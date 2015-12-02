@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MedianTransform.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">MedianTransform.java</span></div><h1>MedianTransform.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.MedianSmooth;
+import java.util.List;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L10" title="1 of 2 branches missed.">public class MedianTransform {</span>
+
+    /**
+     * A computationally expensive multiscale median transform.
+     * see, the pyramidal mean transform version instead.
+     * This method has a runtime complexity of n_iter * O(N_pixels * lg2(windowArea))
+     * where windowArea grows from 1 to 2*2*lg2(imageDimension) + 1 
+     * and nIter = lg2(imageDimension).
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff
+     */
+    public void multiscaleMedianTransform(GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
+
+<span class="fc" id="L25">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L27">        GreyscaleImage img0 = input.copyImage();</span>
+
+<span class="fc" id="L29">        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));</span>
+<span class="fc" id="L30">        int s = 1;</span>
+
+<span class="fc" id="L32">        outputTransformed.add(img0.copyToSignedImage());</span>
+        
+<span class="fc" id="L34">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+
+<span class="fc" id="L38">            int winL = 2*s + 1;</span>
+            
+<span class="fc" id="L40">            MedianSmooth med = new MedianSmooth();</span>
+            
+<span class="fc" id="L42">            outputTransformed.add(med.calculate(outputTransformed.get(j), winL, winL));</span>
+            
+<span class="fc" id="L44">            outputCoeff.add(outputTransformed.get(j).subtract(outputTransformed.get(j + 1)));</span>
+
+<span class="fc" id="L46">            s = 2*s;</span>
+        }
+        
+<span class="fc" id="L49">    }</span>
+
+    public GreyscaleImage reconstructMultiscaleMedianTransform(GreyscaleImage
+        c0, List&lt;GreyscaleImage&gt; mmCoeff) {
+
+<span class="fc" id="L54">        int nr = mmCoeff.size();</span>
+
+<span class="fc" id="L56">        GreyscaleImage output = c0.copyToSignedImage();</span>
+
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="fc" id="L59">            output = output.add(mmCoeff.get(j));</span>
+        }
+
+<span class="fc" id="L62">        return output;</span>
+    }
+
+    /**
+     * pyramidal median transform (faster than multiscalePyramidalMedianTransform
+     * but reconstruction from coefficients is not exact, so prefer
+     * multiscalePyramidalMedianTransform if exact is needed);
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    public void multiscalePyramidalMedianTransform2(GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
+
+<span class="fc" id="L78">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L80">        GreyscaleImage img0 = input.copyImage();</span>
+
+<span class="fc" id="L82">        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));</span>
+<span class="fc" id="L83">        int s = 1;</span>
+<span class="fc" id="L84">        int winL = 2*s + 1;</span>
+        
+<span class="fc" id="L86">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L88">        outputTransformed.add(img0.copyToSignedImage());</span>
+        
+<span class="fc" id="L90">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+            
+<span class="fc" id="L94">            MedianSmooth med = new MedianSmooth();</span>
+            
+<span class="fc" id="L96">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+            
+<span class="fc" id="L98">            GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   </span>
+            
+            // decimation:
+<span class="fc" id="L101">            GreyscaleImage cJPlus1 = imageProcessor.binImage(cJPlus1Ast, 2);</span>
+            
+<span class="fc" id="L103">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
+            
+<span class="fc" id="L105">            outputTransformed.add(cJPlus1);</span>
+            
+<span class="fc" id="L107">            outputCoeff.add(wJPlus1);</span>
+            
+<span class="pc bpc" id="L109" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
+        }
+        
+        // empty full size image
+<span class="fc" id="L113">        outputCoeff.remove(0);</span>
+<span class="fc" id="L114">    }</span>
+    
+    /**
+     * pyramidal median transform for exact reconstruction.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * 
+     * This method has a runtime complexity of 
+     * n_iter * (O(N_pixels * 1.6) + 5*O(N_pixels))
+     * where nIter = lg2(imageDimension) - 1 and N_pixels is decreasing
+     * in size by a factor of 4 for each iteration.
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    public void multiscalePyramidalMedianTransform(GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
+
+<span class="fc" id="L131">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L133">        GreyscaleImage img0 = input.copyImage();</span>
+
+<span class="fc" id="L135">        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));</span>
+<span class="fc" id="L136">        int s = 1;</span>
+<span class="fc" id="L137">        int winL = 2*s + 1;</span>
+        
+<span class="fc" id="L139">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L141">        outputTransformed.add(img0.copyToSignedImage());</span>
+        
+<span class="fc" id="L143">        outputCoeff.add(img0.createSignedWithDimensions());</span>
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int j = 0; j &lt; (nr - 1); ++j) {</span>
+            
+<span class="fc" id="L147">            MedianSmooth med = new MedianSmooth();</span>
+            
+<span class="fc" id="L149">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+                        
+            // median filter and decimation:
+<span class="fc" id="L152">            GreyscaleImage cJPlus1 = imageProcessor.binImage(med.calculate(cJ, winL, winL), 2);</span>
+            
+            //interpolation of cJPlus1 to size cJ
+<span class="fc" id="L155">            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(cJPlus1);</span>
+            
+<span class="fc" id="L157">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);</span>
+            
+<span class="fc" id="L159">            outputTransformed.add(cJPlus1);</span>
+            
+<span class="fc" id="L161">            outputCoeff.add(wJPlus1);</span>
+            
+<span class="pc bpc" id="L163" title="3 of 4 branches missed.">            assert(cJ.getWidth() == wJPlus1.getWidth());</span>
+        }
+        
+        // empty full size image
+<span class="fc" id="L167">        outputCoeff.remove(0);</span>
+<span class="fc" id="L168">    }</span>
+
+    /**
+     * reconstruct image from products of pyramidal median transform.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * 
+     * @param c0
+     * @param mmCoeff
+     * @return 
+     */
+    public GreyscaleImage reconstructPyramidalMultiscaleMedianTransform(
+        GreyscaleImage c0, List&lt;GreyscaleImage&gt; mmCoeff) {
+
+<span class="fc" id="L181">        int nr = mmCoeff.size();</span>
+
+<span class="fc" id="L183">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L185">        GreyscaleImage output = c0.copyToSignedImage();</span>
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int j = (nr - 1); j &gt; -1; --j) {</span>
+
+            // expand by factor of 2.
+<span class="fc" id="L190">            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(output);</span>
+
+<span class="fc" id="L192">            GreyscaleImage wJ = mmCoeff.get(j);</span>
+            
+<span class="fc" id="L194">            output = cJPrime.add(wJ);</span>
+        }
+
+<span class="fc" id="L197">        return output;</span>
+    }
+
+    public void multiscaleMedianWaveletTransform(GreyscaleImage input) {
+
+        if (true) {
+<span class="nc" id="L203">            throw new UnsupportedOperationException(&quot;not yet implemented&quot;);</span>
+        }
+        
+        /*
+        from: Sparse Image and Signal Processing, Second Edition,
+        by Starck, Murtagh, and Fadili
+
+        estimate st dev using Donoho and Johnstone (1994) based on wavelet
+        coeff of noisy data Y at the finest resolution level.
+        The wavelet coeff of Y at finest scale tend to be mostly noise, while
+        wavelet coeff of X at same scale can be viewed as outliers.
+        sigma = MAD(w_1)/0.6745 = median(|w_1 - median(w_1)|)/0.6745
+
+        where MAD stands for the median absolute deviation
+        w_1 are the orthogonal wavelet coefficients of Y at the finest scale.
+        For 2-D images, the above estimator is to be applied with the
+        diagonal subband of the 2-D separable orthogonal wavelet transform.
+
+We now turn to the estimation of . As the noise is additive, we have , and it is easy to see that
+
+
+If the atoms in the dictionary  all have equal unit -norm, then obviously .
+        This formula is also easily implemented if the -norms were known
+        analytically, as is the case for the curvelet tight frame
+        (see Section 5.4.2.2). But if these norms are not known in closed
+        form, they can be estimated in practice by taking the transform
+        of a Dirac, and then computing the -norm of each subband.
+        */
+        /*
+         detect in w_(j+1) the significant coefficients:
+              |w_(j+1)| &gt; tau * MAD(w_(j+1))/0.6745
+              where MAD stands for the median absolute deviation used as an estimator
+              of the noise standard deviation.  see eqn (6.9) and tau a threshold
+              chosen large enough to avoid false detections, for instance tau=5.
+          set to zero all significant coefficients in w_(j+1).
+          compute c_prime_j = w_(j+1) + c_(j+1).  hence c_prime_j is a version of c_j,
+              but without the detected significant structures.
+          compute the 2D starlet transform of c_prime_j with j+1 scales.
+              we get w={w_prime_j,...w_prime_(j+1), c_prime_(j+1)}
+          set c_(j+1) = c_prime_(j+1). therefore, c_(j+1) is smoothed with wavelets,
+              but strong features have been extracted with median
+          compute the median-wavelet coefficients: w_(j+1) = c_j - c_(j+1).
+          s = 2*s
+
+          output: w={w_1,...w_j, c_j}
+        */
+        
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

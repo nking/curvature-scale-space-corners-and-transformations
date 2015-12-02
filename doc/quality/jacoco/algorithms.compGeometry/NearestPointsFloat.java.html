@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NearestPointsFloat.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">NearestPointsFloat.java</span></div><h1>NearestPointsFloat.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.MultiArrayMergeSort;
+import algorithms.util.PairFloat;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Builds an unmodifiable data structure to make finding member points within
+ * a distance of a location faster than O(N^2).
+ * 
+ * The runtime complexity is O(N*lg2(N)) for the constructor
+ * and for search is O(lg2(N)) + small number of scans surrounding the nearest x.
+ * 
+ * @author nichole
+ */
+public class NearestPointsFloat {
+    
+    private final float[] x;
+    private final float[] y;
+    private final int[] originalIndexes;
+    
+<span class="fc" id="L24">    public NearestPointsFloat(float[] xPoints, float[] yPoints, int len) {</span>
+        
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (xPoints == null) {</span>
+<span class="nc" id="L27">            throw new IllegalStateException(&quot;xPoints cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (yPoints == null) {</span>
+<span class="nc" id="L30">            throw new IllegalStateException(&quot;yPoints cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (xPoints.length &lt; len) {</span>
+<span class="nc" id="L33">            throw new IllegalStateException(&quot;xPoints.length is less than len&quot;);</span>
+        }
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (yPoints.length &lt; len) {</span>
+<span class="nc" id="L36">            throw new IllegalStateException(&quot;yPoints.length is less than len&quot;);</span>
+        }
+        
+<span class="fc" id="L39">        int n = len;</span>
+<span class="fc" id="L40">        x = new float[n];</span>
+<span class="fc" id="L41">        y = new float[n];</span>
+<span class="fc" id="L42">        originalIndexes = new int[n];</span>
+        
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L45">            x[i] = xPoints[i];</span>
+<span class="fc" id="L46">            y[i] = yPoints[i];</span>
+<span class="fc" id="L47">            originalIndexes[i] = i;</span>
+        }
+        
+<span class="fc" id="L50">        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y, originalIndexes);</span>
+<span class="fc" id="L51">    }</span>
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public Set&lt;PairFloat&gt; findNeighbors(float xCenter, float yCenter, float radius) {
+        
+<span class="nc" id="L62">        Set&lt;PairFloat&gt; result = new HashSet&lt;PairFloat&gt;();</span>
+        
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (x.length == 0) {</span>
+<span class="nc" id="L65">            return result;</span>
+        }
+        
+<span class="nc" id="L68">        Set&lt;Integer&gt; indexes = findNeighborIndexesR(xCenter, yCenter, radius);</span>
+        
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
+<span class="nc" id="L71">            int i = index.intValue();</span>
+<span class="nc" id="L72">            result.add(new PairFloat(x[i], y[i]));</span>
+<span class="nc" id="L73">        }</span>
+        
+<span class="nc" id="L75">        return result;</span>
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public Set&lt;Integer&gt; findNeighborIndexes(float xCenter, float yCenter, float radius) {
+        
+<span class="nc" id="L87">        Set&lt;Integer&gt; result = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (x.length == 0) {</span>
+<span class="nc" id="L90">            return result;</span>
+        }
+        
+<span class="nc" id="L93">        Set&lt;Integer&gt; indexes = findNeighborIndexesR(xCenter, yCenter, radius);</span>
+        
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        for (Integer index : indexes) {</span>
+<span class="nc" id="L96">            int i = index.intValue();</span>
+<span class="nc" id="L97">            result.add(originalIndexes[i]);</span>
+<span class="nc" id="L98">        }</span>
+        
+<span class="nc" id="L100">        return result;</span>
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points
+     * and return the indexes relative to the x,y arrays (not the original
+     * array given at construct time).
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    private Set&lt;Integer&gt; findNeighborIndexesR(float xCenter, float yCenter, float radius) {
+        
+<span class="nc" id="L114">        Set&lt;Integer&gt; resultIndexes = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (x.length == 0) {</span>
+<span class="nc" id="L117">            return resultIndexes;</span>
+        }
+        
+        // O(lg2(N))
+<span class="nc" id="L121">        int idx = Arrays.binarySearch(x, xCenter);</span>
+                    
+        // if it's negative, (-(insertion point) - 1)
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="nc" id="L126">            idx = -1*(idx + 1);</span>
+        }
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (idx &gt; (x.length - 1)) {</span>
+<span class="nc" id="L129">            idx = x.length - 1;</span>
+        }
+        
+<span class="nc" id="L132">        int startIdx = idx;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L134">            float diffX = Math.abs(x[i] - xCenter);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (diffX &gt; radius) {</span>
+<span class="nc" id="L136">                break;</span>
+            }
+<span class="nc" id="L138">            startIdx = i;</span>
+        }
+        
+<span class="nc" id="L141">        int stopIdx = idx;</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        for (int i = idx; i &lt; x.length; ++i) {</span>
+<span class="nc" id="L143">            float diffX = Math.abs(x[i] - xCenter);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (diffX &gt; radius) {</span>
+<span class="nc" id="L145">                break;</span>
+            }
+<span class="nc" id="L147">            stopIdx = i;</span>
+        }
+       
+<span class="nc" id="L150">        double rSq = Math.sqrt(2) * radius * radius;</span>
+        
+        // search for points within startIdx and stopIdx that are within radius
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        for (int i = startIdx; i &lt;= stopIdx; ++i) {</span>
+<span class="nc" id="L154">            float diffX = x[i] - xCenter;</span>
+<span class="nc" id="L155">            float diffY = y[i] - yCenter;</span>
+<span class="nc" id="L156">            double distSq = (diffX*diffX) + (diffY*diffY);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            if (distSq &lt;= rSq) {</span>
+<span class="nc" id="L158">                resultIndexes.add(Integer.valueOf(i));</span>
+            }
+        }
+        
+<span class="nc" id="L162">        return resultIndexes;</span>
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points
+     * and return the indexes relative to original given array.
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
+    public Integer findClosestNeighborIndex(float xCenter, float yCenter, float radius) {
+                
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        if (x.length == 0) {</span>
+<span class="fc" id="L176">            return null;</span>
+        }
+        
+        // O(lg2(N))
+<span class="fc" id="L180">        int idx = Arrays.binarySearch(x, xCenter);</span>
+                    
+        // if it's negative, (-(insertion point) - 1)
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (idx &lt; 0) {</span>
+            // idx = -*idx2 - 1
+<span class="fc" id="L185">            idx = -1*(idx + 1);</span>
+        }
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        if (idx &gt; (x.length - 1)) {</span>
+<span class="fc" id="L188">            idx = x.length - 1;</span>
+        }
+        
+<span class="fc" id="L191">        int startIdx = idx;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L193">            float diffX = Math.abs(x[i] - xCenter);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (diffX &gt; radius) {</span>
+<span class="fc" id="L195">                break;</span>
+            }
+<span class="fc" id="L197">            startIdx = i;</span>
+        }
+        
+<span class="fc" id="L200">        int stopIdx = idx;</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (int i = idx; i &lt; x.length; ++i) {</span>
+<span class="fc" id="L202">            float diffX = Math.abs(x[i] - xCenter);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (diffX &gt; radius) {</span>
+<span class="fc" id="L204">                break;</span>
+            }
+<span class="fc" id="L206">            stopIdx = i;</span>
+        }
+       
+<span class="fc" id="L209">        double rSq = Math.sqrt(2) * radius * radius;</span>
+        
+<span class="fc" id="L211">        double minDistSq = Double.MAX_VALUE;</span>
+<span class="fc" id="L212">        int minDistIdx = -1;</span>
+        
+        // search for points within startIdx and stopIdx that are within radius
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = startIdx; i &lt;= stopIdx; ++i) {</span>
+<span class="fc" id="L216">            float diffX = x[i] - xCenter;</span>
+<span class="fc" id="L217">            float diffY = y[i] - yCenter;</span>
+<span class="fc" id="L218">            double distSq = (diffX*diffX) + (diffY*diffY);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (distSq &lt;= rSq) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">                if (distSq &lt; minDistSq) {</span>
+<span class="fc" id="L221">                    minDistSq = distSq;</span>
+<span class="fc" id="L222">                    minDistIdx = originalIndexes[i];</span>
+                }
+            }
+        }
+        
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (minDistIdx &gt; -1) {</span>
+<span class="fc" id="L228">            return Integer.valueOf(minDistIdx);</span>
+        }
+        
+<span class="fc" id="L231">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

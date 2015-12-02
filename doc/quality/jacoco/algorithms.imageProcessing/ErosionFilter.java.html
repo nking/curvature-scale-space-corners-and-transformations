@@ -1000,7 +1000,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L1000">            return false;</span>
         }
         
-<span class="fc bfc" id="L1003" title="All 2 branches covered.">        if (!isASmallerSearchRegion(p.getX(), p.getY(), imageWidth, imageHeight)</span>
+<span class="pc bpc" id="L1003" title="1 of 2 branches missed.">        if (!isASmallerSearchRegion(p.getX(), p.getY(), imageWidth, imageHeight)</span>
 <span class="fc bfc" id="L1004" title="All 2 branches covered.">            &amp;&amp; hasImmediateFourNeighbors(p, points, overridePointsAdded, </span>
             overridePointsRemoved)) {
 
@@ -1033,9 +1033,9 @@ import java.util.logging.Logger;
 <span class="fc" id="L1033">            int x = p.getX() + fourNeighborsX[nIdx];</span>
 <span class="fc" id="L1034">            int y = p.getY() + fourNeighborsY[nIdx];</span>
             
-<span class="pc bpc" id="L1036" title="3 of 8 branches missed.">            if ((x &lt; 0) || (x &gt; (imageWidth - 1)) || (y &lt; 0) || </span>
+<span class="pc bpc" id="L1036" title="4 of 8 branches missed.">            if ((x &lt; 0) || (x &gt; (imageWidth - 1)) || (y &lt; 0) || </span>
                 (y &gt; (imageHeight - 1))) {
-<span class="fc" id="L1038">                continue;</span>
+<span class="nc" id="L1038">                continue;</span>
             }
 
 <span class="fc" id="L1041">            PairInt p2 = new PairInt(x, y);</span>
@@ -1069,13 +1069,13 @@ import java.util.logging.Logger;
 <span class="fc" id="L1069">        boolean isASmallerSearchRegion = isASmallerSearchRegion(</span>
 <span class="fc" id="L1070">            p.getX(), p.getY(), imageWidth, imageHeight);</span>
         
-<span class="fc bfc" id="L1072" title="All 2 branches covered.">        if (isASmallerSearchRegion) {</span>
+<span class="pc bpc" id="L1072" title="1 of 2 branches missed.">        if (isASmallerSearchRegion) {</span>
             
-<span class="fc" id="L1074">            boolean doesDisconnect = isASmallerSearchRegionAndDoesDisconnect(</span>
+<span class="nc" id="L1074">            boolean doesDisconnect = isASmallerSearchRegionAndDoesDisconnect(</span>
                 p, points, overridePointsAdded, overridePointsRemoved,
                 imageWidth, imageHeight);
 
-<span class="pc bpc" id="L1078" title="1 of 2 branches missed.">            return !doesDisconnect;</span>
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">            return !doesDisconnect;</span>
         }
 
 <span class="pc bpc" id="L1081" title="1 of 2 branches missed.">        if (performEndOfLineCheck) {</span>

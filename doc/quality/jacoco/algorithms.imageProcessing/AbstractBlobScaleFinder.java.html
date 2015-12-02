@@ -27,35 +27,35 @@ import java.util.logging.Logger;
     
     protected String printToString(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="fc" id="L30">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L30">        StringBuilder sb = new StringBuilder();</span>
         
-<span class="fc bfc" id="L32" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
             
-<span class="fc" id="L34">            sb.append(String.format(</span>
+<span class="nc" id="L34">            sb.append(String.format(</span>
             &quot; (%d,%d) (%d,%d) theta1=%.0f theta2=%.0f intSqDiff=%.1f(%.1f)&quot;, 
-<span class="fc" id="L36">            compStat.getImg1Point().getX(), compStat.getImg1Point().getY(), </span>
-<span class="fc" id="L37">            compStat.getImg2Point().getX(), compStat.getImg2Point().getY(), </span>
-<span class="fc" id="L38">            compStat.getImg1PointRotInDegrees(), </span>
-<span class="fc" id="L39">            compStat.getImg2PointRotInDegrees(), </span>
-<span class="fc" id="L40">            compStat.getSumIntensitySqDiff(), </span>
-<span class="fc" id="L41">            compStat.getImg2PointIntensityErr()));</span>
-<span class="fc" id="L42">        }</span>
+<span class="nc" id="L36">            compStat.getImg1Point().getX(), compStat.getImg1Point().getY(), </span>
+<span class="nc" id="L37">            compStat.getImg2Point().getX(), compStat.getImg2Point().getY(), </span>
+<span class="nc" id="L38">            compStat.getImg1PointRotInDegrees(), </span>
+<span class="nc" id="L39">            compStat.getImg2PointRotInDegrees(), </span>
+<span class="nc" id="L40">            compStat.getSumIntensitySqDiff(), </span>
+<span class="nc" id="L41">            compStat.getImg2PointIntensityErr()));</span>
+<span class="nc" id="L42">        }</span>
         
-<span class="fc" id="L44">        return sb.toString();</span>
+<span class="nc" id="L44">        return sb.toString();</span>
     }
 
     protected double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; 
         compStats) {
         
-<span class="fc" id="L50">        double sum = 0;</span>
+<span class="nc" id="L50">        double sum = 0;</span>
         
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
-<span class="fc" id="L53">            sum += compStat.getSumIntensitySqDiff();</span>
-<span class="fc" id="L54">        }</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="nc" id="L53">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="nc" id="L54">        }</span>
         
-<span class="fc" id="L56">        sum /= (double) compStats.size();</span>
+<span class="nc" id="L56">        sum /= (double) compStats.size();</span>
         
-<span class="fc" id="L58">        return sum;</span>
+<span class="nc" id="L58">        return sum;</span>
     }
 
     protected void removeOutliers(List&lt;FeatureComparisonStat&gt; compStats) {
@@ -180,49 +180,49 @@ import java.util.logging.Logger;
     protected boolean rotationIsConsistent(TransformationParameters params, 
         List&lt;FeatureComparisonStat&gt; comparisonStats, float tolerance) {
                 
-<span class="pc bpc" id="L183" title="2 of 4 branches missed.">        if (comparisonStats == null || comparisonStats.isEmpty()) {</span>
+<span class="nc bnc" id="L183" title="All 4 branches missed.">        if (comparisonStats == null || comparisonStats.isEmpty()) {</span>
 <span class="nc" id="L184">            return false;</span>
         }
         
-<span class="fc" id="L187">        float rotationInDegrees = params.getRotationInDegrees();</span>
+<span class="nc" id="L187">        float rotationInDegrees = params.getRotationInDegrees();</span>
         
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        for (FeatureComparisonStat stat : comparisonStats) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        for (FeatureComparisonStat stat : comparisonStats) {</span>
             
-<span class="fc" id="L191">            float a1 = stat.getImg1PointRotInDegrees();</span>
+<span class="nc" id="L191">            float a1 = stat.getImg1PointRotInDegrees();</span>
             
-<span class="fc" id="L193">            float a2 = stat.getImg2PointRotInDegrees();</span>
+<span class="nc" id="L193">            float a2 = stat.getImg2PointRotInDegrees();</span>
             
-<span class="fc" id="L195">            float theta = AngleUtil.getAngleDifference(a1, a2);</span>
-<span class="fc bfc" id="L196" title="All 2 branches covered.">            if (theta &lt; 0) {</span>
-<span class="fc" id="L197">                theta += 360;</span>
+<span class="nc" id="L195">            float theta = AngleUtil.getAngleDifference(a1, a2);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            if (theta &lt; 0) {</span>
+<span class="nc" id="L197">                theta += 360;</span>
             }
             
-<span class="fc" id="L200">            float diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
+<span class="nc" id="L200">            float diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
             
-<span class="fc bfc" id="L202" title="All 2 branches covered.">            if (Math.abs(diff) &gt; tolerance) {</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">            if (Math.abs(diff) &gt; tolerance) {</span>
                 
-<span class="fc bfc" id="L204" title="All 2 branches covered.">                if (a1 &gt; a2) {</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                if (a1 &gt; a2) {</span>
                     
-<span class="fc" id="L206">                    theta = (360.f - a1) + a2;</span>
+<span class="nc" id="L206">                    theta = (360.f - a1) + a2;</span>
                     
-<span class="fc" id="L208">                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
+<span class="nc" id="L208">                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
                     
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">                    if (Math.abs(diff) &gt; tolerance) {</span>
-<span class="fc" id="L211">                        return false;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                    if (Math.abs(diff) &gt; tolerance) {</span>
+<span class="nc" id="L211">                        return false;</span>
                     }
                     
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                } else if (a1 &lt; a2) {</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                } else if (a1 &lt; a2) {</span>
                     
-<span class="fc" id="L216">                    theta = a2 - a1;</span>
+<span class="nc" id="L216">                    theta = a2 - a1;</span>
                     
-<span class="fc" id="L218">                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
+<span class="nc" id="L218">                    diff = AngleUtil.getAngleDifference(theta, rotationInDegrees);</span>
                     
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">                    if (Math.abs(diff) &gt; tolerance) {</span>
-<span class="fc" id="L221">                        return false;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                    if (Math.abs(diff) &gt; tolerance) {</span>
+<span class="nc" id="L221">                        return false;</span>
                     } 
                 }
             }
-<span class="fc" id="L225">        }</span>
+<span class="nc" id="L225">        }</span>
             
 <span class="nc" id="L227">        return true;</span>
     }
@@ -255,58 +255,58 @@ import java.util.logging.Logger;
     protected &lt;T extends CornerRegion&gt; int countMaxMatchable(
         List&lt;List&lt;T&gt;&gt; corners1List, List&lt;List&lt;T&gt;&gt; corners2List) {
         
-<span class="fc" id="L258">        int n1 = 0;</span>
-<span class="fc" id="L259">        int n2 = 0;</span>
+<span class="nc" id="L258">        int n1 = 0;</span>
+<span class="nc" id="L259">        int n2 = 0;</span>
         
-<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (List&lt;T&gt; list : corners1List) {</span>
-<span class="fc" id="L262">            n1 += list.size();</span>
-<span class="fc" id="L263">        }</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        for (List&lt;T&gt; list : corners1List) {</span>
+<span class="nc" id="L262">            n1 += list.size();</span>
+<span class="nc" id="L263">        }</span>
         
-<span class="fc bfc" id="L265" title="All 2 branches covered.">        for (List&lt;T&gt; list : corners2List) {</span>
-<span class="fc" id="L266">            n2 += list.size();</span>
-<span class="fc" id="L267">        }</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">        for (List&lt;T&gt; list : corners2List) {</span>
+<span class="nc" id="L266">            n2 += list.size();</span>
+<span class="nc" id="L267">        }</span>
         
-<span class="fc" id="L269">        return Math.max(n1, n2);</span>
+<span class="nc" id="L269">        return Math.max(n1, n2);</span>
     }
     
     protected &lt;T extends CornerRegion&gt; int[] convertToXPoints(
         List&lt;List&lt;T&gt;&gt; cornersList) {
         
-<span class="fc" id="L275">        int n = 0;</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">        for (List&lt;T&gt; list : cornersList) {</span>
-<span class="fc" id="L277">            n += list.size();</span>
-<span class="fc" id="L278">        }</span>
+<span class="nc" id="L275">        int n = 0;</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        for (List&lt;T&gt; list : cornersList) {</span>
+<span class="nc" id="L277">            n += list.size();</span>
+<span class="nc" id="L278">        }</span>
         
-<span class="fc" id="L280">        int[] x = new int[n];</span>
-<span class="fc" id="L281">        n = 0;</span>
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (List&lt;T&gt; list : cornersList) {</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">            for (T cr : list) {</span>
-<span class="fc" id="L284">                x[n] = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L285">                n++;</span>
-<span class="fc" id="L286">            }</span>
-<span class="fc" id="L287">        }</span>
+<span class="nc" id="L280">        int[] x = new int[n];</span>
+<span class="nc" id="L281">        n = 0;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        for (List&lt;T&gt; list : cornersList) {</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            for (T cr : list) {</span>
+<span class="nc" id="L284">                x[n] = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L285">                n++;</span>
+<span class="nc" id="L286">            }</span>
+<span class="nc" id="L287">        }</span>
         
-<span class="fc" id="L289">        return x;</span>
+<span class="nc" id="L289">        return x;</span>
     }
     
     protected &lt;T extends CornerRegion&gt; int[] convertToYPoints(
         List&lt;List&lt;T&gt;&gt; cornersList) {
         
-<span class="fc" id="L295">        int n = 0;</span>
-<span class="fc bfc" id="L296" title="All 2 branches covered.">        for (List&lt;T&gt; list : cornersList) {</span>
-<span class="fc" id="L297">            n += list.size();</span>
-<span class="fc" id="L298">        }</span>
+<span class="nc" id="L295">        int n = 0;</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        for (List&lt;T&gt; list : cornersList) {</span>
+<span class="nc" id="L297">            n += list.size();</span>
+<span class="nc" id="L298">        }</span>
         
-<span class="fc" id="L300">        int[] y = new int[n];</span>
-<span class="fc" id="L301">        n = 0;</span>
-<span class="fc bfc" id="L302" title="All 2 branches covered.">        for (List&lt;T&gt; list : cornersList) {</span>
-<span class="fc bfc" id="L303" title="All 2 branches covered.">            for (T cr : list) {</span>
-<span class="fc" id="L304">                y[n] = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L305">                n++;</span>
-<span class="fc" id="L306">            }</span>
-<span class="fc" id="L307">        }</span>
+<span class="nc" id="L300">        int[] y = new int[n];</span>
+<span class="nc" id="L301">        n = 0;</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        for (List&lt;T&gt; list : cornersList) {</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">            for (T cr : list) {</span>
+<span class="nc" id="L304">                y[n] = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="nc" id="L305">                n++;</span>
+<span class="nc" id="L306">            }</span>
+<span class="nc" id="L307">        }</span>
         
-<span class="fc" id="L309">        return y;</span>
+<span class="nc" id="L309">        return y;</span>
     }
 
     protected &lt;T extends CornerRegion&gt; int evaluate(TransformationParameters params, 
@@ -315,75 +315,75 @@ import java.util.logging.Logger;
         
         //TODO: move this method to a class for utility methods
         
-<span class="fc" id="L318">        int nMatched = 0;</span>
+<span class="nc" id="L318">        int nMatched = 0;</span>
         
-<span class="fc" id="L320">        int[] xPoints = convertToXPoints(corners2List);</span>
-<span class="fc" id="L321">        int[] yPoints = convertToYPoints(corners2List);</span>
+<span class="nc" id="L320">        int[] xPoints = convertToXPoints(corners2List);</span>
+<span class="nc" id="L321">        int[] yPoints = convertToYPoints(corners2List);</span>
         
-<span class="fc" id="L323">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L323">        Transformer transformer = new Transformer();</span>
         
-<span class="fc" id="L325">        NearestPoints np = new NearestPoints(xPoints, yPoints);</span>
+<span class="nc" id="L325">        NearestPoints np = new NearestPoints(xPoints, yPoints);</span>
         
-<span class="fc bfc" id="L327" title="All 2 branches covered.">        for (int i = 0; i &lt; corners1List.size(); ++i) {</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        for (int i = 0; i &lt; corners1List.size(); ++i) {</span>
             
-<span class="fc" id="L329">            List&lt;T&gt; corners1 = corners1List.get(i);</span>
+<span class="nc" id="L329">            List&lt;T&gt; corners1 = corners1List.get(i);</span>
             
-<span class="fc bfc" id="L331" title="All 2 branches covered.">            for (int ii = 0; ii &lt; corners1.size(); ++ii) {</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">            for (int ii = 0; ii &lt; corners1.size(); ++ii) {</span>
                 
-<span class="fc" id="L333">                T cr = corners1.get(ii);</span>
+<span class="nc" id="L333">                T cr = corners1.get(ii);</span>
                 
-<span class="fc" id="L335">                double[] xyTr = transformer.applyTransformation(params, </span>
-<span class="fc" id="L336">                    cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);</span>
+<span class="nc" id="L335">                double[] xyTr = transformer.applyTransformation(params, </span>
+<span class="nc" id="L336">                    cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);</span>
                 
-<span class="fc" id="L338">                Set&lt;Integer&gt; indexes = np.findNeighborIndexes(</span>
-<span class="fc" id="L339">                    (int)Math.round(xyTr[0]), (int)Math.round(xyTr[1]), </span>
+<span class="nc" id="L338">                Set&lt;Integer&gt; indexes = np.findNeighborIndexes(</span>
+<span class="nc" id="L339">                    (int)Math.round(xyTr[0]), (int)Math.round(xyTr[1]), </span>
                     tolTransXY);
                 
-<span class="pc bpc" id="L342" title="1 of 4 branches missed.">                if (indexes != null &amp;&amp; indexes.size() &gt; 0) {</span>
-<span class="fc" id="L343">                    nMatched++;</span>
+<span class="nc bnc" id="L342" title="All 4 branches missed.">                if (indexes != null &amp;&amp; indexes.size() &gt; 0) {</span>
+<span class="nc" id="L343">                    nMatched++;</span>
                 }
             }
         }
         
-<span class="fc" id="L348">        return nMatched;</span>
+<span class="nc" id="L348">        return nMatched;</span>
     }
     
     protected int[] convertToXPoints2(List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; cList) {
         
-<span class="fc" id="L353">        int n = 0;</span>
-<span class="fc bfc" id="L354" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
-<span class="fc" id="L355">            n += list.size();</span>
-<span class="fc" id="L356">        }</span>
+<span class="nc" id="L353">        int n = 0;</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
+<span class="nc" id="L355">            n += list.size();</span>
+<span class="nc" id="L356">        }</span>
         
-<span class="fc" id="L358">        int[] x = new int[n];</span>
-<span class="fc" id="L359">        n = 0;</span>
-<span class="fc bfc" id="L360" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
-<span class="fc bfc" id="L361" title="All 2 branches covered.">            for (CurvatureScaleSpaceContour cr : list) {</span>
-<span class="fc" id="L362">                x[n] = cr.getPeakDetails()[0].getXCoord();</span>
-<span class="fc" id="L363">                n++;</span>
-<span class="fc" id="L364">            }</span>
-<span class="fc" id="L365">        }</span>
+<span class="nc" id="L358">        int[] x = new int[n];</span>
+<span class="nc" id="L359">        n = 0;</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
+<span class="nc" id="L362">                x[n] = cr.getPeakDetails()[0].getXCoord();</span>
+<span class="nc" id="L363">                n++;</span>
+<span class="nc" id="L364">            }</span>
+<span class="nc" id="L365">        }</span>
         
-<span class="fc" id="L367">        return x;</span>
+<span class="nc" id="L367">        return x;</span>
     }
     
     protected int[] convertToYPoints2(List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; cList) {
         
-<span class="fc" id="L372">        int n = 0;</span>
-<span class="fc bfc" id="L373" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
-<span class="fc" id="L374">            n += list.size();</span>
-<span class="fc" id="L375">        }</span>
+<span class="nc" id="L372">        int n = 0;</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
+<span class="nc" id="L374">            n += list.size();</span>
+<span class="nc" id="L375">        }</span>
         
-<span class="fc" id="L377">        int[] y = new int[n];</span>
-<span class="fc" id="L378">        n = 0;</span>
-<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
-<span class="fc bfc" id="L380" title="All 2 branches covered.">            for (CurvatureScaleSpaceContour cr : list) {</span>
-<span class="fc" id="L381">                y[n] = cr.getPeakDetails()[0].getYCoord();</span>
-<span class="fc" id="L382">                n++;</span>
-<span class="fc" id="L383">            }</span>
-<span class="fc" id="L384">        }</span>
+<span class="nc" id="L377">        int[] y = new int[n];</span>
+<span class="nc" id="L378">        n = 0;</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : cList) {</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
+<span class="nc" id="L381">                y[n] = cr.getPeakDetails()[0].getYCoord();</span>
+<span class="nc" id="L382">                n++;</span>
+<span class="nc" id="L383">            }</span>
+<span class="nc" id="L384">        }</span>
         
-<span class="fc" id="L386">        return y;</span>
+<span class="nc" id="L386">        return y;</span>
     }
 
 }

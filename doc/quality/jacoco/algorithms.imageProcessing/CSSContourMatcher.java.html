@@ -264,17 +264,17 @@ public final class CSSContourMatcher {
 
                 //(2) calc cost: apply to tallest contours from each curve
 
-<span class="fc bfc" id="L267" title="All 2 branches covered.">                for (int index1s = 0; index1s &lt; c1.size(); ++index1s) {</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">                for (int index1s = 0; index1s &lt; c1.size(); ++index1s) {</span>
 
 <span class="fc" id="L269">                    CurvatureScaleSpaceContour contour1s = c1.get(index1s);</span>
 
 <span class="fc bfc" id="L271" title="All 2 branches covered.">                    while (nc.getMatchedContours1().contains(contour1s)</span>
-<span class="fc bfc" id="L272" title="All 2 branches covered.">                        &amp;&amp; ((index1s + 1) &lt; c1.size())) {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">                        &amp;&amp; ((index1s + 1) &lt; c1.size())) {</span>
 <span class="fc" id="L273">                        index1s++;</span>
 <span class="fc" id="L274">                        contour1s = c1.get(index1s);</span>
                     }
-<span class="fc bfc" id="L276" title="All 2 branches covered.">                    if (nc.getMatchedContours1().contains(contour1s)) {</span>
-<span class="fc" id="L277">                        continue;</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">                    if (nc.getMatchedContours1().contains(contour1s)) {</span>
+<span class="nc" id="L277">                        continue;</span>
                     }
 
                     /*
@@ -293,7 +293,7 @@ public final class CSSContourMatcher {
 <span class="fc" id="L293">                    CurvatureScaleSpaceContour contour2s = findMatchingC2(</span>
                         sigma2, t2, nc);
 
-<span class="fc bfc" id="L296" title="All 2 branches covered.">                    if (contour2s != null) {</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">                    if (contour2s != null) {</span>
 <span class="fc" id="L297">                        nc.addMatchedContours(contour1s, contour2s);</span>
                     }
 

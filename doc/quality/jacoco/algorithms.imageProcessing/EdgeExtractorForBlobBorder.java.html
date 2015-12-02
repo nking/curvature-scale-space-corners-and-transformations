@@ -391,9 +391,9 @@ try {
         Note that the algorithm could be redesigned to look for such regions
         first and discard the smaller half with a warning.
         */
-<span class="pc bpc" id="L394" title="1 of 2 branches missed.">        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
    
-<span class="nc bnc" id="L396" title="All 2 branches missed.">if (debug) {        </span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">if (debug) {        </span>
 <span class="nc" id="L397">Image img3 = new Image(imageWidth, imageHeight);</span>
 <span class="nc bnc" id="L398" title="All 2 branches missed.">for (int i = 0; i &lt; out.getN(); ++i) {</span>
 <span class="nc" id="L399">    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);</span>
@@ -403,10 +403,10 @@ try {
 <span class="nc" id="L403">MiscDebug.writeImage(img3, &quot;border_trimEndpointSpurs&quot;);</span>
 }
 
-<span class="nc" id="L406">            boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), </span>
-<span class="nc" id="L407">                img.getHeight());</span>
+<span class="fc" id="L406">            boolean altered = trimEndpointSpursIfAny(out, img.getWidth(), </span>
+<span class="fc" id="L407">                img.getHeight());</span>
 
-<span class="nc bnc" id="L409" title="All 2 branches missed.">if (debug) {        </span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">if (debug) {        </span>
 <span class="nc" id="L410">Image img3 = new Image(imageWidth, imageHeight);</span>
 <span class="nc bnc" id="L411" title="All 2 branches missed.">for (int i = 0; i &lt; out.getN(); ++i) {</span>
 <span class="nc" id="L412">    img3.setRGB(out.getX(i), out.getY(i), 255, 0, 0);</span>
@@ -416,7 +416,7 @@ try {
 <span class="nc" id="L416">MiscDebug.writeImage(img3, &quot;border_before_reorder_endpoints&quot;);</span>
 }
 
-<span class="nc bnc" id="L419" title="All 2 branches missed.">            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
                 
 <span class="nc" id="L421">                extractor.reorderEndpointsIfNeeded(out);</span>
                 
@@ -486,14 +486,14 @@ try {
     private boolean trimEndpointSpursIfAny(final PairIntArray curve, 
         final int imageWidth, final int imageHeight) {
 
-<span class="nc" id="L489">        boolean edited = false;</span>
+<span class="fc" id="L489">        boolean edited = false;</span>
         
-<span class="nc" id="L491">        SpurRemover spurRemover = new SpurRemover();</span>
+<span class="fc" id="L491">        SpurRemover spurRemover = new SpurRemover();</span>
         
         // try beginning of curve        
         while (true) {
             
-<span class="nc bnc" id="L496" title="All 2 branches missed.">if (debug) {        </span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">if (debug) {        </span>
 <span class="nc" id="L497">Image img3 = new Image(imageWidth, imageHeight);</span>
 <span class="nc bnc" id="L498" title="All 2 branches missed.">for (int i = 0; i &lt; curve.getN(); ++i) {</span>
 <span class="nc" id="L499">    int x = curve.getX(i);</span>
@@ -503,31 +503,31 @@ try {
 <span class="nc" id="L503">MiscDebug.writeImage(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
 }      
 
-<span class="nc" id="L506">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
+<span class="fc" id="L506">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
             
-<span class="nc" id="L508">            int idx = 0;</span>
+<span class="fc" id="L508">            int idx = 0;</span>
                 
-<span class="nc" id="L510">            int x = curve.getX(idx);                </span>
-<span class="nc" id="L511">            int y = curve.getY(idx);</span>
+<span class="fc" id="L510">            int x = curve.getX(idx);                </span>
+<span class="fc" id="L511">            int y = curve.getY(idx);</span>
                 
-<span class="nc" id="L513">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
+<span class="fc" id="L513">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
                 imageHeight);
                 
-<span class="nc bnc" id="L516" title="All 2 branches missed.">            if (isASpur) {</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">            if (isASpur) {</span>
                 
-<span class="nc" id="L518">                curve.removeRange(idx, idx);</span>
+<span class="fc" id="L518">                curve.removeRange(idx, idx);</span>
                 
-<span class="nc" id="L520">                edited = true;</span>
+<span class="fc" id="L520">                edited = true;</span>
                 
             } else {
                 break;
             }
-<span class="nc" id="L525">        }</span>
+<span class="fc" id="L525">        }</span>
         
         // try end of curve        
         while (true) {
 
-<span class="nc bnc" id="L530" title="All 2 branches missed.">if (debug) {        </span>
+<span class="pc bpc" id="L530" title="1 of 2 branches missed.">if (debug) {        </span>
 <span class="nc" id="L531">Image img3 = new Image(imageWidth, imageHeight);</span>
 <span class="nc bnc" id="L532" title="All 2 branches missed.">for (int i = 0; i &lt; curve.getN(); ++i) {</span>
 <span class="nc" id="L533">    int x = curve.getX(i);</span>
@@ -537,17 +537,17 @@ try {
 <span class="nc" id="L537">MiscDebug.writeImage(img3, &quot;before_trim_endpoints_&quot; + MiscDebug.getCurrentTimeFormatted());</span>
 }
 
-<span class="nc" id="L540">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
+<span class="fc" id="L540">            Set&lt;PairInt&gt; points = Misc.convert(curve);</span>
             
-<span class="nc" id="L542">            int idx = (curve.getN() - 1);</span>
+<span class="fc" id="L542">            int idx = (curve.getN() - 1);</span>
                 
-<span class="nc" id="L544">            int x = curve.getX(idx);                </span>
-<span class="nc" id="L545">            int y = curve.getY(idx);</span>
+<span class="fc" id="L544">            int x = curve.getX(idx);                </span>
+<span class="fc" id="L545">            int y = curve.getY(idx);</span>
                 
-<span class="nc" id="L547">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
+<span class="fc" id="L547">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
                 imageHeight);
                 
-<span class="nc bnc" id="L550" title="All 2 branches missed.">            if (isASpur) {</span>
+<span class="pc bpc" id="L550" title="1 of 2 branches missed.">            if (isASpur) {</span>
                 
 <span class="nc" id="L552">                curve.removeRange(idx, idx);</span>
                 
@@ -558,7 +558,7 @@ try {
             }
 <span class="nc" id="L559">        }</span>
         
-<span class="nc" id="L561">        return edited;</span>
+<span class="fc" id="L561">        return edited;</span>
     }
 
     private boolean trimForMultipleClosedCurves(final EdgeExtractorWithJunctions 

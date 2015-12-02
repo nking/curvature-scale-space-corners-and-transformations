@@ -153,10 +153,10 @@ public class BlobContourHelper {
     public List&lt;List&lt;BlobPerimeterRegion&gt;&gt; generatePerimeterRegions(
         SegmentationType type, boolean applyToBinnedImage) {
          
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (applyToBinnedImage) {</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (applyToBinnedImage) {</span>
 <span class="nc" id="L157">            return generatePerimeterRegionsForBinned(type);</span>
         } else {
-<span class="fc" id="L159">            return generatePerimeterRegionsUnbinned(type);</span>
+<span class="nc" id="L159">            return generatePerimeterRegionsUnbinned(type);</span>
         }
     }
     
@@ -170,36 +170,36 @@ public class BlobContourHelper {
     public List&lt;List&lt;BlobPerimeterRegion&gt;&gt; getPerimeterRegions(
         SegmentationType type, boolean applyToBinnedImage) {
          
-<span class="fc" id="L173">        return generatePerimeterRegions(type, applyToBinnedImage);</span>
+<span class="nc" id="L173">        return generatePerimeterRegions(type, applyToBinnedImage);</span>
     }
     
     protected List&lt;List&lt;BlobPerimeterRegion&gt;&gt; 
         generatePerimeterRegionsUnbinned(SegmentationType type) {
         
-<span class="fc" id="L179">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprs = segBPRMap.get(type);</span>
+<span class="nc" id="L179">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprs = segBPRMap.get(type);</span>
 
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (bprs != null) {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (bprs != null) {</span>
 <span class="nc" id="L182">            return bprs;</span>
         }
         
-<span class="fc" id="L185">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
+<span class="nc" id="L185">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
         
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (segImg == null) {</span>
             //TODO: consider changing logic to perform this if needed
 <span class="nc" id="L189">            throw new IllegalArgumentException(&quot;segmented image hasn't been created yet.  error?&quot;);</span>
         }
         
-<span class="fc" id="L192">        boolean useBinned = false;</span>
+<span class="nc" id="L192">        boolean useBinned = false;</span>
         
-<span class="fc" id="L194">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = getPerimeterContours(</span>
+<span class="nc" id="L194">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours = getPerimeterContours(</span>
             type, useBinned);
         
-<span class="fc" id="L197">        bprs = BlobsAndContours.populateRegions(imgHelper, contours, type, </span>
+<span class="nc" id="L197">        bprs = BlobsAndContours.populateRegions(imgHelper, contours, type, </span>
             useBinned);
         
-<span class="fc" id="L200">        segBPRMap.put(type, bprs);</span>
+<span class="nc" id="L200">        segBPRMap.put(type, bprs);</span>
         
-<span class="fc" id="L202">        return bprs;</span>
+<span class="nc" id="L202">        return bprs;</span>
     }
     
     protected List&lt;List&lt;BlobPerimeterRegion&gt;&gt; 

@@ -301,8 +301,8 @@ import java.util.Set;
         Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; overridePointsAdded, 
         Set&lt;PairInt&gt; overridePointsRemoved, int imageWidth, int imageHeight) {
         
-<span class="fc" id="L304">        int col = p.getX();</span>
-<span class="fc" id="L305">        int row = p.getY();</span>
+<span class="nc" id="L304">        int col = p.getX();</span>
+<span class="nc" id="L305">        int row = p.getY();</span>
         
         /*
         coordinates of the 8 neighbors as already created PairInts without 
@@ -310,10 +310,10 @@ import java.util.Set;
         indexes are found as +1 of the difference relative to center,
         for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
         */
-<span class="fc" id="L313">        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(</span>
+<span class="nc" id="L313">        PairInt[][] neighborCoords = createCoordinatePointsForEightNeighbors(</span>
             col, row);
         
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">        if ((col - 1) &lt; 0) {</span>
             /*
              | @ @
              | C @
@@ -488,7 +488,7 @@ import java.util.Set;
             }
 <span class="nc" id="L489">            return false;</span>
             
-<span class="pc bpc" id="L491" title="1 of 2 branches missed.">        } else if ((col + 1) &gt; (imageWidth - 1)) {</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        } else if ((col + 1) &gt; (imageWidth - 1)) {</span>
             /*
              @ @ |
              @ C |
@@ -648,7 +648,7 @@ import java.util.Set;
                 }
             }
 <span class="nc" id="L650">            return false;</span>
-<span class="pc bpc" id="L651" title="1 of 2 branches missed.">        } else if ((row - 1) &lt; 0) {</span>
+<span class="nc bnc" id="L651" title="All 2 branches missed.">        } else if ((row - 1) &lt; 0) {</span>
             /*
              @ @ @
              @ C @
@@ -745,7 +745,7 @@ import java.util.Set;
                 }
             }
 <span class="nc" id="L747">            return false;</span>
-<span class="pc bpc" id="L748" title="1 of 2 branches missed.">        } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
+<span class="nc bnc" id="L748" title="All 2 branches missed.">        } else if ((row + 1) &gt; (imageHeight - 1)) {</span>
             /*
              @ C @
              @ @ @
@@ -758,19 +758,19 @@ import java.util.Set;
              ?  C  #    '#' is disconnected if All .'s are 0s
              ?  .  _       AND AtLeastOne (? is 1)
              */
-<span class="fc" id="L761">            if (</span>
+<span class="nc" id="L761">            if (</span>
                 (
-<span class="fc bfc" id="L763" title="All 2 branches covered.">                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &amp;&amp;</span>
-<span class="fc bfc" id="L764" title="All 2 branches covered.">                    (overridePointsAdded.contains(neighborCoords[2][0]) ||</span>
-<span class="pc bpc" id="L765" title="1 of 2 branches missed.">                    points.contains(neighborCoords[2][0])))</span>
+<span class="nc bnc" id="L763" title="All 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[2][0]) &amp;&amp;</span>
+<span class="nc bnc" id="L764" title="All 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[2][0]) ||</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">                    points.contains(neighborCoords[2][0])))</span>
                     || 
-<span class="pc bpc" id="L767" title="1 of 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &amp;&amp;</span>
-<span class="pc bpc" id="L768" title="1 of 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[2][1]) ||</span>
-<span class="pc bpc" id="L769" title="1 of 2 branches missed.">                    points.contains(neighborCoords[2][1])))</span>
+<span class="nc bnc" id="L767" title="All 2 branches missed.">                    (!overridePointsRemoved.contains(neighborCoords[2][1]) &amp;&amp;</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">                    (overridePointsAdded.contains(neighborCoords[2][1]) ||</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">                    points.contains(neighborCoords[2][1])))</span>
                 ) &amp;&amp; 
-<span class="pc bpc" id="L771" title="1 of 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[1][0]) ||</span>
-<span class="fc bfc" id="L772" title="All 2 branches covered.">                    (!overridePointsAdded.contains(neighborCoords[1][0]) &amp;&amp;</span>
-<span class="pc bpc" id="L773" title="1 of 2 branches missed.">                    !points.contains(neighborCoords[1][0])))</span>
+<span class="nc bnc" id="L771" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[1][0]) ||</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[1][0]) &amp;&amp;</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">                    !points.contains(neighborCoords[1][0])))</span>
                 ) {
                 
 <span class="nc" id="L776">                if (</span>
@@ -790,22 +790,22 @@ import java.util.Set;
              .  C  .
              -  #  _  '#' is disconnected if All .'s are 0s
              */
-<span class="fc" id="L793">            if (</span>
-<span class="pc bpc" id="L794" title="1 of 2 branches missed.">                (!overridePointsRemoved.contains(neighborCoords[1][0]) &amp;&amp;</span>
-<span class="fc bfc" id="L795" title="All 2 branches covered.">                (overridePointsAdded.contains(neighborCoords[1][0]) ||</span>
-<span class="pc bpc" id="L796" title="1 of 2 branches missed.">                points.contains(neighborCoords[1][0])))</span>
+<span class="nc" id="L793">            if (</span>
+<span class="nc bnc" id="L794" title="All 2 branches missed.">                (!overridePointsRemoved.contains(neighborCoords[1][0]) &amp;&amp;</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">                (overridePointsAdded.contains(neighborCoords[1][0]) ||</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">                points.contains(neighborCoords[1][0])))</span>
                 ) {
                 
-<span class="fc" id="L799">                if (</span>
-<span class="pc bpc" id="L800" title="1 of 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[0][1]) ||</span>
-<span class="pc bpc" id="L801" title="1 of 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[0][1]) &amp;&amp;</span>
-<span class="fc bfc" id="L802" title="All 2 branches covered.">                    !points.contains(neighborCoords[0][1])))</span>
+<span class="nc" id="L799">                if (</span>
+<span class="nc bnc" id="L800" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[0][1]) ||</span>
+<span class="nc bnc" id="L801" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[0][1]) &amp;&amp;</span>
+<span class="nc bnc" id="L802" title="All 2 branches missed.">                    !points.contains(neighborCoords[0][1])))</span>
                     || 
-<span class="pc bpc" id="L804" title="1 of 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[2][1]) ||</span>
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[2][1]) &amp;&amp;</span>
-<span class="pc bpc" id="L806" title="1 of 2 branches missed.">                    !points.contains(neighborCoords[2][1])))</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">                    (overridePointsRemoved.contains(neighborCoords[2][1]) ||</span>
+<span class="nc bnc" id="L805" title="All 2 branches missed.">                    (!overridePointsAdded.contains(neighborCoords[2][1]) &amp;&amp;</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">                    !points.contains(neighborCoords[2][1])))</span>
                     ) {
-<span class="fc" id="L808">                    return true;</span>
+<span class="nc" id="L808">                    return true;</span>
                 }
             }
             /*

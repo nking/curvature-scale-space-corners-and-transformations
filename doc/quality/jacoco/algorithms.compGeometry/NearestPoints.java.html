@@ -143,8 +143,8 @@ public class NearestPoints {
             }
 <span class="fc" id="L144">            stopIdx = i;</span>
         }
-        
-<span class="fc" id="L147">        double rSq = radius * radius;</span>
+       
+<span class="fc" id="L147">        double rSq = Math.sqrt(2) * radius * radius;</span>
         
         // search for points within startIdx and stopIdx that are within radius
 <span class="fc bfc" id="L150" title="All 2 branches covered.">        for (int i = startIdx; i &lt;= stopIdx; ++i) {</span>

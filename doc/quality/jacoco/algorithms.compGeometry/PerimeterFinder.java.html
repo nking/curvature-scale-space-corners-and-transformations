@@ -1033,10 +1033,10 @@ import java.util.logging.Logger;
             } else {
 <span class="fc" id="L1034">                rows = new int[]{rowMinMax[0]};</span>
             }
-<span class="pc bpc" id="L1036" title="1 of 2 branches missed.">        } else if (rowMinMax[1] &lt; imageMaxRow) {</span>
+<span class="fc bfc" id="L1036" title="All 2 branches covered.">        } else if (rowMinMax[1] &lt; imageMaxRow) {</span>
 <span class="fc" id="L1037">            rows = new int[]{rowMinMax[1]};</span>
         } else {
-<span class="nc" id="L1039">            rows = new int[]{};</span>
+<span class="fc" id="L1039">            rows = new int[]{};</span>
         }
 
 <span class="fc bfc" id="L1042" title="All 2 branches covered.">        for (int row : rows) {</span>

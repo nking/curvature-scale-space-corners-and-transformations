@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="pc bpc" id="L25" title="1 of 2 branches missed.">public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">public class BlobContoursScaleFinder0 extends AbstractBlobScaleFinder {</span>
 
     protected void filterToSameNumberIfPossible(
         PairIntArray curve1, List&lt;BlobPerimeterRegion&gt; regions1,
@@ -32,16 +32,16 @@ import java.util.logging.Logger;
         // data for example... may need to have increasing tolerances
         // that are different for contours1 than contours2
         
-<span class="fc" id="L35">        int tolT = 3; </span>
-<span class="fc" id="L36">        float tolD = 4.0f;</span>
+<span class="nc" id="L35">        int tolT = 3; </span>
+<span class="nc" id="L36">        float tolD = 4.0f;</span>
         
-<span class="fc" id="L38">        List&lt;Integer&gt; rmIndexes = BlobsAndContours.combineOverlappingPeaks0(</span>
+<span class="nc" id="L38">        List&lt;Integer&gt; rmIndexes = BlobsAndContours.combineOverlappingPeaks0(</span>
             tolT, tolD, curve1, regions1);
         
-<span class="fc" id="L41">        rmIndexes = BlobsAndContours.combineOverlappingPeaks0(tolT, tolD, curve2, </span>
+<span class="nc" id="L41">        rmIndexes = BlobsAndContours.combineOverlappingPeaks0(tolT, tolD, curve2, </span>
             regions2);
        
-<span class="fc" id="L44">    }</span>
+<span class="nc" id="L44">    }</span>
     
     protected List&lt;CurvatureScaleSpaceContour&gt; copyContours(
         List&lt;CurvatureScaleSpaceContour&gt; contours) {
@@ -61,22 +61,22 @@ import java.util.logging.Logger;
         BlobContourHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2) {
 
-<span class="fc" id="L64">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bpr1List = </span>
-<span class="fc" id="L65">            img1Helper.getPerimeterRegions(type1, useBinned1);</span>
+<span class="nc" id="L64">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bpr1List = </span>
+<span class="nc" id="L65">            img1Helper.getPerimeterRegions(type1, useBinned1);</span>
         
-<span class="fc" id="L67">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bpr2List = </span>
-<span class="fc" id="L68">            img2Helper.getPerimeterRegions(type2, useBinned2);</span>
+<span class="nc" id="L67">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bpr2List = </span>
+<span class="nc" id="L68">            img2Helper.getPerimeterRegions(type2, useBinned2);</span>
         
-<span class="fc" id="L70">        List&lt;PairIntArray&gt; perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);</span>
-<span class="fc" id="L71">        List&lt;PairIntArray&gt; perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);</span>
+<span class="nc" id="L70">        List&lt;PairIntArray&gt; perimeters1 = img1Helper.imgHelper.getBlobPerimeters(type1, useBinned1);</span>
+<span class="nc" id="L71">        List&lt;PairIntArray&gt; perimeters2 = img2Helper.imgHelper.getBlobPerimeters(type2, useBinned2);</span>
         
-<span class="fc" id="L73">        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);</span>
-<span class="fc" id="L74">        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);</span>
+<span class="nc" id="L73">        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);</span>
+<span class="nc" id="L74">        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);</span>
         
-<span class="fc" id="L76">        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);</span>
-<span class="fc" id="L77">        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);</span>
+<span class="nc" id="L76">        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);</span>
+<span class="nc" id="L77">        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);</span>
         
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (debug) {</span>
 <span class="nc" id="L80">            Collection&lt;BlobPerimeterRegion&gt; set1 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
 <span class="nc" id="L81">            Collection&lt;BlobPerimeterRegion&gt; set2 = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
 <span class="nc bnc" id="L82" title="All 2 branches missed.">            for (int i = 0; i &lt; bpr1List.size(); ++i) {</span>
@@ -93,8 +93,8 @@ import java.util.logging.Logger;
 <span class="nc" id="L93">            }            </span>
         }
         
-<span class="fc" id="L96">        int n1 = bpr1List.size();</span>
-<span class="fc" id="L97">        int n2 = bpr2List.size();</span>
+<span class="nc" id="L96">        int n1 = bpr1List.size();</span>
+<span class="nc" id="L97">        int n2 = bpr2List.size();</span>
         
 /*        
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -127,153 +127,153 @@ try {
     Logger.getLogger(BlobContoursScaleFinder0.class.getName()).log(Level.SEVERE, null, ex);
 }
 */
-<span class="fc" id="L130">        Map&lt;Integer, TransformationPair3&gt; trMap = new HashMap&lt;Integer, TransformationPair3&gt;();</span>
+<span class="nc" id="L130">        Map&lt;Integer, TransformationPair3&gt; trMap = new HashMap&lt;Integer, TransformationPair3&gt;();</span>
         
-<span class="fc" id="L132">        Map&lt;Integer, TransformationParameters&gt; pMap = new HashMap&lt;Integer,</span>
+<span class="nc" id="L132">        Map&lt;Integer, TransformationParameters&gt; pMap = new HashMap&lt;Integer,</span>
             TransformationParameters&gt;();
         
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
             
-<span class="fc" id="L137">            List&lt;BlobPerimeterRegion&gt; bpr1 = bpr1List.get(i);</span>
-<span class="fc" id="L138">            int nc1 = bpr1.size();</span>
-<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (nc1 &lt; 3) {</span>
-<span class="fc" id="L140">                continue;</span>
+<span class="nc" id="L137">            List&lt;BlobPerimeterRegion&gt; bpr1 = bpr1List.get(i);</span>
+<span class="nc" id="L138">            int nc1 = bpr1.size();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            if (nc1 &lt; 3) {</span>
+<span class="nc" id="L140">                continue;</span>
             }
             
-<span class="fc" id="L143">            TransformationPair3 bestMatches = null;</span>
+<span class="nc" id="L143">            TransformationPair3 bestMatches = null;</span>
             
-<span class="fc bfc" id="L145" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
                 
-<span class="fc" id="L147">                List&lt;BlobPerimeterRegion&gt; bpr2 = bpr2List.get(j);</span>
-<span class="fc" id="L148">                int nc2 = bpr2.size();</span>
-<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (nc2 &lt; 3) {</span>
-<span class="fc" id="L150">                    continue;</span>
+<span class="nc" id="L147">                List&lt;BlobPerimeterRegion&gt; bpr2 = bpr2List.get(j);</span>
+<span class="nc" id="L148">                int nc2 = bpr2.size();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                if (nc2 &lt; 3) {</span>
+<span class="nc" id="L150">                    continue;</span>
                 }
                 
-<span class="fc" id="L153">                int minN = Math.min(nc1, nc2);</span>
-<span class="fc" id="L154">                int diffNC = Math.abs(nc1 - nc2);</span>
+<span class="nc" id="L153">                int minN = Math.min(nc1, nc2);</span>
+<span class="nc" id="L154">                int diffNC = Math.abs(nc1 - nc2);</span>
                 
-<span class="pc bpc" id="L156" title="4 of 8 branches missed.">                if (((minN &gt; 10) &amp;&amp; (diffNC &gt; 3)) || ((minN &lt;= 10) &amp;&amp; (diffNC &gt; 2))){</span>
-<span class="fc" id="L157">                    continue;</span>
+<span class="nc bnc" id="L156" title="All 8 branches missed.">                if (((minN &gt; 10) &amp;&amp; (diffNC &gt; 3)) || ((minN &lt;= 10) &amp;&amp; (diffNC &gt; 2))){</span>
+<span class="nc" id="L157">                    continue;</span>
                 }
                 
                 List&lt;BlobPerimeterRegion&gt; c1p;
                 List&lt;BlobPerimeterRegion&gt; c2p;
                 
-<span class="fc bfc" id="L163" title="All 2 branches covered.">                if (nc1 == nc2) {</span>
-<span class="fc" id="L164">                    c1p = bpr1;</span>
-<span class="fc" id="L165">                    c2p = bpr2;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                if (nc1 == nc2) {</span>
+<span class="nc" id="L164">                    c1p = bpr1;</span>
+<span class="nc" id="L165">                    c2p = bpr2;</span>
                 } else {
-<span class="fc" id="L167">                    c1p = copyRegions(bpr1);</span>
-<span class="fc" id="L168">                    c2p = copyRegions(bpr2);                  </span>
-<span class="fc" id="L169">                    filterToSameNumberIfPossible(perimeters1.get(i), c1p,</span>
-<span class="fc" id="L170">                        perimeters2.get(j), c2p);</span>
+<span class="nc" id="L167">                    c1p = copyRegions(bpr1);</span>
+<span class="nc" id="L168">                    c2p = copyRegions(bpr2);                  </span>
+<span class="nc" id="L169">                    filterToSameNumberIfPossible(perimeters1.get(i), c1p,</span>
+<span class="nc" id="L170">                        perimeters2.get(j), c2p);</span>
                     
-<span class="fc bfc" id="L172" title="All 2 branches covered.">                    if (c1p.size() != c2p.size()) {</span>
-<span class="fc" id="L173">                        continue;</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                    if (c1p.size() != c2p.size()) {</span>
+<span class="nc" id="L173">                        continue;</span>
                     }
                 }
             
                 //matching algorithm here for c1p and c2p
-<span class="fc" id="L178">                ClosedCurveContourMatcher0 matcher </span>
+<span class="nc" id="L178">                ClosedCurveContourMatcher0 matcher </span>
                     = new ClosedCurveContourMatcher0();
                 
-<span class="fc" id="L181">                boolean solved = matcher.matchCorners(features1, features2, </span>
+<span class="nc" id="L181">                boolean solved = matcher.matchCorners(features1, features2, </span>
                     c1p, c2p, img1, img2);
                 
-<span class="fc bfc" id="L184" title="All 2 branches covered.">                if (solved) {</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">                if (solved) {</span>
 
-<span class="pc bpc" id="L186" title="3 of 4 branches missed.">                    assert(matcher.getTransformationPair3() != null);</span>
+<span class="nc bnc" id="L186" title="All 4 branches missed.">                    assert(matcher.getTransformationPair3() != null);</span>
 
-<span class="fc bfc" id="L188" title="All 2 branches covered.">                    if (bestMatches == null) {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                    if (bestMatches == null) {</span>
                         
-<span class="fc" id="L190">                        bestMatches = matcher.getTransformationPair3();</span>
-<span class="fc" id="L191">                        bestMatches.setContourIndex1(i);</span>
-<span class="fc" id="L192">                        bestMatches.setContourIndex2(j);</span>
+<span class="nc" id="L190">                        bestMatches = matcher.getTransformationPair3();</span>
+<span class="nc" id="L191">                        bestMatches.setContourIndex1(i);</span>
+<span class="nc" id="L192">                        bestMatches.setContourIndex2(j);</span>
                         
                     } else {
                         
-<span class="fc" id="L196">                        TransformationPair3 tr = matcher.getTransformationPair3();</span>
-<span class="fc" id="L197">                        tr.setContourIndex1(i);</span>
-<span class="fc" id="L198">                        tr.setContourIndex2(j);</span>
+<span class="nc" id="L196">                        TransformationPair3 tr = matcher.getTransformationPair3();</span>
+<span class="nc" id="L197">                        tr.setContourIndex1(i);</span>
+<span class="nc" id="L198">                        tr.setContourIndex2(j);</span>
                         
-<span class="fc" id="L200">                        int bN = bestMatches.getMatchedContourRegions1().size();</span>
-<span class="fc" id="L201">                        int cN = tr.getMatchedContourRegions1().size();</span>
+<span class="nc" id="L200">                        int bN = bestMatches.getMatchedContourRegions1().size();</span>
+<span class="nc" id="L201">                        int cN = tr.getMatchedContourRegions1().size();</span>
                         
-<span class="fc bfc" id="L203" title="All 4 branches covered.">                        if (((cN &gt;= bN) &amp;&amp; (tr.getCost() &lt; bestMatches.getCost()))</span>
-<span class="pc bpc" id="L204" title="3 of 4 branches missed.">                            || ((tr.getCost() == bestMatches.getCost()) &amp;&amp; (cN &gt; bN))) {</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">                        if (((cN &gt;= bN) &amp;&amp; (tr.getCost() &lt; bestMatches.getCost()))</span>
+<span class="nc bnc" id="L204" title="All 4 branches missed.">                            || ((tr.getCost() == bestMatches.getCost()) &amp;&amp; (cN &gt; bN))) {</span>
                             
-<span class="fc" id="L206">                            bestMatches = tr;</span>
+<span class="nc" id="L206">                            bestMatches = tr;</span>
                         }
                     }
                 }
             }
             
-<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (bestMatches != null) {</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (bestMatches != null) {</span>
                 
-<span class="fc" id="L214">                trMap.put(Integer.valueOf(i), bestMatches);</span>
+<span class="nc" id="L214">                trMap.put(Integer.valueOf(i), bestMatches);</span>
                 
-<span class="fc" id="L216">                TransformationParameters params = MiscStats.calculateTransformation(</span>
-<span class="fc" id="L217">                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), </span>
+<span class="nc" id="L216">                TransformationParameters params = MiscStats.calculateTransformation(</span>
+<span class="nc" id="L217">                    binFactor1, binFactor2, bestMatches.getMatchedCompStats(), </span>
                     new float[4]);
                 
-<span class="fc bfc" id="L220" title="All 2 branches covered.">                if (params == null) {</span>
-<span class="fc" id="L221">                    continue;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                if (params == null) {</span>
+<span class="nc" id="L221">                    continue;</span>
                 }
                 
-<span class="pc bpc" id="L224" title="1 of 4 branches missed.">                if ((bestMatches.getMatchedContourRegions1().size() &gt; 4) &amp;&amp; </span>
+<span class="nc bnc" id="L224" title="All 4 branches missed.">                if ((bestMatches.getMatchedContourRegions1().size() &gt; 4) &amp;&amp; </span>
                     (i &lt; (n1 - 1))) {
-<span class="fc bfc" id="L226" title="All 2 branches covered.">                    if (MiscStats.standardDeviationsAreSmall(params)) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">                    if (MiscStats.standardDeviationsAreSmall(params)) {</span>
                         
-<span class="fc" id="L228">                        double c = calculateCombinedIntensityStat(</span>
-<span class="fc" id="L229">                            bestMatches.getMatchedCompStats());</span>
-<span class="fc" id="L230">                        log.info(&quot;MATCHED EARLY: combined compStat=&quot; + c);</span>
+<span class="nc" id="L228">                        double c = calculateCombinedIntensityStat(</span>
+<span class="nc" id="L229">                            bestMatches.getMatchedCompStats());</span>
+<span class="nc" id="L230">                        log.info(&quot;MATCHED EARLY: combined compStat=&quot; + c);</span>
                         
-<span class="fc" id="L232">                        MatchingSolution soln = new MatchingSolution(params,</span>
-<span class="fc" id="L233">                            bestMatches.getMatchedCompStats());</span>
+<span class="nc" id="L232">                        MatchingSolution soln = new MatchingSolution(params,</span>
+<span class="nc" id="L233">                            bestMatches.getMatchedCompStats());</span>
                         
-<span class="fc" id="L235">                        return soln;</span>
+<span class="nc" id="L235">                        return soln;</span>
                     }
                 }
                 
-<span class="fc" id="L239">                pMap.put(Integer.valueOf(i), params);</span>
+<span class="nc" id="L239">                pMap.put(Integer.valueOf(i), params);</span>
             }
         }
         
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (trMap.isEmpty()) {</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (trMap.isEmpty()) {</span>
 <span class="nc" id="L244">            return null;</span>
         }
         
 //TODO: consider changing to the biparite matching then most frequent params filter
         
         // find best (lowest cost) and combine others with it if similar
-<span class="fc" id="L250">        double minCost = Double.MAX_VALUE;</span>
-<span class="fc" id="L251">        Integer minCostKey = null;</span>
+<span class="nc" id="L250">        double minCost = Double.MAX_VALUE;</span>
+<span class="nc" id="L251">        Integer minCostKey = null;</span>
         
-<span class="fc bfc" id="L253" title="All 2 branches covered.">        for (Entry&lt;Integer, TransformationPair3&gt; entry : trMap.entrySet()) {</span>
-<span class="fc" id="L254">            TransformationPair3 tr = entry.getValue();</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">            if (tr.getCost() &lt; minCost) {</span>
-<span class="fc" id="L256">                minCost = tr.getCost();</span>
-<span class="fc" id="L257">                minCostKey = entry.getKey();</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        for (Entry&lt;Integer, TransformationPair3&gt; entry : trMap.entrySet()) {</span>
+<span class="nc" id="L254">            TransformationPair3 tr = entry.getValue();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">            if (tr.getCost() &lt; minCost) {</span>
+<span class="nc" id="L256">                minCost = tr.getCost();</span>
+<span class="nc" id="L257">                minCostKey = entry.getKey();</span>
             }
-<span class="fc" id="L259">        }</span>
+<span class="nc" id="L259">        }</span>
         
-<span class="pc bpc" id="L261" title="3 of 4 branches missed.">        assert(minCostKey != null);</span>
+<span class="nc bnc" id="L261" title="All 4 branches missed.">        assert(minCostKey != null);</span>
         
-<span class="fc" id="L263">        TransformationPair3 minCostTR = trMap.remove(minCostKey);</span>
+<span class="nc" id="L263">        TransformationPair3 minCostTR = trMap.remove(minCostKey);</span>
                 
-<span class="fc" id="L265">        TransformationParameters minCostParams = MiscStats.calculateTransformation(</span>
-<span class="fc" id="L266">            binFactor1, binFactor2, minCostTR.getMatchedCompStats(), </span>
+<span class="nc" id="L265">        TransformationParameters minCostParams = MiscStats.calculateTransformation(</span>
+<span class="nc" id="L266">            binFactor1, binFactor2, minCostTR.getMatchedCompStats(), </span>
             new float[4]);
         
-<span class="fc" id="L269">        List&lt;FeatureComparisonStat&gt; combine = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="nc" id="L269">        List&lt;FeatureComparisonStat&gt; combine = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
     
-<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if (minCostParams != null) {</span>
-<span class="fc bfc" id="L272" title="All 2 branches covered.">            for (Entry&lt;Integer, TransformationPair3&gt; entry : trMap.entrySet()) {</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (minCostParams != null) {</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">            for (Entry&lt;Integer, TransformationPair3&gt; entry : trMap.entrySet()) {</span>
 
-<span class="fc" id="L274">                TransformationPair3 tr = entry.getValue();</span>
+<span class="nc" id="L274">                TransformationPair3 tr = entry.getValue();</span>
 
-<span class="pc bpc" id="L276" title="1 of 2 branches missed.">                if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">                if (rotationIsConsistent(minCostParams, tr.getMatchedCompStats(), 20)) {</span>
 
 <span class="nc" id="L278">                    TransformationParameters params = pMap.get(entry.getKey());</span>
 
@@ -283,19 +283,19 @@ try {
                         }
                     }
                 }
-<span class="fc" id="L286">            }</span>
+<span class="nc" id="L286">            }</span>
         }
         
-<span class="pc bpc" id="L289" title="1 of 2 branches missed.">        if (combine.isEmpty()) {</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (combine.isEmpty()) {</span>
 
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">            if (minCostParams == null) {</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">            if (minCostParams == null) {</span>
 <span class="nc" id="L292">                return null;</span>
             }
             
-<span class="fc" id="L295">            MatchingSolution soln = new MatchingSolution(minCostParams,</span>
-<span class="fc" id="L296">                minCostTR.getMatchedCompStats());</span>
+<span class="nc" id="L295">            MatchingSolution soln = new MatchingSolution(minCostParams,</span>
+<span class="nc" id="L296">                minCostTR.getMatchedCompStats());</span>
             
-<span class="fc" id="L298">            return soln;</span>
+<span class="nc" id="L298">            return soln;</span>
         }
         
 <span class="nc" id="L301">        combine.addAll(minCostTR.getMatchedCompStats());</span>
@@ -316,13 +316,13 @@ try {
     private List&lt;BlobPerimeterRegion&gt; copyRegions(List&lt;BlobPerimeterRegion&gt; 
         contourPoints) {
         
-<span class="fc" id="L319">        List&lt;BlobPerimeterRegion&gt; copy = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+<span class="nc" id="L319">        List&lt;BlobPerimeterRegion&gt; copy = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
         
-<span class="fc bfc" id="L321" title="All 2 branches covered.">        for (int i = 0; i &lt; contourPoints.size(); ++i) {</span>
-<span class="fc" id="L322">            copy.add(contourPoints.get(i).copy());</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        for (int i = 0; i &lt; contourPoints.size(); ++i) {</span>
+<span class="nc" id="L322">            copy.add(contourPoints.get(i).copy());</span>
         }
         
-<span class="fc" id="L325">        return copy;</span>
+<span class="nc" id="L325">        return copy;</span>
     }
 
 }

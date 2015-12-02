@@ -72,9 +72,9 @@ import java.util.Arrays;
 <span class="fc" id="L72">        double twoPi = 2. * Math.PI;</span>
 <span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (theRotationInRadians &lt; 0) {</span>
 <span class="nc" id="L74">            theRotationInRadians += twoPi;</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        } else if (theRotationInRadians &gt; twoPi) {</span>
-<span class="fc" id="L76">            double m = (int)(theRotationInRadians/twoPi) * twoPi;</span>
-<span class="fc" id="L77">            theRotationInRadians -= m;</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        } else if (theRotationInRadians &gt; twoPi) {</span>
+<span class="nc" id="L76">            double m = (int)(theRotationInRadians/twoPi) * twoPi;</span>
+<span class="nc" id="L77">            theRotationInRadians -= m;</span>
         }
 <span class="fc" id="L79">        this.rotationInRadians = theRotationInRadians;</span>
 <span class="fc" id="L80">    }</span>

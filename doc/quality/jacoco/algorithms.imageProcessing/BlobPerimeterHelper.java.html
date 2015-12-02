@@ -18,27 +18,27 @@ public class BlobPerimeterHelper {
     
     private final SegmentedImageHelper imgHelper;
     
-<span class="fc" id="L21">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBlobsMap =      </span>
+<span class="pc" id="L21">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="fc" id="L24">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="pc" id="L24">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="fc" id="L27">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBinnedBlobsMap =      </span>
+<span class="pc" id="L27">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBinnedBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="fc" id="L30">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="pc" id="L30">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segBinnedBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="fc" id="L33">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segLargeBlobsMap =      </span>
+<span class="pc" id="L33">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segLargeBlobsMap =      </span>
         new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
    
-<span class="fc" id="L36">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+<span class="pc" id="L36">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
         segLargeBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
     
-<span class="fc" id="L39">    public BlobPerimeterHelper(final ImageExt img) {</span>
-<span class="fc" id="L40">        imgHelper = new SegmentedImageHelper(img);</span>
-<span class="fc" id="L41">    }</span>
+<span class="nc" id="L39">    public BlobPerimeterHelper(final ImageExt img) {</span>
+<span class="nc" id="L40">        imgHelper = new SegmentedImageHelper(img);</span>
+<span class="nc" id="L41">    }</span>
     
 <span class="fc" id="L43">    public BlobPerimeterHelper(final ImageExt img, final String debugTag) {</span>
 <span class="fc" id="L44">        imgHelper = new SegmentedImageHelper(img, debugTag);</span>
@@ -77,8 +77,8 @@ public class BlobPerimeterHelper {
     }
 
     public void applyEqualization() {
-<span class="fc" id="L80">        imgHelper.applyEqualization();</span>
-<span class="fc" id="L81">    }</span>
+<span class="nc" id="L80">        imgHelper.applyEqualization();</span>
+<span class="nc" id="L81">    }</span>
     
     public boolean didApplyHistEq() {
 <span class="fc" id="L84">        return imgHelper.didApplyHistEq();</span>
@@ -312,8 +312,8 @@ public class BlobPerimeterHelper {
         
 <span class="fc" id="L313">        List&lt;Set&lt;PairInt&gt;&gt; blobs = null;</span>
         
-<span class="fc bfc" id="L315" title="All 2 branches covered.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
-<span class="fc" id="L316">            blobs = segLargeBlobsMap.get(type);</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">        if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="nc" id="L316">            blobs = segLargeBlobsMap.get(type);</span>
         } else {
 <span class="fc" id="L318">            blobs = segBlobsMap.get(type);</span>
         }

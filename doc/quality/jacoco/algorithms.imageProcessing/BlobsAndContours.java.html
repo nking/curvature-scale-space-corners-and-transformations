@@ -232,22 +232,22 @@ import java.util.logging.Logger;
         int tolIndexes, int[] idxs, float[]x, float[]y, float tolD, 
         boolean isClosedCurve) {
         
-<span class="fc" id="L235">        int n = curveIndexes.length;</span>
+<span class="nc" id="L235">        int n = curveIndexes.length;</span>
         
-<span class="fc" id="L237">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+<span class="nc" id="L237">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
 
-<span class="fc bfc" id="L239" title="All 2 branches covered.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
-<span class="fc" id="L240">            int deltaT = curveIndexes[i + 1] - curveIndexes[i];</span>
-<span class="fc bfc" id="L241" title="All 2 branches covered.">            if (deltaT &gt; tolIndexes) {</span>
-<span class="fc" id="L242">                continue;</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
+<span class="nc" id="L240">            int deltaT = curveIndexes[i + 1] - curveIndexes[i];</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (deltaT &gt; tolIndexes) {</span>
+<span class="nc" id="L242">                continue;</span>
             }
-<span class="fc" id="L244">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
-<span class="fc" id="L245">            set.add(Integer.valueOf(i));</span>
-<span class="fc" id="L246">            set.add(Integer.valueOf(i + 1));</span>
+<span class="nc" id="L244">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L245">            set.add(Integer.valueOf(i));</span>
+<span class="nc" id="L246">            set.add(Integer.valueOf(i + 1));</span>
             // check wrap around for i==0
-<span class="pc bpc" id="L248" title="1 of 4 branches missed.">            if ((i == 0) &amp;&amp; isClosedCurve) {</span>
-<span class="fc" id="L249">                int deltaT2 = (1 - curveIndexes[n - 1]) + curveIndexes[0];</span>
-<span class="pc bpc" id="L250" title="2 of 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[n - 1]], y[idxs[n - 1]], </span>
+<span class="nc bnc" id="L248" title="All 4 branches missed.">            if ((i == 0) &amp;&amp; isClosedCurve) {</span>
+<span class="nc" id="L249">                int deltaT2 = (1 - curveIndexes[n - 1]) + curveIndexes[0];</span>
+<span class="nc bnc" id="L250" title="All 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[n - 1]], y[idxs[n - 1]], </span>
                     x[idxs[0]], y[idxs[0]]) &lt;= tolD)) {
                     
 <span class="nc" id="L253">                    set.add(Integer.valueOf(n - 1));</span>
@@ -264,20 +264,20 @@ import java.util.logging.Logger;
                 }
             }
             // check forward until not within tolIndexes
-<span class="pc bfc" id="L267" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; (n - 1); ++j) {</span>
-<span class="fc" id="L268">                i = j;</span>
-<span class="fc" id="L269">                int deltaT2 = curveIndexes[j] - curveIndexes[j + 1];</span>
-<span class="pc bpc" id="L270" title="2 of 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; (n - 1); ++j) {</span>
+<span class="nc" id="L268">                i = j;</span>
+<span class="nc" id="L269">                int deltaT2 = curveIndexes[j] - curveIndexes[j + 1];</span>
+<span class="nc bnc" id="L270" title="All 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
                     x[idxs[j + 1]], y[idxs[j + 1]]) &lt;= tolD)) {
 <span class="nc" id="L272">                    set.add(Integer.valueOf(j + 1));</span>
                 } else {
                     break;
                 }
             }
-<span class="fc" id="L277">            combineIndexes.add(set);</span>
+<span class="nc" id="L277">            combineIndexes.add(set);</span>
         }
         
-<span class="fc" id="L280">        return combineIndexes;</span>
+<span class="nc" id="L280">        return combineIndexes;</span>
     }
 
     /**
@@ -384,44 +384,44 @@ import java.util.logging.Logger;
         imgHelper, List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours, 
         SegmentationType type, boolean useBinned) {
         
-<span class="fc" id="L387">        List&lt;PairIntArray&gt; perimeterLists = imgHelper.getBlobPerimeters(type, useBinned);</span>
+<span class="nc" id="L387">        List&lt;PairIntArray&gt; perimeterLists = imgHelper.getBlobPerimeters(type, useBinned);</span>
         
-<span class="fc" id="L389">        List&lt;Set&lt;PairInt&gt;&gt; blobs = imgHelper.getBlobs(type, useBinned);</span>
+<span class="nc" id="L389">        List&lt;Set&lt;PairInt&gt;&gt; blobs = imgHelper.getBlobs(type, useBinned);</span>
         
-<span class="fc" id="L391">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprs = new ArrayList&lt;List&lt;BlobPerimeterRegion&gt;&gt;();</span>
+<span class="nc" id="L391">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprs = new ArrayList&lt;List&lt;BlobPerimeterRegion&gt;&gt;();</span>
         
-<span class="fc bfc" id="L393" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
             
-<span class="fc" id="L395">            List&lt;BlobPerimeterRegion&gt; bpr = extractBlobPerimeterRegions(i,</span>
-<span class="fc" id="L396">                contours.get(i), perimeterLists.get(i), blobs.get(i));</span>
+<span class="nc" id="L395">            List&lt;BlobPerimeterRegion&gt; bpr = extractBlobPerimeterRegions(i,</span>
+<span class="nc" id="L396">                contours.get(i), perimeterLists.get(i), blobs.get(i));</span>
             
-<span class="fc" id="L398">            bprs.add(bpr);</span>
+<span class="nc" id="L398">            bprs.add(bpr);</span>
         }
         
-<span class="fc" id="L401">        return bprs;</span>
+<span class="nc" id="L401">        return bprs;</span>
     }
 
     public static List&lt;BlobPerimeterRegion&gt; extractBlobPerimeterRegions(
         int theEdgeIndex, List&lt;CurvatureScaleSpaceContour&gt; contours,
         PairIntArray closedCurve, Set&lt;PairInt&gt; blob) {
 
-<span class="fc" id="L408">        List&lt;BlobPerimeterRegion&gt; bprList = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+<span class="nc" id="L408">        List&lt;BlobPerimeterRegion&gt; bprList = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
                 
-<span class="fc bfc" id="L410" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
             
-<span class="fc" id="L412">            CurvatureScaleSpaceContour c = contours.get(i);</span>
+<span class="nc" id="L412">            CurvatureScaleSpaceContour c = contours.get(i);</span>
             
-<span class="pc bpc" id="L414" title="3 of 4 branches missed.">            assert(c.getPeakDetails().length == 1);</span>
+<span class="nc bnc" id="L414" title="All 4 branches missed.">            assert(c.getPeakDetails().length == 1);</span>
             
-<span class="fc" id="L416">            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, </span>
-<span class="fc" id="L417">                c.getPeakDetails()[0], closedCurve, blob);</span>
+<span class="nc" id="L416">            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, </span>
+<span class="nc" id="L417">                c.getPeakDetails()[0], closedCurve, blob);</span>
             
-<span class="fc" id="L419">            bpr.setIndexWithinCurve(c.getPeakDetails()[0].getCoordIdx());</span>
+<span class="nc" id="L419">            bpr.setIndexWithinCurve(c.getPeakDetails()[0].getCoordIdx());</span>
                       
-<span class="fc" id="L421">            bprList.add(bpr);</span>
+<span class="nc" id="L421">            bprList.add(bpr);</span>
         }
         
-<span class="fc" id="L424">        return bprList;</span>
+<span class="nc" id="L424">        return bprList;</span>
     }
     
     /**
@@ -437,12 +437,12 @@ import java.util.logging.Logger;
         int theEdgeIndex, CurvatureScaleSpaceImagePoint peakDetail, 
         PairIntArray perimeter, Set&lt;PairInt&gt; blob) {
         
-<span class="pc bpc" id="L440" title="2 of 4 branches missed.">        if (perimeter == null || (perimeter.getN() &lt; 4)) {</span>
+<span class="nc bnc" id="L440" title="All 4 branches missed.">        if (perimeter == null || (perimeter.getN() &lt; 4)) {</span>
 <span class="nc" id="L441">            throw new IllegalArgumentException(</span>
             &quot;perimeter cannot be null and must have at least 4 points&quot;);
         }
         
-<span class="pc bpc" id="L445" title="1 of 2 branches missed.">        if (blob == null) {</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (blob == null) {</span>
 <span class="nc" id="L446">            throw new IllegalArgumentException(&quot;blob cannot be null&quot;);</span>
         }
         
@@ -452,19 +452,19 @@ import java.util.logging.Logger;
         // so for those, have to use the preceding index and then
         // the next + 1 (instead of next)
         
-<span class="fc" id="L455">        int detailIdx = peakDetail.getCoordIdx();</span>
-<span class="fc" id="L456">        float sigma = peakDetail.getSigma();</span>
+<span class="nc" id="L455">        int detailIdx = peakDetail.getCoordIdx();</span>
+<span class="nc" id="L456">        float sigma = peakDetail.getSigma();</span>
 
         // inflection points are found in between extremes of curvature,
         // so detailIdx must not be one of the curve endpoints.
 
-<span class="fc" id="L461">        int xm = peakDetail.getXCoord();</span>
-<span class="fc" id="L462">        int ym = peakDetail.getYCoord();</span>
+<span class="nc" id="L461">        int xm = peakDetail.getXCoord();</span>
+<span class="nc" id="L462">        int ym = peakDetail.getYCoord();</span>
 
         int xPrev, yPrev;
         int xNext, yNext;
         
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">        if (detailIdx == 0) {</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (detailIdx == 0) {</span>
             
             // wrap around closed curve
 <span class="nc" id="L470">            xPrev = perimeter.getX(perimeter.getN() - 1);</span>
@@ -478,14 +478,14 @@ import java.util.logging.Logger;
 <span class="nc" id="L478">                yNext = perimeter.getY(detailIdx + 1);</span>
             }
             
-<span class="fc bfc" id="L481" title="All 4 branches covered.">        } else if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
+<span class="nc bnc" id="L481" title="All 4 branches missed.">        } else if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
             
-<span class="fc" id="L483">            xPrev = perimeter.getX(detailIdx - 1);</span>
-<span class="fc" id="L484">            yPrev = perimeter.getY(detailIdx - 1);</span>
+<span class="nc" id="L483">            xPrev = perimeter.getX(detailIdx - 1);</span>
+<span class="nc" id="L484">            yPrev = perimeter.getY(detailIdx - 1);</span>
             
-<span class="pc bpc" id="L486" title="1 of 2 branches missed.">            if ((detailIdx + 2) &lt; perimeter.getN()) {</span>
-<span class="fc" id="L487">                xNext = perimeter.getX(detailIdx + 2);</span>
-<span class="fc" id="L488">                yNext = perimeter.getY(detailIdx + 2);</span>
+<span class="nc bnc" id="L486" title="All 2 branches missed.">            if ((detailIdx + 2) &lt; perimeter.getN()) {</span>
+<span class="nc" id="L487">                xNext = perimeter.getX(detailIdx + 2);</span>
+<span class="nc" id="L488">                yNext = perimeter.getY(detailIdx + 2);</span>
             } else {
                 // this is a closed curve, so wrap around
 <span class="nc" id="L491">                xNext = perimeter.getX(0);</span>
@@ -494,12 +494,12 @@ import java.util.logging.Logger;
             
         } else {
             
-<span class="fc" id="L497">            xPrev = perimeter.getX(detailIdx - 1);</span>
-<span class="fc" id="L498">            yPrev = perimeter.getY(detailIdx - 1);</span>
+<span class="nc" id="L497">            xPrev = perimeter.getX(detailIdx - 1);</span>
+<span class="nc" id="L498">            yPrev = perimeter.getY(detailIdx - 1);</span>
             
-<span class="pc bpc" id="L500" title="1 of 2 branches missed.">            if ((detailIdx + 1) &lt; perimeter.getN()) {</span>
-<span class="fc" id="L501">                xNext = perimeter.getX(detailIdx + 1);</span>
-<span class="fc" id="L502">                yNext = perimeter.getY(detailIdx + 1);</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">            if ((detailIdx + 1) &lt; perimeter.getN()) {</span>
+<span class="nc" id="L501">                xNext = perimeter.getX(detailIdx + 1);</span>
+<span class="nc" id="L502">                yNext = perimeter.getY(detailIdx + 1);</span>
             } else {
                 // this is a closed curve, so wrap around
 <span class="nc" id="L505">                xNext = perimeter.getX(0);</span>
@@ -508,12 +508,12 @@ import java.util.logging.Logger;
             
         }
         
-<span class="fc" id="L511">        BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, </span>
+<span class="nc" id="L511">        BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, </span>
             xPrev, yPrev, xm, ym, xNext, yNext, blob, sigma);
        
-<span class="fc" id="L514">        region.setIndexWithinCurve(detailIdx);</span>
+<span class="nc" id="L514">        region.setIndexWithinCurve(detailIdx);</span>
 
-<span class="fc" id="L516">        return region;</span>
+<span class="nc" id="L516">        return region;</span>
     }
     
     /**
@@ -554,10 +554,10 @@ import java.util.logging.Logger;
         PairIntArray curve, List&lt;BlobPerimeterRegion&gt; bprs) {
         
         // presumably these are all closed curves, but verify that:
-<span class="fc" id="L557">        boolean isClosedCurve = false;</span>
-<span class="pc bpc" id="L558" title="1 of 2 branches missed.">        if ((curve instanceof PairIntArrayWithColor) &amp;&amp;</span>
-<span class="pc bpc" id="L559" title="1 of 2 branches missed.">            (((PairIntArrayWithColor)curve).getColor() == 1)) {</span>
-<span class="fc" id="L560">            isClosedCurve = true;</span>
+<span class="nc" id="L557">        boolean isClosedCurve = false;</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if ((curve instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">            (((PairIntArrayWithColor)curve).getColor() == 1)) {</span>
+<span class="nc" id="L560">            isClosedCurve = true;</span>
         }
 
         /*
@@ -567,61 +567,61 @@ import java.util.logging.Logger;
            (x,y) space and replace them with the average.  the strongest
            sigma is retained for the average.
         */
-<span class="fc" id="L570">        int n = bprs.size();</span>
-<span class="fc" id="L571">        float[] x = new float[n];</span>
-<span class="fc" id="L572">        float[] y = new float[n];</span>
-<span class="fc" id="L573">        int[] curveIndexes = new int[n];</span>
-<span class="fc" id="L574">        int[] idxs = new int[n];</span>
-<span class="fc bfc" id="L575" title="All 2 branches covered.">        for (int i = 0; i &lt; bprs.size(); ++i) {</span>
+<span class="nc" id="L570">        int n = bprs.size();</span>
+<span class="nc" id="L571">        float[] x = new float[n];</span>
+<span class="nc" id="L572">        float[] y = new float[n];</span>
+<span class="nc" id="L573">        int[] curveIndexes = new int[n];</span>
+<span class="nc" id="L574">        int[] idxs = new int[n];</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        for (int i = 0; i &lt; bprs.size(); ++i) {</span>
 
-<span class="fc" id="L577">            BlobPerimeterRegion bpr = bprs.get(i);</span>
+<span class="nc" id="L577">            BlobPerimeterRegion bpr = bprs.get(i);</span>
 
-<span class="fc" id="L579">            x[i] = bpr.getX()[1];</span>
-<span class="fc" id="L580">            y[i] = bpr.getY()[1];</span>
-<span class="fc" id="L581">            curveIndexes[i] = bpr.getIndexWithinCurve();</span>
-<span class="fc" id="L582">            idxs[i] = i;</span>
+<span class="nc" id="L579">            x[i] = bpr.getX()[1];</span>
+<span class="nc" id="L580">            y[i] = bpr.getY()[1];</span>
+<span class="nc" id="L581">            curveIndexes[i] = bpr.getIndexWithinCurve();</span>
+<span class="nc" id="L582">            idxs[i] = i;</span>
         }
         
-<span class="fc" id="L585">        QuickSort.sortBy1stArg(curveIndexes, idxs);</span>
+<span class="nc" id="L585">        QuickSort.sortBy1stArg(curveIndexes, idxs);</span>
                     
-<span class="fc" id="L587">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(curveIndexes, </span>
+<span class="nc" id="L587">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(curveIndexes, </span>
             tolIndexes, idxs, x, y, tolD, isClosedCurve);
 
-<span class="fc bfc" id="L590" title="All 2 branches covered.">        if (combineIndexes.isEmpty()) {</span>
-<span class="fc" id="L591">            return null;</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">        if (combineIndexes.isEmpty()) {</span>
+<span class="nc" id="L591">            return null;</span>
         }
 
-<span class="fc" id="L594">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L594">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
             
-<span class="fc bfc" id="L596" title="All 2 branches covered.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
+<span class="nc bnc" id="L596" title="All 2 branches missed.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
             //keep the one with largest sigma
-<span class="fc" id="L598">            float sigmaMax = Float.MIN_VALUE;</span>
-<span class="fc" id="L599">            int sigmaMaxIdx = -1;</span>
+<span class="nc" id="L598">            float sigmaMax = Float.MIN_VALUE;</span>
+<span class="nc" id="L599">            int sigmaMaxIdx = -1;</span>
             
-<span class="fc bfc" id="L601" title="All 2 branches covered.">            for (Integer index : combineSet) {</span>
-<span class="fc" id="L602">                int idx0 = idxs[index.intValue()];                                </span>
-<span class="fc" id="L603">                float sigma = bprs.get(idx0).getSigma();</span>
-<span class="fc bfc" id="L604" title="All 2 branches covered.">                if (sigma &gt; sigmaMax) {</span>
-<span class="fc" id="L605">                    sigmaMax = sigma;</span>
-<span class="fc" id="L606">                    sigmaMaxIdx = idx0;</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L602">                int idx0 = idxs[index.intValue()];                                </span>
+<span class="nc" id="L603">                float sigma = bprs.get(idx0).getSigma();</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">                if (sigma &gt; sigmaMax) {</span>
+<span class="nc" id="L605">                    sigmaMax = sigma;</span>
+<span class="nc" id="L606">                    sigmaMaxIdx = idx0;</span>
                 }
                 
-<span class="fc" id="L609">            }</span>
-<span class="fc bfc" id="L610" title="All 2 branches covered.">            for (Integer index : combineSet) {</span>
-<span class="fc" id="L611">                int idx0 = idxs[index.intValue()];</span>
-<span class="fc bfc" id="L612" title="All 2 branches covered.">                if (idx0 != sigmaMaxIdx) {</span>
-<span class="fc" id="L613">                    remove.add(Integer.valueOf(idx0));</span>
+<span class="nc" id="L609">            }</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L611">                int idx0 = idxs[index.intValue()];</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">                if (idx0 != sigmaMaxIdx) {</span>
+<span class="nc" id="L613">                    remove.add(Integer.valueOf(idx0));</span>
                 }
-<span class="fc" id="L615">            }</span>
-<span class="fc" id="L616">        }</span>
+<span class="nc" id="L615">            }</span>
+<span class="nc" id="L616">        }</span>
 
-<span class="fc" id="L618">        Collections.sort(remove);</span>
-<span class="fc bfc" id="L619" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L620">            int idx = remove.get(i).intValue();</span>
-<span class="fc" id="L621">            bprs.remove(idx);</span>
+<span class="nc" id="L618">        Collections.sort(remove);</span>
+<span class="nc bnc" id="L619" title="All 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L620">            int idx = remove.get(i).intValue();</span>
+<span class="nc" id="L621">            bprs.remove(idx);</span>
         }
         
-<span class="fc" id="L624">        return remove;</span>
+<span class="nc" id="L624">        return remove;</span>
     }
 
 }

@@ -51,8 +51,8 @@ import org.ejml.simple.*;
      */
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
 
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
-<span class="nc" id="L55">            return false;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="fc" id="L55">            return false;</span>
         }
 
 <span class="fc" id="L58">        int nNeg = 0;</span>
@@ -1101,7 +1101,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L1101" title="All 4 branches covered.">                            } else if ((diff32 &lt; diff10) &amp;&amp; (diff32 &lt; diff21)) {</span>
                                 // matches the range r2 to r3, don't merge
 <span class="fc" id="L1103">                                continue;</span>
-<span class="fc bfc" id="L1104" title="All 4 branches covered.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
+<span class="pc bpc" id="L1104" title="1 of 4 branches missed.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
                                 // matches the range r0 to r1, don't merge
 <span class="fc" id="L1106">                                continue;</span>
                             }
@@ -2328,104 +2328,123 @@ import org.ejml.simple.*;
 
 <span class="fc" id="L2329">        return nn;</span>
     }
+    
+    public int countNeighbors(int x, int y, Set&lt;PairInt&gt; points) {
+
+<span class="fc" id="L2334">        int nn = 0;</span>
+
+<span class="fc bfc" id="L2336" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="fc" id="L2338">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L2339">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="fc" id="L2341">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="fc bfc" id="L2343" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
+<span class="fc" id="L2344">                nn++;</span>
+            }
+        }
+
+<span class="fc" id="L2348">        return nn;</span>
+    }
 
     public List&lt;PairIntArray&gt; smoothAndReExtractEdges(List&lt;PairIntArray&gt; edges,
         GreyscaleImage gradientXY, int smoothingFactor) {
 
-<span class="nc" id="L2335">        AverageUtil avgUtil = new AverageUtil();</span>
+<span class="nc" id="L2354">        AverageUtil avgUtil = new AverageUtil();</span>
 
-<span class="nc" id="L2337">        GreyscaleImage output = gradientXY.createWithDimensions();</span>
+<span class="nc" id="L2356">        GreyscaleImage output = gradientXY.createWithDimensions();</span>
 
-<span class="nc bnc" id="L2339" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
-<span class="nc" id="L2340">            PairIntArray edge = edges.get(i);</span>
-<span class="nc bnc" id="L2341" title="All 2 branches missed.">            if (edge.getN() &gt;= smoothingFactor) {</span>
-<span class="nc" id="L2342">                edge = avgUtil.calculateBoxCarAverage(edges.get(i), smoothingFactor);</span>
-<span class="nc bnc" id="L2343" title="All 2 branches missed.">                for (int j = 0; j &lt; edge.getN(); ++j) {</span>
-<span class="nc" id="L2344">                    output.setValue(edge.getX(j), edge.getY(j), 1);</span>
+<span class="nc bnc" id="L2358" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); ++i) {</span>
+<span class="nc" id="L2359">            PairIntArray edge = edges.get(i);</span>
+<span class="nc bnc" id="L2360" title="All 2 branches missed.">            if (edge.getN() &gt;= smoothingFactor) {</span>
+<span class="nc" id="L2361">                edge = avgUtil.calculateBoxCarAverage(edges.get(i), smoothingFactor);</span>
+<span class="nc bnc" id="L2362" title="All 2 branches missed.">                for (int j = 0; j &lt; edge.getN(); ++j) {</span>
+<span class="nc" id="L2363">                    output.setValue(edge.getX(j), edge.getY(j), 1);</span>
                 }
             }
         }
 
-<span class="nc" id="L2349">        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();</span>
-<span class="nc" id="L2350">        pslt.correctForArtifacts(output);</span>
-<span class="nc" id="L2351">        IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(output);</span>
-<span class="nc" id="L2352">        edgeExtractor.removeShorterEdges(true);</span>
-<span class="nc" id="L2353">        edges = edgeExtractor.findEdges();</span>
+<span class="nc" id="L2368">        PostLineThinnerCorrections pslt = new PostLineThinnerCorrections();</span>
+<span class="nc" id="L2369">        pslt.correctForArtifacts(output);</span>
+<span class="nc" id="L2370">        IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(output);</span>
+<span class="nc" id="L2371">        edgeExtractor.removeShorterEdges(true);</span>
+<span class="nc" id="L2372">        edges = edgeExtractor.findEdges();</span>
 
-<span class="nc" id="L2355">        return edges;</span>
+<span class="nc" id="L2374">        return edges;</span>
     }
 
     public boolean hasAtLeastOneNonPointNeighbor(int x, int y,
         Set&lt;PairInt&gt; points, int imageWidth, int imageHeight) {
 
-<span class="fc bfc" id="L2361" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+<span class="fc bfc" id="L2380" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
 
-<span class="fc" id="L2363">            int x2 = x + eightNeighborsX[i];</span>
-<span class="fc" id="L2364">            int y2 = y + eightNeighborsY[i];</span>
+<span class="fc" id="L2382">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L2383">            int y2 = y + eightNeighborsY[i];</span>
 
-<span class="pc bpc" id="L2366" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="pc bpc" id="L2385" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                 (y2 &gt; (imageHeight - 1))) {
-<span class="nc" id="L2368">                continue;</span>
+<span class="nc" id="L2387">                continue;</span>
             }
 
-<span class="fc bfc" id="L2371" title="All 2 branches covered.">            if (!points.contains(new PairInt(x2, y2))) {</span>
-<span class="fc" id="L2372">                return true;</span>
+<span class="fc bfc" id="L2390" title="All 2 branches covered.">            if (!points.contains(new PairInt(x2, y2))) {</span>
+<span class="fc" id="L2391">                return true;</span>
             }
         }
 
-<span class="fc" id="L2376">        return false;</span>
+<span class="fc" id="L2395">        return false;</span>
     }
 
     public void findNeighborsWithAtLeastOneNonPoint(int x, int y,
         Set&lt;PairInt&gt; outputNeighbors, Set&lt;PairInt&gt; points,
         Set&lt;PairInt&gt; excludePoints, int imageWidth, int imageHeight) {
 
-<span class="fc" id="L2383">        outputNeighbors.clear();</span>
+<span class="fc" id="L2402">        outputNeighbors.clear();</span>
 
-<span class="fc bfc" id="L2385" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+<span class="fc bfc" id="L2404" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
 
-<span class="fc" id="L2387">            int x2 = x + eightNeighborsX[i];</span>
-<span class="fc" id="L2388">            int y2 = y + eightNeighborsY[i];</span>
+<span class="fc" id="L2406">            int x2 = x + eightNeighborsX[i];</span>
+<span class="fc" id="L2407">            int y2 = y + eightNeighborsY[i];</span>
 
-<span class="pc bpc" id="L2390" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="pc bpc" id="L2409" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                 (y2 &gt; (imageHeight - 1))) {
-<span class="nc" id="L2392">                continue;</span>
+<span class="nc" id="L2411">                continue;</span>
             }
 
-<span class="fc" id="L2395">            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(</span>
+<span class="fc" id="L2414">            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(</span>
                 x2, y2, points, imageWidth, imageHeight);
 
-<span class="fc bfc" id="L2398" title="All 2 branches covered.">            if (!isPossiblyABorderPoint) {</span>
-<span class="fc" id="L2399">                continue;</span>
+<span class="fc bfc" id="L2417" title="All 2 branches covered.">            if (!isPossiblyABorderPoint) {</span>
+<span class="fc" id="L2418">                continue;</span>
             }
 
-<span class="fc" id="L2402">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L2421">            PairInt p2 = new PairInt(x2, y2);</span>
 
-<span class="fc bfc" id="L2404" title="All 2 branches covered.">            if (excludePoints.contains(p2)) {</span>
-<span class="fc" id="L2405">                continue;</span>
+<span class="fc bfc" id="L2423" title="All 2 branches covered.">            if (excludePoints.contains(p2)) {</span>
+<span class="fc" id="L2424">                continue;</span>
             }
-<span class="fc bfc" id="L2407" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
-<span class="fc" id="L2408">                outputNeighbors.add(p2);</span>
+<span class="fc bfc" id="L2426" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
+<span class="fc" id="L2427">                outputNeighbors.add(p2);</span>
             }
         }
-<span class="fc" id="L2411">    }</span>
+<span class="fc" id="L2430">    }</span>
 
     public boolean isAdjacent(PairIntArray edge, int idx1, int idx2) {
 
-<span class="fc" id="L2415">        int x1 = edge.getX(idx1);</span>
-<span class="fc" id="L2416">        int y1 = edge.getY(idx1);</span>
+<span class="fc" id="L2434">        int x1 = edge.getX(idx1);</span>
+<span class="fc" id="L2435">        int y1 = edge.getY(idx1);</span>
 
-<span class="fc" id="L2418">        int x2 = edge.getX(idx2);</span>
-<span class="fc" id="L2419">        int y2 = edge.getY(idx2);</span>
+<span class="fc" id="L2437">        int x2 = edge.getX(idx2);</span>
+<span class="fc" id="L2438">        int y2 = edge.getY(idx2);</span>
 
-<span class="fc" id="L2421">        int diffX = Math.abs(x1 - x2);</span>
-<span class="fc" id="L2422">        int diffY = Math.abs(y1 - y2);</span>
+<span class="fc" id="L2440">        int diffX = Math.abs(x1 - x2);</span>
+<span class="fc" id="L2441">        int diffY = Math.abs(y1 - y2);</span>
 
-<span class="pc bpc" id="L2424" title="2 of 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
-<span class="fc" id="L2425">            return true;</span>
+<span class="fc bfc" id="L2443" title="All 4 branches covered.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="fc" id="L2444">            return true;</span>
         }
 
-<span class="nc" id="L2428">        return false;</span>
+<span class="fc" id="L2447">        return false;</span>
     }
 
     /**
@@ -2459,34 +2478,34 @@ import org.ejml.simple.*;
         double yr = centroidY + ((-(x - centroidX) * sine(angle)))
         */
 
-<span class="fc" id="L2462">        int xmRot90 = xp + (ym - yp);</span>
-<span class="fc" id="L2463">        int ymRot90 = yp + (-(xm - xp));</span>
+<span class="fc" id="L2481">        int xmRot90 = xp + (ym - yp);</span>
+<span class="fc" id="L2482">        int ymRot90 = yp + (-(xm - xp));</span>
 
-<span class="fc" id="L2465">        int xmRotNegative90 = xp  - (ym - yp);</span>
-<span class="fc" id="L2466">        int ymRotNegative90 = yp + (xm - xp);</span>
+<span class="fc" id="L2484">        int xmRotNegative90 = xp  - (ym - yp);</span>
+<span class="fc" id="L2485">        int ymRotNegative90 = yp + (xm - xp);</span>
 
-<span class="fc" id="L2468">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
+<span class="fc" id="L2487">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
             + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
 
-<span class="fc" id="L2471">        double distSqRotNegative90 =</span>
+<span class="fc" id="L2490">        double distSqRotNegative90 =</span>
             (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
             + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
 
-<span class="fc" id="L2475">        double perp = theta;</span>
+<span class="fc" id="L2494">        double perp = theta;</span>
 
-<span class="fc bfc" id="L2477" title="All 2 branches covered.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
-<span class="fc" id="L2478">            perp += Math.PI/2.;</span>
+<span class="fc bfc" id="L2496" title="All 2 branches covered.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="fc" id="L2497">            perp += Math.PI/2.;</span>
         } else {
-<span class="fc" id="L2480">            perp -= Math.PI/2.;</span>
+<span class="fc" id="L2499">            perp -= Math.PI/2.;</span>
         }
 
-<span class="fc bfc" id="L2483" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
-<span class="fc" id="L2484">            perp = perp - 2*Math.PI;</span>
-<span class="fc bfc" id="L2485" title="All 2 branches covered.">        } else if (perp &lt; 0) {</span>
-<span class="fc" id="L2486">            perp += 2*Math.PI;</span>
+<span class="fc bfc" id="L2502" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
+<span class="fc" id="L2503">            perp = perp - 2*Math.PI;</span>
+<span class="fc bfc" id="L2504" title="All 2 branches covered.">        } else if (perp &lt; 0) {</span>
+<span class="fc" id="L2505">            perp += 2*Math.PI;</span>
         }
 
-<span class="fc" id="L2489">        return perp;</span>
+<span class="fc" id="L2508">        return perp;</span>
     }
 
     /**
@@ -2524,51 +2543,51 @@ import org.ejml.simple.*;
         double yr = centroidY + ((-(x - centroidX) * sine(angle)))
         */
 
-<span class="fc" id="L2527">        int xmRot90 = xp + (ym - yp);</span>
-<span class="fc" id="L2528">        int ymRot90 = yp + (-(xm - xp));</span>
+<span class="nc" id="L2546">        int xmRot90 = xp + (ym - yp);</span>
+<span class="nc" id="L2547">        int ymRot90 = yp + (-(xm - xp));</span>
 
-<span class="fc" id="L2530">        int xmRotNegative90 = xp  - (ym - yp);</span>
-<span class="fc" id="L2531">        int ymRotNegative90 = yp + (xm - xp);</span>
+<span class="nc" id="L2549">        int xmRotNegative90 = xp  - (ym - yp);</span>
+<span class="nc" id="L2550">        int ymRotNegative90 = yp + (xm - xp);</span>
 
-<span class="fc" id="L2533">        boolean rot90IsInPoints = points.contains(</span>
-<span class="fc" id="L2534">            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));</span>
+<span class="nc" id="L2552">        boolean rot90IsInPoints = points.contains(</span>
+<span class="nc" id="L2553">            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));</span>
 
-<span class="fc" id="L2536">        boolean rotNegative90IsInPoints = points.contains(</span>
-<span class="fc" id="L2537">            new PairInt(Math.round(xmRotNegative90),</span>
-<span class="fc" id="L2538">            Math.round(ymRotNegative90)));</span>
+<span class="nc" id="L2555">        boolean rotNegative90IsInPoints = points.contains(</span>
+<span class="nc" id="L2556">            new PairInt(Math.round(xmRotNegative90),</span>
+<span class="nc" id="L2557">            Math.round(ymRotNegative90)));</span>
 
-<span class="fc" id="L2540">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
+<span class="nc" id="L2559">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
             + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
 
-<span class="fc" id="L2543">        double distSqRotNegative90 =</span>
+<span class="nc" id="L2562">        double distSqRotNegative90 =</span>
             (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
             + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
 
-<span class="fc" id="L2547">        double perp = theta;</span>
+<span class="nc" id="L2566">        double perp = theta;</span>
 
-<span class="fc bfc" id="L2549" title="All 2 branches covered.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
-<span class="fc" id="L2550">            perp += Math.PI/2.;</span>
-<span class="pc bpc" id="L2551" title="1 of 2 branches missed.">        } else if (distSqRot90 &gt; distSqRotNegative90) {</span>
-<span class="nc bnc" id="L2552" title="All 4 branches missed.">            if (rot90IsInPoints &amp;&amp; !rotNegative90IsInPoints) {</span>
-<span class="nc" id="L2553">                perp -= Math.PI/2.;</span>
-<span class="nc bnc" id="L2554" title="All 4 branches missed.">            } else if (!rot90IsInPoints &amp;&amp; rotNegative90IsInPoints) {</span>
-<span class="nc" id="L2555">                perp += Math.PI/2.;</span>
+<span class="nc bnc" id="L2568" title="All 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="nc" id="L2569">            perp += Math.PI/2.;</span>
+<span class="nc bnc" id="L2570" title="All 2 branches missed.">        } else if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="nc bnc" id="L2571" title="All 4 branches missed.">            if (rot90IsInPoints &amp;&amp; !rotNegative90IsInPoints) {</span>
+<span class="nc" id="L2572">                perp -= Math.PI/2.;</span>
+<span class="nc bnc" id="L2573" title="All 4 branches missed.">            } else if (!rot90IsInPoints &amp;&amp; rotNegative90IsInPoints) {</span>
+<span class="nc" id="L2574">                perp += Math.PI/2.;</span>
             } else {
-<span class="nc" id="L2557">                throw new IllegalStateException(&quot;Error in algorithm:&quot; +</span>
+<span class="nc" id="L2576">                throw new IllegalStateException(&quot;Error in algorithm:&quot; +</span>
                 &quot; consider changing the test 90 and -90 points so that&quot; +
                 &quot; one will always be in points set.&quot;);
             }
         } else {
-<span class="fc" id="L2562">            perp -= Math.PI/2.;</span>
+<span class="nc" id="L2581">            perp -= Math.PI/2.;</span>
         }
 
-<span class="fc bfc" id="L2565" title="All 2 branches covered.">        if (perp &gt;= 2*Math.PI) {</span>
-<span class="fc" id="L2566">            perp = perp - 2*Math.PI;</span>
-<span class="fc bfc" id="L2567" title="All 2 branches covered.">        } else if (perp &lt; 0) {</span>
-<span class="fc" id="L2568">            perp += 2*Math.PI;</span>
+<span class="nc bnc" id="L2584" title="All 2 branches missed.">        if (perp &gt;= 2*Math.PI) {</span>
+<span class="nc" id="L2585">            perp = perp - 2*Math.PI;</span>
+<span class="nc bnc" id="L2586" title="All 2 branches missed.">        } else if (perp &lt; 0) {</span>
+<span class="nc" id="L2587">            perp += 2*Math.PI;</span>
         }
 
-<span class="fc" id="L2571">        return perp;</span>
+<span class="nc" id="L2590">        return perp;</span>
     }
 
 }

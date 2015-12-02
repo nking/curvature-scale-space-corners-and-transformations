@@ -71,8 +71,8 @@ import thirdparty.HungarianAlgorithm;
                 
 <span class="fc" id="L72">        IntensityDescriptor desc2 = features2.extractIntensity(gsImg2, x2, y2, rot2);</span>
         
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (desc2 == null) {</span>
-<span class="fc" id="L75">            return null;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L75">            return null;</span>
         }
         
         // because anglediff compares closest angles:
@@ -138,7 +138,7 @@ import thirdparty.HungarianAlgorithm;
                         gsImg1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
 <span class="fc bfc" id="L140" title="All 2 branches covered.">                    if (desc1 == null) {</span>
-<span class="fc" id="L141">                        return null;</span>
+<span class="fc" id="L141">                        continue;</span>
                     }
                     
 <span class="fc" id="L144">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
@@ -303,15 +303,15 @@ import thirdparty.HungarianAlgorithm;
         BlobPerimeterRegion region1, BlobPerimeterRegion region2, int dither) 
         throws CornerRegion.CornerRegionDegneracyException {
      
-<span class="fc" id="L306">        final int x1 = region1.getX()[1];</span>
-<span class="fc" id="L307">        final int y1 = region1.getY()[1];</span>
-<span class="fc" id="L308">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L306">        final int x1 = region1.getX()[1];</span>
+<span class="nc" id="L307">        final int y1 = region1.getY()[1];</span>
+<span class="nc" id="L308">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L310">        final int x2 = region2.getX()[1];</span>
-<span class="fc" id="L311">        final int y2 = region2.getY()[1];</span>
-<span class="fc" id="L312">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L310">        final int x2 = region2.getX()[1];</span>
+<span class="nc" id="L311">        final int y2 = region2.getY()[1];</span>
+<span class="nc" id="L312">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L314">        return ditherAndRotateForBestLocation(features1, features2,</span>
+<span class="nc" id="L314">        return ditherAndRotateForBestLocation(features1, features2,</span>
             x1, y1, rot1, x2, y2, rot2, dither);
     }
     
@@ -334,15 +334,15 @@ import thirdparty.HungarianAlgorithm;
         GreyscaleImage img1, GreyscaleImage img2) 
         throws CornerRegion.CornerRegionDegneracyException {
      
-<span class="fc" id="L337">        final int x1 = region1.getX()[1];</span>
-<span class="fc" id="L338">        final int y1 = region1.getY()[1];</span>
-<span class="fc" id="L339">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L337">        final int x1 = region1.getX()[1];</span>
+<span class="nc" id="L338">        final int y1 = region1.getY()[1];</span>
+<span class="nc" id="L339">        int rot1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L341">        final int x2 = region2.getX()[1];</span>
-<span class="fc" id="L342">        final int y2 = region2.getY()[1];</span>
-<span class="fc" id="L343">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L341">        final int x2 = region2.getX()[1];</span>
+<span class="nc" id="L342">        final int y2 = region2.getY()[1];</span>
+<span class="nc" id="L343">        int rot2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L345">        return ditherAndRotateForBestLocation(features1, features2,</span>
+<span class="nc" id="L345">        return ditherAndRotateForBestLocation(features1, features2,</span>
             x1, y1, rot1, x2, y2, rot2, dither, img1, img2);
     }
     
@@ -386,26 +386,26 @@ import thirdparty.HungarianAlgorithm;
         GreyscaleImage img1, GreyscaleImage img2, int degreeIntervals) 
         throws CornerRegion.CornerRegionDegneracyException {
      
-<span class="fc" id="L389">        final int x1 = region1.getX()[1];</span>
-<span class="fc" id="L390">        final int y1 = region1.getY()[1];</span>
-<span class="fc" id="L391">        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L389">        final int x1 = region1.getX()[1];</span>
+<span class="nc" id="L390">        final int y1 = region1.getY()[1];</span>
+<span class="nc" id="L391">        int rotD1 = Math.round(region1.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L393">        final int x2 = region2.getX()[1];</span>
-<span class="fc" id="L394">        final int y2 = region2.getY()[1];</span>
-<span class="fc" id="L395">        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
+<span class="nc" id="L393">        final int x2 = region2.getX()[1];</span>
+<span class="nc" id="L394">        final int y2 = region2.getY()[1];</span>
+<span class="nc" id="L395">        int rotD2 = Math.round(region2.getRelativeOrientationInDegrees());</span>
         
-<span class="fc" id="L397">        int n = 360/degreeIntervals;</span>
-<span class="fc" id="L398">        int[] rotations = new int[n];</span>
-<span class="fc" id="L399">        int i = 0;</span>
-<span class="fc bfc" id="L400" title="All 2 branches covered.">        for (int rot1 = 0; rot1 &lt; 360; rot1 += degreeIntervals) {</span>
-<span class="fc" id="L401">            rotations[i] = rot1 + rotD1;</span>
-<span class="fc bfc" id="L402" title="All 2 branches covered.">            if (rotations[i] &gt; 359) {</span>
-<span class="fc" id="L403">                rotations[i] -= 360;</span>
+<span class="nc" id="L397">        int n = 360/degreeIntervals;</span>
+<span class="nc" id="L398">        int[] rotations = new int[n];</span>
+<span class="nc" id="L399">        int i = 0;</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">        for (int rot1 = 0; rot1 &lt; 360; rot1 += degreeIntervals) {</span>
+<span class="nc" id="L401">            rotations[i] = rot1 + rotD1;</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">            if (rotations[i] &gt; 359) {</span>
+<span class="nc" id="L403">                rotations[i] -= 360;</span>
             }
-<span class="fc" id="L405">            i++;</span>
+<span class="nc" id="L405">            i++;</span>
         }
         
-<span class="fc" id="L408">        return ditherAndRotateForBestLocation(features1, features2,</span>
+<span class="nc" id="L408">        return ditherAndRotateForBestLocation(features1, features2,</span>
             x1, y1, rotations, x2, y2, rotD2, dither, img1, img2);
     }
     
@@ -473,20 +473,20 @@ import thirdparty.HungarianAlgorithm;
         int dither) {
         
         
-<span class="fc" id="L476">        int[] rotations = new int[10];</span>
-<span class="fc" id="L477">        int i = 0;</span>
-<span class="fc bfc" id="L478" title="All 2 branches covered.">        for (int rotD1 = (rot1 - 30); rotD1 &lt;= (rot1 + 30); rotD1 += 10) {</span>
-<span class="fc" id="L479">            rotations[i] = rotD1;</span>
-<span class="fc" id="L480">            i++;</span>
+<span class="nc" id="L476">        int[] rotations = new int[10];</span>
+<span class="nc" id="L477">        int i = 0;</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        for (int rotD1 = (rot1 - 30); rotD1 &lt;= (rot1 + 30); rotD1 += 10) {</span>
+<span class="nc" id="L479">            rotations[i] = rotD1;</span>
+<span class="nc" id="L480">            i++;</span>
         }
-<span class="fc" id="L482">        rotations[i] = rot1 + 90;</span>
-<span class="fc" id="L483">        i++;</span>
-<span class="fc" id="L484">        rotations[i] = rot1 + 180;</span>
-<span class="fc" id="L485">        i++;</span>
-<span class="fc" id="L486">        rotations[i] = rot1 + 270;</span>
-<span class="fc" id="L487">        i++;</span>
+<span class="nc" id="L482">        rotations[i] = rot1 + 90;</span>
+<span class="nc" id="L483">        i++;</span>
+<span class="nc" id="L484">        rotations[i] = rot1 + 180;</span>
+<span class="nc" id="L485">        i++;</span>
+<span class="nc" id="L486">        rotations[i] = rot1 + 270;</span>
+<span class="nc" id="L487">        i++;</span>
         
-<span class="fc" id="L489">        return ditherAndRotateForBestLocation(features1, features2, x1, y1, </span>
+<span class="nc" id="L489">        return ditherAndRotateForBestLocation(features1, features2, x1, y1, </span>
             rotations, x2, y2, rot2, dither);
     }
     
@@ -550,11 +550,11 @@ import thirdparty.HungarianAlgorithm;
         final int x2, final int y2, final int rot2,        
         int dither) {
         
-<span class="fc" id="L553">        FeatureComparisonStat best = null;</span>
+<span class="nc" id="L553">        FeatureComparisonStat best = null;</span>
         
-<span class="fc" id="L555">        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);</span>
+<span class="nc" id="L555">        IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, rot2);</span>
         
-<span class="pc bpc" id="L557" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc bnc" id="L557" title="All 2 branches missed.">        if (desc2 == null) {</span>
 <span class="nc" id="L558">            return null;</span>
         }
         
@@ -563,41 +563,41 @@ import thirdparty.HungarianAlgorithm;
         the gradient images because these are on edges.
         */
         
-<span class="fc bfc" id="L566" title="All 2 branches covered.">        for (int rotD1 : rotations) {</span>
-<span class="fc bfc" id="L567" title="All 2 branches covered.">            if (rotD1 &gt; 359) {</span>
-<span class="fc" id="L568">                rotD1 = rotD1 - 360;</span>
-<span class="fc bfc" id="L569" title="All 2 branches covered.">            } else if (rotD1 &lt; 0) {</span>
-<span class="fc" id="L570">                rotD1 += 360;</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        for (int rotD1 : rotations) {</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">            if (rotD1 &gt; 359) {</span>
+<span class="nc" id="L568">                rotD1 = rotD1 - 360;</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">            } else if (rotD1 &lt; 0) {</span>
+<span class="nc" id="L570">                rotD1 += 360;</span>
             }
-<span class="fc bfc" id="L572" title="All 2 branches covered.">            for (int x1d = (x1 - dither); x1d &lt;= (x1 + dither); ++x1d) {</span>
-<span class="pc bpc" id="L573" title="1 of 2 branches missed.">                if (!features1.isWithinXBounds(x1d)) {</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">            for (int x1d = (x1 - dither); x1d &lt;= (x1 + dither); ++x1d) {</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">                if (!features1.isWithinXBounds(x1d)) {</span>
 <span class="nc" id="L574">                    continue;</span>
                 }
-<span class="fc bfc" id="L576" title="All 2 branches covered.">                for (int y1d = (y1 - dither); y1d &lt;= (y1 + dither); ++y1d) {</span>
-<span class="pc bpc" id="L577" title="1 of 2 branches missed.">                    if (!features1.isWithinYBounds(y1d)) {</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">                for (int y1d = (y1 - dither); y1d &lt;= (y1 + dither); ++y1d) {</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">                    if (!features1.isWithinYBounds(y1d)) {</span>
 <span class="nc" id="L578">                        continue;</span>
                     }
                     
-<span class="fc" id="L581">                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);</span>
+<span class="nc" id="L581">                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);</span>
         
-<span class="pc bpc" id="L583" title="1 of 2 branches missed.">                    if (desc1 == null) {</span>
-<span class="nc" id="L584">                        return null;</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">                    if (desc1 == null) {</span>
+<span class="nc" id="L584">                        continue;</span>
                     }
                     
-<span class="fc" id="L587">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
+<span class="nc" id="L587">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
                         desc1, x1d, y1d, desc2, x2, y2);
                    
-<span class="fc bfc" id="L590" title="All 2 branches covered.">                    if (stat.getSumIntensitySqDiff() &lt; stat.getImg2PointIntensityErr()) {</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">                    if (stat.getSumIntensitySqDiff() &lt; stat.getImg2PointIntensityErr()) {</span>
                        
-<span class="fc bfc" id="L592" title="All 2 branches covered.">                        if (best == null) {</span>
-<span class="fc" id="L593">                            best = stat;</span>
-<span class="fc" id="L594">                            best.setImg1PointRotInDegrees(rotD1);</span>
-<span class="fc" id="L595">                            best.setImg2PointRotInDegrees(rot2);</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">                        if (best == null) {</span>
+<span class="nc" id="L593">                            best = stat;</span>
+<span class="nc" id="L594">                            best.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L595">                            best.setImg2PointRotInDegrees(rot2);</span>
                         } else {
-<span class="fc bfc" id="L597" title="All 2 branches covered.">                            if (best.getSumIntensitySqDiff() &gt; stat.getSumIntensitySqDiff()) {</span>
-<span class="fc" id="L598">                                best = stat;</span>
-<span class="fc" id="L599">                                best.setImg1PointRotInDegrees(rotD1);</span>
-<span class="fc" id="L600">                                best.setImg2PointRotInDegrees(rot2);</span>
+<span class="nc bnc" id="L597" title="All 2 branches missed.">                            if (best.getSumIntensitySqDiff() &gt; stat.getSumIntensitySqDiff()) {</span>
+<span class="nc" id="L598">                                best = stat;</span>
+<span class="nc" id="L599">                                best.setImg1PointRotInDegrees(rotD1);</span>
+<span class="nc" id="L600">                                best.setImg2PointRotInDegrees(rot2);</span>
                             }
                         }
                     }
@@ -605,7 +605,7 @@ import thirdparty.HungarianAlgorithm;
             }
         }
         
-<span class="fc" id="L608">        return best;</span>
+<span class="nc" id="L608">        return best;</span>
     }
     
     /**
@@ -635,8 +635,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L635">        IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, </span>
             rot2);
         
-<span class="fc bfc" id="L638" title="All 2 branches covered.">        if (desc2 == null) {</span>
-<span class="fc" id="L639">            return null;</span>
+<span class="pc bpc" id="L638" title="1 of 2 branches missed.">        if (desc2 == null) {</span>
+<span class="nc" id="L639">            return null;</span>
         }
         
         /*
@@ -675,7 +675,7 @@ import thirdparty.HungarianAlgorithm;
                         img1, x1d, y1d, rotD1, xTrq0, yTrq0);
                     
 <span class="fc bfc" id="L677" title="All 2 branches covered.">                    if (desc1 == null) {</span>
-<span class="fc" id="L678">                        return null;</span>
+<span class="fc" id="L678">                        continue;</span>
                     }
                     
 <span class="fc" id="L681">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
@@ -843,7 +843,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="nc" id="L843">                    IntensityDescriptor desc1 = features1.extractIntensity(x1d, y1d, rotD1);</span>
         
 <span class="nc bnc" id="L845" title="All 2 branches missed.">                    if (desc1 == null) {</span>
-<span class="nc" id="L846">                        return null;</span>
+<span class="nc" id="L846">                        continue;</span>
                     }
                     
 <span class="nc" id="L849">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
@@ -968,7 +968,7 @@ import thirdparty.HungarianAlgorithm;
                         img1, x1d, y1d, rotD1, xTrq0, yTrq0);
         
 <span class="fc bfc" id="L970" title="All 2 branches covered.">                    if (desc1 == null) {</span>
-<span class="fc" id="L971">                        return null;</span>
+<span class="fc" id="L971">                        continue;</span>
                     }
                     
 <span class="fc" id="L974">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
@@ -996,23 +996,23 @@ import thirdparty.HungarianAlgorithm;
     
     public static float[] calculateThetaDiff(List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="pc bpc" id="L999" title="2 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
+<span class="nc bnc" id="L999" title="All 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
 <span class="nc" id="L1000">            return null;</span>
         }
         
-<span class="fc" id="L1003">        float[] values = new float[compStats.size()];</span>
+<span class="nc" id="L1003">        float[] values = new float[compStats.size()];</span>
         
-<span class="fc bfc" id="L1005" title="All 2 branches covered.">        for (int i = 0; i &lt; compStats.size(); ++i) {</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">        for (int i = 0; i &lt; compStats.size(); ++i) {</span>
             
-<span class="fc" id="L1007">            FeatureComparisonStat stat = compStats.get(i);</span>
+<span class="nc" id="L1007">            FeatureComparisonStat stat = compStats.get(i);</span>
             
-<span class="fc" id="L1009">            float diff = AngleUtil.getAngleDifference(</span>
-<span class="fc" id="L1010">                stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());</span>
+<span class="nc" id="L1009">            float diff = AngleUtil.getAngleDifference(</span>
+<span class="nc" id="L1010">                stat.getImg1PointRotInDegrees(), stat.getImg2PointRotInDegrees());</span>
             
-<span class="fc" id="L1012">            values[i] = diff;</span>
+<span class="nc" id="L1012">            values[i] = diff;</span>
         }
         
-<span class="fc" id="L1015">        return values;</span>
+<span class="nc" id="L1015">        return values;</span>
     }
 
     public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
@@ -1355,8 +1355,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc bfc" id="L1355" title="All 4 branches covered.">            if ((x &lt; (minXY2[0] - transXYTol)) || (x &gt; (maxXY2[0] + transXYTol))) {</span>
 <span class="fc" id="L1356">                continue;</span>
             }
-<span class="fc bfc" id="L1358" title="All 4 branches covered.">            if ((y &lt; (minXY2[1] - transXYTol)) || (y &gt; (maxXY2[1] + transXYTol))) {</span>
-<span class="fc" id="L1359">                continue;</span>
+<span class="pc bpc" id="L1358" title="1 of 4 branches missed.">            if ((y &lt; (minXY2[1] - transXYTol)) || (y &gt; (maxXY2[1] + transXYTol))) {</span>
+<span class="nc" id="L1359">                continue;</span>
             }
 <span class="fc" id="L1361">            outFilteredTransformedC1.add(ctr);</span>
 <span class="fc" id="L1362">            outFilteredC1.add(c1[i]);</span>
@@ -1383,8 +1383,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc bfc" id="L1383" title="All 4 branches covered.">            if ((x &lt; (minXY1[0] - transXYTol)) || (x &gt; (maxXY1[0] + transXYTol))) {</span>
 <span class="fc" id="L1384">                continue;</span>
             }
-<span class="fc bfc" id="L1386" title="All 4 branches covered.">            if ((y &lt; (minXY1[1] - transXYTol)) || (y &gt; (maxXY1[1] + transXYTol))) {</span>
-<span class="fc" id="L1387">                continue;</span>
+<span class="pc bpc" id="L1386" title="1 of 4 branches missed.">            if ((y &lt; (minXY1[1] - transXYTol)) || (y &gt; (maxXY1[1] + transXYTol))) {</span>
+<span class="nc" id="L1387">                continue;</span>
             }
 <span class="fc" id="L1389">            outFilteredC2.add(c);</span>
         }        
@@ -1393,52 +1393,52 @@ import thirdparty.HungarianAlgorithm;
     public static List&lt;Integer&gt; removeDiscrepantThetaDiff(
         List&lt;FeatureComparisonStat&gt; compStats) {
         
-<span class="pc bpc" id="L1396" title="2 of 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
+<span class="nc bnc" id="L1396" title="All 4 branches missed.">        if (compStats == null || compStats.isEmpty()) {</span>
 <span class="nc" id="L1397">            return null;</span>
         }
         
-<span class="fc" id="L1400">        float[] values = calculateThetaDiff(compStats);</span>
-<span class="fc bfc" id="L1401" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="fc bfc" id="L1402" title="All 2 branches covered.">            if (values[i] &lt; 0) {</span>
-<span class="fc" id="L1403">                values[i] += 360;</span>
+<span class="nc" id="L1400">        float[] values = calculateThetaDiff(compStats);</span>
+<span class="nc bnc" id="L1401" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">            if (values[i] &lt; 0) {</span>
+<span class="nc" id="L1403">                values[i] += 360;</span>
             }
         }
         
         // 20 degree wide bins
-<span class="fc" id="L1408">        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, </span>
-<span class="fc" id="L1409">            Errors.populateYErrorsBySqrt(values));</span>
+<span class="nc" id="L1408">        HistogramHolder hist = Histogram.createSimpleHistogram(20.f, values, </span>
+<span class="nc" id="L1409">            Errors.populateYErrorsBySqrt(values));</span>
         
-<span class="fc" id="L1411">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-<span class="fc bfc" id="L1412" title="All 4 branches covered.">        if ((yMaxIdx &gt; -1) &amp;&amp; (hist.getYHist()[yMaxIdx] == 1)) {</span>
-<span class="fc" id="L1413">            hist = Histogram.createSimpleHistogram(40.f, values, </span>
-<span class="fc" id="L1414">                Errors.populateYErrorsBySqrt(values));</span>
-<span class="fc" id="L1415">            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L1411">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc bnc" id="L1412" title="All 4 branches missed.">        if ((yMaxIdx &gt; -1) &amp;&amp; (hist.getYHist()[yMaxIdx] == 1)) {</span>
+<span class="nc" id="L1413">            hist = Histogram.createSimpleHistogram(40.f, values, </span>
+<span class="nc" id="L1414">                Errors.populateYErrorsBySqrt(values));</span>
+<span class="nc" id="L1415">            yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         }
         
         float thetaDiff;
-<span class="fc bfc" id="L1419" title="All 2 branches covered.">        if (yMaxIdx == -1) {</span>
-<span class="fc" id="L1420">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
-<span class="fc" id="L1421">            thetaDiff = thetaDiffMeanStDev[0];</span>
-<span class="fc" id="L1422">        } else {</span>
-<span class="fc" id="L1423">            thetaDiff = hist.getXHist()[yMaxIdx];</span>
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
+<span class="nc" id="L1420">            float[] thetaDiffMeanStDev = MiscMath.getAvgAndStDev(values);</span>
+<span class="nc" id="L1421">            thetaDiff = thetaDiffMeanStDev[0];</span>
+<span class="nc" id="L1422">        } else {</span>
+<span class="nc" id="L1423">            thetaDiff = hist.getXHist()[yMaxIdx];</span>
         }
         
         //TODO: consider a bin larger than 20 degrees... 25
-<span class="fc" id="L1427">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L1427">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
         
-<span class="fc bfc" id="L1429" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="fc" id="L1430">            float diffRot = AngleUtil.getAngleDifference(values[i], thetaDiff);</span>
-<span class="fc bfc" id="L1431" title="All 2 branches covered.">            if (diffRot &gt; 20) {</span>
-<span class="fc" id="L1432">                remove.add(Integer.valueOf(i));</span>
+<span class="nc bnc" id="L1429" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="nc" id="L1430">            float diffRot = AngleUtil.getAngleDifference(values[i], thetaDiff);</span>
+<span class="nc bnc" id="L1431" title="All 2 branches missed.">            if (diffRot &gt; 20) {</span>
+<span class="nc" id="L1432">                remove.add(Integer.valueOf(i));</span>
             }
         }
         
-<span class="fc bfc" id="L1436" title="All 2 branches covered.">        for (int i = remove.size() - 1; i &gt; -1; --i) {</span>
-<span class="fc" id="L1437">            int idx = remove.get(i);</span>
-<span class="fc" id="L1438">            compStats.remove(idx);</span>
+<span class="nc bnc" id="L1436" title="All 2 branches missed.">        for (int i = remove.size() - 1; i &gt; -1; --i) {</span>
+<span class="nc" id="L1437">            int idx = remove.get(i);</span>
+<span class="nc" id="L1438">            compStats.remove(idx);</span>
         }
         
-<span class="fc" id="L1441">        return remove;</span>
+<span class="nc" id="L1441">        return remove;</span>
     }
     
     public static List&lt;Integer&gt; removeDiscrepantThetaDiff(

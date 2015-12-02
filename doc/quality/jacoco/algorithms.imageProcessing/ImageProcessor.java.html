@@ -1664,66 +1664,156 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L1665">        return out;</span>
     }
+            
+    public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
+
+<span class="pc bpc" id="L1670" title="1 of 2 branches missed.">        if (input == null) {</span>
+<span class="nc" id="L1671">            throw new IllegalArgumentException(&quot;input cannot be null&quot;);</span>
+        }
+
+<span class="fc" id="L1674">        int w0 = input.getWidth();</span>
+<span class="fc" id="L1675">        int h0 = input.getHeight();</span>
+
+<span class="fc" id="L1677">        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);</span>
+
+<span class="fc" id="L1679">        int w1 = out.getWidth();</span>
+<span class="fc" id="L1680">        int h1 = out.getHeight();</span>
+
+<span class="fc bfc" id="L1682" title="All 2 branches covered.">        for (int i = 0; i &lt; w1; ++i) {</span>
+<span class="fc bfc" id="L1683" title="All 2 branches covered.">            for (int j = 0; j &lt; h1; ++j) {</span>
+                
+<span class="fc bfc" id="L1685" title="All 4 branches covered.">                if (((i &amp; 1) != 1) &amp;&amp; ((j &amp; 1) != 1)) {</span>
+<span class="fc" id="L1686">                    int x0 = i/2;</span>
+<span class="fc" id="L1687">                    int y0 = j/2;</span>
+<span class="fc" id="L1688">                    out.setValue(i, j, input.getValue(x0, y0));</span>
+<span class="fc" id="L1689">                    continue;</span>
+                }
+
+<span class="fc" id="L1692">                float x0 = (float)i/2.f;</span>
+<span class="fc" id="L1693">                float y0 = (float)j/2.f;</span>
+                
+<span class="fc bfc" id="L1695" title="All 2 branches covered.">                if (x0 &gt; (w0 - 1)) {</span>
+<span class="fc" id="L1696">                    x0 = w0 - 1;</span>
+                }
+<span class="fc bfc" id="L1698" title="All 2 branches covered.">                if (y0 &gt; (h0 - 1)) {</span>
+<span class="fc" id="L1699">                    y0 = h0 - 1;</span>
+                }
+                
+<span class="fc" id="L1702">                double v2 = biLinearInterpolation(input, x0, y0);</span>
+                
+<span class="fc" id="L1704">                out.setValue(i, j, (int)Math.round(v2));</span>
+            }
+        }
+
+<span class="fc" id="L1708">        return out;</span>
+    }
+    
+    public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
+
+<span class="nc bnc" id="L1713" title="All 2 branches missed.">        if (input == null) {</span>
+<span class="nc" id="L1714">            throw new IllegalArgumentException(&quot;input cannot be null&quot;);</span>
+        }
+
+<span class="nc" id="L1717">        int w0 = input.getWidth();</span>
+<span class="nc" id="L1718">        int h0 = input.getHeight();</span>
+
+<span class="nc" id="L1720">        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);</span>
+
+<span class="nc" id="L1722">        int w1 = out.getWidth();</span>
+<span class="nc" id="L1723">        int h1 = out.getHeight();</span>
+
+<span class="nc bnc" id="L1725" title="All 2 branches missed.">        for (int i = 0; i &lt; w0; i++) {</span>
+<span class="nc bnc" id="L1726" title="All 2 branches missed.">            for (int j = 0; j &lt; h0; j++) {</span>
+
+<span class="nc" id="L1728">                int v = input.getValue(i, j);</span>
+
+<span class="nc bnc" id="L1730" title="All 2 branches missed.">                for (int ii = (i*binFactor); ii &lt; ((i + 1)*binFactor); ii++) {</span>
+<span class="nc bnc" id="L1731" title="All 2 branches missed.">                    for (int jj = (j*binFactor); jj &lt; ((j + 1)*binFactor); jj++) {</span>
+<span class="nc" id="L1732">                        out.setValue(ii, jj, v);</span>
+                    }
+                }
+            }
+        }
+
+<span class="nc bnc" id="L1738" title="All 2 branches missed.">        if ((input.getWidth() &amp; 1) == 1) {</span>
+            // copy next to last column into last column
+<span class="nc" id="L1740">            int i = input.getWidth() - 2;</span>
+<span class="nc bnc" id="L1741" title="All 2 branches missed.">            for (int j = 0; j &lt; h1; j++) {</span>
+<span class="nc" id="L1742">                int v = out.getValue(i, j);</span>
+<span class="nc" id="L1743">                out.setValue(i + 1, j, v);</span>
+            }
+        }
+<span class="nc bnc" id="L1746" title="All 2 branches missed.">        if ((input.getHeight() &amp; 1) == 1) {</span>
+            // copy next to last row into last row
+<span class="nc" id="L1748">            int j = input.getHeight() - 2;</span>
+<span class="nc bnc" id="L1749" title="All 2 branches missed.">            for (int i = 0; i &lt; w1; i++) {</span>
+<span class="nc" id="L1750">                int v = out.getValue(i, j);</span>
+<span class="nc" id="L1751">                out.setValue(i, j + 1, v);</span>
+            }
+        }
+
+<span class="nc" id="L1755">        return out;</span>
+    }
 
     public List&lt;PairIntArray&gt; unbinZeroPointLists(List&lt;PairIntArray&gt; zeroPointLists,
         int binFactor) {
 
-<span class="nc bnc" id="L1671" title="All 2 branches missed.">        if (zeroPointLists == null) {</span>
-<span class="nc" id="L1672">            throw new IllegalArgumentException(&quot;mask cannot be null&quot;);</span>
+<span class="nc bnc" id="L1761" title="All 2 branches missed.">        if (zeroPointLists == null) {</span>
+<span class="nc" id="L1762">            throw new IllegalArgumentException(&quot;mask cannot be null&quot;);</span>
         }
 
-<span class="nc" id="L1675">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc" id="L1765">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
 
-<span class="nc bnc" id="L1677" title="All 2 branches missed.">        for (PairIntArray zeroPointList : zeroPointLists) {</span>
+<span class="nc bnc" id="L1767" title="All 2 branches missed.">        for (PairIntArray zeroPointList : zeroPointLists) {</span>
 
-<span class="nc" id="L1679">            PairIntArray transformed = new PairIntArray(zeroPointList.getN() *</span>
+<span class="nc" id="L1769">            PairIntArray transformed = new PairIntArray(zeroPointList.getN() *</span>
                 binFactor);
 
-<span class="nc bnc" id="L1682" title="All 2 branches missed.">            for (int i = 0; i &lt; zeroPointList.getN(); i++) {</span>
+<span class="nc bnc" id="L1772" title="All 2 branches missed.">            for (int i = 0; i &lt; zeroPointList.getN(); i++) {</span>
 
-<span class="nc" id="L1684">                int x = zeroPointList.getX(i);</span>
-<span class="nc" id="L1685">                int y = zeroPointList.getY(i);</span>
+<span class="nc" id="L1774">                int x = zeroPointList.getX(i);</span>
+<span class="nc" id="L1775">                int y = zeroPointList.getY(i);</span>
 
-<span class="nc bnc" id="L1687" title="All 2 branches missed.">                for (int ii = (x*binFactor); ii &lt; ((x + 1)*binFactor); ii++) {</span>
-<span class="nc bnc" id="L1688" title="All 2 branches missed.">                    for (int jj = (y*binFactor); jj &lt; ((y + 1)*binFactor); jj++) {</span>
+<span class="nc bnc" id="L1777" title="All 2 branches missed.">                for (int ii = (x*binFactor); ii &lt; ((x + 1)*binFactor); ii++) {</span>
+<span class="nc bnc" id="L1778" title="All 2 branches missed.">                    for (int jj = (y*binFactor); jj &lt; ((y + 1)*binFactor); jj++) {</span>
 
-<span class="nc" id="L1690">                        transformed.add(ii, jj);</span>
+<span class="nc" id="L1780">                        transformed.add(ii, jj);</span>
                     }
                 }
             }
 
-<span class="nc" id="L1695">            output.add(transformed);</span>
+<span class="nc" id="L1785">            output.add(transformed);</span>
 
-<span class="nc" id="L1697">        }</span>
+<span class="nc" id="L1787">        }</span>
 
-<span class="nc" id="L1699">        return output;</span>
+<span class="nc" id="L1789">        return output;</span>
     }
 
     public Set&lt;PairInt&gt; unbinZeroPointLists(Set&lt;PairInt&gt; zeroPoints,
         int binFactor) {
 
-<span class="pc bpc" id="L1705" title="1 of 2 branches missed.">        if (zeroPoints == null) {</span>
-<span class="nc" id="L1706">            throw new IllegalArgumentException(&quot;zeroPoints cannot be null&quot;);</span>
+<span class="pc bpc" id="L1795" title="1 of 2 branches missed.">        if (zeroPoints == null) {</span>
+<span class="nc" id="L1796">            throw new IllegalArgumentException(&quot;zeroPoints cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L1709">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1799">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc bfc" id="L1711" title="All 2 branches covered.">        for (PairInt zeroPoint : zeroPoints) {</span>
+<span class="fc bfc" id="L1801" title="All 2 branches covered.">        for (PairInt zeroPoint : zeroPoints) {</span>
 
-<span class="fc" id="L1713">            int x = zeroPoint.getX();</span>
-<span class="fc" id="L1714">            int y = zeroPoint.getY();</span>
+<span class="fc" id="L1803">            int x = zeroPoint.getX();</span>
+<span class="fc" id="L1804">            int y = zeroPoint.getY();</span>
 
-<span class="fc bfc" id="L1716" title="All 2 branches covered.">            for (int ii = (x*binFactor); ii &lt; ((x + 1)*binFactor); ii++) {</span>
-<span class="fc bfc" id="L1717" title="All 2 branches covered.">                for (int jj = (y*binFactor); jj &lt; ((y + 1)*binFactor); jj++) {</span>
+<span class="fc bfc" id="L1806" title="All 2 branches covered.">            for (int ii = (x*binFactor); ii &lt; ((x + 1)*binFactor); ii++) {</span>
+<span class="fc bfc" id="L1807" title="All 2 branches covered.">                for (int jj = (y*binFactor); jj &lt; ((y + 1)*binFactor); jj++) {</span>
 
-<span class="fc" id="L1719">                    PairInt p = new PairInt(ii, jj);</span>
+<span class="fc" id="L1809">                    PairInt p = new PairInt(ii, jj);</span>
 
-<span class="fc" id="L1721">                    output.add(p);</span>
+<span class="fc" id="L1811">                    output.add(p);</span>
                 }
             }
-<span class="fc" id="L1724">        }</span>
+<span class="fc" id="L1814">        }</span>
 
-<span class="fc" id="L1726">        return output;</span>
+<span class="fc" id="L1816">        return output;</span>
     }
 
     public void printImageColorContrastStats(Image image, int rgbSkyAvg,
@@ -1735,87 +1825,87 @@ import java.util.logging.Logger;
            U = | 128 | + |-0.148 -0.291  0.439 | |G|
            V   | 128 |   | 0.439 -0.368 -0.072 | |B|
         */
-<span class="fc" id="L1738">        double[][] m = new double[3][];</span>
-<span class="fc" id="L1739">        m[0] = new double[]{0.256, 0.504, 0.098};</span>
-<span class="fc" id="L1740">        m[1] = new double[]{-0.148, -0.291, 0.439};</span>
-<span class="fc" id="L1741">        m[2] = new double[]{0.439, -0.368, -0.072};</span>
+<span class="fc" id="L1828">        double[][] m = new double[3][];</span>
+<span class="fc" id="L1829">        m[0] = new double[]{0.256, 0.504, 0.098};</span>
+<span class="fc" id="L1830">        m[1] = new double[]{-0.148, -0.291, 0.439};</span>
+<span class="fc" id="L1831">        m[2] = new double[]{0.439, -0.368, -0.072};</span>
 
-<span class="fc" id="L1743">        int rSky = (rgbSkyAvg &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L1744">        int gSky = (rgbSkyAvg &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L1745">        int bSky = rgbSkyAvg &amp; 0xFF;</span>
-<span class="fc" id="L1746">        double[] yuvSky = MatrixUtil.multiply(m, new double[]{rSky, gSky, bSky});</span>
+<span class="fc" id="L1833">        int rSky = (rgbSkyAvg &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L1834">        int gSky = (rgbSkyAvg &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L1835">        int bSky = rgbSkyAvg &amp; 0xFF;</span>
+<span class="fc" id="L1836">        double[] yuvSky = MatrixUtil.multiply(m, new double[]{rSky, gSky, bSky});</span>
 
-<span class="fc" id="L1748">        double t313 = Math.pow(3, (1./3.));</span>
+<span class="fc" id="L1838">        double t313 = Math.pow(3, (1./3.));</span>
 
-<span class="fc" id="L1750">        int w = image.getWidth();</span>
-<span class="fc" id="L1751">        int h = image.getHeight();</span>
-<span class="fc" id="L1752">        int slice = 1;//10;</span>
+<span class="fc" id="L1840">        int w = image.getWidth();</span>
+<span class="fc" id="L1841">        int h = image.getHeight();</span>
+<span class="fc" id="L1842">        int slice = 1;//10;</span>
 
-<span class="fc" id="L1754">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L1844">        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
 
-<span class="fc bfc" id="L1756" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
+<span class="fc bfc" id="L1846" title="All 2 branches covered.">        for (int i = 0; i &lt; 6; i++) {</span>
 
-<span class="fc" id="L1758">            int startCol = -1;</span>
-<span class="fc" id="L1759">            int stopCol = -1;</span>
-<span class="fc" id="L1760">            int startRow = -1;</span>
-<span class="fc" id="L1761">            int stopRow = -1;</span>
-<span class="fc" id="L1762">            boolean plotAlongRows = true;</span>
-<span class="fc" id="L1763">            String labelSuffix = null;</span>
+<span class="fc" id="L1848">            int startCol = -1;</span>
+<span class="fc" id="L1849">            int stopCol = -1;</span>
+<span class="fc" id="L1850">            int startRow = -1;</span>
+<span class="fc" id="L1851">            int stopRow = -1;</span>
+<span class="fc" id="L1852">            boolean plotAlongRows = true;</span>
+<span class="fc" id="L1853">            String labelSuffix = null;</span>
 
-<span class="fc bfc" id="L1765" title="All 6 branches covered.">            switch(i) {</span>
+<span class="fc bfc" id="L1855" title="All 6 branches covered.">            switch(i) {</span>
                 case 0:
                     //horizontal at low y
-<span class="fc" id="L1768">                    startCol = 0;</span>
-<span class="fc" id="L1769">                    stopCol = w - 1;</span>
-<span class="fc" id="L1770">                    startRow = slice;</span>
-<span class="fc" id="L1771">                    stopRow = startRow + slice;</span>
-<span class="fc" id="L1772">                    plotAlongRows = false;</span>
-<span class="fc" id="L1773">                    labelSuffix = &quot;horizontal stripe at low y&quot;;</span>
-<span class="fc" id="L1774">                    break;</span>
+<span class="fc" id="L1858">                    startCol = 0;</span>
+<span class="fc" id="L1859">                    stopCol = w - 1;</span>
+<span class="fc" id="L1860">                    startRow = slice;</span>
+<span class="fc" id="L1861">                    stopRow = startRow + slice;</span>
+<span class="fc" id="L1862">                    plotAlongRows = false;</span>
+<span class="fc" id="L1863">                    labelSuffix = &quot;horizontal stripe at low y&quot;;</span>
+<span class="fc" id="L1864">                    break;</span>
                 case 1:
                     //horizontal at mid y
-<span class="fc" id="L1777">                    startCol = 0;</span>
-<span class="fc" id="L1778">                    stopCol = w - 1;</span>
-<span class="fc" id="L1779">                    startRow = (h - slice)/2 ;</span>
-<span class="fc" id="L1780">                    stopRow = startRow + slice;</span>
-<span class="fc" id="L1781">                    plotAlongRows = false;</span>
-<span class="fc" id="L1782">                    labelSuffix = &quot;horizontal stripe at mid y&quot;;</span>
-<span class="fc" id="L1783">                    break;</span>
+<span class="fc" id="L1867">                    startCol = 0;</span>
+<span class="fc" id="L1868">                    stopCol = w - 1;</span>
+<span class="fc" id="L1869">                    startRow = (h - slice)/2 ;</span>
+<span class="fc" id="L1870">                    stopRow = startRow + slice;</span>
+<span class="fc" id="L1871">                    plotAlongRows = false;</span>
+<span class="fc" id="L1872">                    labelSuffix = &quot;horizontal stripe at mid y&quot;;</span>
+<span class="fc" id="L1873">                    break;</span>
                 case 2:
                     //horizontal at high y
-<span class="fc" id="L1786">                    startCol = 0;</span>
-<span class="fc" id="L1787">                    stopCol = w - 1;</span>
-<span class="fc" id="L1788">                    startRow = (h - 2*slice) - 1;</span>
-<span class="fc" id="L1789">                    stopRow = startRow + slice;</span>
-<span class="fc" id="L1790">                    plotAlongRows = false;</span>
-<span class="fc" id="L1791">                    labelSuffix = &quot;horizontal stripe at high y&quot;;</span>
-<span class="fc" id="L1792">                    break;</span>
+<span class="fc" id="L1876">                    startCol = 0;</span>
+<span class="fc" id="L1877">                    stopCol = w - 1;</span>
+<span class="fc" id="L1878">                    startRow = (h - 2*slice) - 1;</span>
+<span class="fc" id="L1879">                    stopRow = startRow + slice;</span>
+<span class="fc" id="L1880">                    plotAlongRows = false;</span>
+<span class="fc" id="L1881">                    labelSuffix = &quot;horizontal stripe at high y&quot;;</span>
+<span class="fc" id="L1882">                    break;</span>
                 case 3:
                     //vertical at low x
-<span class="fc" id="L1795">                    startCol = slice;</span>
-<span class="fc" id="L1796">                    stopCol = startCol + slice;</span>
-<span class="fc" id="L1797">                    startRow = 0;</span>
-<span class="fc" id="L1798">                    stopRow = h - 1;</span>
-<span class="fc" id="L1799">                    plotAlongRows = true;</span>
-<span class="fc" id="L1800">                    labelSuffix = &quot;vertical stripe at low x&quot;;</span>
-<span class="fc" id="L1801">                    break;</span>
+<span class="fc" id="L1885">                    startCol = slice;</span>
+<span class="fc" id="L1886">                    stopCol = startCol + slice;</span>
+<span class="fc" id="L1887">                    startRow = 0;</span>
+<span class="fc" id="L1888">                    stopRow = h - 1;</span>
+<span class="fc" id="L1889">                    plotAlongRows = true;</span>
+<span class="fc" id="L1890">                    labelSuffix = &quot;vertical stripe at low x&quot;;</span>
+<span class="fc" id="L1891">                    break;</span>
                 case 4:
                     //vertical at mid x
-<span class="fc" id="L1804">                    startCol = (w - slice)/2;</span>
-<span class="fc" id="L1805">                    stopCol = startCol + slice;</span>
-<span class="fc" id="L1806">                    startRow = 0;</span>
-<span class="fc" id="L1807">                    stopRow = h - 1;</span>
-<span class="fc" id="L1808">                    plotAlongRows = true;</span>
-<span class="fc" id="L1809">                    labelSuffix = &quot;vertical stripe at mid x&quot;;</span>
-<span class="fc" id="L1810">                    break;</span>
+<span class="fc" id="L1894">                    startCol = (w - slice)/2;</span>
+<span class="fc" id="L1895">                    stopCol = startCol + slice;</span>
+<span class="fc" id="L1896">                    startRow = 0;</span>
+<span class="fc" id="L1897">                    stopRow = h - 1;</span>
+<span class="fc" id="L1898">                    plotAlongRows = true;</span>
+<span class="fc" id="L1899">                    labelSuffix = &quot;vertical stripe at mid x&quot;;</span>
+<span class="fc" id="L1900">                    break;</span>
                 default:
                     //vertical at high x
-<span class="fc" id="L1813">                    startCol = (w - 2*slice) - 1;</span>
-<span class="fc" id="L1814">                    stopCol = startCol + slice;</span>
-<span class="fc" id="L1815">                    startRow = 0;</span>
-<span class="fc" id="L1816">                    stopRow = h - 1;</span>
-<span class="fc" id="L1817">                    plotAlongRows = true;</span>
-<span class="fc" id="L1818">                    labelSuffix = &quot;vertical stripe at high x&quot;;</span>
+<span class="fc" id="L1903">                    startCol = (w - 2*slice) - 1;</span>
+<span class="fc" id="L1904">                    stopCol = startCol + slice;</span>
+<span class="fc" id="L1905">                    startRow = 0;</span>
+<span class="fc" id="L1906">                    stopRow = h - 1;</span>
+<span class="fc" id="L1907">                    plotAlongRows = true;</span>
+<span class="fc" id="L1908">                    labelSuffix = &quot;vertical stripe at high x&quot;;</span>
                     break;
             }
 
@@ -1823,204 +1913,204 @@ import java.util.logging.Logger;
             // hue
             // blue
             // red
-<span class="fc" id="L1826">            float[] contrast = null;</span>
-<span class="fc" id="L1827">            float[] hue = null;</span>
-<span class="fc" id="L1828">            float[] red = null;</span>
-<span class="fc" id="L1829">            float[] blue = null;</span>
-<span class="fc" id="L1830">            float[] white = null;</span>
-<span class="fc" id="L1831">            float[] axis = null;</span>
+<span class="fc" id="L1916">            float[] contrast = null;</span>
+<span class="fc" id="L1917">            float[] hue = null;</span>
+<span class="fc" id="L1918">            float[] red = null;</span>
+<span class="fc" id="L1919">            float[] blue = null;</span>
+<span class="fc" id="L1920">            float[] white = null;</span>
+<span class="fc" id="L1921">            float[] axis = null;</span>
 
-<span class="fc bfc" id="L1833" title="All 2 branches covered.">            if (!plotAlongRows) {</span>
+<span class="fc bfc" id="L1923" title="All 2 branches covered.">            if (!plotAlongRows) {</span>
 
                 // plot along columns
 
-<span class="fc" id="L1837">                contrast = new float[w];</span>
-<span class="fc" id="L1838">                hue = new float[w];</span>
-<span class="fc" id="L1839">                red = new float[w];</span>
-<span class="fc" id="L1840">                blue = new float[w];</span>
-<span class="fc" id="L1841">                white = new float[w];</span>
-<span class="fc" id="L1842">                axis = new float[w];</span>
+<span class="fc" id="L1927">                contrast = new float[w];</span>
+<span class="fc" id="L1928">                hue = new float[w];</span>
+<span class="fc" id="L1929">                red = new float[w];</span>
+<span class="fc" id="L1930">                blue = new float[w];</span>
+<span class="fc" id="L1931">                white = new float[w];</span>
+<span class="fc" id="L1932">                axis = new float[w];</span>
 
-<span class="fc bfc" id="L1844" title="All 2 branches covered.">                for (int col = startCol; col &lt;= stopCol; col++) {</span>
+<span class="fc bfc" id="L1934" title="All 2 branches covered.">                for (int col = startCol; col &lt;= stopCol; col++) {</span>
 
-<span class="fc" id="L1846">                    int row = startRow;</span>
+<span class="fc" id="L1936">                    int row = startRow;</span>
 
-<span class="fc" id="L1848">                    int r = image.getR(col, row);</span>
-<span class="fc" id="L1849">                    int g = image.getG(col, row);</span>
-<span class="fc" id="L1850">                    int b = image.getB(col, row);</span>
-<span class="fc" id="L1851">                    double[] rgb = new double[]{r, g, b};</span>
+<span class="fc" id="L1938">                    int r = image.getR(col, row);</span>
+<span class="fc" id="L1939">                    int g = image.getG(col, row);</span>
+<span class="fc" id="L1940">                    int b = image.getB(col, row);</span>
+<span class="fc" id="L1941">                    double[] rgb = new double[]{r, g, b};</span>
 
-<span class="fc" id="L1853">                    double[] yuv = MatrixUtil.multiply(m, rgb);</span>
-<span class="fc" id="L1854">                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});</span>
-<span class="fc" id="L1855">                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));</span>
+<span class="fc" id="L1943">                    double[] yuv = MatrixUtil.multiply(m, rgb);</span>
+<span class="fc" id="L1944">                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});</span>
+<span class="fc" id="L1945">                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));</span>
 
-<span class="fc" id="L1857">                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];</span>
+<span class="fc" id="L1947">                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];</span>
 
-<span class="fc" id="L1859">                    double whiteValue = (r + g + b)/3.;</span>
+<span class="fc" id="L1949">                    double whiteValue = (r + g + b)/3.;</span>
 
-<span class="fc" id="L1861">                    contrast[col] = (float)contrastValue;</span>
-<span class="fc" id="L1862">                    hue[col] = (float)hueValue;</span>
-<span class="fc" id="L1863">                    blue[col] = (float)b;</span>
-<span class="fc" id="L1864">                    red[col] = (float)r;</span>
-<span class="fc" id="L1865">                    white[col] = (float)whiteValue;</span>
+<span class="fc" id="L1951">                    contrast[col] = (float)contrastValue;</span>
+<span class="fc" id="L1952">                    hue[col] = (float)hueValue;</span>
+<span class="fc" id="L1953">                    blue[col] = (float)b;</span>
+<span class="fc" id="L1954">                    red[col] = (float)r;</span>
+<span class="fc" id="L1955">                    white[col] = (float)whiteValue;</span>
 
-<span class="fc" id="L1867">                    axis[col] = col;</span>
+<span class="fc" id="L1957">                    axis[col] = col;</span>
                 }
 
             } else {
                 // plot along rows
-<span class="fc" id="L1872">                contrast = new float[h];</span>
-<span class="fc" id="L1873">                hue = new float[h];</span>
-<span class="fc" id="L1874">                red = new float[h];</span>
-<span class="fc" id="L1875">                blue = new float[h];</span>
-<span class="fc" id="L1876">                white = new float[h];</span>
-<span class="fc" id="L1877">                axis = new float[h];</span>
+<span class="fc" id="L1962">                contrast = new float[h];</span>
+<span class="fc" id="L1963">                hue = new float[h];</span>
+<span class="fc" id="L1964">                red = new float[h];</span>
+<span class="fc" id="L1965">                blue = new float[h];</span>
+<span class="fc" id="L1966">                white = new float[h];</span>
+<span class="fc" id="L1967">                axis = new float[h];</span>
 
-<span class="fc bfc" id="L1879" title="All 2 branches covered.">                for (int row = startRow; row &lt;= stopRow; row++) {</span>
+<span class="fc bfc" id="L1969" title="All 2 branches covered.">                for (int row = startRow; row &lt;= stopRow; row++) {</span>
 
-<span class="fc" id="L1881">                    int col = startCol;</span>
+<span class="fc" id="L1971">                    int col = startCol;</span>
 
-<span class="fc" id="L1883">                    int r = image.getR(col, row);</span>
-<span class="fc" id="L1884">                    int g = image.getG(col, row);</span>
-<span class="fc" id="L1885">                    int b = image.getB(col, row);</span>
-<span class="fc" id="L1886">                    double[] rgb = new double[]{r, g, b};</span>
+<span class="fc" id="L1973">                    int r = image.getR(col, row);</span>
+<span class="fc" id="L1974">                    int g = image.getG(col, row);</span>
+<span class="fc" id="L1975">                    int b = image.getB(col, row);</span>
+<span class="fc" id="L1976">                    double[] rgb = new double[]{r, g, b};</span>
 
-<span class="fc" id="L1888">                    double[] yuv = MatrixUtil.multiply(m, rgb);</span>
-<span class="fc" id="L1889">                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});</span>
-<span class="fc" id="L1890">                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));</span>
+<span class="fc" id="L1978">                    double[] yuv = MatrixUtil.multiply(m, rgb);</span>
+<span class="fc" id="L1979">                    yuv = MatrixUtil.add(yuv, new double[]{16, 128, 128});</span>
+<span class="fc" id="L1980">                    double hueValue = Math.atan2(t313 * (g - b), ((2 * r) - g - b));</span>
 
-<span class="fc" id="L1892">                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];</span>
+<span class="fc" id="L1982">                    double contrastValue = (yuvSky[0] - yuv[0])/yuv[0];</span>
 
-<span class="fc" id="L1894">                    double whiteValue = (r + g + b)/3.;</span>
+<span class="fc" id="L1984">                    double whiteValue = (r + g + b)/3.;</span>
 
-<span class="fc" id="L1896">                    contrast[row] = (float)contrastValue;</span>
-<span class="fc" id="L1897">                    hue[row] = (float)hueValue;</span>
-<span class="fc" id="L1898">                    blue[row] = (float)b;</span>
-<span class="fc" id="L1899">                    red[row] = (float)r;</span>
-<span class="fc" id="L1900">                    white[row] = (float)whiteValue;</span>
+<span class="fc" id="L1986">                    contrast[row] = (float)contrastValue;</span>
+<span class="fc" id="L1987">                    hue[row] = (float)hueValue;</span>
+<span class="fc" id="L1988">                    blue[row] = (float)b;</span>
+<span class="fc" id="L1989">                    red[row] = (float)r;</span>
+<span class="fc" id="L1990">                    white[row] = (float)whiteValue;</span>
 
-<span class="fc" id="L1902">                    axis[row] = row;</span>
+<span class="fc" id="L1992">                    axis[row] = row;</span>
                 }
 
             }
 
-<span class="fc" id="L1907">            float xmn = MiscMath.findMin(axis);</span>
-<span class="fc" id="L1908">            float xmx = MiscMath.findMax(axis);</span>
+<span class="fc" id="L1997">            float xmn = MiscMath.findMin(axis);</span>
+<span class="fc" id="L1998">            float xmx = MiscMath.findMax(axis);</span>
 
-<span class="fc" id="L1910">            float ymn = MiscMath.findMin(contrast);</span>
-<span class="fc" id="L1911">            float ymx = 1.1f * MiscMath.findMax(contrast);</span>
-<span class="fc" id="L1912">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
+<span class="fc" id="L2000">            float ymn = MiscMath.findMin(contrast);</span>
+<span class="fc" id="L2001">            float ymx = 1.1f * MiscMath.findMax(contrast);</span>
+<span class="fc" id="L2002">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
                 axis, contrast, null, null, null, null,
                 &quot;contrast &quot; + labelSuffix);
 
-<span class="fc" id="L1916">            ymn = MiscMath.findMin(hue);</span>
-<span class="fc" id="L1917">            ymx = 1.1f * MiscMath.findMax(hue);</span>
-<span class="fc" id="L1918">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
+<span class="fc" id="L2006">            ymn = MiscMath.findMin(hue);</span>
+<span class="fc" id="L2007">            ymx = 1.1f * MiscMath.findMax(hue);</span>
+<span class="fc" id="L2008">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
                 axis, hue, null, null, null, null, &quot;hue &quot; + labelSuffix);
 
-<span class="fc" id="L1921">            ymn = MiscMath.findMin(blue);</span>
-<span class="fc" id="L1922">            ymx = 1.1f * MiscMath.findMax(blue);</span>
-<span class="fc" id="L1923">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
+<span class="fc" id="L2011">            ymn = MiscMath.findMin(blue);</span>
+<span class="fc" id="L2012">            ymx = 1.1f * MiscMath.findMax(blue);</span>
+<span class="fc" id="L2013">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
                 axis, blue, null, null, null, null, &quot;blue &quot; + labelSuffix);
 
-<span class="fc" id="L1926">            ymn = MiscMath.findMin(red);</span>
-<span class="fc" id="L1927">            ymx = 1.1f * MiscMath.findMax(red);</span>
-<span class="fc" id="L1928">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
+<span class="fc" id="L2016">            ymn = MiscMath.findMin(red);</span>
+<span class="fc" id="L2017">            ymx = 1.1f * MiscMath.findMax(red);</span>
+<span class="fc" id="L2018">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
                 axis, red, null, null, null, null, &quot;red &quot; + labelSuffix);
 
-<span class="fc" id="L1931">            ymn = MiscMath.findMin(white);</span>
-<span class="fc" id="L1932">            ymx = 1.1f * MiscMath.findMax(white);</span>
-<span class="fc" id="L1933">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
+<span class="fc" id="L2021">            ymn = MiscMath.findMin(white);</span>
+<span class="fc" id="L2022">            ymx = 1.1f * MiscMath.findMax(white);</span>
+<span class="fc" id="L2023">            plotter.addPlot(xmn, xmx, ymn, ymx,</span>
                 axis, white, null, null, null, null, &quot;white &quot; + labelSuffix);
 
-<span class="fc" id="L1936">            plotter.writeFile(plotNumber);</span>
+<span class="fc" id="L2026">            plotter.writeFile(plotNumber);</span>
         }
-<span class="fc" id="L1938">    }</span>
+<span class="fc" id="L2028">    }</span>
 
     public double[] calculateYRGB(PairIntArray points, Image originalColorImage,
         int xOffset, int yOffset, boolean addAlongX, int addAmount) {
 
-<span class="fc" id="L1943">        double[][] m = new double[3][];</span>
-<span class="fc" id="L1944">        m[0] = new double[]{0.256, 0.504, 0.098};</span>
-<span class="fc" id="L1945">        m[1] = new double[]{-0.148, -0.291, 0.439};</span>
-<span class="fc" id="L1946">        m[2] = new double[]{0.439, -0.368, -0.072};</span>
+<span class="fc" id="L2033">        double[][] m = new double[3][];</span>
+<span class="fc" id="L2034">        m[0] = new double[]{0.256, 0.504, 0.098};</span>
+<span class="fc" id="L2035">        m[1] = new double[]{-0.148, -0.291, 0.439};</span>
+<span class="fc" id="L2036">        m[2] = new double[]{0.439, -0.368, -0.072};</span>
 
-<span class="fc" id="L1948">        double avgY = 0;</span>
-<span class="fc" id="L1949">        double avgR = 0;</span>
-<span class="fc" id="L1950">        double avgG = 0;</span>
-<span class="fc" id="L1951">        double avgB = 0;</span>
+<span class="fc" id="L2038">        double avgY = 0;</span>
+<span class="fc" id="L2039">        double avgR = 0;</span>
+<span class="fc" id="L2040">        double avgG = 0;</span>
+<span class="fc" id="L2041">        double avgB = 0;</span>
 
-<span class="fc bfc" id="L1953" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); i++) {</span>
+<span class="fc bfc" id="L2043" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); i++) {</span>
 
-<span class="fc" id="L1955">            int x = points.getX(i);</span>
-<span class="fc" id="L1956">            int y = points.getY(i);</span>
+<span class="fc" id="L2045">            int x = points.getX(i);</span>
+<span class="fc" id="L2046">            int y = points.getY(i);</span>
 
-<span class="fc" id="L1958">            int ox = x + xOffset;</span>
-<span class="fc" id="L1959">            int oy = y + yOffset;</span>
+<span class="fc" id="L2048">            int ox = x + xOffset;</span>
+<span class="fc" id="L2049">            int oy = y + yOffset;</span>
 
-<span class="pc bpc" id="L1961" title="1 of 2 branches missed.">            if (addAlongX) {</span>
-<span class="fc" id="L1962">                ox += addAmount;</span>
+<span class="pc bpc" id="L2051" title="1 of 2 branches missed.">            if (addAlongX) {</span>
+<span class="fc" id="L2052">                ox += addAmount;</span>
             } else {
-<span class="nc" id="L1964">                oy += addAmount;</span>
+<span class="nc" id="L2054">                oy += addAmount;</span>
             }
-<span class="pc bpc" id="L1966" title="2 of 4 branches missed.">            if ((ox &lt; 0) || (ox &gt; (originalColorImage.getWidth() - 1))) {</span>
-<span class="nc" id="L1967">                continue;</span>
+<span class="pc bpc" id="L2056" title="2 of 4 branches missed.">            if ((ox &lt; 0) || (ox &gt; (originalColorImage.getWidth() - 1))) {</span>
+<span class="nc" id="L2057">                continue;</span>
             }
-<span class="pc bpc" id="L1969" title="2 of 4 branches missed.">            if ((oy &lt; 0) || (oy &gt; (originalColorImage.getHeight() - 1))) {</span>
-<span class="nc" id="L1970">                continue;</span>
+<span class="pc bpc" id="L2059" title="2 of 4 branches missed.">            if ((oy &lt; 0) || (oy &gt; (originalColorImage.getHeight() - 1))) {</span>
+<span class="nc" id="L2060">                continue;</span>
             }
 
-<span class="fc" id="L1973">            int r = originalColorImage.getR(x, y);</span>
-<span class="fc" id="L1974">            int g = originalColorImage.getG(x, y);</span>
-<span class="fc" id="L1975">            int b = originalColorImage.getB(x, y);</span>
-<span class="fc" id="L1976">            double[] rgb = new double[]{r, g, b};</span>
-<span class="fc" id="L1977">            double[] yuv = MatrixUtil.multiply(m, rgb);</span>
+<span class="fc" id="L2063">            int r = originalColorImage.getR(x, y);</span>
+<span class="fc" id="L2064">            int g = originalColorImage.getG(x, y);</span>
+<span class="fc" id="L2065">            int b = originalColorImage.getB(x, y);</span>
+<span class="fc" id="L2066">            double[] rgb = new double[]{r, g, b};</span>
+<span class="fc" id="L2067">            double[] yuv = MatrixUtil.multiply(m, rgb);</span>
 
-<span class="fc" id="L1979">            avgY += yuv[0];</span>
+<span class="fc" id="L2069">            avgY += yuv[0];</span>
 
-<span class="fc" id="L1981">            avgR += r;</span>
-<span class="fc" id="L1982">            avgG += g;</span>
-<span class="fc" id="L1983">            avgB += b;</span>
+<span class="fc" id="L2071">            avgR += r;</span>
+<span class="fc" id="L2072">            avgG += g;</span>
+<span class="fc" id="L2073">            avgB += b;</span>
         }
 
-<span class="fc" id="L1986">        avgY /= (double)points.getN();</span>
-<span class="fc" id="L1987">        avgR /= (double)points.getN();</span>
-<span class="fc" id="L1988">        avgG /= (double)points.getN();</span>
-<span class="fc" id="L1989">        avgB /= (double)points.getN();</span>
+<span class="fc" id="L2076">        avgY /= (double)points.getN();</span>
+<span class="fc" id="L2077">        avgR /= (double)points.getN();</span>
+<span class="fc" id="L2078">        avgG /= (double)points.getN();</span>
+<span class="fc" id="L2079">        avgB /= (double)points.getN();</span>
 
-<span class="fc" id="L1991">        return new double[]{avgY, avgR, avgG, avgB};</span>
+<span class="fc" id="L2081">        return new double[]{avgY, avgR, avgG, avgB};</span>
     }
 
     public GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
 
-<span class="nc" id="L1996">        int w0 = input.getWidth();</span>
-<span class="nc" id="L1997">        int h0 = input.getHeight();</span>
+<span class="fc" id="L2086">        int w0 = input.getWidth();</span>
+<span class="fc" id="L2087">        int h0 = input.getHeight();</span>
 
-<span class="nc" id="L1999">        int w = 1 &lt;&lt; (int)(Math.ceil(Math.log(w0)/Math.log(2)));</span>
-<span class="nc" id="L2000">        int h = 1 &lt;&lt; (int)(Math.ceil(Math.log(h0)/Math.log(2)));</span>
+<span class="fc" id="L2089">        int w = 1 &lt;&lt; (int)(Math.ceil(Math.log(w0)/Math.log(2)));</span>
+<span class="fc" id="L2090">        int h = 1 &lt;&lt; (int)(Math.ceil(Math.log(h0)/Math.log(2)));</span>
 
-<span class="nc" id="L2002">        int xOffset = w - w0;</span>
-<span class="nc" id="L2003">        int yOffset = h - h0;</span>
+<span class="fc" id="L2092">        int xOffset = w - w0;</span>
+<span class="fc" id="L2093">        int yOffset = h - h0;</span>
 
-<span class="nc bnc" id="L2005" title="All 4 branches missed.">        if (xOffset == 0 &amp;&amp; yOffset == 0) {</span>
-<span class="nc" id="L2006">            return input;</span>
+<span class="pc bpc" id="L2095" title="3 of 4 branches missed.">        if (xOffset == 0 &amp;&amp; yOffset == 0) {</span>
+<span class="nc" id="L2096">            return input;</span>
         }
 
-<span class="nc" id="L2009">        int xOffsetOrig = input.getXRelativeOffset();</span>
-<span class="nc" id="L2010">        int yOffsetOrig = input.getYRelativeOffset();</span>
+<span class="fc" id="L2099">        int xOffsetOrig = input.getXRelativeOffset();</span>
+<span class="fc" id="L2100">        int yOffsetOrig = input.getYRelativeOffset();</span>
 
-<span class="nc" id="L2012">        GreyscaleImage output = new GreyscaleImage(w, h, input.getType());</span>
-<span class="nc" id="L2013">        output.setXRelativeOffset(xOffset + xOffsetOrig);</span>
-<span class="nc" id="L2014">        output.setYRelativeOffset(yOffset + yOffsetOrig);</span>
+<span class="fc" id="L2102">        GreyscaleImage output = new GreyscaleImage(w, h, input.getType());</span>
+<span class="fc" id="L2103">        output.setXRelativeOffset(xOffset + xOffsetOrig);</span>
+<span class="fc" id="L2104">        output.setYRelativeOffset(yOffset + yOffsetOrig);</span>
 
-<span class="nc bnc" id="L2016" title="All 2 branches missed.">        for (int i = 0; i &lt; w0; ++i) {</span>
-<span class="nc bnc" id="L2017" title="All 2 branches missed.">            for (int j = 0; j &lt; h0; ++j) {</span>
-<span class="nc" id="L2018">                int v = input.getValue(i, j);</span>
-<span class="nc" id="L2019">                output.setValue(i + xOffset, j + yOffset, v);</span>
+<span class="fc bfc" id="L2106" title="All 2 branches covered.">        for (int i = 0; i &lt; w0; ++i) {</span>
+<span class="fc bfc" id="L2107" title="All 2 branches covered.">            for (int j = 0; j &lt; h0; ++j) {</span>
+<span class="fc" id="L2108">                int v = input.getValue(i, j);</span>
+<span class="fc" id="L2109">                output.setValue(i + xOffset, j + yOffset, v);</span>
             }
         }
 
-<span class="nc" id="L2023">        return output;</span>
+<span class="fc" id="L2113">        return output;</span>
     }
 
     /**
@@ -2030,120 +2120,120 @@ import java.util.logging.Logger;
      */
     public void apply2DFFT(GreyscaleImage input, boolean forward) {
 
-<span class="nc" id="L2033">        int xOffsetOrig = input.getXRelativeOffset();</span>
-<span class="nc" id="L2034">        int yOffsetOrig = input.getYRelativeOffset();</span>
+<span class="fc" id="L2123">        int xOffsetOrig = input.getXRelativeOffset();</span>
+<span class="fc" id="L2124">        int yOffsetOrig = input.getYRelativeOffset();</span>
 
         //TODO remove the other power of 2 padding method
-<span class="nc" id="L2037">        GreyscaleImage tmp = padUpToPowerOfTwo(input);</span>
+<span class="fc" id="L2127">        GreyscaleImage tmp = padUpToPowerOfTwo(input);</span>
 
         // initialize matrix of complex numbers as real numbers from image
-<span class="nc" id="L2040">        Complex[][] cc = convertImage(tmp);</span>
+<span class="fc" id="L2130">        Complex[][] cc = convertImage(tmp);</span>
 
-<span class="nc" id="L2042">        Complex[][] ccOut = apply2DFFT(cc, forward);</span>
+<span class="fc" id="L2132">        Complex[][] ccOut = apply2DFFT(cc, forward);</span>
 
-<span class="nc" id="L2044">        writeToImage(tmp, ccOut);</span>
+<span class="fc" id="L2134">        writeToImage(tmp, ccOut);</span>
 
-<span class="nc bnc" id="L2046" title="All 2 branches missed.">        if (tmp.getNPixels() &gt; input.getNPixels()) {</span>
+<span class="pc bpc" id="L2136" title="1 of 2 branches missed.">        if (tmp.getNPixels() &gt; input.getNPixels()) {</span>
 
-<span class="nc" id="L2048">            int xOffset = tmp.getXRelativeOffset();</span>
-<span class="nc" id="L2049">            int yOffset = tmp.getYRelativeOffset();</span>
+<span class="fc" id="L2138">            int xOffset = tmp.getXRelativeOffset();</span>
+<span class="fc" id="L2139">            int yOffset = tmp.getYRelativeOffset();</span>
 
             // padding is at front of cols and rows
-<span class="nc" id="L2052">            int x = 0;</span>
-<span class="nc bnc" id="L2053" title="All 2 branches missed.">            for (int col = xOffset; col &lt; tmp.getWidth(); col++) {</span>
-<span class="nc" id="L2054">                int y = 0;</span>
-<span class="nc bnc" id="L2055" title="All 2 branches missed.">                for (int row = yOffset; row &lt; tmp.getHeight(); row++) {</span>
-<span class="nc" id="L2056">                    int v = tmp.getValue(col, row);</span>
-<span class="nc" id="L2057">                    input.setValue(x, y, v);</span>
-<span class="nc" id="L2058">                    y++;</span>
+<span class="fc" id="L2142">            int x = 0;</span>
+<span class="fc bfc" id="L2143" title="All 2 branches covered.">            for (int col = xOffset; col &lt; tmp.getWidth(); col++) {</span>
+<span class="fc" id="L2144">                int y = 0;</span>
+<span class="fc bfc" id="L2145" title="All 2 branches covered.">                for (int row = yOffset; row &lt; tmp.getHeight(); row++) {</span>
+<span class="fc" id="L2146">                    int v = tmp.getValue(col, row);</span>
+<span class="fc" id="L2147">                    input.setValue(x, y, v);</span>
+<span class="fc" id="L2148">                    y++;</span>
                 }
-<span class="nc" id="L2060">                x++;</span>
+<span class="fc" id="L2150">                x++;</span>
              }
-<span class="nc" id="L2062">            input.setXRelativeOffset(xOffsetOrig);</span>
-<span class="nc" id="L2063">            input.setYRelativeOffset(yOffsetOrig);</span>
+<span class="fc" id="L2152">            input.setXRelativeOffset(xOffsetOrig);</span>
+<span class="fc" id="L2153">            input.setYRelativeOffset(yOffsetOrig);</span>
         }
-<span class="nc" id="L2065">    }</span>
+<span class="fc" id="L2155">    }</span>
 
     protected Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {
 
         // perform FFT by column
-<span class="fc bfc" id="L2070" title="All 2 branches covered.">        for (int col = 0; col &lt; cc.length; col++) {</span>
-<span class="fc bfc" id="L2071" title="All 2 branches covered.">            if (forward) {</span>
-<span class="fc" id="L2072">                cc[col] = FFT.fft(cc[col]);</span>
+<span class="fc bfc" id="L2160" title="All 2 branches covered.">        for (int col = 0; col &lt; cc.length; col++) {</span>
+<span class="fc bfc" id="L2161" title="All 2 branches covered.">            if (forward) {</span>
+<span class="fc" id="L2162">                cc[col] = FFT.fft(cc[col]);</span>
             } else {
-<span class="fc" id="L2074">                cc[col] = FFT.ifft(cc[col]);</span>
+<span class="fc" id="L2164">                cc[col] = FFT.ifft(cc[col]);</span>
             }
         }
 
 
         //transpose the matrix
-<span class="fc" id="L2080">        cc = MatrixUtil.transpose(cc);</span>
+<span class="fc" id="L2170">        cc = MatrixUtil.transpose(cc);</span>
 
         // perform FFT by column (originally rows)
-<span class="fc bfc" id="L2083" title="All 2 branches covered.">        for (int col = 0; col &lt; cc.length; col++) {</span>
-<span class="fc bfc" id="L2084" title="All 2 branches covered.">            if (forward) {</span>
-<span class="fc" id="L2085">                cc[col] = FFT.fft(cc[col]);</span>
+<span class="fc bfc" id="L2173" title="All 2 branches covered.">        for (int col = 0; col &lt; cc.length; col++) {</span>
+<span class="fc bfc" id="L2174" title="All 2 branches covered.">            if (forward) {</span>
+<span class="fc" id="L2175">                cc[col] = FFT.fft(cc[col]);</span>
             } else {
-<span class="fc" id="L2087">                cc[col] = FFT.ifft(cc[col]);</span>
+<span class="fc" id="L2177">                cc[col] = FFT.ifft(cc[col]);</span>
             }
         }
 
         //transpose the matrix
-<span class="fc" id="L2092">        cc = MatrixUtil.transpose(cc);</span>
+<span class="fc" id="L2182">        cc = MatrixUtil.transpose(cc);</span>
 
 
-<span class="fc" id="L2095">        return cc;</span>
+<span class="fc" id="L2185">        return cc;</span>
     }
 
     public void writeToImage(GreyscaleImage img, Complex[][] cc) {
 
-<span class="fc" id="L2100">        img.fill(0);</span>
+<span class="fc" id="L2190">        img.fill(0);</span>
 
         // write back to original image
-<span class="fc bfc" id="L2103" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L2104" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L2105">                double re = cc[col][row].re();</span>
-<span class="fc" id="L2106">                double a = cc[col][row].abs();</span>
-<span class="fc" id="L2107">                double p = cc[col][row].phase();</span>
-<span class="fc" id="L2108">                img.setValue(col, row, (int)re);</span>
+<span class="fc bfc" id="L2193" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="fc bfc" id="L2194" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="fc" id="L2195">                double re = cc[col][row].re();</span>
+<span class="fc" id="L2196">                double a = cc[col][row].abs();</span>
+<span class="fc" id="L2197">                double p = cc[col][row].phase();</span>
+<span class="fc" id="L2198">                img.setValue(col, row, (int)re);</span>
             }
         }
 
-<span class="fc" id="L2112">    }</span>
+<span class="fc" id="L2202">    }</span>
 
     public void writePositiveRealToImage(GreyscaleImage img, Complex[][] cc) {
 
-<span class="fc" id="L2116">        img.fill(0);</span>
+<span class="fc" id="L2206">        img.fill(0);</span>
 
         // write back to original image
-<span class="fc bfc" id="L2119" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L2120" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L2121">                double re = cc[col][row].re();</span>
-<span class="fc" id="L2122">                double a = cc[col][row].abs();</span>
-<span class="fc" id="L2123">                double p = cc[col][row].phase();</span>
-<span class="fc bfc" id="L2124" title="All 2 branches covered.">                if (re &gt; 0) {</span>
-<span class="fc" id="L2125">                    img.setValue(col, row, (int)re);</span>
+<span class="fc bfc" id="L2209" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="fc bfc" id="L2210" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="fc" id="L2211">                double re = cc[col][row].re();</span>
+<span class="fc" id="L2212">                double a = cc[col][row].abs();</span>
+<span class="fc" id="L2213">                double p = cc[col][row].phase();</span>
+<span class="fc bfc" id="L2214" title="All 2 branches covered.">                if (re &gt; 0) {</span>
+<span class="fc" id="L2215">                    img.setValue(col, row, (int)re);</span>
                 }
             }
         }
 
-<span class="fc" id="L2130">    }</span>
+<span class="fc" id="L2220">    }</span>
 
     protected Complex[][] convertImage(GreyscaleImage input) {
 
         // initialize matrix of complex numbers as real numbers from image
-<span class="fc" id="L2135">        Complex[][] cc = new Complex[input.getWidth()][];</span>
+<span class="fc" id="L2225">        Complex[][] cc = new Complex[input.getWidth()][];</span>
 
-<span class="fc bfc" id="L2137" title="All 2 branches covered.">        for (int col = 0; col &lt; input.getWidth(); col++) {</span>
+<span class="fc bfc" id="L2227" title="All 2 branches covered.">        for (int col = 0; col &lt; input.getWidth(); col++) {</span>
 
-<span class="fc" id="L2139">            cc[col] = new Complex[input.getHeight()];</span>
+<span class="fc" id="L2229">            cc[col] = new Complex[input.getHeight()];</span>
 
-<span class="fc bfc" id="L2141" title="All 2 branches covered.">            for (int row = 0; row &lt; input.getHeight(); row++) {</span>
-<span class="fc" id="L2142">                cc[col][row] = new Complex(input.getValue(col, row), 0);</span>
+<span class="fc bfc" id="L2231" title="All 2 branches covered.">            for (int row = 0; row &lt; input.getHeight(); row++) {</span>
+<span class="fc" id="L2232">                cc[col][row] = new Complex(input.getValue(col, row), 0);</span>
             }
         }
 
-<span class="fc" id="L2146">        return cc;</span>
+<span class="fc" id="L2236">        return cc;</span>
     }
 
     /**
@@ -2155,9 +2245,9 @@ import java.util.logging.Logger;
 
         //TODO NOT READY FOR USE YET...
 
-<span class="fc" id="L2158">        applyWienerFilter(input);</span>
+<span class="fc" id="L2248">        applyWienerFilter(input);</span>
 
-<span class="fc" id="L2160">    }</span>
+<span class="fc" id="L2250">    }</span>
 
     /**
      * NOT READY FOR USE YET
@@ -2168,46 +2258,46 @@ import java.util.logging.Logger;
 
         //TODO NOT READY FOR USE YET...
 
-<span class="fc" id="L2171">        CannyEdgeFilter cef = new CannyEdgeFilter();</span>
+<span class="fc" id="L2261">        CannyEdgeFilter cef = new CannyEdgeFilter();</span>
 
         // note, this is not scaled for total sum = 1 yet
-<span class="fc" id="L2174">        GreyscaleImage psf = cef.createGradientPSFForTesting();</span>
-<span class="fc" id="L2175">        double sum = 0;</span>
-<span class="fc bfc" id="L2176" title="All 2 branches covered.">        for (int col = 0; col &lt; psf.getWidth(); col++) {</span>
-<span class="fc bfc" id="L2177" title="All 2 branches covered.">            for (int row = 0; row &lt; psf.getHeight(); row++) {</span>
-<span class="fc" id="L2178">                int v = psf.getValue(col, row);</span>
-<span class="fc" id="L2179">                sum += v;</span>
+<span class="fc" id="L2264">        GreyscaleImage psf = cef.createGradientPSFForTesting();</span>
+<span class="fc" id="L2265">        double sum = 0;</span>
+<span class="fc bfc" id="L2266" title="All 2 branches covered.">        for (int col = 0; col &lt; psf.getWidth(); col++) {</span>
+<span class="fc bfc" id="L2267" title="All 2 branches covered.">            for (int row = 0; row &lt; psf.getHeight(); row++) {</span>
+<span class="fc" id="L2268">                int v = psf.getValue(col, row);</span>
+<span class="fc" id="L2269">                sum += v;</span>
             }
         }
-<span class="fc" id="L2182">        psf = padToNearestPowerOf2Dimensions(psf);</span>
-<span class="fc" id="L2183">        Complex[][] psfNorm = new Complex[psf.getWidth()][];</span>
-<span class="fc bfc" id="L2184" title="All 2 branches covered.">        for (int col = 0; col &lt; psf.getWidth(); col++) {</span>
-<span class="fc" id="L2185">            psfNorm[col] = new Complex[psf.getHeight()];</span>
-<span class="fc bfc" id="L2186" title="All 2 branches covered.">            for (int row = 0; row &lt; psf.getHeight(); row++) {</span>
-<span class="fc" id="L2187">                int v = psf.getValue(col, row);</span>
-<span class="fc" id="L2188">                double vn = v / sum;</span>
-<span class="fc" id="L2189">                psfNorm[col][row] = new Complex(vn, 0);</span>
+<span class="fc" id="L2272">        psf = padToNearestPowerOf2Dimensions(psf);</span>
+<span class="fc" id="L2273">        Complex[][] psfNorm = new Complex[psf.getWidth()][];</span>
+<span class="fc bfc" id="L2274" title="All 2 branches covered.">        for (int col = 0; col &lt; psf.getWidth(); col++) {</span>
+<span class="fc" id="L2275">            psfNorm[col] = new Complex[psf.getHeight()];</span>
+<span class="fc bfc" id="L2276" title="All 2 branches covered.">            for (int row = 0; row &lt; psf.getHeight(); row++) {</span>
+<span class="fc" id="L2277">                int v = psf.getValue(col, row);</span>
+<span class="fc" id="L2278">                double vn = v / sum;</span>
+<span class="fc" id="L2279">                psfNorm[col][row] = new Complex(vn, 0);</span>
             }
         }
-<span class="fc" id="L2192">        psfNorm = apply2DFFT(psfNorm, true);</span>
+<span class="fc" id="L2282">        psfNorm = apply2DFFT(psfNorm, true);</span>
 
         // filter out low values?
-<span class="fc bfc" id="L2195" title="All 2 branches covered.">        for (int i = 0; i &lt; psfNorm.length; i++) {</span>
-<span class="fc bfc" id="L2196" title="All 2 branches covered.">            for (int j = 0; j &lt; psfNorm[0].length; j++) {</span>
-<span class="fc" id="L2197">                double r = psfNorm[i][j].re();</span>
-<span class="fc bfc" id="L2198" title="All 2 branches covered.">                if (r &lt; 0.1) {</span>
-<span class="fc" id="L2199">                    psfNorm[i][j] = new Complex(0, 0);</span>
+<span class="fc bfc" id="L2285" title="All 2 branches covered.">        for (int i = 0; i &lt; psfNorm.length; i++) {</span>
+<span class="fc bfc" id="L2286" title="All 2 branches covered.">            for (int j = 0; j &lt; psfNorm[0].length; j++) {</span>
+<span class="fc" id="L2287">                double r = psfNorm[i][j].re();</span>
+<span class="fc bfc" id="L2288" title="All 2 branches covered.">                if (r &lt; 0.1) {</span>
+<span class="fc" id="L2289">                    psfNorm[i][j] = new Complex(0, 0);</span>
                 }
             }
         }
 
-<span class="fc" id="L2204">        GreyscaleImage img0 = padToNearestPowerOf2Dimensions(input);</span>
+<span class="fc" id="L2294">        GreyscaleImage img0 = padToNearestPowerOf2Dimensions(input);</span>
 
-<span class="fc" id="L2206">        ImageDisplayer.displayImage(&quot;before deconv&quot;, img0);</span>
+<span class="fc" id="L2296">        ImageDisplayer.displayImage(&quot;before deconv&quot;, img0);</span>
 
-<span class="fc" id="L2208">        Complex[][] imgCC = convertImage(img0);</span>
+<span class="fc" id="L2298">        Complex[][] imgCC = convertImage(img0);</span>
 
-<span class="fc" id="L2210">        Complex[][] imgFFT = apply2DFFT(imgCC, true);</span>
+<span class="fc" id="L2300">        Complex[][] imgFFT = apply2DFFT(imgCC, true);</span>
 
         /*
         complex division:
@@ -2222,16 +2312,16 @@ import java.util.logging.Logger;
             imag = a.re * b.im + a.im * b.re;
         */
 
-<span class="fc" id="L2225">        Complex[][] ccDeconv = new Complex[imgFFT.length][];</span>
-<span class="fc" id="L2226">        int pXH =  psfNorm.length &gt;&gt; 1;</span>
-<span class="fc" id="L2227">        int pYH =  psfNorm[0].length &gt;&gt; 1;</span>
-<span class="fc bfc" id="L2228" title="All 2 branches covered.">        for (int col = 0; col &lt; imgFFT.length; col++) {</span>
+<span class="fc" id="L2315">        Complex[][] ccDeconv = new Complex[imgFFT.length][];</span>
+<span class="fc" id="L2316">        int pXH =  psfNorm.length &gt;&gt; 1;</span>
+<span class="fc" id="L2317">        int pYH =  psfNorm[0].length &gt;&gt; 1;</span>
+<span class="fc bfc" id="L2318" title="All 2 branches covered.">        for (int col = 0; col &lt; imgFFT.length; col++) {</span>
 
-<span class="fc" id="L2230">            ccDeconv[col] = new Complex[imgFFT[0].length];</span>
+<span class="fc" id="L2320">            ccDeconv[col] = new Complex[imgFFT[0].length];</span>
 
-<span class="fc bfc" id="L2232" title="All 2 branches covered.">            for (int row = 0; row &lt; imgFFT[0].length; row++) {</span>
+<span class="fc bfc" id="L2322" title="All 2 branches covered.">            for (int row = 0; row &lt; imgFFT[0].length; row++) {</span>
 
-<span class="fc" id="L2234">                Complex v = imgFFT[col][row];</span>
+<span class="fc" id="L2324">                Complex v = imgFFT[col][row];</span>
 
                 // for convolution, each element of kernel and neighboring
                 // pixel (including center pixel) were multiplied and result
@@ -2239,143 +2329,143 @@ import java.util.logging.Logger;
 
                 // for deconvolution, the sums of the division are calculated
 
-<span class="fc" id="L2242">                Complex pixSum = new Complex(v.re(), v.im());</span>
+<span class="fc" id="L2332">                Complex pixSum = new Complex(v.re(), v.im());</span>
 
-<span class="fc bfc" id="L2244" title="All 2 branches covered.">                for (int pXIdx = 0; pXIdx &lt; psfNorm.length; pXIdx++) {</span>
-<span class="fc" id="L2245">                    int pixXIdx = col + (pXIdx - pXH);</span>
+<span class="fc bfc" id="L2334" title="All 2 branches covered.">                for (int pXIdx = 0; pXIdx &lt; psfNorm.length; pXIdx++) {</span>
+<span class="fc" id="L2335">                    int pixXIdx = col + (pXIdx - pXH);</span>
 
                     // correct for out of bounds of image
-<span class="fc bfc" id="L2248" title="All 2 branches covered.">                    if (pixXIdx &lt; 0) {</span>
+<span class="fc bfc" id="L2338" title="All 2 branches covered.">                    if (pixXIdx &lt; 0) {</span>
                         // replicate
-<span class="fc" id="L2250">                        pixXIdx = -1*pixXIdx - 1;</span>
-<span class="pc bpc" id="L2251" title="1 of 2 branches missed.">                        if (pixXIdx &gt; (img0.getWidth() - 1)) {</span>
-<span class="nc" id="L2252">                            pixXIdx = img0.getWidth() - 1;</span>
+<span class="fc" id="L2340">                        pixXIdx = -1*pixXIdx - 1;</span>
+<span class="pc bpc" id="L2341" title="1 of 2 branches missed.">                        if (pixXIdx &gt; (img0.getWidth() - 1)) {</span>
+<span class="nc" id="L2342">                            pixXIdx = img0.getWidth() - 1;</span>
                         }
-<span class="fc bfc" id="L2254" title="All 2 branches covered.">                    } else if (pixXIdx &gt;= img0.getWidth()) {</span>
-<span class="fc" id="L2255">                        int diff = pixXIdx - img0.getWidth();</span>
-<span class="fc" id="L2256">                        pixXIdx = img0.getWidth() - diff - 1;</span>
-<span class="pc bpc" id="L2257" title="1 of 2 branches missed.">                        if (pixXIdx &lt; 0) {</span>
-<span class="nc" id="L2258">                            pixXIdx = 0;</span>
+<span class="fc bfc" id="L2344" title="All 2 branches covered.">                    } else if (pixXIdx &gt;= img0.getWidth()) {</span>
+<span class="fc" id="L2345">                        int diff = pixXIdx - img0.getWidth();</span>
+<span class="fc" id="L2346">                        pixXIdx = img0.getWidth() - diff - 1;</span>
+<span class="pc bpc" id="L2347" title="1 of 2 branches missed.">                        if (pixXIdx &lt; 0) {</span>
+<span class="nc" id="L2348">                            pixXIdx = 0;</span>
                         }
                     }
 
-<span class="fc bfc" id="L2262" title="All 2 branches covered.">                    for (int pYIdx = 0; pYIdx &lt; psfNorm.length; pYIdx++) {</span>
+<span class="fc bfc" id="L2352" title="All 2 branches covered.">                    for (int pYIdx = 0; pYIdx &lt; psfNorm.length; pYIdx++) {</span>
 
-<span class="fc bfc" id="L2264" title="All 2 branches covered.">                        if (psfNorm[pXIdx][pYIdx].abs() == 0) {</span>
-<span class="fc" id="L2265">                            continue;</span>
+<span class="fc bfc" id="L2354" title="All 2 branches covered.">                        if (psfNorm[pXIdx][pYIdx].abs() == 0) {</span>
+<span class="fc" id="L2355">                            continue;</span>
                         }
 
-<span class="fc" id="L2268">                        int pixYIdx = row + (pYIdx - pYH);</span>
+<span class="fc" id="L2358">                        int pixYIdx = row + (pYIdx - pYH);</span>
 
                         // correct for out of bounds of image
-<span class="fc bfc" id="L2271" title="All 2 branches covered.">                        if (pixYIdx &lt; 0) {</span>
+<span class="fc bfc" id="L2361" title="All 2 branches covered.">                        if (pixYIdx &lt; 0) {</span>
                             // replicate
-<span class="fc" id="L2273">                            pixYIdx = -1*pixYIdx - 1;</span>
-<span class="pc bpc" id="L2274" title="1 of 2 branches missed.">                            if (pixYIdx &gt; (img0.getHeight() - 1)) {</span>
-<span class="nc" id="L2275">                                pixYIdx = img0.getHeight() - 1;</span>
+<span class="fc" id="L2363">                            pixYIdx = -1*pixYIdx - 1;</span>
+<span class="pc bpc" id="L2364" title="1 of 2 branches missed.">                            if (pixYIdx &gt; (img0.getHeight() - 1)) {</span>
+<span class="nc" id="L2365">                                pixYIdx = img0.getHeight() - 1;</span>
                             }
-<span class="fc bfc" id="L2277" title="All 2 branches covered.">                        } else if (pixYIdx &gt;= img0.getHeight()) {</span>
-<span class="fc" id="L2278">                            int diff = pixYIdx - img0.getHeight();</span>
-<span class="fc" id="L2279">                            pixYIdx = img0.getHeight() - diff - 1;</span>
-<span class="pc bpc" id="L2280" title="1 of 2 branches missed.">                            if (pixYIdx &lt; 0) {</span>
-<span class="nc" id="L2281">                                pixYIdx = 0;</span>
+<span class="fc bfc" id="L2367" title="All 2 branches covered.">                        } else if (pixYIdx &gt;= img0.getHeight()) {</span>
+<span class="fc" id="L2368">                            int diff = pixYIdx - img0.getHeight();</span>
+<span class="fc" id="L2369">                            pixYIdx = img0.getHeight() - diff - 1;</span>
+<span class="pc bpc" id="L2370" title="1 of 2 branches missed.">                            if (pixYIdx &lt; 0) {</span>
+<span class="nc" id="L2371">                                pixYIdx = 0;</span>
                             }
                         }
 
-<span class="fc" id="L2285">                        Complex vk = imgFFT[pixXIdx][pixYIdx];</span>
+<span class="fc" id="L2375">                        Complex vk = imgFFT[pixXIdx][pixYIdx];</span>
 
-<span class="pc bpc" id="L2287" title="1 of 2 branches missed.">                        if (vk.abs() == 0) {</span>
-<span class="nc" id="L2288">                            continue;</span>
+<span class="pc bpc" id="L2377" title="1 of 2 branches missed.">                        if (vk.abs() == 0) {</span>
+<span class="nc" id="L2378">                            continue;</span>
                         }
 
-<span class="fc" id="L2291">                        Complex kRecip = psfNorm[pXIdx][pYIdx].reciprocal();</span>
+<span class="fc" id="L2381">                        Complex kRecip = psfNorm[pXIdx][pYIdx].reciprocal();</span>
 
-<span class="fc" id="L2293">                        Complex vDivPSF = vk.times(kRecip);</span>
+<span class="fc" id="L2383">                        Complex vDivPSF = vk.times(kRecip);</span>
 
-<span class="fc" id="L2295">                        pixSum = pixSum.plus(vDivPSF);</span>
+<span class="fc" id="L2385">                        pixSum = pixSum.plus(vDivPSF);</span>
                     }
                 }
 
 
-<span class="fc" id="L2300">                ccDeconv[col][row] = pixSum;</span>
+<span class="fc" id="L2390">                ccDeconv[col][row] = pixSum;</span>
             }
         }
 
-<span class="fc" id="L2304">        GreyscaleImage img2 = img0.createFullRangeIntWithDimensions();</span>
+<span class="fc" id="L2394">        GreyscaleImage img2 = img0.createFullRangeIntWithDimensions();</span>
 
-<span class="fc" id="L2306">        writePositiveRealToImage(img2, ccDeconv);</span>
+<span class="fc" id="L2396">        writePositiveRealToImage(img2, ccDeconv);</span>
 
-<span class="fc" id="L2308">        ImageDisplayer.displayImage(&quot;FFT(img0)/FFT(PSF)&quot;, img2);</span>
-
-
-<span class="fc" id="L2311">        Complex[][] inverse = apply2DFFT(ccDeconv, false);</span>
-
-<span class="fc" id="L2313">        GreyscaleImage img4 = img0.createFullRangeIntWithDimensions();</span>
-
-<span class="fc" id="L2315">        writePositiveRealToImage(img4, inverse);</span>
-
-<span class="fc" id="L2317">        ImageDisplayer.displayImage(&quot;ifft of FFT(img0)/FFT(PSF)&quot;, img4);</span>
+<span class="fc" id="L2398">        ImageDisplayer.displayImage(&quot;FFT(img0)/FFT(PSF)&quot;, img2);</span>
 
 
-<span class="fc bfc" id="L2320" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
-<span class="fc bfc" id="L2321" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L2322">                double f = inverse[i][j].re();</span>
-<span class="fc" id="L2323">                int v = input.getValue(i, j);</span>
-<span class="fc bfc" id="L2324" title="All 4 branches covered.">                if (v &gt; 0 &amp;&amp; f &gt; 0) {</span>
+<span class="fc" id="L2401">        Complex[][] inverse = apply2DFFT(ccDeconv, false);</span>
+
+<span class="fc" id="L2403">        GreyscaleImage img4 = img0.createFullRangeIntWithDimensions();</span>
+
+<span class="fc" id="L2405">        writePositiveRealToImage(img4, inverse);</span>
+
+<span class="fc" id="L2407">        ImageDisplayer.displayImage(&quot;ifft of FFT(img0)/FFT(PSF)&quot;, img4);</span>
+
+
+<span class="fc bfc" id="L2410" title="All 2 branches covered.">        for (int i = 0; i &lt; input.getWidth(); i++) {</span>
+<span class="fc bfc" id="L2411" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L2412">                double f = inverse[i][j].re();</span>
+<span class="fc" id="L2413">                int v = input.getValue(i, j);</span>
+<span class="fc bfc" id="L2414" title="All 4 branches covered.">                if (v &gt; 0 &amp;&amp; f &gt; 0) {</span>
                     // apply it to the original image?  f*v or v or f?
-<span class="fc" id="L2326">                    input.setValue(i, j, v);</span>
+<span class="fc" id="L2416">                    input.setValue(i, j, v);</span>
                 } else {
-<span class="fc" id="L2328">                    input.setValue(i, j, 0);</span>
+<span class="fc" id="L2418">                    input.setValue(i, j, 0);</span>
                 }
             }
         }
-<span class="fc" id="L2332">    }</span>
+<span class="fc" id="L2422">    }</span>
 
     public GreyscaleImage padToNearestPowerOf2Dimensions(GreyscaleImage img) {
 
-<span class="fc" id="L2336">        int w = img.getWidth();</span>
-<span class="fc" id="L2337">        int h = img.getHeight();</span>
+<span class="fc" id="L2426">        int w = img.getWidth();</span>
+<span class="fc" id="L2427">        int h = img.getHeight();</span>
 
-<span class="fc" id="L2339">        boolean xIsPowerOf2 = MiscMath.isAPowerOf2(w);</span>
-<span class="fc" id="L2340">        boolean yIsPowerOf2 = MiscMath.isAPowerOf2(h);</span>
-<span class="pc bpc" id="L2341" title="1 of 4 branches missed.">        if (xIsPowerOf2 &amp;&amp; yIsPowerOf2) {</span>
-<span class="fc" id="L2342">            return img;</span>
+<span class="fc" id="L2429">        boolean xIsPowerOf2 = MiscMath.isAPowerOf2(w);</span>
+<span class="fc" id="L2430">        boolean yIsPowerOf2 = MiscMath.isAPowerOf2(h);</span>
+<span class="pc bpc" id="L2431" title="1 of 4 branches missed.">        if (xIsPowerOf2 &amp;&amp; yIsPowerOf2) {</span>
+<span class="fc" id="L2432">            return img;</span>
         }
 
-<span class="fc" id="L2345">        int w2 = w;</span>
-<span class="fc" id="L2346">        int h2 = h;</span>
-<span class="pc bpc" id="L2347" title="1 of 2 branches missed.">        if (!xIsPowerOf2) {</span>
-<span class="fc" id="L2348">            double p2X = Math.ceil(Math.log(w)/Math.log(2));</span>
-<span class="fc" id="L2349">            w2 = (1 &lt;&lt; (int)p2X);</span>
+<span class="fc" id="L2435">        int w2 = w;</span>
+<span class="fc" id="L2436">        int h2 = h;</span>
+<span class="pc bpc" id="L2437" title="1 of 2 branches missed.">        if (!xIsPowerOf2) {</span>
+<span class="fc" id="L2438">            double p2X = Math.ceil(Math.log(w)/Math.log(2));</span>
+<span class="fc" id="L2439">            w2 = (1 &lt;&lt; (int)p2X);</span>
         }
-<span class="pc bpc" id="L2351" title="1 of 2 branches missed.">        if (!yIsPowerOf2) {</span>
-<span class="fc" id="L2352">            double p2Y = Math.ceil(Math.log(h)/Math.log(2));</span>
-<span class="fc" id="L2353">            h2 = (1 &lt;&lt; (int)p2Y);</span>
+<span class="pc bpc" id="L2441" title="1 of 2 branches missed.">        if (!yIsPowerOf2) {</span>
+<span class="fc" id="L2442">            double p2Y = Math.ceil(Math.log(h)/Math.log(2));</span>
+<span class="fc" id="L2443">            h2 = (1 &lt;&lt; (int)p2Y);</span>
         }
 
-<span class="fc" id="L2356">        GreyscaleImage img2 = new GreyscaleImage(w2, h2, img.getType());</span>
+<span class="fc" id="L2446">        GreyscaleImage img2 = new GreyscaleImage(w2, h2, img.getType());</span>
 
-<span class="fc bfc" id="L2358" title="All 2 branches covered.">        for (int col = 0; col &lt; w; col++) {</span>
-<span class="fc bfc" id="L2359" title="All 2 branches covered.">            for (int row = 0; row &lt; h; row++) {</span>
-<span class="fc" id="L2360">                int v = img.getValue(col, row);</span>
-<span class="fc" id="L2361">                img2.setValue(col, row, v);</span>
+<span class="fc bfc" id="L2448" title="All 2 branches covered.">        for (int col = 0; col &lt; w; col++) {</span>
+<span class="fc bfc" id="L2449" title="All 2 branches covered.">            for (int row = 0; row &lt; h; row++) {</span>
+<span class="fc" id="L2450">                int v = img.getValue(col, row);</span>
+<span class="fc" id="L2451">                img2.setValue(col, row, v);</span>
             }
-<span class="pc bpc" id="L2363" title="1 of 2 branches missed.">            if (h2 &gt; h) {</span>
-<span class="fc bfc" id="L2364" title="All 2 branches covered.">                for (int row = h; row &lt; h2; row++) {</span>
-<span class="fc" id="L2365">                    img2.setValue(col, row, 0);</span>
+<span class="pc bpc" id="L2453" title="1 of 2 branches missed.">            if (h2 &gt; h) {</span>
+<span class="fc bfc" id="L2454" title="All 2 branches covered.">                for (int row = h; row &lt; h2; row++) {</span>
+<span class="fc" id="L2455">                    img2.setValue(col, row, 0);</span>
                 }
             }
         }
 
-<span class="pc bpc" id="L2370" title="1 of 2 branches missed.">        if (!xIsPowerOf2) {</span>
-<span class="fc bfc" id="L2371" title="All 2 branches covered.">            for (int col = w; col &lt; w2; col++) {</span>
-<span class="fc bfc" id="L2372" title="All 2 branches covered.">                for (int row = 0; row &lt; h2; row++) {</span>
-<span class="fc" id="L2373">                    img2.setValue(col, row, 0);</span>
+<span class="pc bpc" id="L2460" title="1 of 2 branches missed.">        if (!xIsPowerOf2) {</span>
+<span class="fc bfc" id="L2461" title="All 2 branches covered.">            for (int col = w; col &lt; w2; col++) {</span>
+<span class="fc bfc" id="L2462" title="All 2 branches covered.">                for (int row = 0; row &lt; h2; row++) {</span>
+<span class="fc" id="L2463">                    img2.setValue(col, row, 0);</span>
                 }
             }
         }
 
-<span class="fc" id="L2378">        return img2;</span>
+<span class="fc" id="L2468">        return img2;</span>
     }
 
     /**
@@ -2386,32 +2476,32 @@ import java.util.logging.Logger;
      */
     public Set&lt;PairInt&gt; readNonZeroPixels(GreyscaleImage img) {
 
-<span class="fc" id="L2389">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L2479">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc bfc" id="L2391" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L2392" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L2393">                int v = img.getValue(col, row);</span>
-<span class="fc bfc" id="L2394" title="All 2 branches covered.">                if (v != 0) {</span>
-<span class="fc" id="L2395">                    set.add(new PairInt(col, row));</span>
+<span class="fc bfc" id="L2481" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="fc bfc" id="L2482" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="fc" id="L2483">                int v = img.getValue(col, row);</span>
+<span class="fc bfc" id="L2484" title="All 2 branches covered.">                if (v != 0) {</span>
+<span class="fc" id="L2485">                    set.add(new PairInt(col, row));</span>
                 }
             }
         }
 
-<span class="fc" id="L2400">        return set;</span>
+<span class="fc" id="L2490">        return set;</span>
     }
 
     public void writeAsBinaryToImage(GreyscaleImage img, Set&lt;PairInt&gt;
         nonZeroPoints) {
 
-<span class="fc" id="L2406">        img.fill(0);</span>
+<span class="fc" id="L2496">        img.fill(0);</span>
 
-<span class="fc bfc" id="L2408" title="All 2 branches covered.">        for (PairInt p : nonZeroPoints) {</span>
-<span class="fc" id="L2409">            int x = p.getX();</span>
-<span class="fc" id="L2410">            int y = p.getY();</span>
-<span class="fc" id="L2411">            img.setValue(x, y, 1);</span>
-<span class="fc" id="L2412">        }</span>
+<span class="fc bfc" id="L2498" title="All 2 branches covered.">        for (PairInt p : nonZeroPoints) {</span>
+<span class="fc" id="L2499">            int x = p.getX();</span>
+<span class="fc" id="L2500">            int y = p.getY();</span>
+<span class="fc" id="L2501">            img.setValue(x, y, 1);</span>
+<span class="fc" id="L2502">        }</span>
 
-<span class="fc" id="L2414">    }</span>
+<span class="fc" id="L2504">    }</span>
 
     /**
      * find contiguous zeros in image and if the number of pixels in a groups
@@ -2423,70 +2513,70 @@ import java.util.logging.Logger;
     public void fillInPixels(GreyscaleImage img, final int valueToFill,
         final int contiguousZerosLimit) {
 
-<span class="nc" id="L2426">        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);</span>
-<span class="nc" id="L2427">        finder.setMinimumNumberInCluster(1);</span>
-<span class="nc" id="L2428">        finder.findGroups(valueToFill);</span>
+<span class="nc" id="L2516">        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);</span>
+<span class="nc" id="L2517">        finder.setMinimumNumberInCluster(1);</span>
+<span class="nc" id="L2518">        finder.findGroups(valueToFill);</span>
 
-<span class="nc" id="L2430">        int nGroups = finder.getNumberOfGroups();</span>
+<span class="nc" id="L2520">        int nGroups = finder.getNumberOfGroups();</span>
 
-<span class="nc bnc" id="L2432" title="All 2 branches missed.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="nc bnc" id="L2522" title="All 2 branches missed.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
 
-<span class="nc" id="L2434">            int n = finder.getNumberofGroupMembers(i);</span>
+<span class="nc" id="L2524">            int n = finder.getNumberofGroupMembers(i);</span>
 
-<span class="nc bnc" id="L2436" title="All 2 branches missed.">            if (n &lt;= contiguousZerosLimit) {</span>
+<span class="nc bnc" id="L2526" title="All 2 branches missed.">            if (n &lt;= contiguousZerosLimit) {</span>
 
-<span class="nc" id="L2438">                PairIntArray group = finder.getXY(i);</span>
+<span class="nc" id="L2528">                PairIntArray group = finder.getXY(i);</span>
 
                 // find the adjacent non-zero pixels to these
-<span class="nc" id="L2441">                Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L2442" title="All 2 branches missed.">                for (int j = 0; j &lt; group.getN(); ++j)  {</span>
-<span class="nc" id="L2443">                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j),</span>
+<span class="nc" id="L2531">                Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L2532" title="All 2 branches missed.">                for (int j = 0; j &lt; group.getN(); ++j)  {</span>
+<span class="nc" id="L2533">                    getNeighborsNotThisValue(img, group.getX(j), group.getY(j),</span>
                         valueToFill, neighbors);
                 }
 
                 // get thier average intensities
-<span class="nc" id="L2448">                double avgV = 0;</span>
-<span class="nc bnc" id="L2449" title="All 2 branches missed.">                for (PairInt p : neighbors) {</span>
-<span class="nc" id="L2450">                    int v = img.getValue(p.getX(), p.getY());</span>
-<span class="nc" id="L2451">                    avgV += v;</span>
-<span class="nc" id="L2452">                }</span>
-<span class="nc" id="L2453">                avgV /= (double)neighbors.size();</span>
-<span class="nc" id="L2454">                int vRepl = Math.round((float)avgV);</span>
-<span class="nc bnc" id="L2455" title="All 2 branches missed.">                for (int j = 0; j &lt; group.getN(); ++j)  {</span>
-<span class="nc" id="L2456">                    int x = group.getX(j);</span>
-<span class="nc" id="L2457">                    int y = group.getY(j);</span>
-<span class="nc" id="L2458">                    img.setValue(x, y, vRepl);</span>
+<span class="nc" id="L2538">                double avgV = 0;</span>
+<span class="nc bnc" id="L2539" title="All 2 branches missed.">                for (PairInt p : neighbors) {</span>
+<span class="nc" id="L2540">                    int v = img.getValue(p.getX(), p.getY());</span>
+<span class="nc" id="L2541">                    avgV += v;</span>
+<span class="nc" id="L2542">                }</span>
+<span class="nc" id="L2543">                avgV /= (double)neighbors.size();</span>
+<span class="nc" id="L2544">                int vRepl = Math.round((float)avgV);</span>
+<span class="nc bnc" id="L2545" title="All 2 branches missed.">                for (int j = 0; j &lt; group.getN(); ++j)  {</span>
+<span class="nc" id="L2546">                    int x = group.getX(j);</span>
+<span class="nc" id="L2547">                    int y = group.getY(j);</span>
+<span class="nc" id="L2548">                    img.setValue(x, y, vRepl);</span>
                 }
             }
         }
 
-<span class="nc" id="L2463">    }</span>
+<span class="nc" id="L2553">    }</span>
 
     public void getNeighborsNotThisValue(GreyscaleImage input, int x, int y,
         final int value, Set&lt;PairInt&gt; outputNeighbors) {
 
-<span class="nc" id="L2468">        int width = input.getWidth();</span>
-<span class="nc" id="L2469">        int height = input.getHeight();</span>
+<span class="nc" id="L2558">        int width = input.getWidth();</span>
+<span class="nc" id="L2559">        int height = input.getHeight();</span>
 
-<span class="nc bnc" id="L2471" title="All 2 branches missed.">        for (int c = (x - 1); c &lt;= (x + 1); c++) {</span>
-<span class="nc bnc" id="L2472" title="All 4 branches missed.">            if ((c &lt; 0) || (c &gt; (width - 1))) {</span>
-<span class="nc" id="L2473">                continue;</span>
+<span class="nc bnc" id="L2561" title="All 2 branches missed.">        for (int c = (x - 1); c &lt;= (x + 1); c++) {</span>
+<span class="nc bnc" id="L2562" title="All 4 branches missed.">            if ((c &lt; 0) || (c &gt; (width - 1))) {</span>
+<span class="nc" id="L2563">                continue;</span>
             }
-<span class="nc bnc" id="L2475" title="All 2 branches missed.">            for (int r = (y - 1); r &lt;= (y + 1); r++) {</span>
-<span class="nc bnc" id="L2476" title="All 4 branches missed.">                if ((r &lt; 0) || (r &gt; (height - 1))) {</span>
-<span class="nc" id="L2477">                    continue;</span>
+<span class="nc bnc" id="L2565" title="All 2 branches missed.">            for (int r = (y - 1); r &lt;= (y + 1); r++) {</span>
+<span class="nc bnc" id="L2566" title="All 4 branches missed.">                if ((r &lt; 0) || (r &gt; (height - 1))) {</span>
+<span class="nc" id="L2567">                    continue;</span>
                 }
-<span class="nc bnc" id="L2479" title="All 4 branches missed.">                if ((c == x) &amp;&amp; (r == y)) {</span>
-<span class="nc" id="L2480">                    continue;</span>
+<span class="nc bnc" id="L2569" title="All 4 branches missed.">                if ((c == x) &amp;&amp; (r == y)) {</span>
+<span class="nc" id="L2570">                    continue;</span>
                 }
-<span class="nc" id="L2482">                int v = input.getValue(c, r);</span>
-<span class="nc bnc" id="L2483" title="All 2 branches missed.">                if (v != value) {</span>
-<span class="nc" id="L2484">                    PairInt p = new PairInt(c, r);</span>
-<span class="nc" id="L2485">                    outputNeighbors.add(p);</span>
+<span class="nc" id="L2572">                int v = input.getValue(c, r);</span>
+<span class="nc bnc" id="L2573" title="All 2 branches missed.">                if (v != value) {</span>
+<span class="nc" id="L2574">                    PairInt p = new PairInt(c, r);</span>
+<span class="nc" id="L2575">                    outputNeighbors.add(p);</span>
                 }
             }
         }
-<span class="nc" id="L2489">    }</span>
+<span class="nc" id="L2579">    }</span>
 
     /**
      * NOT YET TESTED
@@ -2499,45 +2589,45 @@ import java.util.logging.Logger;
      */
     public double biLinearInterpolation(GreyscaleImage gsImg, float x, float y) {
 
-<span class="fc" id="L2502">        double x1 = Math.floor(x);</span>
+<span class="fc" id="L2592">        double x1 = Math.floor(x);</span>
 
-<span class="fc" id="L2504">        double x2 = Math.ceil(x);</span>
+<span class="fc" id="L2594">        double x2 = Math.ceil(x);</span>
 
-<span class="fc" id="L2506">        double y1 = Math.floor(y);</span>
+<span class="fc" id="L2596">        double y1 = Math.floor(y);</span>
 
-<span class="fc" id="L2508">        double y2 = Math.ceil(y);</span>
+<span class="fc" id="L2598">        double y2 = Math.ceil(y);</span>
 
         double v1, v2;
 
-<span class="fc bfc" id="L2512" title="All 2 branches covered.">        if (x1 == x2) {</span>
+<span class="fc bfc" id="L2602" title="All 2 branches covered.">        if (x1 == x2) {</span>
 
-<span class="fc" id="L2514">            v1 = gsImg.getValue((int)x1, (int)y1);</span>
+<span class="fc" id="L2604">            v1 = gsImg.getValue((int)x1, (int)y1);</span>
 
-<span class="pc bpc" id="L2516" title="1 of 2 branches missed.">            if (y1 == y2) {</span>
-<span class="fc" id="L2517">                return v1;</span>
+<span class="fc bfc" id="L2606" title="All 2 branches covered.">            if (y1 == y2) {</span>
+<span class="fc" id="L2607">                return v1;</span>
             }
 
-<span class="nc" id="L2520">            v2 = gsImg.getValue((int)x1, (int)y2);</span>
+<span class="fc" id="L2610">            v2 = gsImg.getValue((int)x1, (int)y2);</span>
 
         } else {
 
             // interpolate over row y1
-<span class="fc" id="L2525">            v1 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y1) +</span>
-<span class="fc" id="L2526">                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y1);</span>
+<span class="fc" id="L2615">            v1 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y1) +</span>
+<span class="fc" id="L2616">                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y1);</span>
 
-<span class="fc bfc" id="L2528" title="All 2 branches covered.">            if (y1 == y2) {</span>
-<span class="fc" id="L2529">                return v1;</span>
+<span class="fc bfc" id="L2618" title="All 2 branches covered.">            if (y1 == y2) {</span>
+<span class="fc" id="L2619">                return v1;</span>
             }
 
             // interpolate over row y2
-<span class="fc" id="L2533">            v2 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y2) +</span>
-<span class="fc" id="L2534">                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y2);</span>
+<span class="fc" id="L2623">            v2 = ((x2 - x)/(x2 - x1)) * gsImg.getValue((int)x1, (int)y2) +</span>
+<span class="fc" id="L2624">                ((x - x1)/(x2 - x1)) * gsImg.getValue((int)x2, (int)y2);</span>
         }
 
         // interpolate the fraction of v1 and v2 over rows
-<span class="fc" id="L2538">        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;</span>
+<span class="fc" id="L2628">        double v = ((y2 - y)/(y2 - y1)) * v1 + ((y - y1)/(y2 - y1)) * v2;</span>
 
-<span class="fc" id="L2540">        return v;</span>
+<span class="fc" id="L2630">        return v;</span>
     }
 
     /**
@@ -2551,112 +2641,112 @@ import java.util.logging.Logger;
      */
     public double[] biLinearInterpolation(Image clrImg, float x, float y) {
 
-<span class="fc" id="L2554">        double x1 = Math.floor(x);</span>
+<span class="fc" id="L2644">        double x1 = Math.floor(x);</span>
 
-<span class="fc" id="L2556">        double x2 = Math.ceil(x);</span>
+<span class="fc" id="L2646">        double x2 = Math.ceil(x);</span>
 
-<span class="fc" id="L2558">        double y1 = Math.floor(y);</span>
+<span class="fc" id="L2648">        double y1 = Math.floor(y);</span>
 
-<span class="fc" id="L2560">        double y2 = Math.ceil(y);</span>
+<span class="fc" id="L2650">        double y2 = Math.ceil(y);</span>
 
         double r1, r2, g1, g2, b1, b2;
 
-<span class="fc bfc" id="L2564" title="All 2 branches covered.">        if (x1 == x2) {</span>
+<span class="fc bfc" id="L2654" title="All 2 branches covered.">        if (x1 == x2) {</span>
 
-<span class="fc" id="L2566">            r1 = clrImg.getR((int)x1, (int)y1);</span>
-<span class="fc" id="L2567">            g1 = clrImg.getG((int)x1, (int)y1);</span>
-<span class="fc" id="L2568">            b1 = clrImg.getB((int)x1, (int)y1);</span>
+<span class="fc" id="L2656">            r1 = clrImg.getR((int)x1, (int)y1);</span>
+<span class="fc" id="L2657">            g1 = clrImg.getG((int)x1, (int)y1);</span>
+<span class="fc" id="L2658">            b1 = clrImg.getB((int)x1, (int)y1);</span>
 
-<span class="pc bpc" id="L2570" title="1 of 2 branches missed.">            if (y1 == y2) {</span>
-<span class="fc" id="L2571">                return new double[]{r1, g1, b1};</span>
+<span class="pc bpc" id="L2660" title="1 of 2 branches missed.">            if (y1 == y2) {</span>
+<span class="fc" id="L2661">                return new double[]{r1, g1, b1};</span>
             }
 
-<span class="nc" id="L2574">            r2 = clrImg.getR((int)x1, (int)y2);</span>
-<span class="nc" id="L2575">            g2 = clrImg.getG((int)x1, (int)y2);</span>
-<span class="nc" id="L2576">            b2 = clrImg.getB((int)x1, (int)y2);</span>
+<span class="nc" id="L2664">            r2 = clrImg.getR((int)x1, (int)y2);</span>
+<span class="nc" id="L2665">            g2 = clrImg.getG((int)x1, (int)y2);</span>
+<span class="nc" id="L2666">            b2 = clrImg.getB((int)x1, (int)y2);</span>
 
         } else {
 
-<span class="fc" id="L2580">            double v1X2Frac = ((x2 - x)/(x2 - x1));</span>
-<span class="fc" id="L2581">            double v1X1Frac = ((x - x1)/(x2 - x1));</span>
+<span class="fc" id="L2670">            double v1X2Frac = ((x2 - x)/(x2 - x1));</span>
+<span class="fc" id="L2671">            double v1X1Frac = ((x - x1)/(x2 - x1));</span>
 
             // interpolate over row y1
-<span class="fc" id="L2584">            r1 = v1X2Frac * clrImg.getR((int)x1, (int)y1) +</span>
-<span class="fc" id="L2585">                v1X1Frac * clrImg.getR((int)x2, (int)y1);</span>
+<span class="fc" id="L2674">            r1 = v1X2Frac * clrImg.getR((int)x1, (int)y1) +</span>
+<span class="fc" id="L2675">                v1X1Frac * clrImg.getR((int)x2, (int)y1);</span>
 
-<span class="fc" id="L2587">            g1 = v1X2Frac * clrImg.getG((int)x1, (int)y1) +</span>
-<span class="fc" id="L2588">                v1X1Frac * clrImg.getG((int)x2, (int)y1);</span>
+<span class="fc" id="L2677">            g1 = v1X2Frac * clrImg.getG((int)x1, (int)y1) +</span>
+<span class="fc" id="L2678">                v1X1Frac * clrImg.getG((int)x2, (int)y1);</span>
 
-<span class="fc" id="L2590">            b1 = v1X2Frac * clrImg.getB((int)x1, (int)y1) +</span>
-<span class="fc" id="L2591">                v1X1Frac * clrImg.getB((int)x2, (int)y1);</span>
+<span class="fc" id="L2680">            b1 = v1X2Frac * clrImg.getB((int)x1, (int)y1) +</span>
+<span class="fc" id="L2681">                v1X1Frac * clrImg.getB((int)x2, (int)y1);</span>
 
-<span class="pc bpc" id="L2593" title="1 of 2 branches missed.">            if (y1 == y2) {</span>
-<span class="nc" id="L2594">                return new double[]{r1, g1, b1};</span>
+<span class="pc bpc" id="L2683" title="1 of 2 branches missed.">            if (y1 == y2) {</span>
+<span class="nc" id="L2684">                return new double[]{r1, g1, b1};</span>
             }
 
             // interpolate over row y2
-<span class="fc" id="L2598">            r2 = v1X2Frac * clrImg.getR((int)x1, (int)y2) +</span>
-<span class="fc" id="L2599">                v1X1Frac * clrImg.getR((int)x2, (int)y2);</span>
+<span class="fc" id="L2688">            r2 = v1X2Frac * clrImg.getR((int)x1, (int)y2) +</span>
+<span class="fc" id="L2689">                v1X1Frac * clrImg.getR((int)x2, (int)y2);</span>
 
-<span class="fc" id="L2601">            g2 = v1X2Frac * clrImg.getG((int)x1, (int)y2) +</span>
-<span class="fc" id="L2602">                v1X1Frac * clrImg.getG((int)x2, (int)y2);</span>
+<span class="fc" id="L2691">            g2 = v1X2Frac * clrImg.getG((int)x1, (int)y2) +</span>
+<span class="fc" id="L2692">                v1X1Frac * clrImg.getG((int)x2, (int)y2);</span>
 
-<span class="fc" id="L2604">            b2 = v1X2Frac * clrImg.getB((int)x1, (int)y2) +</span>
-<span class="fc" id="L2605">                v1X1Frac * clrImg.getB((int)x2, (int)y2);</span>
+<span class="fc" id="L2694">            b2 = v1X2Frac * clrImg.getB((int)x1, (int)y2) +</span>
+<span class="fc" id="L2695">                v1X1Frac * clrImg.getB((int)x2, (int)y2);</span>
         }
 
-<span class="fc" id="L2608">        double v1Y2Frac = ((y2 - y)/(y2 - y1));</span>
-<span class="fc" id="L2609">        double v1Y1Frac = ((y - y1)/(y2 - y1));</span>
+<span class="fc" id="L2698">        double v1Y2Frac = ((y2 - y)/(y2 - y1));</span>
+<span class="fc" id="L2699">        double v1Y1Frac = ((y - y1)/(y2 - y1));</span>
 
         // interpolate the fraction of v1 and v2 over rows
-<span class="fc" id="L2612">        double r = v1Y2Frac * r1 + v1Y1Frac * r2;</span>
+<span class="fc" id="L2702">        double r = v1Y2Frac * r1 + v1Y1Frac * r2;</span>
 
         // interpolate the fraction of v1 and v2 over rows
-<span class="fc" id="L2615">        double g = v1Y2Frac * g1 + v1Y1Frac * g2;</span>
+<span class="fc" id="L2705">        double g = v1Y2Frac * g1 + v1Y1Frac * g2;</span>
 
         // interpolate the fraction of v1 and v2 over rows
-<span class="fc" id="L2618">        double b = v1Y2Frac * b1 + v1Y1Frac * b2;</span>
+<span class="fc" id="L2708">        double b = v1Y2Frac * b1 + v1Y1Frac * b2;</span>
 
-<span class="fc" id="L2620">        return new double[]{r, g, b};</span>
+<span class="fc" id="L2710">        return new double[]{r, g, b};</span>
     }
 
     public void applyAdaptiveMeanThresholding(GreyscaleImage img) {
 
-<span class="nc" id="L2625">        applyAdaptiveMeanThresholding(img, 3);</span>
-<span class="nc" id="L2626">    }</span>
+<span class="nc" id="L2715">        applyAdaptiveMeanThresholding(img, 3);</span>
+<span class="nc" id="L2716">    }</span>
 
     public void applyAdaptiveMeanThresholding(GreyscaleImage img,
         int halfDimension) {
 
-<span class="fc" id="L2631">        GreyscaleImage imgM = img.copyImage();</span>
+<span class="fc" id="L2721">        GreyscaleImage imgM = img.copyImage();</span>
 
         /*
         7 x 7 averaging
         */
-<span class="fc" id="L2636">        applyCenteredMean(imgM, halfDimension);</span>
+<span class="fc" id="L2726">        applyCenteredMean(imgM, halfDimension);</span>
 
-<span class="fc" id="L2638">        int c = 7;</span>
+<span class="fc" id="L2728">        int c = 7;</span>
 
-<span class="fc" id="L2640">        int foreground = 255;//1;</span>
-<span class="fc" id="L2641">        int background = 0;</span>
+<span class="fc" id="L2730">        int foreground = 255;//1;</span>
+<span class="fc" id="L2731">        int background = 0;</span>
 
-<span class="fc bfc" id="L2643" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L2644" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="fc" id="L2645">                int v = img.getValue(i, j);</span>
-<span class="fc" id="L2646">                int m = imgM.getValue(i, j);</span>
-<span class="fc" id="L2647">                int t = m - c;</span>
-<span class="fc bfc" id="L2648" title="All 2 branches covered.">                if (v &gt; t) {</span>
-<span class="fc" id="L2649">                    img.setValue(i, j, foreground);</span>
+<span class="fc bfc" id="L2733" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L2734" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L2735">                int v = img.getValue(i, j);</span>
+<span class="fc" id="L2736">                int m = imgM.getValue(i, j);</span>
+<span class="fc" id="L2737">                int t = m - c;</span>
+<span class="fc bfc" id="L2738" title="All 2 branches covered.">                if (v &gt; t) {</span>
+<span class="fc" id="L2739">                    img.setValue(i, j, foreground);</span>
                 } else {
-<span class="fc" id="L2651">                    img.setValue(i, j, background);</span>
+<span class="fc" id="L2741">                    img.setValue(i, j, background);</span>
                 }
             }
         }
 
-<span class="fc" id="L2656">        imgM = null;</span>
+<span class="fc" id="L2746">        imgM = null;</span>
 
-<span class="fc" id="L2658">        System.gc();</span>
-<span class="fc" id="L2659">    }</span>
+<span class="fc" id="L2748">        System.gc();</span>
+<span class="fc" id="L2749">    }</span>
 
     /**
      * create an image of the mean of the surrounding dimension x dimension
@@ -2681,8 +2771,8 @@ import java.util.logging.Logger;
      */
     public void applyBoxcarMean(GreyscaleImage img, int dimension) {
 
-<span class="pc bpc" id="L2684" title="2 of 4 branches missed.">        if ((img.getWidth() &lt; dimension) || (img.getHeight() &lt; dimension)) {</span>
-<span class="nc" id="L2685">            throw new IllegalArgumentException(&quot;dimension is larger than image&quot;</span>
+<span class="pc bpc" id="L2774" title="2 of 4 branches missed.">        if ((img.getWidth() &lt; dimension) || (img.getHeight() &lt; dimension)) {</span>
+<span class="nc" id="L2775">            throw new IllegalArgumentException(&quot;dimension is larger than image&quot;</span>
                 + &quot; dimensions.  method not yet handling that.&quot;);
         }
 
@@ -2695,76 +2785,76 @@ import java.util.logging.Logger;
         sumCol[j=2] = sumCol[1] - row[j-1] + row[dim + j - 1]
         */
 
-<span class="fc" id="L2698">        int w = img.getWidth();</span>
-<span class="fc" id="L2699">        int h = img.getHeight();</span>
+<span class="fc" id="L2788">        int w = img.getWidth();</span>
+<span class="fc" id="L2789">        int h = img.getHeight();</span>
 
-<span class="fc" id="L2701">        int[] mean = new int[img.getNPixels()];</span>
+<span class="fc" id="L2791">        int[] mean = new int[img.getNPixels()];</span>
         
         // sum along rows
-<span class="fc bfc" id="L2704" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc" id="L2705">            int sum0 = 0;</span>
-<span class="fc bfc" id="L2706" title="All 2 branches covered.">            for (int j = 0; j &lt; dimension; ++j) {</span>
-<span class="fc" id="L2707">                sum0 += img.getValue(i, j);</span>
+<span class="fc bfc" id="L2794" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L2795">            int sum0 = 0;</span>
+<span class="fc bfc" id="L2796" title="All 2 branches covered.">            for (int j = 0; j &lt; dimension; ++j) {</span>
+<span class="fc" id="L2797">                sum0 += img.getValue(i, j);</span>
             }
-<span class="fc" id="L2709">            mean[img.getInternalIndex(i, 0)] = sum0;</span>
-<span class="fc bfc" id="L2710" title="All 2 branches covered.">            for (int j = 1; j &lt;= (h - dimension); ++j) {</span>
-<span class="fc" id="L2711">                int vp = img.getValue(i, j - 1);</span>
-<span class="fc" id="L2712">                int vl =  img.getValue(i, dimension + j - 1);</span>
-<span class="fc" id="L2713">                sum0 = sum0 - vp + vl;</span>
-<span class="fc" id="L2714">                mean[img.getInternalIndex(i, j)] = sum0;</span>
+<span class="fc" id="L2799">            mean[img.getInternalIndex(i, 0)] = sum0;</span>
+<span class="fc bfc" id="L2800" title="All 2 branches covered.">            for (int j = 1; j &lt;= (h - dimension); ++j) {</span>
+<span class="fc" id="L2801">                int vp = img.getValue(i, j - 1);</span>
+<span class="fc" id="L2802">                int vl =  img.getValue(i, dimension + j - 1);</span>
+<span class="fc" id="L2803">                sum0 = sum0 - vp + vl;</span>
+<span class="fc" id="L2804">                mean[img.getInternalIndex(i, j)] = sum0;</span>
             }
             // last dimension - 1 rows: sum along them, divide by count then mult by dimension
-<span class="fc bfc" id="L2717" title="All 2 branches covered.">            for (int j = (h - dimension + 1); j &lt; h; ++j) {</span>
-<span class="fc" id="L2718">                float count = h - j;</span>
-<span class="fc" id="L2719">                float sum = 0;</span>
-<span class="fc bfc" id="L2720" title="All 2 branches covered.">                for (int k = j; k &lt; h; ++k) {</span>
-<span class="fc" id="L2721">                    sum += img.getValue(i, k);</span>
+<span class="fc bfc" id="L2807" title="All 2 branches covered.">            for (int j = (h - dimension + 1); j &lt; h; ++j) {</span>
+<span class="fc" id="L2808">                float count = h - j;</span>
+<span class="fc" id="L2809">                float sum = 0;</span>
+<span class="fc bfc" id="L2810" title="All 2 branches covered.">                for (int k = j; k &lt; h; ++k) {</span>
+<span class="fc" id="L2811">                    sum += img.getValue(i, k);</span>
                 }
-<span class="fc" id="L2723">                sum /= count;</span>
-<span class="fc" id="L2724">                sum *= dimension;</span>
-<span class="fc" id="L2725">                mean[img.getInternalIndex(i, j)] = Math.round(sum);</span>
+<span class="fc" id="L2813">                sum /= count;</span>
+<span class="fc" id="L2814">                sum *= dimension;</span>
+<span class="fc" id="L2815">                mean[img.getInternalIndex(i, j)] = Math.round(sum);</span>
             }
         }
 
-<span class="fc" id="L2729">        int[] mean2 = new int[img.getNPixels()];</span>
+<span class="fc" id="L2819">        int[] mean2 = new int[img.getNPixels()];</span>
       
         // sum along columns
-<span class="fc bfc" id="L2732" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L2733">            int sum0 = 0;</span>
-<span class="fc bfc" id="L2734" title="All 2 branches covered.">            for (int i = 0; i &lt; dimension; ++i) {</span>
-<span class="fc" id="L2735">                sum0 += mean[img.getInternalIndex(i, j)];</span>
+<span class="fc bfc" id="L2822" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L2823">            int sum0 = 0;</span>
+<span class="fc bfc" id="L2824" title="All 2 branches covered.">            for (int i = 0; i &lt; dimension; ++i) {</span>
+<span class="fc" id="L2825">                sum0 += mean[img.getInternalIndex(i, j)];</span>
             }
-<span class="fc" id="L2737">            mean2[img.getInternalIndex(0, j)] = sum0;</span>
-<span class="fc bfc" id="L2738" title="All 2 branches covered.">            for (int i = 1; i &lt;= (w - dimension); ++i) {</span>
-<span class="fc" id="L2739">                int vp = mean[img.getInternalIndex(i - 1, j)];</span>
-<span class="fc" id="L2740">                int vl = mean[img.getInternalIndex(dimension + i - 1, j)];</span>
-<span class="fc" id="L2741">                sum0 = sum0 - vp + vl;</span>
-<span class="fc" id="L2742">                mean2[img.getInternalIndex(i, j)] = sum0;</span>
+<span class="fc" id="L2827">            mean2[img.getInternalIndex(0, j)] = sum0;</span>
+<span class="fc bfc" id="L2828" title="All 2 branches covered.">            for (int i = 1; i &lt;= (w - dimension); ++i) {</span>
+<span class="fc" id="L2829">                int vp = mean[img.getInternalIndex(i - 1, j)];</span>
+<span class="fc" id="L2830">                int vl = mean[img.getInternalIndex(dimension + i - 1, j)];</span>
+<span class="fc" id="L2831">                sum0 = sum0 - vp + vl;</span>
+<span class="fc" id="L2832">                mean2[img.getInternalIndex(i, j)] = sum0;</span>
             }
 
             // last dimension - 1 cols: sum along them, divide by count then mult by dimension
-<span class="fc bfc" id="L2746" title="All 2 branches covered.">            for (int i = (w - dimension + 1); i &lt; w; ++i) {</span>
-<span class="fc" id="L2747">                float count = h - i;</span>
-<span class="fc" id="L2748">                float sum = 0;</span>
-<span class="fc bfc" id="L2749" title="All 2 branches covered.">                for (int k = i; k &lt; w; ++k) {</span>
-<span class="fc" id="L2750">                    sum += mean[img.getInternalIndex(k, j)];</span>
+<span class="fc bfc" id="L2836" title="All 2 branches covered.">            for (int i = (w - dimension + 1); i &lt; w; ++i) {</span>
+<span class="fc" id="L2837">                float count = h - i;</span>
+<span class="fc" id="L2838">                float sum = 0;</span>
+<span class="fc bfc" id="L2839" title="All 2 branches covered.">                for (int k = i; k &lt; w; ++k) {</span>
+<span class="fc" id="L2840">                    sum += mean[img.getInternalIndex(k, j)];</span>
                 }
-<span class="fc" id="L2752">                sum /= count;</span>
-<span class="fc" id="L2753">                sum *= dimension;</span>
-<span class="fc" id="L2754">                mean2[img.getInternalIndex(i, j)] = Math.round(sum);</span>
+<span class="fc" id="L2842">                sum /= count;</span>
+<span class="fc" id="L2843">                sum *= dimension;</span>
+<span class="fc" id="L2844">                mean2[img.getInternalIndex(i, j)] = Math.round(sum);</span>
             }
         }
 
         // divide each value by dimension * dimension
-<span class="fc" id="L2759">        float dsq = dimension * dimension;</span>
-<span class="fc bfc" id="L2760" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L2761" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L2762">                int v = mean2[img.getInternalIndex(i, j)];</span>
-<span class="fc" id="L2763">                v = Math.round((float)v/dsq);</span>
-<span class="fc" id="L2764">                img.setValue(i, j, v);</span>
+<span class="fc" id="L2849">        float dsq = dimension * dimension;</span>
+<span class="fc bfc" id="L2850" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L2851" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L2852">                int v = mean2[img.getInternalIndex(i, j)];</span>
+<span class="fc" id="L2853">                v = Math.round((float)v/dsq);</span>
+<span class="fc" id="L2854">                img.setValue(i, j, v);</span>
             }
         }
-<span class="fc" id="L2767">    }</span>
+<span class="fc" id="L2857">    }</span>
 
     /**
      * create an image of the mean of the surrounding dimension x dimension
@@ -2787,9 +2877,9 @@ import java.util.logging.Logger;
      */
     public void applyCenteredMean(GreyscaleImage img, int halfDimension) {
 
-<span class="pc bpc" id="L2790" title="1 of 2 branches missed.">        if ((img.getWidth() &lt; 2*halfDimension) ||</span>
-<span class="pc bpc" id="L2791" title="1 of 2 branches missed.">            (img.getHeight() &lt; 2*halfDimension)) {</span>
-<span class="nc" id="L2792">            throw new IllegalArgumentException(&quot;dimension is larger than image&quot;</span>
+<span class="pc bpc" id="L2880" title="1 of 2 branches missed.">        if ((img.getWidth() &lt; 2*halfDimension) ||</span>
+<span class="pc bpc" id="L2881" title="1 of 2 branches missed.">            (img.getHeight() &lt; 2*halfDimension)) {</span>
+<span class="nc" id="L2882">            throw new IllegalArgumentException(&quot;dimension is larger than image&quot;</span>
                 + &quot; dimensions.  method not yet handling that.&quot;);
         }
 
@@ -2799,34 +2889,34 @@ import java.util.logging.Logger;
         sum along columns first using dynamic programming, then rows
         */
 
-<span class="fc" id="L2802">        int dimension = 2*halfDimension + 1;</span>
+<span class="fc" id="L2892">        int dimension = 2*halfDimension + 1;</span>
 
-<span class="fc" id="L2804">        int w = img.getWidth();</span>
-<span class="fc" id="L2805">        int h = img.getHeight();</span>
+<span class="fc" id="L2894">        int w = img.getWidth();</span>
+<span class="fc" id="L2895">        int h = img.getHeight();</span>
 
-<span class="fc" id="L2807">        int[] mean = new int[img.getNPixels()];</span>
+<span class="fc" id="L2897">        int[] mean = new int[img.getNPixels()];</span>
         
-<span class="fc" id="L2809">        int[] imgValues = img.getValues();</span>
+<span class="fc" id="L2899">        int[] imgValues = img.getValues();</span>
         
         // sum along rows
-<span class="fc bfc" id="L2812" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L2902" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
 
             /* pixels before halfDimension
             halfDimension = 2
             0 1 2 3 4 5 6
                 &lt;
             */
-<span class="fc bfc" id="L2819" title="All 2 branches covered.">            for (int j = 0; j &lt; halfDimension; ++j) {</span>
-<span class="fc" id="L2820">                float count = halfDimension - j;</span>
-<span class="fc" id="L2821">                float sum = 0;</span>
-<span class="fc bfc" id="L2822" title="All 2 branches covered.">                for (int k = j; k &lt; halfDimension; ++k) {</span>
-<span class="fc" id="L2823">                    int pixIdx = img.getIndex(i, k);</span>
-<span class="fc" id="L2824">                    sum += imgValues[pixIdx];</span>
+<span class="fc bfc" id="L2909" title="All 2 branches covered.">            for (int j = 0; j &lt; halfDimension; ++j) {</span>
+<span class="fc" id="L2910">                float count = halfDimension - j;</span>
+<span class="fc" id="L2911">                float sum = 0;</span>
+<span class="fc bfc" id="L2912" title="All 2 branches covered.">                for (int k = j; k &lt; halfDimension; ++k) {</span>
+<span class="fc" id="L2913">                    int pixIdx = img.getIndex(i, k);</span>
+<span class="fc" id="L2914">                    sum += imgValues[pixIdx];</span>
                 }
-<span class="fc" id="L2826">                sum /= count;</span>
-<span class="fc" id="L2827">                sum *= dimension;</span>
-<span class="fc" id="L2828">                int pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2829">                mean[pixIdx] = Math.round(sum);</span>
+<span class="fc" id="L2916">                sum /= count;</span>
+<span class="fc" id="L2917">                sum *= dimension;</span>
+<span class="fc" id="L2918">                int pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2919">                mean[pixIdx] = Math.round(sum);</span>
             }
 
             /* pixels between halfDimension and j-halfDimension
@@ -2835,13 +2925,13 @@ import java.util.logging.Logger;
             |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
             but store in idx
             */
-<span class="fc" id="L2838">            int sum0 = 0;</span>
-<span class="fc bfc" id="L2839" title="All 2 branches covered.">            for (int j = 0; j &lt;= 2*halfDimension; ++j) {</span>
-<span class="fc" id="L2840">                int pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2841">                sum0 += imgValues[pixIdx];</span>
+<span class="fc" id="L2928">            int sum0 = 0;</span>
+<span class="fc bfc" id="L2929" title="All 2 branches covered.">            for (int j = 0; j &lt;= 2*halfDimension; ++j) {</span>
+<span class="fc" id="L2930">                int pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2931">                sum0 += imgValues[pixIdx];</span>
             }
-<span class="fc" id="L2843">            int pixIdx = img.getIndex(i, halfDimension);</span>
-<span class="fc" id="L2844">            mean[pixIdx] = sum0;</span>
+<span class="fc" id="L2933">            int pixIdx = img.getIndex(i, halfDimension);</span>
+<span class="fc" id="L2934">            mean[pixIdx] = sum0;</span>
             /*
             halfDimension = 2
             0 1 2 3 4 5 6
@@ -2849,52 +2939,52 @@ import java.util.logging.Logger;
                 |   *   |
 
             */
-<span class="fc bfc" id="L2852" title="All 2 branches covered.">            for (int j = halfDimension + 1; j &lt; (h - halfDimension); ++j) {</span>
-<span class="fc" id="L2853">                pixIdx = img.getIndex(i, j - halfDimension - 1);</span>
-<span class="fc" id="L2854">                int vp = imgValues[pixIdx];</span>
-<span class="fc" id="L2855">                pixIdx = img.getIndex(i, j + halfDimension);</span>
-<span class="fc" id="L2856">                int vl =  imgValues[pixIdx];</span>
-<span class="fc" id="L2857">                sum0 = sum0 - vp + vl;</span>
-<span class="fc" id="L2858">                pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2859">                mean[pixIdx] = sum0;</span>
+<span class="fc bfc" id="L2942" title="All 2 branches covered.">            for (int j = halfDimension + 1; j &lt; (h - halfDimension); ++j) {</span>
+<span class="fc" id="L2943">                pixIdx = img.getIndex(i, j - halfDimension - 1);</span>
+<span class="fc" id="L2944">                int vp = imgValues[pixIdx];</span>
+<span class="fc" id="L2945">                pixIdx = img.getIndex(i, j + halfDimension);</span>
+<span class="fc" id="L2946">                int vl =  imgValues[pixIdx];</span>
+<span class="fc" id="L2947">                sum0 = sum0 - vp + vl;</span>
+<span class="fc" id="L2948">                pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2949">                mean[pixIdx] = sum0;</span>
             }
             /* last halfDimension pixels
             0 1 2 3   n=4, halfDimension = 2
                 &gt;
             */
-<span class="fc bfc" id="L2865" title="All 2 branches covered.">            for (int j = (h - halfDimension); j &lt; h; ++j) {</span>
-<span class="fc" id="L2866">                float count = h - j + 1;</span>
-<span class="fc" id="L2867">                float sum = 0;</span>
-<span class="fc bfc" id="L2868" title="All 2 branches covered.">                for (int k = (j - 1); k &lt; h; ++k) {</span>
-<span class="fc" id="L2869">                    pixIdx = img.getIndex(i, k);</span>
-<span class="fc" id="L2870">                    sum +=  imgValues[pixIdx];</span>
+<span class="fc bfc" id="L2955" title="All 2 branches covered.">            for (int j = (h - halfDimension); j &lt; h; ++j) {</span>
+<span class="fc" id="L2956">                float count = h - j + 1;</span>
+<span class="fc" id="L2957">                float sum = 0;</span>
+<span class="fc bfc" id="L2958" title="All 2 branches covered.">                for (int k = (j - 1); k &lt; h; ++k) {</span>
+<span class="fc" id="L2959">                    pixIdx = img.getIndex(i, k);</span>
+<span class="fc" id="L2960">                    sum +=  imgValues[pixIdx];</span>
                 }
-<span class="fc" id="L2872">                sum /= count;</span>
-<span class="fc" id="L2873">                sum *= dimension;</span>
-<span class="fc" id="L2874">                pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2875">                mean[pixIdx] = Math.round(sum);</span>
+<span class="fc" id="L2962">                sum /= count;</span>
+<span class="fc" id="L2963">                sum *= dimension;</span>
+<span class="fc" id="L2964">                pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2965">                mean[pixIdx] = Math.round(sum);</span>
             }
         }
 
         // sum along columns
-<span class="fc bfc" id="L2880" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L2970" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
 
             /* pixels before halfDimension
             halfDimension = 2
             0 1 2 3 4 5 6
                 &lt;
             */
-<span class="fc bfc" id="L2887" title="All 2 branches covered.">            for (int i = 0; i &lt; halfDimension; ++i) {</span>
-<span class="fc" id="L2888">                float count = halfDimension - i;</span>
-<span class="fc" id="L2889">                float sum = 0;</span>
-<span class="fc bfc" id="L2890" title="All 2 branches covered.">                for (int k = i; k &lt; halfDimension; ++k) {</span>
-<span class="fc" id="L2891">                    int pixIdx = img.getIndex(k, j);</span>
-<span class="fc" id="L2892">                    sum += mean[pixIdx];                    </span>
+<span class="fc bfc" id="L2977" title="All 2 branches covered.">            for (int i = 0; i &lt; halfDimension; ++i) {</span>
+<span class="fc" id="L2978">                float count = halfDimension - i;</span>
+<span class="fc" id="L2979">                float sum = 0;</span>
+<span class="fc bfc" id="L2980" title="All 2 branches covered.">                for (int k = i; k &lt; halfDimension; ++k) {</span>
+<span class="fc" id="L2981">                    int pixIdx = img.getIndex(k, j);</span>
+<span class="fc" id="L2982">                    sum += mean[pixIdx];                    </span>
                 }
-<span class="fc" id="L2894">                sum /= count;</span>
-<span class="fc" id="L2895">                sum *= dimension;</span>
-<span class="fc" id="L2896">                int pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2897">                imgValues[pixIdx] =  Math.round(sum);</span>
+<span class="fc" id="L2984">                sum /= count;</span>
+<span class="fc" id="L2985">                sum *= dimension;</span>
+<span class="fc" id="L2986">                int pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2987">                imgValues[pixIdx] =  Math.round(sum);</span>
             }
 
             /* pixels between halfDimension and j-halfDimension
@@ -2903,13 +2993,13 @@ import java.util.logging.Logger;
             |   *   |  sum from idx - halfDimension to idx + halfDimension, incl
             but store in idx
             */
-<span class="fc" id="L2906">            int sum0 = 0;</span>
-<span class="fc bfc" id="L2907" title="All 2 branches covered.">            for (int i = 0; i &lt;= 2*halfDimension; ++i) {</span>
-<span class="fc" id="L2908">                int pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2909">                sum0 += mean[pixIdx]; </span>
+<span class="fc" id="L2996">            int sum0 = 0;</span>
+<span class="fc bfc" id="L2997" title="All 2 branches covered.">            for (int i = 0; i &lt;= 2*halfDimension; ++i) {</span>
+<span class="fc" id="L2998">                int pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L2999">                sum0 += mean[pixIdx]; </span>
             }
-<span class="fc" id="L2911">            int pixIdx = img.getIndex(halfDimension, j);</span>
-<span class="fc" id="L2912">            imgValues[pixIdx] = sum0;</span>
+<span class="fc" id="L3001">            int pixIdx = img.getIndex(halfDimension, j);</span>
+<span class="fc" id="L3002">            imgValues[pixIdx] = sum0;</span>
             /*
             halfDimension = 2
             0 1 2 3 4 5 6
@@ -2917,46 +3007,70 @@ import java.util.logging.Logger;
                 |   *   |
 
             */
-<span class="fc bfc" id="L2920" title="All 2 branches covered.">            for (int i = halfDimension + 1; i &lt; (w - halfDimension); ++i) {</span>
-<span class="fc" id="L2921">                pixIdx = img.getIndex(i - halfDimension - 1, j);</span>
-<span class="fc" id="L2922">                int vp = mean[pixIdx];</span>
-<span class="fc" id="L2923">                pixIdx = img.getIndex(i + halfDimension, j);</span>
-<span class="fc" id="L2924">                int vl =  mean[pixIdx];</span>
-<span class="fc" id="L2925">                sum0 = sum0 - vp + vl;</span>
-<span class="fc" id="L2926">                pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2927">                imgValues[pixIdx] = sum0;</span>
+<span class="fc bfc" id="L3010" title="All 2 branches covered.">            for (int i = halfDimension + 1; i &lt; (w - halfDimension); ++i) {</span>
+<span class="fc" id="L3011">                pixIdx = img.getIndex(i - halfDimension - 1, j);</span>
+<span class="fc" id="L3012">                int vp = mean[pixIdx];</span>
+<span class="fc" id="L3013">                pixIdx = img.getIndex(i + halfDimension, j);</span>
+<span class="fc" id="L3014">                int vl =  mean[pixIdx];</span>
+<span class="fc" id="L3015">                sum0 = sum0 - vp + vl;</span>
+<span class="fc" id="L3016">                pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L3017">                imgValues[pixIdx] = sum0;</span>
             }
             /* last halfDimension pixels
             0 1 2 3   n=4, halfDimension = 2
                 &gt;
             */
-<span class="fc bfc" id="L2933" title="All 2 branches covered.">            for (int i = (w - halfDimension); i &lt; w; ++i) {</span>
-<span class="fc" id="L2934">                float count = w - i + 1;</span>
-<span class="fc" id="L2935">                float sum = 0;</span>
-<span class="fc bfc" id="L2936" title="All 2 branches covered.">                for (int k = (i - 1); k &lt; w; ++k) {</span>
-<span class="fc" id="L2937">                    pixIdx = img.getIndex(k, j);</span>
-<span class="fc" id="L2938">                    sum += mean[pixIdx];</span>
+<span class="fc bfc" id="L3023" title="All 2 branches covered.">            for (int i = (w - halfDimension); i &lt; w; ++i) {</span>
+<span class="fc" id="L3024">                float count = w - i + 1;</span>
+<span class="fc" id="L3025">                float sum = 0;</span>
+<span class="fc bfc" id="L3026" title="All 2 branches covered.">                for (int k = (i - 1); k &lt; w; ++k) {</span>
+<span class="fc" id="L3027">                    pixIdx = img.getIndex(k, j);</span>
+<span class="fc" id="L3028">                    sum += mean[pixIdx];</span>
                 }
-<span class="fc" id="L2940">                sum /= count;</span>
-<span class="fc" id="L2941">                sum *= dimension;</span>
-<span class="fc" id="L2942">                pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2943">                imgValues[pixIdx] = Math.round(sum);</span>
+<span class="fc" id="L3030">                sum /= count;</span>
+<span class="fc" id="L3031">                sum *= dimension;</span>
+<span class="fc" id="L3032">                pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L3033">                imgValues[pixIdx] = Math.round(sum);</span>
             }
         }
 
         // divide each value by dimension * dimension
-<span class="fc" id="L2948">        float dsq = dimension * dimension;</span>
-<span class="fc bfc" id="L2949" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L2950" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L2951">                int pixIdx = img.getIndex(i, j);</span>
-<span class="fc" id="L2952">                int v = imgValues[pixIdx];</span>
-<span class="fc" id="L2953">                v = Math.round((float)v/dsq);</span>
-<span class="fc" id="L2954">                imgValues[pixIdx] = v;</span>
+<span class="fc" id="L3038">        float dsq = dimension * dimension;</span>
+<span class="fc bfc" id="L3039" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L3040" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L3041">                int pixIdx = img.getIndex(i, j);</span>
+<span class="fc" id="L3042">                int v = imgValues[pixIdx];</span>
+<span class="fc" id="L3043">                v = Math.round((float)v/dsq);</span>
+<span class="fc" id="L3044">                imgValues[pixIdx] = v;</span>
             }
         }
-<span class="fc bfc" id="L2957" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc" id="L2958">            img.setValue(i, imgValues[i]);</span>
+<span class="fc bfc" id="L3047" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L3048">            img.setValue(i, imgValues[i]);</span>
         }
-<span class="fc" id="L2960">    }</span>
+<span class="fc" id="L3050">    }</span>
+
+    public GreyscaleImage createSmallImage(int bufferSize, Set&lt;PairInt&gt; points, 
+        int pointValue) {
+        
+        //minMaxXY int[]{xMin, xMax, yMin, yMax}
+<span class="nc" id="L3056">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
+        
+<span class="nc" id="L3058">        int xOffset = minMaxXY[0] - bufferSize;</span>
+<span class="nc" id="L3059">        int yOffset = minMaxXY[2] - bufferSize;</span>
+        
+<span class="nc" id="L3061">        int width = (minMaxXY[1] - minMaxXY[0]) + (2 * bufferSize);</span>
+<span class="nc" id="L3062">        int height = (minMaxXY[3] - minMaxXY[2]) + (2 * bufferSize);</span>
+        
+<span class="nc" id="L3064">        GreyscaleImage img = new GreyscaleImage(width, height);</span>
+<span class="nc" id="L3065">        img.setXRelativeOffset(xOffset);</span>
+<span class="nc" id="L3066">        img.setYRelativeOffset(yOffset);</span>
+<span class="nc bnc" id="L3067" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L3068">            int x = p.getX() - xOffset;</span>
+<span class="nc" id="L3069">            int y = p.getY() - yOffset;</span>
+<span class="nc" id="L3070">            img.setValue(x, y, pointValue);</span>
+<span class="nc" id="L3071">        }</span>
+        
+<span class="nc" id="L3073">        return img;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

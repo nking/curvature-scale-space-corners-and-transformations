@@ -13,25 +13,25 @@ public class TransformationPair4 implements Comparable&lt;TransformationPair4&gt
     
     private final int startIdx2;
             
-<span class="fc" id="L16">    private double cost = Double.MAX_VALUE;</span>
+<span class="nc" id="L16">    private double cost = Double.MAX_VALUE;</span>
     
-<span class="fc" id="L18">    private List&lt;CornerRegion&gt; matchedCornerRegions1 = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="nc" id="L18">    private List&lt;CornerRegion&gt; matchedCornerRegions1 = new ArrayList&lt;CornerRegion&gt;();</span>
     
-<span class="fc" id="L20">    private List&lt;CornerRegion&gt; matchedCornerRegions2 = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="nc" id="L20">    private List&lt;CornerRegion&gt; matchedCornerRegions2 = new ArrayList&lt;CornerRegion&gt;();</span>
     
-<span class="fc" id="L22">    private List&lt;FeatureComparisonStat&gt; matchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="nc" id="L22">    private List&lt;FeatureComparisonStat&gt; matchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
     
-<span class="fc" id="L24">    private int cornerListIndex1 = -1;</span>
+<span class="nc" id="L24">    private int cornerListIndex1 = -1;</span>
     
-<span class="fc" id="L26">    private int cornerListIndex2 = -1;</span>
+<span class="nc" id="L26">    private int cornerListIndex2 = -1;</span>
            
     public TransformationPair4(int startRegionIndex1, int startRegionIndex2,
-<span class="fc" id="L29">        int size) {</span>
+<span class="nc" id="L29">        int size) {</span>
         
-<span class="fc" id="L31">        this.startIdx1 = startRegionIndex1;</span>
+<span class="nc" id="L31">        this.startIdx1 = startRegionIndex1;</span>
         
-<span class="fc" id="L33">        this.startIdx2 = startRegionIndex2;        </span>
-<span class="fc" id="L34">    }</span>
+<span class="nc" id="L33">        this.startIdx2 = startRegionIndex2;        </span>
+<span class="nc" id="L34">    }</span>
 
     /**
      * @return the startRegionIndex1
@@ -50,69 +50,69 @@ public class TransformationPair4 implements Comparable&lt;TransformationPair4&gt
     public void addMatched(CornerRegion region1, CornerRegion region2,
         FeatureComparisonStat stat) {
         
-<span class="fc" id="L53">        matchedCornerRegions1.add(region1);</span>
-<span class="fc" id="L54">        matchedCornerRegions2.add(region2);</span>
-<span class="fc" id="L55">        matchedCompStats.add(stat);</span>
-<span class="fc" id="L56">    }</span>
+<span class="nc" id="L53">        matchedCornerRegions1.add(region1);</span>
+<span class="nc" id="L54">        matchedCornerRegions2.add(region2);</span>
+<span class="nc" id="L55">        matchedCompStats.add(stat);</span>
+<span class="nc" id="L56">    }</span>
 
     /**
      * @return the cost
      */
     public double getCost() {
-<span class="fc" id="L62">        return cost;</span>
+<span class="nc" id="L62">        return cost;</span>
     }
 
     /**
      * @param cost the cost to set
      */
     public void setCost(double cost) {
-<span class="fc" id="L69">        this.cost = cost;</span>
-<span class="fc" id="L70">    }</span>
+<span class="nc" id="L69">        this.cost = cost;</span>
+<span class="nc" id="L70">    }</span>
 
     /**
      * @return the matchedContourRegions1
      */
     public List&lt;CornerRegion&gt; getMatchedCornerRegions1() {
-<span class="fc" id="L76">        return matchedCornerRegions1;</span>
+<span class="nc" id="L76">        return matchedCornerRegions1;</span>
     }
 
     /**
      * @return the matchedContourRegions2
      */
     public List&lt;CornerRegion&gt; getMatchedCornerRegions2() {
-<span class="fc" id="L83">        return matchedCornerRegions2;</span>
+<span class="nc" id="L83">        return matchedCornerRegions2;</span>
     }
 
     /**
      * @return the matchedCompStats
      */
     public List&lt;FeatureComparisonStat&gt; getMatchedCompStats() {
-<span class="fc" id="L90">        return matchedCompStats;</span>
+<span class="nc" id="L90">        return matchedCompStats;</span>
     }
 
     public void setCornerListIndex1(int idx) {
-<span class="fc" id="L94">        this.cornerListIndex1 = idx;</span>
-<span class="fc" id="L95">    }</span>
+<span class="nc" id="L94">        this.cornerListIndex1 = idx;</span>
+<span class="nc" id="L95">    }</span>
 
     public void setCornerListIndex2(int idx) {
-<span class="fc" id="L98">        this.cornerListIndex2 = idx;</span>
-<span class="fc" id="L99">    }</span>
+<span class="nc" id="L98">        this.cornerListIndex2 = idx;</span>
+<span class="nc" id="L99">    }</span>
 
     @Override
     public int compareTo(TransformationPair4 other) {
         
-<span class="fc" id="L104">        int tN = matchedCompStats.size();</span>
-<span class="fc" id="L105">        double tCost = cost;</span>
+<span class="nc" id="L104">        int tN = matchedCompStats.size();</span>
+<span class="nc" id="L105">        double tCost = cost;</span>
         
-<span class="fc" id="L107">        int oN = other.getMatchedCompStats().size();</span>
-<span class="fc" id="L108">        double oCost = other.getCost();</span>
+<span class="nc" id="L107">        int oN = other.getMatchedCompStats().size();</span>
+<span class="nc" id="L108">        double oCost = other.getCost();</span>
         
-<span class="pc bpc" id="L110" title="3 of 8 branches missed.">        if (((tN &gt;= oN) &amp;&amp; (tCost &lt; oCost)) || ((oCost == tCost) &amp;&amp; (tN &gt; oN))) {</span>
-<span class="fc" id="L111">            return -1;</span>
-<span class="pc bpc" id="L112" title="3 of 4 branches missed.">        } else if ((tN == oN) &amp;&amp; (oCost == tCost)) {</span>
+<span class="nc bnc" id="L110" title="All 8 branches missed.">        if (((tN &gt;= oN) &amp;&amp; (tCost &lt; oCost)) || ((oCost == tCost) &amp;&amp; (tN &gt; oN))) {</span>
+<span class="nc" id="L111">            return -1;</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">        } else if ((tN == oN) &amp;&amp; (oCost == tCost)) {</span>
 <span class="nc" id="L113">            return 0;</span>
         } else {
-<span class="fc" id="L115">            return 1;</span>
+<span class="nc" id="L115">            return 1;</span>
         }
     }
 
@@ -120,14 +120,14 @@ public class TransformationPair4 implements Comparable&lt;TransformationPair4&gt
      * @return the cornerListIndex1
      */
     public int getCornerListIndex1() {
-<span class="fc" id="L123">        return cornerListIndex1;</span>
+<span class="nc" id="L123">        return cornerListIndex1;</span>
     }
 
     /**
      * @return the cornerListIndex2
      */
     public int getCornerListIndex2() {
-<span class="fc" id="L130">        return cornerListIndex2;</span>
+<span class="nc" id="L130">        return cornerListIndex2;</span>
     }
     
 }

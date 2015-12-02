@@ -1641,8 +1641,8 @@ import java.util.logging.Level;
 <span class="fc" id="L1641">                        tmpLastRemoveMap.put(Integer.valueOf(loc0.getX()), removedLastSet);</span>
                     }
 
-<span class="fc bfc" id="L1644" title="All 6 branches covered.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet.contains(joinPoint)) {</span>
-<span class="fc" id="L1645">                        continue;</span>
+<span class="pc bpc" id="L1644" title="1 of 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet.contains(joinPoint)) {</span>
+<span class="nc" id="L1645">                        continue;</span>
                     }
 <span class="fc bfc" id="L1647" title="All 6 branches covered.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &gt; (n0 - 3)) &amp;&amp; removedLastSet.contains(joinPoint)) {</span>
 <span class="fc" id="L1648">                        continue;</span>
@@ -1702,8 +1702,8 @@ import java.util.logging.Level;
 <span class="fc" id="L1702">                    Set&lt;PointPairInt&gt; removedLastSet0 =</span>
 <span class="fc" id="L1703">                        tmpLastRemoveMap.get(Integer.valueOf(loc0.getX()));</span>
 
-<span class="fc bfc" id="L1705" title="All 6 branches covered.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
-<span class="fc" id="L1706">                        continue;</span>
+<span class="pc bpc" id="L1705" title="1 of 6 branches missed.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &lt; 2) &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1706">                        continue;</span>
                     }
 <span class="fc bfc" id="L1708" title="All 6 branches covered.">                    if ((n0 != 3) &amp;&amp; (loc0.getY() &gt; (n0 - 3)) &amp;&amp; removedLastSet0.contains(joinPoint)) {</span>
 <span class="fc" id="L1709">                        continue;</span>
@@ -1893,8 +1893,8 @@ import java.util.logging.Level;
 <span class="nc" id="L1893">            return null;</span>
         }
         
-<span class="pc bpc" id="L1896" title="1 of 2 branches missed.">        if (output.size() &gt; 1) {</span>
-<span class="nc" id="L1897">            Collections.sort(output, new PairIntArrayDescendingComparator());</span>
+<span class="fc bfc" id="L1896" title="All 2 branches covered.">        if (output.size() &gt; 1) {</span>
+<span class="fc" id="L1897">            Collections.sort(output, new PairIntArrayDescendingComparator());</span>
         }
         
 <span class="fc" id="L1900">        PairIntArray out = output.get(0);</span>
@@ -1903,7 +1903,7 @@ import java.util.logging.Level;
                 
 <span class="fc" id="L1904">        boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1);</span>
         
-<span class="pc bpc" id="L1906" title="1 of 2 branches missed.">        if (isAdjacent) {</span>
+<span class="fc bfc" id="L1906" title="All 2 branches covered.">        if (isAdjacent) {</span>
 <span class="fc" id="L1907">            PairIntArrayWithColor p = new PairIntArrayWithColor(out);</span>
 <span class="fc" id="L1908">            p.setColor(1);</span>
 <span class="fc" id="L1909">            out = p;</span>
@@ -1972,21 +1972,21 @@ import java.util.logging.Level;
 
 <span class="fc bfc" id="L1973" title="All 2 branches covered.">        for (int i = (edges.size() - 1); i &gt; -1; --i) {</span>
 
-<span class="pc bpc" id="L1975" title="3 of 4 branches missed.">            if (i == maxEdgeIdx || (edges.get(i).getN() == 0)) {</span>
+<span class="pc bpc" id="L1975" title="1 of 4 branches missed.">            if (i == maxEdgeIdx || (edges.get(i).getN() == 0)) {</span>
 <span class="nc" id="L1976">                continue;</span>
             }
 
             // i may be merged into maxEdgeIdx
-<span class="nc" id="L1980">            int nInserted = insert(theEdgeToPixelIndexMap, edges, maxEdgeIdx, i);</span>
+<span class="fc" id="L1980">            int nInserted = insert(theEdgeToPixelIndexMap, edges, maxEdgeIdx, i);</span>
 
-<span class="nc bnc" id="L1982" title="All 2 branches missed.">            if (nInserted &gt; 0) {</span>
+<span class="pc bpc" id="L1982" title="1 of 2 branches missed.">            if (nInserted &gt; 0) {</span>
 
 <span class="nc" id="L1984">                findJunctions(edges);</span>
 
 <span class="nc" id="L1986">                theEdgeToPixelIndexMap = createEdgeToPixelIndexMap();</span>
             }
 
-<span class="nc" id="L1989">            nChanged += nInserted;</span>
+<span class="fc" id="L1989">            nChanged += nInserted;</span>
         }
 
 <span class="fc" id="L1992">        int nMerged = 0;</span>
@@ -2218,10 +2218,10 @@ import java.util.logging.Level;
         final int edge1Idx, final int edge2Idx,
         Map&lt;PairInt, Set&lt;PairInt&gt;&gt; outputAdjacentToEdge1LocMap) {
 
-<span class="nc" id="L2221">        Set&lt;Integer&gt; edge1PixIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));</span>
+<span class="fc" id="L2221">        Set&lt;Integer&gt; edge1PixIndexes = theEdgeToPixelIndexMap.get(Integer.valueOf(edge1Idx));</span>
 
-<span class="nc bnc" id="L2223" title="All 4 branches missed.">        if (edge1PixIndexes == null || edge1PixIndexes.isEmpty()) {</span>
-<span class="nc" id="L2224">            return;</span>
+<span class="pc bpc" id="L2223" title="3 of 4 branches missed.">        if (edge1PixIndexes == null || edge1PixIndexes.isEmpty()) {</span>
+<span class="fc" id="L2224">            return;</span>
         }
         
 <span class="nc bnc" id="L2227" title="All 2 branches missed.">        for (Integer edge1PixIndex : edge1PixIndexes) {</span>
@@ -2267,30 +2267,30 @@ import java.util.logging.Level;
 
 <span class="fc" id="L2268">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="pc bpc" id="L2270" title="1 of 2 branches missed.">        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
+<span class="fc bfc" id="L2270" title="All 2 branches covered.">        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
 <span class="fc" id="L2271">            return;</span>
         }
 
-<span class="nc" id="L2274">        int x1 = out.getX(0);</span>
-<span class="nc" id="L2275">        int y1 = out.getY(0);</span>
+<span class="fc" id="L2274">        int x1 = out.getX(0);</span>
+<span class="fc" id="L2275">        int y1 = out.getY(0);</span>
 
-<span class="nc" id="L2277">        int xn = out.getX(out.getN() - 1);</span>
-<span class="nc" id="L2278">        int yn = out.getY(out.getN() - 1);</span>
+<span class="fc" id="L2277">        int xn = out.getX(out.getN() - 1);</span>
+<span class="fc" id="L2278">        int yn = out.getY(out.getN() - 1);</span>
 
-<span class="nc" id="L2280">        int closestPivotIdx = -1;</span>
+<span class="fc" id="L2280">        int closestPivotIdx = -1;</span>
 
-<span class="nc bnc" id="L2282" title="All 2 branches missed.">        for (int idx = (out.getN() - 2); idx &gt; 0; --idx) {</span>
+<span class="pc bpc" id="L2282" title="1 of 2 branches missed.">        for (int idx = (out.getN() - 2); idx &gt; 0; --idx) {</span>
 
-<span class="nc" id="L2284">            int x = out.getX(idx);</span>
-<span class="nc" id="L2285">            int y = out.getY(idx);</span>
+<span class="fc" id="L2284">            int x = out.getX(idx);</span>
+<span class="fc" id="L2285">            int y = out.getY(idx);</span>
 
-<span class="nc bnc" id="L2287" title="All 4 branches missed.">            if ((Math.abs(x - x1) &lt; 2) &amp;&amp; (Math.abs(y - y1) &lt; 2)) {</span>
-<span class="nc" id="L2288">                closestPivotIdx = idx;</span>
-<span class="nc" id="L2289">                break;</span>
+<span class="fc bfc" id="L2287" title="All 4 branches covered.">            if ((Math.abs(x - x1) &lt; 2) &amp;&amp; (Math.abs(y - y1) &lt; 2)) {</span>
+<span class="fc" id="L2288">                closestPivotIdx = idx;</span>
+<span class="fc" id="L2289">                break;</span>
             }
         }
 
-<span class="nc bnc" id="L2293" title="All 2 branches missed.">        if (closestPivotIdx == -1) {</span>
+<span class="pc bpc" id="L2293" title="1 of 2 branches missed.">        if (closestPivotIdx == -1) {</span>
             // it's not a closed curve
 <span class="nc" id="L2295">            return;</span>
         }
@@ -2298,7 +2298,7 @@ import java.util.logging.Level;
         //TODO: consider butterflyJunctions is not empty and make sure
         //   routes are not altered
 
-<span class="nc bnc" id="L2301" title="All 2 branches missed.">        if (closestPivotIdx &gt; (out.getN() - closestPivotIdx - 1)) {</span>
+<span class="pc bpc" id="L2301" title="1 of 2 branches missed.">        if (closestPivotIdx &gt; (out.getN() - closestPivotIdx - 1)) {</span>
             // closest to end
             /*
             If point before closestPivotIdx is next to (x1, y1), can just
@@ -2328,30 +2328,30 @@ import java.util.logging.Level;
             points from 0 to closestPivotIdx.
             */
 
-<span class="nc" id="L2331">            closestPivotIdx = -1;</span>
+<span class="fc" id="L2331">            closestPivotIdx = -1;</span>
 
-<span class="nc bnc" id="L2333" title="All 2 branches missed.">            for (int idx = 1; idx &lt; (out.getN() - 1); ++idx) {</span>
+<span class="pc bpc" id="L2333" title="1 of 2 branches missed.">            for (int idx = 1; idx &lt; (out.getN() - 1); ++idx) {</span>
 
-<span class="nc" id="L2335">                int x = out.getX(idx);</span>
-<span class="nc" id="L2336">                int y = out.getY(idx);</span>
+<span class="fc" id="L2335">                int x = out.getX(idx);</span>
+<span class="fc" id="L2336">                int y = out.getY(idx);</span>
 
-<span class="nc bnc" id="L2338" title="All 4 branches missed.">                if ((Math.abs(x - xn) &lt; 2) &amp;&amp; (Math.abs(y - yn) &lt; 2)) {</span>
-<span class="nc" id="L2339">                    closestPivotIdx = idx;</span>
-<span class="nc" id="L2340">                    break;</span>
+<span class="fc bfc" id="L2338" title="All 4 branches covered.">                if ((Math.abs(x - xn) &lt; 2) &amp;&amp; (Math.abs(y - yn) &lt; 2)) {</span>
+<span class="fc" id="L2339">                    closestPivotIdx = idx;</span>
+<span class="fc" id="L2340">                    break;</span>
                 }
             }
 
-<span class="nc bnc" id="L2344" title="All 2 branches missed.">            if (closestPivotIdx == -1) {</span>
+<span class="pc bpc" id="L2344" title="1 of 2 branches missed.">            if (closestPivotIdx == -1) {</span>
                 // it's not a closed curve
 <span class="nc" id="L2346">                return;</span>
             }
             
             // if x[0],y[0] is adj to x[closestPivotIdx+1],y[closestPivotIdx+1]
 
-<span class="nc" id="L2351">            int xNext = out.getX(closestPivotIdx + 1);</span>
-<span class="nc" id="L2352">            int yNext = out.getY(closestPivotIdx + 1);</span>
-<span class="nc bnc" id="L2353" title="All 4 branches missed.">            if ((Math.abs(xNext - x1) &gt; 1) || (Math.abs(yNext - y1) &gt; 1)) {</span>
-<span class="nc" id="L2354">                return;</span>
+<span class="fc" id="L2351">            int xNext = out.getX(closestPivotIdx + 1);</span>
+<span class="fc" id="L2352">            int yNext = out.getY(closestPivotIdx + 1);</span>
+<span class="pc bpc" id="L2353" title="1 of 4 branches missed.">            if ((Math.abs(xNext - x1) &gt; 1) || (Math.abs(yNext - y1) &gt; 1)) {</span>
+<span class="fc" id="L2354">                return;</span>
             }
 
 <span class="nc" id="L2357">            out.reverse0toIdx(closestPivotIdx);</span>
@@ -2361,26 +2361,26 @@ import java.util.logging.Level;
     private int insert(Map&lt;Integer, Set&lt;Integer&gt;&gt; theEdgeToPixelIndexMap,
         List&lt;PairIntArray&gt; output, int edge1Idx, int edge2Idx) {
 
-<span class="nc" id="L2364">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L2364">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
         /*
         edge 1 is the one being inserted into by edge 2
         */
 
-<span class="nc" id="L2370">        PairIntArray edge1 = output.get(edge1Idx);</span>
+<span class="fc" id="L2370">        PairIntArray edge1 = output.get(edge1Idx);</span>
 
-<span class="nc" id="L2372">        PairIntArray edge2 = output.get(edge2Idx);</span>
+<span class="fc" id="L2372">        PairIntArray edge2 = output.get(edge2Idx);</span>
 
         /*
         key is a location in edge1,
         value is a set of locations in edge2 adjacent to the key
         */
-<span class="nc" id="L2378">        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; adjToEdge1LocMap = new HashMap&lt;PairInt, Set&lt;PairInt&gt;&gt;();</span>
-<span class="nc" id="L2379">        populateWithAdjacentLocations(theEdgeToPixelIndexMap, edge1Idx, edge2Idx,</span>
+<span class="fc" id="L2378">        Map&lt;PairInt, Set&lt;PairInt&gt;&gt; adjToEdge1LocMap = new HashMap&lt;PairInt, Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L2379">        populateWithAdjacentLocations(theEdgeToPixelIndexMap, edge1Idx, edge2Idx,</span>
             adjToEdge1LocMap);
 
-<span class="nc bnc" id="L2382" title="All 2 branches missed.">        if (adjToEdge1LocMap.isEmpty()) {</span>
-<span class="nc" id="L2383">            return 0;</span>
+<span class="pc bpc" id="L2382" title="1 of 2 branches missed.">        if (adjToEdge1LocMap.isEmpty()) {</span>
+<span class="fc" id="L2383">            return 0;</span>
         }
 
         // if can insert at index = 0 or last index for edge1, prefer that

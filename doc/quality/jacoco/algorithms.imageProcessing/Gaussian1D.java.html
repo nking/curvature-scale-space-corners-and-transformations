@@ -9,14 +9,14 @@
  */
 <span class="nc" id="L10">public class Gaussian1D {</span>
    
-    protected static float estimateHWZI(SIGMA sigma, float fractionMax) {
+    public static float estimateHWZI(SIGMA sigma, float fractionMax) {
       
 <span class="fc" id="L14">        float s = SIGMA.getValue(sigma);</span>
 
 <span class="fc" id="L16">        return estimateHWZI(s, fractionMax);</span>
     }
     
-    protected static float estimateHWZI(float sigma, float fractionMax) {
+    public static float estimateHWZI(float sigma, float fractionMax) {
         
         /*
            exp( (-(x0 - mu)^2)/2o~^2) / exp( (-(xcenter - mu)^2)/2o~^2) = fractionMax

@@ -4,12 +4,14 @@ import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,16 +27,16 @@ public class FeatureMatcherWrapper {
     private final ImageExt img1;
     private final ImageExt img2;
     
-<span class="pc" id="L28">    private GreyscaleImage gsImg1 = null;</span>
-<span class="pc" id="L29">    private GreyscaleImage gsImg2 = null;</span>
+<span class="pc" id="L30">    private GreyscaleImage gsImg1 = null;</span>
+<span class="pc" id="L31">    private GreyscaleImage gsImg2 = null;</span>
         
-<span class="pc" id="L31">    private Set&lt;CornerRegion&gt; cornerRegions1 = null;</span>
-<span class="pc" id="L32">    private Set&lt;CornerRegion&gt; cornerRegions2 = null;</span>
+<span class="pc" id="L33">    private Set&lt;CornerRegion&gt; cornerRegions1 = null;</span>
+<span class="pc" id="L34">    private Set&lt;CornerRegion&gt; cornerRegions2 = null;</span>
 
     private enum State {
         DID_APPLY_HIST_EQ, COULD_NOT_DETERMINE_SCALE
     }
-<span class="pc" id="L37">    private Set&lt;State&gt; stateSet = new HashSet&lt;State&gt;();</span>
+<span class="pc" id="L39">    private Set&lt;State&gt; stateSet = new HashSet&lt;State&gt;();</span>
     
     private final boolean doDetermineScale;
     
@@ -42,35 +44,35 @@ public class FeatureMatcherWrapper {
     
     private final String debugTagPrefix;
     
-<span class="pc" id="L45">    private TransformationParameters params = null;</span>
+<span class="pc" id="L47">    private TransformationParameters params = null;</span>
             
-<span class="pc" id="L47">    private float scaleTol = 0.2f;</span>
+<span class="pc" id="L49">    private float scaleTol = 0.2f;</span>
     
-<span class="pc" id="L49">    private float rotationInRadiansTol = (float)(20. * Math.PI/180.);</span>
+<span class="pc" id="L51">    private float rotationInRadiansTol = (float)(20. * Math.PI/180.);</span>
     
-<span class="pc" id="L51">    private double ssdLimit = 1500;</span>
+<span class="pc" id="L53">    private double ssdLimit = 1500;</span>
     
     //TODO: revise this...
-<span class="pc" id="L54">    private int transXYTol = 20;</span>
+<span class="pc" id="L56">    private int transXYTol = 20;</span>
     
-<span class="pc" id="L56">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="pc" id="L58">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="nc" id="L58">    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2) {</span>
-<span class="nc" id="L59">        img1 = image1;</span>
-<span class="nc" id="L60">        img2 = image2;</span>
-<span class="nc" id="L61">        doDetermineScale = true;</span>
-<span class="nc" id="L62">        debug = false;</span>
-<span class="nc" id="L63">        debugTagPrefix = &quot;&quot;;</span>
-<span class="nc" id="L64">    }</span>
+<span class="nc" id="L60">    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2) {</span>
+<span class="nc" id="L61">        img1 = image1;</span>
+<span class="nc" id="L62">        img2 = image2;</span>
+<span class="nc" id="L63">        doDetermineScale = true;</span>
+<span class="nc" id="L64">        debug = false;</span>
+<span class="nc" id="L65">        debugTagPrefix = &quot;&quot;;</span>
+<span class="nc" id="L66">    }</span>
     
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-<span class="fc" id="L67">        String debugTagPrefix) {</span>
-<span class="fc" id="L68">        img1 = image1;</span>
-<span class="fc" id="L69">        img2 = image2;</span>
-<span class="fc" id="L70">        doDetermineScale = true;</span>
-<span class="fc" id="L71">        debug = true;</span>
-<span class="fc" id="L72">        this.debugTagPrefix = debugTagPrefix;</span>
-<span class="fc" id="L73">    }</span>
+<span class="fc" id="L69">        String debugTagPrefix) {</span>
+<span class="fc" id="L70">        img1 = image1;</span>
+<span class="fc" id="L71">        img2 = image2;</span>
+<span class="fc" id="L72">        doDetermineScale = true;</span>
+<span class="fc" id="L73">        debug = true;</span>
+<span class="fc" id="L74">        this.debugTagPrefix = debugTagPrefix;</span>
+<span class="fc" id="L75">    }</span>
     
     /**
      * constructor accepting transformation parameters.  Note, for best results,
@@ -81,14 +83,14 @@ public class FeatureMatcherWrapper {
      * @param parameters 
      */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-<span class="nc" id="L84">        TransformationParameters parameters) {</span>
-<span class="nc" id="L85">        img1 = image1;</span>
-<span class="nc" id="L86">        img2 = image2;</span>
-<span class="nc" id="L87">        doDetermineScale = false;</span>
-<span class="nc" id="L88">        params = parameters;</span>
-<span class="nc" id="L89">        debug = false;</span>
-<span class="nc" id="L90">        debugTagPrefix = &quot;&quot;;</span>
-<span class="nc" id="L91">    }</span>
+<span class="nc" id="L86">        TransformationParameters parameters) {</span>
+<span class="nc" id="L87">        img1 = image1;</span>
+<span class="nc" id="L88">        img2 = image2;</span>
+<span class="nc" id="L89">        doDetermineScale = false;</span>
+<span class="nc" id="L90">        params = parameters;</span>
+<span class="nc" id="L91">        debug = false;</span>
+<span class="nc" id="L92">        debugTagPrefix = &quot;&quot;;</span>
+<span class="nc" id="L93">    }</span>
     
     /**
      * constructor accepting transformation parameters and a debugging tag for
@@ -101,14 +103,14 @@ public class FeatureMatcherWrapper {
      * @param debugTagPrefix 
      */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-<span class="fc" id="L104">        TransformationParameters parameters, String debugTagPrefix) {</span>
-<span class="fc" id="L105">        img1 = image1;</span>
-<span class="fc" id="L106">        img2 = image2;</span>
-<span class="fc" id="L107">        doDetermineScale = false;</span>
-<span class="fc" id="L108">        params = parameters;</span>
-<span class="fc" id="L109">        debug = true;</span>
-<span class="fc" id="L110">        this.debugTagPrefix = debugTagPrefix;</span>
-<span class="fc" id="L111">    }</span>
+<span class="nc" id="L106">        TransformationParameters parameters, String debugTagPrefix) {</span>
+<span class="nc" id="L107">        img1 = image1;</span>
+<span class="nc" id="L108">        img2 = image2;</span>
+<span class="nc" id="L109">        doDetermineScale = false;</span>
+<span class="nc" id="L110">        params = parameters;</span>
+<span class="nc" id="L111">        debug = true;</span>
+<span class="nc" id="L112">        this.debugTagPrefix = debugTagPrefix;</span>
+<span class="nc" id="L113">    }</span>
     
     public CorrespondenceList matchFeatures() throws IOException, 
         NoSuchAlgorithmException {
@@ -125,267 +127,319 @@ public class FeatureMatcherWrapper {
                 (3) use feature matcher w/ scale to make the correspondence list
         */
         
-<span class="fc" id="L128">        CorrespondenceList cl = null;</span>
+<span class="fc" id="L130">        CorrespondenceList cl = null;</span>
         
-<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (doDetermineScale) {</span>
-<span class="fc" id="L131">            cl = solveForScale();</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="fc" id="L133">                printMatches(cl);</span>
-            }
-<span class="fc" id="L135">            return cl;</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (doDetermineScale) {</span>
+<span class="fc" id="L133">            return solveForScale();</span>
         }
                
-<span class="fc" id="L138">        applyHistEqIfNeeded();</span>
+<span class="nc" id="L136">        applyHistEqIfNeeded();</span>
                         
-<span class="fc" id="L140">        cl = extractAndMatch(params);</span>
+<span class="nc" id="L138">        cl = extractAndMatch(params);</span>
         
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L143">            printMatches(cl);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L141">            printMatches(cl);</span>
         }
         
-<span class="fc" id="L146">        return cl;</span>
+<span class="nc" id="L144">        return cl;</span>
     }
     
     private CorrespondenceList solveForScale() throws IOException, 
         NoSuchAlgorithmException {
         
-<span class="fc" id="L152">        BlobScaleFinderWrapper scaleFinder = null;</span>
+<span class="fc" id="L150">        BlobScaleFinderWrapper scaleFinder = null;</span>
         
-<span class="fc" id="L154">        boolean useBinned = true;</span>
+<span class="fc" id="L152">        boolean useBinned = true;</span>
             
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L157">            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned, </span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L155">            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned, </span>
                 debugTagPrefix);
         } else {
-<span class="nc" id="L160">            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned);</span>
+<span class="nc" id="L158">            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned);</span>
         }
         
-<span class="fc" id="L163">        params = scaleFinder.calculateScale();</span>
+<span class="fc" id="L161">        params = scaleFinder.calculateScale();</span>
         
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (params == null) {</span>
-<span class="nc" id="L166">            stateSet.add(State.COULD_NOT_DETERMINE_SCALE);</span>
-<span class="nc" id="L167">            return null;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (params == null) {</span>
+<span class="nc" id="L164">            stateSet.add(State.COULD_NOT_DETERMINE_SCALE);</span>
+<span class="nc" id="L165">            return null;</span>
         }
         
-<span class="fc" id="L170">        boolean didApplyHist = scaleFinder.img1Helper.didApplyHistEq();</span>
-<span class="fc" id="L171">        this.gsImg1 = scaleFinder.img1Helper.getGreyscaleImage().copyImage();</span>
-<span class="fc" id="L172">        this.gsImg2 = scaleFinder.img2Helper.getGreyscaleImage().copyImage();</span>
+<span class="fc" id="L168">        boolean didApplyHist = scaleFinder.img1Helper.didApplyHistEq();</span>
+<span class="fc" id="L169">        this.gsImg1 = scaleFinder.img1Helper.getGreyscaleImage().copyImage();</span>
+<span class="fc" id="L170">        this.gsImg2 = scaleFinder.img2Helper.getGreyscaleImage().copyImage();</span>
         
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (didApplyHist) {</span>
-<span class="nc" id="L175">            stateSet.add(State.DID_APPLY_HIST_EQ);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (didApplyHist) {</span>
+<span class="nc" id="L173">            stateSet.add(State.DID_APPLY_HIST_EQ);</span>
         }
         
-<span class="fc" id="L178">        List&lt;FeatureComparisonStat&gt; stats = </span>
-<span class="fc" id="L179">            scaleFinder.getSolution().getComparisonStats();</span>
+<span class="fc" id="L176">        List&lt;FeatureComparisonStat&gt; stats = </span>
+<span class="fc" id="L177">            scaleFinder.getSolution().getComparisonStats();</span>
         
-<span class="fc" id="L181">        CorrespondenceList cl = null;</span>
+<span class="fc" id="L179">        CorrespondenceList cl = null;</span>
         
         int tolXY;
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (params.getStandardDeviations() != null) {</span>
-<span class="fc" id="L185">            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], </span>
-<span class="fc" id="L186">                params.getStandardDeviations()[3]));</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (tolXY &lt; 3) {</span>
-<span class="fc" id="L188">                tolXY = 3;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (params.getStandardDeviations() != null) {</span>
+<span class="fc" id="L183">            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], </span>
+<span class="fc" id="L184">                params.getStandardDeviations()[3]));</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            if (tolXY &lt; 3) {</span>
+<span class="fc" id="L186">                tolXY = 3;</span>
             }
         } else {
-<span class="nc" id="L191">            tolXY = 10;</span>
+<span class="nc" id="L189">            tolXY = 10;</span>
         }
         
-<span class="fc" id="L194">        int binFactor1 = scaleFinder.getBinFactor1();</span>
-<span class="fc" id="L195">        int binFactor2 = scaleFinder.getBinFactor2();</span>
+<span class="fc" id="L192">        int binFactor1 = scaleFinder.getBinFactor1();</span>
+<span class="fc" id="L193">        int binFactor2 = scaleFinder.getBinFactor2();</span>
         
-<span class="fc" id="L197">        int nLimit = 16;</span>
+<span class="fc" id="L195">        int nLimit = 16;</span>
                 
-<span class="pc bpc" id="L199" title="3 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
+<span class="pc bpc" id="L197" title="3 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
 
             //stats need to be revised for the location in the full size
             //image in order to be usable for correspondence
-<span class="fc" id="L203">            List&lt;FeatureComparisonStat&gt; revisedStats = reviseStatsForFullImages(stats);</span>
+<span class="fc" id="L201">            List&lt;FeatureComparisonStat&gt; revisedStats = reviseStatsForFullImages(stats);</span>
 
-<span class="fc" id="L205">            stats = revisedStats;</span>
+<span class="fc" id="L203">            stats = revisedStats;</span>
 
-<span class="fc" id="L207">            TransformationParameters revisedParams</span>
-<span class="fc" id="L208">                = MiscStats.calculateTransformation(1, 1, stats, new float[4]);</span>
+<span class="fc" id="L205">            TransformationParameters revisedParams</span>
+<span class="fc" id="L206">                = MiscStats.calculateTransformation(1, 1, stats, new float[4]);</span>
 
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            if (revisedParams != null) {</span>
-<span class="fc" id="L211">                params = revisedParams;</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">            if (revisedParams != null) {</span>
+<span class="fc" id="L209">                params = revisedParams;</span>
             } else {
-<span class="nc" id="L213">                log.warning(&quot;possible ERROR in revision of stats&quot;);</span>
+<span class="nc" id="L211">                log.warning(&quot;possible ERROR in revision of stats&quot;);</span>
             }
         }
+                
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L216">            printMatches(stats);</span>
+        }
         
-<span class="fc bfc" id="L217" title="All 2 branches covered.">        boolean extractMoreCorners = (stats.size() &lt; nLimit);</span>
+<span class="fc" id="L219">        boolean covers = statsCoverIntersection(stats);</span>
         
-<span class="fc" id="L219">extractMoreCorners = true;</span>
+<span class="fc bfc" id="L221" title="All 4 branches covered.">        boolean extractMoreCorners = (stats.size() &lt; nLimit) || !covers;</span>
         
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (!extractMoreCorners) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (!extractMoreCorners) {</span>
 
-<span class="nc" id="L223">            List&lt;PairInt&gt; matched1 = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc" id="L224">            List&lt;PairInt&gt; matched2 = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc" id="L225">            populateLists(stats, matched1, matched2);</span>
+<span class="fc" id="L225">            List&lt;PairInt&gt; matched1 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L226">            List&lt;PairInt&gt; matched2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L227">            populateLists(stats, matched1, matched2);</span>
 
-<span class="nc" id="L227">            cl = new CorrespondenceList(params.getScale(), </span>
-<span class="nc" id="L228">                Math.round(params.getRotationInDegrees()), </span>
-<span class="nc" id="L229">                Math.round(params.getTranslationX()),</span>
-<span class="nc" id="L230">                Math.round(params.getTranslationY()), </span>
-<span class="nc" id="L231">                Math.round(params.getStandardDeviations()[0]),</span>
-<span class="nc" id="L232">                Math.round(params.getStandardDeviations()[2]),</span>
-<span class="nc" id="L233">                Math.round(params.getStandardDeviations()[3]),</span>
+<span class="fc" id="L229">            cl = new CorrespondenceList(params.getScale(), </span>
+<span class="fc" id="L230">                Math.round(params.getRotationInDegrees()), </span>
+<span class="fc" id="L231">                Math.round(params.getTranslationX()),</span>
+<span class="fc" id="L232">                Math.round(params.getTranslationY()), </span>
+<span class="fc" id="L233">                Math.round(params.getStandardDeviations()[0]),</span>
+<span class="fc" id="L234">                Math.round(params.getStandardDeviations()[2]),</span>
+<span class="fc" id="L235">                Math.round(params.getStandardDeviations()[3]),</span>
                 matched1, matched2);
 
-<span class="nc" id="L236">            return cl;</span>
+<span class="fc" id="L238">            return cl;</span>
         }
             
-<span class="fc" id="L239">        cl = extractAndMatch(params);</span>
+<span class="fc" id="L241">        cl = extractAndMatch(params);</span>
             
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (cl != null) {</span>
-<span class="fc" id="L242">            return cl;</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (cl != null) {</span>
+            
+<span class="fc" id="L245">            addStatsToSolution(cl, stats);</span>
+            
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="fc" id="L248">                printMatches(cl.getPoints1(), cl.getPoints2());</span>
+                //MiscDebug.print(cl);
+            }
         }
-               
-<span class="nc" id="L245">        return cl;</span>
+          
+<span class="fc" id="L253">        return cl;</span>
     }
     
     private void applyHistEqIfNeeded() {
         
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (stateSet.contains(State.DID_APPLY_HIST_EQ)) {</span>
-<span class="nc" id="L251">            return;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (stateSet.contains(State.DID_APPLY_HIST_EQ)) {</span>
+<span class="nc" id="L259">            return;</span>
         }
         
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">        if (gsImg1 != null) {</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (gsImg1 != null) {</span>
             // gs images were set during scale calculation
-<span class="nc" id="L256">            return;</span>
+<span class="nc" id="L264">            return;</span>
         }
         
-<span class="fc" id="L259">        this.gsImg1 = img1.copyToGreyscale();</span>
-<span class="fc" id="L260">        this.gsImg2 = img2.copyToGreyscale();</span>
+<span class="nc" id="L267">        this.gsImg1 = img1.copyToGreyscale();</span>
+<span class="nc" id="L268">        this.gsImg2 = img2.copyToGreyscale();</span>
         
-<span class="fc" id="L262">        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(gsImg1, true);</span>
-<span class="fc" id="L263">        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(gsImg2, true);</span>
+<span class="nc" id="L270">        ImageStatistics stats1 = ImageStatisticsHelper.examineImage(gsImg1, true);</span>
+<span class="nc" id="L271">        ImageStatistics stats2 = ImageStatisticsHelper.examineImage(gsImg2, true);</span>
         
-<span class="fc" id="L265">        boolean performHistEq = false;</span>
-<span class="fc" id="L266">        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();</span>
-<span class="fc" id="L267">        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();</span>
-<span class="fc" id="L268">        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();</span>
-<span class="pc bpc" id="L269" title="2 of 8 branches missed.">        if (</span>
+<span class="nc" id="L273">        boolean performHistEq = false;</span>
+<span class="nc" id="L274">        double median1DivMedian2 = stats1.getMedian()/stats2.getMedian();</span>
+<span class="nc" id="L275">        double meanDivMedian1 = stats1.getMean()/stats1.getMedian();</span>
+<span class="nc" id="L276">        double meanDivMedian2 = stats2.getMean()/stats2.getMedian();</span>
+<span class="nc bnc" id="L277" title="All 8 branches missed.">        if (</span>
             ((median1DivMedian2 &gt; 1) &amp;&amp; ((median1DivMedian2 - 1) &gt; 0.2)) ||
             ((median1DivMedian2 &lt; 1) &amp;&amp; (median1DivMedian2 &lt; 0.8))) {
-<span class="nc" id="L272">            performHistEq = true;</span>
-<span class="pc bpc" id="L273" title="3 of 8 branches missed.">        } else if (</span>
+<span class="nc" id="L280">            performHistEq = true;</span>
+<span class="nc bnc" id="L281" title="All 8 branches missed.">        } else if (</span>
             ((meanDivMedian1 &gt; 1) &amp;&amp; ((meanDivMedian1 - 1) &gt; 0.2)) ||
             ((meanDivMedian1 &lt; 1) &amp;&amp; (meanDivMedian1 &lt; 0.8))) {
-<span class="fc" id="L276">            performHistEq = true;</span>
-<span class="pc bpc" id="L277" title="5 of 8 branches missed.">        } else if (</span>
+<span class="nc" id="L284">            performHistEq = true;</span>
+<span class="nc bnc" id="L285" title="All 8 branches missed.">        } else if (</span>
             ((meanDivMedian2 &gt; 1) &amp;&amp; ((meanDivMedian2 - 1) &gt; 0.2)) ||
             ((meanDivMedian2 &lt; 1) &amp;&amp; (meanDivMedian2 &lt; 0.8))) {
-<span class="nc" id="L280">            performHistEq = true;</span>
+<span class="nc" id="L288">            performHistEq = true;</span>
         }
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        if (performHistEq) {</span>
-<span class="fc" id="L283">            log.info(&quot;use histogram equalization on the greyscale images&quot;);</span>
-<span class="fc" id="L284">            HistogramEqualization hEq = new HistogramEqualization(gsImg1);</span>
-<span class="fc" id="L285">            hEq.applyFilter();</span>
-<span class="fc" id="L286">            hEq = new HistogramEqualization(gsImg2);</span>
-<span class="fc" id="L287">            hEq.applyFilter();</span>
-<span class="fc" id="L288">            stateSet.add(State.DID_APPLY_HIST_EQ);</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        if (performHistEq) {</span>
+<span class="nc" id="L291">            log.info(&quot;use histogram equalization on the greyscale images&quot;);</span>
+<span class="nc" id="L292">            HistogramEqualization hEq = new HistogramEqualization(gsImg1);</span>
+<span class="nc" id="L293">            hEq.applyFilter();</span>
+<span class="nc" id="L294">            hEq = new HistogramEqualization(gsImg2);</span>
+<span class="nc" id="L295">            hEq.applyFilter();</span>
+<span class="nc" id="L296">            stateSet.add(State.DID_APPLY_HIST_EQ);</span>
         }
 
-<span class="fc" id="L291">    }</span>
+<span class="nc" id="L299">    }</span>
 
     private void extractCornerRegions() {
         
-<span class="fc" id="L295">        ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L296">        imageProcessor.blur(gsImg1, SIGMA.ONE);</span>
+<span class="fc" id="L303">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L304">        imageProcessor.blur(gsImg1, SIGMA.ONE);</span>
         
-<span class="fc" id="L298">        CurvatureScaleSpaceCornerDetector detector = new</span>
+<span class="fc" id="L306">        CurvatureScaleSpaceCornerDetector detector = new</span>
             CurvatureScaleSpaceCornerDetector(gsImg1);
-<span class="fc" id="L300">        detector.doNotPerformHistogramEqualization();</span>
-<span class="fc" id="L301">        detector.findCorners();</span>
+<span class="fc" id="L308">        detector.doNotPerformHistogramEqualization();</span>
+<span class="fc" id="L309">        detector.findCorners();</span>
 //TODO: revisit to make sure coordinate systems are consistent:       
-<span class="fc" id="L303">        cornerRegions1 = detector.getEdgeCornerRegions(true);</span>
+<span class="fc" id="L311">        cornerRegions1 = detector.getEdgeCornerRegions(true);</span>
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+    
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L315">            List&lt;PairIntArray&gt; edges = detector.getEdgesInOriginalReferenceFrame();</span>
+<span class="fc" id="L316">                Image imgCp = img1.copyImage();</span>
+<span class="fc" id="L317">                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);</span>
+<span class="fc" id="L318">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_1_edges_&quot;);</span>
+<span class="fc" id="L319">                imgCp = img1.copyImage();</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">                for (CornerRegion cr : cornerRegions1) {</span>
+<span class="fc" id="L321">                    int x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L322">                    int y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L323">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+<span class="fc" id="L324">                }</span>
+<span class="fc" id="L325">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_1_cornerregions_&quot;);</span>
+<span class="fc" id="L326">                Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = detector.getJunctionMap();</span>
+<span class="fc" id="L327">                imgCp = img1.copyImage();</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                for (Integer pixIndex : junctionMap.keySet()) {</span>
+<span class="fc" id="L329">                    int x = imgCp.getCol(pixIndex.intValue());</span>
+<span class="fc" id="L330">                    int y = imgCp.getRow(pixIndex.intValue());</span>
+<span class="fc" id="L331">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+<span class="fc" id="L332">                }</span>
+<span class="fc" id="L333">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_1_junctions_&quot;);</span>
+<span class="fc" id="L334">                imgCp = img1.copyImage();</span>
+<span class="fc" id="L335">                PairIntArray corners = detector.getCornersInOriginalReferenceFrame();</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                for (int ii = 0; ii &lt; corners.getN(); ++ii) {</span>
+<span class="fc" id="L337">                    int x = corners.getX(ii);</span>
+<span class="fc" id="L338">                    int y = corners.getY(ii);</span>
+<span class="fc" id="L339">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+                }
+<span class="fc" id="L341">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_1_corners_&quot;);</span>
+        }
         
         //-------
         
-<span class="fc" id="L308">        imageProcessor.blur(gsImg2, SIGMA.ONE);</span>
+<span class="fc" id="L346">        imageProcessor.blur(gsImg2, SIGMA.ONE);</span>
         
-<span class="fc" id="L310">        detector = new</span>
+<span class="fc" id="L348">        detector = new</span>
             CurvatureScaleSpaceCornerDetector(gsImg2);
-<span class="fc" id="L312">        detector.doNotPerformHistogramEqualization();</span>
-<span class="fc" id="L313">        detector.findCorners();</span>
-<span class="fc" id="L314">        cornerRegions2 = detector.getEdgeCornerRegions(true);</span>
+<span class="fc" id="L350">        detector.doNotPerformHistogramEqualization();</span>
+<span class="fc" id="L351">        detector.findCorners();</span>
+<span class="fc" id="L352">        cornerRegions2 = detector.getEdgeCornerRegions(true);</span>
         //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         
-<span class="pc bpc" id="L317" title="1 of 2 branches missed.">        if (debug) {</span>
-            try {
-<span class="fc" id="L319">                MiscDebug.writeImage(cornerRegions1, img1.copyImage(), debugTagPrefix + &quot;_1_corners_&quot;);</span>
-<span class="fc" id="L320">                MiscDebug.writeImage(cornerRegions2, img2.copyImage(), debugTagPrefix + &quot;_2_corners_&quot;);</span>
-<span class="nc" id="L321">            } catch (IOException ex) {</span>
-<span class="nc" id="L322">                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L323">            }</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L356">            List&lt;PairIntArray&gt; edges = detector.getEdgesInOriginalReferenceFrame();</span>
+<span class="fc" id="L357">                Image imgCp = img2.copyImage();</span>
+<span class="fc" id="L358">                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);</span>
+<span class="fc" id="L359">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_2_edges_&quot;);</span>
+<span class="fc" id="L360">                imgCp = img2.copyImage();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">                for (CornerRegion cr : cornerRegions2) {</span>
+<span class="fc" id="L362">                    int x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L363">                    int y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L364">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+<span class="fc" id="L365">                }</span>
+<span class="fc" id="L366">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_2_corneregions_&quot;);</span>
+<span class="fc" id="L367">                Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = detector.getJunctionMap();</span>
+<span class="fc" id="L368">                imgCp = img2.copyImage();</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                for (Integer pixIndex : junctionMap.keySet()) {</span>
+<span class="fc" id="L370">                    int x = imgCp.getCol(pixIndex.intValue());</span>
+<span class="fc" id="L371">                    int y = imgCp.getRow(pixIndex.intValue());</span>
+<span class="fc" id="L372">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+<span class="fc" id="L373">                }</span>
+<span class="fc" id="L374">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_2_junctions_&quot;);</span>
+<span class="fc" id="L375">                imgCp = img2.copyImage();</span>
+<span class="fc" id="L376">                PairIntArray corners = detector.getCornersInOriginalReferenceFrame();</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">                for (int ii = 0; ii &lt; corners.getN(); ++ii) {</span>
+<span class="fc" id="L378">                    int x = corners.getX(ii);</span>
+<span class="fc" id="L379">                    int y = corners.getY(ii);</span>
+<span class="fc" id="L380">                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);</span>
+                }
+<span class="fc" id="L382">                MiscDebug.writeImage(imgCp, debugTagPrefix + &quot;_2_corners_&quot;);</span>
         }
-<span class="fc" id="L325">    }</span>
+<span class="fc" id="L384">    }</span>
 
     private CorrespondenceList findCorrespondence(TransformationParameters 
         parameters) {
         
-<span class="fc" id="L330">        FeatureMatcher matcher = new FeatureMatcher();</span>
+<span class="fc" id="L389">        FeatureMatcher matcher = new FeatureMatcher();</span>
         
         int tolXY;
-<span class="pc bpc" id="L333" title="1 of 2 branches missed.">        if (params.getStandardDeviations() != null) {</span>
-<span class="fc" id="L334">            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], </span>
-<span class="fc" id="L335">                params.getStandardDeviations()[3]));</span>
-<span class="fc bfc" id="L336" title="All 2 branches covered.">            if (tolXY &lt; 3) {</span>
-<span class="fc" id="L337">                tolXY = 3;</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if (params.getStandardDeviations() != null) {</span>
+<span class="fc" id="L393">            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], </span>
+<span class="fc" id="L394">                params.getStandardDeviations()[3]));</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">            if (tolXY &lt; 3) {</span>
+<span class="fc" id="L396">                tolXY = 3;</span>
             }
         } else {
-<span class="nc" id="L340">            tolXY = transXYTol;</span>
+<span class="nc" id="L399">            tolXY = transXYTol;</span>
         }
         
-<span class="fc" id="L343">        int dither = 1;</span>
+<span class="fc" id="L402">        int dither = 1;</span>
         
         //TODO: revise this
-<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (tolXY &gt; 3) {</span>
-<span class="fc" id="L347">            dither = 4;</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">        if (tolXY &gt; 3) {</span>
+<span class="fc" id="L406">            dither = 4;</span>
         }
         
-<span class="fc" id="L350">        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1,</span>
-<span class="fc" id="L351">            cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),</span>
+<span class="fc" id="L409">        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1,</span>
+<span class="fc" id="L410">            cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),</span>
             gsImg2,
-<span class="fc" id="L353">            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), </span>
+<span class="fc" id="L412">            cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), </span>
             parameters, scaleTol, rotationInRadiansTol, tolXY,
             dither);
 
-<span class="fc" id="L357">        return cl;</span>
+<span class="fc" id="L416">        return cl;</span>
     }
     
     private void populateLists(List&lt;FeatureComparisonStat&gt; stats, 
         List&lt;PairInt&gt; matched1, List&lt;PairInt&gt; matched2) {
         
-<span class="nc bnc" id="L363" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
             
-<span class="nc" id="L365">            int x1 = stat.getImg1Point().getX();</span>
-<span class="nc" id="L366">            int y1 = stat.getImg1Point().getY();</span>
-<span class="nc" id="L367">            int x2 = stat.getImg2Point().getX();</span>
-<span class="nc" id="L368">            int y2 = stat.getImg2Point().getY();</span>
+<span class="fc" id="L424">            int x1 = stat.getImg1Point().getX();</span>
+<span class="fc" id="L425">            int y1 = stat.getImg1Point().getY();</span>
+<span class="fc" id="L426">            int x2 = stat.getImg2Point().getX();</span>
+<span class="fc" id="L427">            int y2 = stat.getImg2Point().getY();</span>
             
-<span class="nc" id="L370">            matched1.add(new PairInt(x1, y1));</span>
+<span class="fc" id="L429">            matched1.add(new PairInt(x1, y1));</span>
             
-<span class="nc" id="L372">            matched2.add(new PairInt(x2, y2));</span>
-<span class="nc" id="L373">        }</span>
-<span class="nc" id="L374">    }</span>
+<span class="fc" id="L431">            matched2.add(new PairInt(x2, y2));</span>
+<span class="fc" id="L432">        }</span>
+<span class="fc" id="L433">    }</span>
     
     private CorrespondenceList extractAndMatch(
         TransformationParameters parameters) {
         
-<span class="fc" id="L379">        extractCornerRegions();</span>
+<span class="fc" id="L438">        extractCornerRegions();</span>
 
-<span class="fc" id="L381">        CorrespondenceList cl = findCorrespondence(parameters);</span>
+<span class="fc" id="L440">        CorrespondenceList cl = findCorrespondence(parameters);</span>
         
-<span class="pc bpc" id="L383" title="1 of 2 branches missed.">        if (cl != null) {</span>
-            // add stats in if not already present
-<span class="fc" id="L385">            int z = 1;</span>
-        }
-        
-<span class="fc" id="L388">        return cl;</span>
+<span class="fc" id="L442">        return cl;</span>
     }
     
     /**
@@ -418,34 +472,34 @@ public class FeatureMatcherWrapper {
           0 --&gt;
         */
         
-<span class="nc" id="L421">        double[][] img2Intersection = getBoundsOfIntersectionInFrame2();</span>
+<span class="fc" id="L475">        double[][] img2Intersection = getBoundsOfIntersectionInFrame2();</span>
         
-<span class="nc" id="L423">        float[] d1 = new float[]{</span>
+<span class="fc" id="L477">        float[] d1 = new float[]{</span>
             (float)((img2Intersection[0][0] + img2Intersection[1][0])/2.f),
             (float)((img2Intersection[0][1] + img2Intersection[1][1])/2.f)};     
-<span class="nc" id="L426">        float[] d2 = new float[]{</span>
+<span class="fc" id="L480">        float[] d2 = new float[]{</span>
             (float)((img2Intersection[1][0] + img2Intersection[2][0])/2.f),
             (float)((img2Intersection[1][1] + img2Intersection[2][1])/2.f)};
-<span class="nc" id="L429">        float[] d4 = new float[]{</span>
+<span class="fc" id="L483">        float[] d4 = new float[]{</span>
             (float)((img2Intersection[0][0] + img2Intersection[3][0])/2.f),
             (float)((img2Intersection[0][1] + img2Intersection[3][1])/2.f)};
-<span class="nc" id="L432">        float[] d5 = new float[]{</span>
+<span class="fc" id="L486">        float[] d5 = new float[]{</span>
             (float)((img2Intersection[2][0] + img2Intersection[3][0])/2.f),
             (float)((img2Intersection[2][1] + img2Intersection[3][1])/2.f)};
-<span class="nc" id="L435">        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};</span>
+<span class="fc" id="L489">        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};</span>
         
-<span class="nc" id="L437">        float[] xPoly0 = new float[5];</span>
-<span class="nc" id="L438">        float[] yPoly0 = new float[5];</span>
-<span class="nc" id="L439">        xPoly0[0] = (float)img2Intersection[0][0];</span>
-<span class="nc" id="L440">        yPoly0[0] = (float)img2Intersection[0][1];</span>
-<span class="nc" id="L441">        xPoly0[1] = d1[0];</span>
-<span class="nc" id="L442">        yPoly0[1] = d1[1];</span>
-<span class="nc" id="L443">        xPoly0[2] = d3[0];</span>
-<span class="nc" id="L444">        yPoly0[2] = d3[1];</span>
-<span class="nc" id="L445">        xPoly0[3] = d4[0];</span>
-<span class="nc" id="L446">        yPoly0[3] = d4[1];</span>
-<span class="nc" id="L447">        xPoly0[4] = xPoly0[0];</span>
-<span class="nc" id="L448">        yPoly0[4] = yPoly0[0];</span>
+<span class="fc" id="L491">        float[] xPoly0 = new float[5];</span>
+<span class="fc" id="L492">        float[] yPoly0 = new float[5];</span>
+<span class="fc" id="L493">        xPoly0[0] = (float)img2Intersection[0][0];</span>
+<span class="fc" id="L494">        yPoly0[0] = (float)img2Intersection[0][1];</span>
+<span class="fc" id="L495">        xPoly0[1] = d1[0];</span>
+<span class="fc" id="L496">        yPoly0[1] = d1[1];</span>
+<span class="fc" id="L497">        xPoly0[2] = d3[0];</span>
+<span class="fc" id="L498">        yPoly0[2] = d3[1];</span>
+<span class="fc" id="L499">        xPoly0[3] = d4[0];</span>
+<span class="fc" id="L500">        yPoly0[3] = d4[1];</span>
+<span class="fc" id="L501">        xPoly0[4] = xPoly0[0];</span>
+<span class="fc" id="L502">        yPoly0[4] = yPoly0[0];</span>
 
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -456,31 +510,31 @@ public class FeatureMatcherWrapper {
           0 --&gt;
         */
         
-<span class="nc" id="L459">        float[] xPoly1 = new float[5];</span>
-<span class="nc" id="L460">        float[] yPoly1 = new float[5];</span>
-<span class="nc" id="L461">        xPoly1[0] = d1[0];</span>
-<span class="nc" id="L462">        yPoly1[0] = d1[1];</span>
-<span class="nc" id="L463">        xPoly1[1] = (float)img2Intersection[1][0];</span>
-<span class="nc" id="L464">        yPoly1[1] = (float)img2Intersection[1][1];</span>
-<span class="nc" id="L465">        xPoly1[2] = d2[0];</span>
-<span class="nc" id="L466">        yPoly1[2] = d2[1];</span>
-<span class="nc" id="L467">        xPoly1[3] = d3[0];</span>
-<span class="nc" id="L468">        yPoly1[3] = d3[1];</span>
-<span class="nc" id="L469">        xPoly1[4] = xPoly1[0];</span>
-<span class="nc" id="L470">        yPoly1[4] = yPoly1[0];</span>
+<span class="fc" id="L513">        float[] xPoly1 = new float[5];</span>
+<span class="fc" id="L514">        float[] yPoly1 = new float[5];</span>
+<span class="fc" id="L515">        xPoly1[0] = d1[0];</span>
+<span class="fc" id="L516">        yPoly1[0] = d1[1];</span>
+<span class="fc" id="L517">        xPoly1[1] = (float)img2Intersection[1][0];</span>
+<span class="fc" id="L518">        yPoly1[1] = (float)img2Intersection[1][1];</span>
+<span class="fc" id="L519">        xPoly1[2] = d2[0];</span>
+<span class="fc" id="L520">        yPoly1[2] = d2[1];</span>
+<span class="fc" id="L521">        xPoly1[3] = d3[0];</span>
+<span class="fc" id="L522">        yPoly1[3] = d3[1];</span>
+<span class="fc" id="L523">        xPoly1[4] = xPoly1[0];</span>
+<span class="fc" id="L524">        yPoly1[4] = yPoly1[0];</span>
         
-<span class="nc" id="L472">        float[] xPoly2 = new float[5];</span>
-<span class="nc" id="L473">        float[] yPoly2 = new float[5];</span>
-<span class="nc" id="L474">        xPoly2[0] = d3[0];</span>
-<span class="nc" id="L475">        yPoly2[0] = d3[1];</span>
-<span class="nc" id="L476">        xPoly2[1] = d2[0];</span>
-<span class="nc" id="L477">        yPoly2[1] = d2[1];</span>
-<span class="nc" id="L478">        xPoly2[2] = (float)img2Intersection[2][0];</span>
-<span class="nc" id="L479">        yPoly2[2] = (float)img2Intersection[2][1];</span>
-<span class="nc" id="L480">        xPoly2[3] = d5[0];</span>
-<span class="nc" id="L481">        yPoly2[3] = d5[1];</span>
-<span class="nc" id="L482">        xPoly2[4] = xPoly2[0];</span>
-<span class="nc" id="L483">        yPoly2[4] = yPoly2[0];</span>
+<span class="fc" id="L526">        float[] xPoly2 = new float[5];</span>
+<span class="fc" id="L527">        float[] yPoly2 = new float[5];</span>
+<span class="fc" id="L528">        xPoly2[0] = d3[0];</span>
+<span class="fc" id="L529">        yPoly2[0] = d3[1];</span>
+<span class="fc" id="L530">        xPoly2[1] = d2[0];</span>
+<span class="fc" id="L531">        yPoly2[1] = d2[1];</span>
+<span class="fc" id="L532">        xPoly2[2] = (float)img2Intersection[2][0];</span>
+<span class="fc" id="L533">        yPoly2[2] = (float)img2Intersection[2][1];</span>
+<span class="fc" id="L534">        xPoly2[3] = d5[0];</span>
+<span class="fc" id="L535">        yPoly2[3] = d5[1];</span>
+<span class="fc" id="L536">        xPoly2[4] = xPoly2[0];</span>
+<span class="fc" id="L537">        yPoly2[4] = yPoly2[0];</span>
         
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -491,89 +545,89 @@ public class FeatureMatcherWrapper {
           0 --&gt;
         */
         
-<span class="nc" id="L494">        float[] xPoly3 = new float[5];</span>
-<span class="nc" id="L495">        float[] yPoly3 = new float[5];</span>
-<span class="nc" id="L496">        xPoly3[0] = d4[0];</span>
-<span class="nc" id="L497">        yPoly3[0] = d4[1];</span>
-<span class="nc" id="L498">        xPoly3[1] = d3[0];</span>
-<span class="nc" id="L499">        yPoly3[1] = d3[1];</span>
-<span class="nc" id="L500">        xPoly3[2] = d5[0];</span>
-<span class="nc" id="L501">        yPoly3[2] = d5[1];</span>
-<span class="nc" id="L502">        xPoly3[3] = (float)img2Intersection[3][0];</span>
-<span class="nc" id="L503">        yPoly3[3] = (float)img2Intersection[3][1];</span>
-<span class="nc" id="L504">        xPoly3[4] = xPoly3[0];</span>
-<span class="nc" id="L505">        yPoly3[4] = yPoly3[0];</span>
+<span class="fc" id="L548">        float[] xPoly3 = new float[5];</span>
+<span class="fc" id="L549">        float[] yPoly3 = new float[5];</span>
+<span class="fc" id="L550">        xPoly3[0] = d4[0];</span>
+<span class="fc" id="L551">        yPoly3[0] = d4[1];</span>
+<span class="fc" id="L552">        xPoly3[1] = d3[0];</span>
+<span class="fc" id="L553">        yPoly3[1] = d3[1];</span>
+<span class="fc" id="L554">        xPoly3[2] = d5[0];</span>
+<span class="fc" id="L555">        yPoly3[2] = d5[1];</span>
+<span class="fc" id="L556">        xPoly3[3] = (float)img2Intersection[3][0];</span>
+<span class="fc" id="L557">        yPoly3[3] = (float)img2Intersection[3][1];</span>
+<span class="fc" id="L558">        xPoly3[4] = xPoly3[0];</span>
+<span class="fc" id="L559">        yPoly3[4] = yPoly3[0];</span>
         
-<span class="nc" id="L507">        PointInPolygon poly = new PointInPolygon();</span>
+<span class="fc" id="L561">        PointInPolygon poly = new PointInPolygon();</span>
         
-<span class="nc" id="L509">        int[] count = new int[4];</span>
-<span class="nc bnc" id="L510" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
-<span class="nc" id="L511">            int x = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
-<span class="nc" id="L512">            int y = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
-<span class="nc" id="L513">            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">            if (isIn) {</span>
-<span class="nc" id="L515">                count[0]++;</span>
+<span class="fc" id="L563">        int[] count = new int[4];</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="fc" id="L565">            int x = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
+<span class="fc" id="L566">            int y = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
+<span class="fc" id="L567">            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">            if (isIn) {</span>
+<span class="fc" id="L569">                count[0]++;</span>
             } else {
-<span class="nc" id="L517">                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">                if (isIn) {</span>
-<span class="nc" id="L519">                    count[1]++;</span>
+<span class="fc" id="L571">                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);</span>
+<span class="fc bfc" id="L572" title="All 2 branches covered.">                if (isIn) {</span>
+<span class="fc" id="L573">                    count[1]++;</span>
                 } else {
-<span class="nc" id="L521">                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);</span>
-<span class="nc bnc" id="L522" title="All 2 branches missed.">                    if (isIn) {</span>
-<span class="nc" id="L523">                        count[2]++;</span>
+<span class="fc" id="L575">                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);</span>
+<span class="fc bfc" id="L576" title="All 2 branches covered.">                    if (isIn) {</span>
+<span class="fc" id="L577">                        count[2]++;</span>
                     } else {
-<span class="nc" id="L525">                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);</span>
-<span class="nc bnc" id="L526" title="All 2 branches missed.">                        if (isIn) {</span>
-<span class="nc" id="L527">                            count[3]++;</span>
+<span class="fc" id="L579">                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);</span>
+<span class="pc bpc" id="L580" title="1 of 2 branches missed.">                        if (isIn) {</span>
+<span class="fc" id="L581">                            count[3]++;</span>
                         }
                     }
                 }
             }
-<span class="nc" id="L532">        }</span>
+<span class="fc" id="L586">        }</span>
         
-<span class="nc" id="L534">        int nq = 0;</span>
-<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (int c : count) {</span>
-<span class="nc bnc" id="L536" title="All 2 branches missed.">            if (c &gt; 0) {</span>
-<span class="nc" id="L537">                nq++;</span>
+<span class="fc" id="L588">        int nq = 0;</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">        for (int c : count) {</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">            if (c &gt; 0) {</span>
+<span class="fc" id="L591">                nq++;</span>
             }
         }
         
-<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L542">            Image imcp = img2.copyImage();</span>
-<span class="nc bnc" id="L543" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoly0.length; ++i) {</span>
-<span class="nc" id="L544">                ImageIOHelper.addPointToImage(xPoly0[i], yPoly0[i], imcp, 5, 0, 255, 255);</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L596">            Image imcp = img2.copyImage();</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">            for (int i = 0; i &lt; xPoly0.length; ++i) {</span>
+<span class="fc" id="L598">                ImageIOHelper.addPointToImage(xPoly0[i], yPoly0[i], imcp, 5, 0, 255, 255);</span>
             }
-<span class="nc bnc" id="L546" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoly1.length; ++i) {</span>
-<span class="nc" id="L547">                ImageIOHelper.addPointToImage(xPoly1[i], yPoly1[i], imcp, 5, 0, 255, 0);</span>
+<span class="fc bfc" id="L600" title="All 2 branches covered.">            for (int i = 0; i &lt; xPoly1.length; ++i) {</span>
+<span class="fc" id="L601">                ImageIOHelper.addPointToImage(xPoly1[i], yPoly1[i], imcp, 5, 0, 255, 0);</span>
             }
-<span class="nc bnc" id="L549" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoly2.length; ++i) {</span>
-<span class="nc" id="L550">                ImageIOHelper.addPointToImage(xPoly2[i], yPoly2[i], imcp, 5, 0, 0, 255);</span>
+<span class="fc bfc" id="L603" title="All 2 branches covered.">            for (int i = 0; i &lt; xPoly2.length; ++i) {</span>
+<span class="fc" id="L604">                ImageIOHelper.addPointToImage(xPoly2[i], yPoly2[i], imcp, 5, 0, 0, 255);</span>
             }
-<span class="nc bnc" id="L552" title="All 2 branches missed.">            for (int i = 0; i &lt; xPoly3.length; ++i) {</span>
-<span class="nc" id="L553">                ImageIOHelper.addPointToImage(xPoly3[i], yPoly3[i], imcp, 5, 0, 125, 125);</span>
+<span class="fc bfc" id="L606" title="All 2 branches covered.">            for (int i = 0; i &lt; xPoly3.length; ++i) {</span>
+<span class="fc" id="L607">                ImageIOHelper.addPointToImage(xPoly3[i], yPoly3[i], imcp, 5, 0, 125, 125);</span>
             }
-<span class="nc bnc" id="L555" title="All 2 branches missed.">            for (int i = 0; i &lt; stats.size(); ++i) {</span>
-<span class="nc" id="L556">                FeatureComparisonStat stat = stats.get(i);</span>
-<span class="nc" id="L557">                PairInt p2 = stat.getImg2Point();</span>
-<span class="nc" id="L558">                ImageIOHelper.addPointToImage(p2.getX() * stat.getBinFactor2(), </span>
-<span class="nc" id="L559">                    p2.getY() * stat.getBinFactor2(), imcp, 2, 255, 0, 0);</span>
+<span class="fc bfc" id="L609" title="All 2 branches covered.">            for (int i = 0; i &lt; stats.size(); ++i) {</span>
+<span class="fc" id="L610">                FeatureComparisonStat stat = stats.get(i);</span>
+<span class="fc" id="L611">                PairInt p2 = stat.getImg2Point();</span>
+<span class="fc" id="L612">                ImageIOHelper.addPointToImage(p2.getX() * stat.getBinFactor2(), </span>
+<span class="fc" id="L613">                    p2.getY() * stat.getBinFactor2(), imcp, 2, 255, 0, 0);</span>
             }
-<span class="nc" id="L561">            MiscDebug.writeImage(imcp, debugTagPrefix + &quot;_scale_points&quot;);</span>
+<span class="fc" id="L615">            MiscDebug.writeImage(imcp, debugTagPrefix + &quot;_scale_points&quot;);</span>
         }
         
-<span class="nc bnc" id="L564" title="All 2 branches missed.">        return (nq == 4);</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">        return (nq == 4);</span>
     }
     
     private double[][] getBoundsOfIntersectionInFrame2() {
         
         //calculate the intersection of the 2 images
         
-<span class="nc" id="L571">        MatchedPointsTransformationCalculator tc = </span>
+<span class="fc" id="L625">        MatchedPointsTransformationCalculator tc = </span>
             new MatchedPointsTransformationCalculator();
         
-<span class="nc" id="L574">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L628">        Transformer transformer = new Transformer();</span>
         
-<span class="nc" id="L576">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
+<span class="fc" id="L630">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
         
         /*
         
@@ -586,130 +640,181 @@ public class FeatureMatcherWrapper {
         */
         
         // determine intersection of img2 with img1 in img1 reference frame
-<span class="nc" id="L589">        double[] q1Tr = transformer.applyTransformation(revParams, </span>
-<span class="nc" id="L590">            img2.getWidth() - 1, 0);</span>
+<span class="fc" id="L643">        double[] q1Tr = transformer.applyTransformation(revParams, </span>
+<span class="fc" id="L644">            img2.getWidth() - 1, 0);</span>
         
-<span class="nc" id="L592">        double[] q2Tr = transformer.applyTransformation(revParams, </span>
+<span class="fc" id="L646">        double[] q2Tr = transformer.applyTransformation(revParams, </span>
             0, 0);
         
-<span class="nc" id="L595">        double[] q3Tr = transformer.applyTransformation(revParams, </span>
-<span class="nc" id="L596">            0, img2.getHeight() - 1);</span>
+<span class="fc" id="L649">        double[] q3Tr = transformer.applyTransformation(revParams, </span>
+<span class="fc" id="L650">            0, img2.getHeight() - 1);</span>
         
-<span class="nc" id="L598">        double[] q4Tr = transformer.applyTransformation(revParams, </span>
-<span class="nc" id="L599">            img2.getWidth() - 1, img2.getHeight() - 1);</span>
+<span class="fc" id="L652">        double[] q4Tr = transformer.applyTransformation(revParams, </span>
+<span class="fc" id="L653">            img2.getWidth() - 1, img2.getHeight() - 1);</span>
         
         // if the transformed bounds are off image, reset the bounds to img1 bounds
-<span class="nc" id="L602">        double[][] img1Intersection = new double[4][2];</span>
-<span class="nc" id="L603">        img1Intersection[0] = q1Tr;</span>
-<span class="nc" id="L604">        img1Intersection[1] = q2Tr;</span>
-<span class="nc" id="L605">        img1Intersection[2] = q3Tr;</span>
-<span class="nc" id="L606">        img1Intersection[3] = q4Tr;</span>
+<span class="fc" id="L656">        double[][] img1Intersection = new double[4][2];</span>
+<span class="fc" id="L657">        img1Intersection[0] = q1Tr;</span>
+<span class="fc" id="L658">        img1Intersection[1] = q2Tr;</span>
+<span class="fc" id="L659">        img1Intersection[2] = q3Tr;</span>
+<span class="fc" id="L660">        img1Intersection[3] = q4Tr;</span>
         
-<span class="nc bnc" id="L608" title="All 2 branches missed.">        for (double[] xyTr : img1Intersection) {</span>
-<span class="nc bnc" id="L609" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L610">                xyTr[0] = 0;</span>
-<span class="nc bnc" id="L611" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img1.getWidth() - 1)) {</span>
-<span class="nc" id="L612">                xyTr[0] = (img1.getWidth() - 1);</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">        for (double[] xyTr : img1Intersection) {</span>
+<span class="fc bfc" id="L663" title="All 2 branches covered.">            if (xyTr[0] &lt; 0) {</span>
+<span class="fc" id="L664">                xyTr[0] = 0;</span>
+<span class="fc bfc" id="L665" title="All 2 branches covered.">            } else if (xyTr[0] &gt; (img1.getWidth() - 1)) {</span>
+<span class="fc" id="L666">                xyTr[0] = (img1.getWidth() - 1);</span>
             }
-<span class="nc bnc" id="L614" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
-<span class="nc" id="L615">                xyTr[1] = 0;</span>
-<span class="nc bnc" id="L616" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img1.getHeight() - 1)) {</span>
-<span class="nc" id="L617">                xyTr[1] = (img1.getHeight() - 1);</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">            if (xyTr[1] &lt; 0) {</span>
+<span class="fc" id="L669">                xyTr[1] = 0;</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">            } else if (xyTr[1] &gt; (img1.getHeight() - 1)) {</span>
+<span class="fc" id="L671">                xyTr[1] = (img1.getHeight() - 1);</span>
             }
         }
         
         // transform the img1 intersection into reference frame of img2
-<span class="nc" id="L622">        double[] q1TrTr = transformer.applyTransformation(params, q1Tr[0], q1Tr[1]);</span>
+<span class="fc" id="L676">        double[] q1TrTr = transformer.applyTransformation(params, q1Tr[0], q1Tr[1]);</span>
         
-<span class="nc" id="L624">        double[] q2TrTr = transformer.applyTransformation(params, q2Tr[0], q2Tr[1]);</span>
+<span class="fc" id="L678">        double[] q2TrTr = transformer.applyTransformation(params, q2Tr[0], q2Tr[1]);</span>
         
-<span class="nc" id="L626">        double[] q3TrTr = transformer.applyTransformation(params, q3Tr[0], q3Tr[1]);</span>
+<span class="fc" id="L680">        double[] q3TrTr = transformer.applyTransformation(params, q3Tr[0], q3Tr[1]);</span>
         
-<span class="nc" id="L628">        double[] q4TrTr = transformer.applyTransformation(params, q4Tr[0], q4Tr[1]);</span>
+<span class="fc" id="L682">        double[] q4TrTr = transformer.applyTransformation(params, q4Tr[0], q4Tr[1]);</span>
         
-<span class="nc" id="L630">        double[][] img2Intersection = new double[4][2];</span>
-<span class="nc" id="L631">        img2Intersection[0] = q1TrTr;</span>
-<span class="nc" id="L632">        img2Intersection[1] = q2TrTr;</span>
-<span class="nc" id="L633">        img2Intersection[2] = q3TrTr;</span>
-<span class="nc" id="L634">        img2Intersection[3] = q4TrTr;</span>
+<span class="fc" id="L684">        double[][] img2Intersection = new double[4][2];</span>
+<span class="fc" id="L685">        img2Intersection[0] = q1TrTr;</span>
+<span class="fc" id="L686">        img2Intersection[1] = q2TrTr;</span>
+<span class="fc" id="L687">        img2Intersection[2] = q3TrTr;</span>
+<span class="fc" id="L688">        img2Intersection[3] = q4TrTr;</span>
         
-<span class="nc bnc" id="L636" title="All 2 branches missed.">        for (double[] xyTr : img2Intersection) {</span>
-<span class="nc bnc" id="L637" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L638">                xyTr[0] = 0;</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img2.getWidth() - 1)) {</span>
-<span class="nc" id="L640">                xyTr[0] = (img2.getWidth() - 1);</span>
+<span class="fc bfc" id="L690" title="All 2 branches covered.">        for (double[] xyTr : img2Intersection) {</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">            if (xyTr[0] &lt; 0) {</span>
+<span class="fc" id="L692">                xyTr[0] = 0;</span>
+<span class="fc bfc" id="L693" title="All 2 branches covered.">            } else if (xyTr[0] &gt; (img2.getWidth() - 1)) {</span>
+<span class="fc" id="L694">                xyTr[0] = (img2.getWidth() - 1);</span>
             }
-<span class="nc bnc" id="L642" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
-<span class="nc" id="L643">                xyTr[1] = 0;</span>
-<span class="nc bnc" id="L644" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img2.getHeight() - 1)) {</span>
-<span class="nc" id="L645">                xyTr[1] = (img2.getHeight() - 1);</span>
+<span class="pc bpc" id="L696" title="1 of 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
+<span class="nc" id="L697">                xyTr[1] = 0;</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            } else if (xyTr[1] &gt; (img2.getHeight() - 1)) {</span>
+<span class="fc" id="L699">                xyTr[1] = (img2.getHeight() - 1);</span>
             }
         }
         
-<span class="nc" id="L649">        return img2Intersection;</span>
+<span class="fc" id="L703">        return img2Intersection;</span>
     }
 
     private List&lt;FeatureComparisonStat&gt; reviseStatsForFullImages(
         List&lt;FeatureComparisonStat&gt; stats) {
         
-<span class="fc" id="L655">        List&lt;FeatureComparisonStat&gt; revised = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="fc" id="L709">        List&lt;FeatureComparisonStat&gt; revised = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
         
-<span class="fc" id="L657">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+<span class="fc" id="L711">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
         
-<span class="fc" id="L659">        IntensityFeatures features1 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L713">        IntensityFeatures features1 = new IntensityFeatures(5, true);</span>
 
-<span class="fc" id="L661">        IntensityFeatures features2 = new IntensityFeatures(5, true);</span>
+<span class="fc" id="L715">        IntensityFeatures features2 = new IntensityFeatures(5, true);</span>
         
-<span class="fc" id="L663">        int rotD = Math.round(params.getRotationInDegrees());</span>
+<span class="fc" id="L717">        int rotD = Math.round(params.getRotationInDegrees());</span>
         
-<span class="fc" id="L665">        final int rotationTolerance = 20;</span>
+<span class="fc" id="L719">        final int rotationTolerance = 20;</span>
         
-<span class="fc" id="L667">        final int dither = 4;</span>
+<span class="fc" id="L721">        final int dither = 4;</span>
         
-<span class="fc bfc" id="L669" title="All 2 branches covered.">        for (int i = 0; i &lt; stats.size(); ++i) {</span>
+<span class="fc bfc" id="L723" title="All 2 branches covered.">        for (int i = 0; i &lt; stats.size(); ++i) {</span>
             
-<span class="fc" id="L671">            FeatureComparisonStat stat = stats.get(i);</span>
+<span class="fc" id="L725">            FeatureComparisonStat stat = stats.get(i);</span>
             
-<span class="fc" id="L673">            int x1 = stat.getImg1Point().getX() * stat.getBinFactor1();</span>
-<span class="fc" id="L674">            int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();</span>
-<span class="fc" id="L675">            int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
-<span class="fc" id="L676">            int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
+<span class="fc" id="L727">            int x1 = stat.getImg1Point().getX() * stat.getBinFactor1();</span>
+<span class="fc" id="L728">            int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();</span>
+<span class="fc" id="L729">            int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
+<span class="fc" id="L730">            int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
             
-<span class="fc" id="L678">            FeatureComparisonStat compStat = </span>
-<span class="fc" id="L679">                featureMatcher.ditherAndRotateForBestLocation(</span>
+<span class="fc" id="L732">            FeatureComparisonStat compStat = </span>
+<span class="fc" id="L733">                featureMatcher.ditherAndRotateForBestLocation(</span>
                     features1, features2, 
-<span class="fc" id="L681">                    x1, y1, Math.round(stat.getImg1PointRotInDegrees()),</span>
-<span class="fc" id="L682">                    x2, y2, Math.round(stat.getImg2PointRotInDegrees()),</span>
+<span class="fc" id="L735">                    x1, y1, Math.round(stat.getImg1PointRotInDegrees()),</span>
+<span class="fc" id="L736">                    x2, y2, Math.round(stat.getImg2PointRotInDegrees()),</span>
                     dither, rotD, rotationTolerance, gsImg1, gsImg2);
            
-<span class="pc bpc" id="L685" title="1 of 4 branches missed.">            if (compStat == null || (compStat.getSumIntensitySqDiff() &gt;= ssdLimit)) {</span>
-<span class="nc" id="L686">                continue;</span>
+<span class="pc bpc" id="L739" title="1 of 4 branches missed.">            if (compStat == null || (compStat.getSumIntensitySqDiff() &gt;= ssdLimit)) {</span>
+<span class="nc" id="L740">                continue;</span>
             }
 
-<span class="pc bpc" id="L689" title="1 of 2 branches missed.">            if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
-<span class="fc" id="L690">                revised.add(compStat);</span>
+<span class="pc bpc" id="L743" title="1 of 2 branches missed.">            if (compStat.getSumIntensitySqDiff() &lt; compStat.getImg2PointIntensityErr()) {</span>
+<span class="fc" id="L744">                revised.add(compStat);</span>
             }
         }
         
-<span class="fc" id="L694">        return revised;</span>
+<span class="fc" id="L748">        return revised;</span>
     }
-
-    private void printMatches(CorrespondenceList cl) {
-<span class="pc bpc" id="L698" title="1 of 2 branches missed.">        if (cl == null) {</span>
-<span class="nc" id="L699">            return;</span>
+    
+    private void addStatsToSolution(CorrespondenceList cl, 
+        List&lt;FeatureComparisonStat&gt; stats) {
+        
+<span class="pc bpc" id="L754" title="1 of 2 branches missed.">        if (cl == null) {</span>
+<span class="nc" id="L755">            return;</span>
         }
-<span class="fc" id="L701">        int ts = MiscDebug.getCurrentTimeFormatted();</span>
-<span class="fc" id="L702">        Collection&lt;PairInt&gt; m1 = cl.getPoints1();</span>
-<span class="fc" id="L703">        Collection&lt;PairInt&gt; m2 = cl.getPoints2();</span>
-<span class="fc" id="L704">        GreyscaleImage gsImg1 = img1.copyToGreyscale();</span>
-<span class="fc" id="L705">        GreyscaleImage gsImg2 = img2.copyToGreyscale();</span>
-<span class="fc" id="L706">        String name1 = &quot;1_&quot; + debugTagPrefix + &quot;_&quot; + ts;</span>
-<span class="fc" id="L707">        String name2 = &quot;2_&quot; + debugTagPrefix + &quot;_&quot; + ts;</span>
-<span class="fc" id="L708">        name1 = name1 + &quot;_matched&quot;;</span>
-<span class="fc" id="L709">        name2 = name2 + &quot;_matched&quot;;</span>
-<span class="fc" id="L710">        MiscDebug.plotCorners(gsImg1, m1, name1, 2);</span>
-<span class="fc" id="L711">        MiscDebug.plotCorners(gsImg2, m2, name2, 2);</span>
-<span class="fc" id="L712">    }</span>
+        
+<span class="fc" id="L758">        List&lt;PairInt&gt; matched01 = cl.getPoints1();</span>
+<span class="fc" id="L759">        List&lt;PairInt&gt; matched02 = cl.getPoints2();</span>
+        
+<span class="fc" id="L761">        Set&lt;PairInt&gt; added1 = new HashSet&lt;PairInt&gt;(matched01);</span>
+<span class="fc" id="L762">        Set&lt;PairInt&gt; added2 = new HashSet&lt;PairInt&gt;(matched02);</span>
+        
+<span class="fc" id="L764">        boolean didAdd = false;</span>
+        
+<span class="fc bfc" id="L766" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="fc" id="L767">            PairInt imPt1 = stat.getImg1Point();</span>
+<span class="fc" id="L768">            PairInt imPt2 = stat.getImg2Point();</span>
+<span class="fc bfc" id="L769" title="All 4 branches covered.">            if (added1.contains(imPt1) || added2.contains(imPt2)) {</span>
+                //TODO: consider replacing the match with imPt1, imPt2 which is
+                // usually better from the small first solution.
+                // in that case, need to remove the added.adds below
+<span class="fc" id="L773">                continue;</span>
+            }
+<span class="fc" id="L775">            matched01.add(imPt1);</span>
+<span class="fc" id="L776">            matched02.add(imPt2);</span>
+<span class="fc" id="L777">            added1.add(imPt1);</span>
+<span class="fc" id="L778">            added2.add(imPt2);</span>
+            
+<span class="fc" id="L780">            didAdd = true;</span>
+<span class="fc" id="L781">        }</span>
+        
+<span class="pc bpc" id="L783" title="1 of 2 branches missed.">        if (didAdd) {</span>
+            // TODO: redo ranges
+        }
+<span class="fc" id="L786">    }</span>
+
+    private void printMatches(List&lt;FeatureComparisonStat&gt; stats) {
+<span class="pc bpc" id="L789" title="1 of 2 branches missed.">        if (stats == null) {</span>
+<span class="nc" id="L790">            return;</span>
+        }
+<span class="fc" id="L792">        List&lt;PairInt&gt; matched1 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L793">        List&lt;PairInt&gt; matched2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L794">        populateLists(stats, matched1, matched2);</span>
+        
+<span class="fc" id="L796">        printMatches(matched1, matched2);</span>
+<span class="fc" id="L797">    }</span>
+    
+    private void printMatches(CorrespondenceList cl) {
+<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (cl == null) {</span>
+<span class="nc" id="L801">            return;</span>
+        }
+<span class="nc" id="L803">        printMatches(cl.getPoints1(), cl.getPoints2());</span>
+<span class="nc" id="L804">    }</span>
+    
+    private void printMatches(Collection&lt;PairInt&gt; m1, Collection&lt;PairInt&gt; m2) {
+        
+<span class="fc" id="L808">        int ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="fc" id="L809">        GreyscaleImage gsImg1 = img1.copyToGreyscale();</span>
+<span class="fc" id="L810">        GreyscaleImage gsImg2 = img2.copyToGreyscale();</span>
+<span class="fc" id="L811">        String name1 = &quot;1_&quot; + debugTagPrefix + &quot;_&quot; + ts;</span>
+<span class="fc" id="L812">        String name2 = &quot;2_&quot; + debugTagPrefix + &quot;_&quot; + ts;</span>
+<span class="fc" id="L813">        name1 = name1 + &quot;_matched&quot;;</span>
+<span class="fc" id="L814">        name2 = name2 + &quot;_matched&quot;;</span>
+<span class="fc" id="L815">        MiscDebug.plotCorners(gsImg1, m1, name1, 2);</span>
+<span class="fc" id="L816">        MiscDebug.plotCorners(gsImg2, m2, name2, 2);</span>
+<span class="fc" id="L817">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

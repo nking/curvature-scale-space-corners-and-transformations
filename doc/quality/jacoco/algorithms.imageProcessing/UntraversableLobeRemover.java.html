@@ -259,8 +259,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 
 <span class="fc" id="L260">        patternPoints = findPattern(x, y, points, pattern);</span>
 
-<span class="fc bfc" id="L262" title="All 2 branches covered.">        if (patternPoints != null) {</span>
-<span class="fc" id="L263">            return patternPoints;</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
+<span class="nc" id="L263">            return patternPoints;</span>
         }
 
 <span class="fc" id="L266">        pattern = getDiagPattern3();</span>
@@ -586,8 +586,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L586">            neighbors.removeAll(junctionPoints);</span>
 
 <span class="fc bfc" id="L588" title="All 2 branches covered.">            if (!p.equals(jC)) {</span>
-<span class="pc bpc" id="L589" title="1 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
-<span class="fc" id="L590">                    return null;</span>
+<span class="pc bpc" id="L589" title="2 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
+<span class="nc" id="L590">                    return null;</span>
                 }
 <span class="fc bfc" id="L592" title="All 2 branches covered.">                if (neighbors.size() &gt; 1) {</span>
                     // keep the closest to jC

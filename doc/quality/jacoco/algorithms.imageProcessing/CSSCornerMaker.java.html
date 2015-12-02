@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CSSCornerMaker.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CSSCornerMaker.java</span></div><h1>CSSCornerMaker.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.compGeometry.NearestPoints;
+import algorithms.compGeometry.NearestPointsFloat;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,89 +41,204 @@ import java.util.logging.Logger;
  *
  * The method uses the recursive and separable properties of Gaussians where
  * possible.  (NOTE, not finished implementing the recursive portion).
- * Also, the curves can be closed curves and derived from means other than 
+ * Also, the curves can be closed curves and derived from means other than
  * edge detectors.
- * 
+ *
  * @author nichole
  */
-public class CSSCornerMaker {
-    
-<span class="fc" id="L42">    protected boolean enableJaggedLineCorrections = true;</span>
-    
-<span class="fc" id="L44">    protected float factorIncreaseForCurvatureMinimum = 1.f;</span>
-    
-<span class="fc" id="L46">    protected boolean performWholeImageCorners = true;</span>
-    
-<span class="fc" id="L48">    protected boolean doStoreCornerRegions = true;</span>
-    
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">public class CSSCornerMaker {</span>
+
+<span class="fc" id="L51">    protected boolean enableJaggedLineCorrections = true;</span>
+
+<span class="fc" id="L53">    protected float factorIncreaseForCurvatureMinimum = 1.f;</span>
+
+<span class="fc" id="L55">    protected boolean performWholeImageCorners = true;</span>
+
+<span class="fc" id="L57">    protected boolean doStoreCornerRegions = true;</span>
+
     protected final int width;
-    
+
     protected final int height;
-    
-<span class="fc" id="L54">    private Map&lt;Integer, List&lt;CornerRegion&gt;&gt; edgeCornerRegionMap = new</span>
+
+<span class="fc" id="L63">    private Map&lt;Integer, List&lt;CornerRegion&gt;&gt; edgeCornerRegionMap = new</span>
         HashMap&lt;Integer, List&lt;CornerRegion&gt;&gt;();
 
-<span class="fc" id="L57">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
-    
-<span class="fc" id="L59">    public CSSCornerMaker(int imageWidth, int imageHeight) {</span>
-<span class="fc" id="L60">        width = imageWidth;</span>
-<span class="fc" id="L61">        height = imageHeight;</span>
-<span class="fc" id="L62">    }</span>
-    
+<span class="fc" id="L66">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="fc" id="L68">    public CSSCornerMaker(int imageWidth, int imageHeight) {</span>
+<span class="fc" id="L69">        width = imageWidth;</span>
+<span class="fc" id="L70">        height = imageHeight;</span>
+<span class="fc" id="L71">    }</span>
+
     public void enableJaggedLineCorrections() {
-<span class="fc" id="L65">        enableJaggedLineCorrections = true;</span>
-<span class="fc" id="L66">    }</span>
+<span class="fc" id="L74">        enableJaggedLineCorrections = true;</span>
+<span class="fc" id="L75">    }</span>
     public void disableJaggedLineCorrections() {
-<span class="fc" id="L68">        enableJaggedLineCorrections = false;</span>
-<span class="fc" id="L69">    }</span>
-    
+<span class="fc" id="L77">        enableJaggedLineCorrections = false;</span>
+<span class="fc" id="L78">    }</span>
+
     public void doNotStoreCornerRegions() {
-<span class="nc" id="L72">        doStoreCornerRegions = false;</span>
-<span class="nc" id="L73">    }</span>
-    
+<span class="nc" id="L81">        doStoreCornerRegions = false;</span>
+<span class="nc" id="L82">    }</span>
+
     public void increaseFactorForCurvatureMinimum(float factor) {
-<span class="fc" id="L76">        factorIncreaseForCurvatureMinimum = factor;</span>
-<span class="fc" id="L77">    }</span>
-    
+<span class="fc" id="L85">        factorIncreaseForCurvatureMinimum = factor;</span>
+<span class="fc" id="L86">    }</span>
+
     public void resetFactorForCurvatureMinimum() {
-<span class="nc" id="L80">        factorIncreaseForCurvatureMinimum = 1.f;</span>
-<span class="nc" id="L81">    }</span>
-    
+<span class="nc" id="L89">        factorIncreaseForCurvatureMinimum = 1.f;</span>
+<span class="nc" id="L90">    }</span>
+
+    /**
+     *
+     * @param theEdges
+     * @param junctions map w/ key=edge index,
+     *     values = junctions on edge as (x,y) and edge curve indexes
+     * @param doUseOutdoorMode
+     * @param outputCorners
+     * @return
+     */
     public Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt;
-    findCornersInScaleSpaceMaps(final List&lt;PairIntArray&gt; theEdges, final boolean
-        doUseOutdoorMode, final PairIntArray outputCorners) {
-        
-<span class="fc" id="L87">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; scaleSpaceMaps</span>
+    findCornersInScaleSpaceMaps(final List&lt;PairIntArray&gt; theEdges,
+        Map&lt;Integer, Set&lt;PairIntWithIndex&gt;&gt; junctions,
+        final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
+
+<span class="fc" id="L106">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; scaleSpaceMaps</span>
             = new HashMap&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt;();
-          
+
         // perform the analysis on the edgesScaleSpaceMaps
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; theEdges.size(); i++) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; theEdges.size(); i++) {</span>
 
-<span class="fc" id="L93">            final PairIntArray edge = theEdges.get(i);</span>
+<span class="fc" id="L112">            final PairIntArray edge = theEdges.get(i);</span>
 
-<span class="fc" id="L95">            final Map&lt;SIGMA, ScaleSpaceCurve&gt; map =</span>
-<span class="fc" id="L96">                createLowUpperThresholdScaleSpaceMaps(edge);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">                (((PairIntArrayWithColor)edge).getColor() == 1);</span>
 
-<span class="fc" id="L98">            scaleSpaceMaps.put(edge, map);</span>
+<span class="fc" id="L117">            final Map&lt;SIGMA, ScaleSpaceCurve&gt; map =</span>
+<span class="fc" id="L118">                createLowUpperThresholdScaleSpaceMaps(edge);</span>
 
-<span class="fc" id="L100">            PairIntArray edgeCorners = findCornersInScaleSpaceMap(edge, map, i,</span>
-                doUseOutdoorMode);
+<span class="fc" id="L120">            scaleSpaceMaps.put(edge, map);</span>
 
-<span class="fc" id="L103">            log.log(Level.FINE,</span>
+<span class="fc" id="L122">            Set&lt;PairIntWithIndex&gt; edgeJunctions = junctions.get(Integer.valueOf(i));</span>
+
+<span class="fc" id="L124">            CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,</span>
+                edgeJunctions, i, doUseOutdoorMode);
+
+            // remove aliasing artifacts of a straight line with a single
+            // step in it.
+            // note that edgeCorners are already ordered by index.
+<span class="fc" id="L130">            PostLineThinnerCorrections.removeSingleStairsAliasArtifacts(</span>
+                edgeCorners, isClosedCurve);
+
+<span class="fc" id="L133">            log.log(Level.FINE,</span>
                 &quot;{0}) number of corners adding ={1} for edge={2}&quot;,
-<span class="fc" id="L105">                new Object[]{Integer.valueOf(i),</span>
-<span class="fc" id="L106">                    Integer.valueOf(edgeCorners.getN()),</span>
-<span class="fc" id="L107">                    Integer.valueOf(i)});</span>
+<span class="fc" id="L135">                new Object[]{Integer.valueOf(i),</span>
+<span class="fc" id="L136">                    Integer.valueOf(edgeCorners.getN()),</span>
+<span class="fc" id="L137">                    Integer.valueOf(i)});</span>
 
             //store xc and yc for the edge
-<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (int ii = 0; ii &lt; edgeCorners.getN(); ii++) {</span>
-<span class="fc" id="L111">                outputCorners.add(edgeCorners.getX(ii), edgeCorners.getY(ii));</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (int ii = 0; ii &lt; edgeCorners.getN(); ii++) {</span>
+<span class="fc" id="L141">                int x = Math.round(edgeCorners.getX(ii));</span>
+<span class="fc" id="L142">                int y = Math.round(edgeCorners.getY(ii));</span>
+<span class="fc" id="L143">                outputCorners.add(x, y);</span>
+            }
+
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (doStoreCornerRegions) {</span>
+
+<span class="fc" id="L148">                int edgeNumber = i;</span>
+                
+<span class="fc" id="L150">                Set&lt;Integer&gt; removeIndexes = new HashSet&lt;Integer&gt;();</span>
+
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                for (int ii = 0; ii &lt; edgeCorners.getN(); ii++) {</span>
+
+<span class="fc" id="L154">                    int idx = edgeCorners.getInt(ii);</span>
+                    
+<span class="fc bfc" id="L156" title="All 2 branches covered.">                    if (removeIndexes.contains(Integer.valueOf(ii))) {</span>
+<span class="fc" id="L157">                        continue;</span>
+                    }
+<span class="fc" id="L159">                    int x = Math.round(edgeCorners.getX(ii));</span>
+<span class="fc" id="L160">                    int y = Math.round(edgeCorners.getY(ii));</span>
+
+<span class="fc" id="L162">                    SIGMA sscSigma = edgeCorners.getSIGMA(ii);</span>
+<span class="fc" id="L163">                    ScaleSpaceCurve scaleSpace = map.get(sscSigma);</span>
+<span class="pc bpc" id="L164" title="3 of 4 branches missed.">                    assert(scaleSpace != null);</span>
+
+<span class="pc bpc" id="L166" title="3 of 4 branches missed.">                    assert(x == Math.round(scaleSpace.getX(idx)));</span>
+<span class="pc bpc" id="L167" title="3 of 4 branches missed.">                    assert(y == Math.round(scaleSpace.getY(idx)));</span>
+
+<span class="fc" id="L169">                    boolean added = storeCornerRegion(edgeNumber, idx, scaleSpace);</span>
+                    
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                    if (!added) {</span>
+<span class="fc" id="L172">                        continue;</span>
+                    }
+                    
+                    // -- merge adjacent or nearly adjacent corners --
+                    
+<span class="fc" id="L177">                    int ii2 = -1;</span>
+<span class="fc" id="L178">                    int idx2 = -1;</span>
+<span class="fc" id="L179">                    int dIdx = Integer.MAX_VALUE;</span>
+                    
+<span class="fc bfc" id="L181" title="All 4 branches covered.">                    if (isClosedCurve &amp;&amp; (ii == 0)) {</span>
+<span class="fc" id="L182">                        ii2 = edgeCorners.getN() - 1;</span>
+<span class="fc" id="L183">                        idx2 = edgeCorners.getInt(ii2);</span>
+<span class="fc" id="L184">                        dIdx = edge.getN() - idx2 + idx;</span>
+<span class="fc bfc" id="L185" title="All 4 branches covered.">                    } else if (isClosedCurve &amp;&amp; (ii == (edgeCorners.getN() - 1))) {</span>
+<span class="fc" id="L186">                        ii2 = 0;</span>
+<span class="fc" id="L187">                        idx2 = edgeCorners.getInt(ii2);</span>
+<span class="fc" id="L188">                        dIdx = edge.getN() - idx + idx2;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">                    } else if (ii &lt; (edgeCorners.getN() - 1)) {</span>
+<span class="fc" id="L190">                        ii2 = ii + 1;</span>
+<span class="fc" id="L191">                        idx2 = edgeCorners.getInt(ii2);</span>
+<span class="fc" id="L192">                        dIdx = idx2 + idx;</span>
+                    }
+<span class="fc bfc" id="L194" title="All 4 branches covered.">                    if ((idx2 &gt; -1) &amp;&amp; (dIdx &lt; 4)) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                        if (removeIndexes.contains(Integer.valueOf(ii2))) {</span>
+<span class="fc" id="L196">                            continue;</span>
+                        }
+<span class="fc" id="L198">                        ScaleSpaceCurve scaleSpace2 = map.get(edgeCorners.getSIGMA(ii2));</span>
+<span class="fc" id="L199">                        float k = scaleSpace.getK(idx);</span>
+<span class="fc" id="L200">                        float k2 = scaleSpace2.getK(idx2);</span>
+<span class="fc" id="L201">                        float kLimit = 0.1f * Math.abs((k + k2)/2.f);</span>
+                        //remove weakest
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                        if (Math.abs(k - k2) &gt; kLimit) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                            if (Math.abs(k2) &gt; Math.abs(k)) {</span>
+<span class="fc" id="L205">                                removeIndexes.add(Integer.valueOf(ii));</span>
+                            } else {
+<span class="fc" id="L207">                                removeIndexes.add(Integer.valueOf(ii2));</span>
+                            }
+                        } else {
+                            //merge, replace ii, remove ii2
+<span class="fc" id="L211">                            int x2 = Math.round(edgeCorners.getX(ii2));</span>
+<span class="fc" id="L212">                            int y2 = Math.round(edgeCorners.getY(ii2));</span>
+<span class="fc" id="L213">                            float xAvg = (edgeCorners.getX(ii) + edgeCorners.getX(ii2))/2.f;</span>
+<span class="fc" id="L214">                            float yAvg = (edgeCorners.getY(ii) + edgeCorners.getY(ii2))/2.f;</span>
+<span class="fc" id="L215">                            edgeCorners.set(ii, xAvg, yAvg, idx, sscSigma);</span>
+<span class="fc" id="L216">                            removeIndexes.add(Integer.valueOf(ii2));</span>
+                        }
+                    }
+                }
+<span class="fc bfc" id="L220" title="All 2 branches covered.">                if (removeIndexes.size() == 1) {</span>
+<span class="fc" id="L221">                    int rmIdx = removeIndexes.iterator().next().intValue();</span>
+<span class="fc" id="L222">                    edgeCorners.removeRange(rmIdx, rmIdx);</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">                } else if (removeIndexes.size() &gt; 0) {</span>
+<span class="nc" id="L224">                    int[] rmIdxs = new int[removeIndexes.size()];</span>
+<span class="nc" id="L225">                    int count = 0;</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">                    for (Integer rmIndex : removeIndexes) {</span>
+<span class="nc" id="L227">                        rmIdxs[count] = rmIndex.intValue();</span>
+<span class="nc" id="L228">                        count++;</span>
+<span class="nc" id="L229">                    }</span>
+<span class="nc" id="L230">                    Arrays.sort(rmIdxs);</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                    for (int j = (rmIdxs.length - 1); j &gt; -1; --j) {</span>
+<span class="nc" id="L232">                        int rmIdx = rmIdxs[j];</span>
+<span class="nc" id="L233">                        edgeCorners.removeRange(rmIdx, rmIdx);</span>
+                    }
+                }
             }
         }
 
-<span class="fc" id="L115">        return scaleSpaceMaps;</span>
+<span class="fc" id="L239">        return scaleSpaceMaps;</span>
     }
-    
+
     /**
      * Construct scale space images (that is X(t, sigma), y(t, sigma), and
      * k(t, sigma) where t is the intervals of spacing along the curve
@@ -128,53 +252,53 @@ public class CSSCornerMaker {
     private Map&lt;SIGMA, ScaleSpaceCurve&gt; createLowUpperThresholdScaleSpaceMaps(
         final PairIntArray edge) {
 
-<span class="fc" id="L131">        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();</span>
+<span class="fc" id="L255">        ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();</span>
 
-<span class="fc" id="L133">        Map&lt;SIGMA, ScaleSpaceCurve&gt; map = new HashMap&lt;SIGMA, ScaleSpaceCurve&gt;();</span>
+<span class="fc" id="L257">        Map&lt;SIGMA, ScaleSpaceCurve&gt; map = new HashMap&lt;SIGMA, ScaleSpaceCurve&gt;();</span>
 
-<span class="fc" id="L135">        SIGMA sigma = SIGMA.ZEROPOINTFIVE;</span>
+<span class="fc" id="L259">        SIGMA sigma = SIGMA.ZEROPOINTFIVE;</span>
 
         //TODO: take a look at the highest resolution curvature array
         //   and see if can derive the same upper limit by S/N estimate
         //   and assuming want to smooth to 2 o3 3 times the noise
-<span class="fc" id="L140">        SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());</span>
+<span class="fc" id="L264">        SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());</span>
 
         // this increases by a factor of sqrt(2)
-<span class="fc" id="L143">        float resultingSigma = SIGMA.getValue(sigma);</span>
+<span class="fc" id="L267">        float resultingSigma = SIGMA.getValue(sigma);</span>
 
-<span class="fc" id="L145">        ScaleSpaceCurve lastCurve = null;</span>
+<span class="fc" id="L269">        ScaleSpaceCurve lastCurve = null;</span>
 
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        while (sigma.compareTo(maxSIGMA) &lt; 1) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        while (sigma.compareTo(maxSIGMA) &lt; 1) {</span>
 
             ScaleSpaceCurve curve;
 
-<span class="fc bfc" id="L151" title="All 2 branches covered.">            if (lastCurve == null) {</span>
-<span class="fc" id="L152">                curve = scaleSpaceHelper.computeCurvature(edge, sigma,</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (lastCurve == null) {</span>
+<span class="fc" id="L276">                curve = scaleSpaceHelper.computeCurvature(edge, sigma,</span>
                     resultingSigma);
             } else {
-<span class="fc" id="L155">                curve = scaleSpaceHelper.computeCurvature(</span>
-<span class="fc" id="L156">                    lastCurve.getXYCurve(), sigma, resultingSigma);</span>
+<span class="fc" id="L279">                curve = scaleSpaceHelper.computeCurvature(</span>
+<span class="fc" id="L280">                    lastCurve.getXYCurve(), sigma, resultingSigma);</span>
             }
 
-<span class="fc" id="L159">            map.put(sigma, curve);</span>
+<span class="fc" id="L283">            map.put(sigma, curve);</span>
 
-<span class="fc" id="L161">            sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);</span>
+<span class="fc" id="L285">            sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);</span>
 
-<span class="fc" id="L163">            resultingSigma *= Math.sqrt(2);</span>
+<span class="fc" id="L287">            resultingSigma *= Math.sqrt(2);</span>
 
-<span class="fc" id="L165">            lastCurve = curve;</span>
+<span class="fc" id="L289">            lastCurve = curve;</span>
 
-<span class="fc" id="L167">        }</span>
+<span class="fc" id="L291">        }</span>
 
-<span class="fc bfc" id="L169" title="All 2 branches covered.">        if (!map.containsKey(maxSIGMA)) {</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (!map.containsKey(maxSIGMA)) {</span>
 
-<span class="fc" id="L171">            ScaleSpaceCurve curve = scaleSpaceHelper.computeCurvature(edge,</span>
-<span class="fc" id="L172">                maxSIGMA, SIGMA.getValue(maxSIGMA));</span>
+<span class="fc" id="L295">            ScaleSpaceCurve curve = scaleSpaceHelper.computeCurvature(edge,</span>
+<span class="fc" id="L296">                maxSIGMA, SIGMA.getValue(maxSIGMA));</span>
 
-<span class="fc" id="L174">            map.put(maxSIGMA, curve);</span>
+<span class="fc" id="L298">            map.put(maxSIGMA, curve);</span>
         }
 
-<span class="fc" id="L177">        return map;</span>
+<span class="fc" id="L301">        return map;</span>
     }
 
     /**
@@ -188,6 +312,7 @@ public class CSSCornerMaker {
      * corners found.
      *
      * @param scaleSpace scale space map for an edge
+     * @param scaleSpaceSigma
      * @param edgeNumber the edgeNumber of the scaleSpace.  it's passed for
      * debugging purposes.
      * @param correctForJaggedLines
@@ -195,61 +320,54 @@ public class CSSCornerMaker {
      * @param doUseOutdoorMode
      * @return
      */
-    protected PairFloatArray findCornersInScaleSpaceMap(
-        final ScaleSpaceCurve scaleSpace, int edgeNumber,
-        boolean correctForJaggedLines, final boolean isAClosedCurve,
-        final boolean doUseOutdoorMode) {
+    protected CornerArray findCornersInScaleSpaceMap(
+        final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
+        int edgeNumber, boolean correctForJaggedLines,
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
-<span class="fc" id="L203">        float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);</span>
+<span class="fc" id="L328">        float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);</span>
 
-<span class="fc" id="L205">        float[] outputLowThreshold = new float[1];</span>
+<span class="fc" id="L330">        float[] outputLowThreshold = new float[1];</span>
 
-<span class="fc" id="L207">        List&lt;Integer&gt; minimaAndMaximaIndexes = findMinimaAndMaximaInCurvature(</span>
+<span class="fc" id="L332">        List&lt;Integer&gt; minimaAndMaximaIndexes = findMinimaAndMaximaInCurvature(</span>
             k, outputLowThreshold);
 
-<span class="fc" id="L210">        List&lt;Integer&gt; maxCandidateCornerIndexes = findCandidateCornerIndexes(</span>
+<span class="fc" id="L335">        List&lt;Integer&gt; maxCandidateCornerIndexes = findCandidateCornerIndexes(</span>
             k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode);
 
-<span class="fc" id="L213">        PairFloatArray xy = new PairFloatArray(maxCandidateCornerIndexes.size());</span>
+<span class="fc" id="L338">        CornerArray xy = new CornerArray(maxCandidateCornerIndexes.size());</span>
 
-<span class="fc bfc" id="L215" title="All 2 branches covered.">        if (maxCandidateCornerIndexes.isEmpty()) {</span>
-<span class="fc" id="L216">            return xy;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        if (maxCandidateCornerIndexes.isEmpty()) {</span>
+<span class="fc" id="L341">            return xy;</span>
         }
-        
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        boolean storeCornerRegion = doStoreCornerRegions &amp;&amp; </span>
-<span class="fc bfc" id="L220" title="All 2 branches covered.">            !edgeCornerRegionMap.containsKey(Integer.valueOf(edgeNumber));</span>
-        
-<span class="pc bpc" id="L222" title="1 of 4 branches missed.">        if (correctForJaggedLines &amp;&amp; !doUseOutdoorMode) {</span>
 
-<span class="fc" id="L224">            PairIntArray jaggedLines = removeFalseCorners(</span>
-<span class="fc" id="L225">                scaleSpace.getXYCurve(), maxCandidateCornerIndexes,</span>
+<span class="pc bpc" id="L344" title="1 of 4 branches missed.">        if (correctForJaggedLines &amp;&amp; !doUseOutdoorMode) {</span>
+
+<span class="fc" id="L346">            PairIntArray jaggedLines = removeFalseCorners(</span>
+<span class="fc" id="L347">                scaleSpace.getXYCurve(), maxCandidateCornerIndexes,</span>
                 isAClosedCurve);
         }
 
-<span class="fc" id="L229">        int minDistFromEnds = 5;</span>
-<span class="fc" id="L230">        int nPoints = scaleSpace.getSize();</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int ii = 0; ii &lt; maxCandidateCornerIndexes.size(); ii++) {</span>
+<span class="fc" id="L351">        int minDistFromEnds = 5;</span>
+<span class="fc" id="L352">        int nPoints = scaleSpace.getSize();</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        for (int ii = 0; ii &lt; maxCandidateCornerIndexes.size(); ii++) {</span>
 
-<span class="fc" id="L233">            int idx = maxCandidateCornerIndexes.get(ii);</span>
+<span class="fc" id="L355">            int idx = maxCandidateCornerIndexes.get(ii);</span>
 
-<span class="pc bpc" id="L235" title="3 of 4 branches missed.">            if (doUseOutdoorMode &amp;&amp; !scaleSpace.curveIsClosed()) {</span>
-<span class="nc bnc" id="L236" title="All 4 branches missed.">                if ((idx &lt; minDistFromEnds)</span>
+<span class="pc bpc" id="L357" title="3 of 4 branches missed.">            if (doUseOutdoorMode &amp;&amp; !scaleSpace.curveIsClosed()) {</span>
+<span class="nc bnc" id="L358" title="All 4 branches missed.">                if ((idx &lt; minDistFromEnds)</span>
                     || (idx &gt; (nPoints - minDistFromEnds))) {
-<span class="nc" id="L238">                    continue;</span>
+<span class="nc" id="L360">                    continue;</span>
                 }
             }
-            
-<span class="fc" id="L242">            float x = scaleSpace.getX(idx);</span>
-<span class="fc" id="L243">            float y = scaleSpace.getY(idx);</span>
 
-<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (storeCornerRegion) {</span>
-<span class="fc" id="L246">                storeCornerRegion(edgeNumber, idx, k, scaleSpace);</span>
-            }
-            
-<span class="fc" id="L249">            xy.add(x, y);</span>
+<span class="fc" id="L364">            float x = scaleSpace.getX(idx);</span>
+<span class="fc" id="L365">            float y = scaleSpace.getY(idx);</span>
+
+<span class="fc" id="L367">            xy.add(x, y, idx, scaleSpaceSigma);</span>
         }
 
-<span class="fc" id="L252">        return xy;</span>
+<span class="fc" id="L370">        return xy;</span>
     }
 
     /**
@@ -261,62 +379,72 @@ public class CSSCornerMaker {
      * @param edgeNumber
      * @return
      */
-    private PairIntArray findCornersInScaleSpaceMap(final PairIntArray edge,
+    private CornerArray findCornersInScaleSpaceMap(final PairIntArray edge,
         final Map&lt;SIGMA, ScaleSpaceCurve&gt; scaleSpaceCurves,
+        final Set&lt;PairIntWithIndex&gt; junctions,
         final int edgeNumber, final boolean doUseOutdoorMode) {
 
-<span class="fc bfc" id="L268" title="All 2 branches covered.">        boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
-<span class="pc bpc" id="L269" title="1 of 2 branches missed.">            (((PairIntArrayWithColor)edge).getColor() == 1);</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">        boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">            (((PairIntArrayWithColor)edge).getColor() == 1);</span>
 
-<span class="fc" id="L271">        SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());</span>
+<span class="fc" id="L390">        SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());</span>
 
-<span class="fc" id="L273">        ScaleSpaceCurve maxScaleSpace = scaleSpaceCurves.get(maxSIGMA);</span>
+<span class="fc" id="L392">        ScaleSpaceCurve maxScaleSpace = scaleSpaceCurves.get(maxSIGMA);</span>
 
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        if (maxScaleSpace == null) {</span>
-<span class="nc" id="L276">            throw new IllegalStateException(</span>
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">        if (maxScaleSpace == null) {</span>
+<span class="nc" id="L395">            throw new IllegalStateException(</span>
                 &quot;could not find the scale space for max sigma&quot;);
         }
 
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">        if (maxScaleSpace.getK() == null) {</span>
-<span class="nc" id="L281">            return new PairIntArray(0);</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">        if (maxScaleSpace.getK() == null) {</span>
+<span class="nc" id="L400">            return new CornerArray(0);</span>
         }
-        
-<span class="fc" id="L284">        PairFloatArray candidateCornersXY =</span>
-<span class="fc" id="L285">            findCornersInScaleSpaceMap(maxScaleSpace, edgeNumber, </span>
+
+<span class="fc" id="L403">        CornerArray candidateCornersXY =</span>
+<span class="fc" id="L404">            findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber,</span>
                 enableJaggedLineCorrections, isAClosedCurve, doUseOutdoorMode);
 
-<span class="fc" id="L288">        SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);</span>
+<span class="fc" id="L407">        insertJunctions(maxScaleSpace, maxSIGMA, edgeNumber, junctions,</span>
+            candidateCornersXY);
 
-<span class="fc" id="L290">        SIGMA prevSigma = maxSIGMA;</span>
+<span class="fc" id="L410">        SIGMA sigma = SIGMA.divideBySQRT2(maxSIGMA);</span>
+
+<span class="fc" id="L412">        SIGMA prevSigma = maxSIGMA;</span>
 
         //find the corners in the higher res scale space curves
-<span class="fc bfc" id="L293" title="All 2 branches covered.">        while (sigma != null) {</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        while (sigma != null) {</span>
 
-<span class="fc" id="L295">            ScaleSpaceCurve scaleSpace = scaleSpaceCurves.get(sigma);</span>
+<span class="fc" id="L417">            ScaleSpaceCurve scaleSpace = scaleSpaceCurves.get(sigma);</span>
 
-<span class="fc" id="L297">            refinePrimaryCoordinates(candidateCornersXY.getX(),</span>
-<span class="fc" id="L298">                candidateCornersXY.getY(), candidateCornersXY.getN(),</span>
-                scaleSpace, prevSigma, edgeNumber, isAClosedCurve,
+<span class="fc" id="L419">            refinePrimaryCoordinates(candidateCornersXY,</span>
+                scaleSpace, sigma, prevSigma, edgeNumber, isAClosedCurve,
                 doUseOutdoorMode);
 
-<span class="fc" id="L302">            prevSigma = sigma;</span>
+<span class="fc" id="L423">            removeRedundantPoints(candidateCornersXY, scaleSpaceCurves);</span>
 
-<span class="fc" id="L304">            sigma = SIGMA.divideBySQRT2(sigma);</span>
-<span class="fc" id="L305">        }</span>
+<span class="fc" id="L425">            prevSigma = sigma;</span>
 
-<span class="fc" id="L307">        log.log(Level.FINE, &quot;number of corners adding ={0}&quot;,</span>
-<span class="fc" id="L308">            Integer.valueOf(candidateCornersXY.getN()));</span>
+<span class="fc" id="L427">            sigma = SIGMA.divideBySQRT2(sigma);</span>
+<span class="fc" id="L428">        }</span>
 
-<span class="fc" id="L310">        PairIntArray edgeCorners = new PairIntArray(candidateCornersXY.getN());</span>
+<span class="fc" id="L430">        log.log(Level.FINE, &quot;number of corners adding ={0}&quot;,</span>
+<span class="fc" id="L431">            Integer.valueOf(candidateCornersXY.getN()));</span>
+
+<span class="fc" id="L433">        CornerArray edgeCorners = new CornerArray(candidateCornersXY.getN());</span>
 
         //store xc and yc for the edge
-<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int ii = 0; ii &lt; candidateCornersXY.getN(); ii++) {</span>
-<span class="fc" id="L314">            int xte = Math.round(candidateCornersXY.getX(ii));</span>
-<span class="fc" id="L315">            int yte = Math.round(candidateCornersXY.getY(ii));</span>
-<span class="fc" id="L316">            edgeCorners.add(xte, yte);</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">        for (int ii = 0; ii &lt; candidateCornersXY.getN(); ii++) {</span>
+
+<span class="fc" id="L438">            int xte = Math.round(candidateCornersXY.getX(ii));</span>
+<span class="fc" id="L439">            int yte = Math.round(candidateCornersXY.getY(ii));</span>
+
+<span class="fc" id="L441">            edgeCorners.add(xte, yte, candidateCornersXY.getInt(ii),</span>
+<span class="fc" id="L442">                candidateCornersXY.getSIGMA(ii));</span>
         }
 
-<span class="fc" id="L319">        return edgeCorners;</span>
+        //insertJunctions(edgeCorners, scaleSpaceCurves, junctions);
+
+<span class="fc" id="L447">        return edgeCorners;</span>
     }
 
     /**
@@ -331,32 +459,32 @@ public class CSSCornerMaker {
     protected List&lt;Integer&gt; findMinimaAndMaximaInCurvature(float[] k,
         float[] outputLowThreshold) {
 
-<span class="pc bpc" id="L334" title="2 of 4 branches missed.">        if ((k == null) || (k.length == 0)) {</span>
-<span class="nc" id="L335">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="pc bpc" id="L462" title="2 of 4 branches missed.">        if ((k == null) || (k.length == 0)) {</span>
+<span class="nc" id="L463">            return new ArrayList&lt;Integer&gt;();</span>
         }
 
-<span class="fc bfc" id="L338" title="All 2 branches covered.">        for (int ii = 1; ii &lt; k.length; ii++) {</span>
-<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (k[ii] &lt; 0.0f) {</span>
-<span class="fc" id="L340">                k[ii] *= -1.0f;</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (int ii = 1; ii &lt; k.length; ii++) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (k[ii] &lt; 0.0f) {</span>
+<span class="fc" id="L468">                k[ii] *= -1.0f;</span>
             }
         }
 
-<span class="fc bfc" id="L344" title="All 2 branches covered.">        if (k.length &lt; 3) {</span>
-<span class="fc" id="L345">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">        if (k.length &lt; 3) {</span>
+<span class="fc" id="L473">            return new ArrayList&lt;Integer&gt;();</span>
         }
 
-<span class="fc" id="L348">        float[] kQuartiles = ImageStatisticsHelper.getQuartiles(k);</span>
+<span class="fc" id="L476">        float[] kQuartiles = ImageStatisticsHelper.getQuartiles(k);</span>
 
-<span class="fc" id="L350">        log.fine(&quot;quartiles=&quot; + Arrays.toString(kQuartiles));</span>
+<span class="fc" id="L478">        log.fine(&quot;quartiles=&quot; + Arrays.toString(kQuartiles));</span>
 
         //float kMax = MiscMath.findMax(k);
 
         // determine float lowThresh
-<span class="fc" id="L355">        HistogramHolder h = Histogram.calculateSturgesHistogram(</span>
-<span class="fc" id="L356">            0, 2 * kQuartiles[2], k, Errors.populateYErrorsBySqrt(k));</span>
+<span class="fc" id="L483">        HistogramHolder h = Histogram.calculateSturgesHistogram(</span>
+<span class="fc" id="L484">            0, 2 * kQuartiles[2], k, Errors.populateYErrorsBySqrt(k));</span>
 
-<span class="fc bfc" id="L358" title="All 2 branches covered.">        if (h.getXHist().length &lt; 3) {</span>
-<span class="fc" id="L359">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">        if (h.getXHist().length &lt; 3) {</span>
+<span class="fc" id="L487">            return new ArrayList&lt;Integer&gt;();</span>
         }
 
         /*
@@ -365,42 +493,42 @@ public class CSSCornerMaker {
         } catch (Exception e) {}
         */
 
-<span class="fc" id="L368">        int[] firstPeakAndMinIdx = findFirstPeakAndMinimum(h);</span>
+<span class="fc" id="L496">        int[] firstPeakAndMinIdx = findFirstPeakAndMinimum(h);</span>
 
-<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt; 3) {</span>
-<span class="fc" id="L371">            firstPeakAndMinIdx[1] = firstPeakAndMinIdx[0] + 1;</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt; 3) {</span>
+<span class="fc" id="L499">            firstPeakAndMinIdx[1] = firstPeakAndMinIdx[0] + 1;</span>
         }
-<span class="fc bfc" id="L373" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt;= (h.getYHist().length &gt;&gt; 1)) {</span>
-<span class="fc" id="L374">            firstPeakAndMinIdx[1] = 1;</span>
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        if (firstPeakAndMinIdx[1] &gt;= (h.getYHist().length &gt;&gt; 1)) {</span>
+<span class="fc" id="L502">            firstPeakAndMinIdx[1] = 1;</span>
         }
 
         // sum intensity &lt;= firstMinIdx and then after to compare
-<span class="fc" id="L378">        long sum0 = 0;</span>
-<span class="fc" id="L379">        long sum1 = 0;</span>
-<span class="fc bfc" id="L380" title="All 2 branches covered.">        for (int i = 0; i &lt; h.getXHist().length; i++) {</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">            if (i &lt;= firstPeakAndMinIdx[1]) {</span>
-<span class="fc" id="L382">                sum0 += h.getYHist()[i];</span>
+<span class="fc" id="L506">        long sum0 = 0;</span>
+<span class="fc" id="L507">        long sum1 = 0;</span>
+<span class="fc bfc" id="L508" title="All 2 branches covered.">        for (int i = 0; i &lt; h.getXHist().length; i++) {</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">            if (i &lt;= firstPeakAndMinIdx[1]) {</span>
+<span class="fc" id="L510">                sum0 += h.getYHist()[i];</span>
             } else {
-<span class="fc" id="L384">                sum1 += h.getYHist()[i];</span>
+<span class="fc" id="L512">                sum1 += h.getYHist()[i];</span>
             }
         }
 
-<span class="fc bfc" id="L388" title="All 2 branches covered.">        if (sum1 == 0) {</span>
-<span class="fc" id="L389">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">        if (sum1 == 0) {</span>
+<span class="fc" id="L517">            return new ArrayList&lt;Integer&gt;();</span>
         }
 
-<span class="fc" id="L392">        float divSum = (float)sum0/(float)sum1;</span>
-<span class="fc" id="L393">        outputLowThreshold[0] = 0;</span>
-<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (divSum &gt; 10) {</span>
-<span class="fc" id="L395">            outputLowThreshold[0] = h.getXHist()[firstPeakAndMinIdx[0]];</span>
-<span class="pc bpc" id="L396" title="1 of 4 branches missed.">        } else if ((firstPeakAndMinIdx[1] &gt; 0) &amp;&amp; (sum1 &gt; 0)) {</span>
-<span class="fc" id="L397">            outputLowThreshold[0] = (h.getXHist()[firstPeakAndMinIdx[1]]</span>
-<span class="fc" id="L398">                + h.getXHist()[firstPeakAndMinIdx[1] - 1])/2;</span>
-<span class="pc bpc" id="L399" title="3 of 4 branches missed.">        } else if ((firstPeakAndMinIdx[1] &gt; 0) &amp;&amp; (sum1 == 0)) {</span>
-<span class="nc" id="L400">            firstPeakAndMinIdx[1]--;</span>
+<span class="fc" id="L520">        float divSum = (float)sum0/(float)sum1;</span>
+<span class="fc" id="L521">        outputLowThreshold[0] = 0;</span>
+<span class="fc bfc" id="L522" title="All 2 branches covered.">        if (divSum &gt; 10) {</span>
+<span class="fc" id="L523">            outputLowThreshold[0] = h.getXHist()[firstPeakAndMinIdx[0]];</span>
+<span class="pc bpc" id="L524" title="1 of 4 branches missed.">        } else if ((firstPeakAndMinIdx[1] &gt; 0) &amp;&amp; (sum1 &gt; 0)) {</span>
+<span class="fc" id="L525">            outputLowThreshold[0] = (h.getXHist()[firstPeakAndMinIdx[1]]</span>
+<span class="fc" id="L526">                + h.getXHist()[firstPeakAndMinIdx[1] - 1])/2;</span>
+<span class="pc bpc" id="L527" title="3 of 4 branches missed.">        } else if ((firstPeakAndMinIdx[1] &gt; 0) &amp;&amp; (sum1 == 0)) {</span>
+<span class="nc" id="L528">            firstPeakAndMinIdx[1]--;</span>
         }
 
-<span class="fc" id="L403">        log.fine(&quot;lowThresh=&quot; + outputLowThreshold[0]</span>
+<span class="fc" id="L531">        log.fine(&quot;lowThresh=&quot; + outputLowThreshold[0]</span>
             + &quot; sum0=&quot; + sum0 + &quot; sum1=&quot; + sum1 + &quot; divsum=&quot; + divSum
             + &quot; firstPeakAndMinIdx[0]=&quot; + firstPeakAndMinIdx[0]
             + &quot; firstPeakAndMinIdx[1]=&quot; + firstPeakAndMinIdx[1]);
@@ -410,36 +538,36 @@ public class CSSCornerMaker {
         the minima have -1*index within k
         and the maxima keep their positive values of the index within k.
         */
-<span class="fc" id="L413">        List&lt;Integer&gt; minMaxIndexes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L541">        List&lt;Integer&gt; minMaxIndexes = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc" id="L415">        float lastK = k[0];</span>
-<span class="fc" id="L416">        boolean incr = true;</span>
-<span class="fc bfc" id="L417" title="All 2 branches covered.">        for (int ii = 1; ii &lt; k.length; ii++) {</span>
+<span class="fc" id="L543">        float lastK = k[0];</span>
+<span class="fc" id="L544">        boolean incr = true;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">        for (int ii = 1; ii &lt; k.length; ii++) {</span>
 
-<span class="fc" id="L419">            float currentK = k[ii];</span>
+<span class="fc" id="L547">            float currentK = k[ii];</span>
 
-<span class="fc bfc" id="L421" title="All 4 branches covered.">            if ((currentK &lt; lastK) &amp;&amp; incr) {</span>
-<span class="fc bfc" id="L422" title="All 2 branches covered.">                if (k[ii - 1] &gt; outputLowThreshold[0]) {</span>
-<span class="fc" id="L423">                    minMaxIndexes.add(Integer.valueOf(ii - 1));</span>
+<span class="fc bfc" id="L549" title="All 4 branches covered.">            if ((currentK &lt; lastK) &amp;&amp; incr) {</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">                if (k[ii - 1] &gt; outputLowThreshold[0]) {</span>
+<span class="fc" id="L551">                    minMaxIndexes.add(Integer.valueOf(ii - 1));</span>
                 }
-<span class="fc" id="L425">                incr = false;</span>
-<span class="fc bfc" id="L426" title="All 4 branches covered.">            } else if ((currentK &gt; lastK) &amp;&amp; !incr) {</span>
+<span class="fc" id="L553">                incr = false;</span>
+<span class="fc bfc" id="L554" title="All 4 branches covered.">            } else if ((currentK &gt; lastK) &amp;&amp; !incr) {</span>
                 // values below outputLowThreshold[0] are handled by
                 // callers.  TODO: redesign the caller and this method
                 // to not need to understand peculiarities of the data.
-<span class="fc" id="L430">                minMaxIndexes.add(Integer.valueOf(-1*(ii - 1)));</span>
-<span class="fc" id="L431">                incr = true;</span>
+<span class="fc" id="L558">                minMaxIndexes.add(Integer.valueOf(-1*(ii - 1)));</span>
+<span class="fc" id="L559">                incr = true;</span>
             }
 
-<span class="fc" id="L434">            lastK = currentK;</span>
+<span class="fc" id="L562">            lastK = currentK;</span>
         }
 
-<span class="fc bfc" id="L437" title="All 2 branches covered.">        if (incr) {</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">        if (incr) {</span>
             // add the last point
-<span class="fc" id="L439">             minMaxIndexes.add(Integer.valueOf(k.length - 1));</span>
+<span class="fc" id="L567">             minMaxIndexes.add(Integer.valueOf(k.length - 1));</span>
         }
 
-<span class="fc" id="L442">        return minMaxIndexes;</span>
+<span class="fc" id="L570">        return minMaxIndexes;</span>
     }
 
     /**
@@ -451,32 +579,32 @@ public class CSSCornerMaker {
      */
     protected int[] findFirstPeakAndMinimum(HistogramHolder h) {
 
-<span class="fc" id="L454">        float[] xh = h.getXHist();</span>
-<span class="fc" id="L455">        float[] yh = h.getYHistFloat();</span>
+<span class="fc" id="L582">        float[] xh = h.getXHist();</span>
+<span class="fc" id="L583">        float[] yh = h.getYHistFloat();</span>
 
-<span class="fc" id="L457">        int firstMinIdx = -1;</span>
-<span class="fc" id="L458">        int yFirstPeakIdx = -1;</span>
-<span class="fc" id="L459">        float lastY = yh[0];</span>
-<span class="fc" id="L460">        boolean incr = true;</span>
-<span class="fc bfc" id="L461" title="All 2 branches covered.">        for (int i = 1; i &lt; xh.length; i++) {</span>
-<span class="fc bfc" id="L462" title="All 2 branches covered.">            if (yFirstPeakIdx &gt; -1) {</span>
-<span class="pc bpc" id="L463" title="1 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
-<span class="nc" id="L464">                    incr = false;</span>
-<span class="pc bpc" id="L465" title="1 of 4 branches missed.">                } else if ((yh[i] &gt; lastY) &amp;&amp; !incr) {</span>
-<span class="fc" id="L466">                    firstMinIdx = i - 1;</span>
-<span class="fc" id="L467">                    break;</span>
+<span class="fc" id="L585">        int firstMinIdx = -1;</span>
+<span class="fc" id="L586">        int yFirstPeakIdx = -1;</span>
+<span class="fc" id="L587">        float lastY = yh[0];</span>
+<span class="fc" id="L588">        boolean incr = true;</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">        for (int i = 1; i &lt; xh.length; i++) {</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">            if (yFirstPeakIdx &gt; -1) {</span>
+<span class="pc bpc" id="L591" title="1 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
+<span class="nc" id="L592">                    incr = false;</span>
+<span class="pc bpc" id="L593" title="1 of 4 branches missed.">                } else if ((yh[i] &gt; lastY) &amp;&amp; !incr) {</span>
+<span class="fc" id="L594">                    firstMinIdx = i - 1;</span>
+<span class="fc" id="L595">                    break;</span>
                 }
             } else {
-<span class="pc bpc" id="L470" title="1 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
-<span class="fc" id="L471">                    incr = false;</span>
-<span class="fc" id="L472">                    yFirstPeakIdx = i - 1;</span>
+<span class="pc bpc" id="L598" title="1 of 4 branches missed.">                if ((yh[i] &lt; lastY) &amp;&amp; incr) {</span>
+<span class="fc" id="L599">                    incr = false;</span>
+<span class="fc" id="L600">                    yFirstPeakIdx = i - 1;</span>
                 }
             }
-<span class="fc" id="L475">            lastY = yh[i];</span>
+<span class="fc" id="L603">            lastY = yh[i];</span>
         }
-<span class="fc" id="L477">        firstMinIdx++;</span>
+<span class="fc" id="L605">        firstMinIdx++;</span>
 
-<span class="fc" id="L479">        return new int[]{yFirstPeakIdx, firstMinIdx};</span>
+<span class="fc" id="L607">        return new int[]{yFirstPeakIdx, firstMinIdx};</span>
     }
 
     /**
@@ -499,90 +627,90 @@ public class CSSCornerMaker {
         // findJaggedLineSegments2 are simplified, use both separately
         // and keep the solution which results in fewer corners.
 
-<span class="fc" id="L502">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L630">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
 
-<span class="fc" id="L504">        PairIntArray jaggedLineSegments1 =</span>
-<span class="fc" id="L505">            curveHelper.findJaggedLineSegments(xyCurve);</span>
+<span class="fc" id="L632">        PairIntArray jaggedLineSegments1 =</span>
+<span class="fc" id="L633">            curveHelper.findJaggedLineSegments(xyCurve);</span>
 
-<span class="fc" id="L507">        PairIntArray jaggedLineSegments2 =</span>
-<span class="fc" id="L508">            curveHelper.findJaggedLineSegments2(xyCurve);</span>
+<span class="fc" id="L635">        PairIntArray jaggedLineSegments2 =</span>
+<span class="fc" id="L636">            curveHelper.findJaggedLineSegments2(xyCurve);</span>
 
-<span class="fc" id="L510">        List&lt;Integer&gt; remove1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L638">        List&lt;Integer&gt; remove1 = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc" id="L512">        List&lt;Integer&gt; remove2 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L640">        List&lt;Integer&gt; remove2 = new ArrayList&lt;Integer&gt;();</span>
 
-<span class="fc bfc" id="L514" title="All 2 branches covered.">        for (int ii = 0; ii &lt; maxCandidateCornerIndexes.size(); ii++) {</span>
+<span class="fc bfc" id="L642" title="All 2 branches covered.">        for (int ii = 0; ii &lt; maxCandidateCornerIndexes.size(); ii++) {</span>
 
-<span class="fc" id="L516">            int idx = maxCandidateCornerIndexes.get(ii);</span>
+<span class="fc" id="L644">            int idx = maxCandidateCornerIndexes.get(ii);</span>
 
-<span class="fc bfc" id="L518" title="All 6 branches covered.">            if (isAClosedCurve &amp;&amp; ((idx &lt; 3) || (idx &gt; (xyCurve.getN() - 4)))) {</span>
+<span class="fc bfc" id="L646" title="All 6 branches covered.">            if (isAClosedCurve &amp;&amp; ((idx &lt; 3) || (idx &gt; (xyCurve.getN() - 4)))) {</span>
                 // keep
 
-<span class="fc bfc" id="L521" title="All 4 branches covered.">            } else if ((idx &lt; 4) || (idx &gt; (xyCurve.getN() - 5))) {</span>
+<span class="fc bfc" id="L649" title="All 4 branches covered.">            } else if ((idx &lt; 4) || (idx &gt; (xyCurve.getN() - 5))) {</span>
 
-<span class="fc" id="L523">                remove1.add(Integer.valueOf(ii));</span>
-<span class="fc" id="L524">                remove2.add(Integer.valueOf(ii));</span>
+<span class="fc" id="L651">                remove1.add(Integer.valueOf(ii));</span>
+<span class="fc" id="L652">                remove2.add(Integer.valueOf(ii));</span>
 
             } else {
 
                 //TODO: make this result less sensitive to minDistFromBoundary
-<span class="fc" id="L529">                int range1Idx = isWithinARange(jaggedLineSegments1, idx,</span>
+<span class="fc" id="L657">                int range1Idx = isWithinARange(jaggedLineSegments1, idx,</span>
                     3);
 
-<span class="fc bfc" id="L532" title="All 2 branches covered.">                if (range1Idx &gt; -1) {</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">                if (range1Idx &gt; -1) {</span>
 
-<span class="fc" id="L534">                    int last1Idx = jaggedLineSegments1.getN() - 1;</span>
+<span class="fc" id="L662">                    int last1Idx = jaggedLineSegments1.getN() - 1;</span>
 
-<span class="fc bfc" id="L536" title="All 4 branches covered.">                    if ((range1Idx &gt; 0) &amp;&amp; (range1Idx &lt; last1Idx)) {</span>
-<span class="fc" id="L537">                        remove1.add(Integer.valueOf(ii));</span>
+<span class="fc bfc" id="L664" title="All 4 branches covered.">                    if ((range1Idx &gt; 0) &amp;&amp; (range1Idx &lt; last1Idx)) {</span>
+<span class="fc" id="L665">                        remove1.add(Integer.valueOf(ii));</span>
                     }
                 }
-<span class="fc" id="L540">                int range2Idx = isWithinARange(jaggedLineSegments2, idx, 3);</span>
-<span class="fc bfc" id="L541" title="All 2 branches covered.">                if (range2Idx &gt; -1) {</span>
-<span class="fc" id="L542">                    remove2.add(Integer.valueOf(ii));</span>
+<span class="fc" id="L668">                int range2Idx = isWithinARange(jaggedLineSegments2, idx, 3);</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">                if (range2Idx &gt; -1) {</span>
+<span class="fc" id="L670">                    remove2.add(Integer.valueOf(ii));</span>
                 }
             }
         }
-<span class="fc" id="L546">        int choose1 = 0;</span>
-<span class="fc bfc" id="L547" title="All 2 branches covered.">        if (remove1.size() == remove2.size()) {</span>
+<span class="fc" id="L674">        int choose1 = 0;</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">        if (remove1.size() == remove2.size()) {</span>
             // choose the lines which cover more of the curve
-<span class="fc" id="L549">            int sum1 = 0;</span>
-<span class="pc bpc" id="L550" title="1 of 2 branches missed.">            if (jaggedLineSegments1 != null) {</span>
-<span class="fc bfc" id="L551" title="All 2 branches covered.">                for (int ii = 0; ii &lt; jaggedLineSegments1.getN(); ii++) {</span>
-<span class="fc" id="L552">                    sum1 += (jaggedLineSegments1.getY(ii)</span>
-<span class="fc" id="L553">                        - jaggedLineSegments1.getX(ii));</span>
+<span class="fc" id="L677">            int sum1 = 0;</span>
+<span class="pc bpc" id="L678" title="1 of 2 branches missed.">            if (jaggedLineSegments1 != null) {</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">                for (int ii = 0; ii &lt; jaggedLineSegments1.getN(); ii++) {</span>
+<span class="fc" id="L680">                    sum1 += (jaggedLineSegments1.getY(ii)</span>
+<span class="fc" id="L681">                        - jaggedLineSegments1.getX(ii));</span>
                 }
             }
-<span class="fc" id="L556">            int sum2 = 0;</span>
-<span class="pc bpc" id="L557" title="1 of 2 branches missed.">            if (jaggedLineSegments2 != null) {</span>
-<span class="fc bfc" id="L558" title="All 2 branches covered.">                for (int ii = 0; ii &lt; jaggedLineSegments2.getN(); ii++) {</span>
-<span class="fc" id="L559">                    sum2 += (jaggedLineSegments2.getY(ii)</span>
-<span class="fc" id="L560">                        - jaggedLineSegments2.getX(ii));</span>
+<span class="fc" id="L684">            int sum2 = 0;</span>
+<span class="pc bpc" id="L685" title="1 of 2 branches missed.">            if (jaggedLineSegments2 != null) {</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">                for (int ii = 0; ii &lt; jaggedLineSegments2.getN(); ii++) {</span>
+<span class="fc" id="L687">                    sum2 += (jaggedLineSegments2.getY(ii)</span>
+<span class="fc" id="L688">                        - jaggedLineSegments2.getX(ii));</span>
                 }
             }
-<span class="fc bfc" id="L563" title="All 2 branches covered.">            if (sum1 &gt; sum2) {</span>
-<span class="fc" id="L564">                choose1 = 1;</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">            if (sum1 &gt; sum2) {</span>
+<span class="fc" id="L692">                choose1 = 1;</span>
             }
-<span class="fc bfc" id="L566" title="All 2 branches covered.">        } else if (remove1.size() &gt; remove2.size()) {</span>
-<span class="fc" id="L567">            choose1 = 1;</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">        } else if (remove1.size() &gt; remove2.size()) {</span>
+<span class="fc" id="L695">            choose1 = 1;</span>
         }
-<span class="fc bfc" id="L569" title="All 2 branches covered.">        if (choose1 == 0) {</span>
-<span class="fc bfc" id="L570" title="All 2 branches covered.">            for (int ii = (remove2.size() - 1); ii &gt; -1; ii--) {</span>
-<span class="fc" id="L571">                int idx = remove2.get(ii).intValue();</span>
-<span class="fc" id="L572">                maxCandidateCornerIndexes.remove(idx);</span>
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        if (choose1 == 0) {</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            for (int ii = (remove2.size() - 1); ii &gt; -1; ii--) {</span>
+<span class="fc" id="L699">                int idx = remove2.get(ii).intValue();</span>
+<span class="fc" id="L700">                maxCandidateCornerIndexes.remove(idx);</span>
             }
-<span class="fc" id="L574">            log.fine(&quot;NREMOVED=&quot; + remove2.size());</span>
+<span class="fc" id="L702">            log.fine(&quot;NREMOVED=&quot; + remove2.size());</span>
 
-<span class="fc" id="L576">            return jaggedLineSegments2;</span>
+<span class="fc" id="L704">            return jaggedLineSegments2;</span>
 
         } else {
-<span class="fc bfc" id="L579" title="All 2 branches covered.">            for (int ii = (remove1.size() - 1); ii &gt; -1; ii--) {</span>
-<span class="fc" id="L580">                int idx = remove1.get(ii).intValue();</span>
-<span class="fc" id="L581">                maxCandidateCornerIndexes.remove(idx);</span>
+<span class="fc bfc" id="L707" title="All 2 branches covered.">            for (int ii = (remove1.size() - 1); ii &gt; -1; ii--) {</span>
+<span class="fc" id="L708">                int idx = remove1.get(ii).intValue();</span>
+<span class="fc" id="L709">                maxCandidateCornerIndexes.remove(idx);</span>
             }
-<span class="fc" id="L583">            log.fine(&quot;NREMOVED=&quot; + remove1.size());</span>
+<span class="fc" id="L711">            log.fine(&quot;NREMOVED=&quot; + remove1.size());</span>
 
-<span class="fc" id="L585">            return jaggedLineSegments1;</span>
+<span class="fc" id="L713">            return jaggedLineSegments1;</span>
         }
     }
 
@@ -598,30 +726,30 @@ public class CSSCornerMaker {
     private int isWithinARange(PairIntArray lineRangeSegments, int idx,
         int minDistFromEnds) {
 
-<span class="pc bpc" id="L601" title="1 of 4 branches missed.">        if ((lineRangeSegments == null) || (lineRangeSegments.getN() == 0)) {</span>
-<span class="fc" id="L602">            return -1;</span>
+<span class="pc bpc" id="L729" title="1 of 4 branches missed.">        if ((lineRangeSegments == null) || (lineRangeSegments.getN() == 0)) {</span>
+<span class="fc" id="L730">            return -1;</span>
         }
 
         // search outside of bounds first:
-<span class="fc bfc" id="L606" title="All 2 branches covered.">        if (idx &lt; lineRangeSegments.getX(0)) {</span>
-<span class="fc" id="L607">            return -1;</span>
-<span class="fc bfc" id="L608" title="All 2 branches covered.">        } else if (idx &gt; lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {</span>
-<span class="fc" id="L609">            return -1;</span>
+<span class="fc bfc" id="L734" title="All 2 branches covered.">        if (idx &lt; lineRangeSegments.getX(0)) {</span>
+<span class="fc" id="L735">            return -1;</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">        } else if (idx &gt; lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {</span>
+<span class="fc" id="L737">            return -1;</span>
         }
 
-<span class="fc bfc" id="L612" title="All 2 branches covered.">        for (int i = 0; i &lt; lineRangeSegments.getN(); i++) {</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">        for (int i = 0; i &lt; lineRangeSegments.getN(); i++) {</span>
 
-<span class="fc" id="L614">            int idx0 = lineRangeSegments.getX(i);</span>
-<span class="fc" id="L615">            int idx1 = lineRangeSegments.getY(i);</span>
+<span class="fc" id="L742">            int idx0 = lineRangeSegments.getX(i);</span>
+<span class="fc" id="L743">            int idx1 = lineRangeSegments.getY(i);</span>
 
-<span class="fc bfc" id="L617" title="All 4 branches covered.">            if ((idx &gt;= (idx0 + minDistFromEnds))</span>
+<span class="fc bfc" id="L745" title="All 4 branches covered.">            if ((idx &gt;= (idx0 + minDistFromEnds))</span>
                 &amp;&amp; (idx &lt;= (idx1 - minDistFromEnds))) {
 
-<span class="fc" id="L620">                return i;</span>
+<span class="fc" id="L748">                return i;</span>
             }
         }
 
-<span class="fc" id="L624">        return -1;</span>
+<span class="fc" id="L752">        return -1;</span>
     }
 
      /**
@@ -636,158 +764,145 @@ public class CSSCornerMaker {
      * @param previousSigma
      * @param edgeNumber included for debugging
      */
-    private void refinePrimaryCoordinates(float[] xc, float[] yc,
-        final int xyLength,
-        ScaleSpaceCurve scaleSpace, final SIGMA previousSigma,
-        final int edgeNumber, final boolean isAClosedCurve,
-        final boolean doUseOutdoorMode) {
+    private void refinePrimaryCoordinates(CornerArray candidateCornersXY,
+        ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
+        final SIGMA previousSigma, final int edgeNumber,
+        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
 
-<span class="pc bpc" id="L645" title="1 of 4 branches missed.">        if (scaleSpace == null || scaleSpace.getK() == null) {</span>
+<span class="pc bpc" id="L772" title="1 of 4 branches missed.">        if (scaleSpace == null || scaleSpace.getK() == null) {</span>
             //TODO: follow up on NPE here
-<span class="fc" id="L647">            return;</span>
+<span class="fc" id="L774">            return;</span>
         }
 
-<span class="fc" id="L650">        PairFloatArray xy2 =</span>
-<span class="fc" id="L651">            findCornersInScaleSpaceMap(scaleSpace, edgeNumber, false,</span>
-            isAClosedCurve, doUseOutdoorMode);
+<span class="fc" id="L777">        CornerArray xy2 =</span>
+<span class="fc" id="L778">            findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber,</span>
+                false, isAClosedCurve, doUseOutdoorMode);
 
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
-<span class="fc" id="L656">        float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);</span>
-<span class="fc" id="L657">        maxSepSq *= maxSepSq;</span>
-
-<span class="pc bpc" id="L659" title="1 of 2 branches missed.">        if (maxSepSq &gt; 4) {</span>
-<span class="fc" id="L660">            maxSepSq = 4;</span>
+<span class="fc" id="L783">        float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);</span>
+<span class="fc" id="L784">        maxSepSq *= maxSepSq;</span>
+<span class="pc bpc" id="L785" title="1 of 2 branches missed.">        if (maxSepSq &gt; 4) {</span>
+<span class="fc" id="L786">            maxSepSq = 4;</span>
         }
+<span class="fc" id="L788">        float maxSep = (float)Math.sqrt(maxSepSq);</span>
+
+<span class="fc" id="L790">        NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(),</span>
+<span class="fc" id="L791">            xy2.getN());</span>
 
         // revise the points in {xc, yc} to the closest in {xc2, yc2}
-<span class="fc" id="L664">        boolean[] matchedNew = new boolean[xy2.getN()];</span>
-<span class="fc bfc" id="L665" title="All 2 branches covered.">        for (int j = 0; j &lt; xyLength; j++) {</span>
-<span class="fc" id="L666">            float x = xc[j];</span>
-<span class="fc" id="L667">            float y = yc[j];</span>
-<span class="fc" id="L668">            float minSepSq = Float.MAX_VALUE;</span>
-<span class="fc" id="L669">            int minSepIdx = -1;</span>
-<span class="fc bfc" id="L670" title="All 2 branches covered.">            for (int jj = 0; jj &lt; xy2.getN(); jj++) {</span>
-<span class="fc bfc" id="L671" title="All 2 branches covered.">                if (matchedNew[jj]) {</span>
-<span class="fc" id="L672">                    continue;</span>
-                }
-<span class="fc" id="L674">                float x2 = xy2.getX(jj);</span>
-<span class="fc" id="L675">                float y2 = xy2.getY(jj);</span>
-<span class="fc" id="L676">                float dx = x2 - x;</span>
-<span class="fc" id="L677">                float dy = y2 - y;</span>
-<span class="fc" id="L678">                float sepSq = (dx*dx) + (dy*dy);</span>
-<span class="fc bfc" id="L679" title="All 2 branches covered.">                if (sepSq &lt; minSepSq) {</span>
-<span class="fc" id="L680">                    minSepSq = sepSq;</span>
-<span class="fc" id="L681">                    minSepIdx = jj;</span>
-                }
-            }
+<span class="fc bfc" id="L794" title="All 2 branches covered.">        for (int j = 0; j &lt; candidateCornersXY.getN(); j++) {</span>
+<span class="fc" id="L795">            float x = candidateCornersXY.getX(j);</span>
+<span class="fc" id="L796">            float y = candidateCornersXY.getY(j);</span>
 
-<span class="fc bfc" id="L685" title="All 2 branches covered.">            if (minSepIdx &gt; -1) {</span>
-<span class="fc bfc" id="L686" title="All 2 branches covered.">                if (minSepSq &lt; maxSepSq) {</span>
-<span class="fc" id="L687">                    matchedNew[minSepIdx] = true;</span>
-<span class="fc" id="L688">                    xc[j] = xy2.getX(minSepIdx);</span>
-<span class="fc" id="L689">                    yc[j] = xy2.getY(minSepIdx);</span>
-                }
+<span class="fc" id="L798">            Integer minSepIndex = np.findClosestNeighborIndex(x, y, maxSep);</span>
+
+<span class="fc bfc" id="L800" title="All 2 branches covered.">            if (minSepIndex != null) {</span>
+<span class="fc" id="L801">                int minSepIdx = minSepIndex.intValue();</span>
+<span class="fc" id="L802">                float x3 = xy2.getX(minSepIdx);</span>
+<span class="fc" id="L803">                float y3 = xy2.getY(minSepIdx);</span>
+<span class="fc" id="L804">                candidateCornersXY.set(j, x3, y3,</span>
+<span class="fc" id="L805">                    xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));</span>
             }
         }
-<span class="fc" id="L693">    }</span>
+<span class="fc" id="L808">    }</span>
 
-    private void storeCornerRegion(int edgeNumber, int cornerIdx, float[] k, 
+    private boolean storeCornerRegion(int edgeNumber, int cornerIdx,
         ScaleSpaceCurve scaleSpace) {
-        
+
+<span class="fc" id="L813">        final float[] k = scaleSpace.getK();</span>
+
         //for 2 neighboring points on each side, min k is 0.2
-<span class="fc bfc" id="L699" title="All 2 branches covered.">        if (k[cornerIdx] &lt; 0.14f) {//0.18</span>
-<span class="fc" id="L700">            return;</span>
-        }
-        
-<span class="fc" id="L703">        int n = scaleSpace.getSize();</span>
-        
-<span class="pc bpc" id="L705" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
-<span class="nc" id="L706">            return;</span>
+<span class="fc" id="L816">        float kCenterAbs = Math.abs(k[cornerIdx]);</span>
+<span class="fc bfc" id="L817" title="All 2 branches covered.">        if (kCenterAbs &lt; 0.14f) {//0.18</span>
+<span class="fc" id="L818">            return false;</span>
         }
 
-<span class="fc" id="L709">        boolean isClosedCurve = scaleSpace.curveIsClosed();</span>
-        
-<span class="fc" id="L711">        int nCR = 0;</span>
-<span class="fc" id="L712">        int kMaxIdx = -1;</span>
-                
-<span class="fc" id="L714">        int count = 0;</span>
-<span class="fc" id="L715">        int nH = 2;</span>
-<span class="pc bpc" id="L716" title="1 of 2 branches missed.">        if (scaleSpace.getSize() &lt; 5) {</span>
-<span class="nc" id="L717">            nH = 1;</span>
+<span class="fc" id="L821">        int n = scaleSpace.getSize();</span>
+
+<span class="pc bpc" id="L823" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc" id="L824">            return false;</span>
         }
-<span class="fc" id="L719">        int[] pIdxs = new int[(2*nH) + 1];</span>
-<span class="fc bfc" id="L720" title="All 2 branches covered.">        for (int pIdx = (cornerIdx - nH); pIdx &lt;= (cornerIdx + nH); ++pIdx) {</span>
-<span class="fc bfc" id="L721" title="All 4 branches covered.">            if ((pIdx &lt; 0) &amp;&amp; isClosedCurve) {</span>
-<span class="fc" id="L722">                pIdxs[count] = n + pIdx;</span>
-<span class="fc bfc" id="L723" title="All 4 branches covered.">            } else if ((pIdx &gt; (n - 1)) &amp;&amp; isClosedCurve) {</span>
-<span class="fc" id="L724">                pIdxs[count] = pIdx - n;</span>
+
+<span class="fc" id="L827">        boolean isClosedCurve = scaleSpace.curveIsClosed();</span>
+
+<span class="fc" id="L829">        int nCR = 0;</span>
+<span class="fc" id="L830">        int kMaxIdx = -1;</span>
+
+<span class="fc" id="L832">        int count = 0;</span>
+<span class="fc" id="L833">        int nH = 2;</span>
+<span class="fc bfc" id="L834" title="All 2 branches covered.">        if (scaleSpace.getSize() &lt; 5) {</span>
+<span class="fc" id="L835">            nH = 1;</span>
+        }
+<span class="fc" id="L837">        int[] pIdxs = new int[(2*nH) + 1];</span>
+<span class="fc bfc" id="L838" title="All 2 branches covered.">        for (int pIdx = (cornerIdx - nH); pIdx &lt;= (cornerIdx + nH); ++pIdx) {</span>
+<span class="fc bfc" id="L839" title="All 4 branches covered.">            if ((pIdx &lt; 0) &amp;&amp; isClosedCurve) {</span>
+<span class="fc" id="L840">                pIdxs[count] = n + pIdx;</span>
+<span class="fc bfc" id="L841" title="All 4 branches covered.">            } else if ((pIdx &gt; (n - 1)) &amp;&amp; isClosedCurve) {</span>
+<span class="fc" id="L842">                pIdxs[count] = pIdx - n;</span>
             } else {
-<span class="fc" id="L726">                pIdxs[count] = pIdx;</span>
+<span class="fc" id="L844">                pIdxs[count] = pIdx;</span>
             }
-<span class="fc" id="L728">            count++;</span>
+<span class="fc" id="L846">            count++;</span>
         }
-       
-        //log.info(&quot;edgeIdx=&quot; + edgeNumber + &quot; corner idx=&quot; + cornerIdx + &quot; (&quot; + 
-        //    Math.round(scaleSpace.getX(cornerIdx)) + &quot;,&quot; +
-        //    Math.round(scaleSpace.getY(cornerIdx)) +&quot;)&quot;);
-<span class="fc bfc" id="L734" title="All 2 branches covered.">        for (int pIdx : pIdxs) {</span>
-<span class="fc bfc" id="L735" title="All 4 branches covered.">            if (pIdx &lt; 0 || (pIdx &gt; (n - 1))) {</span>
+
+<span class="fc bfc" id="L849" title="All 2 branches covered.">        for (int pIdx : pIdxs) {</span>
+<span class="fc bfc" id="L850" title="All 4 branches covered.">            if (pIdx &lt; 0 || (pIdx &gt; (n - 1))) {</span>
                 // it's out of bounds only if it is not a closed curve
-<span class="fc" id="L737">                continue;</span>
+<span class="fc" id="L852">                continue;</span>
             }
-<span class="fc bfc" id="L739" title="All 2 branches covered.">            if (pIdx == cornerIdx) {</span>
-<span class="fc" id="L740">                kMaxIdx = nCR;</span>
+<span class="fc bfc" id="L854" title="All 2 branches covered.">            if (pIdx == cornerIdx) {</span>
+<span class="fc" id="L855">                kMaxIdx = nCR;</span>
             }
-<span class="fc" id="L742">            nCR++;</span>
-            //log.info(String.format(
-            //   &quot;k[%d]=%.2f  for (%.0f, %.0f)&quot;, pIdx, k[pIdx],
-            //   scaleSpace.getX(pIdx), scaleSpace.getY(pIdx))); 
-        }
-<span class="pc bpc" id="L747" title="1 of 2 branches missed.">        if (nCR &lt; 3) {</span>
-<span class="nc" id="L748">            return;</span>
-        }
-                
-<span class="fc bfc" id="L751" title="All 2 branches covered.">        if (!isClosedCurve) {</span>
-<span class="fc bfc" id="L752" title="All 4 branches covered.">            if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {</span>
-<span class="fc" id="L753">                return;</span>
-            }
-        }
-        //log.info(&quot; ==&gt; kept&quot;);
-    
-<span class="fc" id="L758">        CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);</span>
-<span class="fc" id="L759">        nCR = 0;</span>
-<span class="fc bfc" id="L760" title="All 2 branches covered.">        for (int pIdx : pIdxs) {</span>
-<span class="fc bfc" id="L761" title="All 4 branches covered.">            if (pIdx &lt; 0 || (pIdx &gt; (n - 1))) {</span>
-                // it's out of bounds only if it is not a closed curve
-<span class="fc" id="L763">                continue;</span>
-            }
-          
-<span class="fc" id="L766">            int x = Math.round(scaleSpace.getX(pIdx));</span>
-<span class="fc" id="L767">            int y = Math.round(scaleSpace.getY(pIdx));</span>
-            
+<span class="fc" id="L857">            int x = Math.round(scaleSpace.getX(pIdx));</span>
+<span class="fc" id="L858">            int y = Math.round(scaleSpace.getY(pIdx));</span>
+
             // discard if out of bounds
-<span class="pc bpc" id="L770" title="4 of 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (width - 1)) || (y &gt; (height - 1))) {</span>
-<span class="nc" id="L771">                return;</span>
+<span class="pc bpc" id="L861" title="4 of 8 branches missed.">            if ((x &lt; 0) || (y &lt; 0) || (x &gt; (width - 1)) || (y &gt; (height - 1))) {</span>
+<span class="nc" id="L862">                return false;</span>
             }
-            
-<span class="fc" id="L774">            cr.set(nCR, k[pIdx], x, y);</span>
-            
-<span class="fc bfc" id="L776" title="All 2 branches covered.">            if (kMaxIdx == nCR) {</span>
-<span class="fc" id="L777">                cr.setIndexWithinCurve(pIdx);</span>
+<span class="fc" id="L864">            nCR++;</span>
+        }
+<span class="fc bfc" id="L866" title="All 2 branches covered.">        if (nCR &lt; 3) {</span>
+<span class="fc" id="L867">            return false;</span>
+        }
+
+<span class="fc bfc" id="L870" title="All 2 branches covered.">        if (!isClosedCurve) {</span>
+<span class="fc bfc" id="L871" title="All 4 branches covered.">            if (kMaxIdx == 0 || kMaxIdx == (nCR - 1)) {</span>
+<span class="fc" id="L872">                return false;</span>
             }
-            
-<span class="fc" id="L780">            nCR++; </span>
         }
-<span class="fc" id="L782">        Integer key = Integer.valueOf(edgeNumber);</span>
-<span class="fc" id="L783">        List&lt;CornerRegion&gt; list = edgeCornerRegionMap.get(key);</span>
-<span class="fc bfc" id="L784" title="All 2 branches covered.">        if (list == null) {</span>
-<span class="fc" id="L785">            list = new ArrayList&lt;CornerRegion&gt;();</span>
-<span class="fc" id="L786">            edgeCornerRegionMap.put(key, list);</span>
+
+<span class="fc" id="L876">        CornerRegion cr = new CornerRegion(edgeNumber, nCR, kMaxIdx);</span>
+<span class="fc" id="L877">        nCR = 0;</span>
+<span class="fc bfc" id="L878" title="All 2 branches covered.">        for (int pIdx : pIdxs) {</span>
+<span class="fc bfc" id="L879" title="All 4 branches covered.">            if (pIdx &lt; 0 || (pIdx &gt; (n - 1))) {</span>
+                // it's out of bounds only if it is not a closed curve
+<span class="fc" id="L881">                continue;</span>
+            }
+
+<span class="fc" id="L884">            int x = Math.round(scaleSpace.getX(pIdx));</span>
+<span class="fc" id="L885">            int y = Math.round(scaleSpace.getY(pIdx));</span>
+
+<span class="fc" id="L887">            cr.set(nCR, k[pIdx], x, y);</span>
+
+<span class="fc bfc" id="L889" title="All 2 branches covered.">            if (kMaxIdx == nCR) {</span>
+<span class="fc" id="L890">                cr.setIndexWithinCurve(pIdx);</span>
+            }
+
+<span class="fc" id="L893">            nCR++;</span>
         }
-<span class="fc" id="L788">        list.add(cr);</span>
-<span class="fc" id="L789">    }</span>
-    
+<span class="fc" id="L895">        Integer key = Integer.valueOf(edgeNumber);</span>
+<span class="fc" id="L896">        List&lt;CornerRegion&gt; list = edgeCornerRegionMap.get(key);</span>
+<span class="fc bfc" id="L897" title="All 2 branches covered.">        if (list == null) {</span>
+<span class="fc" id="L898">            list = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="fc" id="L899">            edgeCornerRegionMap.put(key, list);</span>
+        }
+<span class="fc" id="L901">        list.add(cr);</span>
+
+<span class="fc" id="L903">        return true;</span>
+    }
+
     /**
      * maxSigma is defined by the ECSS algorithm in:
      * 2006, &quot;Performance evaluation of corner detectors using consistency and
@@ -802,12 +917,12 @@ public class CSSCornerMaker {
         //    &lt; 200, sigma = 2
         //    &lt;= 600, sigma=3
         //    else    sigma=4
-<span class="fc bfc" id="L805" title="All 2 branches covered.">        if (nPoints &lt; 200) {</span>
-<span class="fc" id="L806">            return SIGMA.TWO;</span>
-<span class="fc bfc" id="L807" title="All 2 branches covered.">        } else if (nPoints &lt; 601) {</span>
-<span class="fc" id="L808">            return SIGMA.THREE;</span>
+<span class="fc bfc" id="L920" title="All 2 branches covered.">        if (nPoints &lt; 200) {</span>
+<span class="fc" id="L921">            return SIGMA.TWO;</span>
+<span class="fc bfc" id="L922" title="All 2 branches covered.">        } else if (nPoints &lt; 601) {</span>
+<span class="fc" id="L923">            return SIGMA.THREE;</span>
         } else {
-<span class="fc" id="L810">            return SIGMA.FOUR;</span>
+<span class="fc" id="L925">            return SIGMA.FOUR;</span>
         }
     }
 
@@ -828,65 +943,65 @@ public class CSSCornerMaker {
 
         // find peaks where k[ii] is &gt; factorAboveMin* adjacent local minima
 
-<span class="fc" id="L831">        float factorAboveMin = factorIncreaseForCurvatureMinimum * 2.5f;//3.5f;// 10 misses some corners</span>
+<span class="fc" id="L946">        float factorAboveMin = factorIncreaseForCurvatureMinimum * 2.5f;//3.5f;// 10 misses some corners</span>
 
-<span class="pc bpc" id="L833" title="1 of 2 branches missed.">if (doUseOutdoorMode) {</span>
-<span class="nc" id="L834">    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;</span>
+<span class="pc bpc" id="L948" title="1 of 2 branches missed.">if (doUseOutdoorMode) {</span>
+<span class="nc" id="L949">    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;</span>
 }
-<span class="fc" id="L836">        log.fine(&quot;using factorAboveMin=&quot; + factorAboveMin);</span>
-        
+<span class="fc" id="L951">        log.fine(&quot;using factorAboveMin=&quot; + factorAboveMin);</span>
+
         //to limit k to curvature that shows a rise in 1 pixel over a run of 3,
         // use 0.2 for a lower limit.
         // TODO: it's not clear that kLowerLimit is a good idea.  the relative change
         // filter alone is good for all size scale corners, and adding this
         // limit biases the results.  may want to only use this bias if
         // the some amount of curvature points are &gt;= 0.2
-<span class="fc" id="L844">        float kLowerLimit = 0.05f;</span>
+<span class="fc" id="L959">        float kLowerLimit = 0.05f;</span>
 
-<span class="fc" id="L846">        List&lt;Integer&gt; cornerCandidates = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L961">        List&lt;Integer&gt; cornerCandidates = new ArrayList&lt;Integer&gt;();</span>
 
         // choose candidates from minMaxIndexes that are
         //     &gt;= factorAboveMin one adjacent min
-<span class="fc bfc" id="L850" title="All 2 branches covered.">        for (int ii = 0; ii &lt; minMaxIndexes.size(); ii++) {</span>
+<span class="fc bfc" id="L965" title="All 2 branches covered.">        for (int ii = 0; ii &lt; minMaxIndexes.size(); ii++) {</span>
 
-<span class="fc" id="L852">            int idx = minMaxIndexes.get(ii).intValue();</span>
+<span class="fc" id="L967">            int idx = minMaxIndexes.get(ii).intValue();</span>
 
-<span class="fc bfc" id="L854" title="All 2 branches covered.">            if (idx &gt; -1) {</span>
+<span class="fc bfc" id="L969" title="All 2 branches covered.">            if (idx &gt; -1) {</span>
                 // this is maximum
 
-<span class="fc" id="L857">                boolean found = false;</span>
+<span class="fc" id="L972">                boolean found = false;</span>
 
                 // compare to preceding minimum
-<span class="pc bfc" id="L860" title="All 2 branches covered.">                for (int iii = (ii - 1); iii &gt; -1; iii--) {</span>
-<span class="fc" id="L861">                    int idx2 = minMaxIndexes.get(iii).intValue();</span>
-<span class="pc bpc" id="L862" title="1 of 2 branches missed.">                    if (idx2 &lt; 0) {</span>
-<span class="fc" id="L863">                        float compare = k[-1*idx2];</span>
-<span class="fc bfc" id="L864" title="All 2 branches covered.">                        if (compare &lt; lowThreshold) {</span>
+<span class="pc bfc" id="L975" title="All 2 branches covered.">                for (int iii = (ii - 1); iii &gt; -1; iii--) {</span>
+<span class="fc" id="L976">                    int idx2 = minMaxIndexes.get(iii).intValue();</span>
+<span class="pc bpc" id="L977" title="1 of 2 branches missed.">                    if (idx2 &lt; 0) {</span>
+<span class="fc" id="L978">                        float compare = k[-1*idx2];</span>
+<span class="fc bfc" id="L979" title="All 2 branches covered.">                        if (compare &lt; lowThreshold) {</span>
                             // avoids divide by very small number sometimes
-<span class="fc" id="L866">                            compare = lowThreshold;</span>
+<span class="fc" id="L981">                            compare = lowThreshold;</span>
                         }
-<span class="fc bfc" id="L868" title="All 4 branches covered.">                        if (k[idx] &gt;= kLowerLimit &amp;&amp; k[idx] &gt;= factorAboveMin * compare) {</span>
-<span class="fc" id="L869">                            cornerCandidates.add(Integer.valueOf(idx));</span>
-<span class="fc" id="L870">                            found = true;</span>
+<span class="fc bfc" id="L983" title="All 4 branches covered.">                        if (k[idx] &gt;= kLowerLimit &amp;&amp; k[idx] &gt;= factorAboveMin * compare) {</span>
+<span class="fc" id="L984">                            cornerCandidates.add(Integer.valueOf(idx));</span>
+<span class="fc" id="L985">                            found = true;</span>
                         }
                         break;
                     }
                 }
-<span class="fc bfc" id="L875" title="All 2 branches covered.">                if (found) {</span>
-<span class="fc" id="L876">                    continue;</span>
+<span class="fc bfc" id="L990" title="All 2 branches covered.">                if (found) {</span>
+<span class="fc" id="L991">                    continue;</span>
                 }
 
                 //compare to proceeding minimum
-<span class="pc bfc" id="L880" title="All 2 branches covered.">                for (int iii = (ii + 1); iii &lt; minMaxIndexes.size(); iii++) {</span>
-<span class="fc" id="L881">                    int idx2 = minMaxIndexes.get(iii).intValue();</span>
-<span class="pc bpc" id="L882" title="1 of 2 branches missed.">                    if (idx2 &lt; 0) {</span>
-<span class="fc" id="L883">                        float compare = k[-1*idx2];</span>
-<span class="fc bfc" id="L884" title="All 2 branches covered.">                        if (compare &lt; lowThreshold) {</span>
+<span class="pc bfc" id="L995" title="All 2 branches covered.">                for (int iii = (ii + 1); iii &lt; minMaxIndexes.size(); iii++) {</span>
+<span class="fc" id="L996">                    int idx2 = minMaxIndexes.get(iii).intValue();</span>
+<span class="pc bpc" id="L997" title="1 of 2 branches missed.">                    if (idx2 &lt; 0) {</span>
+<span class="fc" id="L998">                        float compare = k[-1*idx2];</span>
+<span class="fc bfc" id="L999" title="All 2 branches covered.">                        if (compare &lt; lowThreshold) {</span>
                             // avoids divide by very small number sometimes
-<span class="fc" id="L886">                            compare = lowThreshold;</span>
+<span class="fc" id="L1001">                            compare = lowThreshold;</span>
                         }
-<span class="fc bfc" id="L888" title="All 4 branches covered.">                        if (k[idx] &gt;= kLowerLimit &amp;&amp; k[idx] &gt;= factorAboveMin * compare) {</span>
-<span class="fc" id="L889">                            cornerCandidates.add(Integer.valueOf(idx));</span>
+<span class="fc bfc" id="L1003" title="All 4 branches covered.">                        if (k[idx] &gt;= kLowerLimit &amp;&amp; k[idx] &gt;= factorAboveMin * compare) {</span>
+<span class="fc" id="L1004">                            cornerCandidates.add(Integer.valueOf(idx));</span>
                         }
                         break;
                     }
@@ -894,15 +1009,112 @@ public class CSSCornerMaker {
             }
         }
 
-<span class="fc" id="L897">        return cornerCandidates;</span>
+<span class="fc" id="L1012">        return cornerCandidates;</span>
     }
 
     /**
      * @return the edgeCornerRegionMap
      */
     public Map&lt;Integer, List&lt;CornerRegion&gt;&gt; getEdgeCornerRegionMap() {
-<span class="fc" id="L904">        return edgeCornerRegionMap;</span>
+<span class="fc" id="L1019">        return edgeCornerRegionMap;</span>
     }
+
+    private void removeRedundantPoints(CornerArray candidateCornersXY,
+        Map&lt;SIGMA, ScaleSpaceCurve&gt; scaleSpaceCurves) {
+
+<span class="fc" id="L1025">        boolean hasRedundant = false;</span>
+
+        // looking for redundant points
+<span class="fc" id="L1028">        Map&lt;PairInt, Set&lt;Integer&gt;&gt; coordIndexes = new HashMap&lt;PairInt, Set&lt;Integer&gt;&gt;();</span>
+<span class="fc bfc" id="L1029" title="All 2 branches covered.">        for (int j = 0; j &lt; candidateCornersXY.getN(); j++) {</span>
+
+<span class="fc" id="L1031">            int x = Math.round(candidateCornersXY.getX(j));</span>
+<span class="fc" id="L1032">            int y = Math.round(candidateCornersXY.getY(j));</span>
+<span class="fc" id="L1033">            PairInt p = new PairInt(x, y);</span>
+
+<span class="fc" id="L1035">            Set&lt;Integer&gt; indexes = coordIndexes.get(p);</span>
+<span class="fc bfc" id="L1036" title="All 2 branches covered.">            if (indexes == null) {</span>
+<span class="fc" id="L1037">                indexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L1038">                coordIndexes.put(p, indexes);</span>
+            } else {
+<span class="fc" id="L1040">                hasRedundant = true;</span>
+            }
+<span class="fc" id="L1042">            indexes.add(Integer.valueOf(j));</span>
+        }
+
+<span class="fc bfc" id="L1045" title="All 2 branches covered.">        if (!hasRedundant) {</span>
+<span class="fc" id="L1046">            return;</span>
+        }
+
+        // remove the weaker 'k' of any redundant points
+<span class="fc" id="L1050">        Set&lt;Integer&gt; resolved = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L1051">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L1052" title="All 2 branches covered.">        for (Entry&lt;PairInt, Set&lt;Integer&gt;&gt; entry : coordIndexes.entrySet()) {</span>
+<span class="fc" id="L1053">            Set&lt;Integer&gt; set = entry.getValue();</span>
+<span class="fc bfc" id="L1054" title="All 2 branches covered.">            if (set.size() &gt; 1) {</span>
+<span class="fc" id="L1055">                float maxAbsK = Float.MIN_VALUE;</span>
+<span class="fc" id="L1056">                Integer bestIndex1 = null;</span>
+<span class="fc bfc" id="L1057" title="All 2 branches covered.">                for (Integer index1 : set) {</span>
+<span class="pc bpc" id="L1058" title="1 of 2 branches missed.">                    if (resolved.contains(index1)) {</span>
+<span class="nc" id="L1059">                        continue;</span>
+                    }
+<span class="fc" id="L1061">                    int idx = index1.intValue();</span>
+<span class="fc" id="L1062">                    SIGMA sigma = candidateCornersXY.getSIGMA(idx);</span>
+<span class="fc" id="L1063">                    ScaleSpaceCurve ssc = scaleSpaceCurves.get(sigma);</span>
+<span class="fc" id="L1064">                    int sscIdx = candidateCornersXY.getInt(idx);</span>
+<span class="pc bpc" id="L1065" title="3 of 4 branches missed.">                    assert(ssc != null);</span>
+<span class="fc" id="L1066">                    float kAbs = Math.abs(ssc.getK()[sscIdx]);</span>
+<span class="fc bfc" id="L1067" title="All 2 branches covered.">                    if (kAbs &gt; maxAbsK) {</span>
+<span class="fc" id="L1068">                        maxAbsK = kAbs;</span>
+<span class="fc" id="L1069">                        bestIndex1 = index1;</span>
+                    }
+<span class="fc" id="L1071">                    resolved.add(index1);</span>
+<span class="fc" id="L1072">                }</span>
+<span class="pc bpc" id="L1073" title="1 of 2 branches missed.">                if (bestIndex1 != null) {</span>
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">                    for (Integer index1 : set) {</span>
+<span class="fc bfc" id="L1075" title="All 2 branches covered.">                        if (index1.equals(bestIndex1)) {</span>
+<span class="fc" id="L1076">                            continue;</span>
+                        }
+<span class="fc" id="L1078">                        remove.add(index1);</span>
+<span class="fc" id="L1079">                    }</span>
+                }
+            }
+<span class="fc" id="L1082">        }</span>
+
+<span class="fc" id="L1084">        Collections.sort(remove);</span>
+<span class="fc bfc" id="L1085" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L1086">            int idx = remove.get(i);</span>
+<span class="fc" id="L1087">            candidateCornersXY.removeRange(idx, idx);</span>
+        }
+<span class="fc" id="L1089">    }</span>
+
+    private void insertJunctions(ScaleSpaceCurve scaleSpace, SIGMA sigma,
+        int edgeNumber, Set&lt;PairIntWithIndex&gt; junctions,
+        CornerArray candidateCornersXY) {
+
+<span class="fc bfc" id="L1095" title="All 2 branches covered.">        if (junctions == null) {</span>
+<span class="fc" id="L1096">            return;</span>
+        }
+
+<span class="fc bfc" id="L1099" title="All 2 branches covered.">        for (PairIntWithIndex p : junctions) {</span>
+
+<span class="fc" id="L1101">            int idxWithinEdge = p.getPixIndex();</span>
+
+            // find where to insert in candidateCornersXY
+<span class="fc" id="L1104">            int idx = Arrays.binarySearch(candidateCornersXY.getYInt(),</span>
+<span class="fc" id="L1105">                0, candidateCornersXY.getN(), idxWithinEdge);</span>
+            // if it's negative, (-(insertion point) - 1)
+<span class="fc bfc" id="L1107" title="All 2 branches covered.">            if (idx &lt; 0) {</span>
+                // idx = -*idx2 - 1
+<span class="fc" id="L1109">                idx = -1 * (idx + 1);</span>
+            }
+
+<span class="fc" id="L1112">            float x = scaleSpace.getX(idxWithinEdge);</span>
+<span class="fc" id="L1113">            float y = scaleSpace.getY(idxWithinEdge);</span>
+
+<span class="fc" id="L1115">            candidateCornersXY.insert(idx, x, y, idxWithinEdge, sigma);</span>
+<span class="fc" id="L1116">        }</span>
+<span class="fc" id="L1117">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

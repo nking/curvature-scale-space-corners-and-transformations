@@ -167,7 +167,7 @@ import org.ejml.simple.SimpleMatrix;
 
 <span class="fc" id="L168">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
 <span class="fc" id="L169">        long seed = System.currentTimeMillis();</span>
-<span class="fc" id="L170">        log.info(&quot;SEED=&quot; + seed);</span>
+<span class="fc" id="L170">        log.info(&quot;SEED=&quot; + seed + &quot; nPoints=&quot; + nPoints);</span>
 <span class="fc" id="L171">        sr.setSeed(seed);</span>
 
 <span class="fc" id="L173">        int[] selected = new int[nSet];</span>
@@ -256,132 +256,133 @@ import org.ejml.simple.SimpleMatrix;
         }
 
 <span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
-<span class="nc" id="L259">            return null;</span>
+<span class="nc" id="L259">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
+<span class="nc" id="L260">            return null;</span>
         }
 
         // store inliers in outputLeftXY and outputRightXY and redo the
         // entire fit using only the inliers to determine the fundamental
         // matrix.
-<span class="fc" id="L265">        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, inlierIndexes.size());</span>
-<span class="fc" id="L266">        SimpleMatrix inliersRightXY = new SimpleMatrix(3, inlierIndexes.size());</span>
+<span class="fc" id="L266">        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, inlierIndexes.size());</span>
+<span class="fc" id="L267">        SimpleMatrix inliersRightXY = new SimpleMatrix(3, inlierIndexes.size());</span>
 
-<span class="fc" id="L268">        int count = 0;</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">        for (Integer idx : inlierIndexes) {</span>
-<span class="fc" id="L270">            int idxInt = idx.intValue();</span>
+<span class="fc" id="L269">        int count = 0;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (Integer idx : inlierIndexes) {</span>
+<span class="fc" id="L271">            int idxInt = idx.intValue();</span>
             
-<span class="fc" id="L272">            float x = (float)matchedLeftXY.get(0, idxInt);</span>
-<span class="fc" id="L273">            float y = (float)matchedLeftXY.get(1, idxInt);</span>
-<span class="fc" id="L274">            inliersLeftXY.set(0, count, x);</span>
-<span class="fc" id="L275">            inliersLeftXY.set(1, count, y);</span>
-<span class="fc" id="L276">            inliersLeftXY.set(2, count, 1);</span>
+<span class="fc" id="L273">            float x = (float)matchedLeftXY.get(0, idxInt);</span>
+<span class="fc" id="L274">            float y = (float)matchedLeftXY.get(1, idxInt);</span>
+<span class="fc" id="L275">            inliersLeftXY.set(0, count, x);</span>
+<span class="fc" id="L276">            inliersLeftXY.set(1, count, y);</span>
+<span class="fc" id="L277">            inliersLeftXY.set(2, count, 1);</span>
             
-<span class="fc" id="L278">            x = (float)matchedRightXY.get(0, idxInt);</span>
-<span class="fc" id="L279">            y = (float)matchedRightXY.get(1, idxInt);</span>
-<span class="fc" id="L280">            inliersRightXY.set(0, count, x);</span>
-<span class="fc" id="L281">            inliersRightXY.set(1, count, y);</span>
-<span class="fc" id="L282">            inliersRightXY.set(2, count, 1);</span>
-<span class="fc" id="L283">            count++;</span>
-<span class="fc" id="L284">        }</span>
+<span class="fc" id="L279">            x = (float)matchedRightXY.get(0, idxInt);</span>
+<span class="fc" id="L280">            y = (float)matchedRightXY.get(1, idxInt);</span>
+<span class="fc" id="L281">            inliersRightXY.set(0, count, x);</span>
+<span class="fc" id="L282">            inliersRightXY.set(1, count, y);</span>
+<span class="fc" id="L283">            inliersRightXY.set(2, count, 1);</span>
+<span class="fc" id="L284">            count++;</span>
+<span class="fc" id="L285">        }</span>
 
-<span class="fc" id="L286">        StereoProjectionTransformer spTransformer = new</span>
+<span class="fc" id="L287">        StereoProjectionTransformer spTransformer = new</span>
             StereoProjectionTransformer();
 
-<span class="fc" id="L289">        StereoProjectionTransformerFit finalFit = null;</span>
+<span class="fc" id="L290">        StereoProjectionTransformerFit finalFit = null;</span>
 
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        if (nPoints == 7) {</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if (nPoints == 7) {</span>
 
-<span class="nc" id="L293">            finalFit = bestFit;</span>
+<span class="nc" id="L294">            finalFit = bestFit;</span>
 
         } else {
 
-<span class="fc" id="L297">            SimpleMatrix finalFM = null;</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">            if (inliersLeftXY.numCols() == 7) {</span>
-<span class="nc" id="L299">                List&lt;SimpleMatrix&gt; fms =</span>
-<span class="nc" id="L300">                    spTransformer.calculateEpipolarProjectionFor7Points(</span>
+<span class="fc" id="L298">            SimpleMatrix finalFM = null;</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">            if (inliersLeftXY.numCols() == 7) {</span>
+<span class="nc" id="L300">                List&lt;SimpleMatrix&gt; fms =</span>
+<span class="nc" id="L301">                    spTransformer.calculateEpipolarProjectionFor7Points(</span>
                     inliersLeftXY, inliersRightXY);
-<span class="nc bnc" id="L302" title="All 4 branches missed.">                if (fms == null || fms.isEmpty()) {</span>
-<span class="nc" id="L303">                    return null;</span>
+<span class="nc bnc" id="L303" title="All 4 branches missed.">                if (fms == null || fms.isEmpty()) {</span>
+<span class="nc" id="L304">                    return null;</span>
                 }
-<span class="nc" id="L305">                finalFM = fms.get(0);</span>
-<span class="nc" id="L306">            } else {</span>
-<span class="fc" id="L307">                finalFM =</span>
-<span class="fc" id="L308">                    spTransformer.calculateEpipolarProjectionForPerfectlyMatched(</span>
+<span class="nc" id="L306">                finalFM = fms.get(0);</span>
+<span class="nc" id="L307">            } else {</span>
+<span class="fc" id="L308">                finalFM =</span>
+<span class="fc" id="L309">                    spTransformer.calculateEpipolarProjectionForPerfectlyMatched(</span>
                     inliersLeftXY, inliersRightXY);
             }
 
             //fit against all because the new fit may be slighty different
-<span class="fc" id="L313">            finalFit = spTransformer.evaluateFitForAlreadyMatched(finalFM,</span>
+<span class="fc" id="L314">            finalFit = spTransformer.evaluateFitForAlreadyMatched(finalFM,</span>
                 matchedLeftXY, matchedRightXY, tolerance);
 
         }
         
-<span class="fc bfc" id="L318" title="All 2 branches covered.">        for (Integer idx : finalFit.getInlierIndexes()) {</span>
-<span class="fc" id="L319">            int idxInt = idx.intValue();</span>
-<span class="fc" id="L320">            outputLeftXY.add(</span>
-<span class="fc" id="L321">                (float)matchedLeftXY.get(0, idxInt),</span>
-<span class="fc" id="L322">                (float)matchedLeftXY.get(1, idxInt));</span>
-<span class="fc" id="L323">            outputRightXY.add(</span>
-<span class="fc" id="L324">                (float)matchedRightXY.get(0, idxInt),</span>
-<span class="fc" id="L325">                (float)matchedRightXY.get(1, idxInt));</span>
-<span class="fc" id="L326">        }</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (Integer idx : finalFit.getInlierIndexes()) {</span>
+<span class="fc" id="L320">            int idxInt = idx.intValue();</span>
+<span class="fc" id="L321">            outputLeftXY.add(</span>
+<span class="fc" id="L322">                (float)matchedLeftXY.get(0, idxInt),</span>
+<span class="fc" id="L323">                (float)matchedLeftXY.get(1, idxInt));</span>
+<span class="fc" id="L324">            outputRightXY.add(</span>
+<span class="fc" id="L325">                (float)matchedRightXY.get(0, idxInt),</span>
+<span class="fc" id="L326">                (float)matchedRightXY.get(1, idxInt));</span>
+<span class="fc" id="L327">        }</span>
 
-<span class="fc" id="L328">        log.info(&quot;nIter=&quot; + nIter);</span>
+<span class="fc" id="L329">        log.info(&quot;nIter=&quot; + nIter);</span>
 
-<span class="fc" id="L330">        log.info(&quot;best fit from 7-point: &quot; + bestFit.toString());</span>
+<span class="fc" id="L331">        log.info(&quot;best fit from 7-point: &quot; + bestFit.toString());</span>
 
-<span class="fc" id="L332">        log.info(&quot;final fit: &quot; + finalFit.toString());</span>
+<span class="fc" id="L333">        log.info(&quot;final fit: &quot; + finalFit.toString());</span>
 
-<span class="fc" id="L334">        return finalFit;</span>
+<span class="fc" id="L335">        return finalFit;</span>
     }
 
     boolean fitIsBetter(StereoProjectionTransformerFit bestFit,
         StereoProjectionTransformerFit compareFit) {
 
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (compareFit == null) {</span>
-<span class="nc" id="L341">            return false;</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (compareFit == null) {</span>
+<span class="nc" id="L342">            return false;</span>
         }
-<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (bestFit == null) {</span>
-<span class="fc" id="L344">            return true;</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        if (bestFit == null) {</span>
+<span class="fc" id="L345">            return true;</span>
         }
 
-<span class="fc" id="L347">        long nMatches = compareFit.getNMatches();</span>
+<span class="fc" id="L348">        long nMatches = compareFit.getNMatches();</span>
 
-<span class="fc bfc" id="L349" title="All 2 branches covered.">        if (nMatches &gt; bestFit.getNMatches()) {</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        if (nMatches &gt; bestFit.getNMatches()) {</span>
 
-<span class="fc" id="L351">            return true;</span>
+<span class="fc" id="L352">            return true;</span>
 
-<span class="fc bfc" id="L353" title="All 2 branches covered.">        } else if (nMatches == bestFit.getNMatches()) {</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">        } else if (nMatches == bestFit.getNMatches()) {</span>
 
-<span class="pc bpc" id="L355" title="1 of 2 branches missed.">            if (!Double.isNaN(compareFit.getMeanDistance()) &amp;&amp; (</span>
-<span class="fc" id="L356">                compareFit.getMeanDistance()</span>
-<span class="fc bfc" id="L357" title="All 2 branches covered.">                &lt; bestFit.getMeanDistance())) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">            if (!Double.isNaN(compareFit.getMeanDistance()) &amp;&amp; (</span>
+<span class="fc" id="L357">                compareFit.getMeanDistance()</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">                &lt; bestFit.getMeanDistance())) {</span>
 
-<span class="fc" id="L359">                return true;</span>
+<span class="fc" id="L360">                return true;</span>
 
-<span class="fc" id="L361">            } else if (compareFit.getMeanDistance()</span>
-<span class="pc bpc" id="L362" title="1 of 2 branches missed.">                == bestFit.getMeanDistance()) {</span>
+<span class="fc" id="L362">            } else if (compareFit.getMeanDistance()</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">                == bestFit.getMeanDistance()) {</span>
 
-<span class="nc bnc" id="L364" title="All 2 branches missed.">                if (compareFit.getStDevFromMean()&lt; bestFit.getStDevFromMean()) {</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">                if (compareFit.getStDevFromMean()&lt; bestFit.getStDevFromMean()) {</span>
 
-<span class="nc" id="L366">                    return true;</span>
+<span class="nc" id="L367">                    return true;</span>
                 }
             }
         }
 
-<span class="fc" id="L371">        return false;</span>
+<span class="fc" id="L372">        return false;</span>
     }
 
     private boolean hasConverged(StereoProjectionTransformerFit bestFit) {
-<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (bestFit == null) {</span>
-<span class="nc" id="L376">            return false;</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L377">            return false;</span>
         }
         
-<span class="nc" id="L379">        double limit = 0.2;</span>
+<span class="nc" id="L380">        double limit = 0.2;</span>
 
-<span class="nc bnc" id="L381" title="All 4 branches missed.">        if ((bestFit.getMeanDistance() &lt; limit) &amp;&amp; bestFit.getStDevFromMean() &lt; limit) {</span>
-<span class="nc" id="L382">            return true;</span>
+<span class="nc bnc" id="L382" title="All 4 branches missed.">        if ((bestFit.getMeanDistance() &lt; limit) &amp;&amp; bestFit.getStDevFromMean() &lt; limit) {</span>
+<span class="nc" id="L383">            return true;</span>
         }
-<span class="nc" id="L384">        return false;</span>
+<span class="nc" id="L385">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
