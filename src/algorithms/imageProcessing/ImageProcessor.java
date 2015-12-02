@@ -1681,6 +1681,13 @@ public class ImageProcessor {
 
         for (int i = 0; i < w1; ++i) {
             for (int j = 0; j < h1; ++j) {
+                
+                if (((i & 1) != 1) && ((j & 1) != 1)) {
+                    int x0 = i/2;
+                    int y0 = j/2;
+                    out.setValue(i, j, input.getValue(x0, y0));
+                    continue;
+                }
 
                 float x0 = (float)i/2.f;
                 float y0 = (float)j/2.f;

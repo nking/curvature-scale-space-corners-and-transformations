@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MedianSmooth;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -63,14 +64,16 @@ public class MedianTransform {
     }
 
     /**
-     * pyramidal median transform.
+     * pyramidal median transform (faster than multiscalePyramidalMedianTransform
+     * but reconstruction from coefficients is not exact, so prefer
+     * multiscalePyramidalMedianTransform if exact is needed);
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
      * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
      */
-    public void multiscalePyramidalMedianTransform(GreyscaleImage input,
+    public void multiscalePyramidalMedianTransform2(GreyscaleImage input,
         List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
@@ -107,6 +110,57 @@ public class MedianTransform {
             assert(cJ.getWidth() == wJPlus1.getWidth());
         }
         
+        // empty full size image
+        outputCoeff.remove(0);
+    }
+    
+    /**
+     * pyramidal median transform for exact reconstruction.
+     * following pseudocode in http://www.multiresolution.com/svbook.pdf
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    public void multiscalePyramidalMedianTransform(GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        GreyscaleImage img0 = input.copyImage();
+
+        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));
+        int s = 1;
+        int winL = 2*s + 1;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        outputTransformed.add(img0.copyToSignedImage());
+        
+        outputCoeff.add(img0.createSignedWithDimensions());
+
+        for (int j = 0; j < (nr - 1); ++j) {
+            
+            MedianSmooth med = new MedianSmooth();
+            
+            GreyscaleImage cJ = outputTransformed.get(j);
+                        
+            // median filter and decimation:
+            GreyscaleImage cJPlus1 = imageProcessor.binImage(med.calculate(cJ, winL, winL), 2);
+            
+            //interpolation of cJPlus1(binned by factor 2) to size cJ
+            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(cJPlus1);
+            
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
+            
+            outputTransformed.add(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+            
+            assert(cJ.getWidth() == wJPlus1.getWidth());
+        }
+        
+        // empty full size image
         outputCoeff.remove(0);
     }
 
@@ -114,7 +168,6 @@ public class MedianTransform {
      * reconstruct image from products of pyramidal median transform.
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
      * 
-     * not yet finished 
      * @param c0
      * @param mmCoeff
      * @return 
@@ -130,7 +183,7 @@ public class MedianTransform {
 
         for (int j = (nr - 1); j > -1; --j) {
 
-            // expand by factor of 2.  TODO: replace w/ B-spline interpolation
+            // expand by factor of 2.
             GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(output);
 
             GreyscaleImage wJ = mmCoeff.get(j);
