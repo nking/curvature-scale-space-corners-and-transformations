@@ -1,7 +1,12 @@
 package algorithms.imageProcessing;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertEquals;
 
 /**
  *
@@ -153,6 +158,42 @@ public class FixedSizeSortedVectorTest extends TestCase {
     private static class C extends A {
         public C(int v) {
             super(v);
+        }
+    }
+    
+    public void testRandom() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        //seed=1393807938003554000l;
+        sr.setSeed( seed );
+        
+        int n = 1000;
+        int sz = 100;
+                
+        List<Integer> sorted = new ArrayList<Integer>();
+        
+        FixedSizeSortedVector<Integer> sVec = new FixedSizeSortedVector<Integer>(sz, Integer.class);
+                
+        for (int i = 0; i < n; ++i) {
+            
+            int number = sr.nextInt(sz);
+             
+            sorted.add(Integer.valueOf(number));
+            
+            sVec.add(Integer.valueOf(number));
+            
+            if (i >= sz) {
+                
+                Collections.sort(sorted);
+                sorted.remove(sorted.size() - 1);
+                
+                // compare contents
+                for (int j = 0; j < sorted.size(); ++j) {
+                    Integer number2 = sorted.get(j);
+                    assertEquals(number2.intValue(), sVec.getArray()[j].intValue());
+                }
+            }
         }
     }
 }

@@ -1,6 +1,11 @@
 package algorithms.imageProcessing;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 /**
@@ -8,6 +13,8 @@ import junit.framework.TestCase;
  * @author nichole
  */
 public class FixedSizeSortedIntVectorTest extends TestCase {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     public void testAdd() throws Exception {
         
@@ -111,4 +118,39 @@ public class FixedSizeSortedIntVectorTest extends TestCase {
         assertEquals(7, values[3]);
     }
     
+    public void testRandom() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        //seed=1393807938003554000l;
+        sr.setSeed( seed );
+        
+        int n = 1000;
+        int sz = 100;
+                
+        List<Integer> sorted = new ArrayList<Integer>();
+        
+        FixedSizeSortedIntVector sVec = new FixedSizeSortedIntVector(sz);
+                
+        for (int i = 0; i < n; ++i) {
+            
+            int number = sr.nextInt(sz);
+             
+            sorted.add(Integer.valueOf(number));
+            
+            sVec.add(number);
+            
+            if (i >= sz) {
+                
+                Collections.sort(sorted);
+                sorted.remove(sorted.size() - 1);
+                
+                // compare contents
+                for (int j = 0; j < sorted.size(); ++j) {
+                    Integer number2 = sorted.get(j);
+                    assertEquals(number2.intValue(), sVec.getValue(j));
+                }
+            }
+        }
+    }
 }

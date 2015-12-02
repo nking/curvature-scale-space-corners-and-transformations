@@ -24,7 +24,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 5; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {
@@ -34,31 +34,31 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                     break;
                 }
                 case 1: {
-                    fileName1 = "checkerboard_01.jpg";
-                    fileName2 = "checkerboard_02.jpg";
-                    useBinning = true;
-                    rotate = false;
-                    break;
-                }
-                case 2: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
                     break;
                 }
-                case 3: {
+                case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
                     break;
                 }
-                case 4: {
+                case 3: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
                     useBinning = true;
                     break;
                 }
-                default: {
+                case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
+                    useBinning = true;
+                    rotate = false;
                     break;
                 }
             }
