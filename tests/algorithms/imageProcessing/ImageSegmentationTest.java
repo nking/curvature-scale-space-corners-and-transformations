@@ -1,13 +1,9 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -127,7 +123,45 @@ public class ImageSegmentationTest extends TestCase {
                 ImageIOHelper.addCornerRegionsToImage(crList, img4, 0, 0, 0, 255, 0, 0);
             }            
             ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr.png", img4);
-                        
+            
+            if (fileNameRoot.contains("checkerboard")) {
+                /*StringBuilder sb = new StringBuilder();
+                for (List<CornerRegion> list : cornerRegions2) {
+                    for (CornerRegion cr : list) {
+                        sb.append(String.format("crImg.setValue(%d, %d);\n", 
+                            Math.round(cr.getX()[cr.getKMaxIdx()]), 
+                            Math.round(cr.getY()[cr.getKMaxIdx()]), 255));
+                    }
+                }
+                log.info(sb.toString());*/
+                GreyscaleImage crImg = new GreyscaleImage(img4.getWidth(), img4.getHeight(),
+                    GreyscaleImage.Type.Bits32FullRangeInt);
+                if (fileNameRoot.equals("checkerboard_01")) {
+                    populateCleanedCR1(crImg);
+                } else {
+                    populateCleanedCR2(crImg);
+                }
+                imageProcessor.apply2DFFT(crImg, true);
+                ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr_cleaned_fft.png", crImg);
+                plotFFT(crImg, fileNameRoot + "_cleaned");
+            }
+            
+            GreyscaleImage crImg = new GreyscaleImage(img4.getWidth(), img4.getHeight(),
+                GreyscaleImage.Type.Bits32FullRangeInt);
+            for (List<CornerRegion> list : cornerRegions2) {
+                for (CornerRegion cr : list) {
+                    crImg.setValue(cr.getX()[cr.getKMaxIdx()], 
+                        cr.getY()[cr.getKMaxIdx()], 255);
+                }
+            }
+            //ImageDisplayer.displayImage("img0", crImg);
+            imageProcessor.apply2DFFT(crImg, true);
+            //ImageDisplayer.displayImage("FFT of img0", crImg);
+        
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr_fft.png", crImg);
+            
+            plotFFT(crImg, fileNameRoot);
+            
             int z = 1;
         }
     }
@@ -522,5 +556,258 @@ public class ImageSegmentationTest extends TestCase {
         
         return c;
     }
-    
+
+    private void plotFFT(GreyscaleImage crImg, String fileNameRoot) throws IOException {
+
+        int bn = 1;//8
+        float[] xPoints = new float[crImg.getWidth() / bn];
+        float[] yPoints = new float[crImg.getWidth() / bn];
+        float xmn = 0;
+        float xmx = crImg.getWidth() / bn;
+        float ymn = Float.MAX_VALUE;
+        float ymx = Float.MIN_VALUE;
+        int row = 50;
+        for (int i = 0; i < (crImg.getWidth() / bn) - 1; ++i) {
+            int ii = bn * i;
+            xPoints[i] = i;
+            for (int k = 0; k < bn; ++k) {
+                yPoints[i] += crImg.getValue(ii + k, row);
+            }
+            yPoints[i] /= bn;
+            if (yPoints[i] < ymn) {
+                ymn = yPoints[i];
+            }
+            if (yPoints[i] > ymx) {
+                ymx = yPoints[i];
+            }
+        }
+
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(xmn, xmx, ymn, ymx,
+            xPoints, yPoints, null, null, xPoints, yPoints,
+            "X fft_" + fileNameRoot);
+
+        xPoints = new float[crImg.getHeight() / bn];
+        yPoints = new float[crImg.getHeight() / bn];
+        xmn = 0;
+        xmx = crImg.getHeight() / bn;
+        ymn = Float.MAX_VALUE;
+        ymx = Float.MIN_VALUE;
+        int col = 50;
+        for (int j = 0; j < (crImg.getHeight() / bn) - 1; ++j) {
+            int jj = bn * j;
+            xPoints[j] = j;
+            for (int k = 0; k < bn; ++k) {
+                yPoints[j] += crImg.getValue(jj + k, row);
+            }
+            yPoints[j] /= bn;
+            if (yPoints[j] < ymn) {
+                ymn = yPoints[j];
+            }
+            if (yPoints[j] > ymx) {
+                ymx = yPoints[j];
+            }
+        }
+
+        plotter.addPlot(xmn, xmx, ymn, ymx,
+            xPoints, yPoints, null, null, xPoints, yPoints,
+            "y fft_" + fileNameRoot);
+
+        plotter.writeFile(fileNameRoot + "_blob_cr_fft");
+
+    }
+
+    private void populateCleanedCR2(GreyscaleImage crImg) {
+        crImg.setValue(84, 146);
+        crImg.setValue(36, 146);
+        crImg.setValue(35, 99);
+        crImg.setValue(85, 99);
+        crImg.setValue(83, 97);
+        crImg.setValue(37, 97);
+        //crImg.setValue(36, 77); artifact
+        //crImg.setValue(35, 65); artifact
+        crImg.setValue(36, 50);
+        //crImg.setValue(45, 49); artifact
+        //crImg.setValue(67, 50); artifact
+        crImg.setValue(83, 51);
+        crImg.setValue(83, 193);
+        crImg.setValue(37, 194);
+        crImg.setValue(36, 148);
+        crImg.setValue(84, 148);
+        crImg.setValue(131, 99);
+        crImg.setValue(86, 98);
+        crImg.setValue(86, 51);
+        //crImg.setValue(105, 52); artifact
+        crImg.setValue(131, 53);
+        crImg.setValue(131, 192);
+        crImg.setValue(86, 193);
+        crImg.setValue(86, 146);
+        crImg.setValue(131, 146);
+        crImg.setValue(130, 52);
+        //crImg.setValue(105, 51); artifact
+        crImg.setValue(86, 50);
+        crImg.setValue(86, 4);
+        //crImg.setValue(104, 5); artifact
+        //crImg.setValue(119, 6); artifact
+        crImg.setValue(131, 7);
+        crImg.setValue(176, 54);
+        crImg.setValue(133, 53);
+        crImg.setValue(132, 13);
+        crImg.setValue(134, 6);
+        //crImg.setValue(154, 7); artifact
+        //crImg.setValue(168, 8); artifact
+        crImg.setValue(176, 9);
+        crImg.setValue(130, 145);
+        crImg.setValue(86, 144);
+        crImg.setValue(87, 99);
+        //crImg.setValue(92, 100); artifact
+        crImg.setValue(131, 101);
+        crImg.setValue(176, 144);
+        //crImg.setValue(138, 145); artifact
+        crImg.setValue(133, 146);
+        crImg.setValue(132, 101);
+        crImg.setValue(177, 101);
+        crImg.setValue(175, 99);
+        crImg.setValue(133, 98);
+        crImg.setValue(134, 54);
+        //crImg.setValue(155, 55); artifact
+        crImg.setValue(176, 56);
+        //crImg.setValue(219, 89); artifact
+        crImg.setValue(218, 101);
+        crImg.setValue(178, 100);
+        crImg.setValue(177, 56);
+        //crImg.setValue(187, 55); artifact
+        //crImg.setValue(190, 56); artifact
+        crImg.setValue(220, 58);
+        crImg.setValue(175, 189);
+        //crImg.setValue(168, 190); artifact
+        crImg.setValue(134, 191);
+        crImg.setValue(133, 148);
+        crImg.setValue(176, 147);
+        crImg.setValue(218, 189);
+        crImg.setValue(178, 190);
+        crImg.setValue(177, 146);
+        crImg.setValue(219, 146);
+        crImg.setValue(218, 56);
+        //crImg.setValue(190, 55); artifact
+        crImg.setValue(179, 54);
+        crImg.setValue(179, 10);
+        //crImg.setValue(190, 11); artifact
+        //crImg.setValue(203, 12); artifact
+        crImg.setValue(219, 14);
+        crImg.setValue(218, 144);
+        crImg.setValue(178, 144);
+        //crImg.setValue(177, 116); artifact
+        crImg.setValue(178, 102);
+        //crImg.setValue(201, 101); artifact
+        //crImg.setValue(204, 102); artifact
+        crImg.setValue(219, 103);
+        crImg.setValue(259, 144);
+        crImg.setValue(221, 145);
+        crImg.setValue(221, 101);
+        crImg.setValue(260, 103);
+        crImg.setValue(260, 58);
+        //crImg.setValue(248, 57); artifact
+        crImg.setValue(222, 56);
+        crImg.setValue(222, 12);
+        //crImg.setValue(237, 13); artifact
+        //crImg.setValue(250, 14); artifact
+        //crImg.setValue(253, 15); artifact
+        crImg.setValue(261, 16);
+    }
+
+    private void populateCleanedCR1(GreyscaleImage crImg) {
+        crImg.setValue(123, 148);
+        crImg.setValue(78, 148);
+        crImg.setValue(77, 102);
+        //crImg.setValue(110, 101); artifact
+        //crImg.setValue(113, 102); artifact
+        crImg.setValue(124, 103);
+        crImg.setValue(123, 55);
+        crImg.setValue(78, 54);
+        crImg.setValue(78, 8);
+        crImg.setValue(124, 9);
+        crImg.setValue(169, 101);
+        crImg.setValue(125, 102);
+        crImg.setValue(125, 55);
+        crImg.setValue(138, 56);
+        crImg.setValue(170, 57);
+        //crImg.setValue(170, 96); artifact
+        crImg.setValue(75, 147);
+        crImg.setValue(31, 147);
+        crImg.setValue(30, 102);
+        crImg.setValue(50, 101);
+        crImg.setValue(53, 102);
+        crImg.setValue(76, 103);
+        crImg.setValue(75, 53);
+        crImg.setValue(31, 53);
+        crImg.setValue(30, 17);
+        crImg.setValue(31, 14);
+        crImg.setValue(32, 7);
+        crImg.setValue(53, 8);
+        crImg.setValue(76, 9);
+        crImg.setValue(214, 56);
+        crImg.setValue(171, 56);
+        crImg.setValue(171, 10);
+        //crImg.setValue(206, 11); artifact
+        crImg.setValue(215, 12);
+        crImg.setValue(213, 148);
+        crImg.setValue(171, 148);
+        crImg.setValue(171, 102);
+        crImg.setValue(215, 103);
+        //crImg.setValue(214, 112); artifact
+        //crImg.setValue(215, 136); artifact
+        crImg.setValue(168, 193);
+        crImg.setValue(125, 194);
+        crImg.setValue(125, 148);
+        crImg.setValue(169, 149);
+        crImg.setValue(122, 101);
+        crImg.setValue(79, 100);
+        crImg.setValue(78, 56);
+        crImg.setValue(108, 55);
+        crImg.setValue(111, 56);
+        crImg.setValue(123, 57);
+        crImg.setValue(259, 102);
+        crImg.setValue(215, 101);
+        //crImg.setValue(215, 66); artifact
+        crImg.setValue(217, 57);
+        crImg.setValue(260, 58);
+        crImg.setValue(168, 55);
+        crImg.setValue(135, 54);
+        crImg.setValue(125, 53);
+        crImg.setValue(125, 10);
+        //crImg.setValue(141, 9); artifact
+        //crImg.setValue(144, 10); artifact
+        crImg.setValue(169, 11);
+        crImg.setValue(258, 193);
+        crImg.setValue(216, 193);
+        crImg.setValue(216, 148);
+        crImg.setValue(258, 148);
+        crImg.setValue(122, 193);
+        crImg.setValue(79, 193);
+        crImg.setValue(78, 150);
+        crImg.setValue(123, 150);
+        crImg.setValue(168, 147);
+        crImg.setValue(126, 147);
+        crImg.setValue(125, 104);
+        crImg.setValue(169, 104);
+        //crImg.setValue(214, 66); artifact
+        crImg.setValue(213, 101);
+        crImg.setValue(172, 101);
+        crImg.setValue(172, 57);
+        crImg.setValue(215, 58);
+        crImg.setValue(213, 192);
+        crImg.setValue(170, 191);
+        crImg.setValue(170, 150);
+        crImg.setValue(214, 150);
+        crImg.setValue(258, 147);
+        crImg.setValue(217, 147);
+        crImg.setValue(216, 104);
+        crImg.setValue(258, 103);
+        crImg.setValue(258, 56);
+        crImg.setValue(217, 56);
+        crImg.setValue(217, 12);
+        crImg.setValue(258, 13);
+    }
+
 }

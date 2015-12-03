@@ -1,9 +1,3 @@
-**-- for matching w/ checkerboard:
-     some artifacts are produced by aliasing and segmentation,
-     the point matching should be looked at in detail.
-     what does the FFT of just the points themselves look like?
-     grid pattern discernable?
-
 **-- use the added half dome test images to assert that matching same
      from other cameras is working
 
@@ -72,6 +66,9 @@
 -- low priority, changes for KMPP...
    -- use a watershed at line 133
       and use the labeled components throughout code
+
+-- explore a little the biorthogonal wavelet transform 
+    in the JPEG-2000 image storage and compression standard
 
 -- text recognition
    -- would like a class to extract and match text

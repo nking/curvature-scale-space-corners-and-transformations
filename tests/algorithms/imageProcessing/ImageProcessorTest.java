@@ -575,10 +575,16 @@ public class ImageProcessorTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        GreyscaleImage img0 = getGrid();
+        GreyscaleImage img0 = getGrid(0);
         ImageDisplayer.displayImage("img0", img0);
         imageProcessor.apply2DFFT(img0, true);
         ImageDisplayer.displayImage("FFT of img0", img0);
+        
+        GreyscaleImage img30 = getGrid(30);
+        ImageDisplayer.displayImage("img30", img30);
+        imageProcessor.apply2DFFT(img30, true);
+        ImageDisplayer.displayImage("FFT of img30", img30);
+        
         int z = 1;
         /*
         
@@ -772,19 +778,28 @@ public class ImageProcessorTest extends TestCase {
         return checkerboard;
     }
     
-    private GreyscaleImage getGrid() {
+    private GreyscaleImage getGrid(double rotationInDegrees) {
         
         int width = 300;
         int dim = 50;
         
         GreyscaleImage img = new GreyscaleImage(width, width, GreyscaleImage.Type.Bits32FullRangeInt);
         
+        Transformer transformer = new Transformer();
+        
         /*
            50   100   150   200   250   |
         */
         for (int i = 0; i < 5; ++i) {
             for (int j = 0; j < 5; ++j) {
-                img.setValue((i + 1)*dim, (j + 1)*dim, 250);
+                int x = (i + 1)*dim;
+                int y = (j + 1)*dim;
+                float[] xyT = transformer.rotate((float)rotationInDegrees, x, y);
+                if (xyT[0] < 0 || (xyT[0] > (width - 1)) || (xyT[1] < 0) ||
+                    (xyT[1] > (width - 1))) {
+                    continue;
+                }
+                img.setValue(Math.round(xyT[0]), Math.round(xyT[1]), 250);
             }
         }
         
