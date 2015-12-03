@@ -1664,8 +1664,31 @@ public class ImageProcessor {
 
         return out;
     }
-            
+    
+    
     public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
+
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
+
+        int w1 = 2 * input.getWidth();
+        int h1 = 2 * input.getHeight();
+        
+        return expandBy2UsingBilinearInterp(input, w1, h1);
+    }
+            
+    /**
+     * expand image to final size by a factor of 2, and use the given output
+     * widths and heights which are expected to be either twice the input
+     * or twice plus 1.
+     * @param input
+     * @param outWidth
+     * @param outHeight
+     * @return 
+     */
+    public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input,
+        int outWidth, int outHeight) {
 
         if (input == null) {
             throw new IllegalArgumentException("input cannot be null");
@@ -1673,20 +1696,28 @@ public class ImageProcessor {
 
         int w0 = input.getWidth();
         int h0 = input.getHeight();
+        
+        if ((2*w0 != outWidth) && ((2*w0 + 1) != outWidth)) {
+            throw new IllegalArgumentException(
+            "outWidth should be 2 * input.getWidth() or (2 * input.getWidth()) + 1");
+        }
+        if ((2*h0 != outHeight) && ((2*h0 + 1) != outHeight)) {
+            throw new IllegalArgumentException(
+            "outHeight should be 2 * input.getHeight() or (2 * input.getHeight()) + 1");
+        }
 
-        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);
+        GreyscaleImage out = input.createWithDimensions(outWidth, outHeight);
 
-        int w1 = out.getWidth();
-        int h1 = out.getHeight();
-
-        for (int i = 0; i < w1; ++i) {
-            for (int j = 0; j < h1; ++j) {
+        for (int i = 0; i < outWidth; ++i) {
+            for (int j = 0; j < outHeight; ++j) {
                 
                 if (((i & 1) != 1) && ((j & 1) != 1)) {
                     int x0 = i/2;
                     int y0 = j/2;
-                    out.setValue(i, j, input.getValue(x0, y0));
-                    continue;
+                    if ((x0 < w0) && (y0 < h0)) {
+                        out.setValue(i, j, input.getValue(x0, y0));
+                        continue;
+                    }
                 }
 
                 float x0 = (float)i/2.f;

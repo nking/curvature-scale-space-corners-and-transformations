@@ -4,6 +4,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -144,8 +145,25 @@ public class ImageSegmentationTest extends TestCase {
                 imageProcessor.apply2DFFT(crImg, true);
                 ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr_cleaned_fft.png", crImg);
                 plotFFT(crImg, fileNameRoot + "_cleaned");
+                
+                img = ImageIOHelper.readImageExt(filePath);
+                MedianTransform mt = new MedianTransform();
+                List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+                List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+                //mt.multiscaleMedianTransform(img.copyToGreyscale(), transformed, coeffs);
+                mt.multiscalePyramidalMedianTransform(gsImg, transformed, coeffs);        
+                //GreyscaleImage r = mt.reconstructPyramidalMultiscaleMedianTransform(
+                //    transformed.get(transformed.size() - 1), coeffs);
+
+                //for (int i = 0; i < transformed.size(); ++i) {
+                //    ImageDisplayer.displayImage("transformed " + i, transformed.get(i));
+                //}
+                for (int i = 0; i < coeffs.size(); ++i) {
+                    ImageDisplayer.displayImage("coeffs " + i, coeffs.get(i));
+                }
+                int z = 1;
             }
-            
+
             GreyscaleImage crImg = new GreyscaleImage(img4.getWidth(), img4.getHeight(),
                 GreyscaleImage.Type.Bits32FullRangeInt);
             for (List<CornerRegion> list : cornerRegions2) {

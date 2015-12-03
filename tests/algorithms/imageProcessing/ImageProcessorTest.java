@@ -5,7 +5,9 @@ import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -585,7 +587,28 @@ public class ImageProcessorTest extends TestCase {
         imageProcessor.apply2DFFT(img30, true);
         ImageDisplayer.displayImage("FFT of img30", img30);
         
+        /*
+        MedianTransform mt = new MedianTransform();
+        
+        List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+        List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+        mt.multiscaleMedianTransform(img30, transformed, coeffs);        
+        GreyscaleImage r = mt.reconstructMultiscaleMedianTransform(
+            transformed.get(transformed.size() - 1), coeffs);
+        //mt.multiscalePyramidalMedianTransform(getGrid(0), transformed, coeffs);        
+        //GreyscaleImage r = mt.reconstructPyramidalMultiscaleMedianTransform(
+        //    transformed.get(transformed.size() - 1), coeffs);
+        
+        for (int i = 0; i < transformed.size(); ++i) {
+            ImageDisplayer.displayImage("transformed " + i, transformed.get(i));
+        }
+        for (int i = 0; i < coeffs.size(); ++i) {
+            ImageDisplayer.displayImage("coeffs " + i, coeffs.get(i));
+        }
+        ImageDisplayer.displayImage("reconstructed ", r);
+        
         int z = 1;
+        */
         /*
         
         GreyscaleImage checkerboard = getCheckboard(8);

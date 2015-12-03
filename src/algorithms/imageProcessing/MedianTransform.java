@@ -38,6 +38,10 @@ public class MedianTransform {
             int winL = 2*s + 1;
             
             MedianSmooth med = new MedianSmooth();
+
+            if (outputTransformed.get(j).getWidth() < winL) {
+                break;
+            }
             
             outputTransformed.add(med.calculate(outputTransformed.get(j), winL, winL));
             
@@ -95,6 +99,10 @@ public class MedianTransform {
             
             GreyscaleImage cJ = outputTransformed.get(j);
             
+            if (cJ.getWidth() < winL) {
+                break;
+            }
+            
             GreyscaleImage cJPlus1Ast = med.calculate(cJ, winL, winL);   
             
             // decimation:
@@ -147,12 +155,17 @@ public class MedianTransform {
             MedianSmooth med = new MedianSmooth();
             
             GreyscaleImage cJ = outputTransformed.get(j);
-                        
+            
+            if (cJ.getWidth() < winL) {
+                break;
+            }
+            
             // median filter and decimation:
             GreyscaleImage cJPlus1 = imageProcessor.binImage(med.calculate(cJ, winL, winL), 2);
             
             //interpolation of cJPlus1 to size cJ
-            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(cJPlus1);
+            GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(
+                cJPlus1, cJ.getWidth(), cJ.getHeight());
             
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1Ast);
             
@@ -186,10 +199,11 @@ public class MedianTransform {
 
         for (int j = (nr - 1); j > -1; --j) {
 
-            // expand by factor of 2.
-            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(output);
-
             GreyscaleImage wJ = mmCoeff.get(j);
+            
+            // expand by factor of 2.
+            GreyscaleImage cJPrime = imageProcessor.expandBy2UsingBilinearInterp(
+                output, wJ.getWidth(), wJ.getHeight());
             
             output = cJPrime.add(wJ);
         }
