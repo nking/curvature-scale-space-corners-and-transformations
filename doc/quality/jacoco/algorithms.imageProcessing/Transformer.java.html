@@ -863,15 +863,15 @@ import java.util.logging.Logger;
      */
     public float[] rotate(float rotationInDegrees, float x, float y) {
         
-<span class="nc" id="L866">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
+<span class="fc" id="L866">        double rotationInRadians = rotationInDegrees * Math.PI/180.;</span>
         
-<span class="nc" id="L868">        double cos = Math.cos(rotationInRadians);</span>
-<span class="nc" id="L869">        double sin = Math.sin(rotationInRadians);</span>
+<span class="fc" id="L868">        double cos = Math.cos(rotationInRadians);</span>
+<span class="fc" id="L869">        double sin = Math.sin(rotationInRadians);</span>
                             
-<span class="nc" id="L871">        double xr = (x * cos) + (y * sin);</span>
-<span class="nc" id="L872">        double yr = (-x * sin) + (y * cos);</span>
+<span class="fc" id="L871">        double xr = (x * cos) + (y * sin);</span>
+<span class="fc" id="L872">        double yr = (-x * sin) + (y * cos);</span>
             
-<span class="nc" id="L874">        return new float[]{(float)xr, (float)yr};</span>
+<span class="fc" id="L874">        return new float[]{(float)xr, (float)yr};</span>
     }
 
     /**

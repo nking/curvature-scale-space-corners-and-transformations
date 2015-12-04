@@ -646,19 +646,19 @@ import javax.imageio.ImageIO;
         Image img, int xOffset, int yOffset,
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="fc bfc" id="L649" title="All 2 branches covered.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="fc" id="L650">            float xx = x + dx;</span>
-<span class="pc bpc" id="L651" title="2 of 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
-<span class="fc bfc" id="L652" title="All 2 branches covered.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
-<span class="fc" id="L653">                    dy++) {</span>
-<span class="fc" id="L654">                    float yy = y + dy;</span>
-<span class="pc bpc" id="L655" title="2 of 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
-<span class="fc" id="L656">                        img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="nc bnc" id="L649" title="All 2 branches missed.">        for (int dx = (-1*nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L650">            float xx = x + dx;</span>
+<span class="nc bnc" id="L651" title="All 4 branches missed.">            if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">                for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L653">                    dy++) {</span>
+<span class="nc" id="L654">                    float yy = y + dy;</span>
+<span class="nc bnc" id="L655" title="All 4 branches missed.">                    if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
+<span class="nc" id="L656">                        img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                     }
                 }
             }
         }
-<span class="fc" id="L661">    }</span>
+<span class="nc" id="L661">    }</span>
 
     public static void writeLabeledContours(
         List&lt;CurvatureScaleSpaceContour&gt; contours, int xOffset, int yOffset,
@@ -1433,25 +1433,25 @@ import javax.imageio.ImageIO;
         int yOffsetToApply, Image input, int rClr, int gClr, int bClr) throws 
         IOException {
         
-<span class="pc bpc" id="L1436" title="2 of 4 branches missed.">        if (points == null || input == null) {</span>
+<span class="nc bnc" id="L1436" title="All 4 branches missed.">        if (points == null || input == null) {</span>
 <span class="nc" id="L1437">            return;</span>
         }
         
-<span class="fc" id="L1440">        int w = input.getWidth();</span>
-<span class="fc" id="L1441">        int h = input.getHeight();</span>
+<span class="nc" id="L1440">        int w = input.getWidth();</span>
+<span class="nc" id="L1441">        int h = input.getHeight();</span>
                   
-<span class="fc bfc" id="L1443" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">        for (PairInt p : points) {</span>
 
-<span class="fc" id="L1445">            int col = p.getX() + xOffsetToApply;</span>
-<span class="fc" id="L1446">            int row = p.getY() + yOffsetToApply;</span>
+<span class="nc" id="L1445">            int col = p.getX() + xOffsetToApply;</span>
+<span class="nc" id="L1446">            int row = p.getY() + yOffsetToApply;</span>
             
-<span class="pc bpc" id="L1448" title="4 of 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
+<span class="nc bnc" id="L1448" title="All 8 branches missed.">            if ((col &lt; 0) || (row &lt; 0) || (col &gt; (w - 1)) || (row &gt; (h - 1))) {</span>
 <span class="nc" id="L1449">                continue;</span>
             }
 
-<span class="fc" id="L1452">            input.setRGB(col, row, rClr, gClr, bClr);</span>
-<span class="fc" id="L1453">        }</span>
-<span class="fc" id="L1454">    }</span>
+<span class="nc" id="L1452">            input.setRGB(col, row, rClr, gClr, bClr);</span>
+<span class="nc" id="L1453">        }</span>
+<span class="nc" id="L1454">    }</span>
     
     public static void addToImage(Set&lt;PairInt&gt; points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int nExtraForDot,
@@ -1775,14 +1775,14 @@ import javax.imageio.ImageIO;
         Collection&lt;T&gt; regions, Image img, int xOffset, int yOffset, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="fc bfc" id="L1778" title="All 2 branches covered.">        for (T br : regions ) {</span>
+<span class="nc bnc" id="L1778" title="All 2 branches missed.">        for (T br : regions ) {</span>
             
-<span class="fc" id="L1780">            int x = br.getX()[br.getKMaxIdx()];</span>
-<span class="fc" id="L1781">            int y = br.getY()[br.getKMaxIdx()];</span>
+<span class="nc" id="L1780">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L1781">            int y = br.getY()[br.getKMaxIdx()];</span>
             
-<span class="fc" id="L1783">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L1783">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 rClr, gClr, bClr);
-<span class="fc" id="L1785">        }</span>
-<span class="fc" id="L1786">    }</span>
+<span class="nc" id="L1785">        }</span>
+<span class="nc" id="L1786">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

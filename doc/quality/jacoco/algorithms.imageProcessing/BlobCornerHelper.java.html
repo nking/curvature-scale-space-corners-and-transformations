@@ -10,24 +10,24 @@ import java.util.Map;
  */
 public class BlobCornerHelper {
     
-<span class="fc" id="L13">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
+<span class="pc" id="L13">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
         segCornersMap = new HashMap&lt;SegmentationType, 
         List&lt;List&lt;CornerRegion&gt;&gt;&gt;();
     
-<span class="fc" id="L17">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
+<span class="pc" id="L17">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
         segBinnedCornersMap = new HashMap&lt;SegmentationType, 
         List&lt;List&lt;CornerRegion&gt;&gt;&gt;();
     
     protected final BlobPerimeterHelper imgHelper;
     
-<span class="fc" id="L23">    protected boolean debug = false;</span>
+<span class="pc" id="L23">    protected boolean debug = false;</span>
     
-<span class="fc" id="L25">    protected String debugTag = &quot;&quot;;</span>
+<span class="pc" id="L25">    protected String debugTag = &quot;&quot;;</span>
     
-<span class="fc" id="L27">    public BlobCornerHelper(final BlobPerimeterHelper imgHelper) {</span>
+<span class="nc" id="L27">    public BlobCornerHelper(final BlobPerimeterHelper imgHelper) {</span>
         
-<span class="fc" id="L29">        this.imgHelper = imgHelper;</span>
-<span class="fc" id="L30">    }</span>
+<span class="nc" id="L29">        this.imgHelper = imgHelper;</span>
+<span class="nc" id="L30">    }</span>
     
     public BlobCornerHelper(final BlobPerimeterHelper imgHelper, 
 <span class="fc" id="L33">        final String debugTag) {</span>
