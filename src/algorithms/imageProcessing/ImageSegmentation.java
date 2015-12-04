@@ -3113,46 +3113,6 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         return fineCoeff;
     }
     
-    protected static GreyscaleImage growRadius(GreyscaleImage input, 
-        int radius, int value) {
-        
-        int w = input.getWidth();
-        int h = input.getHeight();
-                
-        GreyscaleImage output = input.createWithDimensions();
-        
-        for (int x1 = 0; x1 < w; ++x1) {
-            for (int y1 = 0; y1 < h; ++y1) {
-                
-                int v1 = input.getValue(x1, y1);
-                
-                if (v1 < 1) {
-                    continue;
-                }
-                
-                output.setValue(x1, y1, v1);
-                
-                for (int dx = (-1 * radius); dx < (radius + 1); dx++) {
-                    int x2 = x1 + dx;
-                    // do not grow image boundary pixels too
-                    if ((x2 < 1) || (x2 > (w - 2))) {
-                        continue;
-                    }
-                    for (int dy = (-1 * radius); dy < (radius + 1); ++dy) {
-                        int y2 = y1 + dy;
-                        // do not grow image boundary pixels too
-                        if ((y2 < 1) || (y2 > (h - 2))) {
-                            continue;
-                        }
-                        output.setValue(x2, y2, value);
-                    }
-                } 
-            }
-        }
-        
-        return output;
-    }
-    
     protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,
         Set<PairInt> points) {
 
