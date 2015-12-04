@@ -257,11 +257,11 @@ public class SegmentedImageHelper {
         
         if (type.equals(SegmentationType.GREYSCALE_HIST)) {
             
-            //segImg = gsImg.copyImage();
-            //imageSegmentation.applyGreyscaleHistogram(segImg);
+            //ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
+            //segImg = imageSegmentation.createGreyscale3(imgBinned);
             
-            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            segImg = imageSegmentation.createGreyscale3(imgBinned);
+            //TODO: change the name of GREYSCALE_HIST
+            segImg = imageSegmentation.createGreyscale5(gsImg);
                         
             imgBinnedSegmentedMap.put(type, segImg);
             
@@ -343,12 +343,12 @@ public class SegmentedImageHelper {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
                 
         if (type.equals(SegmentationType.GREYSCALE_HIST)) {
-            
-            //segImg = gsImg.copyImage();
-            //imageSegmentation.applyGreyscaleHistogram(segImg);
-            
-            segImg = imageSegmentation.createGreyscale3(img);
                         
+            //segImg = imageSegmentation.createGreyscale3(img);
+                        
+            //TODO: change the name of GREYSCALE_HIST
+            segImg = imageSegmentation.createGreyscale5(imgGrey.copyImage());
+            
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {

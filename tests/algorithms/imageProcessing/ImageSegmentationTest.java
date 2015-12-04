@@ -27,7 +27,7 @@ public class ImageSegmentationTest extends TestCase {
         
         String fileName1, fileName2;
 
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 0; i < 6; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {
@@ -68,67 +68,18 @@ public class ImageSegmentationTest extends TestCase {
             String bin = ResourceFinder.findDirectory("bin");
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            int idx = fileName1.lastIndexOf(".");
+            String fileNameRoot = fileName1.substring(0, idx);
 
             GreyscaleImage img1 = ImageIOHelper.readImage(filePath1).copyToGreyscale();
             GreyscaleImage img2 = ImageIOHelper.readImage(filePath2).copyToGreyscale();
             
-            /*
-            MedianTransform mt = new MedianTransform();
-            List<GreyscaleImage> transformed1 = new ArrayList<GreyscaleImage>();
-            List<GreyscaleImage> coeffs1 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform(img1, transformed1, coeffs1);     
-            for (int ii = 0; ii < coeffs1.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/coeff_1_" + ii + ".png", 
-                    coeffs1.get(ii));
-            }            
-            List<GreyscaleImage> transformed2 = new ArrayList<GreyscaleImage>();
-            List<GreyscaleImage> coeffs2 = new ArrayList<GreyscaleImage>();
-            mt.multiscalePyramidalMedianTransform(img2, transformed2, coeffs2);     
-            for (int ii = 0; ii < coeffs2.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/coeff_2_" + ii + ".png", 
-                    coeffs2.get(ii));
-            }
-            */
+            ImageSegmentation imageSegmentation = new ImageSegmentation();
+            GreyscaleImage segImg1 = imageSegmentation.createGreyscale5(img1);
+            GreyscaleImage segImg2 = imageSegmentation.createGreyscale5(img2);
             
-            ATrousWaveletTransform wt = new ATrousWaveletTransform();
-        
-            List<GreyscaleImage> transformed1 = new ArrayList<GreyscaleImage>();
-            List<GreyscaleImage> coeffs1 = new ArrayList<GreyscaleImage>();
-            wt.calculateWithTriangleScalingFunction(img1, transformed1, coeffs1);
-            //wt.calculateWithB3SplineScalingFunction(img1, transformed1, coeffs1);        
-            GreyscaleImage r1 = wt.reconstruct(
-                transformed1.get(transformed1.size() - 1), coeffs1);
-            
-            List<GreyscaleImage> transformed2 = new ArrayList<GreyscaleImage>();
-            List<GreyscaleImage> coeffs2 = new ArrayList<GreyscaleImage>();
-            //wt.calculateWithTriangleScalingFunction(img2, transformed2, coeffs2);
-            wt.calculateWithB3SplineScalingFunction(img2, transformed2, coeffs2);
-            GreyscaleImage r2 = wt.reconstruct(
-                transformed2.get(transformed2.size() - 1), coeffs2);
-            
-            ImageIOHelper.writeOutputImage(bin + "/reconstructed_1.png", r1);
-            ImageIOHelper.writeOutputImage(bin + "/reconstructed_2.png", r2);
-            for (int ii = 0; ii < coeffs1.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/coeff_1_" + ii + ".png", 
-                    coeffs1.get(ii));
-            }
-            for (int ii = 0; ii < transformed1.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/trans_1_" + ii + ".png", 
-                    transformed1.get(ii));
-            }
-            for (int ii = 0; ii < transformed2.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/trans_2_" + ii + ".png", 
-                    transformed2.get(ii));
-            }
-            for (int ii = 0; ii < coeffs2.size(); ++ii) {
-                ImageIOHelper.writeOutputImage(bin + "/coeff_2_" + ii + ".png", 
-                    coeffs2.get(ii));
-            }
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            GreyscaleImage t2 = coeffs2.get(2).copyImage();
-            imageProcessor.applyAdaptiveMeanThresholding(t2, 7);
-            ImageIOHelper.writeOutputImage(bin + "/amt_2_2.png", t2);
+            ImageIOHelper.writeOutputImage(bin + "/seg_1_" + fileNameRoot +".png", segImg1);
+            ImageIOHelper.writeOutputImage(bin + "/seg_2_" + fileNameRoot +".png", segImg2);
             
             int z = 1;
         }

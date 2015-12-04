@@ -174,11 +174,11 @@ public class BlobsAndPerimeters {
             int binFactor = imgHelper.getBinFactor();
             int limit = 1024/binFactor;
             if (width >= limit || height >= limit) {
-                numberLimit = 40;
+                numberLimit = 30;
             }
         } else {
             if (width >= 1024 || height >= 1024) {
-                numberLimit = 40;
+                numberLimit = 30;
             }
         }
         

@@ -3015,34 +3015,29 @@ public class ImageSegmentation {
                 correctForIllumination(input, toleranceInValue, colorPixelMap);
             }
         }
-
+/*
 ImageExt tmpInput = input.copyToImageExt();
 for (PairInt p : unassignedPixels) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after_illumc0_unassigned_pix" + MiscDebug.getCurrentTimeFormatted());
 MiscDebug.writeImage(input, "_after_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         Map<PairInt, Float> colorPixelMap2 = createPolarCIEXYMap(input, addToColor);
         if (toleranceInValue > -1 && !colorPixelMap2.isEmpty()) {
             correctForIllumination(input, toleranceInValue, colorPixelMap2);
         }
-
+/*
 tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap2.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after2_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
 MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         Map<PairInt, Float> colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);
         toleranceInValue = determineToleranceForIllumCorr(colorPixelMap3, nTotC);
         if (toleranceInValue > -1 && !colorPixelMap3.isEmpty()) {
-            //cp 20,   bp=26667, cp2=75     cp3=28238  tol=1 for checkboard which prefers tol=10
-            //cp=3526  bp=1874   cp2=25797  cp3=17049  tol=1     bl2003, prefers tol=1
-            //cp=57578 bp=46581  cp2=32624  cp3=59825  tol=3     morton, prefers tol=3
-            //cp=4854  bp=38103  cp2=35     cp3=33808  tol=1     campus
-            //   8159     37597      3142       27902      1     campus
             if ((toleranceInValue == 1) && 
                 ((blackPixels.size()/colorPixelMap2.size()) > 10)) {
                 if ((blackPixels.size()/colorPixelMap.size()) > 10) {
@@ -3053,13 +3048,13 @@ MiscDebug.writeImage(input, "_after2_illumc0_" + MiscDebug.getCurrentTimeFormatt
             }
             correctForIllumination(input, toleranceInValue, colorPixelMap3);
         }
-tmpInput = input.copyToImageExt();
+/*tmpInput = input.copyToImageExt();
 for (PairInt p : colorPixelMap3.keySet()) {
 tmpInput.setRGB(p.getX(), p.getY(), 255, 0, 0);
 }        
 MiscDebug.writeImage(tmpInput, "_after3_illumc0_pix" + MiscDebug.getCurrentTimeFormatted());   
 MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatted());
-
+*/
         if (nTotC != blackPixels.size()) {
             //TODO: not sure will use this... might consider same method w/ rgb
             toleranceInValue = 2;
@@ -3078,29 +3073,114 @@ MiscDebug.writeImage(input, "_after3_illumc0_" + MiscDebug.getCurrentTimeFormatt
 
         int[] binCenters = determineGreyscaleBinCenters(cValues);
 
-        //ImageExt img2 = input.copyToImageExt();
-
         assignToNearestCluster(img, binCenters);
         MiscDebug.writeImage(img, "_after_greyscale_bins_" + MiscDebug.getCurrentTimeFormatted());
-        
-        /*    
-        try {
-            applyUsingKMPP(img, 3);
-        } catch (IOException ex) {
-            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
-        }*/
-        
+      
         for (PairInt p : blackPixels) {
             img.setValue(p.getX(), p.getY(), 0);
-            //img2.setRGB(p.getX(), p.getY(), 255, 0, 0);
         }
 
-MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
-                      
+MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());                    
 
         return img;
+    }
+    
+    /**
+     * segmentation algorithm using an a trous wavelet transform.
+     * If using this to find blobs, consider only using the zero pixels.
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage createGreyscale4(GreyscaleImage input) {
+
+        ATrousWaveletTransform wt = new ATrousWaveletTransform();
+        
+        List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+        List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+           
+        wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);        
+        
+        GreyscaleImage fineCoeff = coeffs.get(coeffs.size() - 1);
+        
+        for (int i = 0; i < fineCoeff.getNPixels(); ++i) {
+            if (fineCoeff.getValue(i) > 0) {
+                fineCoeff.setValue(i, 250);
+            }
+        }
+        fineCoeff = growRadius(fineCoeff, 4, 250);
+        
+        // consider expanding by 4 pixels then... looks like it produces too
+        // many jagged edges where there were smooth surfaces before
+        
+        return fineCoeff;
+    }
+    
+    /**
+     * segmentation algorithm using an a trous wavelet transform.
+     * 
+     * @param input
+     * @return 
+     */
+    public GreyscaleImage createGreyscale5(GreyscaleImage input) {
+
+        ATrousWaveletTransform wt = new ATrousWaveletTransform();
+        
+        List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+        List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+        
+        wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);        
+        
+        GreyscaleImage fineCoeff = coeffs.get(coeffs.size() - 1);
+                
+        for (int i = 0; i < fineCoeff.getNPixels(); ++i) {
+            if (fineCoeff.getValue(i) > 0) {
+                fineCoeff.setValue(i, 250);
+            } else {
+                fineCoeff.setValue(i, 0);
+            }
+        }
+        
+        return fineCoeff;
+    }
+    
+    protected static GreyscaleImage growRadius(GreyscaleImage input, 
+        int radius, int value) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+                
+        GreyscaleImage output = input.createWithDimensions();
+        
+        for (int x1 = 0; x1 < w; ++x1) {
+            for (int y1 = 0; y1 < h; ++y1) {
+                
+                int v1 = input.getValue(x1, y1);
+                
+                if (v1 < 1) {
+                    continue;
+                }
+                
+                output.setValue(x1, y1, v1);
+                
+                for (int dx = (-1 * radius); dx < (radius + 1); dx++) {
+                    int x2 = x1 + dx;
+                    // do not grow image boundary pixels too
+                    if ((x2 < 1) || (x2 > (w - 2))) {
+                        continue;
+                    }
+                    for (int dy = (-1 * radius); dy < (radius + 1); ++dy) {
+                        int y2 = y1 + dy;
+                        // do not grow image boundary pixels too
+                        if ((y2 < 1) || (y2 > (h - 2))) {
+                            continue;
+                        }
+                        output.setValue(x2, y2, value);
+                    }
+                } 
+            }
+        }
+        
+        return output;
     }
     
     protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,

@@ -1,3 +1,8 @@
+**-- can see for the test images of books, should improve the matching analysis and results
+     same for merton.  plenty of corner in common to match really well, but a few points are off
+
+** -- checkerboard shows need to improve blob extraction
+
 **-- use the added half dome test images to assert that matching same
      from other cameras is working
 

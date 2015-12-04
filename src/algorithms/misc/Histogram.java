@@ -1039,6 +1039,12 @@ public class Histogram {
         return freqMap;
     }
     
+    /**
+     * create an array of values and frequency for given img, 
+     * where returned points are x = value, y = count
+     * @param img
+     * @return 
+     */
     public static PairIntArray createADescendingSortbyFrequencyArray(GreyscaleImage img) {
         
         Map<Integer, Integer> freqMap = createAFrequencyMap(img);
