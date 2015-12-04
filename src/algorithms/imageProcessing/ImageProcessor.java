@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -2794,9 +2793,7 @@ public class ImageProcessor {
      * </pre>
      * runtime complexity is O(N_pixels)
      * This can be used as part of adaptive mean thresholding.
-     * NOTE: this method if not tested, may need edits for new img storage
-     * (mean intermediate values might be > 255, so need to be using arrays
-     * until have final values. need to revisit this code soon)
+     * 
      * @param img
      * @param dimension
      */

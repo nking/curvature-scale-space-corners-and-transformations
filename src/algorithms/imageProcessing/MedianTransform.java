@@ -11,7 +11,8 @@ public class MedianTransform {
 
     /**
      * A computationally expensive multiscale median transform.
-     * see, the pyramidal mean transform version instead.
+     * <em>see the pyramidal mean transform 
+     * multiscalePyramidalMedianTransform(...) instead.</em>
      * This method has a runtime complexity of n_iter * O(N_pixels * lg2(windowArea))
      * where windowArea grows from 1 to 2*2*lg2(imageDimension) + 1 
      * and nIter = lg2(imageDimension).
@@ -29,6 +30,8 @@ public class MedianTransform {
         int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));
         int s = 1;
 
+        MedianSmooth med = new MedianSmooth();
+        
         outputTransformed.add(img0.copyToSignedImage());
         
         outputCoeff.add(img0.createSignedWithDimensions());
@@ -36,10 +39,9 @@ public class MedianTransform {
         for (int j = 0; j < (nr - 1); ++j) {
 
             int winL = 2*s + 1;
-            
-            MedianSmooth med = new MedianSmooth();
 
-            if (outputTransformed.get(j).getWidth() < winL) {
+            if ((outputTransformed.get(j).getWidth() < winL) ||
+                (outputTransformed.get(j).getHeight() < winL)) {
                 break;
             }
             
@@ -69,7 +71,7 @@ public class MedianTransform {
     /**
      * pyramidal median transform (faster than multiscalePyramidalMedianTransform
      * but reconstruction from coefficients is not exact, so prefer
-     * multiscalePyramidalMedianTransform if exact is needed);
+     * multiscalePyramidalMedianTransform(...) if exact is needed);
      * following pseudocode in http://www.multiresolution.com/svbook.pdf
      * 
      * @param input
@@ -89,17 +91,17 @@ public class MedianTransform {
         
         ImageProcessor imageProcessor = new ImageProcessor();
 
+        MedianSmooth med = new MedianSmooth();
+        
         outputTransformed.add(img0.copyToSignedImage());
         
         outputCoeff.add(img0.createSignedWithDimensions());
 
         for (int j = 0; j < (nr - 1); ++j) {
-            
-            MedianSmooth med = new MedianSmooth();
-            
+                       
             GreyscaleImage cJ = outputTransformed.get(j);
             
-            if (cJ.getWidth() < winL) {
+            if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
                 break;
             }
             
@@ -146,22 +148,23 @@ public class MedianTransform {
         
         ImageProcessor imageProcessor = new ImageProcessor();
 
+        MedianSmooth med = new MedianSmooth();
+        
         outputTransformed.add(img0.copyToSignedImage());
         
         outputCoeff.add(img0.createSignedWithDimensions());
 
         for (int j = 0; j < (nr - 1); ++j) {
-            
-            MedianSmooth med = new MedianSmooth();
-            
+                        
             GreyscaleImage cJ = outputTransformed.get(j);
             
-            if (cJ.getWidth() < winL) {
+            if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
                 break;
             }
             
             // median filter and decimation:
-            GreyscaleImage cJPlus1 = imageProcessor.binImage(med.calculate(cJ, winL, winL), 2);
+            GreyscaleImage cJPlus1 = imageProcessor.binImage(
+                med.calculate(cJ, winL, winL), 2);
             
             //interpolation of cJPlus1 to size cJ
             GreyscaleImage cJPlus1Ast = imageProcessor.expandBy2UsingBilinearInterp(

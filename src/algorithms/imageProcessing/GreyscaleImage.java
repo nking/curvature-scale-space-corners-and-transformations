@@ -709,12 +709,34 @@ public class GreyscaleImage {
         return img2;
     }
     
+    public GreyscaleImage copyToFullRangeIntImage() {
+
+        GreyscaleImage img2;
+        
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            img2 = new GreyscaleImage(width, height, type);
+            System.arraycopy(a, 0, img2.a, 0, len);
+        } else {
+            img2 = new GreyscaleImage(width, height, Type.Bits32FullRangeInt);
+            for (int i = 0; i < nPixels; ++i) {
+                int v = getValue(i);
+                img2.setValue(i, v);
+            }
+        }
+           
+        return img2;
+    }
+    
     public GreyscaleImage createWithDimensions() {
        
         GreyscaleImage img2 = new GreyscaleImage(width, height, type);
                 
         img2.xRelativeOffset = xRelativeOffset;
         img2.yRelativeOffset = yRelativeOffset;
+        
+        if (img2.minAllowed < 0) {
+            img2.fill(0);
+        }
         
         return img2;
     }
@@ -732,6 +754,10 @@ public class GreyscaleImage {
         img2.xRelativeOffset = xRelativeOffset;
         img2.yRelativeOffset = yRelativeOffset;
         
+        if (img2.minAllowed < 0) {
+            img2.fill(0);
+        }
+        
         return img2;
     }
     
@@ -747,6 +773,10 @@ public class GreyscaleImage {
             }
         } else {
             img2 = new GreyscaleImage(width, height, type);
+        }
+        
+        if (img2.minAllowed < 0) {
+            img2.fill(0);
         }
         
         return img2;
