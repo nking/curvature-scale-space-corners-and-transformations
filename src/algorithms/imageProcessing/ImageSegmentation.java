@@ -3087,36 +3087,6 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
     
     /**
      * segmentation algorithm using an a trous wavelet transform.
-     * If using this to find blobs, consider only using the zero pixels.
-     * @param input
-     * @return 
-     */
-    public GreyscaleImage createGreyscale4(GreyscaleImage input) {
-
-        ATrousWaveletTransform wt = new ATrousWaveletTransform();
-        
-        List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
-        List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
-           
-        wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);        
-        
-        GreyscaleImage fineCoeff = coeffs.get(coeffs.size() - 1);
-        
-        for (int i = 0; i < fineCoeff.getNPixels(); ++i) {
-            if (fineCoeff.getValue(i) > 0) {
-                fineCoeff.setValue(i, 250);
-            }
-        }
-        fineCoeff = growRadius(fineCoeff, 4, 250);
-        
-        // consider expanding by 4 pixels then... looks like it produces too
-        // many jagged edges where there were smooth surfaces before
-        
-        return fineCoeff;
-    }
-    
-    /**
-     * segmentation algorithm using an a trous wavelet transform.
      * 
      * @param input
      * @return 
