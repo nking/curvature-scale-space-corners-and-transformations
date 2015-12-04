@@ -23,7 +23,118 @@ public class ImageSegmentationTest extends TestCase {
         super(testName);
     }
     
-    public void test0() throws Exception {
+    public void testNextSegmentation() throws Exception {
+        
+        String fileName1, fileName2;
+
+        for (int i = 1; i < 2; ++i) {
+            //fileName1 = "valve_gaussian.png";
+            //fileName2 = "valve_gaussian.png";
+            switch(i) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "campus_010.jpg";
+                    fileName2 = "campus_011.jpg";
+                    break;
+                }
+                case 4: {
+                    fileName1 = "merton_college_I_001.jpg";
+                    fileName2 = "merton_college_I_002.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
+                    break;
+                }
+            }
+            
+            System.out.println("fileName1=" + fileName1);
+            
+            String bin = ResourceFinder.findDirectory("bin");
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+            GreyscaleImage img1 = ImageIOHelper.readImage(filePath1).copyToGreyscale();
+            GreyscaleImage img2 = ImageIOHelper.readImage(filePath2).copyToGreyscale();
+            
+            /*
+            MedianTransform mt = new MedianTransform();
+            List<GreyscaleImage> transformed1 = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs1 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform(img1, transformed1, coeffs1);     
+            for (int ii = 0; ii < coeffs1.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/coeff_1_" + ii + ".png", 
+                    coeffs1.get(ii));
+            }            
+            List<GreyscaleImage> transformed2 = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs2 = new ArrayList<GreyscaleImage>();
+            mt.multiscalePyramidalMedianTransform(img2, transformed2, coeffs2);     
+            for (int ii = 0; ii < coeffs2.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/coeff_2_" + ii + ".png", 
+                    coeffs2.get(ii));
+            }
+            */
+            
+            ATrousWaveletTransform wt = new ATrousWaveletTransform();
+        
+            List<GreyscaleImage> transformed1 = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs1 = new ArrayList<GreyscaleImage>();
+            wt.calculateWithTriangleScalingFunction(img1, transformed1, coeffs1);
+            //wt.calculateWithB3SplineScalingFunction(img1, transformed1, coeffs1);        
+            GreyscaleImage r1 = wt.reconstruct(
+                transformed1.get(transformed1.size() - 1), coeffs1);
+            
+            List<GreyscaleImage> transformed2 = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs2 = new ArrayList<GreyscaleImage>();
+            //wt.calculateWithTriangleScalingFunction(img2, transformed2, coeffs2);
+            wt.calculateWithB3SplineScalingFunction(img2, transformed2, coeffs2);
+            GreyscaleImage r2 = wt.reconstruct(
+                transformed2.get(transformed2.size() - 1), coeffs2);
+            
+            ImageIOHelper.writeOutputImage(bin + "/reconstructed_1.png", r1);
+            ImageIOHelper.writeOutputImage(bin + "/reconstructed_2.png", r2);
+            for (int ii = 0; ii < coeffs1.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/coeff_1_" + ii + ".png", 
+                    coeffs1.get(ii));
+            }
+            for (int ii = 0; ii < transformed1.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/trans_1_" + ii + ".png", 
+                    transformed1.get(ii));
+            }
+            for (int ii = 0; ii < transformed2.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/trans_2_" + ii + ".png", 
+                    transformed2.get(ii));
+            }
+            for (int ii = 0; ii < coeffs2.size(); ++ii) {
+                ImageIOHelper.writeOutputImage(bin + "/coeff_2_" + ii + ".png", 
+                    coeffs2.get(ii));
+            }
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            GreyscaleImage t2 = coeffs2.get(2).copyImage();
+            imageProcessor.applyAdaptiveMeanThresholding(t2, 7);
+            ImageIOHelper.writeOutputImage(bin + "/amt_2_2.png", t2);
+            
+            int z = 1;
+        }
+    }
+    
+    public void est0() throws Exception {
         
         String[] fileNames = new String[2];
         
@@ -84,6 +195,7 @@ public class ImageSegmentationTest extends TestCase {
             
             String bin = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot  + "_segmentation.png", gsImg);
+            
             
             /*
             // canny edges are built into this detector:
@@ -146,22 +258,6 @@ public class ImageSegmentationTest extends TestCase {
                 ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr_cleaned_fft.png", crImg);
                 plotFFT(crImg, fileNameRoot + "_cleaned");
                 
-                img = ImageIOHelper.readImageExt(filePath);
-                MedianTransform mt = new MedianTransform();
-                List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
-                List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
-                //mt.multiscaleMedianTransform(img.copyToGreyscale(), transformed, coeffs);
-                mt.multiscalePyramidalMedianTransform(gsImg, transformed, coeffs);        
-                //GreyscaleImage r = mt.reconstructPyramidalMultiscaleMedianTransform(
-                //    transformed.get(transformed.size() - 1), coeffs);
-
-                //for (int i = 0; i < transformed.size(); ++i) {
-                //    ImageDisplayer.displayImage("transformed " + i, transformed.get(i));
-                //}
-                for (int i = 0; i < coeffs.size(); ++i) {
-                    ImageDisplayer.displayImage("coeffs " + i, coeffs.get(i));
-                }
-                int z = 1;
             }
 
             GreyscaleImage crImg = new GreyscaleImage(img4.getWidth(), img4.getHeight(),
