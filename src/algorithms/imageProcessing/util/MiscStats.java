@@ -666,7 +666,7 @@ public class MiscStats {
                 similarSets.add(set);
             }
         }
-        
+                  
         // use histograms to remove translation outliers in similar sets
         
         List<TransformationParameters> combinedParams = 
@@ -695,7 +695,54 @@ public class MiscStats {
             combinedParams.add(params);
         }
         
-        return combinedParams;
+        // sometimes, the averaged params in similarSets are similar to one
+        // another too, so one more round of checking for similarity
+        List<TransformationParameters> combinedParams2 = new ArrayList<TransformationParameters>();
+        
+        Set<TransformationParameters> alreadyCombined2 = new HashSet<TransformationParameters>();
+        
+        for (TransformationParameters params0 : combinedParams) {
+            if (alreadyCombined2.contains(params0)) {
+                continue;
+            }
+            Set<TransformationParameters> set = new HashSet<TransformationParameters>();
+            set.add(params0);
+            for (TransformationParameters compare : combinedParams) {
+                if (compare.equals(params0)) {
+                    continue;
+                }
+                if (alreadyCombined2.contains(compare)) {
+                    continue;
+                }
+                float diff = AngleUtil.getAngleDifference(
+                    params0.getRotationInDegrees(), compare.getRotationInDegrees());
+                if (Math.abs(diff) > 20) {
+                    continue;
+                }
+                float avg = (params0.getScale() + compare.getScale())/2.f;
+                if (Math.abs(params0.getScale() - compare.getScale()) > 0.2*avg) {
+                    continue;
+                }
+                //TODO: may need to revise translation tolerance...
+                double diffX = Math.abs(params0.getTranslationX() - compare.getTranslationX());
+                double diffY = Math.abs(params0.getTranslationY() - compare.getTranslationY());
+                if ((diffX > transTol) || (diffY > transTol)) {
+                    continue;
+                }
+                set.add(compare);
+            }
+            alreadyCombined2.addAll(set);
+            if (set.size() > 1) {
+                MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+                TransformationParameters params =  tc.averageWithoutRemoval(
+                    new ArrayList<TransformationParameters>(set));
+                combinedParams2.add(params);
+            } else {
+                combinedParams2.addAll(set);
+            }
+        }
+        
+        return combinedParams2;
     }
     
     /**

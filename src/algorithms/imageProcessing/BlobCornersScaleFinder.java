@@ -19,19 +19,19 @@ import java.util.logging.Logger;
 /**
  * class to invoke methods needed to solve for euclidean scale between
  * image1 and image2 using methods specific to corners on closed curves.
- * 
+ *
  * @author nichole
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
-    
+
     private double ssdLimit = 1500;
 
     public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
-        SegmentationType type1, boolean useBinned1, 
+        SegmentationType type1, boolean useBinned1,
         BlobCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2) {
-        
+
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type1, useBinned1);
         List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
@@ -42,18 +42,18 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type1, useBinned1);
         List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
             type2, useBinned2);
-        
+
         GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
         GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
-                
+
         assert(blobs1.size() == perimeters1.size());
         assert(blobs1.size() == corners1List.size());
         assert(blobs2.size() == perimeters2.size());
         assert(blobs2.size() == corners2List.size());
-                 
+
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-        
+
         float dist = 2.5f;
         for (int i = 0; i < perimeters1.size(); ++i) {
             filterCorners(perimeters1.get(i), corners1List.get(i), dist);
@@ -61,7 +61,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         for (int i = 0; i < perimeters2.size(); ++i) {
             filterCorners(perimeters2.get(i), corners2List.get(i), dist);
         }
-        
+
         if (true) {
             for (List<CornerRegion> list : corners1List) {
                 sortCornersToCCW(list);
@@ -70,17 +70,17 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 sortCornersToCCW(list);
             }
         }
-            
-        MatchingSolution soln = match(features1, features2, img1, img2, perimeters1, 
+
+        MatchingSolution soln = match(features1, features2, img1, img2, perimeters1,
             perimeters2, corners1List, corners2List, binFactor1, binFactor2);
-            
-        return soln;      
+
+        return soln;
     }
 
     private <T extends CornerRegion> MatchingSolution match(
-        IntensityFeatures features1, IntensityFeatures features2, 
-        GreyscaleImage img1, GreyscaleImage img2, 
-        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2, 
+        IntensityFeatures features1, IntensityFeatures features2,
+        GreyscaleImage img1, GreyscaleImage img2,
+        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2,
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
 /*
@@ -101,6 +101,7 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
 xPoints2[i] = (float)xy2[i][0];
 yPoints2[i] = (float)xy2[i][1];
 }
+
 ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
 plotter.plotLabeledPoints(0, img1.getWidth(), 0, img1.getHeight(), xPoints1, yPoints1,
 "img1", "X", "Y");
@@ -113,25 +114,27 @@ try {
 } catch (IOException ex) {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
+
 StringBuilder sb = new StringBuilder("xy1:\n");
 for (int i = 0; i < xy1.length; ++i) {
-    sb.append(String.format("[%2d] (%3d, %3d)\n", i, 
+    sb.append(String.format("[%2d] (%3d, %3d)\n", i,
         (int)Math.round(xy1[i][0]), (int)Math.round(xy1[i][1])));
 }
 sb.append("xy2:\n");
 for (int i = 0; i < xy2.length; ++i) {
-    sb.append(String.format("[%2d] (%3d, %3d)\n", i, 
+    sb.append(String.format("[%2d] (%3d, %3d)\n", i,
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+*/
+/*
 PairInt[] im1Chk = new PairInt[]{
-    new PairInt(238,124), new PairInt(201,134), new PairInt(209,90), 
-    new PairInt(219,101), new PairInt(179,168)
+    new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),
+    new PairInt(68,  80), new PairInt(25,  55), new PairInt(80, 144)
 };
 PairInt[] im2Chk = new PairInt[]{
-    new PairInt(91, 120), new PairInt(53, 126), new PairInt(73, 85),
-    new PairInt(79, 97), new PairInt(24, 159)
+    new PairInt(189, 179), new PairInt(164, 109), new PairInt(164, 109),
+    new PairInt(189, 179), new PairInt(154,  59), new PairInt(193, 146)
 };
 int[] im1ChkIdxs = new int[im1Chk.length];
 int[] im2ChkIdxs = new int[im2Chk.length];
@@ -164,12 +167,12 @@ for (int i = 0; i < im1ChkIdxs.length; ++i) {
 }
 System.out.println(sb.toString());
 */
-        Map<PairInt, TransformationParameters> trMap 
+        Map<PairInt, TransformationParameters> trMap
             = new HashMap<PairInt, TransformationParameters>();
 
         int n1 = corners1List.size();
         int n2 = corners2List.size();
-        
+
         if (n1 == 0 || n2 == 0) {
             return null;
         }
@@ -184,7 +187,7 @@ System.out.println(sb.toString());
                -- (2) eval by finding best SSD of points within tolerance of predicted and
                       use nEval, SSD and dist to return a normalized cost
         */
-        
+
         for (int idx1 = 0; idx1 < n1; ++idx1) {
 
             if (corners1List.get(idx1).size() < 3) {
@@ -192,7 +195,7 @@ System.out.println(sb.toString());
             }
 
             List<T> corners1 = corners1List.get(idx1);
-            
+
             /*
             first, see if nEval alone finds the true matches for curve to curve
             */
@@ -200,7 +203,7 @@ System.out.println(sb.toString());
             TransformationParameters maxNEvalParams = null;
             Integer maxNEvalIndex2 = null;
             double minCost = Double.MAX_VALUE;
-            
+
             for (int idx2 = 0; idx2 < n2; ++idx2) {
 
                 if (corners2List.get(idx2).size() < 3) {
@@ -210,44 +213,54 @@ System.out.println(sb.toString());
                 Integer index2 = Integer.valueOf(idx2);
 
                 List<T> corners2 = corners2List.get(idx2);
-                
+
                 ClosedCurveCornerMatcher2<T> mapper =
                     new ClosedCurveCornerMatcher2<T>();
 
-                boolean matched = mapper.matchCorners(features1, features2, 
+                boolean matched = mapper.matchCorners(features1, features2,
                     corners1, corners2, img1, img2, binFactor1, binFactor2);
 
                 if (!matched) {
                     continue;
                 }
-                
+
                 // NOTE: if solving for binned, the params are in binned reference frame
                 TransformationParameters params = mapper.getSolution();
                 int nEval = mapper.getNEval();
                 double cost = mapper.getSolutionCost();
-                
+
                 if (cost < minCost) {
+                    if ((nEval < 3) && (maxNEval > 4)) {
+                        // do not accept if nEval is much lower than maxNEval
+                        continue;
+                    }
                     maxNEval = nEval;
                     maxNEvalParams = params;
                     maxNEvalIndex2 = index2;
                     minCost = cost;
+                } else if ((maxNEval == 2) && (nEval > 3)) {
+                    //TODO: may need to revise this
+                    double avgCost = (cost + minCost)/2.;
+                    if ((Math.abs(cost - avgCost)/(0.1*avgCost)) < 2) {
+                        maxNEval = nEval;
+                        maxNEvalParams = params;
+                        maxNEvalIndex2 = index2;
+                        minCost = cost;
+                    }
                 }
             }
-//TODO: to speed up matches, could consider
-// not searching the longest corner lists until the
-// the others have been matched and evaluated, then if
-// needed, try to match the longest
+
             if (maxNEvalParams != null) {
-                trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()), 
+                trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()),
                     maxNEvalParams);
-            }            
+            }
         }
-        
+
         int n2c = 0;
         for (List<T> corners2 : corners2List) {
             n2c += corners2.size();
         }
-        
+
         List<T> cr2List = new ArrayList<T>();
         int[] xC2 = new int[n2c];
         int[] yC2 = new int[n2c];
@@ -260,13 +273,13 @@ System.out.println(sb.toString());
                 n2c++;
             }
         }
-        
+
         NearestPoints np2 = new NearestPoints(xC2, yC2);
-        
+
         MatchingSolution soln = evaluateForBestUsingFeatures(
             features1, features2, img1, img2,
             trMap, corners1List, cr2List, np2, binFactor1, binFactor2);
-        
+
         return soln;
     }
 
@@ -286,17 +299,17 @@ System.out.println(sb.toString());
      * @param np2
      * @param binFactor1
      * @param binFactor2
-     * @return 
+     * @return
      */
     private <T extends CornerRegion> MatchingSolution evaluateForBestUsingFeatures(
-        IntensityFeatures features1, IntensityFeatures features2, 
-        GreyscaleImage img1, GreyscaleImage img2, 
-        Map<PairInt, TransformationParameters> paramsMap, 
-        List<List<T>> corners1List, List<T> corners2List, 
+        IntensityFeatures features1, IntensityFeatures features2,
+        GreyscaleImage img1, GreyscaleImage img2,
+        Map<PairInt, TransformationParameters> paramsMap,
+        List<List<T>> corners1List, List<T> corners2List,
         NearestPoints np2, int binFactor1, int binFactor2) {
-        
+
         int tolTransXY = 5;//10;
-        
+
         double maxDistance = Math.sqrt(2) * tolTransXY;
 
         /*
@@ -304,41 +317,42 @@ System.out.println(sb.toString());
            -- (2) eval by finding best SSD of points within tolerance of predicted and
               use nEval, SSD and dist to return a normalized cost
         */
-                
-        //List<TransformationParameters> parameterList = 
+
+        //List<TransformationParameters> parameterList =
         //    MiscStats.filterToSimilarParamSets(paramsMap, binFactor1, binFactor2);
-        
-        List<TransformationParameters> parameterList = 
+
+        List<TransformationParameters> parameterList =
             MiscStats.filterToSimilarParamSets2(paramsMap, binFactor1, binFactor2);
-        
+
         int n1 = 0;
         for (List<T> corners1 : corners1List) {
             n1 += corners1.size();
         }
         int n2 = corners2List.size();
         int nMaxMatchable = Math.min(n1, n2);
-        
+
         FeatureMatcher featureMatcher = new FeatureMatcher();
         Transformer transformer = new Transformer();
-        
+
         final int rotationTolerance = 20;
-        
+
         final int dither = 4;
-        
+
         TransformationParameters bestParams = null;
         float bestCost = Float.MAX_VALUE;
+        float bestCost1Norm = Float.MAX_VALUE;
         List<FeatureComparisonStat> bestStats = null;
 
         boolean tolIsTooLarge = false;
-        
+
         int nIter = 0;
-        
+
         int deltaTol = 0;
-            
+
         while (nIter < 2) {
-                
+
             tolIsTooLarge = false;
-                            
+
             for (TransformationParameters params : parameterList) {
 
                 double rotInRadians = params.getRotationInRadians();
@@ -353,7 +367,7 @@ System.out.println(sb.toString());
                 }
                 if (tolTransXY2 == 0) {
                     tolTransXY2 = 1;
-                } 
+                }
                 if (tolTransXY2 > 1) {
                     tolTransXY2 -= deltaTol;
                 }
@@ -377,7 +391,7 @@ System.out.println(sb.toString());
                         T crTr = transformer.applyTransformation(params, cr, cos, sin);
 
                         Set<Integer> indexes2 = np2.findNeighborIndexes(
-                            crTr.getX()[crTr.getKMaxIdx()], 
+                            crTr.getX()[crTr.getKMaxIdx()],
                             crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
 
                         for (Integer index : indexes2) {
@@ -396,25 +410,25 @@ System.out.println(sb.toString());
                                 log.fine(ex.getMessage());
                             }
                             if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)
-                                || 
+                                ||
                                 (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())) {
                                 continue;
                             }
 
-                            double xTr = (compStat.getImg1Point().getX() * 
-                                params.getScale() * cos) + 
-                                (compStat.getImg1Point().getY() * 
+                            double xTr = (compStat.getImg1Point().getX() *
+                                params.getScale() * cos) +
+                                (compStat.getImg1Point().getY() *
                                 params.getScale() * sin);
                             xTr += params.getTranslationX();
 
-                            double yTr = (-compStat.getImg1Point().getX() * 
-                                params.getScale() * sin) + 
-                                (compStat.getImg1Point().getY() * 
+                            double yTr = (-compStat.getImg1Point().getX() *
+                                params.getScale() * sin) +
+                                (compStat.getImg1Point().getY() *
                                 params.getScale()* cos);
                             yTr += params.getTranslationY();
 
-                            double dist = distance(xTr, yTr, 
-                                compStat.getImg2Point().getX(), 
+                            double dist = distance(xTr, yTr,
+                                compStat.getImg2Point().getX(),
                                 compStat.getImg2Point().getY());
 
                             stats.add(compStat);
@@ -425,7 +439,7 @@ System.out.println(sb.toString());
                         }
                     }
                 }
-            
+
                 if (nEval == 0) {
                     continue;
                 }
@@ -438,13 +452,17 @@ System.out.println(sb.toString());
                 sumDist /= (double)nEval;
 
                 float cost1Norm = 1.f/(float)nEval;
-                float cost2Norm = (float)((sumSSD + 1)/ssdLimit);
-                float cost3Norm = (float)(sumDist/maxDistance);
+                float cost2Norm = (float)(sumSSD/ssdLimit);
+                float cost3Norm = (float)sumDist;
                 float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
+               
+                //TODO: cost1Norm's proportion in normalizedCost should be higher
+                
+                boolean t1 = (normalizedCost < bestCost);
+                
+                if (t1 && (nEval > 2)) {
 
-                if (normalizedCost < bestCost) {
-
-                    TransformationParameters combinedParams = 
+                    TransformationParameters combinedParams =
                         MiscStats.calculateTransformation(binFactor1, binFactor2,
                             stats, new float[4]);
 
@@ -457,25 +475,27 @@ System.out.println(sb.toString());
                         bestCost = normalizedCost;
                         bestParams = combinedParams;
                         bestStats = stats;
+                        bestCost1Norm = cost1Norm;
                     } else if (MiscStats.standardDeviationsAreSmall(params)) {
                         //TODO: this suggests tolTransXY2 is too large
                         tolIsTooLarge = true;
                         bestCost = normalizedCost;
                         bestParams = params;
                         bestStats = stats;
-                    }         
+                        bestCost1Norm = cost1Norm;
+                    }
                 }
             }
             if (!tolIsTooLarge) {
                 break;
             }
             deltaTol++;
-                
+
             nIter++;
         }
 
         if (bestParams != null) {
-            
+
             if (binFactor1 != 1 || binFactor2 != 1) {
                 for (int i = 0; i < bestStats.size(); ++i) {
                     FeatureComparisonStat stat = bestStats.get(i);
@@ -483,27 +503,27 @@ System.out.println(sb.toString());
                     stat.setBinFactor2(binFactor2);
                 }
             }
-            
-            MatchingSolution soln = new MatchingSolution(bestParams, bestStats);            
+
+            MatchingSolution soln = new MatchingSolution(bestParams, bestStats);
             return soln;
         }
-        
+
         return null;
     }
 
-    protected void filterCorners(PairIntArray curve, 
+    protected void filterCorners(PairIntArray curve,
         List<CornerRegion> regions, float dist) {
-        
+
         /*
         if there are more than 1 corner within dist of 2 or so of on another,
         remove all except strongest corner.
         */
         List<Set<Integer>> closeCornerIndexes = findCloseCorners(dist, regions);
-        
+
         if (closeCornerIndexes.isEmpty()) {
             return;
         }
-        
+
         List<Integer> remove = new ArrayList<Integer>();
         for (Set<Integer> set : closeCornerIndexes) {
             float maxK = Float.MIN_VALUE;
@@ -522,7 +542,7 @@ System.out.println(sb.toString());
                 }
             }
         }
-        
+
         if (remove.size() > 1) {
             Collections.sort(remove);
         }
@@ -530,48 +550,48 @@ System.out.println(sb.toString());
             regions.remove(remove.get(i).intValue());
         }
     }
-    
-    private static List<Set<Integer>> findCloseCorners(float tolD, 
+
+    private static List<Set<Integer>> findCloseCorners(float tolD,
         List<CornerRegion> regions) {
-       
+
         float[] x = new float[regions.size()];
         float[] y = new float[regions.size()];
         for (int i = 0; i < regions.size(); ++i) {
-            CornerRegion cr = regions.get(i);            
+            CornerRegion cr = regions.get(i);
             x[i] = cr.getX()[cr.getKMaxIdx()];
             y[i] = cr.getY()[cr.getKMaxIdx()];
         }
-        
+
         List<Set<Integer>> close = new ArrayList<Set<Integer>>();
-        
+
         FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);
 
         groupFinder.findGroupsOfPoints(tolD);
-        
+
         int nGroups = groupFinder.getNumberOfGroups();
-        
+
         for (int i = 0; i < nGroups; ++i) {
             Set<Integer> group = groupFinder.getGroupIndexes(i);
             if (group.size() > 1) {
                 close.add(group);
             }
         }
-        
+
         return close;
     }
-    
+
     private double distance(double x1, double y1, double x2, double y2) {
-        
+
         double diffX = x1 - x2;
         double diffY = y1 - y2;
-        
+
         double dist = Math.sqrt(diffX * diffX + diffY * diffY);
-        
+
         return dist;
     }
 
     private void sortCornersToCCW(List<CornerRegion> corners) {
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         PairIntArray cornerXY = new PairIntArray();
         for (int ii = 0; ii < corners.size(); ++ii) {
