@@ -8,6 +8,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
@@ -89,11 +90,45 @@ public class HoughTransformTest extends TestCase {
             int idx = fileName1.lastIndexOf(".");
             String fileNameRoot = fileName1.substring(0, idx);
 
+            ImageProcessor imageProcessor = new ImageProcessor();
+            
+            boolean useBinned = true;
+            int binnedImageMaxDimension = 512;
+            int binFactor1 = 1;
+            int binFactor2 = 1;
+            
             GreyscaleImage img1 = ImageIOHelper.readImage(filePath1).copyToGreyscale();
             GreyscaleImage img2 = ImageIOHelper.readImage(filePath2).copyToGreyscale();
             
+            if (useBinned) {
+                binFactor1 = (int) Math.ceil(Math.max((float) img1.getWidth() / binnedImageMaxDimension, 
+                (float) img1.getHeight() / binnedImageMaxDimension));
+                
+                binFactor2 = (int) Math.ceil(Math.max((float) img2.getWidth() / binnedImageMaxDimension, 
+                (float) img2.getHeight() / binnedImageMaxDimension));
+                
+                img1 = imageProcessor.binImage(img1, binFactor1);
+                img2 = imageProcessor.binImage(img2, binFactor2);
+            }
+            
+            //ImageSegmentation imageSegmentation = new ImageSegmentation();
+            //GreyscaleImage segImg1 = imageSegmentation.createGreyscale5(img1);
+            //GreyscaleImage segImg2 = imageSegmentation.createGreyscale5(img2);
+            
+            BlobPerimeterHelper bph = new BlobPerimeterHelper(
+                ImageIOHelper.readImageExt(filePath1), fileNameRoot);
+            bph.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            bph.applySegmentation(SegmentationType.GREYSCALE_HIST, useBinned);
+            BlobCornerHelper bch = new BlobCornerHelper(bph, fileNameRoot);
+            List<List<CornerRegion>> cornerRegionLists =
+                bch.generatePerimeterCorners(SegmentationType.GREYSCALE_HIST,
+                useBinned);
+            
+            GreyscaleImage segImg1 = useBinned ?
+                bph.getBinnedSegmentationImage(SegmentationType.GREYSCALE_HIST) :
+                bph.getSegmentationImage(SegmentationType.GREYSCALE_HIST);
+            
             ImageSegmentation imageSegmentation = new ImageSegmentation();
-            GreyscaleImage segImg1 = imageSegmentation.createGreyscale5(img1);
             GreyscaleImage segImg2 = imageSegmentation.createGreyscale5(img2);
             
             String outPath1 = bin + "/seg_1_" + fileNameRoot +".png";
@@ -106,7 +141,7 @@ public class HoughTransformTest extends TestCase {
             lineThinner.applyFilter(segImg1);
             String outPath1_0 = bin + "/seg_1__lt_" + fileNameRoot + ".png";
             ImageIOHelper.writeOutputImage(outPath1_0, segImg1);
-            
+           
             algorithms.compGeometry.HoughTransform ht0 = 
                 new algorithms.compGeometry.HoughTransform();
             Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
@@ -130,8 +165,8 @@ public class HoughTransformTest extends TestCase {
                 new HashMap<PairInt, Set<PairInt>>(outputPolarCoordsPixMap);
             
             int thetaTol = 2;
-            int radiusTol = 4;
-            int sizeLimit = 50;
+            int radiusTol = 4/binFactor1;
+            int sizeLimit = 50/(binFactor1*binFactor1);
             
             List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
             Map<PairInt, PairInt> pixToTRMap = ht0.createPixTRMapsFromSorted(
@@ -173,6 +208,23 @@ public class HoughTransformTest extends TestCase {
                     tmp3SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
                 }
             }
+            
+            for (List<CornerRegion> cornerRegions : cornerRegionLists) {
+                for (CornerRegion cr : cornerRegions) {
+                    int x = cr.getX()[cr.getKMaxIdx()];
+                    int y = cr.getY()[cr.getKMaxIdx()];
+                    ImageIOHelper.addPointToImage(x, y, tmp3SegImg1, 0, 0, 1,
+                        255, 255, 255);
+                }
+            }
+            for (List<CornerRegion> cornerRegions : cornerRegionLists) {
+                for (CornerRegion cr : cornerRegions) {
+                    int x = cr.getX()[cr.getKMaxIdx()];
+                    int y = cr.getY()[cr.getKMaxIdx()];
+                    ImageIOHelper.addPointToImage(x, y, tmp3SegImg1, 0, 0, 0,
+                        255, 0, 0);
+                }
+            }
             ImageIOHelper.writeOutputImage(bin + "/seg_1_hough3_" + fileNameRoot + ".png", tmp3SegImg1);
             
             /*
@@ -184,7 +236,7 @@ public class HoughTransformTest extends TestCase {
             consider making this pattern possible with more methods in hough transform:
             
             -- use the hough transform for edges with large tolerance in 
-            radius such as 10 or 15.
+            radius such as 4 or 10 or 15.
             -- the resulting points may include outliers or may be 
                consecutive joins of more than one parallel line.
                -- for each set of points, look at histogram of
@@ -201,7 +253,6 @@ public class HoughTransformTest extends TestCase {
                      the theta, radius of peaks with small tolerances to
                      divide the lines into segments and use the fit for one
                      peak on each segments points.
-            
             x = r cos(t)
             y = r sin(t)
             */
@@ -220,8 +271,7 @@ public class HoughTransformTest extends TestCase {
             float[] t = new float[n];
             float[] r = new float[n];
             for (PairInt p : group0) {
-                PairInt tr = pixToTRMap.get(p);
-                //PairInt tr = origPixToTRMap.get(p);
+                PairInt tr = origPixToTRMap.get(p);
                 t[count] = tr.getX();
                 r[count] = tr.getY();
                 count++;
