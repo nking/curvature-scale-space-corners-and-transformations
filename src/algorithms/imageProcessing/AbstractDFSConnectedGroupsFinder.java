@@ -45,22 +45,52 @@ public abstract class AbstractDFSConnectedGroupsFinder {
     }
 
     protected void processPair(PairInt uPoint, PairInt vPoint) {
-        Integer groupId = pointToGroupMap.get(uPoint);
-        if ((groupId != null) && (pointToGroupMap.get(vPoint) == null)) {
-            groupMembership.get(groupId).add(vPoint);
-            pointToGroupMap.put(vPoint, groupId);
-        } else if ((groupId == null) && (pointToGroupMap.get(vPoint) != null)) {
-            groupId = pointToGroupMap.get(vPoint);
-            groupMembership.get(groupId).add(uPoint);
-            pointToGroupMap.put(uPoint, groupId);
-        } else if ((groupId == null) && (pointToGroupMap.get(vPoint) == null)) {
-            groupId = Integer.valueOf(groupMembership.size());
-            pointToGroupMap.put(uPoint, groupId);
-            pointToGroupMap.put(vPoint, groupId);
-            Set<PairInt> set = new HashSet<PairInt>();
-            set.add(uPoint);
-            set.add(vPoint);
-            groupMembership.add(set);
+        Integer uGroupId = pointToGroupMap.get(uPoint);
+        Integer vGroupId = pointToGroupMap.get(vPoint);
+        if (uGroupId == null) {
+            if (vGroupId == null) {
+                uGroupId = Integer.valueOf(groupMembership.size());
+                pointToGroupMap.put(uPoint, uGroupId);
+                pointToGroupMap.put(vPoint, uGroupId);
+                Set<PairInt> set = new HashSet<PairInt>();
+                set.add(uPoint);
+                set.add(vPoint);
+                groupMembership.add(set);
+            } else {
+                groupMembership.get(vGroupId).add(uPoint);
+                pointToGroupMap.put(uPoint, vGroupId);
+            }
+        } else {
+            if (vGroupId == null) {
+                groupMembership.get(uGroupId).add(vPoint);
+                pointToGroupMap.put(vPoint, uGroupId);
+            } else {
+                // else vGroupId == uGroupId
+                if (!vGroupId.equals(uGroupId)) {
+                    // merge groups
+                    Set<PairInt> uGroup = groupMembership.get(uGroupId);
+                    Set<PairInt> vGroup = groupMembership.get(vGroupId);
+                    int nU = uGroup.size();
+                    int nV = vGroup.size();
+                    if (nU >= nV) {
+                        // merge v into u
+                        uGroup.addAll(vGroup);
+                        for (PairInt p : vGroup) {
+                            pointToGroupMap.put(p, uGroupId);
+                        }
+                        vGroup.clear();
+                        int z = 1;
+                    } else {
+                        // merge u into v
+                        vGroup.addAll(uGroup);
+                        for (PairInt p : uGroup) {
+                            pointToGroupMap.put(p, vGroupId);
+                        }
+                        uGroup.clear();
+                        int z = 1;
+                    }
+                }
+            }
         }
     }
 

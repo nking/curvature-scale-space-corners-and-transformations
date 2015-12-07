@@ -121,8 +121,9 @@ public class ImageSegmentationTest extends TestCase {
             }
             ImageIOHelper.writeOutputImage(bin + "/seg_1_hough1_" + fileNameRoot + ".png", tmp1SegImg1);
             
+            List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
             Map<PairInt, PairInt> pixToTRMap = ht0.createPixTRMapsFromSorted(
-                outSortedKeys, outputPolarCoordsPixMap);
+                outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups);
             Map<PairInt, Integer> trColorMap = new HashMap<PairInt, Integer>();
             Image tmp2SegImg1 = segImg1.copyToColorGreyscale();
             for (int col = 0; col < tmp2SegImg1.getWidth(); ++col) {
@@ -143,6 +144,23 @@ public class ImageSegmentationTest extends TestCase {
                 }
             }
             ImageIOHelper.writeOutputImage(bin + "/seg_1_hough2_" + fileNameRoot + ".png", tmp2SegImg1);
+            
+            Image tmp3SegImg1 = segImg1.copyToColorGreyscale();
+            for (int ii = 0; ii < outputSortedGroups.size(); ++ii) {
+                
+                Set<PairInt> group = outputSortedGroups.get(ii);
+                
+                if (group.size() < 5) {
+                    break;
+                }
+                
+                int[] c = ImageIOHelper.getNextRGB(ii);
+                
+                for (PairInt p : group) {
+                    tmp3SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
+                }
+            }
+            ImageIOHelper.writeOutputImage(bin + "/seg_1_hough3_" + fileNameRoot + ".png", tmp3SegImg1);
             
             int z0 = 1;
         }
