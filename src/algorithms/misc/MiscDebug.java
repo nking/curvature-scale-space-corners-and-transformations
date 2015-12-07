@@ -11,6 +11,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import static algorithms.imageProcessing.ImageIOHelper.getNextColorRGB;
 import algorithms.imageProcessing.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
@@ -342,16 +343,37 @@ public class MiscDebug {
         try {
             
             Image img2 = ImageIOHelper.convertImage(img);
-
+            
             ImageIOHelper.addAlternatingColorCurvesToImage2(edges, img2, 0);
 
-            for (List<CornerRegion> list : corners) {
-                for (CornerRegion cr : list) {
-                    int x = cr.getX()[cr.getKMaxIdx()];
-                    int y = cr.getY()[cr.getKMaxIdx()];
-                    ImageIOHelper.addPointToImage(x, y, img2, nExtraForDot, 
-                        255, 0, 0);
+            int clr = 0;
+            int w = img.getWidth();
+            int h = img.getHeight();
+
+            for (int i = 0; i < corners.size(); i++) {
+
+                int c = getNextColorRGB(clr);
+                
+                List<CornerRegion> cornerRegions = corners.get(i);
+                for (int ii = 0; ii < cornerRegions.size(); ii++) {
+                    CornerRegion cr = cornerRegions.get(ii);
+                    int col = cr.getX()[cr.getKMaxIdx()];
+                    int row = cr.getY()[cr.getKMaxIdx()];
+                    for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                        int xx = col + dx;
+                        if ((xx < 0) || (xx > (w - 1))) {
+                            continue;
+                        }
+                        for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                            int yy = row + dy;
+                            if ((yy < 0) || (yy > (h - 1))) {
+                                continue;
+                            }
+                            img2.setRGB(xx, yy, c);
+                        }
+                    }                
                 }
+                clr++;
             }
             
             if (!fileName.contains("\\.")) {

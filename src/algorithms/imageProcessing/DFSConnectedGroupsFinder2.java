@@ -28,12 +28,15 @@ public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder 
     private State state = null;
     
     public DFSConnectedGroupsFinder2() {
+    
+        super();
         
         minimumNumberInCluster = 1;
         
         state = State.INITIALIZED;
     }
     
+    @Override
     Logger constructLogger() {
         return Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());
     }

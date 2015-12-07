@@ -2590,4 +2590,76 @@ public class MiscellaneousCurveHelper {
         return perp;
     }
 
+    /**
+     * calculate theta in degrees as a value between -pi and pi for the given point
+     * which should have a value greater than 0 at (x,y) and should be part
+     * of a curve thinned to a width of 1.
+     <pre>
+                 90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+          -135    |   -45
+                 -90
+     </pre>
+     * @param x
+     * @param y
+     * @param img
+     * @return 
+     */
+    public int calculateThetaForPointOnEdge(int x, int y, GreyscaleImage img) {
+        
+        double[] gXY = calculateGradientsForPointOnEdge(x, y, img);
+        
+        /*
+        Math.atan arc tangent, angle is in the range -pi/2 through pi/2
+        Math.atan2 conversion of rectangular coordinates (x, y) 
+            to polar coordinates (r, theta). 
+            This method computes the phase theta by computing an arc tangent 
+            of y/x in the range of -pi to pi.
+        */
+        double t = Math.atan2(gXY[1], gXY[0]);
+      
+        return (int)Math.round(t);
+    }
+
+    /**
+     * calculate gradient x and gradient y for the given point
+     * which should have a value greater than 0 at (x,y) and should be part
+     * of a curve thinned to a width of 1.
+     
+     * @param x
+     * @param y
+     * @param img
+     * @return double{gradX, gradY}
+     */
+    public double[] calculateGradientsForPointOnEdge(int x, int y, GreyscaleImage img) {
+        
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        
+        float sigma = 0.42466090014400953f;
+        
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
+        
+        double convX1 = kernel1DHelper.convolvePointWithKernel(
+            img, x, y, kernel, true);
+        
+        double convX2 = kernel1DHelper.convolvePointWithKernel(
+            img, x, y, kernel2, true);
+             
+        double convY1 = kernel1DHelper.convolvePointWithKernel(
+            img, x, y, kernel, true);
+        
+        double convY2 = kernel1DHelper.convolvePointWithKernel(
+            img, x, y, kernel2, true);
+             
+        double gX = convX2 - convX1;
+        double gY = convY2 - convY1;
+        
+        return new double[]{gX, gY};
+    }
+
 }

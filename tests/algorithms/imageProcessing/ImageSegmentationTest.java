@@ -1,13 +1,26 @@
 package algorithms.imageProcessing;
 
+import algorithms.CountingSort;
+import algorithms.MultiArrayMergeSort;
+import algorithms.misc.Histogram;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -27,7 +40,7 @@ public class ImageSegmentationTest extends TestCase {
         
         String fileName1, fileName2;
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 5; i < 6; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {
@@ -64,7 +77,7 @@ public class ImageSegmentationTest extends TestCase {
             }
             
             System.out.println("fileName1=" + fileName1);
-            
+          
             String bin = ResourceFinder.findDirectory("bin");
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
@@ -78,10 +91,60 @@ public class ImageSegmentationTest extends TestCase {
             GreyscaleImage segImg1 = imageSegmentation.createGreyscale5(img1);
             GreyscaleImage segImg2 = imageSegmentation.createGreyscale5(img2);
             
-            ImageIOHelper.writeOutputImage(bin + "/seg_1_" + fileNameRoot +".png", segImg1);
-            ImageIOHelper.writeOutputImage(bin + "/seg_2_" + fileNameRoot +".png", segImg2);
+            String outPath1 = bin + "/seg_1_" + fileNameRoot +".png";
+            String outPath2 = bin + "/seg_2_" + fileNameRoot +".png";
+            ImageIOHelper.writeOutputImage(outPath1, segImg1);
+            ImageIOHelper.writeOutputImage(outPath2, segImg2);
             
-            int z = 1;
+            // a look at finding lines with Hough transform
+            ZhangSuenLineThinner lineThinner = new ZhangSuenLineThinner();
+            lineThinner.applyFilter(segImg1);
+            String outPath1_0 = bin + "/seg_1__lt_" + fileNameRoot + ".png";
+            ImageIOHelper.writeOutputImage(outPath1_0, segImg1);
+            
+            algorithms.compGeometry.HoughTransform ht0 = 
+                new algorithms.compGeometry.HoughTransform();
+            Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
+                ht0.calculateLineGivenEdges(segImg1);
+            List<PairInt> outSortedKeys = ht0.sortByVotes(outputPolarCoordsPixMap);
+            
+            Image tmp1SegImg1 = segImg1.copyToColorGreyscale();
+            
+            for (int ii = 0; ii < outSortedKeys.size(); ++ii) {
+                int[] c = ImageIOHelper.getNextRGB(ii);
+                PairInt thetaRadius = outSortedKeys.get(ii);
+                Set<PairInt> pixCoords = outputPolarCoordsPixMap.get(thetaRadius);
+                
+                for (PairInt p : pixCoords) {
+                    tmp1SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
+                }
+            }
+            ImageIOHelper.writeOutputImage(bin + "/seg_1_hough1_" + fileNameRoot + ".png", tmp1SegImg1);
+            
+            Map<PairInt, PairInt> pixToTRMap = ht0.createPixTRMapsFromSorted(
+                outSortedKeys, outputPolarCoordsPixMap);
+            Map<PairInt, Integer> trColorMap = new HashMap<PairInt, Integer>();
+            Image tmp2SegImg1 = segImg1.copyToColorGreyscale();
+            for (int col = 0; col < tmp2SegImg1.getWidth(); ++col) {
+                for (int row = 0; row < tmp2SegImg1.getHeight(); ++row) {
+                    int v = tmp2SegImg1.getR(col, row);
+                    if (v > 0) {
+                        PairInt p = new PairInt(col, row);
+                        PairInt tr = pixToTRMap.get(p);
+                        Integer cIndex = trColorMap.get(tr);
+                        if (cIndex == null) {
+                            cIndex = Integer.valueOf(trColorMap.size());
+                            trColorMap.put(tr, cIndex);
+                        }
+                        int cIdx = cIndex.intValue();
+                        int[] c = ImageIOHelper.getNextRGB(cIdx);
+                        tmp2SegImg1.setRGB(col, row, c[0], c[1], c[2]);
+                    }
+                }
+            }
+            ImageIOHelper.writeOutputImage(bin + "/seg_1_hough2_" + fileNameRoot + ".png", tmp2SegImg1);
+            
+            int z0 = 1;
         }
     }
     
