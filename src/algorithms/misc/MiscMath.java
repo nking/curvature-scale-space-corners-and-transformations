@@ -945,6 +945,14 @@ public class MiscMath {
             return null;
         }
         
+        if (x.length == 1) {
+            List<Integer> minMaxIndexes = new ArrayList<Integer>();
+            if (y[0] > 0) {
+                minMaxIndexes.add(Integer.valueOf(0));
+            }
+            return minMaxIndexes;
+        }
+        
         int yPeakIdx = MiscMath.findYMaxIndex(y);
         
         if (yPeakIdx == -1) {
@@ -973,15 +981,15 @@ public class MiscMath {
             lastY = y[ii];
         }
         
+        if (incr) {
+            // add the last point
+             minMaxIndexes.add(Integer.valueOf(y.length - 1));
+        }
+        
         // for the histograms of euclidean point combination differences,
         // this should usually be singly peaked
         if (minMaxIndexes.size() == 1) {
             return minMaxIndexes;
-        }
-        
-        if (incr) {
-            // add the last point
-             minMaxIndexes.add(Integer.valueOf(y.length - 1));
         }
         
         float limit = frac * yMaxPeak;

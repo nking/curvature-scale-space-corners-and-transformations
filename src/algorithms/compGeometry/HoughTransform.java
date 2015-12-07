@@ -81,7 +81,7 @@ public class HoughTransform {
                 double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, img);
                 
                 double t = Math.atan2(gXY[1], gXY[0]);
-                
+                                
                 int tInt = (int)Math.round(t);
 
                 Integer theta = Integer.valueOf(tInt);
@@ -155,8 +155,22 @@ public class HoughTransform {
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
         List<Set<PairInt>> outputSortedGroups) {
         
+        //TODO: could make the radiusTol higher, and afterwards,
+        //use outputSortedGroups and thetaRadiusPixMap to get the approx
+        //line (theta, radius) of a group's points, then fit a line
+        //excluding outliers (see Thiel Sen estimater in LinearRegression.java)
+        
         int thetaTol = 2;
-        int radiusTol = 8;   
+        int radiusTol = 8;
+        
+        return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, 
+            outputSortedGroups, thetaTol, radiusTol);
+    }
+    
+    public Map<PairInt, PairInt> createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
+        Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
+        List<Set<PairInt>> outputSortedGroups, int thetaTol, int radiusTol) {
+        
         // using a DFS visitor pattern and a tolerance for contiguous neighbor
         // grouping to aggretate the (theta, radius) solutions of adjacent
         // points
