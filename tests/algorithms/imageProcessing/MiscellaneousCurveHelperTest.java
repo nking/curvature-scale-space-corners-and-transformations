@@ -1012,7 +1012,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
                 col, i, img);
             double t = Math.atan2(gradXY[1], gradXY[0]);
             double tD = t * 180./Math.PI;
-            assertTrue((Math.abs(tD - 0) < 1) || (Math.abs(tD - -180) < 1));
+            assertTrue((Math.abs(tD - 0) < 3) ||(Math.abs(tD - 180) < 3) || (Math.abs(tD - -180) < 3));
             //assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
             //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
@@ -1060,7 +1060,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
                 col, i, points);
             double t = Math.atan2(gradXY[1], gradXY[0]);
             double tD = t * 180./Math.PI;
-            assertTrue((Math.abs(tD - 0) < 1) || (Math.abs(tD - -180) < 1));
+            assertTrue((Math.abs(tD - 0) < 3) ||(Math.abs(tD - 180) < 3) || (Math.abs(tD - -180) < 3));
             //assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
             //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
