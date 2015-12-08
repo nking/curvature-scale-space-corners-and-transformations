@@ -42,9 +42,7 @@ public class HoughTransform {
      * with edges in it (single pixel width curves).  Note that the gradient
      * calc cannot tell the difference between above and below the y=0, so
      * all results are presented in the reference frame of 0 to 180.
-     * <em>For a more accurate result, use the method with corner regions
-     * because the tangent is calculated for direction pointing away from center
-     * of blob.</em>
+     * 
      * @param img image with content being single pixel width curves.
      * @return thetaRadiusPixCoords mappings
      */
@@ -149,7 +147,9 @@ public class HoughTransform {
      * the origin in pixels; value = number of transformation points having
      * the key.  this method uses an approximation of the gradient
      * from the immediate neighbors, so the input should only be an image
-     * with edges in it (single pixel width curves).
+     * with edges in it (single pixel width curves).  Note that the gradient
+     * calc cannot tell the difference between above and below the y=0, so
+     * all results are presented in the reference frame of 0 to 180.
      * @param edge a curve defined by the points within
      * @param imageWidth
      * @param imageHeight
@@ -158,12 +158,11 @@ public class HoughTransform {
     public Map<PairInt, Set<PairInt>> calculateLineGivenEdge(PairIntArray edge,
         int imageWidth, int imageHeight) {
         
-        return null;
-/* 
         // theta is 0 to 180
         Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForPI();
         Map<Integer, Double> sineMap = Misc.getSineThetaMapForPI();
 
+        Set<PairInt> points = Misc.convert(edge);
         
         Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
             new HashMap<PairInt, Set<PairInt>>();
@@ -174,70 +173,63 @@ public class HoughTransform {
             
             int x = edge.getX(i);
             int y = edge.getY(i);
+               
+            double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, 
+                points);
                 
-            double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, img);
-                
-                double t = Math.atan2(gXY[1], gXY[0]) * 180. / Math.PI;
-                                
-                int tInt = (int)Math.round(t);
+            double t = Math.atan2(gXY[1], gXY[0]) * 180. / Math.PI;
 
-                Integer theta = Integer.valueOf(tInt);
-                
-                Integer thetaOpp = Integer.valueOf(-1*tInt);
+            int tInt = (int)Math.round(t);
 
-                double ct, st;
-                
-                if (tInt < 0) {
-                    ct = cosineMap.get(thetaOpp).doubleValue();
-                    st = sineMap.get(thetaOpp).doubleValue();
-                } else {
-                    ct = cosineMap.get(theta).doubleValue();
-                    st = sineMap.get(theta).doubleValue();
-                }
-                
-                if (gXY[0] < 0) {
-                    // ct should be < 0
-                    if (ct > 0) {
-                        ct *= -1;
-                    }
-                } else {
-                    // ct should be >= 0
-                    if (ct < 0) {
-                        ct *= -1;
-                    }
-                }
-                if (gXY[1] < 0) {
-                    // st should be < 0
-                    if (st > 0) {
-                        st *= -1;
-                    }
-                } else {
-                    // st should be >= 0
-                    if (st < 0) {
-                        st *= -1;
-                    }
-                }
-            
-                double r = (x * ct) + (y * st);
-                                               
-                if (tInt < 0) {
-                    r *= -1;
-                    tInt *= -1;
-                }
-
-                PairInt p = new PairInt(tInt, (int)Math.round(r));
-
-                Set<PairInt> set = outputPolarCoordsPixMap.get(p);
-                if (set == null) {
-                    set = new HashSet<PairInt>();
-                    outputPolarCoordsPixMap.put(p, set);
-                }
-                set.add(new PairInt(x, y));
+            if (tInt < 0) {
+                tInt = 180 + tInt;
             }
+
+            Integer theta = Integer.valueOf(tInt);
+
+            double ct = cosineMap.get(theta).doubleValue();
+            double st = sineMap.get(theta).doubleValue();
+
+            if (gXY[0] < 0) {
+                // ct should be < 0
+                if (ct > 0) {
+                    ct *= -1;
+                }
+            } else {
+                // ct should be >= 0
+                if (ct < 0) {
+                    ct *= -1;
+                }
+            }
+            if (gXY[1] < 0) {
+                // st should be < 0
+                if (st > 0) {
+                    st *= -1;
+                }
+            } else {
+                // st should be >= 0
+                if (st < 0) {
+                    st *= -1;
+                }
+            }
+
+            double r = (x * ct) + (y * st);
+
+            if (r < 0) {
+                r *= -1;
+            }
+
+            PairInt p = new PairInt(tInt, (int)Math.round(r));
+
+            Set<PairInt> set = outputPolarCoordsPixMap.get(p);
+            if (set == null) {
+                set = new HashSet<PairInt>();
+                outputPolarCoordsPixMap.put(p, set);
+            }
+            set.add(new PairInt(x, y));
         }
         
         return outputPolarCoordsPixMap;
-        */
     }
         
     public List<PairInt> sortByVotes(Map<PairInt, Set<PairInt>> thetaRadiusPixMap) {
@@ -269,11 +261,6 @@ public class HoughTransform {
     public Map<PairInt, PairInt> createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
         List<Set<PairInt>> outputSortedGroups) {
-        
-        //TODO: could make the radiusTol higher, and afterwards,
-        //use outputSortedGroups and thetaRadiusPixMap to get the approx
-        //line (theta, radius) of a group's points, then fit a line
-        //excluding outliers (see Thiel Sen estimater in LinearRegression.java)
         
         int thetaTol = 2;
         int radiusTol = 8;

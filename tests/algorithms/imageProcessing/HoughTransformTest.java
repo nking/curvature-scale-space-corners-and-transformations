@@ -42,7 +42,7 @@ public class HoughTransformTest extends TestCase {
         super(testName);
     }
     
-    public void testLines0() throws Exception {
+    public void estLines0() throws Exception {
         
         String fileName1, fileName2;
 
@@ -237,37 +237,6 @@ public class HoughTransformTest extends TestCase {
             ImageIOHelper.writeOutputImage(
                 bin + "/seg_1_hough3_" + fileNameRoot + ".png", tmp3SegImg1);
             
-            /*
-            TODO:
-            since have attempted to retain the original (theta, radius)
-            combinations in polarCoordsPixMapOrig, can use those values
-            to re-interpret "sets" into smaller divisions if needed.
-            
-            consider making this pattern possible with more methods in hough 
-                transform:
-            
-            -- use the hough transform for edges with large tolerance in 
-            radius such as 4 or 10 or 15.
-            -- the resulting points may include outliers or may be 
-               consecutive joins of more than one parallel line.
-               -- for each set of points, look at histogram of
-                  (theta, radius), expec radius.
-                  are there large peaks (more than one)? 
-                  -- if there is essentially only one peak, this looks like
-                     a contiguous single line and so can use
-                     chi sq min around a small delta in avg theta and radius
-                     to find best fit and remove outliers.
-                     might be best to remove outliers with the avg first, then
-                     recalc best fit.
-                  -- else for multiple peaks, use a dfs search pattern on the
-                     points in this set for
-                     the theta, radius of peaks with small tolerances to
-                     divide the lines into segments and use the fit for one
-                     peak on each segments points.
-            x = r cos(t)
-            y = r sin(t)
-            */
-            
             // make inverse map from polarCoordsPixMapOrig
             Map<PairInt, PairInt> origPixToTRMap = new HashMap<PairInt, PairInt>();
             for (Entry<PairInt, Set<PairInt>> entry : polarCoordsPixMapOrig.entrySet()) {
@@ -317,7 +286,7 @@ public class HoughTransformTest extends TestCase {
         }
     }
     
-    public void estLines1() throws Exception {
+    public void testLines1() throws Exception {
         
         String fileName1, fileName2;
 
@@ -402,10 +371,15 @@ public class HoughTransformTest extends TestCase {
                 bph.getBinnedSegmentationImage(type) :
                 bph.getSegmentationImage(type);
             
+            //TODO: the radiusTol probably has to be >= FWZI of sigma used in gradient
+            int thetaTol = 2;
+            int radiusTol = 20/binFactor1;
+            int sizeLimit = 30/(binFactor1*binFactor1);
+            
             List<PairIntArray> edgeLists = bph.getBlobPerimeters(type, useBinned);
             
-            CornerCorrector.removeCornersFromLineArtifacts(edgeLists,
-                cornerRegionLists, segImg1.getWidth(), segImg1.getHeight());
+            //CornerCorrector.removeCornersFromLineArtifacts(edgeLists,
+            //    cornerRegionLists, segImg1.getWidth(), segImg1.getHeight());
             
             ImageSegmentation imageSegmentation = new ImageSegmentation();
             GreyscaleImage segImg2 = imageSegmentation.createGreyscale5(img2);
@@ -415,180 +389,65 @@ public class HoughTransformTest extends TestCase {
             ImageIOHelper.writeOutputImage(outPath1, segImg1);
             ImageIOHelper.writeOutputImage(outPath2, segImg2);
             
-            // a look at finding lines with Hough transform
-            ZhangSuenLineThinner lineThinner = new ZhangSuenLineThinner();
-            lineThinner.applyFilter(segImg1);
-            String outPath1_0 = bin + "/seg_1__lt_" + fileNameRoot + ".png";
-            ImageIOHelper.writeOutputImage(outPath1_0, segImg1);
-           
             algorithms.compGeometry.HoughTransform ht0 = 
                 new algorithms.compGeometry.HoughTransform();
-            Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
-                ht0.calculateLineGivenEdges(segImg1);
-            List<PairInt> outSortedKeys = ht0.sortByVotes(outputPolarCoordsPixMap);
             
             Image tmp1SegImg1 = segImg1.copyToColorGreyscale();
+            tmp1SegImg1 = new Image(segImg1.getWidth(), segImg1.getWidth());
             
-            for (int ii = 0; ii < outSortedKeys.size(); ++ii) {
-                int[] c = ImageIOHelper.getNextRGB(ii);
-                PairInt thetaRadius = outSortedKeys.get(ii);
-                Set<PairInt> pixCoords = outputPolarCoordsPixMap.get(thetaRadius);
+            for (int ii = 0; ii < edgeLists.size(); ++ii) {
                 
-                for (PairInt p : pixCoords) {
-                    tmp1SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
+                PairIntArray edge = edgeLists.get(ii);
+                
+                List<CornerRegion> cornerRegions = cornerRegionLists.get(ii);
+                
+                if (cornerRegions.size() < 2) {
+                    continue;
                 }
-            }
-            ImageIOHelper.writeOutputImage(
-                bin + "/seg_1_hough1_" + fileNameRoot + ".png", tmp1SegImg1);
+
+                ImageIOHelper.addCurveToImage(edge, tmp1SegImg1, 1, 255, 255, 255);
+                
+                Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
+                   ht0.calculateLineGivenEdge(edge, segImg1.getWidth(), 
+                       segImg1.getHeight());
+          
+                List<PairInt> outSortedKeys = ht0.sortByVotes(outputPolarCoordsPixMap);
+                               
+                // find indiv lines within the edge
+                Map<PairInt, Set<PairInt>> polarCoordsPixMapOrig = 
+                    new HashMap<PairInt, Set<PairInt>>(outputPolarCoordsPixMap);
             
-            Map<PairInt, Set<PairInt>> polarCoordsPixMapOrig = 
-                new HashMap<PairInt, Set<PairInt>>(outputPolarCoordsPixMap);
-            
-            //TODO: the radiusTol probably has to be >= FWZI of sigma used in gradient
-            int thetaTol = 2;
-            int radiusTol = 2/binFactor1;
-            int sizeLimit = 50/(binFactor1*binFactor1);
-            
-            //TODO: if there were lines found, remove them and try w/ a larger radius to
-            //   capture the horizontal lines
-            
-            List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
-            Map<PairInt, PairInt> pixToTRMap = ht0.createPixTRMapsFromSorted(
-                outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
-                thetaTol, radiusTol);
-            Map<PairInt, Integer> trColorMap = new HashMap<PairInt, Integer>();
-            Image tmp2SegImg1 = segImg1.copyToColorGreyscale();
-            for (int col = 0; col < tmp2SegImg1.getWidth(); ++col) {
-                for (int row = 0; row < tmp2SegImg1.getHeight(); ++row) {
-                    int v = tmp2SegImg1.getR(col, row);
-                    if (v > 0) {
-                        PairInt p = new PairInt(col, row);
-                        PairInt tr = pixToTRMap.get(p);
-                        Integer cIndex = trColorMap.get(tr);
-                        if (cIndex == null) {
-                            cIndex = Integer.valueOf(trColorMap.size());
-                            trColorMap.put(tr, cIndex);
-                        }
-                        int cIdx = cIndex.intValue();
-                        int[] c = ImageIOHelper.getNextRGB(cIdx);
-                        tmp2SegImg1.setRGB(col, row, c[0], c[1], c[2]);
+                List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
+                Map<PairInt, PairInt> pixToTRMap = ht0.createPixTRMapsFromSorted(
+                    outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
+                    thetaTol, radiusTol);
+                                
+                for (int iii = 0; iii < outputSortedGroups.size(); ++iii) {
+                
+                    Set<PairInt> group = outputSortedGroups.get(iii);
+
+                    if (group.size() < sizeLimit) {
+                        break;
+                    }
+
+                    // TODO: remove artifact corners
+
+                    for (CornerRegion cr : cornerRegions) {
+                        int x = cr.getX()[cr.getKMaxIdx()];
+                        int y = cr.getY()[cr.getKMaxIdx()];
+                        ImageIOHelper.addPointToImage(x, y, tmp1SegImg1, 0, 0, 2,
+                            255, 0, 0);
+                    }                
+                    int[] c = ImageIOHelper.getNextRGB(iii);  
+                    for (PairInt p : group) {
+                        tmp1SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
                     }
                 }
             }
+            
             ImageIOHelper.writeOutputImage(
-                bin + "/seg_1_hough2_" + fileNameRoot + ".png", tmp2SegImg1);
-            
-            Image tmp3SegImg1 = segImg1.copyToColorGreyscale();
-            for (int ii = 0; ii < outputSortedGroups.size(); ++ii) {
-                
-                Set<PairInt> group = outputSortedGroups.get(ii);
-                
-                if (group.size() < sizeLimit) {
-                    break;
-                }
-                
-                int[] c = ImageIOHelper.getNextRGB(ii);
-                
-                for (PairInt p : group) {
-                    tmp3SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
-                }
-            }
-            
-            for (List<CornerRegion> cornerRegions : cornerRegionLists) {
-                for (CornerRegion cr : cornerRegions) {
-                    int x = cr.getX()[cr.getKMaxIdx()];
-                    int y = cr.getY()[cr.getKMaxIdx()];
-                    ImageIOHelper.addPointToImage(x, y, tmp3SegImg1, 0, 0, 1,
-                        255, 255, 255);
-                }
-            }
-            for (List<CornerRegion> cornerRegions : cornerRegionLists) {
-                for (CornerRegion cr : cornerRegions) {
-                    int x = cr.getX()[cr.getKMaxIdx()];
-                    int y = cr.getY()[cr.getKMaxIdx()];
-                    ImageIOHelper.addPointToImage(x, y, tmp3SegImg1, 0, 0, 0,
-                        255, 0, 0);
-                }
-            }
-            ImageIOHelper.writeOutputImage(
-                bin + "/seg_1_hough3_" + fileNameRoot + ".png", tmp3SegImg1);
-            
-            /*
-            TODO:
-            since have attempted to retain the original (theta, radius)
-            combinations in polarCoordsPixMapOrig, can use those values
-            to re-interpret "sets" into smaller divisions if needed.
-            
-            consider making this pattern possible with more methods in hough 
-                transform:
-            
-            -- use the hough transform for edges with large tolerance in 
-            radius such as 4 or 10 or 15.
-            -- the resulting points may include outliers or may be 
-               consecutive joins of more than one parallel line.
-               -- for each set of points, look at histogram of
-                  (theta, radius), expec radius.
-                  are there large peaks (more than one)? 
-                  -- if there is essentially only one peak, this looks like
-                     a contiguous single line and so can use
-                     chi sq min around a small delta in avg theta and radius
-                     to find best fit and remove outliers.
-                     might be best to remove outliers with the avg first, then
-                     recalc best fit.
-                  -- else for multiple peaks, use a dfs search pattern on the
-                     points in this set for
-                     the theta, radius of peaks with small tolerances to
-                     divide the lines into segments and use the fit for one
-                     peak on each segments points.
-            x = r cos(t)
-            y = r sin(t)
-            */
-            
-            // make inverse map from polarCoordsPixMapOrig
-            Map<PairInt, PairInt> origPixToTRMap = new HashMap<PairInt, PairInt>();
-            for (Entry<PairInt, Set<PairInt>> entry : polarCoordsPixMapOrig.entrySet()) {
-                for (PairInt p : entry.getValue()) {
-                    origPixToTRMap.put(p, entry.getKey());
-                }
-            }
-            
-            Set<PairInt> group0 = outputSortedGroups.get(1);
-            int n = group0.size();
-            int count = 0;
-            float[] t = new float[n];
-            float[] r = new float[n];
-            for (PairInt p : group0) {
-                PairInt tr = origPixToTRMap.get(p);
-                t[count] = tr.getX();
-                r[count] = tr.getY();
-                count++;
-            }
-            float[] tAvgStDev = MiscMath.getAvgAndStDev(t);
-            float[] rAvgStDev = MiscMath.getAvgAndStDev(r);
-            
-            float minXT = (float)Math.floor(tAvgStDev[0] - 3*tAvgStDev[1]);
-            float maxXT = (float)Math.ceil(tAvgStDev[0] + 3*tAvgStDev[1]);
-            if (maxXT == minXT) {
-                maxXT += 2;
-            }
-            
-            float minXR = (float)Math.floor(rAvgStDev[0] - 3*rAvgStDev[1]);
-            float maxXR = (float)Math.ceil(rAvgStDev[0] + 3*rAvgStDev[1]);
-            if (maxXR == minXR) {
-                maxXR += 2;
-            }
-            
-            HistogramHolder histT = Histogram.createSimpleHistogram(minXT, maxXT,
-                1.f, t, Errors.populateYErrorsBySqrt(t));
-            HistogramHolder histR = Histogram.createSimpleHistogram(minXR, maxXR,
-                1.f, r, Errors.populateYErrorsBySqrt(r));
-            
-            List<Integer> indexesT = MiscMath.findStrongPeakIndexes(histT, 0.25f);
-            List<Integer> indexesR = MiscMath.findStrongPeakIndexes(histR, 0.25f);
-            
-            histT.plotHistogram("theta", "_theta");
-            histR.plotHistogram("radius", "_radius");
-        
+                bin + "/seg_1_hough1_" + fileNameRoot + ".png", tmp1SegImg1);
+                                             
             int z0 = 1;
         }
     }

@@ -351,7 +351,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         int n = sortedGroups.size();
         
         // search will stop when size of groups is less than this
-        int minSize = 3;
+        int minSize = 1;//3;
         
         int distSqTol = radiusTol * radiusTol;
         

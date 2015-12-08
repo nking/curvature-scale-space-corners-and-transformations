@@ -15,13 +15,10 @@ import java.util.Set;
  * From pseudocode in Intro to Algorithms by Cormen et al.
  * 
  * runtime complexity was ~ O(N lg N), but changes have been made for set2
- * so need to recalculate after changes are finished.
+ * that add at most O(3*3) to the smallest of recursive steps.
  * 
- * NOT YET READY FOR USE
+ * NOTE: this class has not been thoroughly tested yet.
  * 
- * TODO: have to edit to keep set1 and set2 separate w/ same structures
-   to divide them separately, then add the 2 sets for the brute force compare
- *
  * @author nichole
  */
 public class ClosestPairBetweenSets {
@@ -53,9 +50,6 @@ public class ClosestPairBetweenSets {
         List<PairIntWithIndex> p = new ArrayList<PairIntWithIndex>();
         List<PairIntWithIndex> x = new ArrayList<PairIntWithIndex>();
         List<PairIntWithIndex> y = new ArrayList<PairIntWithIndex>();
-        
-//TODO: have to keep set1 and set2 separate w/ same structures below
-// to divide them separately, then add the 2 sets for the brute force compare
         
         for (PairInt ps1 : set1) {
             // since the points xy are not going to be modified, can reuse xy
@@ -100,8 +94,6 @@ public class ClosestPairBetweenSets {
         List<PairIntWithIndex> pL = new ArrayList<PairIntWithIndex>(q);
         List<PairIntWithIndex> pR = new ArrayList<PairIntWithIndex>(q);
         
-        // need a datastructure to search for pL members.  for a hash table, search is O(1).
-        //  will assume that the java HashSet implementation has O(1) insert and search
         Set<PairIntWithIndex> isInL = new HashSet<PairIntWithIndex>();
         
         List<PairIntWithIndex> xL = new ArrayList<PairIntWithIndex>(q);
@@ -141,8 +133,7 @@ public class ClosestPairBetweenSets {
 
         ClosestPairInt d = (cpL.separationSq <= cpR.separationSq) ? cpL : cpR;
         
-        // NOTE: temporary work around until have changed to keep set1 and set2 divides separate
-        if ((d.point0 == null) && (pL.size() < 10) && (pR.size() < 10)) {
+        if ((d.point0 == null) && (pL.size() < 4) && (pR.size() < 4)) {
             if (hasAPoint(pL, 1) && hasAPoint(pR, 2)) {
                 List<PairIntWithIndex> list = new ArrayList<PairIntWithIndex>();
                 list.addAll(pL);

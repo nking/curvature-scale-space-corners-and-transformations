@@ -47,9 +47,13 @@ public class BlobsAndCorners  {
             width, height);
         
         if (correctLineArtifacts) {
+            int binFactor = blobPerimeterHelper.getBinFactor();
+            int thetaTol = 2;
+            int radiusTol = 2/binFactor;
+            
             //use hough transform for lines to remove corners from line artifacts
            CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
-               indexCornerRegionMap, width, height);
+               indexCornerRegionMap, thetaTol, radiusTol, width, height);
         }
         
         int nTotCR = 0;
