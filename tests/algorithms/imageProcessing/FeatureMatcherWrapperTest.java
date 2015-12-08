@@ -1,7 +1,12 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.Vector;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 

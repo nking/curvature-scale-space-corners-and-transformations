@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import java.util.Set;
 
 /**
  *
@@ -123,12 +125,13 @@ public class Kernel1DHelper {
     }
 
     /**
-     * convolve point[xyIdx] with the kernel g along a column if calcX is true.
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
      * @param img
      * @param col
      * @param row
      * @param g
-     * @param calcX
+     * @param calcX convolve along column if true, else row
      * @return 
      */
     public double convolvePointWithKernel(final GreyscaleImage img, int col, 
@@ -259,4 +262,52 @@ public class Kernel1DHelper {
         return sum;
     }
     
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
+     * @param points
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX convolve along column if true, else row
+     * @return 
+     */
+    public double convolvePointWithKernel(final Set<PairInt> points, int col, 
+        int row, float[] g, final boolean calcX) {
+
+        int h = g.length >> 1;
+
+        double sum = 0;
+                
+        for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+            float gg = g[gIdx];
+
+            if (gg == 0) {
+                continue;
+            }
+            
+            int idx = gIdx - h;
+
+            int cIdx = calcX ? (col + idx) : (row + idx);
+
+            float point = 0;
+            
+            if (calcX) {
+                // keep row constant
+                if (points.contains(new PairInt(cIdx, row))) {
+                    point = 1;
+                }
+            } else {
+                // keep col constant
+                if (points.contains(new PairInt(col, cIdx))) {
+                    point = 1;
+                }
+            }
+
+            sum += (point * gg);
+        }
+
+        return sum;
+    }
 }

@@ -5,7 +5,11 @@ import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,8 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 
 /**
  * class to invoke methods needed to solve for euclidean scale between
@@ -53,7 +59,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-
+  
         float dist = 2.5f;
         for (int i = 0; i < perimeters1.size(); ++i) {
             filterCorners(perimeters1.get(i), corners1List.get(i), dist);
@@ -83,7 +89,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<PairIntArray> perimeters1, List<PairIntArray> perimeters2,
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
-/*
+
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -126,7 +132,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-*/
+
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),

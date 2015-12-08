@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
-import org.junit.Test;
 import org.ejml.simple.*;
 
 /**
@@ -950,14 +949,84 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         }
     }
     
-    public void testFindXCrossings() throws Exception {
+    public void testCalculateGradientsForPointOnEdge_image() throws Exception {
+    
+        GreyscaleImage img = new GreyscaleImage(10, 10);
+        for (int i = 3; i < 8; ++i) {
+            img.setValue(i, i, 1);
+        }
         
-        //blob_x_01.dat
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(i, i, img);
+            // magnitudes should be equal
+            assertTrue(Math.abs((gradXY[1]/gradXY[0]) - 1) < 0.1);
+        }
         
-        // method does not exist yet. 
-        // when it does, it will test that curve point order 
-        // does not cross for x sections in line and returns the
-        // points that violate that
+        int row = 5;
+        img = new GreyscaleImage(10, 10);
+        for (int i = 3; i < 8; ++i) {
+            img.setValue(i, row, 1);
+        }
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
+                i, row, img);
+            // gradX should be near zero
+            // gradY should be 1 if calibrated
+            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
+        }
+        
+        int col = 5;
+        img = new GreyscaleImage(10, 10);
+        for (int i = 3; i < 8; ++i) {
+            img.setValue(col, i, 1);
+        }
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
+                col, i, img);
+            assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
+            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+        }
+    }
+    
+    public void testCalculateGradientsForPointOnEdge_points() throws Exception {
+    
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 3; i < 8; ++i) {
+            points.add(new PairInt(i, i));
+        }
+                        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(i, i, points);
+            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+        }
+        
+        int row = 5;
+        points = new HashSet<PairInt>();
+        for (int i = 3; i < 8; ++i) {
+            points.add(new PairInt(i, row));
+        }
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
+                i, row, points);
+            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
+        }
+        
+        int col = 5;
+        points = new HashSet<PairInt>();
+        for (int i = 3; i < 8; ++i) {
+            points.add(new PairInt(col, i));
+        }
+        for (int i = 4; i < 7; ++i) {
+            double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
+                col, i, points);
+            assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
+            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+        }
     }
     
     public PairIntArray getEdge0() {

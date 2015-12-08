@@ -20,6 +20,8 @@ public class BlobCornerHelper {
     
     protected final BlobPerimeterHelper imgHelper;
     
+    private boolean correctLineArtifacts = true;
+    
     protected boolean debug = false;
     
     protected String debugTag = "";
@@ -37,6 +39,10 @@ public class BlobCornerHelper {
         debug = false;
         
         this.debugTag = debugTag;
+    }
+    
+    public void turnOffCorrectionForLineArtifacts() {
+        correctLineArtifacts = false;
     }
     
     /**
@@ -86,10 +92,10 @@ public class BlobCornerHelper {
         final boolean enableJaggedLineCorrections = false;
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
-        
+   
         corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
             outdoorMode, enableJaggedLineCorrections, 
-            factorIncreaseForCurvatureMinimum);
+            factorIncreaseForCurvatureMinimum, correctLineArtifacts);
        
         segCornersMap.put(type, corners);
         
@@ -120,10 +126,10 @@ public class BlobCornerHelper {
         final boolean enableJaggedLineCorrections = false;
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
-        
+
         corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,
             outdoorMode, enableJaggedLineCorrections, 
-            factorIncreaseForCurvatureMinimum);
+            factorIncreaseForCurvatureMinimum, correctLineArtifacts);
         
         segBinnedCornersMap.put(type, corners);
         

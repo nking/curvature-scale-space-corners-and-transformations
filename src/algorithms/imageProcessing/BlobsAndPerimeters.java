@@ -81,7 +81,9 @@ public class BlobsAndPerimeters {
         List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
         
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
+            
             Integer pixValue = entry.getKey();
+            
             defaultExtractBlobs(segImg, pixValue.intValue(), 
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
                 outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
@@ -147,8 +149,7 @@ public class BlobsAndPerimeters {
 
     public static List<PairIntArray> extractBoundsOfBlobs(
         SegmentedImageHelper imgHelper, SegmentationType type, 
-        final List<Set<PairInt>> inOutBlobs,
-        boolean useBinned,
+        final List<Set<PairInt>> inOutBlobs, boolean useBinned,
         boolean discardWhenCavityIsSmallerThanBorder) {
         
         // TODO: method arguments are vulnerable to not being consistently from
@@ -502,7 +503,7 @@ if (imgHelper.isInDebugMode()) {
         if (use8Neighbors) {
             finder.setToUse8Neighbors();
         }
-        finder.setMinimumNumberInCluster(smallestGroupLimit);
+        finder.setMinimumNumberInCluster(1);//smallestGroupLimit);
         finder.findGroups(pixelValue);
             
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();

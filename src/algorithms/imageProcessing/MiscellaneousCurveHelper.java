@@ -2644,17 +2644,64 @@ public class MiscellaneousCurveHelper {
 
         float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
         
+        boolean calcForX = true;
+               
         double convX1 = kernel1DHelper.convolvePointWithKernel(
-            img, x, y, kernel, true);
+            img, x, y, kernel, calcForX);
         
         double convX2 = kernel1DHelper.convolvePointWithKernel(
-            img, x, y, kernel2, true);
+            img, x, y, kernel2, calcForX);
              
+        calcForX = false;
+        
         double convY1 = kernel1DHelper.convolvePointWithKernel(
-            img, x, y, kernel, true);
+            img, x, y, kernel, calcForX);
         
         double convY2 = kernel1DHelper.convolvePointWithKernel(
-            img, x, y, kernel2, true);
+            img, x, y, kernel2, calcForX);
+             
+        double gX = convX2 - convX1;
+        double gY = convY2 - convY1;
+        
+        return new double[]{gX, gY};
+    }
+    
+    /**
+     * calculate gradient x and gradient y for the given point
+     * which should have a value greater than 0 at (x,y) and should be part
+     * of a curve thinned to a width of 1.
+     
+     * @param x
+     * @param y
+     * @param points
+     * @return double{gradX, gradY}
+     */
+    public double[] calculateGradientsForPointOnEdge(int x, int y, 
+        Set<PairInt> points) {
+        
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        
+        float sigma = 0.42466090014400953f;
+        
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
+        
+        boolean calcForX = true;
+        
+        double convX1 = kernel1DHelper.convolvePointWithKernel(
+            points, x, y, kernel, calcForX);
+        
+        double convX2 = kernel1DHelper.convolvePointWithKernel(
+            points, x, y, kernel2, calcForX);
+             
+        calcForX = false;
+        
+        double convY1 = kernel1DHelper.convolvePointWithKernel(
+            points, x, y, kernel, calcForX);
+        
+        double convY2 = kernel1DHelper.convolvePointWithKernel(
+            points, x, y, kernel2, calcForX);
              
         double gX = convX2 - convX1;
         double gY = convY2 - convY1;

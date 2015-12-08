@@ -6,6 +6,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,20 +89,134 @@ public class HoughTransform {
                 
                 Integer thetaOpp = Integer.valueOf(-1*tInt);
 
-                double ct;
-                if (gXY[0] < 0) {
+                double ct, st;
+                
+                if (tInt < 0) {
                     ct = cosineMap.get(thetaOpp).doubleValue();
-                    ct *= -1;
+                    st = sineMap.get(thetaOpp).doubleValue();
                 } else {
                     ct = cosineMap.get(theta).doubleValue();
+                    st = sineMap.get(theta).doubleValue();
                 }
                 
-                double st;
-                if (gXY[1] < 0) {
-                    st = sineMap.get(thetaOpp).doubleValue();
-                    st *= -1;
+                if (gXY[0] < 0) {
+                    // ct should be < 0
+                    if (ct > 0) {
+                        ct *= -1;
+                    }
                 } else {
+                    // ct should be >= 0
+                    if (ct < 0) {
+                        ct *= -1;
+                    }
+                }
+                if (gXY[1] < 0) {
+                    // st should be < 0
+                    if (st > 0) {
+                        st *= -1;
+                    }
+                } else {
+                    // st should be >= 0
+                    if (st < 0) {
+                        st *= -1;
+                    }
+                }
+                
+                double r = (x * ct) + (y * st);
+                                               
+                if (tInt < 0) {
+                    r *= -1;
+                    tInt *= -1;
+                }
+
+                PairInt p = new PairInt(tInt, (int)Math.round(r));
+
+                Set<PairInt> set = outputPolarCoordsPixMap.get(p);
+                if (set == null) {
+                    set = new HashSet<PairInt>();
+                    outputPolarCoordsPixMap.put(p, set);
+                }
+                set.add(new PairInt(x, y));
+            }
+        }
+        
+        return outputPolarCoordsPixMap;
+    }
+    
+    /**
+     * given an edge of points, computes the Hough
+     * transform of lines and returns results as an associate array with 
+     * key = pair with x = polar theta in degrees and y = distance from
+     * the origin in pixels; value = number of transformation points having
+     * the key.  this method uses an approximation of the gradient
+     * from the immediate neighbors, so the input should only be an image
+     * with edges in it (single pixel width curves).
+     * @param edge a curve defined by the points within
+     * @param imageWidth
+     * @param imageHeight
+     * @return thetaRadiusPixCoords mappings
+     */
+    public Map<PairInt, Set<PairInt>> calculateLineGivenEdge(PairIntArray edge,
+        int imageWidth, int imageHeight) {
+        
+        return null;
+/*
+        // theta is 0 to 180
+        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForPI();
+        Map<Integer, Double> sineMap = Misc.getSineThetaMapForPI();
+
+        
+        Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
+            new HashMap<PairInt, Set<PairInt>>();
+
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (int i = 0; i < edge.getN(); ++i) {
+            
+            int x = edge.getX(i);
+            int y = edge.getY(i);
+                
+            double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, img);
+                
+                double t = Math.atan2(gXY[1], gXY[0]);
+                                
+                int tInt = (int)Math.round(t);
+
+                Integer theta = Integer.valueOf(tInt);
+                
+                Integer thetaOpp = Integer.valueOf(-1*tInt);
+
+                double ct, st;
+                
+                if (tInt < 0) {
+                    ct = cosineMap.get(thetaOpp).doubleValue();
+                    st = sineMap.get(thetaOpp).doubleValue();
+                } else {
+                    ct = cosineMap.get(theta).doubleValue();
                     st = sineMap.get(theta).doubleValue();
+                }
+                
+                if (gXY[0] < 0) {
+                    // ct should be < 0
+                    if (ct > 0) {
+                        ct *= -1;
+                    }
+                } else {
+                    // ct should be >= 0
+                    if (ct < 0) {
+                        ct *= -1;
+                    }
+                }
+                if (gXY[1] < 0) {
+                    // st should be < 0
+                    if (st > 0) {
+                        st *= -1;
+                    }
+                } else {
+                    // st should be >= 0
+                    if (st < 0) {
+                        st *= -1;
+                    }
                 }
             
                 double r = (x * ct) + (y * st);
@@ -123,6 +238,7 @@ public class HoughTransform {
         }
         
         return outputPolarCoordsPixMap;
+        */
     }
         
     public List<PairInt> sortByVotes(Map<PairInt, Set<PairInt>> thetaRadiusPixMap) {
@@ -184,6 +300,42 @@ public class HoughTransform {
         List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
         
         if (sortedGroups != null) {
+            outputSortedGroups.clear();
+            outputSortedGroups.addAll(sortedGroups);
+        }
+        
+        return pixToTRMap;
+    }
+    
+    /**
+     * builds upon createPixTRMapsFromSorted to further fit each set of points
+     * in outputSortedGroups into contiguous line segments
+     * 
+     * @param sortedTRKeys
+     * @param thetaRadiusPixMap
+     * @param outputSortedGroups
+     * @param thetaTol
+     * @param radiusTol
+     * @return 
+     */
+    public Map<PairInt, PairInt> createPixTRMapsFromSorted2(List<PairInt> sortedTRKeys,
+        Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
+        List<Set<PairInt>> outputSortedGroups, int thetaTol, int radiusTol) {
+        
+        // using a DFS visitor pattern and a tolerance for contiguous neighbor
+        // grouping to aggretate the (theta, radius) solutions of adjacent
+        // points
+        DFSSimilarThetaRadiusGroupsFinder groupFinder = new 
+            DFSSimilarThetaRadiusGroupsFinder();
+        
+        // note that thetaRadiusPixMap is altered by this method
+        Map<PairInt, PairInt> pixToTRMap = groupFinder.findConnectedPointGroups(
+            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol);
+        
+        List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
+        
+        if (sortedGroups != null) {
+            outputSortedGroups.clear();
             outputSortedGroups.addAll(sortedGroups);
         }
         

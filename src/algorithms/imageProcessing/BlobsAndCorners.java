@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -23,7 +22,8 @@ public class BlobsAndCorners  {
         SegmentationType type, boolean useBinnedImage,
         final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,
-        final float factorIncreaseForCurvatureMinimum) {
+        final float factorIncreaseForCurvatureMinimum,
+        final boolean correctLineArtifacts) {
 
         List<List<CornerRegion>> cornerRegionLists = 
             new ArrayList<List<CornerRegion>>();
@@ -45,7 +45,13 @@ public class BlobsAndCorners  {
             findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
-
+        
+        if (correctLineArtifacts) {
+            //use hough transform for lines to remove corners from line artifacts
+           CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
+               indexCornerRegionMap, width, height);
+        }
+        
         int nTotCR = 0;
         
         for (int i = 0; i < perimeterLists.size(); ++i) {
