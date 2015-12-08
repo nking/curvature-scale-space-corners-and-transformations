@@ -350,7 +350,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         
         int n = sortedGroups.size();
         
-        // search will stop when size of groups is less than this
+        // search will skip a group when size is less than this
         int minSize = 1;//3;
         
         int distSqTol = radiusTol * radiusTol;
@@ -377,10 +377,8 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
             
             Set<PairInt> group = sortedGroups.get(i);
             
-            if (group.size() == 0) {
+            if (group.size() < minSize) {
                 continue;
-            } else if (group.size() < minSize) {
-                break;
             }
             
             PairInt s1 = group.iterator().next();
@@ -392,10 +390,8 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                 
                 Set<PairInt> group2 = sortedGroups.get(j);
                 
-                if (group2.size() == 0) {
+                if (group2.size() < minSize) {
                     continue;
-                } else if (group2.size() < minSize) {
-                    break;
                 }
                 
                 PairInt s2 = group2.iterator().next();
