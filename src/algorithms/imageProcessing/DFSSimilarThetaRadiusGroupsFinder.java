@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -335,8 +336,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
      * points having (theta, radius) values within 2 times the tolerances,
      * so will be skipped for the closest pair search.
      * </pre>
-     * This should be invoked after the member groups have been pruned and
-     * sorted.
+     * This should be invoked after the member groups have been pruned.
      * @param pixToTRMap
      * @param thetaTol
      * @param radiusTol 
@@ -355,9 +355,32 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         
         int distSqTol = radiusTol * radiusTol;
         
-        for (int i = 0; i < n; ++i) {
+        PairInt chk = new PairInt(197, 57);
+        PairInt chk2 = new PairInt(201, 57);
+        
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i = (n - 1); i > -1; --i) {
+            stack.add(Integer.valueOf(i));
+        }
+        
+        //since the identities of the stack members are changing, a "visited"
+        //does not record state of a finished search.
+        //the outer loop may need to be limited by a large max iteration.
+        //TODO: walk through merge patterns to determine if the algorithm
+        // always terminates (stack becomes empty).
+        
+        while (!stack.isEmpty()) {
+            
+            int i = stack.pop().intValue();
             
             Set<PairInt> group = sortedGroups.get(i);
+            
+            if (group.contains(chk)) {
+                int z = 1;
+            }
+            if (group.contains(chk2)) {
+                int z = 1;
+            }
             
             if (group.size() == 0) {
                 continue;
@@ -369,7 +392,16 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
             PairInt tr1 = pixToTRMap.get(s1);
             
             for (int j = (i + 1); j < n; ++j) {
+                
                 Set<PairInt> group2 = sortedGroups.get(j);
+                
+                if (group2.contains(chk)) {
+                    int z = 1;//8
+                }
+                if (group2.contains(chk2)) {
+                    int z = 1;//5
+                }
+            
                 if (group2.size() == 0) {
                     continue;
                 } else if (group2.size() < minSize) {
@@ -431,6 +463,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                         pointToGroupMap.put(p, Integer.valueOf(i));
                     }
                     group2.clear();
+                    stack.add(Integer.valueOf(i));
                 } else {
                     // merge u into v
                     group2.addAll(group);
@@ -438,6 +471,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                         pointToGroupMap.put(p, Integer.valueOf(j));
                     }
                     group.clear();
+                    stack.add(Integer.valueOf(j));
                 }
             }
         }
