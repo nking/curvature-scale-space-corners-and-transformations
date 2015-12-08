@@ -951,6 +951,24 @@ public class MiscellaneousCurveHelperTest extends TestCase {
     
     public void testCalculateGradientsForPointOnEdge_image() throws Exception {
     
+        /*
+            gx=1 gy=0 d=0  cos(d)=1.000000, sin(d)=0.000000
+            gx=1 gy=1 d=45  cos(d)=0.707107, sin(d)=0.707107
+            gx=0 gy=1 d=90  cos(d)=0.000000, sin(d)=1.000000
+            gx=-1 gy=1 d=135  cos(d)=-0.707107, sin(d)=0.707107
+            gx=-1 gy=0 d=180  cos(d)=-1.000000, sin(d)=0.000000
+            gx=-1 gy=-1 d=-135  cos(d)=-0.707107, sin(d)=-0.707107
+            gx=0 gy=-1 d=-90  cos(d)=0.000000, sin(d)=-1.000000
+            gx=1 gy=-1 d=-45  cos(d)=0.707107, sin(d)=-0.707107
+        
+                     90
+               135   |   45
+                     |
+            180 ------------- 0
+                     |
+               -135  |   -45
+                    -90
+        */
         GreyscaleImage img = new GreyscaleImage(10, 10);
         for (int i = 3; i < 8; ++i) {
             img.setValue(i, i, 1);
@@ -961,6 +979,9 @@ public class MiscellaneousCurveHelperTest extends TestCase {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(i, i, img);
             // magnitudes should be equal
             assertTrue(Math.abs((gradXY[1]/gradXY[0]) - 1) < 0.1);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 45) < 1) || (Math.abs(tD - -135) < 1));
         }
         
         int row = 5;
@@ -971,10 +992,14 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
                 i, row, img);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 90) < 2) || (Math.abs(tD - -90) < 2));
+            
             // gradX should be near zero
             // gradY should be 1 if calibrated
-            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
-            assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
+            //assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            //assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
         }
         
         int col = 5;
@@ -985,8 +1010,11 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
                 col, i, img);
-            assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
-            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 0) < 1) || (Math.abs(tD - -180) < 1));
+            //assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
+            //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
     }
     
@@ -1000,8 +1028,11 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(i, i, points);
-            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
-            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 45) < 1) || (Math.abs(tD - -135) < 1));
+            //assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
         
         int row = 5;
@@ -1012,8 +1043,11 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
                 i, row, points);
-            assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
-            assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 90) < 2) || (Math.abs(tD - -90) < 2));
+            //assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
+            //assertTrue(Math.abs(gradXY[1] - 0) < 0.1);
         }
         
         int col = 5;
@@ -1024,8 +1058,11 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(
                 col, i, points);
-            assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
-            assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
+            double t = Math.atan2(gradXY[1], gradXY[0]);
+            double tD = t * 180./Math.PI;
+            assertTrue((Math.abs(tD - 0) < 1) || (Math.abs(tD - -180) < 1));
+            //assertTrue(Math.abs(gradXY[0] - 0) < 0.1);
+            //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
     }
     

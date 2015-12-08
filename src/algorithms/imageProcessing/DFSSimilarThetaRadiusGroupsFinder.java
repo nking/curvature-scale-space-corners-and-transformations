@@ -22,19 +22,19 @@ import java.util.logging.Logger;
 public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroupsFinder {
 
     private List<Set<PairInt>> sortedGroups = null;
-    
+
     public DFSSimilarThetaRadiusGroupsFinder() {
-        
+
         super();
-        
+
         this.minimumNumberInCluster = 1;
     }
-    
+
     @Override
     Logger constructLogger() {
         return Logger.getLogger(DFSSimilarThetaRadiusGroupsFinder.class.getName());
     }
-    
+
     /**
      * aggregate the results of the Hough transform within a given tolerance in
      * theta and radius for contiguous pixels.
@@ -43,16 +43,16 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         List<PairInt> sortedThetaRadiusKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, int thetaTol,
         int radiusTol) {
-        
+
         Map<PairInt, PairInt> pixToTRMap = findConnectedPointGroupsIterative(
             sortedThetaRadiusKeys, thetaRadiusPixMap, thetaTol, radiusTol);
-        
+
         createGroups(pixToTRMap, thetaTol, radiusTol);
-        
+
         prune();
-        
+
         sortedGroups = sortResults();
-        
+
         return pixToTRMap;
     }
 
@@ -93,11 +93,11 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         for (int i = (sortedThetaRadiusKeys.size() - 1); i > -1; --i) {
             stack.addAll(thetaRadiusPixMap.get(sortedThetaRadiusKeys.get(i)));
         }
-                      
+
         while (!stack.isEmpty()) {
 
             PairInt uPoint = stack.pop();
-            
+
             if (visited.contains(uPoint)) {
                 continue;
             }
@@ -109,9 +109,9 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
 
             // search neighbors having same (theta, radius) within tolerance
             // of uPoint for an existing solution in pixToMap.
-            
+
             PairInt trStore = uTR;
-            
+
             int minDiffT = Integer.MAX_VALUE;
             PairInt minDiffT_TR = null;
             PairInt minDiffT_Coord = null;
@@ -134,8 +134,10 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                     if (vTR.equals(trStore)) {
                         continue;
                     }
+
                     int diffT = Math.abs(trStore.getX() - vTR.getX());
                     int diffR = Math.abs(trStore.getY() - vTR.getY());
+
                     if ((diffT <= thetaTol) && (diffR <= radiusTol)) {
                         if (diffT < minDiffT) {
                             minDiffT = diffT;
@@ -200,7 +202,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                     }
                 }
             }
-                        
+
             pixToTRMap.put(uPoint, trStore);
 
             if (!trStore.equals(uTR)) {
@@ -213,43 +215,43 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
 
         return pixToTRMap;
     }
-    
+
     /**
-     * get the groups of points, sorted by decreasing size, after invoking 
+     * get the groups of points, sorted by decreasing size, after invoking
      * findConnectedPointGroupsIterative.
-     * @return 
+     * @return
      */
     public List<Set<PairInt>> getSortedGroupsOfPoints() {
         return sortedGroups;
     }
 
     private List<Set<PairInt>> sortResults() {
-                
+
         int n = this.getNumberOfGroups();
-        
+
         int[] c = new int[n];
         int[] indexes = new int[n];
-        
+
         for (int i = 0; i < n; ++i) {
             c[i] = getXY(i).size();
             indexes[i] = i;
         }
-        
+
         MultiArrayMergeSort.sortByDecr(c, indexes);
-        
+
         List<Set<PairInt>> sortedList = new ArrayList<Set<PairInt>>();
-        
+
         for (int i = 0; i < n; ++i) {
             int idx = indexes[i];
             sortedList.add(getXY(idx));
         }
-        
+
         return sortedList;
     }
 
     private void createGroups(Map<PairInt, PairInt> pixToTRMap, int thetaTol,
         int radiusTol) {
-        
+
         int[] dxs8 = Misc.dx8;
         int[] dys8 = Misc.dy8;
 
@@ -265,7 +267,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         for (Entry<PairInt, PairInt> entry : pixToTRMap.entrySet()) {
             stack.add(entry.getKey());
         }
-    
+
         while (!stack.isEmpty()) {
 
             PairInt uPoint = stack.pop();
@@ -275,22 +277,22 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
             }
 
             PairInt uTR = pixToTRMap.get(uPoint);
-           
+
             boolean processed = false;
-                        
+
             for (int i = 0; i < dxs8.length; ++i) {
-                
+
                 int vX = uPoint.getX() + dxs8[i];
                 int vY = uPoint.getY() + dys8[i];
-                
+
                 PairInt vPoint = new PairInt(vX, vY);
-                
+
                 PairInt vTR = pixToTRMap.get(vPoint);
-                
+
                 if (vTR == null) {
                     continue;
                 }
-                
+
                 int diffT = Math.abs(uTR.getX() - vTR.getX());
                 int diffR = Math.abs(uTR.getY() - vTR.getY());
                 if ((diffT <= thetaTol) && (diffR <= radiusTol)) {
@@ -299,11 +301,11 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                     stack.add(vPoint);
                 }
             }
-            
+
             if (!processed) {
                 process(uPoint);
-            }     
-            
+            }
+
             visited.add(uPoint);
         }
     }

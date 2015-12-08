@@ -169,7 +169,7 @@ public class HoughTransformTest extends TestCase {
                 new HashMap<PairInt, Set<PairInt>>(outputPolarCoordsPixMap);
             
             //TODO: the radiusTol probably has to be >= FWZI of sigma used in gradient
-            int thetaTol = 10;//2;
+            int thetaTol = 2;
             int radiusTol = 10/binFactor1;
             int sizeLimit = 50/(binFactor1*binFactor1);
             

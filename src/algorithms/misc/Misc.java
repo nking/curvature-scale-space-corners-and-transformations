@@ -266,7 +266,7 @@ public class Misc {
 
         double t = 0;
 
-        for (int i = 0; i < 180; ++i) {
+        for (int i = 0; i < 181; ++i) {
 
             double c = Math.cos(t);
 
@@ -286,7 +286,7 @@ public class Misc {
 
         double t = 0;
 
-        for (int i = 0; i < 180; ++i) {
+        for (int i = 0; i < 181; ++i) {
 
             double c = Math.sin(t);
 

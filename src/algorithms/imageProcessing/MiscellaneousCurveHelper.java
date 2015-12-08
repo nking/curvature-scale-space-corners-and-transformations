@@ -2659,7 +2659,7 @@ public class MiscellaneousCurveHelper {
         
         double convY2 = kernel1DHelper.convolvePointWithKernel(
             img, x, y, kernel2, calcForX);
-             
+        
         double gX = convX2 - convX1;
         double gY = convY2 - convY1;
         
@@ -2670,7 +2670,12 @@ public class MiscellaneousCurveHelper {
      * calculate gradient x and gradient y for the given point
      * which should have a value greater than 0 at (x,y) and should be part
      * of a curve thinned to a width of 1.
-     
+     * Note that the magnitudes have not been calibrated because the main
+     * using method uses the results to calculate the polar angle, so 
+     * factor applied to both not necessary.
+       Note that the magnitudes have not been calibrated because the main
+     * using method uses the results to calculate the polar angle, so 
+     * factor applied to both not necessary.
      * @param x
      * @param y
      * @param points
