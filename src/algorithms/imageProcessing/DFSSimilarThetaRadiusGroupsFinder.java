@@ -355,32 +355,27 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         
         int distSqTol = radiusTol * radiusTol;
         
-        PairInt chk = new PairInt(197, 57);
-        PairInt chk2 = new PairInt(201, 57);
-        
         Stack<Integer> stack = new Stack<Integer>();
         for (int i = (n - 1); i > -1; --i) {
             stack.add(Integer.valueOf(i));
         }
         
-        //since the identities of the stack members are changing, a "visited"
-        //does not record state of a finished search.
-        //the outer loop may need to be limited by a large max iteration.
+        Set<Integer> visited = new HashSet<Integer>();
+        
         //TODO: walk through merge patterns to determine if the algorithm
         // always terminates (stack becomes empty).
         
         while (!stack.isEmpty()) {
             
-            int i = stack.pop().intValue();
+            Integer index = stack.pop();
+            
+            if (visited.contains(index)) {
+                continue;
+            }
+            
+            int i = index.intValue();
             
             Set<PairInt> group = sortedGroups.get(i);
-            
-            if (group.contains(chk)) {
-                int z = 1;
-            }
-            if (group.contains(chk2)) {
-                int z = 1;
-            }
             
             if (group.size() == 0) {
                 continue;
@@ -391,17 +386,12 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
             PairInt s1 = group.iterator().next();
             PairInt tr1 = pixToTRMap.get(s1);
             
+            visited.add(index);
+            
             for (int j = (i + 1); j < n; ++j) {
                 
                 Set<PairInt> group2 = sortedGroups.get(j);
                 
-                if (group2.contains(chk)) {
-                    int z = 1;//8
-                }
-                if (group2.contains(chk2)) {
-                    int z = 1;//5
-                }
-            
                 if (group2.size() == 0) {
                     continue;
                 } else if (group2.size() < minSize) {
@@ -473,6 +463,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                     group.clear();
                     stack.add(Integer.valueOf(j));
                 }
+                visited.clear();
             }
         }
     }
