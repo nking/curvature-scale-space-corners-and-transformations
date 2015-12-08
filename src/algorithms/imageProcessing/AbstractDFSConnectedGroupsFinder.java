@@ -79,7 +79,6 @@ public abstract class AbstractDFSConnectedGroupsFinder {
                             pointToGroupMap.put(p, uGroupId);
                         }
                         vGroup.clear();
-                        int z = 1;
                     } else {
                         // merge u into v
                         vGroup.addAll(uGroup);
@@ -87,7 +86,6 @@ public abstract class AbstractDFSConnectedGroupsFinder {
                             pointToGroupMap.put(p, vGroupId);
                         }
                         uGroup.clear();
-                        int z = 1;
                     }
                 }
             }

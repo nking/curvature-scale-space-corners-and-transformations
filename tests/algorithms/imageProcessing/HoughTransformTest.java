@@ -170,7 +170,7 @@ public class HoughTransformTest extends TestCase {
             
             //TODO: the radiusTol probably has to be >= FWZI of sigma used in gradient
             int thetaTol = 2;
-            int radiusTol = 10/binFactor1;
+            int radiusTol = 20/binFactor1;
             int sizeLimit = 50/(binFactor1*binFactor1);
             
             //TODO: if there were lines found, remove them and try w/ a larger radius to

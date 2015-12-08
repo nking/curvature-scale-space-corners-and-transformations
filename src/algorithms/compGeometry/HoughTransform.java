@@ -292,9 +292,11 @@ public class HoughTransform {
         DFSSimilarThetaRadiusGroupsFinder groupFinder = new 
             DFSSimilarThetaRadiusGroupsFinder();
         
+        boolean allowGaps = true;
+        
         // note that thetaRadiusPixMap is altered by this method
         Map<PairInt, PairInt> pixToTRMap = groupFinder.findConnectedPointGroups(
-            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol);
+            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
         
         List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
         
@@ -327,9 +329,11 @@ public class HoughTransform {
         DFSSimilarThetaRadiusGroupsFinder groupFinder = new 
             DFSSimilarThetaRadiusGroupsFinder();
         
+        boolean allowGaps = true;
+        
         // note that thetaRadiusPixMap is altered by this method
         Map<PairInt, PairInt> pixToTRMap = groupFinder.findConnectedPointGroups(
-            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol);
+            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
         
         List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
         

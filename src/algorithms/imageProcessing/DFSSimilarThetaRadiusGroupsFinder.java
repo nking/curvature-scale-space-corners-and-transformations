@@ -1,9 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.ClosestPairBetweenSets;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
-import com.sun.javafx.sg.prism.NGGroup;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,11 +39,19 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
     /**
      * aggregate the results of the Hough transform within a given tolerance in
      * theta and radius for contiguous pixels.
+     * @param sortedThetaRadiusKeys
+     * @param thetaRadiusPixMap
+     * @param thetaTol
+     * @param radiusTol
+     * @param allowGaps if true, performs another operation to join groups
+     * within a distance of radiusTol if the closest points have (theta, radius)
+     * within tolerances.
+     * @return 
      */
     public Map<PairInt, PairInt> findConnectedPointGroups(
         List<PairInt> sortedThetaRadiusKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, int thetaTol,
-        int radiusTol) {
+        int radiusTol, boolean allowGaps) {
 
         Map<PairInt, PairInt> pixToTRMap = findConnectedPointGroupsIterative(
             sortedThetaRadiusKeys, thetaRadiusPixMap, thetaTol, radiusTol);
@@ -50,8 +59,13 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         createGroups(pixToTRMap, thetaTol, radiusTol);
 
         prune();
-
+        
         sortedGroups = sortResults();
+        
+        if (allowGaps) {
+            mergeIfGapWithinTolerance(pixToTRMap, thetaTol, radiusTol);
+            pruneSortedGroups();
+        }
 
         return pixToTRMap;
     }
@@ -308,5 +322,157 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
 
             visited.add(uPoint);
         }
+    }
+
+    /**
+     * iterate over groups to see if the closest pair of points are within
+     * a radiusTol distance and have (theta, radius) values similar within 
+     * tolerances.
+     * <pre>
+     * runtime complexity is in the 
+     *    worse case: nGroups^2 * (O(N_i * lg2(N_i))
+     * but it is expected that most groups will not have two sampling
+     * points having (theta, radius) values within 2 times the tolerances,
+     * so will be skipped for the closest pair search.
+     * </pre>
+     * This should be invoked after the member groups have been pruned and
+     * sorted.
+     * @param pixToTRMap
+     * @param thetaTol
+     * @param radiusTol 
+     */
+    private void mergeIfGapWithinTolerance(Map<PairInt, PairInt> pixToTRMap, 
+        int thetaTol, int radiusTol) {
+        
+        if (sortedGroups == null) {
+            return;
+        }
+        
+        int n = sortedGroups.size();
+        
+        // search will stop when size of groups is less than this
+        int minSize = 3;
+        
+        int distSqTol = radiusTol * radiusTol;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            Set<PairInt> group = sortedGroups.get(i);
+            
+            if (group.size() == 0) {
+                continue;
+            } else if (group.size() < minSize) {
+                break;
+            }
+            
+            PairInt s1 = group.iterator().next();
+            PairInt tr1 = pixToTRMap.get(s1);
+            
+            for (int j = (i + 1); j < n; ++j) {
+                Set<PairInt> group2 = sortedGroups.get(j);
+                if (group2.size() == 0) {
+                    continue;
+                } else if (group2.size() < minSize) {
+                    break;
+                }
+                
+                PairInt s2 = group2.iterator().next();
+                PairInt tr2 = pixToTRMap.get(s2);
+                
+                if (Math.abs(tr2.getX() - tr1.getX()) > (2 * thetaTol)) {
+                    continue;
+                }
+                if (Math.abs(tr2.getY() - tr1.getY()) > (2 * radiusTol)) {
+                    continue;
+                }
+                
+                /*
+                for the closest pair,
+                adding a variable to represent the two different sets
+                and altering the divide and conquer of the closest pair
+                algorithm to only
+                   compare the members if they are from different sets
+                */
+                ClosestPairBetweenSets cp = new ClosestPairBetweenSets();
+                
+                ClosestPairBetweenSets.ClosestPairInt result = 
+                    cp.findClosestPair(group, group2);
+                
+                if ((result == null) || (result.getSeparationSquared() > distSqTol)) {
+                    continue;
+                }
+                
+                PairIntWithIndex p1, p2;
+                if (result.getPoint0().getPixIndex() == 1) {
+                    p1 = result.getPoint0();
+                    p2 = result.getPoint1();
+                } else {
+                    p1 = result.getPoint1();
+                    p2 = result.getPoint0();
+                }
+                
+                PairInt pTr1 = pixToTRMap.get(new PairInt(p1.getX(), p1.getY()));
+                PairInt pTr2 = pixToTRMap.get(new PairInt(p2.getX(), p2.getY()));
+                
+                int diffT = Math.abs(pTr1.getX() - pTr2.getX());
+                int diffR = Math.abs(pTr1.getY() - pTr2.getY());
+                
+                if ((diffT > thetaTol) || (diffR > radiusTol)) {
+                    continue;
+                }
+                
+                // merge the smaller into the larger
+                int nU = group.size();
+                int nV = group2.size();
+                if (nU >= nV) {
+                    // merge v into u
+                    group.addAll(group2);
+                    for (PairInt p : group2) {
+                        pointToGroupMap.put(p, Integer.valueOf(i));
+                    }
+                    group2.clear();
+                } else {
+                    // merge u into v
+                    group2.addAll(group);
+                    for (PairInt p : group) {
+                        pointToGroupMap.put(p, Integer.valueOf(j));
+                    }
+                    group.clear();
+                }
+            }
+        }
+    }
+
+    private void pruneSortedGroups() {
+        
+        int n0 = this.sortedGroups.size();
+        
+        for (int i = (n0 - 1); i > -1; --i) {
+            Set<PairInt> group = sortedGroups.get(i);
+            if (group.size() == 0) {
+                sortedGroups.remove(i);
+            }
+        }
+        
+        int n = this.sortedGroups.size();
+
+        int[] c = new int[n];
+        int[] indexes = new int[n];
+
+        for (int i = 0; i < n; ++i) {
+            c[i] = sortedGroups.get(i).size();
+            indexes[i] = i;
+        }
+
+        MultiArrayMergeSort.sortByDecr(c, indexes);
+
+        List<Set<PairInt>> sortedList = new ArrayList<Set<PairInt>>();
+
+        for (int i = 0; i < n; ++i) {
+            int idx = indexes[i];
+            sortedList.add(sortedGroups.get(idx));
+        }
+
+        sortedGroups = sortedList;
     }
 }
