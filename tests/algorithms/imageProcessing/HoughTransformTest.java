@@ -294,7 +294,7 @@ public class HoughTransformTest extends TestCase {
 
         String fileName1, fileName2;
 
-        for (int i = 5; i < 6; ++i) {
+        for (int i = 0; i < 1; ++i) {
             //fileName1 = "valve_gaussian.png";
             //fileName2 = "valve_gaussian.png";
             switch(i) {
@@ -374,11 +374,23 @@ public class HoughTransformTest extends TestCase {
             GreyscaleImage segImg1 = useBinned ?
                 bph.getBinnedSegmentationImage(type) :
                 bph.getSegmentationImage(type);
+            
+            //NOTE: the kind of line artifact seen here appears to occur for
+            // near vertical and near horizontal lines, so will limit
+            // corrections to those
 
             //TODO: the radiusTol probably has to be >= FWZI of sigma used in gradient
             int thetaTol = 2;
-            int radiusTol = 20/binFactor1;
-            int sizeLimit = 30/(binFactor1*binFactor1);
+            int radiusTol = 4;//20/binFactor1;
+            int sizeLimit = 15;//30/(binFactor1*binFactor1);
+            
+   //TODO:  For edges that are closed circles, need to use that information
+   // to distinguish orientation of curves.
+   // There is an error introduced when have a narrow blob which has two sides
+   // that are nearly parallel.  Without knowledge of orientation along the curve,
+   // both of the parallel sides might be found to be the same "hough transform found line" if the
+   // radius tolerance is high enough, and then the valid corner in between
+   // them gets removed here.
 
             List<PairIntArray> edgeLists = bph.getBlobPerimeters(type, useBinned);
 
@@ -448,6 +460,17 @@ public class HoughTransformTest extends TestCase {
                         break;
                     }
                     
+                    // quick look at line's theta.
+                    // the artifacts are sometimes present in lines near
+                    // vertical or near horizontal, so skipping if not those                    
+                    PairInt aPoint = group.iterator().next();
+                    PairInt tr = pixToTRMap.get(aPoint);
+                    int vhLimit = 3;
+                    if ((tr.getX() > vhLimit) && (Math.abs(tr.getX() - 180) > vhLimit)
+                        && (Math.abs(tr.getX() - 90) > vhLimit)) {
+                        continue;
+                    }
+                                
                     int minGroupIdx = Integer.MAX_VALUE;
                     int maxGroupIdx = Integer.MIN_VALUE;
                     for (PairInt p : group) {
@@ -461,7 +484,7 @@ public class HoughTransformTest extends TestCase {
                     }
                     boolean wrapAround = (minGroupIdx == 0) &&
                         ((maxGroupIdx - minGroupIdx) > (group.size() + 5));
-                    
+        //  /*
                     if (wrapAround) {
                         // determine points of furthest pair and then
                         // check every corner to see if it is in between and 
@@ -486,6 +509,11 @@ public class HoughTransformTest extends TestCase {
                             }
                             // if it is in between the 2 points, remove it
                             if (isInBetween(furthest, distBetweenEndPoints, cr)) {
+                                
+                                // print theta, radius for debugging
+                                System.out.println("      *** deleting (theta, radius)=(" 
+                                    + tr.getX() + "," + tr.getY() + ")");
+                                    
                                 cornerRegions.remove(cr);
                             }
                         }
@@ -504,86 +532,35 @@ public class HoughTransformTest extends TestCase {
 
                     //the cornerRegions are ordered counter clock wise
                     
-                    // find the first and last corner regions in line segment
-                    int firstEIdx = -1;
-                    int lastEIdx = -1;
-                    int firstCRIdx = -1;
-                    int lastCRIdx = -1;
+                    // NOTE: if junctions were present, would want to skip
+                    // deleting a cornerRegion that was in a junction
 
-                    for (int j = 0; j < cornerRegions.size(); ++j) {
+                    // delete corners that are more than 2 indexes from
+                    // line bounds, starting from last corner
+                    for (int j = (cornerRegions.size() - 1); j > -1; --j) {
                         CornerRegion cr = cornerRegions.get(j);
                         int crIdx = cr.getIndexWithinCurve();
-                        if (firstEIdx == -1) {
-                            if ((crIdx >= minGroupIdx) && (crIdx <= maxGroupIdx)) {
-                                firstEIdx = crIdx;
-                                firstCRIdx = j;
-                            }
-                        } else {
-                            if (crIdx <= maxGroupIdx) {
-                                lastEIdx = crIdx;
-                                lastCRIdx = j;
-                            }
+                        if ((crIdx > (minGroupIdx + 2)) &&
+                            (crIdx < (maxGroupIdx - 2))) {
+                            
+                            // print theta, radius for debugging
+                            System.out.println("      *** deleting (theta, radius)=(" 
+                                + tr.getX() + "," + tr.getY() + ")");
+                            System.out.println("deleting: (" 
+                                + cr.getX()[cr.getKMaxIdx()] + "," 
+                                + cr.getY()[cr.getKMaxIdx()] + ")  eIdx=" 
+                                + cr.getIndexWithinCurve() + " (theta, radius)=(" 
+                                + tr.getX() + "," + tr.getY() + ")");
+                            
+                            cornerRegions.remove(cr);
                         }
                     }
-                    
-                    if (firstEIdx != -1) {
-                        
-                        String crStr = String.format("     corner eIdx0=%d eIdx1=%d",
-                            firstEIdx, lastEIdx);
-                        System.out.println(crStr);
-                        
-                        System.out.println(
-                            String.format("%20s (%3d,%3d)", " ",
-                                cornerRegions.get(firstCRIdx).getX()[cornerRegions.get(firstCRIdx).getKMaxIdx()],
-                                cornerRegions.get(firstCRIdx).getY()[cornerRegions.get(firstCRIdx).getKMaxIdx()]));
-                        if (lastEIdx > -1) {
-                            System.out.println(
-                            String.format("%20s (%3d,%3d)", " ",
-                                cornerRegions.get(lastCRIdx).getX()[cornerRegions.get(lastCRIdx).getKMaxIdx()],
-                                cornerRegions.get(lastCRIdx).getY()[cornerRegions.get(lastCRIdx).getKMaxIdx()]));
-                        }
-                        
-                        /*
-                        delete corner regions within range where the delta from
-                            minLineIdx and firstEIdx is greater than 2 or 3
-                            and same for lastEIdx and maxLineIdx.
-                        */
-                        
-                        // NOTE: if junctions were present, would want to skip
-                        // deleting a cornerRegion that was in a junction
-                        
-                        if (lastEIdx == -1) {
-                            // delete corner if it is more than 2 indexes from 
-                            // line bounds
-                            if (((firstEIdx - minGroupIdx) > 2) && ((maxGroupIdx - firstEIdx) > 2)) {
-                                CornerRegion cr = cornerRegions.get(firstCRIdx);
-                                System.out.println("deleting: (" 
-                                    + cr.getX()[cr.getKMaxIdx()] + "," 
-                                    + cr.getY()[cr.getKMaxIdx()] + ")  eIdx=" 
-                                    + cr.getIndexWithinCurve());
-                                cornerRegions.remove(cr);
-                            }
-                        } else {
-                            // delete corners that are more than 2 indexes from
-                            // line bounds, starting from last corner
-                            for (int j = (cornerRegions.size() - 1); j > -1; --j) {
-                                CornerRegion cr = cornerRegions.get(j);
-                                int crIdx = cr.getIndexWithinCurve();
-                                if (((crIdx - minGroupIdx) > 2) && ((maxGroupIdx - crIdx) > 2)) {
-                                    System.out.println("deleting: (" 
-                                        + cr.getX()[cr.getKMaxIdx()] + "," 
-                                        + cr.getY()[cr.getKMaxIdx()] + ")  eIdx=" 
-                                        + cr.getIndexWithinCurve());
-                                    cornerRegions.remove(cr);
-                                }
-                            }
-                        }
-                    }
-                    
+         // */
                     int[] c = ImageIOHelper.getNextRGB(iii);
                     for (PairInt p : group) {
                         tmp1SegImg1.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
                     }
+                    
                 }
                 for (int j = 0; j < cornerRegions.size(); ++j) {
                     CornerRegion cr = cornerRegions.get(j);
