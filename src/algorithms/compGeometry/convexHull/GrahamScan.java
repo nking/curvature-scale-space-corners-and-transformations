@@ -32,7 +32,6 @@ import algorithms.util.Stack;
 public class GrahamScan {
 
     protected Stack<PairFloat> points = null;
-    //protected XYStack points = null;
 
     protected float[] xHull = null;
     protected float[] yHull = null;
