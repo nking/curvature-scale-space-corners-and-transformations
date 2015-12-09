@@ -2,7 +2,8 @@ package algorithms.compGeometry.convexHull;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.MultiArrayMergeSort;
-import java.util.Arrays;
+import algorithms.util.PairFloat;
+import algorithms.util.Stack;
 
 /**
  * adapted from 
@@ -30,7 +31,8 @@ import java.util.Arrays;
  */
 public class GrahamScan {
 
-    protected XYStack points = null;
+    protected Stack<PairFloat> points = null;
+    //protected XYStack points = null;
 
     protected float[] xHull = null;
     protected float[] yHull = null;
@@ -60,7 +62,7 @@ public class GrahamScan {
 	    if (x.length < 3) {
 	        throw new IllegalArgumentException("x must have at least 3 items");
         }
-
+        
         /*
          * Q is a stack of candidate points which have been pushed once onto the stack
          * and removed if they are not vertices of the stack.
@@ -98,11 +100,11 @@ public class GrahamScan {
 	        throw new GrahamScanTooFewPointsException("polar angle sorting has reduced the number of points to less than 3");
         }
         
-        points = new XYStack(nPointsUsable);
+        points = new Stack<PairFloat>();
         
-        points.push(x[p0Index], y[p0Index]);
-        points.push(x[1], y[1]);
-        points.push(x[2], y[2]);
+        points.push(new PairFloat(x[p0Index], y[p0Index]));
+        points.push(new PairFloat(x[1], y[1]));
+        points.push(new PairFloat(x[2], y[2]));
         
         // for i = 3 to m
         //    while angle between next-to-top(S), top(S) and p_i makes a nonleft turn
@@ -110,10 +112,12 @@ public class GrahamScan {
         //    push(pi, S)
         for (int i = 3; i < nPointsUsable; i++) {
             
-            float topX = points.peekTopX();
-            float topY = points.peekTopY();
-            float nextToTopX = points.peekNextToTopX();
-            float nextToTopY = points.peekNextToTopY();
+            PairFloat top = points.peek();
+            PairFloat nextToTop = points.peekPopNext();
+            float topX = top.getX();
+            float topY = top.getY();
+            float nextToTopX = nextToTop.getX();
+            float nextToTopY = nextToTop.getY();
             float xi = x[i];
             float yi = y[i];
 
@@ -122,16 +126,18 @@ public class GrahamScan {
             
             while (direction <= 0) {
 
-                points.popWithoutReturn();
+                points.pop();
                 
-                if (points.getN() < 2) {
+                if (points.size() < 2) {
                     break;
                 }
 
-                topX = points.peekTopX();
-                topY = points.peekTopY();
-                nextToTopX = points.peekNextToTopX();
-                nextToTopY = points.peekNextToTopY();
+                top = points.peek();
+                nextToTop = points.peekPopNext();
+                topX = top.getX();
+                topY = top.getY();
+                nextToTopX = nextToTop.getX();
+                nextToTopY = nextToTop.getY();
                 xi = x[i];
                 yi = y[i];
                 
@@ -139,7 +145,7 @@ public class GrahamScan {
                     nextToTopX, nextToTopY, topX, topY, xi, yi);                
             }
 
-            points.push(x[i], y[i]);
+            points.push(new PairFloat(x[i], y[i]));
         }
 
         populateHull();
@@ -159,15 +165,18 @@ public class GrahamScan {
             throw new GrahamScanTooFewPointsException("Points cannot be null.  Use computeHull first.");
         }
         
-        int n = points.getN() + 1;
+        int n = points.size() + 1;
 
         this.xHull = new float[n];
         this.yHull = new float[n];
-        System.arraycopy(points.getX(), 0, xHull, 0, points.getN());
-        System.arraycopy(points.getY(), 0, yHull, 0, points.getN());
-
-        this.xHull[n-1] = points.getX(0);
-        this.yHull[n-1] = points.getY(0);
+        for (int i = 0; i < (n - 1); ++i) {
+            PairFloat p = points.pop();
+            xHull[i] = p.getX();
+            yHull[i] = p.getY();
+        }
+        
+        this.xHull[n-1] = xHull[0];
+        this.yHull[n-1] = yHull[0];
     }
 
     @Override

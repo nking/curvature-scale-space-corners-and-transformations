@@ -50,8 +50,19 @@ public class Stack<T> {
         return list.data;
     }
     
+    public T peekPopNext() {
+        if (list == null || list.next == null) {
+            return null;
+        }
+        return list.next.data;
+    }
+    
     public boolean isEmpty() {
         return (list == null);
+    }
+    
+    public int size() {
+        return n;
     }
     
     protected class Node<S> {

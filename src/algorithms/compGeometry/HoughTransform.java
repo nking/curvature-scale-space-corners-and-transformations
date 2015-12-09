@@ -295,40 +295,4 @@ public class HoughTransform {
         return pixToTRMap;
     }
     
-    /**
-     * builds upon createPixTRMapsFromSorted to further fit each set of points
-     * in outputSortedGroups into contiguous line segments
-     * 
-     * @param sortedTRKeys
-     * @param thetaRadiusPixMap
-     * @param outputSortedGroups
-     * @param thetaTol
-     * @param radiusTol
-     * @return 
-     */
-    public Map<PairInt, PairInt> createPixTRMapsFromSorted2(List<PairInt> sortedTRKeys,
-        Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
-        List<Set<PairInt>> outputSortedGroups, int thetaTol, int radiusTol) {
-        
-        // using a DFS visitor pattern and a tolerance for contiguous neighbor
-        // grouping to aggretate the (theta, radius) solutions of adjacent
-        // points
-        DFSSimilarThetaRadiusGroupsFinder groupFinder = new 
-            DFSSimilarThetaRadiusGroupsFinder();
-        
-        boolean allowGaps = true;
-        
-        // note that thetaRadiusPixMap is altered by this method
-        Map<PairInt, PairInt> pixToTRMap = groupFinder.findConnectedPointGroups(
-            sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
-        
-        List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
-        
-        if (sortedGroups != null) {
-            outputSortedGroups.clear();
-            outputSortedGroups.addAll(sortedGroups);
-        }
-        
-        return pixToTRMap;
-    }
 }

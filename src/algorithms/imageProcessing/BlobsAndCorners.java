@@ -46,16 +46,6 @@ public class BlobsAndCorners  {
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
         
-        if (correctLineArtifacts) {
-            int binFactor = blobPerimeterHelper.getBinFactor();
-            int thetaTol = 2;
-            int radiusTol = 2/binFactor;
-            
-            //use hough transform for lines to remove corners from line artifacts
-           CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
-               indexCornerRegionMap, thetaTol, radiusTol, width, height);
-        }
-        
         int nTotCR = 0;
         
         for (int i = 0; i < perimeterLists.size(); ++i) {
@@ -66,42 +56,13 @@ public class BlobsAndCorners  {
             } else {
                 
                 // detailed check for ordering the perimeters.
+                
                 // TODO: consider corrections to this for perimeter also at higher level
                 // then it's not needed here
+                
                 PairIntArray curve = perimeterLists.get(i);
                 
-                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-                
-                PairIntArray cornerXY = new PairIntArray();
-                
-                for (int ii = 0; ii < list.size(); ++ii) {
-                    CornerRegion cr = list.get(ii);
-                    if (ii == 0 && cr.getIndexWithinCurve() != 0) {
-                        // adding test point for clockwise calculation
-                        int idx = cr.getIndexWithinCurve()/2;
-                        cornerXY.add(curve.getX(idx), curve.getY(idx));
-                    }
-                    cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
-                }
-                
-                if (list.get(list.size() - 1).getIndexWithinCurve() < (curve.getN() - 1)) {
-                    // adding test point for clockwise calculation
-                    int idx = curve.getN() - 1;
-                    cornerXY.add(curve.getX(idx), curve.getY(idx));
-                }
-                boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);
-                if (isCW) {
-                    int n = list.size();
-                    if (n > 1) {
-                        int end = n >> 1;
-                        for (int ii = 0; ii < end; ii++) {
-                            int idx2 = n - ii - 1;
-                            CornerRegion swap = list.get(ii);
-                            list.set(ii, list.get(idx2));
-                            list.set(idx2, swap);
-                        }
-                    }
-                }
+                orderCornersCCW(curve, list);
                 
                 nTotCR += list.size();
                 
@@ -109,6 +70,16 @@ public class BlobsAndCorners  {
             }
         }
         
+        if (correctLineArtifacts) {
+            int binFactor = blobPerimeterHelper.getBinFactor();
+            int thetaTol = 2;
+            int radiusTol = 20/binFactor;
+            
+            //use hough transform for lines to remove corners from line artifacts
+           CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
+               cornerRegionLists, thetaTol, radiusTol, width, height);
+        }
+    
         if (blobPerimeterHelper.isInDebugMode()) {
             MiscDebug.writeEdgesAndCorners(perimeterLists, cornerRegionLists,
                 1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
@@ -119,6 +90,43 @@ public class BlobsAndCorners  {
         assert(perimeterLists.size() == cornerRegionLists.size());
         
         return cornerRegionLists;
+    }
+    
+    public static void orderCornersCCW(PairIntArray curve, List<CornerRegion>
+        list) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                
+        PairIntArray tmpCornerChk = new PairIntArray();
+
+        for (int ii = 0; ii < list.size(); ++ii) {
+            CornerRegion cr = list.get(ii);
+            if (ii == 0 && cr.getIndexWithinCurve() != 0) {
+                // adding test point for clockwise calculation
+                int idx = cr.getIndexWithinCurve()/2;
+                tmpCornerChk.add(curve.getX(idx), curve.getY(idx));
+            }
+            tmpCornerChk.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);
+        }
+
+        if (list.get(list.size() - 1).getIndexWithinCurve() < (curve.getN() - 1)) {
+            // adding test point for clockwise calculation
+            int idx = curve.getN() - 1;
+            tmpCornerChk.add(curve.getX(idx), curve.getY(idx));
+        }
+        boolean isCW = curveHelper.curveIsOrderedClockwise(tmpCornerChk);
+        if (isCW) {
+            int n = list.size();
+            if (n > 1) {
+                int end = n >> 1;
+                for (int ii = 0; ii < end; ii++) {
+                    int idx2 = n - ii - 1;
+                    CornerRegion swap = list.get(ii);
+                    list.set(ii, list.get(idx2));
+                    list.set(idx2, swap);
+                }
+            }
+        }
     }
 
     /**
@@ -162,6 +170,7 @@ public class BlobsAndCorners  {
         cornerMaker.increaseFactorForCurvatureMinimum(
             factorIncreaseForCurvatureMinimum);
         
+        // an empty map to allow re-use of method which uses junctions if given
         Map<Integer, Set<PairIntWithIndex>> noJunctions = 
             new HashMap<Integer, Set<PairIntWithIndex>>();
         

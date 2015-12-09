@@ -57,6 +57,21 @@ public class Misc {
 
         return out;
     }
+    
+    public static Map<PairInt, Integer> makePointIndexMap(PairIntArray edge) {
+        
+        if (edge == null) {
+            throw new IllegalArgumentException("edge cannot be null");
+        }
+        
+        Map<PairInt, Integer> map = new HashMap<PairInt, Integer>();
+        
+        for (int i = 0; i < edge.getN(); ++i) {
+            map.put(new PairInt(edge.getX(i), edge.getY(i)), Integer.valueOf(i));
+        }
+        
+        return map;
+    }
 
     /**
      * get the values of Math.sin(theta) for theta from 0 to Math.PI in 1 degree

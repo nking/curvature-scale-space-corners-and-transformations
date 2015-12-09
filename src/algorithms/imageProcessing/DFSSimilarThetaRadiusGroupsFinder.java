@@ -337,6 +337,11 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
      * so will be skipped for the closest pair search.
      * </pre>
      * This should be invoked after the member groups have been pruned.
+     * 
+     * Note that if an image line has high curvature artifacts in it,
+     * the merge might not be able within tolerances to join the segments
+     * currently.  A method afterwards can be used to look at overlapping
+     * edge indexes of the bounds of each group to examine a further merge.
      * @param pixToTRMap
      * @param thetaTol
      * @param radiusTol 
@@ -445,23 +450,18 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                 if (nU >= nV) {
                     // merge v into u
                     group.addAll(group2);
-                    for (PairInt p : group2) {
-                        pointToGroupMap.put(p, Integer.valueOf(i));
-                    }
                     group2.clear();
                     stack.add(Integer.valueOf(i));
                 } else {
                     // merge u into v
                     group2.addAll(group);
-                    for (PairInt p : group) {
-                        pointToGroupMap.put(p, Integer.valueOf(j));
-                    }
                     group.clear();
                     stack.add(Integer.valueOf(j));
                 }
                 visited.clear();
             }
         }
+        
     }
 
     private void pruneSortedGroups() {
