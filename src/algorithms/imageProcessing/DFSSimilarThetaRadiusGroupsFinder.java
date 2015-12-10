@@ -349,7 +349,7 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
     private void mergeIfGapWithinTolerance(Map<PairInt, PairInt> pixToTRMap, 
         int thetaTol, int radiusTol) {
         
-        if (sortedGroups == null) {
+        if (sortedGroups == null || sortedGroups.isEmpty()) {
             return;
         }
         

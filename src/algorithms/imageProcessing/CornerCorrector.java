@@ -22,6 +22,11 @@ public class CornerCorrector {
      * to line artifacts.  NOTE that cornerRegionLists needs to already be
      * ordered counter clockwise (as is done in BlobsAndCorners,
      * see BlobsAndCorners.orderCornersCCW(curve, cornerRegions) if needed).
+     * 
+     * NOTE also: should alter it to accept a junction set of corners that
+     * should not be deleted.  The set can be empty (as it would be for
+     * a edges from only blobs).
+     * 
      * @param edgeLists
      * @param cornerRegionLists
      * @param thetaTolerance
@@ -34,10 +39,6 @@ public class CornerCorrector {
         int thetaTolerance, int radiusTolerance,
         int imageWidth, int imageHeight) {
         
-        if (true) {
-            throw new UnsupportedOperationException("not yet implemented");
-        }
-
         //TODO: sizeLimit may need to scale by binFactor, so be passed in as arg,
         // but should probably have a minimum size that could include
         // 3 corners, one of which would be looked at for removal

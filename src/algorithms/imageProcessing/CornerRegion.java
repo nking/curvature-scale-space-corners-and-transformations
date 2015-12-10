@@ -196,17 +196,25 @@ public class CornerRegion {
         if (x.length == 0) {
             throw new IllegalStateException("this is an empty instance");
         }
+        
+        //TODO: edit to use MiscellaneousCurveHelper.calculateAngleTangentToMidpoint
+        // and use the ref0Idx and refIIdx points along with kMaxIdx
+        // NOTE that the corner regions have to be sorted CCW
+        // for consistent calculation of angle direction
+        
+        int ref0Idx = kMaxIdx - 1;
+        int ref1Idx = kMaxIdx + 1;
 
-        int dx0 = x[kMaxIdx] - x[kMaxIdx - 1];
-        int dy0 = y[kMaxIdx] - y[kMaxIdx - 1];
+        int dx0 = x[kMaxIdx] - x[ref0Idx];
+        int dy0 = y[kMaxIdx] - y[ref0Idx];
 
         double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);
         if (theta0 != 0) {
             theta0 = (2.*Math.PI) - theta0;
         }
 
-        int dx1 = x[kMaxIdx + 1] - x[kMaxIdx];
-        int dy1 = y[kMaxIdx + 1] - y[kMaxIdx];
+        int dx1 = x[ref1Idx] - x[kMaxIdx];
+        int dy1 = y[ref1Idx] - y[kMaxIdx];
 
         double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);
         if (theta1 != 0) {
@@ -220,21 +228,20 @@ public class CornerRegion {
         */
 
         PairIntArray xy = new PairIntArray(3);
-        xy.add(x[kMaxIdx - 1], y[kMaxIdx - 1]);
+        xy.add(x[ref0Idx], y[ref0Idx]);
         xy.add(x[kMaxIdx], y[kMaxIdx]);
-        xy.add(x[kMaxIdx + 1], y[kMaxIdx + 1]);
+        xy.add(x[ref1Idx], y[ref1Idx]);
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         double[] centroidXY = curveHelper.calculateXYCentroids(xy);
 
+        // determine the centroid from neighboring points if gradients are same
         if ((dx1 == dx0) && (dy1 == dy0)) {
 
             // this is a straight line so far between points at kMaxIdx and
             // either side of it
 
-            int ref0Idx = kMaxIdx - 1;
-            int ref1Idx = kMaxIdx + 1;
             ref0Idx--;
             ref1Idx++;
 
@@ -267,41 +274,21 @@ public class CornerRegion {
                 }
 
                 if ((ref0Idx < 0) && (ref1Idx > (x.length - 1))) {
+                    //NOTE: can consider during construction of CornerRegion 
+                    // that if the curve is closed, this instance can keep
+                    // a centroid to use for this keep to make orientation
+                    // angle point away from the centroid unambiguously
                     throw new CornerRegionDegneracyException(
                     "need more neighboring points because the slopes are all the same");
                 }
             }
         }
 
-        /*
-        The angle vectors for theta0 and theta1 should point away from the
-        centroid.
-        */
-
-        //TODO: not sure will keep this weighting.  needs testing.
-        // weight by the respective adjacent curvature strengths
-        double k0 = k[kMaxIdx - 1];
-        double k1 = k[kMaxIdx + 1];
-        double kTot = k0 + k1;
-
-        /*
-        // determine both angles separately, then calc weighted average:
-        double perp0 = calculatePerpendicularAngleAwayFromCentroid(theta0,
-            x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx], y[kMaxIdx], centroidXY);
-
-        double perp1 = calculatePerpendicularAngleAwayFromCentroid(theta1,
-            x[kMaxIdx], y[kMaxIdx], x[kMaxIdx + 1], y[kMaxIdx + 1], centroidXY);
-
-        double weighted = (float)(((k0/kTot)*perp0) + ((k1/kTot)*perp1));
-        */
-
-        /*
         // determine weighted average theta first, then calculate the perpendicular
         // angle pointing out from the edge at the maximum of curvature:
         
-        /*needs to account for averaging when one angle is near 360 and the
-        other is 0 or greater
-        */
+        //needs to account for averaging when one angle is near 360 and the
+        //other is 0 or greater
 
         double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);
                 

@@ -1,27 +1,12 @@
 package algorithms.imageProcessing;
 
-import algorithms.CountingSort;
-import algorithms.MultiArrayMergeSort;
-import algorithms.misc.Histogram;
-import algorithms.util.LinearRegression;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import java.awt.Color;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import java.util.logging.Logger;
-import javax.imageio.ImageIO;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -37,7 +22,7 @@ public class ImageSegmentationTest extends TestCase {
         super(testName);
     }
     
-    public void testNextSegmentation() throws Exception {
+    public void estNextSegmentation() throws Exception {
         
         String fileName1, fileName2;
 
@@ -96,6 +81,80 @@ public class ImageSegmentationTest extends TestCase {
             String outPath2 = bin + "/seg_2_" + fileNameRoot +".png";
             ImageIOHelper.writeOutputImage(outPath1, segImg1);
             ImageIOHelper.writeOutputImage(outPath2, segImg2);
+            
+            int z0 = 1;
+        }
+    }
+    
+    public void testBlobExtraction() throws Exception {
+        
+        String fileName1, fileName2;
+
+        for (int i = 0; i < 6; ++i) {
+            //fileName1 = "valve_gaussian.png";
+            //fileName2 = "valve_gaussian.png";
+            switch(i) {
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "campus_010.jpg";
+                    fileName2 = "campus_011.jpg";
+                    break;
+                }
+                case 4: {
+                    fileName1 = "merton_college_I_001.jpg";
+                    fileName2 = "merton_college_I_002.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
+                    break;
+                }
+            }
+            
+            System.out.println("fileName1=" + fileName1);
+          
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+            int idx = fileName1.lastIndexOf(".");
+            String fileNameRoot1 = fileName1.substring(0, idx);
+            idx = fileName2.lastIndexOf(".");
+            String fileNameRoot2 = fileName2.substring(0, idx);
+
+            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+            ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+            
+            int binnedImageMaxDimension = 512;
+            
+            SegmentationType type = SegmentationType.GREYSCALE_HIST;
+            
+            BlobPerimeterHelper imgHelper1 = new BlobPerimeterHelper(img1, fileNameRoot1);
+            imgHelper1.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            imgHelper1.applySegmentation(type, true);
+            BlobCornerHelper blobCornerHelper1 = new BlobCornerHelper(imgHelper1);
+            List<List<CornerRegion>> cornerRegions1 = 
+                blobCornerHelper1.generatePerimeterCorners(type, true);
+            
+            BlobPerimeterHelper imgHelper2 = new BlobPerimeterHelper(img2, fileNameRoot2);
+            imgHelper2.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            imgHelper2.applySegmentation(type, true);
+            BlobCornerHelper blobCornerHelper2 = new BlobCornerHelper(imgHelper2);
+            List<List<CornerRegion>> cornerRegions2 = 
+                blobCornerHelper2.generatePerimeterCorners(type, true);
             
             int z0 = 1;
         }

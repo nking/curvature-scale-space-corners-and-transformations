@@ -2,7 +2,6 @@ package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;

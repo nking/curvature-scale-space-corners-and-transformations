@@ -22,7 +22,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * class for extracting blobs and their perimeters.
+ * 
  * @author nichole
  */
 public class BlobsAndPerimeters {
@@ -76,7 +77,7 @@ public class BlobsAndPerimeters {
         doesn't currenly know resolution, so this section may need
         to be revised with more testing.
         */
-               
+        
         List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
         
@@ -503,6 +504,7 @@ if (imgHelper.isInDebugMode()) {
         if (use8Neighbors) {
             finder.setToUse8Neighbors();
         }
+//TODO: temporary change to plot the distribution of blob sizes for test images:        
         finder.setMinimumNumberInCluster(1);//smallestGroupLimit);
         finder.findGroups(pixelValue);
             
@@ -533,14 +535,22 @@ if (imgHelper.isInDebugMode()) {
             List<Integer> sizes = new ArrayList<Integer>();
             for (int i = 0; i < nGroups; ++i) {
                 PairIntArray xy = finder.getXY(i);
-                sizes.add(Integer.valueOf(xy.getN()));
+                Set<PairInt> points = Misc.convert(xy);
+                if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+                    points, segImg.getWidth(), segImg.getHeight())) {
+                    sizes.add(Integer.valueOf(xy.getN()));
+                }
             }
             HistogramHolder hist = Histogram.createSimpleHistogram(sizes);
             if (hist != null) {
-                String label = "blbSzs " + Integer.toString(smallestGroupLimit) +
-                    ":" + Integer.toString(largestGroupLimit);
                 try {
-                    hist.plotHistogram(0, 25000, label, debugTag);
+                    int yMaxIdx = MiscMath.findLastZeroIndex(hist);
+                    float xMax = (yMaxIdx == -1) ? 25000 : hist.getXHist()[yMaxIdx];
+                    xMax = (float)Math.ceil(xMax);
+                    String label = debugTag + " (0," + xMax + ") " 
+                        + " def=(" + smallestGroupLimit + "," + largestGroupLimit + ")"
+                        + " pixV=" + pixelValue;                    
+                    hist.plotHistogram(0, xMax, label, debugTag + "_" + MiscDebug.getCurrentTimeFormatted());
                 } catch (IOException ex) {
                     Logger.getLogger(BlobsAndPerimeters.class.getName()).log(
                         Level.SEVERE, null, ex);
