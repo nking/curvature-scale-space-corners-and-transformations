@@ -10,6 +10,10 @@
        to restrict the blob extraction to either value 0 or non-zero depending
        on the histogram.  if the segmentation were the wavelet transform, the
        comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
+       -- could be a problem for objects in sillhouette though, but
+          those image objects need to use something other than feature matching (see below...curature...)
+          because the features have no intensity in them... so extracting
+          only value 0 or non-0 blobs for wavelet based segmentation still seems safe.
 
     -- consider making a corner matcher 3 that sorts the corners and only
        keeps top 4 strongest corners, then feeds them to corner matcher 2.
