@@ -58,6 +58,49 @@ public class HistogramHolder {
         return frac;
     }
 
+    /**
+     * integrate the area of the histogram and the area of the restricted
+     * range of the histogram (from x0 to x1, inclusive) and then return
+     * the value of the restricted range over the total.
+     * @param x0
+     * @param x1
+     * @return 
+     */
+    public float getHistAreaFractionOfTotal(float x0, float x1) {
+        
+        if (yHistFloat == null) {
+            return 0;
+        }
+        
+        float sumTot = 0;
+        float sumR = 0;
+        
+        // trapezoidal rule for area under the curve
+        
+        for (int i = 0; i < (xHist.length - 1); ++i) {
+            
+            float yTerm = yHistFloat[i + 1] + yHistFloat[i];
+            float xLen = xHist[i + 1] - xHist[i];
+            if (xLen < 0) {
+                xLen *= -1;
+            }
+            
+            float v = (yTerm * xLen);
+            
+            float x = xHist[i];
+            
+            sumTot += v;
+            
+            if ((x >= x0) && (x <= x1)) {
+                sumR += v;
+            }
+        }
+        
+        float frac = sumR / sumTot;
+        
+        return frac;
+    }
+
     public int calculateHalfYMaxIndexPastYMax() {
 
         if (yHistFloat == null) {

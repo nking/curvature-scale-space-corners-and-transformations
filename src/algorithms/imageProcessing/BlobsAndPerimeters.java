@@ -72,34 +72,50 @@ public class BlobsAndPerimeters {
                 
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
         
-        /*
-        TODO: for low resolution, should use defaultExtractBlobs. this code
-        doesn't currenly know resolution, so this section may need
-        to be revised with more testing.
-        */
+        // TODO: need to revise.
+        // extracting a default range of blob sizes while storing the full
+        // ranges present in histograms.
+        // The histograms are used to determine if a larger range of sizes
+        // should be used instead.
+        // The size ranges should probably be completely determined by the
+        // histograms and a default factor for the range, but for now,
+        // using fixed ranges for well behaved test images to improve all
+        // of the methods related to feature matching.
         
         List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
         
+        List<HistogramHolder> histograms = new ArrayList<HistogramHolder>();
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
             
             Integer pixValue = entry.getKey();
             
-            defaultExtractBlobs(segImg, pixValue.intValue(), 
+            HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(), 
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
                 outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
                 imgHelper.debugTag);
+            
+            histograms.add(hist);
         }
         
-        int nExcl = outputExcludedBlobs.size();
-        int nIncl = outputBlobs.size();
+        // calculate the total fraction of the areas of the histograms excluded
+        // by the default ranges.
+        float inclFrac = calcIncludedFraction(histograms, smallestGroupLimit, 
+            largestGroupLimit);
+
+        //System.out.println(imgHelper.debugTag + " inclFrac=" + inclFrac);
+
+        boolean redo = useBinned && (inclFrac < 1.0f);
         
-        boolean redo = useBinned && 
-            ((nIncl == 0) || ((nExcl >= 10) && (nExcl > nIncl)));
+//TODO: consider if know the segmentation produces a binary image, whether
+// to restrict the blob extraction to either value 0 or non-zero depending
+// on the histogram.  if the segmentation were the wavelet transform, the
+// comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
         
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
         if (redo) {
+                        
             smallestGroupLimit = imgHelper.getSmallestGroupLimit();
             largestGroupLimit = imgHelper.getLargestGroupLimit();
             List<Set<PairInt>> tmpOutputBlobs = new ArrayList<Set<PairInt>>();
@@ -113,8 +129,7 @@ public class BlobsAndPerimeters {
                     smallestGroupLimit, largestGroupLimit, tmpOutputBlobs,
                     segImg.getWidth(), segImg.getHeight());
             }
-            //TODO: may need to determine group size limits more robustly           
-            outputBlobs.clear();
+            //outputBlobs.clear();
             outputBlobs.addAll(tmpOutputBlobs);
         }
         
@@ -492,7 +507,7 @@ if (imgHelper.isInDebugMode()) {
      * to blobs not on the image boundaries.
      * @param debugTag
      */
-    private static void defaultExtractBlobs(GreyscaleImage segImg, 
+    private static HistogramHolder defaultExtractBlobs(GreyscaleImage segImg, 
         int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
         boolean use8Neighbors, List<Set<PairInt>> outputBlobs, 
         List<Set<PairInt>> outputExcludedBlobs,
@@ -504,8 +519,7 @@ if (imgHelper.isInDebugMode()) {
         if (use8Neighbors) {
             finder.setToUse8Neighbors();
         }
-//TODO: temporary change to plot the distribution of blob sizes for test images:        
-        finder.setMinimumNumberInCluster(1);//smallestGroupLimit);
+        finder.setMinimumNumberInCluster(smallestGroupLimit);
         finder.findGroups(pixelValue);
             
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -530,33 +544,20 @@ if (imgHelper.isInDebugMode()) {
                 }
             }
         }
+        
+        // build histogram to help edit the size ranges that will be kept.
+        List<Integer> sizes = new ArrayList<Integer>();
+        for (int i = 0; i < nGroups; ++i) {
+            PairIntArray xy = finder.getXY(i);
+            Set<PairInt> points = Misc.convert(xy);
+            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+                points, segImg.getWidth(), segImg.getHeight())) {
+                sizes.add(Integer.valueOf(xy.getN()));
+            }
+        }
+        HistogramHolder hist = Histogram.createSimpleHistogram(sizes);
                 
-        if (!debugTag.equals("")) {
-            List<Integer> sizes = new ArrayList<Integer>();
-            for (int i = 0; i < nGroups; ++i) {
-                PairIntArray xy = finder.getXY(i);
-                Set<PairInt> points = Misc.convert(xy);
-                if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
-                    points, segImg.getWidth(), segImg.getHeight())) {
-                    sizes.add(Integer.valueOf(xy.getN()));
-                }
-            }
-            HistogramHolder hist = Histogram.createSimpleHistogram(sizes);
-            if (hist != null) {
-                try {
-                    int yMaxIdx = MiscMath.findLastZeroIndex(hist);
-                    float xMax = (yMaxIdx == -1) ? 25000 : hist.getXHist()[yMaxIdx];
-                    xMax = (float)Math.ceil(xMax);
-                    String label = debugTag + " (0," + xMax + ") " 
-                        + " def=(" + smallestGroupLimit + "," + largestGroupLimit + ")"
-                        + " pixV=" + pixelValue;                    
-                    hist.plotHistogram(0, xMax, label, debugTag + "_" + MiscDebug.getCurrentTimeFormatted());
-                } catch (IOException ex) {
-                    Logger.getLogger(BlobsAndPerimeters.class.getName()).log(
-                        Level.SEVERE, null, ex);
-                }
-            }
-        }        
+        return hist;
     }
 
     /**
@@ -601,15 +602,34 @@ if (imgHelper.isInDebugMode()) {
                 continue;
             }
 
-            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, points, 
+            // grow by '1' pixel to help maintain scale
+            growRadius(blob2, pointsB4);
+                
+            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, blob2, 
                 imageWidth, imageHeight)) {
-
-                // grow by '1' pixel to help maintain scale
-                growRadius(blob2, pointsB4);
                 
                 outputBlobs.add(blob2);
             }
         }
+    }
+
+    private static float calcIncludedFraction(List<HistogramHolder> histograms, 
+        int smallestGroupLimit, int largestGroupLimit) {
+        
+        int n = histograms.size();
+                
+        float sumFrac = 0;
+        int nFrac = 0;
+        for (int i = 0; i < n; ++i) {
+            HistogramHolder hist = histograms.get(i);
+            if (hist != null) {
+                sumFrac += hist.getHistAreaFractionOfTotal(
+                    smallestGroupLimit, largestGroupLimit);
+                nFrac++;
+            }
+        }
+        
+        return sumFrac/(float)nFrac;
     }
 
 }

@@ -346,10 +346,36 @@ public class MiscDebug {
             
             ImageIOHelper.addAlternatingColorCurvesToImage2(edges, img2, 0);
 
-            int clr = 0;
             int w = img.getWidth();
             int h = img.getHeight();
+            
+            if (nExtraForDot > 0) {
+                // draw a larger white square below it to help visibility
+                int nE = nExtraForDot + 1;
+                for (int i = 0; i < corners.size(); i++) {
+                    List<CornerRegion> cornerRegions = corners.get(i);
+                    for (int ii = 0; ii < cornerRegions.size(); ii++) {
+                        CornerRegion cr = cornerRegions.get(ii);
+                        int col = cr.getX()[cr.getKMaxIdx()];
+                        int row = cr.getY()[cr.getKMaxIdx()];
+                        for (int dx = (-1 * nE); dx < (nE + 1); dx++) {
+                            int xx = col + dx;
+                            if ((xx < 0) || (xx > (w - 1))) {
+                                continue;
+                            }
+                            for (int dy = (-1 * nE); dy < (nE + 1); ++dy) {
+                                int yy = row + dy;
+                                if ((yy < 0) || (yy > (h - 1))) {
+                                    continue;
+                                }
+                                img2.setRGB(xx, yy, 255, 255, 255);
+                            }
+                        }                
+                    }
+                }
+            }
 
+            int clr = 0;
             for (int i = 0; i < corners.size(); i++) {
 
                 int c = getNextColorRGB(clr);
