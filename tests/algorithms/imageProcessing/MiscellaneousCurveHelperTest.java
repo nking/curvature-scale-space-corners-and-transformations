@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -34,6 +35,85 @@ public class MiscellaneousCurveHelperTest extends TestCase {
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
+    }
+    
+    public void test0() throws Exception {
+        
+        /*
+                  90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+           225    |   315
+                 270
+        */
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (int i = 0; i < 6; ++i) {
+            
+            int[] x = null;
+            int[] y = null;
+            double ansDeg = 0;
+            double ansTangentDeg = 0;
+            
+            if (i == 0) {
+                x = new int[]{0, 1, 2};
+                y = new int[]{0, 0, -1};
+                ansDeg = 337.5;
+                ansTangentDeg = ansDeg - 90;
+            } else if (i == 1) {
+                x = new int[]{0, 1, 1};
+                y = new int[]{0, 0, -1};
+                ansDeg = 360 - 45;
+                ansTangentDeg = ansDeg - 90;
+            } else if (i == 2) {
+                x = new int[]{0, 0, 0};
+                y = new int[]{1, 0, -1};
+                ansDeg = 270;
+                ansTangentDeg = ansDeg - 90;
+            } else if (i == 3) {
+                x = new int[]{0, 0, -1};
+                y = new int[]{1, 0, 0};
+                ansDeg = 225;
+                ansTangentDeg = ansDeg - 90;
+            } else if (i == 4) {
+                x = new int[]{1, 0, -1};
+                y = new int[]{0, 0, 0};
+                ansDeg = 180;
+                ansTangentDeg = ansDeg - 90;
+            } else if (i == 5) {
+                x = new int[]{1, 0, 0};
+                y = new int[]{0, 0, 1};
+                ansDeg = 135;
+                ansTangentDeg = ansDeg - 90;
+            }
+            
+            /*
+                      90
+               135    |    45
+                      |
+            180 ---------------  0
+                      |
+               225    |   315
+                     270
+            */
+            
+            double theta = curveHelper.calculateAngleAtMidpoint(
+                x[0], y[0], x[1], y[1], x[2], y[2]);
+            
+            double thetaDeg = theta * 180./Math.PI;
+            
+            double perp = curveHelper.calculateAngleTangentToMidpoint(
+                x[0], y[0], x[1], y[1], x[2], y[2]); 
+            
+            double perpDeg = perp * 180./Math.PI;
+            
+            assertTrue(Math.abs(thetaDeg - ansDeg) < 5); 
+            
+            assertTrue(Math.abs(perpDeg - ansTangentDeg) < 5); 
+        }
     }
     
     public void testCurveIsOrderedClockwise() throws Exception {
@@ -1024,8 +1104,21 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         for (int i = 3; i < 8; ++i) {
             points.add(new PairInt(i, i));
         }
-                        
+  
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double d = AngleUtil.getAngleAverageInDegrees(180, 315);
+                
+        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(
+            d*Math.PI/180., 
+            0, 0, 
+            1, 0, new double[]{1, -1});
+        
+        int z = 1;
+        
+//might change this to use corner region methods but improve those
+                        
+        
         for (int i = 4; i < 7; ++i) {
             double[] gradXY = curveHelper.calculateGradientsForPointOnEdge(i, i, points);
             double t = Math.atan2(gradXY[1], gradXY[0]);
@@ -1034,7 +1127,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
             //assertTrue(Math.abs(gradXY[0] - 1) < 0.1);
             //assertTrue(Math.abs(gradXY[1] - 1) < 0.1);
         }
-        
+
         int row = 5;
         points = new HashSet<PairInt>();
         for (int i = 3; i < 8; ++i) {

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.AverageUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -2506,6 +2507,79 @@ public class MiscellaneousCurveHelper {
         }
 
         return perp;
+    }
+    
+    /**
+     * given 3 counter-clockwise ordered points on a curve, calculate the angle 
+     * along the curve at the middle point, its direction is from p0 to p1.
+     * <pre>
+     * For example:
+     * 
+     * 135 degrees
+     *       .---
+     *       | .
+     *           p2   
+     *             p1
+     *                p0
+     * </pre>
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
+    public double calculateAngleAtMidpoint(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
+        /*
+        given the points (x1, y1) (x2, y2) and (x3, y3), 
+        calculates the angle at the midpoint (x2, y2) for the path along
+        the points.
+        */
+        
+        double theta1 = AngleUtil.polarAngleCCW(x2 - x1, y2 - y1);
+        
+        double theta2 = AngleUtil.polarAngleCCW(x3 - x2, y3 - y2);
+        
+        double theta = AngleUtil.getAngleAverageInRadians(theta1, theta2);
+                
+        return theta;
+    }
+    
+    /**
+     * given 3 counter-clockwise ordered points on a curve, calculate the angle 
+     * tangent to the curve at the middle point - its direction follows
+     * the right hand rule.
+     * <pre>
+     * For example:
+     *                  45 degrees
+     *               __
+     *               . |
+     *       p2    .
+     *          p1
+     *             p0
+     * </pre>
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
+    public double calculateAngleTangentToMidpoint(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
+        double theta = calculateAngleAtMidpoint(x1, y1, x2, y2, x3, y3);
+               
+        double thetaMinus90 = theta - Math.PI/2.;
+        if (thetaMinus90 < 0) {
+            thetaMinus90 += (2.*Math.PI);
+        }
+        
+        return thetaMinus90;
     }
 
     /**

@@ -41,24 +41,29 @@ public class CornerCorrector {
         //TODO: sizeLimit may need to scale by binFactor, so be passed in as arg,
         // but should probably have a minimum size that could include
         // 3 corners, one of which would be looked at for removal
-        int sizeLimit = 9;
+        int sizeLimit = 15;
 
         HoughTransform ht = new HoughTransform();
 
-        for (int i = 0; i < edgeLists.size(); ++i) {
+        for (int ii = 0; ii < edgeLists.size(); ++ii) {
 
-            List<CornerRegion> cornerRegions = cornerRegionLists.get(i);
+            //NOTE: in testable method for this, should allow ability to
+            // pass in junctions and not delete corners that are in
+            // junctions.
+            // For these blob perimeters, there are not junctions.
+
+            PairIntArray edge = edgeLists.get(ii);
+
+            List<CornerRegion> cornerRegions = cornerRegionLists.get(ii);
 
             if (cornerRegions.size() < 2) {
                 continue;
             }
 
-            PairIntArray edge = edgeLists.get(i);
-
             Map<PairInt, Integer> pointEdgeIndexMap = Misc.makePointIndexMap(edge);
 
             Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap =
-                ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
+               ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
 
             List<PairInt> outSortedKeys = ht.sortByVotes(outputPolarCoordsPixMap);
 
@@ -71,7 +76,7 @@ public class CornerCorrector {
             Map<PairInt, PairInt> pixToTRMap = ht.createPixTRMapsFromSorted(
                 outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
                 thetaTolerance, radiusTolerance);
-
+               
             for (int iii = 0; iii < outputSortedGroups.size(); ++iii) {
 
                 Set<PairInt> group = outputSortedGroups.get(iii);
@@ -80,6 +85,20 @@ public class CornerCorrector {
                     break;
                 }
 
+                // quick look at line's theta.
+                // the artifacts are sometimes present in lines near
+                // vertical or near horizontal, so skipping if not those                    
+                PairInt aPoint = group.iterator().next();
+                PairInt tr = pixToTRMap.get(aPoint);
+                int vhLimit = 3;
+                if ((tr.getX() > vhLimit) && (Math.abs(tr.getX() - 90) > vhLimit)
+                    && (Math.abs(tr.getX() - 180) > vhLimit)
+                    && (Math.abs(tr.getX() - 270) > vhLimit)
+                    && (Math.abs(tr.getX() - 360) > vhLimit)
+                    ) {
+                    continue;
+                }
+                                
                 int minGroupIdx = Integer.MAX_VALUE;
                 int maxGroupIdx = Integer.MIN_VALUE;
                 for (PairInt p : group) {
@@ -93,10 +112,10 @@ public class CornerCorrector {
                 }
                 boolean wrapAround = (minGroupIdx == 0) &&
                     ((maxGroupIdx - minGroupIdx) > (group.size() + 5));
-
+          
                 if (wrapAround) {
                     // determine points of furthest pair and then
-                    // check every corner to see if it is in between and
+                    // check every corner to see if it is in between and 
                     // larger than 2 pixels from furthest points
                     FurthestPair fp = new FurthestPair();
                     PairInt[] furthest = fp.find(group);
@@ -125,23 +144,7 @@ public class CornerCorrector {
                     continue;
                 }
 
-                /*int tx0 = (minGroupIdx > -1) ? edge.getX(minGroupIdx) : -1;
-                int ty0 = (minGroupIdx > -1) ? edge.getY(minGroupIdx) : -1;
-                int tx1 = (maxGroupIdx > -1) ? edge.getX(maxGroupIdx) : -1;
-                int ty1 = (maxGroupIdx > -1) ? edge.getY(maxGroupIdx) : -1;
-                String grpStr = String.format(
-                    "  line segment %d:  (%3d,%3d) to (%3d,%3d) eIdxes: %d to %d,  %d pts",
-                    iii, tx0, ty0, tx1, ty1, minGroupIdx, maxGroupIdx, group.size());
-                System.out.println(grpStr);
-                */
-
                 //the cornerRegions are ordered counter clock wise
-                    
-                /*
-                delete corner regions within range where the delta from
-                    minLineIdx and firstEIdx is greater than 2 or 3
-                    and same for lastEIdx and maxLineIdx.
-                */
 
                 // NOTE: if junctions were present, would want to skip
                 // deleting a cornerRegion that was in a junction
@@ -153,13 +156,9 @@ public class CornerCorrector {
                     int crIdx = cr.getIndexWithinCurve();
                     if ((crIdx > (minGroupIdx + 2)) &&
                         (crIdx < (maxGroupIdx - 2))) {
-                        /*System.out.println("deleting: (" 
-                            + cr.getX()[cr.getKMaxIdx()] + "," 
-                            + cr.getY()[cr.getKMaxIdx()] + ")  eIdx=" 
-                            + cr.getIndexWithinCurve());*/
                         cornerRegions.remove(cr);
                     }
-                }
+                }                    
             }
         }
     }

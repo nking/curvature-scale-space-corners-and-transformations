@@ -312,4 +312,44 @@ public class Misc {
 
         return map;
     }
+
+    public static Map<Integer, Double> getCosineThetaMapForTwoPI() {
+        
+        Map<Integer, Double> map = new HashMap<Integer, Double>();
+
+        double d = 1. * Math.PI/180;
+
+        double t = 0;
+
+        for (int i = 0; i < 360; ++i) {
+
+            double c = Math.cos(t);
+
+            map.put(Integer.valueOf(i), Double.valueOf(c));
+
+            t += d;
+        }
+
+        return map;
+    }
+
+    public static Map<Integer, Double> getSineThetaMapForTwoPI() {
+        
+        Map<Integer, Double> map = new HashMap<Integer, Double>();
+        
+        double d = 1. * Math.PI/180;
+
+        double t = 0;
+
+        for (int i = 0; i < 360; ++i) {
+
+            double c = Math.sin(t);
+
+            map.put(Integer.valueOf(i), Double.valueOf(c));
+
+            t += d;
+        }
+
+        return map;
+    }
 }

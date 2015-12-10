@@ -7,6 +7,7 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,123 +34,17 @@ public class HoughTransform {
     }
 
     /**
-     * given an image of points, computes the Hough
-     * transform of lines and returns results as an associate array with 
-     * key = pair with x = polar theta in degrees and y = distance from
-     * the origin in pixels; value = number of transformation points having
-     * the key.  this method uses an approximation of the gradient
-     * from the immediate neighbors, so the input should only be an image
-     * with edges in it (single pixel width curves).  Note that the gradient
-     * calc cannot tell the difference between above and below the y=0, so
-     * all results are presented in the reference frame of 0 to 180.
-     * 
-     * @param img image with content being single pixel width curves.
-     * @return thetaRadiusPixCoords mappings
-     */
-    public Map<PairInt, Set<PairInt>> calculateLineGivenEdges(GreyscaleImage img) {
-
-        int w = img.getWidth();
-        int h = img.getHeight();
-                
-        // theta is 0 to 180
-        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForPI();
-        Map<Integer, Double> sineMap = Misc.getSineThetaMapForPI();
-
-        /*
-        signs of results of cos and sign are same as signs for gx and gy, respectively
-            gx=1 gy=0 d=0  cos(d)=1.000000, sin(d)=0.000000
-            gx=1 gy=1 d=45  cos(d)=0.707107, sin(d)=0.707107
-            gx=0 gy=1 d=90  cos(d)=0.000000, sin(d)=1.000000
-            gx=-1 gy=1 d=135  cos(d)=-0.707107, sin(d)=0.707107
-            gx=-1 gy=0 d=180  cos(d)=-1.000000, sin(d)=0.000000
-            gx=-1 gy=-1 d=-135  cos(d)=-0.707107, sin(d)=-0.707107
-            gx=0 gy=-1 d=-90  cos(d)=0.000000, sin(d)=-1.000000
-            gx=1 gy=-1 d=-45  cos(d)=0.707107, sin(d)=-0.707107
-        */
-        
-        Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
-            new HashMap<PairInt, Set<PairInt>>();
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        for (int x = 0; x < w; ++x) {
-
-            for (int y = 0; y < h; ++y) {
-
-                int v = img.getValue(x, y);
-
-                if (v < 1) {
-                    continue;
-                }
-
-                double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, img);
-                
-                double t = Math.atan2(gXY[1], gXY[0]) * 180. / Math.PI;
-                                
-                int tInt = (int)Math.round(t);
-                                
-                if (tInt < 0) {
-                    tInt = 180 + tInt;
-                }
-
-                Integer theta = Integer.valueOf(tInt);
-                                
-                double ct = cosineMap.get(theta).doubleValue();
-                double st = sineMap.get(theta).doubleValue();
-                
-                if (gXY[0] < 0) {
-                    // ct should be < 0
-                    if (ct > 0) {
-                        ct *= -1;
-                    }
-                } else {
-                    // ct should be >= 0
-                    if (ct < 0) {
-                        ct *= -1;
-                    }
-                }
-                if (gXY[1] < 0) {
-                    // st should be < 0
-                    if (st > 0) {
-                        st *= -1;
-                    }
-                } else {
-                    // st should be >= 0
-                    if (st < 0) {
-                        st *= -1;
-                    }
-                }
-                
-                double r = (x * ct) + (y * st);
-                                               
-                if (r < 0) {
-                    r *= -1;
-                }
-
-                PairInt p = new PairInt(tInt, (int)Math.round(r));
-
-                Set<PairInt> set = outputPolarCoordsPixMap.get(p);
-                if (set == null) {
-                    set = new HashSet<PairInt>();
-                    outputPolarCoordsPixMap.put(p, set);
-                }
-                set.add(new PairInt(x, y));
-            }
-        }
-        
-        return outputPolarCoordsPixMap;
-    }
-    
-    /**
      * given an edge of points, computes the Hough
      * transform of lines and returns results as an associate array with 
      * key = pair with x = polar theta in degrees and y = distance from
      * the origin in pixels; value = number of transformation points having
-     * the key.  this method uses an approximation of the gradient
-     * from the immediate neighbors, so the input should only be an image
-     * with edges in it (single pixel width curves).  Note that the gradient
-     * calc cannot tell the difference between above and below the y=0, so
-     * all results are presented in the reference frame of 0 to 180.
+     * the key.   Note that the angle is calculated for expectations of a
+     * counter clockwise ordered curve and the vector of the angle is 
+     * perpendicular to p1 (direction given by right hand rule).
+     * The angles are 0 to 360.
+     * 
+     * Note that if the edge has less than 3 points, an empty map is returned.
+     * 
      * @param edge a curve defined by the points within
      * @param imageWidth
      * @param imageHeight
@@ -158,60 +53,76 @@ public class HoughTransform {
     public Map<PairInt, Set<PairInt>> calculateLineGivenEdge(PairIntArray edge,
         int imageWidth, int imageHeight) {
         
-        // theta is 0 to 180
-        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForPI();
-        Map<Integer, Double> sineMap = Misc.getSineThetaMapForPI();
-
-        Set<PairInt> points = Misc.convert(edge);
+        Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = new HashMap<PairInt, Set<PairInt>>();
         
-        Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap = 
-            new HashMap<PairInt, Set<PairInt>>();
+        if (edge.getN() < 3) {
+            return outputPolarCoordsPixMap;
+        }
+        
+        // theta is 0 to 360
+        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForTwoPI();
+        Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
+        
+        boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &&
+            (((PairIntArrayWithColor)edge).getColor() == 1);
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                    
+        int n = edge.getN();
         
-        for (int i = 0; i < edge.getN(); ++i) {
+        for (int i = 0; i < n; ++i) {
             
             int x = edge.getX(i);
             int y = edge.getY(i);
-               
-            double[] gXY = curveHelper.calculateGradientsForPointOnEdge(x, y, 
-                points);
+            
+            int xp, yp, xn, yn;
+            
+            if (i == 0) {
+                if (curveIsClosed) {
+                    xp = edge.getX(n - 1);
+                    yp = edge.getY(n - 1);
+                } else {
+                    // use replication for boundary
+                    xp = x;
+                    yp = y;
+                }
+                xn = edge.getX(i + 1);
+                yn = edge.getY(i + 1);
+            } else if (i == (n - 1)) {
+                xp = edge.getX(i - 1);
+                yp = edge.getY(i - 1);
+                if (curveIsClosed) {
+                    xn = edge.getX(0);
+                    yn = edge.getY(0);
+                } else {
+                    xn = x;
+                    yn = y;
+                }
+            } else {
+                xp = edge.getX(i - 1);
+                yp = edge.getY(i - 1);
                 
-            double t = Math.atan2(gXY[1], gXY[0]) * 180. / Math.PI;
-
-            int tInt = (int)Math.round(t);
-
-            if (tInt < 0) {
-                tInt = 180 + tInt;
+                xn = edge.getX(i + 1);
+                yn = edge.getY(i + 1);
             }
-
+            
+            // note, this is not the angle along the edge, it's perpendicular
+            // to it, but the calculation is consistent
+            double t = curveHelper.calculateAngleTangentToMidpoint(xp, yp, x, y, 
+                xn, yn); 
+            
+            double tDegrees = t * 180./Math.PI;
+            
+            int tInt = (int)Math.round(tDegrees);
+            
+            if (tInt > 359) {
+                tInt = tInt - 360;
+            }
+            
             Integer theta = Integer.valueOf(tInt);
 
             double ct = cosineMap.get(theta).doubleValue();
             double st = sineMap.get(theta).doubleValue();
-
-            if (gXY[0] < 0) {
-                // ct should be < 0
-                if (ct > 0) {
-                    ct *= -1;
-                }
-            } else {
-                // ct should be >= 0
-                if (ct < 0) {
-                    ct *= -1;
-                }
-            }
-            if (gXY[1] < 0) {
-                // st should be < 0
-                if (st > 0) {
-                    st *= -1;
-                }
-            } else {
-                // st should be >= 0
-                if (st < 0) {
-                    st *= -1;
-                }
-            }
 
             double r = (x * ct) + (y * st);
 

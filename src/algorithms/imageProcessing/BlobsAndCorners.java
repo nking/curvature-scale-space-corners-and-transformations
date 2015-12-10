@@ -72,8 +72,8 @@ public class BlobsAndCorners  {
         
         if (correctLineArtifacts) {
             int binFactor = blobPerimeterHelper.getBinFactor();
-            int thetaTol = 2;
-            int radiusTol = 20/binFactor;
+            int thetaTol = 1;
+            int radiusTol = 7;
             
             //use hough transform for lines to remove corners from line artifacts
            CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 

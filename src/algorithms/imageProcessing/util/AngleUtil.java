@@ -86,48 +86,23 @@ public class AngleUtil {
                   |      
          QIII     |       QIV 
                  270
-        */
         
-        if (x == 0) {
-            if (y >= 0) {
-                return Math.PI/2;
-            }
-            return (3./2.)*Math.PI;
-        }
-        if (y == 0) {
-            if (x > 0) {
-                return 0;
-            }
-            return Math.PI;
-        }
-        /*
-                  +Y
+        
+        Math.atan2 angles are:
                  90
-        QII       |       QI
-                  |     
+           135    |    45
                   |
-     180-------------------- +X  0, 360
-                  |   
-                  |      
-         QIII     |       QIV 
-                 270
+        180 ---------------  0
+                  |
+          -135    |   -45
+                 -90
+        so, for d < 0, need 360+d
         */
-        double theta = Math.atan(y/x);
-
-        // Q1, Q2, Q3, Q4
-        int q = 1;
-        if ((x < 0) && (y >= 0)) {
-            q = 2;
-        } else if ((x < 0) && (y < 0)) {
-            q = 3;
-        } else if ((x >= 0) && (y < 0)) {
-            q = 4;
-        }
         
-        if (q == 2 || q == 3) {
-            theta += Math.PI;
-        } else if (q == 4) {
-            theta = 2*Math.PI + theta;
+        double theta = Math.atan2(y, x);
+        
+        if (theta < 0) {
+            theta += 2. * Math.PI;
         }
         
         return theta;  
@@ -142,10 +117,7 @@ public class AngleUtil {
      * @return 
      */
     public static double polarAngleCW(double x, double y) {
-        /*        
         
-        
-        */
         /*
                   +Y
                  270
@@ -157,29 +129,22 @@ public class AngleUtil {
                   |      
          QII      |       QI 
                   90
+        
+        Math.atan2 angles are:
+                 90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+          -135    |   -45
+                 -90
+        so need -1*d, then for d < 0, need 360+d
         */
         
-        int q = getClockwiseQuadrant(x, y);
-                
-        assert((q > 0) && (q < 5));
+        double theta = -1 * Math.atan2(y, x);
         
-        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);
-        
-        if (x == 0) {
-            if (y == 0) {
-                theta = 0;
-            } else if (y > 0) {
-                theta = 3*Math.PI/2.;
-            }
-            // else Math.PI/2 is correct
-        } else if (q == 1) {
-            theta *= -1;
-        } else if (q == 2) {
-            theta = Math.PI - theta;
-        } else if (q == 3) {
-            theta = Math.PI - theta;
-        } else if (q == 4) {
-            theta = 2*Math.PI - theta;
+        if (theta < 0) {
+            theta += 2. * Math.PI;
         }
         
         return theta;  
