@@ -1,4 +1,25 @@
+-- change the corner region getOrientation to use the improved
+    angle code?
+    see line 204
+
 **-- checkerboard shows need to improve blob extraction
+ ** -- for all test images, plot the blob distribution of sizes
+       and put in notes.
+
+ ** -- consider if know the segmentation produces a binary image, whether
+       to restrict the blob extraction to either value 0 or non-zero depending
+       on the histogram.  if the segmentation were the wavelet transform, the
+       comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
+
+    -- consider making a corner matcher 3 that sorts the corners and only
+       keeps top 4 strongest corners, then feeds them to corner matcher 2.
+       -- should be easy to add for testing then remove if not a good decision.
+          the goal is to keep the accuracy but make faster matches.
+
+** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
+   sure keys will never overflow a long
+
+** -- impl a circle hough transform
 
 **-- use the added half dome test images to assert that matching same
      from other cameras is working
