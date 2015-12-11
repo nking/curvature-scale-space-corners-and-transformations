@@ -41,7 +41,18 @@ public class IntensityFeatures {
      */
     protected Map<PairInt, Map<Integer, IntensityDescriptor>> 
         intensityBlocks = new HashMap<PairInt, Map<Integer, IntensityDescriptor>>();
-
+    
+    /**
+     * key = pixel coordinates;
+     * value = 45 degree resolution orientation angle determined from greyscale
+     * intensities.  (NOTE, this is a cache to hold orientation
+     * angles for pixels that are corner regions or nearby dithered locations
+     * of corner regions.  The CornerRegion.orientation itself is not always
+     * w.r.t. the same curves, so cannot always be used.)
+     */
+    protected Map<PairInt, Integer> mapOf45DegOr = new
+        HashMap<PairInt, Integer>();
+    
     public IntensityFeatures(final GreyscaleImage image, 
         final int blockHalfWidths, final boolean useNormalizedIntensities) {
 
@@ -1006,4 +1017,377 @@ public class IntensityFeatures {
         IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
         return desc;
     }
+    
+    /**
+     * calculate the orientation of the local intensities with respect to the
+     * given point in resolution of 45 degrees. The method finds the direction
+     * of the largest difference from (x, y) and if negative that direction
+     * is returned else the direction opposite of it.
+       <pre>
+                  90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+           225    |    315
+                 270
+       </pre>
+       Note that this method uses
+     * a cache to reuse calculations so it is up to the invoker to make
+     * sure that the same image is given to this instance.  
+     * (the image instance isn't retained to reduce references to potentially
+     * large data structures which would otherwise be garbage collected).
+     * @param img greyscale image. note that because the instance caches previous
+     * calculations, the invoker must supply the same image each time.
+     * @param xCenter
+     * @param yCenter
+     * @return orientation or local intensities in resolution of 45 degrees
+     * for pixels centered at (xCenter, yCenter)
+     * @throws CornerRegion.CornerRegionDegneracyException throws an exception
+     * if each of the neighboring 24 pixels has the same intensity.
+     */
+    public int calculate45DegreeOrientation(GreyscaleImage img, 
+        final int xCenter, final int yCenter) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        if (img == null) {
+            throw new IllegalStateException("img cannot be null");
+        }
+
+        checkBounds(img, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer orientation = mapOf45DegOr.get(p);
+        
+        if (orientation == null) {
+            
+            orientation = calculate45DegOr(img, xCenter, yCenter);
+            
+            mapOf45DegOr.put(p, orientation);
+        }
+        
+        return orientation.intValue();
+    }
+
+    private Integer calculate45DegOr(GreyscaleImage img, int x, int y) 
+    throws CornerRegion.CornerRegionDegneracyException {
+        
+        /*
+               |3|3|2|1|1|
+               |3|3|2|1|1|
+               |4|4| |0|0|
+               |5|5|6|7|7|
+               |5|5|6|7|7|
+        */
+
+        float[] diffs = new float[8];
+        
+        int vCenter = img.getValue(x, y);
+        
+        for (int i = 0; i < 8; ++i) {
+            
+            int count = 0;
+            float sum = 0;
+            
+            switch(i) {
+                
+                case 0: {
+                    int x2 = x + 1;
+                    int y2 = y;
+                    if (!isWithinXBounds(img, x2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x + 2;
+                    if (!isWithinXBounds(img, x2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    break;
+                }
+                case 1: {
+                    int x2 = x + 1;
+                    int y2 = y + 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x + 1;
+                    y2 = y + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x + 2;
+                    y2 = y + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+                case 2: {
+                    int x2 = x;
+                    int y2 = y + 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    y2 = y + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+                case 3: {
+                    int x2 = x - 1;
+                    int y2 = y + 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x - 1;
+                    y2 = y + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x - 2;
+                    y2 = y + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+                case 4: {
+                    int x2 = x - 1;
+                    int y2 = y;
+                    if (!isWithinXBounds(img, x2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x - 2;
+                    if (!isWithinXBounds(img, x2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    break;
+                }
+                case 5: {
+                    int x2 = x - 1;
+                    int y2 = y - 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x - 1;
+                    y2 = y - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x - 2;
+                    y2 = y - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+                case 6: {
+                    int x2 = x;
+                    int y2 = y - 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    y2 = y - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+                case 7: {
+                    int x2 = x + 1;
+                    int y2 = y - 1;
+                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {
+                        continue;
+                    }
+                    sum += img.getValue(x2, y2);
+                    count++;
+                    
+                    x2 = x + 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x + 1;
+                    y2 = y - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    
+                    x2 = x + 2;
+                    y2 = y - 2;
+                    if (isWithinXBounds(img, x2) && isWithinYBounds(img, y2)) {
+                        sum += img.getValue(x2, y2);
+                        count++;
+                    }
+                    break;
+                }
+            }
+            
+            diffs[i] = (count > 0) ? ((sum/(float)count) - vCenter): 
+                Float.MIN_VALUE;
+        }
+        
+        float maxAbsDiff = Float.MIN_VALUE;
+        int maxAbsDiffIdx = -1;
+        
+        // quick check that all values are not same
+        boolean areSame = true;
+        for (int i = 1; i < 8; ++i) {
+            float d = diffs[i];
+            if (d != diffs[i - 1]) {
+                areSame = false;
+                break;
+            }
+        }
+        if (areSame) {
+            throw new CornerRegion.CornerRegionDegneracyException(
+            "cannot calculate orientation because all neighbors have same value");
+        }
+        
+        for (int i = 0; i < 8; ++i) {
+            
+            float d = diffs[i];
+            
+            if (d == Float.MIN_VALUE) {
+                continue;
+            }
+            
+            if (d < 0) {
+                d *= -1;
+            }
+            if (d > maxAbsDiff) {
+                maxAbsDiff = d;
+                maxAbsDiffIdx = i;
+            }
+        }
+        
+        /*
+               |3|3|2|1|1|
+               |3|3|2|1|1|
+               |4|4| |0|0|
+               |5|5|6|7|7|
+               |5|5|6|7|7|
+        */ 
+        
+        // direction is "downhill", so if max diff is +, use the opposite angle
+        boolean isNegative = diffs[maxAbsDiffIdx] < 0;
+        
+        int angle = 0;
+        switch(maxAbsDiffIdx) {
+            case 0: {
+                if (isNegative) {
+                    return 0;
+                } else {
+                    return 180;
+                }
+            }
+            case 1: {
+                if (isNegative) {
+                    return 45;
+                } else {
+                    return 225;
+                }
+            }
+            case 2: {
+                if (isNegative) {
+                    return 90;
+                } else {
+                    return 270;
+                }
+            }
+            case 3: {
+                if (isNegative) {
+                    return 135;
+                } else {
+                    return 315;
+                }
+            }
+            case 4: {
+                if (isNegative) {
+                    return 180;
+                } else {
+                    return 0;
+                }
+            }
+            case 5: {
+                if (isNegative) {
+                    return 225;
+                } else {
+                    return 45;
+                }
+            }
+            case 6: {
+                if (isNegative) {
+                    return 270;
+                } else {
+                    return 90;
+                }
+            } 
+            default: {
+                if (isNegative) {
+                    return 315;
+                } else {
+                    return 135;
+                }
+            }
+        }        
+    }
+    
 }

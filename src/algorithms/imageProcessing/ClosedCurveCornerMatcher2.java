@@ -154,7 +154,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             CornersAndFeatureStat<T>>();
 
         FeatureMatcher featureMatcher = new FeatureMatcher();
-/*
+
 double[][] xy1 = new double[c1.size()][2];
 for (int i = 0; i < c1.size(); ++i) {
 CornerRegion cr = c1.get(i);
@@ -165,7 +165,7 @@ for (int i = 0; i < c2.size(); ++i) {
 CornerRegion cr = c2.get(i);
 xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 }
-*/
+
         for (int i = 0; i < c1.size(); ++i) {
 
             T region1 = c1.get(i);
@@ -178,16 +178,11 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 
                 T region2 = c2.get(j);
 
-                FeatureComparisonStat compStat = null;
-
-                try {
-                    compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither,
-                        img1, img2);
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.fine("**CONSIDER using more points in corner region");
-                }
-
+                FeatureComparisonStat compStat = 
+                    featureMatcher.ditherAndRotateForBestLocation2(
+                    features1, features2, region1, region2, dither,
+                    img1, img2);
+                
                 if ((compStat == null)
                     || (compStat.getSumIntensitySqDiff() >= ssdLimit) ||
                     (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())
@@ -248,15 +243,10 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 
                 T region2 = c2.get(j);
 
-                FeatureComparisonStat compStat = null;
-
-                try {
-                    compStat = featureMatcher.ditherAndRotateForBestLocation(
-                        features1, features2, region1, region2, dither,
-                        img1, img2);
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                    log.fine("**CONSIDER using more points in corner region");
-                }
+                FeatureComparisonStat compStat =
+                    featureMatcher.ditherAndRotateForBestLocation2(
+                    features1, features2, region1, region2, dither,
+                    img1, img2);
 
                 if ((compStat == null)
                     || (compStat.getSumIntensitySqDiff() >= ssdLimit) ||
@@ -420,6 +410,8 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             combinedParams = MiscStats.filterToSimilarParamSets(paramsMap,
                 binFactor1, binFactor2);
         }
+        
+        // --- evaluate transformations on all corners, starting w/ location ----
 
         Transformer transformer = new Transformer();
 
@@ -490,6 +482,8 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         } else {
             topK = c2.size()/2;
         }
+        
+        // --- evaluate transformations on all corners, use features ----
 
         // --- evaluate the params: transform c1 and count matches to c2
         List<FeatureComparisonStat> bestStats = null;
@@ -555,18 +549,20 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 
                 // for now, not caring if a point is double matched, just need general count
                 if (candidates != null && candidates.size() > 0) {
+                    
                     FeatureComparisonStat minStat = null;
+                    
                     T minStatC2 = null;
+                    
                     for (Integer index2 : candidates) {
+                        
                         T corner2 = c2.get(index2.intValue());
-                        FeatureComparisonStat compStat = null;
-                        try {
-                            compStat = featureMatcher.ditherAndRotateForBestLocation(
-                                features1, features2, pt1, corner2, dither2,
-                                rotD, rotationTolerance, img1, img2);
-                        } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                            log.fine(ex.getMessage());
-                        }
+                        
+                        FeatureComparisonStat compStat = 
+                            featureMatcher.ditherAndRotateForBestLocation2(
+                            features1, features2, pt1, corner2, dither2,
+                            rotD, rotationTolerance, img1, img2);
+                        
                         if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
                             continue;
                         }

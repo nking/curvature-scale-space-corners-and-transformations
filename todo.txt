@@ -1,54 +1,11 @@
--- merton college test images matching on right side shows needs improvement.
+-- add tests for
+   IntensityFeatures
+       public int calculate45DegreeOrientation(GreyscaleImage img, 
+        final int xCenter, final int yCenter) 
 
-   -- some blobs which largely are same area in other image
-      have a different blob shape at a corner (due to segmentation).
-      the current corner region orientation is calculated as perp to
-      the perimeter, so different shape there will mean the 
-      orientations are wrong.
-         an example is
-         image1: (385, 185), cr_orientation=158
-         image2: (401, 203), cr_orientation=23
+-- checkerboard is still not matched correctly. 
+   -- look into details
 
-         a detailed look shows the matching pixel in image2 is 1 pixel
-         off in x and y AND the blob perimeters are different there.
-
-         in order to match those 2 pixels, one would need:
-            -- a dither pattern of up to k pixels
-            -- the calculation of orientation within 45 degree accuracy by 
-               looking at the greyscale intensities in the surrounding 24 pixels.
-               ** these need to be cached like features for re-use
-
-               |3|3|2|1|1|
-               |3|3|2|1|1|
-               |4|4| |0|0|
-               |5|5|6|7|7|
-               |5|5|6|7|7|
-
-            -- a small dither in rotation around the 45 degree angle
-
-      Will try 2 new patterns of image wide matching and see if the fastest is usually successful:
-        (1) use the exact CornerRegion coordinates and orientations to try to
-            match a curve to a curve.  no dithers in pixel translation or rotation should be used.
-            --> if this is more often successful than not, it can be improved
-                on a point to point basis.  that is, if a critical number of
-                corners are matched, the others can be recalculated using
-                the 45 degree orientation resoltion and translation and rotaton dithers.
-        (2) instead, for every corner, use the 45 deg orientation and the
-            dither in translation and rotation.
-            this dither pattern should be a new method in the matcher, because the
-            wide range of rotation tries should not be necessary...the orientation range should
-            be very small around the 45 degree estimate.
-            the existing matching methods should be made obsolete.
-
--- checkerboard is still not matched correctly. (this may be due to same reason as merton)
-   looks like the quantity of points is small for a blob and
-   when an extra corner or 2 due to artifacts are present,
-   that can lead to a false match with another blob in the
-   other image with same additional artifact corners.
-   -- need different matching  when a large number of features
-      look very similar to one another?  or the number of corners per
-      blob is less than some number?
-      in that case, the corner matcher3 is possibly a better matcher.
 -- consider making corner matcher 3 that sorts the corners and only
    keeps top 4 strongest corners, then feeds them to corner matcher 2.
    -- should be easy to add for testing then remove if not a good decision.
