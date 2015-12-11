@@ -388,6 +388,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         contourExtractor = new EdgeExtractorWithJunctions(img);
         
+        //TODO: for closed curves, might consider always ordering them the
+        // same here (counter clock wise)
+        
         List<PairIntArray> tmpEdges = contourExtractor.findEdges();
        
         edges.clear();

@@ -1,13 +1,9 @@
--- change the corner region getOrientation to use the improved
-    angle code?
-    see line 204
-
 -- checkerboard is still not matched correctly.
    looks like the quantity of points is small for a blob and
    when an extra corner or 2 due to artifacts are present,
-   that can lead to a fals match with another blob in the
+   that can lead to a false match with another blob in the
    other image with same additional artifact corners.
-   -- need differnt matching  when a large number of features
+   -- need different matching  when a large number of features
       look very similar to one another?
       (a large scale pattern...)
       -- how to quickly identify that so that a blob match

@@ -17,6 +17,20 @@ import java.util.Set;
  */
 public class BlobsAndCorners  {
     
+    /**
+     * get a list of corner regions for the perimeters extracted from the
+     * blobs.  (Note that the default construction of perimeters already
+     * orders them in counter clockwise manner.  That's necessary for
+     * consistent use of the corner region orientation.)
+     * @param blobPerimeterHelper
+     * @param type
+     * @param useBinnedImage
+     * @param outdoorMode
+     * @param enableJaggedLineCorrections
+     * @param factorIncreaseForCurvatureMinimum
+     * @param correctLineArtifacts
+     * @return 
+     */
     public static List<List<CornerRegion>> populateCorners(
         final BlobPerimeterHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage,

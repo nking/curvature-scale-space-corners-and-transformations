@@ -91,7 +91,8 @@ public class CSSCornerMaker {
 
     /**
      *
-     * @param theEdges
+     * @param theEdges edges with points ordered counter-clockwise.
+     * the ordering is important if the corner regions will be used.
      * @param junctions map w/ key=edge index,
      *     values = junctions on edge as (x,y) and edge curve indexes
      * @param doUseOutdoorMode

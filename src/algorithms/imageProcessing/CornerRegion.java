@@ -1,7 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
 /**
@@ -197,104 +195,55 @@ public class CornerRegion {
             throw new IllegalStateException("this is an empty instance");
         }
         
-        //TODO: edit to use MiscellaneousCurveHelper.calculateAngleTangentToMidpoint
-        // and use the ref0Idx and refIIdx points along with kMaxIdx
-        // NOTE that the corner regions have to be sorted CCW
-        // for consistent calculation of angle direction
-        
         int ref0Idx = kMaxIdx - 1;
         int ref1Idx = kMaxIdx + 1;
 
         int dx0 = x[kMaxIdx] - x[ref0Idx];
         int dy0 = y[kMaxIdx] - y[ref0Idx];
 
-        double theta0 = AngleUtil.polarAngleCCW(dx0, dy0);
-        if (theta0 != 0) {
-            theta0 = (2.*Math.PI) - theta0;
-        }
-
         int dx1 = x[ref1Idx] - x[kMaxIdx];
         int dy1 = y[ref1Idx] - y[kMaxIdx];
 
-        double theta1 = AngleUtil.polarAngleCCW(dx1, dy1);
-        if (theta1 != 0) {
-            theta1 = (2.*Math.PI) - theta1;
-        }
-
-        /* determine whether to add or subtract 90 for each vector:
-
-        the centroid of the middle and neighboring points determines the
-        opposite side of the vector pointing outwards from the edge.
-        */
-
-        PairIntArray xy = new PairIntArray(3);
-        xy.add(x[ref0Idx], y[ref0Idx]);
-        xy.add(x[kMaxIdx], y[kMaxIdx]);
-        xy.add(x[ref1Idx], y[ref1Idx]);
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        double[] centroidXY = curveHelper.calculateXYCentroids(xy);
-
-        // determine the centroid from neighboring points if gradients are same
+        // extending reference points out further if gradients are same
         if ((dx1 == dx0) && (dy1 == dy0)) {
 
             // this is a straight line so far between points at kMaxIdx and
             // either side of it
 
-            ref0Idx--;
-            ref1Idx++;
+            while ((ref0Idx > -1) && (ref1Idx < x.length)) {
 
-            if ((ref0Idx < 0) && (ref1Idx > (x.length - 1))) {
+                if (ref0Idx > 0) {
+                    ref0Idx--;
+                    dx0 = x[kMaxIdx] - x[ref0Idx];
+                    dy0 = y[kMaxIdx] - y[ref0Idx];
+                    dx1 = x[ref1Idx] - x[kMaxIdx];
+                    dy1 = y[ref1Idx] - y[kMaxIdx];
+                    if ((dx1 != dx0) || (dy1 != dy0) || (ref0Idx == 0)) {
+                        break;
+                    }
+                }
+                if (ref1Idx < (x.length - 1)) {
+                    ref1Idx++;
+                    dx0 = x[kMaxIdx] - x[ref0Idx];
+                    dy0 = y[kMaxIdx] - y[ref0Idx];
+                    dx1 = x[ref1Idx] - x[kMaxIdx];
+                    dy1 = y[ref1Idx] - y[kMaxIdx];
+                    if ((dx1 != dx0) || (dy1 != dy0) || (ref1Idx == (x.length - 1))) {
+                        break;
+                    }
+                }
+            }            
+            
+            if ((dx1 == dx0) && (dy1 == dy0)) {
                 throw new CornerRegionDegneracyException(
                 "need more neighboring points because the slopes are all the same");
             }
-
-            while ((ref0Idx > -1) || (ref1Idx < x.length)) {
-
-                if (ref0Idx > -1) {
-                    int dxRef0 = x[kMaxIdx - 1] - x[ref0Idx];
-                    int dyRef0 = y[kMaxIdx - 1] - y[ref0Idx];
-                    if ((dxRef0 != dx0) || (dyRef0 != dy0)) {
-                        xy.add(x[ref0Idx], y[ref0Idx]);
-                        centroidXY = curveHelper.calculateXYCentroids(xy);
-                        break;
-                    }
-                    ref0Idx--;
-                }
-                if (ref1Idx < x.length) {
-                    int dxRef1 = x[ref1Idx] - x[kMaxIdx + 1];
-                    int dyRef1 = y[ref1Idx] - y[kMaxIdx + 1];
-                    if ((dxRef1 != dx1) || (dyRef1 != dy1)) {
-                        xy.add(x[ref1Idx], y[ref1Idx]);
-                        centroidXY = curveHelper.calculateXYCentroids(xy);
-                        break;
-                    }
-                    ref1Idx++;
-                }
-
-                if ((ref0Idx < 0) && (ref1Idx > (x.length - 1))) {
-                    //NOTE: can consider during construction of CornerRegion 
-                    // that if the curve is closed, this instance can keep
-                    // a centroid to use for this keep to make orientation
-                    // angle point away from the centroid unambiguously
-                    throw new CornerRegionDegneracyException(
-                    "need more neighboring points because the slopes are all the same");
-                }
-            }
         }
 
-        // determine weighted average theta first, then calculate the perpendicular
-        // angle pointing out from the edge at the maximum of curvature:
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        //needs to account for averaging when one angle is near 360 and the
-        //other is 0 or greater
-
-        double theta = AngleUtil.getAngleAverageInRadians(theta0, theta1);
-                
-        double perp = curveHelper.calculatePerpendicularAngleAwayFromCentroid(
-            theta, x[kMaxIdx - 1], y[kMaxIdx - 1], x[kMaxIdx],
-            y[kMaxIdx], centroidXY);
+        double perp = curveHelper.calculateAngleTangentToMidpoint(
+            x[ref0Idx], y[ref0Idx], x[kMaxIdx], y[kMaxIdx], x[ref1Idx], y[ref1Idx]);
 
         return perp;
     }
