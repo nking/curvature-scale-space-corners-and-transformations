@@ -62,6 +62,8 @@ public class BlobScaleFinderWrapper {
     
     private int binFactor1 = 1;
     private int binFactor2 = 1;
+    
+    private boolean useNormalizedFeatures = true;
 
     private boolean useSameSegmentation = false;
 
@@ -88,9 +90,9 @@ public class BlobScaleFinderWrapper {
 
         img2Helper = new BlobPerimeterHelper(img2, "2");
 
-        features1 = new IntensityFeatures(5, true);
+        features1 = new IntensityFeatures(5, useNormalizedFeatures);
 
-        features2 = new IntensityFeatures(5, true);
+        features2 = new IntensityFeatures(5, useNormalizedFeatures);
         
         skipBinnedImages = true;
         useBinned1 = false;
@@ -120,9 +122,9 @@ public class BlobScaleFinderWrapper {
 
         img2Helper = new BlobPerimeterHelper(img2, debugTagPrefix + "_2");
 
-        features1 = new IntensityFeatures(5, true);
+        features1 = new IntensityFeatures(5, useNormalizedFeatures);
 
-        features2 = new IntensityFeatures(5, true);
+        features2 = new IntensityFeatures(5, useNormalizedFeatures);
         
         skipBinnedImages = true;
         useBinned1 = false;
@@ -165,9 +167,9 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures(5, true);
+            featuresBinned1 = new IntensityFeatures(5, useNormalizedFeatures);
             
-            featuresBinned2 = new IntensityFeatures(5, true);
+            featuresBinned2 = new IntensityFeatures(5, useNormalizedFeatures);
             
         } else {
             
@@ -179,9 +181,9 @@ public class BlobScaleFinderWrapper {
             
         }
 
-        features1 = new IntensityFeatures(5, true);
+        features1 = new IntensityFeatures(5, useNormalizedFeatures);
 
-        features2 = new IntensityFeatures(5, true);
+        features2 = new IntensityFeatures(5, useNormalizedFeatures);
 
     }
 
@@ -221,9 +223,9 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures(5, true);
+            featuresBinned1 = new IntensityFeatures(5, useNormalizedFeatures);
             
-            featuresBinned2 = new IntensityFeatures(5, true);
+            featuresBinned2 = new IntensityFeatures(5, useNormalizedFeatures);
             
         } else {
             
@@ -235,9 +237,9 @@ public class BlobScaleFinderWrapper {
             
         }
 
-        features1 = new IntensityFeatures(5, true);
+        features1 = new IntensityFeatures(5, useNormalizedFeatures);
 
-        features2 = new IntensityFeatures(5, true);
+        features2 = new IntensityFeatures(5, useNormalizedFeatures);
 
     }
 

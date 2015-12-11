@@ -574,8 +574,9 @@ redoStats = true;
 
         // for the redo, because the orientations are set rather than found,
         // not going to re-use the invoker's instance of Features
-        IntensityFeatures features1 = new IntensityFeatures(img1, 5, true);
-        IntensityFeatures features2 = new IntensityFeatures(img2, 5, true);
+        boolean useNormalized = true;
+        IntensityFeatures features1 = new IntensityFeatures(img1, 5, useNormalized);
+        IntensityFeatures features2 = new IntensityFeatures(img2, 5, useNormalized);
 
         int dither = 2;
 

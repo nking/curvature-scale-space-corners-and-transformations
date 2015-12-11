@@ -32,6 +32,8 @@ public class FeatureMatcherWrapper {
         
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
+    
+    private boolean useNormalizedFeatures = true;
 
     private enum State {
         DID_APPLY_HIST_EQ, COULD_NOT_DETERMINE_SCALE
@@ -710,9 +712,9 @@ public class FeatureMatcherWrapper {
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
         
-        IntensityFeatures features1 = new IntensityFeatures(5, true);
+        IntensityFeatures features1 = new IntensityFeatures(5, useNormalizedFeatures);
 
-        IntensityFeatures features2 = new IntensityFeatures(5, true);
+        IntensityFeatures features2 = new IntensityFeatures(5, useNormalizedFeatures);
         
         int rotD = Math.round(params.getRotationInDegrees());
         

@@ -4,12 +4,9 @@
         final int xCenter, final int yCenter) 
 
 -- checkerboard is still not matched correctly. 
-   -- look into details
-
--- consider making corner matcher 3 that sorts the corners and only
-   keeps top 4 strongest corners, then feeds them to corner matcher 2.
-   -- should be easy to add for testing then remove if not a good decision.
-      the goal is to keep the accuracy but make faster matches.
+   -- possibly due to illumination correction in features.
+      yes, when use unnormalized intensity features, the match occurs
+      -- adding logic for user enabled change of that
 
 ** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
    sure keys will never overflow a long
