@@ -175,7 +175,6 @@ public class CornerRegion {
     }
 
     /**
-     * NOT READY FOR USE YET.  NEEDs MORE TESTING
      * calculate the angle perpendicular to the maximum of curvature.
      * The curvature has to be large enough so that a change in the neighboring
      * points is present (slopes cannot both be the same on both sides of the
@@ -210,7 +209,7 @@ public class CornerRegion {
             // this is a straight line so far between points at kMaxIdx and
             // either side of it
 
-            while ((ref0Idx > -1) && (ref1Idx < x.length)) {
+            while ((ref0Idx > 0) || (ref1Idx < (x.length - 1))) {
 
                 if (ref0Idx > 0) {
                     ref0Idx--;
@@ -218,7 +217,7 @@ public class CornerRegion {
                     dy0 = y[kMaxIdx] - y[ref0Idx];
                     dx1 = x[ref1Idx] - x[kMaxIdx];
                     dy1 = y[ref1Idx] - y[kMaxIdx];
-                    if ((dx1 != dx0) || (dy1 != dy0) || (ref0Idx == 0)) {
+                    if ((dx1 != dx0) || (dy1 != dy0)) {
                         break;
                     }
                 }
@@ -228,7 +227,7 @@ public class CornerRegion {
                     dy0 = y[kMaxIdx] - y[ref0Idx];
                     dx1 = x[ref1Idx] - x[kMaxIdx];
                     dy1 = y[ref1Idx] - y[kMaxIdx];
-                    if ((dx1 != dx0) || (dy1 != dy0) || (ref1Idx == (x.length - 1))) {
+                    if ((dx1 != dx0) || (dy1 != dy0)) {
                         break;
                     }
                 }
@@ -268,6 +267,7 @@ public class CornerRegion {
         return cr;
     }
     
+    @Override
     public String toString() {
         
         StringBuilder sb = new StringBuilder();
