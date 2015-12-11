@@ -101,16 +101,26 @@ public class BlobsAndPerimeters {
         // calculate the total fraction of the areas of the histograms excluded
         // by the default ranges.
         float inclFrac = calcIncludedFraction(histograms, smallestGroupLimit, 
-            largestGroupLimit);
+            largestGroupLimit, imgHelper.debugTag);
 
         //System.out.println(imgHelper.debugTag + " inclFrac=" + inclFrac);
 
         boolean redo = useBinned && (inclFrac < 1.0f);
         
-//TODO: consider if know the segmentation produces a binary image, whether
-// to restrict the blob extraction to either value 0 or non-zero depending
-// on the histogram.  if the segmentation were the wavelet transform, the
-// comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
+        //TODO: consider if know the segmentation produces a binary image, whether
+        // to restrict the blob extraction to either value 0 or non-zero depending
+        // on the histogram.  if the segmentation were the wavelet transform, the
+        // comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
+        // Looks like that decision would need to occur at a higher level where both
+        // images were being looked at.  it seems like such a decision could be the
+        // wrong thing if the overlap of common objects in an image were small
+        // and the objects outside of an intersection had the opposite 
+        // intensity pattern.
+        // so, this change to use one value only of the segmented image is 
+        // possibly wrong sometimes.  (e.g. the checkerboard test images).
+        // NOTE: the way to avoid having excluded blob comparisons is of course
+        // to include everything, but need to keep the number of comparisons 
+        // small when possible
         
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
@@ -521,7 +531,7 @@ if (imgHelper.isInDebugMode()) {
         }
         finder.setMinimumNumberInCluster(smallestGroupLimit);
         finder.findGroups(pixelValue);
-            
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         int nGroups = finder.getNumberOfGroups();
@@ -556,7 +566,26 @@ if (imgHelper.isInDebugMode()) {
             }
         }
         HistogramHolder hist = Histogram.createSimpleHistogram(sizes);
-                
+        
+        /*
+        if (hist != null) {
+            try {
+                int yMaxIdx = MiscMath.findLastZeroIndex(hist);
+                float xMax = (yMaxIdx == -1) ? 25000 : hist.getXHist()[yMaxIdx];
+                xMax = (float)Math.ceil(xMax);
+                String label = debugTag + " (0," + xMax + ") " 
+                    + " def=(" + smallestGroupLimit + "," + largestGroupLimit + ")"
+                    + " pixV=" + pixelValue;                    
+                hist.plotHistogram(0, xMax, label, debugTag + "_" + MiscDebug.getCurrentTimeFormatted());
+                System.out.println(debugTag + " pixV=" + pixelValue + " area="
+                    + hist.getHistArea());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobsAndPerimeters.class.getName()).log(
+                    Level.SEVERE, null, ex);
+            }
+        }
+        */
+        
         return hist;
     }
 
@@ -614,7 +643,7 @@ if (imgHelper.isInDebugMode()) {
     }
 
     private static float calcIncludedFraction(List<HistogramHolder> histograms, 
-        int smallestGroupLimit, int largestGroupLimit) {
+        int smallestGroupLimit, int largestGroupLimit, String debugTag) {
         
         int n = histograms.size();
                 

@@ -100,6 +100,38 @@ public class HistogramHolder {
         
         return frac;
     }
+    
+    /**
+     * integrate the area under the curve of the histogram.
+     * @return 
+     */
+    public float getHistArea() {
+        
+        if (yHistFloat == null) {
+            return 0;
+        }
+        
+        float sumTot = 0;
+        
+        // trapezoidal rule for area under the curve
+        
+        for (int i = 0; i < (xHist.length - 1); ++i) {
+            
+            float yTerm = yHistFloat[i + 1] + yHistFloat[i];
+            float xLen = xHist[i + 1] - xHist[i];
+            if (xLen < 0) {
+                xLen *= -1;
+            }
+            
+            float v = (yTerm * xLen);
+                        
+            sumTot += v;
+        }
+        
+        sumTot *= 0.5;
+        
+        return sumTot;
+    }
 
     public int calculateHalfYMaxIndexPastYMax() {
 

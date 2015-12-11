@@ -1,12 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.util.ResourceFinder;
-import java.awt.Color;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.Vector;
 import java.util.logging.Logger;
-import javax.imageio.ImageIO;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -29,7 +24,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         //    with small projection effects.
         //    need to use matching of top k solutions...
         
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -66,7 +61,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -114,7 +109,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-        
+         
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();
             params90.setRotationInDegrees(90);

@@ -2,23 +2,21 @@
     angle code?
     see line 204
 
-**-- checkerboard shows need to improve blob extraction
- ** -- for all test images, plot the blob distribution of sizes
-       and put in notes.
-
- ** -- consider if know the segmentation produces a binary image, whether
-       to restrict the blob extraction to either value 0 or non-zero depending
-       on the histogram.  if the segmentation were the wavelet transform, the
-       comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
-       -- could be a problem for objects in sillhouette though, but
-          those image objects need to use something other than feature matching (see below...curature...)
-          because the features have no intensity in them... so extracting
-          only value 0 or non-0 blobs for wavelet based segmentation still seems safe.
-
-    -- consider making a corner matcher 3 that sorts the corners and only
-       keeps top 4 strongest corners, then feeds them to corner matcher 2.
-       -- should be easy to add for testing then remove if not a good decision.
-          the goal is to keep the accuracy but make faster matches.
+-- checkerboard is still not matched correctly.
+   looks like the quantity of points is small for a blob and
+   when an extra corner or 2 due to artifacts are present,
+   that can lead to a fals match with another blob in the
+   other image with same additional artifact corners.
+   -- need differnt matching  when a large number of features
+      look very similar to one another?
+      (a large scale pattern...)
+      -- how to quickly identify that so that a blob match
+         does not get biased towards artifact matches?
+      
+-- consider making a corner matcher 3 that sorts the corners and only
+   keeps top 4 strongest corners, then feeds them to corner matcher 2.
+   -- should be easy to add for testing then remove if not a good decision.
+      the goal is to keep the accuracy but make faster matches.
 
 ** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
    sure keys will never overflow a long
