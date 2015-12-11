@@ -4,12 +4,10 @@
    that can lead to a false match with another blob in the
    other image with same additional artifact corners.
    -- need different matching  when a large number of features
-      look very similar to one another?
-      (a large scale pattern...)
-      -- how to quickly identify that so that a blob match
-         does not get biased towards artifact matches?
-      
--- consider making a corner matcher 3 that sorts the corners and only
+      look very similar to one another?  or the number of corners per
+      blob is less than some number?
+      in that case, the corner matcher3 is possibly a better matcher.
+-- consider making corner matcher 3 that sorts the corners and only
    keeps top 4 strongest corners, then feeds them to corner matcher 2.
    -- should be easy to add for testing then remove if not a good decision.
       the goal is to keep the accuracy but make faster matches.
