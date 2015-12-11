@@ -33,7 +33,13 @@ public class StereoProjectionTransformerTest extends TestCase {
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
         
-        EpipolarSolver solver = new EpipolarSolver(img1, img2, fileName1Root);
+        
+        FeatureMatcherSettings settings = new FeatureMatcherSettings();
+        settings.setDebug(true);
+        settings.setStartWithBinnedImages(true);
+        settings.setUseNormalizedFeatures(false);
+        
+        EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);
         StereoProjectionTransformerFit fit = solver.solve();
         
         int[] x1 = new int[]{248,341,154,341,341,339,341,249,341,155,};

@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -24,6 +23,8 @@ import java.util.logging.Logger;
  */
 public class FeatureMatcherWrapper {
     
+    private final FeatureMatcherSettings settings;
+    
     private final ImageExt img1;
     private final ImageExt img2;
     
@@ -33,18 +34,12 @@ public class FeatureMatcherWrapper {
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
     
-    private boolean useNormalizedFeatures = true;
-
     private enum State {
         DID_APPLY_HIST_EQ, COULD_NOT_DETERMINE_SCALE
     }
     private Set<State> stateSet = new HashSet<State>();
     
     private final boolean doDetermineScale;
-    
-    private final boolean debug;
-    
-    private final String debugTagPrefix;
     
     private TransformationParameters params = null;
             
@@ -59,21 +54,15 @@ public class FeatureMatcherWrapper {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2) {
+    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2,
+        FeatureMatcherSettings settings) {
+                
         img1 = image1;
         img2 = image2;
+        
         doDetermineScale = true;
-        debug = false;
-        debugTagPrefix = "";
-    }
-    
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-        String debugTagPrefix) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = true;
-        debug = true;
-        this.debugTagPrefix = debugTagPrefix;
+        
+        this.settings = settings.copy();
     }
     
     /**
@@ -85,33 +74,13 @@ public class FeatureMatcherWrapper {
      * @param parameters 
      */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-        TransformationParameters parameters) {
+        TransformationParameters parameters, FeatureMatcherSettings settings) {
+        
         img1 = image1;
         img2 = image2;
         doDetermineScale = false;
-        params = parameters;
-        debug = false;
-        debugTagPrefix = "";
-    }
-    
-    /**
-     * constructor accepting transformation parameters and a debugging tag for
-     * image names.  Note, for best results, the standard deviations within 
-     * parameters should be populated because they are used as tolerances in 
-     * matching.
-     * @param image1
-     * @param image2
-     * @param parameters
-     * @param debugTagPrefix 
-     */
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
-        TransformationParameters parameters, String debugTagPrefix) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = false;
-        params = parameters;
-        debug = true;
-        this.debugTagPrefix = debugTagPrefix;
+        
+        this.settings = settings.copy();
     }
     
     public CorrespondenceList matchFeatures() throws IOException, 
@@ -139,7 +108,7 @@ public class FeatureMatcherWrapper {
                         
         cl = extractAndMatch(params);
         
-        if (debug) {
+        if (settings.debug()) {
             printMatches(cl);
         }
         
@@ -148,17 +117,9 @@ public class FeatureMatcherWrapper {
     
     private CorrespondenceList solveForScale() throws IOException, 
         NoSuchAlgorithmException {
-        
-        BlobScaleFinderWrapper scaleFinder = null;
-        
-        boolean useBinned = true;
-            
-        if (debug) {
-            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned, 
-                debugTagPrefix);
-        } else {
-            scaleFinder = new BlobScaleFinderWrapper(img1, img2, useBinned);
-        }
+                        
+        BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(img1, 
+            img2, settings);
         
         params = scaleFinder.calculateScale();
         
@@ -214,7 +175,7 @@ public class FeatureMatcherWrapper {
             }
         }
                 
-        if (debug) {
+        if (settings.debug()) {
             printMatches(stats);
         }
         
@@ -246,7 +207,7 @@ public class FeatureMatcherWrapper {
             
             addStatsToSolution(cl, stats);
             
-            if (debug) {
+            if (settings.debug()) {
                 printMatches(cl.getPoints1(), cl.getPoints2());
                 //MiscDebug.print(cl);
             }
@@ -313,18 +274,18 @@ public class FeatureMatcherWrapper {
         cornerRegions1 = detector.getEdgeCornerRegions(true);
         //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
     
-        if (debug) {
+        if (settings.debug()) {
             List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
                 Image imgCp = img1.copyImage();
                 ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_edges_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_1_edges_");
                 imgCp = img1.copyImage();
                 for (CornerRegion cr : cornerRegions1) {
                     int x = cr.getX()[cr.getKMaxIdx()];
                     int y = cr.getY()[cr.getKMaxIdx()];
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_cornerregions_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_1_cornerregions_");
                 Map<Integer, Set<Integer>> junctionMap = detector.getJunctionMap();
                 imgCp = img1.copyImage();
                 for (Integer pixIndex : junctionMap.keySet()) {
@@ -332,7 +293,7 @@ public class FeatureMatcherWrapper {
                     int y = imgCp.getRow(pixIndex.intValue());
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_junctions_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_1_junctions_");
                 imgCp = img1.copyImage();
                 PairIntArray corners = detector.getCornersInOriginalReferenceFrame();
                 for (int ii = 0; ii < corners.getN(); ++ii) {
@@ -340,7 +301,7 @@ public class FeatureMatcherWrapper {
                     int y = corners.getY(ii);
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_1_corners_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_1_corners_");
         }
         
         //-------
@@ -354,18 +315,18 @@ public class FeatureMatcherWrapper {
         cornerRegions2 = detector.getEdgeCornerRegions(true);
         //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
         
-        if (debug) {
+        if (settings.debug()) {
             List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
                 Image imgCp = img2.copyImage();
                 ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_edges_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_edges_");
                 imgCp = img2.copyImage();
                 for (CornerRegion cr : cornerRegions2) {
                     int x = cr.getX()[cr.getKMaxIdx()];
                     int y = cr.getY()[cr.getKMaxIdx()];
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_corneregions_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_corneregions_");
                 Map<Integer, Set<Integer>> junctionMap = detector.getJunctionMap();
                 imgCp = img2.copyImage();
                 for (Integer pixIndex : junctionMap.keySet()) {
@@ -373,7 +334,7 @@ public class FeatureMatcherWrapper {
                     int y = imgCp.getRow(pixIndex.intValue());
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_junctions_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_junctions_");
                 imgCp = img2.copyImage();
                 PairIntArray corners = detector.getCornersInOriginalReferenceFrame();
                 for (int ii = 0; ii < corners.getN(); ++ii) {
@@ -381,7 +342,7 @@ public class FeatureMatcherWrapper {
                     int y = corners.getY(ii);
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
-                MiscDebug.writeImage(imgCp, debugTagPrefix + "_2_corners_");
+                MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_corners_");
         }
     }
 
@@ -594,7 +555,7 @@ public class FeatureMatcherWrapper {
             }
         }
         
-        if (debug) {
+        if (settings.debug()) {
             Image imcp = img2.copyImage();
             for (int i = 0; i < xPoly0.length; ++i) {
                 ImageIOHelper.addPointToImage(xPoly0[i], yPoly0[i], imcp, 5, 0, 255, 255);
@@ -614,7 +575,7 @@ public class FeatureMatcherWrapper {
                 ImageIOHelper.addPointToImage(p2.getX() * stat.getBinFactor2(), 
                     p2.getY() * stat.getBinFactor2(), imcp, 2, 255, 0, 0);
             }
-            MiscDebug.writeImage(imcp, debugTagPrefix + "_scale_points");
+            MiscDebug.writeImage(imcp, settings.getDebugTag() + "_scale_points");
         }
         
         return (nq == 4);
@@ -712,9 +673,11 @@ public class FeatureMatcherWrapper {
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
         
-        IntensityFeatures features1 = new IntensityFeatures(5, useNormalizedFeatures);
+        IntensityFeatures features1 = new IntensityFeatures(5, 
+            settings.useNormalizedFeatures());
 
-        IntensityFeatures features2 = new IntensityFeatures(5, useNormalizedFeatures);
+        IntensityFeatures features2 = new IntensityFeatures(5, 
+            settings.useNormalizedFeatures());
         
         int rotD = Math.round(params.getRotationInDegrees());
         
@@ -810,8 +773,8 @@ public class FeatureMatcherWrapper {
         int ts = MiscDebug.getCurrentTimeFormatted();
         GreyscaleImage gsImg1 = img1.copyToGreyscale();
         GreyscaleImage gsImg2 = img2.copyToGreyscale();
-        String name1 = "1_" + debugTagPrefix + "_" + ts;
-        String name2 = "2_" + debugTagPrefix + "_" + ts;
+        String name1 = "1_" + settings.getDebugTag() + "_" + ts;
+        String name2 = "2_" + settings.getDebugTag() + "_" + ts;
         name1 = name1 + "_matched";
         name2 = name2 + "_matched";
         MiscDebug.plotCorners(gsImg1, m1, name1, 2);

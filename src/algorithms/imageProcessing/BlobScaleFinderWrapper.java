@@ -16,10 +16,6 @@ public class BlobScaleFinderWrapper {
 
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    protected boolean debug = true;
-    
-    private String debugTag = "";
-
     protected final int binnedImageMaxDimension = 512;
 
     /*
@@ -56,15 +52,11 @@ public class BlobScaleFinderWrapper {
     protected final IntensityFeatures features2;
     protected final IntensityFeatures featuresBinned2;
 
-    private final boolean skipBinnedImages;
-    private boolean useBinned1 = false;
-    private boolean useBinned2 = false;
+    private final FeatureMatcherSettings settings;
     
     private int binFactor1 = 1;
     private int binFactor2 = 1;
     
-    private boolean useNormalizedFeatures = true;
-
     private boolean useSameSegmentation = false;
 
     private MatchingSolution solution = null;
@@ -81,84 +73,32 @@ public class BlobScaleFinderWrapper {
      * the same scale reference frame as image2.
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
-     */
-    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2) {
-
-        debug = false;
-        
-        img1Helper = new BlobPerimeterHelper(img1, "1");
-
-        img2Helper = new BlobPerimeterHelper(img2, "2");
-
-        features1 = new IntensityFeatures(5, useNormalizedFeatures);
-
-        features2 = new IntensityFeatures(5, useNormalizedFeatures);
-        
-        skipBinnedImages = true;
-        useBinned1 = false;
-        useBinned2 = false;
-
-        featuresBinned1 = null;
-        featuresBinned2 = null;
-    }
-    
-    /**
-     *
-     * @param img1 the first image holding objects for which a Euclidean
-     * transformation is found that can be applied to put it in
-     * the same scale reference frame as image2.
-     * @param img2 the second image representing the reference frame that
-     * image1 is transformed to using the resulting parameters,
-     * @param debugTagPrefix
+     * @param settings
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, 
-        String debugTagPrefix) {
+        FeatureMatcherSettings settings) {
 
-        debug = true;
+        this.settings = settings.copy();
         
-        debugTag = debugTagPrefix;
+        if (settings.debug()) {
+            
+            img1Helper = new BlobPerimeterHelper(img1, settings.getDebugTag() + "_1");
+
+            img2Helper = new BlobPerimeterHelper(img2, settings.getDebugTag() + "_2");
+            
+        } else {
+            
+            img1Helper = new BlobPerimeterHelper(img1);
+
+            img2Helper = new BlobPerimeterHelper(img2);
+        }
         
-        img1Helper = new BlobPerimeterHelper(img1, debugTagPrefix + "_1");
+        features1 = new IntensityFeatures(5, settings.useNormalizedFeatures());
 
-        img2Helper = new BlobPerimeterHelper(img2, debugTagPrefix + "_2");
-
-        features1 = new IntensityFeatures(5, useNormalizedFeatures);
-
-        features2 = new IntensityFeatures(5, useNormalizedFeatures);
-        
-        skipBinnedImages = true;
-        useBinned1 = false;
-        useBinned2 = false;
-
-        featuresBinned1 = null;
-        featuresBinned2 = null;
-    }
-    
-    /**
-     *
-     * @param img1 the first image holding objects for which a Euclidean
-     * transformation is found that can be applied to put it in
-     * the same scale reference frame as image2.
-     * @param img2 the second image representing the reference frame that
-     * image1 is transformed to using the resulting parameters,
-     * @param startWithBinnedImages if true, starts the image processing
-     * with images binned to 300 pixels or less per dimension.
-     */
-    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
-        startWithBinnedImages) {
-
-        debug = false;
-        
-        img1Helper = new BlobPerimeterHelper(img1);
-
-        img2Helper = new BlobPerimeterHelper(img2);
-
-        if (startWithBinnedImages) {
-         
-            skipBinnedImages = false;
-            useBinned1 = true;
-            useBinned2 = true;
-        
+        features2 = new IntensityFeatures(5, settings.useNormalizedFeatures());
+                        
+        if (settings.startWithBinnedImages()) {
+            
             img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             
             binFactor1 = img1Helper.getBinFactor();
@@ -167,80 +107,16 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures(5, useNormalizedFeatures);
+            featuresBinned1 = new IntensityFeatures(5, settings.useNormalizedFeatures());
             
-            featuresBinned2 = new IntensityFeatures(5, useNormalizedFeatures);
-            
-        } else {
-            
-            skipBinnedImages = true;
-            useBinned1 = false;
-            useBinned2 = false;
-            featuresBinned1 = null;
-            featuresBinned2 = null;
-            
-        }
-
-        features1 = new IntensityFeatures(5, useNormalizedFeatures);
-
-        features2 = new IntensityFeatures(5, useNormalizedFeatures);
-
-    }
-
-    /**
-     *
-     * @param img1 the first image holding objects for which a Euclidean
-     * transformation is found that can be applied to put it in
-     * the same scale reference frame as image2.
-     * @param img2 the second image representing the reference frame that
-     * image1 is transformed to using the resulting parameters,
-     * @param startWithBinnedImages if true, starts the image processing
-     * with images binned to 300 pixels or less per dimension.
-     * @param debugTag
-     */
-    public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, boolean
-        startWithBinnedImages, String debugTag) {
-
-        debug = true;
-        
-        this.debugTag = debugTag;
-        
-        img1Helper = new BlobPerimeterHelper(img1, debugTag + "_1");
-
-        img2Helper = new BlobPerimeterHelper(img2, debugTag + "_2");
-
-        if (startWithBinnedImages) {
-         
-            skipBinnedImages = false;
-            useBinned1 = true;
-            useBinned2 = true;
-        
-            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-            
-            binFactor1 = img1Helper.getBinFactor();
-
-            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-            
-            binFactor2 = img2Helper.getBinFactor();
-            
-            featuresBinned1 = new IntensityFeatures(5, useNormalizedFeatures);
-            
-            featuresBinned2 = new IntensityFeatures(5, useNormalizedFeatures);
+            featuresBinned2 = new IntensityFeatures(5, settings.useNormalizedFeatures());
             
         } else {
             
-            skipBinnedImages = true;
-            useBinned1 = false;
-            useBinned2 = false;
             featuresBinned1 = null;
-            featuresBinned2 = null;
             
+            featuresBinned2 = null;  
         }
-
-        features1 = new IntensityFeatures(5, useNormalizedFeatures);
-
-        features2 = new IntensityFeatures(5, useNormalizedFeatures);
-
     }
 
     /**
@@ -327,14 +203,11 @@ public class BlobScaleFinderWrapper {
         
         TransformationParameters params = null;
         
-        boolean[] useBinned = skipBinnedImages ? 
-            new boolean[]{false} : new boolean[]{true, false};
+        boolean[] useBinned = settings.startWithBinnedImages()? 
+            new boolean[]{true, false} : new boolean[]{false};
         
         for (boolean ub : useBinned) {
             
-            useBinned1 = ub;
-            useBinned2 = ub;
-        
             /*
             if (params == null) {
                 algType = AlgType.CORNERS_ORDERED;
@@ -349,7 +222,7 @@ public class BlobScaleFinderWrapper {
 
             if (params == null) {
                 algType = AlgType.CORNERS_COMBINATIONS;
-                params = calculateScaleImpl();
+                params = calculateScaleImpl(ub);
             }
             
             /*
@@ -362,8 +235,8 @@ public class BlobScaleFinderWrapper {
         return params;
     }
 
-    private TransformationParameters calculateScaleImpl() throws IOException,
-        NoSuchAlgorithmException {
+    private TransformationParameters calculateScaleImpl(boolean useBinned) 
+        throws IOException, NoSuchAlgorithmException {
         
         /*
         depending on image statistics, different combinations of segmentation
@@ -404,22 +277,22 @@ public class BlobScaleFinderWrapper {
             SegmentationType segmentationType2 = seg2[ordered2Idx];
 
             log.info("for 1: " + segmentationType1.name() + " alg=" + algType.name()
-                + " binned=" + useBinned1 + " useSameSegmentation=" + useSameSegmentation
+                + " binned=" + useBinned + " useSameSegmentation=" + useSameSegmentation
                 + " ordered1Idx=" + ordered1Idx);
             log.info("for 2: " + segmentationType2.name()
-                + " binned=" + useBinned2 + " ordered2Idx=" + ordered2Idx);
+                + " binned=" + useBinned + " ordered2Idx=" + ordered2Idx);
 
             IntensityFeatures f1;
             IntensityFeatures f2;
 
-            if (useBinned1) {
+            if (useBinned) {
                 img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
                 f1 = featuresBinned1;
             } else {
                 f1 = features1;
             }
 
-            if (useBinned2) {
+            if (useBinned) {
                 img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
                 f2 = featuresBinned2;
             } else {
@@ -428,11 +301,11 @@ public class BlobScaleFinderWrapper {
 
             long t0 = System.currentTimeMillis();
             
-            img1Helper.applySegmentation(segmentationType1, useBinned1);
+            img1Helper.applySegmentation(segmentationType1, useBinned);
 
             long t1 = System.currentTimeMillis();
             
-            img2Helper.applySegmentation(segmentationType2, useBinned2);
+            img2Helper.applySegmentation(segmentationType2, useBinned);
 
             long t2 = System.currentTimeMillis();
             
@@ -450,9 +323,11 @@ public class BlobScaleFinderWrapper {
                 algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
                 
                 if (blobContourHelper1 == null) {
-                    if (debug) {
-                        blobContourHelper1 = new BlobContourHelper(img1Helper, "1");
-                        blobContourHelper2 = new BlobContourHelper(img2Helper, "2");
+                    if (settings.debug()) {
+                        blobContourHelper1 = new BlobContourHelper(img1Helper, 
+                            settings.getDebugTag() + "_1");
+                        blobContourHelper2 = new BlobContourHelper(img2Helper,
+                            settings.getDebugTag() + "_2");
                     } else {
                         blobContourHelper1 = new BlobContourHelper(img1Helper);
                         blobContourHelper2 = new BlobContourHelper(img2Helper);
@@ -460,17 +335,19 @@ public class BlobScaleFinderWrapper {
                 }
 
                 blobContourHelper1.generatePerimeterContours(
-                    segmentationType1, useBinned1);
+                    segmentationType1, useBinned);
                 blobContourHelper2.generatePerimeterContours(
-                    segmentationType2, useBinned2);
+                    segmentationType2, useBinned);
                 
             } else if (algType.equals(AlgType.CORNERS_ORDERED) || 
                 algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
                 if (blobCornerHelper1 == null) {
-                    if (debug) {
-                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, "!");
-                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, "2");
+                    if (settings.debug()) {
+                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, 
+                            settings.getDebugTag() + "_!");
+                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, 
+                            settings.getDebugTag() + "_2");
                     } else {
                         blobCornerHelper1 = new BlobCornerHelper(img1Helper);
                         blobCornerHelper2 = new BlobCornerHelper(img2Helper);
@@ -480,12 +357,12 @@ public class BlobScaleFinderWrapper {
                 t0 = System.currentTimeMillis();
                 
                 blobCornerHelper1.generatePerimeterCorners(
-                    segmentationType1, useBinned1);
+                    segmentationType1, useBinned);
                 
                 t1 = System.currentTimeMillis();
                 
                 blobCornerHelper2.generatePerimeterCorners(
-                    segmentationType2, useBinned2);
+                    segmentationType2, useBinned);
 
                 t2 = System.currentTimeMillis();
                 t1Sec = (t1 - t0)/1000;
@@ -500,61 +377,65 @@ public class BlobScaleFinderWrapper {
                 
                 BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
 
-                if (debug) {
+                if (settings.debug()) {
                     bsFinder.setToDebug();
                 }
          
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
-                    segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2);
+                    segmentationType1, useBinned, blobCornerHelper2, f2,
+                    segmentationType2, useBinned);
 
-                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
-                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned);
+                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned);
                 
             } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {
                 
                 BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();
 
-                if (debug) {
+                if (settings.debug()) {
                     bsFinder.setToDebug();
                 }
         
                 soln = bsFinder.solveForScale(blobContourHelper1, f1,
-                    segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2);
+                    segmentationType1, useBinned, blobContourHelper2, f2,
+                    segmentationType2, useBinned);
 
-                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
-                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned);
+                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned);
                 
             } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
                 
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
-                if (debug) {
+                if (settings.debug()) {
                     bsFinder.setToDebug();
                 }
         
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
-                    segmentationType1, useBinned1, blobCornerHelper2, f2,
-                    segmentationType2, useBinned2);
+                    segmentationType1, useBinned, blobCornerHelper2, f2,
+                    segmentationType2, useBinned);
 
-                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
-                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, 
+                    useBinned);
+                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, 
+                    useBinned);
 
             } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
 
                 BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
-                if (debug) {
+                if (settings.debug()) {
                     bsFinder.setToDebug();
                 }
                 
                 soln = bsFinder.solveForScale(blobContourHelper1, f1,
-                    segmentationType1, useBinned1, blobContourHelper2, f2,
-                    segmentationType2, useBinned2);
+                    segmentationType1, useBinned, blobContourHelper2, f2,
+                    segmentationType2, useBinned);
 
-                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned1);
-                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned2);
+                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, 
+                    useBinned);
+                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, 
+                    useBinned);
                 
             }
        
@@ -568,8 +449,8 @@ public class BlobScaleFinderWrapper {
                 TransformationParameters params = soln.getParams();
                 
                 log.info("params for type"
-                    + " (" + segmentationType1.name() + ", binned=" + useBinned1 + ")"
-                    + " (" + segmentationType2.name() + ", binned=" + useBinned2 + ")"
+                    + " (" + segmentationType1.name() + ", binned=" + useBinned + ")"
+                    + " (" + segmentationType2.name() + ", binned=" + useBinned + ")"
                     + " : " + params.toString());
 
                 log.info(String.format(
@@ -586,8 +467,8 @@ public class BlobScaleFinderWrapper {
                     solutionAlgType = algType;
                     solutionSegmentationType1 = segmentationType1;
                     solutionSegmentationType2 = segmentationType2;
-                    solutionUsedBinned1 = useBinned1;
-                    solutionUsedBinned2 = useBinned2;
+                    solutionUsedBinned1 = useBinned;
+                    solutionUsedBinned2 = useBinned;
                     solution = soln;
                     
                     return params;
@@ -597,9 +478,9 @@ public class BlobScaleFinderWrapper {
             // if arrive here, have to decide to keep current segmentation and
             // binning or increment.  at least one index has to change
 
-            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned1
+            log.info("for 1: " + segmentationType1.name() + " binned=" + useBinned
                 + " nC1=" + n1);
-            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned2
+            log.info("for 2: " + segmentationType2.name() + " binned=" + useBinned
                 + " nC2=" + n2);
 
             if (useSameSegmentation) {

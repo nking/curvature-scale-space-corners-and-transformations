@@ -3,15 +3,22 @@
        public int calculate45DegreeOrientation(GreyscaleImage img, 
         final int xCenter, final int yCenter) 
 
--- checkerboard is still not matched correctly. 
-   -- possibly due to illumination correction in features.
-      yes, when use unnormalized intensity features, the match occurs
-      -- adding logic for user enabled change of that
+-- might need to make a method for the latest segmentation that can
+   correct for equal values of green and red and blue by making
+   3 separate wavelet segmentations and combining them in a way
+   to preserve differences, but only if flag is set.  this kind
+   of correction could possible make matching of different images with
+   different illumination more difficult (sky conditions, sun altitude, room lighting etc).
 
 ** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
    sure keys will never overflow a long
 
 ** -- impl a circle hough transform
+   -- and explore elliptical transforms for the rainbow fitting which
+      currently has a long runtime.
+   -- low priority: 
+      explore using the hough transform for lines to find the astronomical
+      "fundamental plane" of 3 dimensional or multi-dimensional data.
 
 **-- use the added half dome test images to assert that matching same
      from other cameras is working

@@ -20,6 +20,10 @@ public class EpipolarSolverTest extends TestCase {
                 
         String fileName1, fileName2;
         
+        FeatureMatcherSettings settings = new FeatureMatcherSettings();
+        settings.setDebug(true);
+        settings.setStartWithBinnedImages(true);
+        
         // TODO: follow up on changes needed for repeated patterns
         //    with small projection effects.
         //    need to use matching of top k solutions...
@@ -29,35 +33,41 @@ public class EpipolarSolverTest extends TestCase {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 1: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 3: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 default: {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
+                    settings.setUseNormalizedFeatures(false);
                     break;
                 }
             }
-            runEpipolarSolver(fileName1, fileName2, false, false);
+            runEpipolarSolver(fileName1, fileName2, settings, false, false);
         }
     }
     
@@ -65,35 +75,44 @@ public class EpipolarSolverTest extends TestCase {
                 
         String fileName1, fileName2;
         
+        FeatureMatcherSettings settings = new FeatureMatcherSettings();
+        settings.setDebug(true);
+        settings.setStartWithBinnedImages(true);
+        
         for (int i = 0; i < 5; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 1: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 3: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 default: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
             }
-            runEpipolarSolver(fileName1, fileName2, true, false);
+            runEpipolarSolver(fileName1, fileName2, settings, true, false);
         }
     }
     
@@ -101,39 +120,49 @@ public class EpipolarSolverTest extends TestCase {
                 
         String fileName1, fileName2;
         
+        FeatureMatcherSettings settings = new FeatureMatcherSettings();
+        settings.setDebug(true);
+        settings.setStartWithBinnedImages(true);
+        
         for (int i = 0; i < 4; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 1: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 3: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 default: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
             }
-            runEpipolarSolver(fileName1, fileName2, false, true);
+            runEpipolarSolver(fileName1, fileName2, settings, false, true);
         }
     }
 
     private void runEpipolarSolver(String fileName1, String fileName2, 
+        FeatureMatcherSettings settings, 
         boolean rotateBy90, boolean useParameters) throws Exception {
         
         int idx = fileName1.lastIndexOf(".");
@@ -159,9 +188,11 @@ public class EpipolarSolverTest extends TestCase {
         
         log.info("fileName1=" + fileName1);
         
+        settings.setDebugTag(fileName1Root);
+        
         EpipolarSolver solver = null;
         if (!useParameters) {
-            solver = new EpipolarSolver(img1, img2, fileName1Root);
+            solver = new EpipolarSolver(img1, img2, settings);
         } else {
             TransformationParameters parameters = new TransformationParameters();
             parameters.setOriginX(0);
@@ -203,7 +234,7 @@ public class EpipolarSolverTest extends TestCase {
                 float[] stdevs = new float[]{0.01f, 0.014f, 8.95f, 11.43f};
                 parameters.setStandardDeviations(stdevs);
             }
-            solver = new EpipolarSolver(img1, img2, parameters, fileName1Root);
+            solver = new EpipolarSolver(img1, img2, parameters, settings);
         }
         
         StereoProjectionTransformerFit fit = solver.solve();

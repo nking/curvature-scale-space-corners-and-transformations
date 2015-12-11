@@ -36,10 +36,6 @@ public class EpipolarSolver {
     
     private final boolean doDetermineScale;
     
-    private final boolean debug;
-    
-    private final String debugTagPrefix;
-    
     private TransformationParameters params = null;
             
     private float scaleTol = 0.2f;
@@ -52,24 +48,19 @@ public class EpipolarSolver {
     private PairFloatArray solutionLeftXY = null;
     private PairFloatArray solutionRightXY = null;
     
+    private final FeatureMatcherSettings featureSettings;
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public EpipolarSolver(ImageExt image1, ImageExt image2) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = true;
-        debug = false;
-        debugTagPrefix = "";
-        state = State.INITIALIZED;
-    }
-    
     public EpipolarSolver(ImageExt image1, ImageExt image2, 
-        String debugTagPrefix) {
+        FeatureMatcherSettings settings) {
+        
         img1 = image1;
         img2 = image2;
         doDetermineScale = true;
-        debug = true;
-        this.debugTagPrefix = debugTagPrefix;
+        
+        featureSettings = settings.copy();
+        
         state = State.INITIALIZED;
     }
     
@@ -82,34 +73,15 @@ public class EpipolarSolver {
      * @param parameters 
      */
     public EpipolarSolver(ImageExt image1, ImageExt image2, 
-        TransformationParameters parameters) {
+        TransformationParameters parameters, FeatureMatcherSettings settings) {
+        
         img1 = image1;
         img2 = image2;
         doDetermineScale = false;
         params = parameters;
-        debug = false;
-        debugTagPrefix = "";
-        state = State.INITIALIZED;
-    }
-    
-    /**
-     * constructor accepting transformation parameters and a debugging tag for
-     * image names.  Note, for best results, the standard deviations within 
-     * parameters should be populated because they are used as tolerances in 
-     * matching.
-     * @param image1
-     * @param image2
-     * @param parameters
-     * @param debugTagPrefix 
-     */
-    public EpipolarSolver(ImageExt image1, ImageExt image2, 
-        TransformationParameters parameters, String debugTagPrefix) {
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = false;
-        params = parameters;
-        debug = true;
-        this.debugTagPrefix = debugTagPrefix;
+        
+        featureSettings = settings.copy();
+        
         state = State.INITIALIZED;
     }
     
@@ -123,17 +95,9 @@ public class EpipolarSolver {
         FeatureMatcherWrapper wrapper = null;
         
         if (params != null) {
-            if (debug) {
-                wrapper = new FeatureMatcherWrapper(img1, img2, params, debugTagPrefix);
-            } else {
-                wrapper = new FeatureMatcherWrapper(img1, img2, params);
-            }
+            wrapper = new FeatureMatcherWrapper(img1, img2, params, featureSettings);
         } else {
-            if (debug) {
-                wrapper = new FeatureMatcherWrapper(img1, img2, debugTagPrefix);
-            } else {
-                wrapper = new FeatureMatcherWrapper(img1, img2);
-            }
+            wrapper = new FeatureMatcherWrapper(img1, img2, featureSettings);
         }
         
         CorrespondenceList cl = wrapper.matchFeatures();
@@ -178,7 +142,7 @@ public class EpipolarSolver {
             
             this.solutionRightXY = outputRightXY;
             
-            if (debug) {
+            if (featureSettings.debug()) {
                 plotFit(fit);
             }
             
@@ -249,10 +213,10 @@ public class EpipolarSolver {
             dirPath = ResourceFinder.findDirectory("bin");
             
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_1_" + debugTagPrefix + ".png", img1);
+                dirPath + "/tmp_m_1_" + featureSettings.getDebugTag() + ".png", img1);
         
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_2_" + debugTagPrefix + ".png", img2);
+                dirPath + "/tmp_m_2_" + featureSettings.getDebugTag() + ".png", img2);
         
         } catch (IOException ex) {
             Logger.getLogger(EpipolarSolver.class.getName()).log(Level.SEVERE, null, ex);

@@ -19,8 +19,11 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
     public void test0() throws Exception {
 
+        FeatureMatcherSettings settings = new FeatureMatcherSettings();
+        settings.setDebug(true);
+        settings.setStartWithBinnedImages(true);
+        
         boolean rotate = false;
-        boolean useBinning = true;
 
         String fileName1, fileName2;
 
@@ -31,33 +34,37 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 1: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 3: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
-                    useBinning = true;
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
                 default: {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
-                    useBinning = true;
+                    settings.setUseNormalizedFeatures(false);
                     rotate = false;
                     break;
                 }
@@ -86,15 +93,10 @@ public class BlobScaleFinderWrapperTest extends TestCase {
 
             log.info("fileName=" + fileName1 + ", " + fileName2);
             
-            BlobScaleFinderWrapper scaleFinder = null;
+            settings.setDebugTag(fileName1Root);
             
-            if (useBinning) {
-                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, 
-                    true, fileName1Root);
-            } else {
-                scaleFinder = new BlobScaleFinderWrapper(img1Orig, img2Orig, 
-                    fileName1Root);
-            }
+            BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
+                img1Orig, img2Orig, settings);
             
             TransformationParameters params = scaleFinder.calculateScale();
 
