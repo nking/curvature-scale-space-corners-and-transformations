@@ -105,8 +105,8 @@ public class FeatureMatcher {
             }
                         
             int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
-            float[] xTrq0 = new float[len];
-            float[] yTrq0 = new float[xTrq0.length];
+            int[] xTrq0 = new int[len];
+            int[] yTrq0 = new int[xTrq0.length];
             int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
             int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
             IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, 
@@ -866,8 +866,8 @@ public class FeatureMatcher {
             }
             
             int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
-            float[] xTrq0 = new float[len];
-            float[] yTrq0 = new float[xTrq0.length];
+            int[] xTrq0 = new int[len];
+            int[] yTrq0 = new int[xTrq0.length];
             int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
             int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
             IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, rotD1, 
@@ -1193,8 +1193,8 @@ public class FeatureMatcher {
             }
             
             int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
-            float[] xTrq0 = new float[len];
-            float[] yTrq0 = new float[xTrq0.length];
+            int[] xTrq0 = new int[len];
+            int[] yTrq0 = new int[xTrq0.length];
             int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
             int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
             IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross, rotD1, xTrq0, yTrq0);
@@ -1875,5 +1875,4 @@ public class FeatureMatcher {
 
         return cl;
     }
-
 }

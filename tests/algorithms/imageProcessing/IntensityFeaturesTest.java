@@ -20,8 +20,8 @@ public class IntensityFeaturesTest extends TestCase {
         int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
         int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
     
-        float[] xTrq0 = new float[len];
-        float[] yTrq0 = new float[xTrq0.length];
+        int[] xTrq0 = new int[len];
+        int[] yTrq0 = new int[xTrq0.length];
         
         int rotationInDegrees = 45;
         
@@ -38,9 +38,9 @@ public class IntensityFeaturesTest extends TestCase {
             for (int dy = -range0; dy < range0; dy += cellDim) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < n2; ++i) {
-                    float xOff = xTrq0[idx];
-                    float yOff = yTrq0[idx];
-                    sb.append(String.format("(%.1f,%.1f) ", xOff, yOff));
+                    int xOff = xTrq0[idx];
+                    int yOff = yTrq0[idx];
+                    sb.append(String.format("(%d,%d) ", xOff, yOff));
                     if (xOff==0 && yOff==0) {
                         log.info("center at output index=" + oIdx);
                     }

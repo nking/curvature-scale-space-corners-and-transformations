@@ -131,7 +131,7 @@ public class IntensityFeatures {
      */
     IntensityDescriptor extractIntensityCellDesc(GreyscaleImage img, 
         final int xCenter, final int yCenter, final int rotation, 
-        final float[] xTrq0, float[] yTrq0) {
+        final int[] xTrq0, int[] yTrq0) {
         
         if (img == null) {
             throw new IllegalStateException("img cannot be null");
@@ -828,7 +828,7 @@ public class IntensityFeatures {
     
     static void populateRotationOffsetsQ0(final int cellDim,
         final int nCellsAcross, final int rotation,
-        float[] outTrX, float[] outTrY) {
+        int[] outTrX, int[] outTrY) {
 
         int nColsHalf = nCellsAcross / 2;
         int range0 = cellDim * nColsHalf;
@@ -855,8 +855,8 @@ public class IntensityFeatures {
                     for (int dyc = 0; dyc < cellDim; ++dyc) {
                         double xt = (((dx + dxc) * mc) + ((dy + dyc) * ms));
                         double yt = (-((dx + dxc) * ms)) + ((dy + dyc) * mc);
-                        outTrX[count] = (float)xt;
-                        outTrY[count] = (float)yt;
+                        outTrX[count] = (int)Math.round(xt);
+                        outTrY[count] = (int)Math.round(yt);
                         count++;
                     }
                 }
@@ -903,8 +903,8 @@ public class IntensityFeatures {
         int xCenter, int yCenter, int rotation) {
         
         int len = getDefaultLengthForCellExtractOffsets();
-        float[] xTrq0 = new float[len];
-        float[] yTrq0 = new float[xTrq0.length];
+        int[] xTrq0 = new int[len];
+        int[] yTrq0 = new int[xTrq0.length];
         
         int cellDim = getDefaultCellDimForExtract();
         
@@ -940,7 +940,7 @@ public class IntensityFeatures {
      * @return
      */
     public IntensityDescriptor extractGsIntensityForCells2(GreyscaleImage img,
-        int xCenter, int yCenter, float[] xTrq0, float[] yTrq0) {
+        int xCenter, int yCenter, int[] xTrq0, int[] yTrq0) {
         
         if (img == null) {
             throw new IllegalArgumentException("img cannot be null");
@@ -956,6 +956,8 @@ public class IntensityFeatures {
         /*
         defaults: cellDim=2, nCellsAcross=6
         same range in dx, dy could be achieved w/ coarser cellDim=6, nCellsAcross=2
+        int len = (2*nCellsAcross) * (2*nCellsAcross);
+        range0 = 2 * (nCellsAcross/2) = 6
         */
         int cellDim = getDefaultCellDimForExtract();        
         int nCellsAcross = getDefaultNCellsAcrossForExtract();
@@ -988,11 +990,11 @@ public class IntensityFeatures {
                 // ---- sum within the cell ----
                 int v = 0;
                 for (int i = 0; i < n2; ++i) {
-                    float xOff = xTrq0[idx];
-                    float yOff = yTrq0[idx];
+                    int xOff = xTrq0[idx];
+                    int yOff = yTrq0[idx];
                     idx++;
-                    int x = Math.round(xOff + xCenter);
-                    int y = Math.round(yOff + yCenter);
+                    int x = xOff + xCenter;
+                    int y = yOff + yCenter;
                     if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
                         withinBounds = false;
                         break;
