@@ -1071,7 +1071,7 @@ public class IntensityFeatures {
     }
 
     private Integer calculate45DegOr(GreyscaleImage img, int x, int y) 
-    throws CornerRegion.CornerRegionDegneracyException {
+        throws CornerRegion.CornerRegionDegneracyException {
         
         /*
                |3|3|2|1|1|

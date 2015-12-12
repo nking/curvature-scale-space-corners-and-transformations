@@ -1,13 +1,8 @@
--- add tests for
-   IntensityFeatures
-       public int calculate45DegreeOrientation(GreyscaleImage img, 
-        final int xCenter, final int yCenter) 
-
 -- might need to make a method for the latest segmentation that can
    correct for equal values of green and red and blue by making
    3 separate wavelet segmentations and combining them in a way
    to preserve differences, but only if flag is set.  this kind
-   of correction could possible make matching of different images with
+   of correction could possibly make matching of different images with
    different illumination more difficult (sky conditions, sun altitude, room lighting etc).
 
 ** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
@@ -23,7 +18,7 @@
 **-- use the added half dome test images to assert that matching same
      from other cameras is working
 
-**-- make the feature matcher offset arrays improvements below
+***-- make the feature matcher offset arrays improvements below
 
 -- 
    -- consider comment below on cases where there are no matchable
