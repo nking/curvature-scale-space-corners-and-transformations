@@ -35,8 +35,8 @@ public class RotatedOffsets {
      * length of array = (2*nCellsAcross) * (2*nCellsAcross) = 144
      * </pre>
      */
-    private int[] xOffsets = new int[range0 * range0];
-    private int[] yOffsets = new int[xOffsets.length];
+    private final int[] xOffsets = new int[4 * range0 * range0];
+    private final int[] yOffsets = new int[xOffsets.length];
 
     /**
      * range0, that is 6, can be stored in 3 bits, and the negative portion
@@ -138,17 +138,22 @@ public class RotatedOffsets {
         double ms = Math.sin(rotationInRadians);
 
         //64 bits / itemBits = 16 values per item
+        
+        long minAllowed = Long.MIN_VALUE;
+        
         long mask = (1L << itemBits) - 1L;
 
         // 144 / 16 = 9
         long[] compresedOffsets = new long[9];
 
-        int count = 0;
+        int count = 0;        
+        int count16 = 0;
+        
+        // move all numbers down to fill the signed portion of a long
+        long datum16 = minAllowed;
+        
         for (int dx = -range0; dx < range0; dx += cellDimension) {
             for (int dy = -range0; dy < range0; dy += cellDimension) {
-
-                int count16 = 0;
-                long datum16 = 0;
 
                 for (int dxc = 0; dxc < cellDimension; ++dxc) {
                     for (int dyc = 0; dyc < cellDimension; ++dyc) {
@@ -159,10 +164,10 @@ public class RotatedOffsets {
 
                         // if it's a negative number, make the number a positive 
                         // and times two then make the last bit to 1 to make it odd
-                        int t = (v < 0) ? ((-1 * v << 1) | 1) : (v << 1);
-
+                        long t = (v < 0) ? ((-1 * v << 1) | 1) : (v << 1);
+                        
                         long shift = (long) (itemBits * count16);
-
+                        
                         long shifted = (t & mask) << shift;
 
                         datum16 += shifted;
@@ -173,7 +178,7 @@ public class RotatedOffsets {
                             compresedOffsets[count] = datum16;
                             count++;
                             count16 = 0;
-                            datum16 = 0;
+                            datum16 = minAllowed;
                         }
                     }
                 }
@@ -188,6 +193,8 @@ public class RotatedOffsets {
         double rotationInRadians = rotationInDegrees * Math.PI / 180.;
         double mc = Math.cos(rotationInRadians);
         double ms = Math.sin(rotationInRadians);
+        
+        int minAllowed = Integer.MIN_VALUE;
 
         //32 bits / itemBits = 8 values per item
         int mask = (1 << itemBits) - 1;
@@ -196,11 +203,13 @@ public class RotatedOffsets {
         int[] compresedOffsets = new int[18];
 
         int count = 0;
+        int count8 = 0;
+        
+        // move all numbers down to fill the signed portion of a long
+        int datum8 = minAllowed;
+        
         for (int dx = -range0; dx < range0; dx += cellDimension) {
             for (int dy = -range0; dy < range0; dy += cellDimension) {
-
-                int count8 = 0;
-                int datum8 = 0;
 
                 for (int dxc = 0; dxc < cellDimension; ++dxc) {
                     for (int dyc = 0; dyc < cellDimension; ++dyc) {
@@ -212,7 +221,7 @@ public class RotatedOffsets {
                         // if it's a negative number, make the number a positive 
                         // and times two then make the last bit to 1 to make it odd
                         int t = (v < 0) ? ((-1 * v << 1) | 1) : (v << 1);
-
+                        
                         int shift = (itemBits * count8);
 
                         int shifted = (t & mask) << shift;
@@ -225,7 +234,7 @@ public class RotatedOffsets {
                             compresedOffsets[count] = datum8;
                             count++;
                             count8 = 0;
-                            datum8 = 0;
+                            datum8 = minAllowed;
                         }
                     }
                 }
@@ -237,6 +246,8 @@ public class RotatedOffsets {
 
     protected void populateYOffsetsLong(int rotationInDegrees) {
 
+        long minAllowed = Long.MIN_VALUE;
+        
         double rotationInRadians = rotationInDegrees * Math.PI / 180.;
         double mc = Math.cos(rotationInRadians);
         double ms = Math.sin(rotationInRadians);
@@ -248,11 +259,13 @@ public class RotatedOffsets {
         long[] compresedOffsets = new long[9];
 
         int count = 0;
+        int count16 = 0;
+        
+        // move all numbers down to fill the signed portion of a long
+        long datum16 = minAllowed;
+        
         for (int dx = -range0; dx < range0; dx += cellDimension) {
             for (int dy = -range0; dy < range0; dy += cellDimension) {
-
-                int count16 = 0;
-                long datum16 = 0;
 
                 for (int dxc = 0; dxc < cellDimension; ++dxc) {
                     for (int dyc = 0; dyc < cellDimension; ++dyc) {
@@ -277,7 +290,7 @@ public class RotatedOffsets {
                             compresedOffsets[count] = datum16;
                             count++;
                             count16 = 0;
-                            datum16 = 0;
+                            datum16 = minAllowed;
                         }
                     }
                 }
@@ -292,6 +305,8 @@ public class RotatedOffsets {
         double rotationInRadians = rotationInDegrees * Math.PI / 180.;
         double mc = Math.cos(rotationInRadians);
         double ms = Math.sin(rotationInRadians);
+        
+        int minAllowed = Integer.MIN_VALUE;
 
         //32 bits / itemBits = 8 values per item
         int mask = (1 << itemBits) - 1;
@@ -300,11 +315,13 @@ public class RotatedOffsets {
         int[] compresedOffsets = new int[18];
 
         int count = 0;
+        int count8 = 0;
+        
+        // move all numbers down to fill the signed portion of a long
+        int datum8 = minAllowed;
+        
         for (int dx = -range0; dx < range0; dx += cellDimension) {
             for (int dy = -range0; dy < range0; dy += cellDimension) {
-
-                int count8 = 0;
-                int datum8 = 0;
 
                 for (int dxc = 0; dxc < cellDimension; ++dxc) {
                     for (int dyc = 0; dyc < cellDimension; ++dyc) {
@@ -312,11 +329,11 @@ public class RotatedOffsets {
                         double yt = (-((dx + dxc) * ms)) + ((dy + dyc) * mc);
 
                         int v = (int) Math.round(yt);
-
+                        
                         // if it's a negative number, make the number a positive 
                         // and times two then make the last bit to 1 to make it odd
                         int t = (v < 0) ? ((-1 * v << 1) | 1) : (v << 1);
-
+                        
                         int shift = (itemBits * count8);
 
                         int shifted = (t & mask) << shift;
@@ -329,7 +346,7 @@ public class RotatedOffsets {
                             compresedOffsets[count] = datum8;
                             count++;
                             count8 = 0;
-                            datum8 = 0;
+                            datum8 = minAllowed;
                         }
                     }
                 }
@@ -341,6 +358,8 @@ public class RotatedOffsets {
     
     private void populateOffsets(long[] compresedOffsets, int[] outputOffsets) {
 
+        long minAllowed = Long.MIN_VALUE;
+        
         //64 bits / itemBits = 16 values per item
         long mask = (1L << itemBits) - 1L;
 
@@ -353,8 +372,8 @@ public class RotatedOffsets {
             // read each of the 16 datum in the item
             for (int j = 0; j < 16; ++j) {
 
-                long v = (item >> (long) (j * itemBits)) & mask;
-
+                long v = ((item - minAllowed) >> (long) (j * itemBits)) & mask;
+                
                 // decode to negative
                 long t = ((v & 1) == 1) ? -1 * (v >> 1) : v >> 1;
 
@@ -369,6 +388,8 @@ public class RotatedOffsets {
 
         //32 bits / itemBits = 8 values per item
         int mask = (1 << itemBits) - 1;
+        
+        int minAllowed = Integer.MIN_VALUE;
 
         int count = 0;
 
@@ -379,8 +400,8 @@ public class RotatedOffsets {
             // read each of the 8 datum in the item
             for (int j = 0; j < 8; ++j) {
 
-                int v = (item >> (j * itemBits)) & mask;
-
+                int v = ((item - minAllowed) >> (j * itemBits)) & mask;
+                
                 // decode to negative
                 int t = ((v & 1) == 1) ? -1 * (v >> 1) : v >> 1;
 
@@ -421,7 +442,7 @@ public class RotatedOffsets {
             populateOffsets(compresedOffsets, yOffsets);
         }
 
-        return xOffsets;
+        return yOffsets;
     }
 
     private void checkBounds(int rotationInDegrees) {
