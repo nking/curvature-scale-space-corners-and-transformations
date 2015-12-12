@@ -27,20 +27,6 @@ public class RotatedOffsetsTest extends TestCase {
             assertTrue(xOffsets.length == xExpected.length);
             assertTrue(yOffsets.length == yExpected.length);
             
-            
-            for (int i = 0; i < xExpected.length; ++i) {
-                int ae = xExpected[i];
-                int a = xOffsets[i];
-                if (ae != a) {
-                    int z = 1;
-                }
-                int be = yExpected[i];
-                int b = yOffsets[i];
-                if (be != b) {
-                    int z = 1;
-                }
-            }
-            
             assertTrue(Arrays.equals(xExpected, xOffsets));
             assertTrue(Arrays.equals(yExpected, yOffsets));
         }
