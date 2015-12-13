@@ -349,7 +349,7 @@ public class FeatureMatcherWrapper {
     private CorrespondenceList findCorrespondence(TransformationParameters 
         parameters) {
         
-        FeatureMatcher matcher = new FeatureMatcher();
+        FeatureMatcher featureMatcher = new FeatureMatcher();
         
         int tolXY;
         if (params.getStandardDeviations() != null) {
@@ -369,7 +369,7 @@ public class FeatureMatcherWrapper {
             dither = 4;
         }
         
-        CorrespondenceList cl = matcher.findSimilarFeatures(gsImg1,
+        CorrespondenceList cl = featureMatcher.findSimilarFeatures(gsImg1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2,
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
@@ -693,12 +693,13 @@ public class FeatureMatcherWrapper {
             int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();
             int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();
             int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();
-            
+
+            // have to discard the best angles found in stat and derive new
+            // for these higher resolution images
             FeatureComparisonStat compStat = 
-                featureMatcher.ditherAndRotateForBestLocation(
+                featureMatcher.ditherAndRotateForBestLocation2(
                     features1, features2, 
-                    x1, y1, Math.round(stat.getImg1PointRotInDegrees()),
-                    x2, y2, Math.round(stat.getImg2PointRotInDegrees()),
+                    x1, y1, x2, y2,
                     dither, rotD, rotationTolerance, gsImg1, gsImg2);
            
             if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {

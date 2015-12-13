@@ -31,10 +31,9 @@ public class BlobScaleFinderWrapper {
     should try (3) and/or (4) first then (2) and (1)
     */
     public static enum AlgType {
-        CONTOURS_ORDERED, CORNERS_ORDERED,
         CORNERS_COMBINATIONS, CONTOURS_COMBINATIONS
     }
-    protected AlgType algType = AlgType.CORNERS_ORDERED;
+    protected AlgType algType = AlgType.CORNERS_COMBINATIONS;
 
     protected final BlobPerimeterHelper img1Helper;
     protected final BlobPerimeterHelper img2Helper;
@@ -208,18 +207,6 @@ public class BlobScaleFinderWrapper {
         
         for (boolean ub : useBinned) {
             
-            /*
-            if (params == null) {
-                algType = AlgType.CORNERS_ORDERED;
-                params = calculateScaleImpl();
-            }*/
-            
-            /*
-            if (params == null) {
-                algType = AlgType.CONTOURS_ORDERED;
-                params = calculateScaleImpl();
-            }*/
-
             if (params == null) {
                 algType = AlgType.CORNERS_COMBINATIONS;
                 params = calculateScaleImpl(ub);
@@ -319,28 +306,9 @@ public class BlobScaleFinderWrapper {
             int n1 = 0;
             int n2 = 0;
 
-            if (algType.equals(AlgType.CONTOURS_ORDERED) || 
-                algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
-                
-                if (blobContourHelper1 == null) {
-                    if (settings.debug()) {
-                        blobContourHelper1 = new BlobContourHelper(img1Helper, 
-                            settings.getDebugTag() + "_1");
-                        blobContourHelper2 = new BlobContourHelper(img2Helper,
-                            settings.getDebugTag() + "_2");
-                    } else {
-                        blobContourHelper1 = new BlobContourHelper(img1Helper);
-                        blobContourHelper2 = new BlobContourHelper(img2Helper);
-                    }
-                }
-
-                blobContourHelper1.generatePerimeterContours(
-                    segmentationType1, useBinned);
-                blobContourHelper2.generatePerimeterContours(
-                    segmentationType2, useBinned);
-                
-            } else if (algType.equals(AlgType.CORNERS_ORDERED) || 
-                algType.equals(AlgType.CORNERS_COMBINATIONS)) {
+            t0 = System.currentTimeMillis();
+            
+            if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
                 if (blobCornerHelper1 == null) {
                     if (settings.debug()) {
@@ -367,44 +335,9 @@ public class BlobScaleFinderWrapper {
                 t2 = System.currentTimeMillis();
                 t1Sec = (t1 - t0)/1000;
                 t2Sec = (t2 - t1)/1000;
-                Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
+                 Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
                     + t1Sec + " sec corners1(sec)=" + t2Sec + " sec");
-            }
-
-            t0 = System.currentTimeMillis();
-                
-            if (algType.equals(AlgType.CORNERS_ORDERED)) {
-                
-                BlobCornersScaleFinder0 bsFinder = new BlobCornersScaleFinder0();
-
-                if (settings.debug()) {
-                    bsFinder.setToDebug();
-                }
-         
-                soln = bsFinder.solveForScale(blobCornerHelper1, f1,
-                    segmentationType1, useBinned, blobCornerHelper2, f2,
-                    segmentationType2, useBinned);
-
-                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, useBinned);
-                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, useBinned);
-                
-            } else if (algType.equals(AlgType.CONTOURS_ORDERED)) {
-                
-                BlobContoursScaleFinder0 bsFinder = new BlobContoursScaleFinder0();
-
-                if (settings.debug()) {
-                    bsFinder.setToDebug();
-                }
-        
-                soln = bsFinder.solveForScale(blobContourHelper1, f1,
-                    segmentationType1, useBinned, blobContourHelper2, f2,
-                    segmentationType2, useBinned);
-
-                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, useBinned);
-                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, useBinned);
-                
-            } else if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
-                
+            
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
                 if (settings.debug()) {
@@ -422,6 +355,23 @@ public class BlobScaleFinderWrapper {
 
             } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
 
+                if (blobContourHelper1 == null) {
+                    if (settings.debug()) {
+                        blobContourHelper1 = new BlobContourHelper(img1Helper, 
+                            settings.getDebugTag() + "_1");
+                        blobContourHelper2 = new BlobContourHelper(img2Helper,
+                            settings.getDebugTag() + "_2");
+                    } else {
+                        blobContourHelper1 = new BlobContourHelper(img1Helper);
+                        blobContourHelper2 = new BlobContourHelper(img2Helper);
+                    }
+                }
+
+                blobContourHelper1.generatePerimeterContours(
+                    segmentationType1, useBinned);
+                blobContourHelper2.generatePerimeterContours(
+                    segmentationType2, useBinned);
+                
                 BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
 
                 if (settings.debug()) {
@@ -543,8 +493,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<CornerRegion>> getAllCornerRegions1OfSolution() {
         
-        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||
-            algType.equals(AlgType.CONTOURS_ORDERED)) {
+        if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
             return null;
         }
         
@@ -554,8 +503,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<CornerRegion>> getAllCornerRegions2OfSolution() {
         
-        if (algType.equals(AlgType.CONTOURS_COMBINATIONS) ||
-            algType.equals(AlgType.CONTOURS_ORDERED)) {
+        if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
             return null;
         }
         
@@ -565,8 +513,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<BlobPerimeterRegion>> getAllBlobRegions1OfSolution() {
         
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
-            algType.equals(AlgType.CORNERS_ORDERED)) {
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
             return null;
         }
         
@@ -576,8 +523,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<BlobPerimeterRegion>> getAllBlobRegions2OfSolution() {
         
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
-            algType.equals(AlgType.CORNERS_ORDERED)) {
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
             return null;
         }
         
@@ -587,8 +533,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<CurvatureScaleSpaceContour>> getAllContours1OfSolution() {
         
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
-            algType.equals(AlgType.CORNERS_ORDERED)) {
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
             return null;
         }
         
@@ -598,8 +543,7 @@ public class BlobScaleFinderWrapper {
     
     public List<List<CurvatureScaleSpaceContour>> getAllContours2OfSolution() {
         
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS) ||
-            algType.equals(AlgType.CORNERS_ORDERED)) {
+        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
             return null;
         }
         

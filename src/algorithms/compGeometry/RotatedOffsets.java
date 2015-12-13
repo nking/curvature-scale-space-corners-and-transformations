@@ -5,7 +5,8 @@ package algorithms.compGeometry;
  * offsets used in the FeatureMatcher. Note that the methods are not thread safe
  * - they reuse an internal array to avoid constructing a new one for each fetch
  * for a rotation. The user should not allow more than one thread to use the
- * getXOffsets or getYOffsets simultaneously. If that is needed, the class can
+ * getXOffsets and getYOffsets simultaneously and no more than one of each
+ * simultaneously. If multiple use is needed, the class can
  * be altered to be thread safe, but incur the cost of an array construction for
  * each get and a block to check existence of internal data.
  *
@@ -34,12 +35,15 @@ public class RotatedOffsets {
      * range0 = 2 * (nCellsAcross/2) = 6
      * length of array = (2*nCellsAcross) * (2*nCellsAcross) = 144
      * </pre>
+     * xOffsets and yOffsets are arrays to be reused for return values and this
+     * is the design that must be changed if the usage ever changes to multiple
+     * access (that is, more than one return retained and used at the same time).
      */
     private final int[] xOffsets = new int[4 * range0 * range0];
     private final int[] yOffsets = new int[xOffsets.length];
 
     /**
-     * max value is (2*range0) 12, can be stored in 4 bits, and the negative 
+     * max value is (2*range0) 12 and that be stored in 4 bits, and the negative 
      * portion requires one more bit, so 5 bits total to store an offset.
      */
     private static int itemBits = 5;
@@ -50,6 +54,7 @@ public class RotatedOffsets {
 
         is64Bit = ((arch != null) && arch.equals("64")) ? true : false;
 
+        // use platform word size for most efficient storage:
         if (is64Bit) {
             offsets360XL = new long[360][];
             offsets360YL = new long[360][];
@@ -71,12 +76,12 @@ public class RotatedOffsets {
     }
 
     /**
-     * get the offset array for rotation by rotationInDegrees. Note that this
+     * get the offset array for rotation by rotationInDegrees. <em>Note that this
      * method is not thread safe - it reuses an internal array to avoid
      * constructing a new one for each invocation. The user should not allow
      * more than one thread to use getXOffsets simultaneously or more than one
      * return from the method to be retained simultaneously because both returns
-     * will be the same instance.
+     * will be the same instance.</em>
      *
      * @param rotationInDegrees
      * @return
@@ -414,12 +419,12 @@ public class RotatedOffsets {
     }
 
     /**
-     * get the offset array for rotation by rotationInDegrees. Note that this
+     * get the offset array for rotation by rotationInDegrees. <em>Note that this
      * method is not thread safe - it reuses an internal array to avoid
      * constructing a new one for each invocation. The user should not allow
      * more than one thread to use getYOffsets simultaneously or more than one
      * return from the method to be retained simultaneously because both returns
-     * will be the same instance.
+     * will be the same instance.</em>
      *
      * @param rotationInDegrees
      * @return

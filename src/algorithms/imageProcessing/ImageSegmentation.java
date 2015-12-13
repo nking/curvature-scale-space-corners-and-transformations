@@ -3099,9 +3099,18 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
         
         wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);        
+         
+        if (true) {
+            for (int i = 0; i < coeffs.size(); ++i) {
+                GreyscaleImage img = coeffs.get(i);
+                String str = "coeff_" + Integer.toString(i) + "_" + 
+                    MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(img, str);
+            }
+        }
         
         GreyscaleImage fineCoeff = coeffs.get(coeffs.size() - 1);
-                
+        
         for (int i = 0; i < fineCoeff.getNPixels(); ++i) {
             if (fineCoeff.getValue(i) > 0) {
                 fineCoeff.setValue(i, 250);
@@ -3109,7 +3118,7 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 fineCoeff.setValue(i, 0);
             }
         }
-        
+               
         return fineCoeff;
     }
     

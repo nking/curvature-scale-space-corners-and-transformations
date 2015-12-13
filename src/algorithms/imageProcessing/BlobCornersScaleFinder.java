@@ -401,15 +401,11 @@ System.out.println(sb.toString());
 
                             T corner2 = corners2List.get(idx2);
 
-                            FeatureComparisonStat compStat = null;
-
-                            try {
-                                compStat = featureMatcher.ditherAndRotateForBestLocation(
-                                    features1, features2, cr, corner2, dither2,
-                                    rotD, rotationTolerance, img1, img2);
-                            } catch (CornerRegion.CornerRegionDegneracyException ex) {
-                                log.fine(ex.getMessage());
-                            }
+                            FeatureComparisonStat compStat = 
+                                featureMatcher.ditherAndRotateForBestLocation2(
+                                features1, features2, cr, corner2, dither2,
+                                rotD, rotationTolerance, img1, img2);
+                            
                             if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)
                                 ||
                                 (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())) {

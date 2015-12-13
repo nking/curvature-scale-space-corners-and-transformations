@@ -139,6 +139,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      * @param img2 image from which to extract descriptors for features2
      * @return
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected CornersAndFeatureStat<T>[] getBestSSDC1ToC2(
         List<T> c1, List<T> c2,
         IntensityFeatures features1, IntensityFeatures features2,
@@ -221,6 +222,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
      * @param img2 image from which to extract descriptors for features2
      * @return
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected CornersAndFeatureStat<T>[] getAllSSDC1ToC2(
         List<T> c1, List<T> c2,
         IntensityFeatures features1, IntensityFeatures features2,
@@ -271,6 +273,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
      * with runtime O(n*(n-1)/2).
      * TODO: revise the runtime complexity comment for new changes
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void findBestParameters(List<T> c1,
         List<T> c2, NearestPoints np, IntensityFeatures features1,
         IntensityFeatures features2, GreyscaleImage img1, GreyscaleImage img2,

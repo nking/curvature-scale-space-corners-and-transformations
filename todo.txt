@@ -1,13 +1,3 @@
--- might need to make a method for the latest segmentation that can
-   correct for equal values of green and red and blue by making
-   3 separate wavelet segmentations and combining them in a way
-   to preserve differences, but only if flag is set.  this kind
-   of correction could possibly make matching of different images with
-   different illumination more difficult (sky conditions, sun altitude, room lighting etc).
-
-** in ClosedCurveCornerMatcher2, revisit the heapKeyFactor to make
-   sure keys will never overflow a long
-
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
       currently has a long runtime.
@@ -15,12 +5,10 @@
       explore using the hough transform for lines to find the astronomical
       "fundamental plane" of 3 dimensional or multi-dimensional data.
 
-**-- use the added half dome test images to assert that matching same
-     from other cameras is working
+** -- use the added half dome test images to assert that matching same
+      from other cameras is working
 
 ***-- make the feature matcher offset arrays improvements below
-
--- 
    -- consider comment below on cases where there are no matchable
       blobs in an image, such as test image for half dome.
       -- can treat all corners or corner regions as belonging to 
@@ -31,6 +19,9 @@
             if sillhouettes appear to be present in one image but
             not another, feature matching won't be possible but 
             contour matching would be.
+** -- for the offset arrays in the feature matcher, could make these improvements:
+     -- edit use of feature matcher to use RotatedOffsets.java
+
 
 -- more ransac and epipolar solver tests.
    -- when revisiting the books epipolar test, see if evaluation needs to focus
@@ -50,27 +41,8 @@
    might need a way to limit the open curves being matched such as a look at convex and concave
    for any 3 or more points?  I thnk BL2003 chose large blocks of cells of pixels to compare between
    images.  edges and groups of corners should be faster...
+   ... contours
 
-** -- for the offset arrays in the feature matcher, could make these improvements:
-    -- make the math.round changes to the feature offset arrays to speed up process 
-       and add documentation that it should only be used to add to integers (not floating point numbers)
-    -- for speeding up the transformations of feature descriptor offsets, consider 2 things:
-          -- round the numbers into integers.
-             knowing descriptor range0, a maximum and minumum possible value can
-             be calculated: 
-             -- min and max of (-6 and +6?)
-                can store 6 in 3 bits.  
-                can multiply by 2 and add one for negative numbers (max value=12+1=13 so 4 bits), 
-                so an int, being 32 bits could store 8 such numbers.
-                the 144 item array would then only be 18 items.
-             -- in the case that all 360 degrees were tried, that would be 6480 items
-                pre-computing all 360 degrees 
-                    would take that much space plus 32 bits for an array reference.
-                    = in array of size 6480 items
-                    = 207392 bits = 25924 Bytes
-                -- if wanted to use symmetry, could reduce that space by 4 but would need
-                   to use logic for x *=-1 and/or y *=-1.
-                   result is an array that would take 6481 Bytes
 
 -- update aspects if needed and considering replacing them
     -- consider replacing aspectj with something like nanning aop
@@ -86,6 +58,13 @@
 
 -- explore a little the biorthogonal wavelet transform 
     in the JPEG-2000 image storage and compression standard
+
+-- might need to make a method for the latest segmentation that can
+   correct for equal values of green and red and blue by making
+   3 separate wavelet segmentations and combining them in a way
+   to preserve differences, but only if flag is set.  this kind
+   of correction could possibly make matching of different images with
+   different illumination more difficult (sky conditions, sun altitude, room lighting etc).
 
 -- text recognition
    -- would like a class to extract and match text
@@ -111,11 +90,9 @@
 
 -- begin outline for rectification code
 
--- revisit kmeansplusplus...
-
 -- make the method to combine 2 skyline masks to decide what is sky and what
-   is land when there are differences.  This can happen when there are clouds
-   or snow or varying occlusion, etc
+   is land when there are differences and there are more than 2 images to decide.  
+   This can happen when there are clouds or snow or varying occlusion, etc
 
 -- move all of debugging code to aspects or test.  jfreegraph should not need to be included
    in the command line jar unless add an output that uses it.

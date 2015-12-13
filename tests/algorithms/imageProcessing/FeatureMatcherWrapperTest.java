@@ -23,12 +23,9 @@ public class FeatureMatcherWrapperTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
-        
-        // TODO: follow up on changes needed for repeated patterns
-        //    with small projection effects.
-        //    need to use matching of top k solutions...
-        
+         
         for (int i = 0; i < 6; ++i) {
+            
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -45,7 +42,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
-                    settings.setUseNormalizedFeatures(true);
+                    settings.setUseNormalizedFeatures(false);
                     break;
                 }
                 case 3: {
