@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RotatedOffsets.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">RotatedOffsets.java</span></div><h1>RotatedOffsets.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+/**
+ * a class to dynamically populate upon need and cache offset arrays for rotated
+ * offsets used in the FeatureMatcher. Note that the methods are not thread safe
+ * - they reuse an internal array to avoid constructing a new one for each fetch
+ * for a rotation. The user should not allow more than one thread to use the
+ * getXOffsets and getYOffsets simultaneously and no more than one of each
+ * simultaneously. If multiple use is needed, the class can
+ * be altered to be thread safe, but incur the cost of an array construction for
+ * each get and a block to check existence of internal data.
+ *
+ * @author nichole
+ */
+public class RotatedOffsets {
+
+<span class="fc" id="L17">    private static RotatedOffsets instance = null;</span>
+
+    private static int[][] offsets360X;
+    private static int[][] offsets360Y;
+
+    private static long[][] offsets360XL;
+    private static long[][] offsets360YL;
+
+    private static final int cellDimension = 2;
+    private static final int range0 = 6;
+
+    private final boolean is64Bit;
+
+    /**
+     * &lt;pre&gt;
+     * defaults in IntensityFeatures: 
+     * cellDim=2
+     * nCellsAcross=6 
+     * range0 = 2 * (nCellsAcross/2) = 6
+     * length of array = (2*nCellsAcross) * (2*nCellsAcross) = 144
+     * &lt;/pre&gt;
+     * xOffsets and yOffsets are arrays to be reused for return values and this
+     * is the design that must be changed if the usage ever changes to multiple
+     * access (that is, more than one return retained and used at the same time).
+     */
+<span class="fc" id="L42">    private final int[] xOffsets = new int[4 * range0 * range0];</span>
+<span class="fc" id="L43">    private final int[] yOffsets = new int[xOffsets.length];</span>
+
+    /**
+     * max value is (2*range0) 12 and that be stored in 4 bits, and the negative 
+     * portion requires one more bit, so 5 bits total to store an offset.
+     */
+<span class="fc" id="L49">    private static int itemBits = 5;</span>
+
+<span class="fc" id="L51">    private RotatedOffsets() {</span>
+
+<span class="fc" id="L53">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">        is64Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? true : false;</span>
+
+        // use platform word size for most efficient storage:
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+<span class="fc" id="L59">            offsets360XL = new long[360][];</span>
+<span class="fc" id="L60">            offsets360YL = new long[360][];</span>
+<span class="fc" id="L61">            offsets360X = null;</span>
+<span class="fc" id="L62">            offsets360Y = null;</span>
+        } else {
+<span class="nc" id="L64">            offsets360X = new int[360][];</span>
+<span class="nc" id="L65">            offsets360Y = new int[360][];</span>
+<span class="nc" id="L66">            offsets360XL = null;</span>
+<span class="nc" id="L67">            offsets360YL = null;</span>
+        }
+<span class="fc" id="L69">    }</span>
+
+    public static synchronized RotatedOffsets getInstance() {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (instance == null) {</span>
+<span class="fc" id="L73">            instance = new RotatedOffsets();</span>
+        }
+<span class="fc" id="L75">        return instance;</span>
+    }
+
+    /**
+     * get the offset array for rotation by rotationInDegrees. &lt;em&gt;Note that this
+     * method is not thread safe - it reuses an internal array to avoid
+     * constructing a new one for each invocation. The user should not allow
+     * more than one thread to use getXOffsets simultaneously or more than one
+     * return from the method to be retained simultaneously because both returns
+     * will be the same instance.&lt;/em&gt;
+     *
+     * @param rotationInDegrees
+     * @return
+     */
+    public int[] getXOffsets(int rotationInDegrees) {
+
+<span class="fc" id="L91">        checkBounds(rotationInDegrees);</span>
+
+<span class="fc" id="L93">        populateIfMissingX(rotationInDegrees);</span>
+
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+
+<span class="fc" id="L97">            long[] compresedOffsets = offsets360XL[rotationInDegrees];</span>
+
+<span class="fc" id="L99">            populateOffsets(compresedOffsets, xOffsets);</span>
+
+<span class="fc" id="L101">        } else {</span>
+
+<span class="nc" id="L103">            int[] compresedOffsets = offsets360X[rotationInDegrees];</span>
+
+<span class="nc" id="L105">            populateOffsets(compresedOffsets, xOffsets);</span>
+        }
+
+<span class="fc" id="L108">        return xOffsets;</span>
+    }
+
+    private void populateIfMissingX(int rotationInDegrees) {
+
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            if (offsets360XL[rotationInDegrees] == null) {</span>
+<span class="fc" id="L115">                populateXOffsetsLong(rotationInDegrees);</span>
+            }
+        } else {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (offsets360X[rotationInDegrees] == null) {</span>
+<span class="nc" id="L119">                populateXOffsetsInt(rotationInDegrees);</span>
+            }
+        }
+
+<span class="fc" id="L123">    }</span>
+
+    private void populateIfMissingY(int rotationInDegrees) {
+
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (offsets360YL[rotationInDegrees] == null) {</span>
+<span class="fc" id="L129">                populateYOffsetsLong(rotationInDegrees);</span>
+            }
+        } else {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            if (offsets360Y[rotationInDegrees] == null) {</span>
+<span class="nc" id="L133">                populateYOffsetsInt(rotationInDegrees);</span>
+            }
+        }
+
+<span class="fc" id="L137">    }</span>
+
+    protected void populateXOffsetsLong(int rotationInDegrees) {
+
+<span class="fc" id="L141">        double rotationInRadians = rotationInDegrees * Math.PI / 180.;</span>
+<span class="fc" id="L142">        double mc = Math.cos(rotationInRadians);</span>
+<span class="fc" id="L143">        double ms = Math.sin(rotationInRadians);</span>
+
+        //64 bits / itemBits = 12 values per item
+        
+<span class="fc" id="L147">        long minAllowed = Long.MIN_VALUE;</span>
+        
+<span class="fc" id="L149">        long mask = (1L &lt;&lt; itemBits) - 1L;</span>
+
+        // 144 / 12 = 12
+<span class="fc" id="L152">        long[] compresedOffsets = new long[12];</span>
+
+<span class="fc" id="L154">        int count = 0;        </span>
+<span class="fc" id="L155">        int count12 = 0;</span>
+        
+        // move all numbers down to fill the signed portion of a long
+<span class="fc" id="L158">        long datum12 = minAllowed;</span>
+        
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDimension) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDimension) {</span>
+
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                for (int dxc = 0; dxc &lt; cellDimension; ++dxc) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                    for (int dyc = 0; dyc &lt; cellDimension; ++dyc) {</span>
+
+<span class="fc" id="L166">                        double xt = (((dx + dxc) * mc) + ((dy + dyc) * ms));</span>
+
+<span class="fc" id="L168">                        int v = (int) Math.round(xt);</span>
+
+                        // if it's a negative number, make the number a positive 
+                        // and times two then make the last bit to 1 to make it odd
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                        long t = (v &lt; 0) ? ((-1 * v &lt;&lt; 1) | 1) : (v &lt;&lt; 1);</span>
+                        
+<span class="fc" id="L174">                        long shift = (long) (itemBits * count12);</span>
+                        
+<span class="fc" id="L176">                        long shifted = (t &amp; mask) &lt;&lt; shift;</span>
+
+<span class="fc" id="L178">                        datum12 += shifted;</span>
+
+<span class="fc" id="L180">                        count12++;</span>
+
+<span class="fc bfc" id="L182" title="All 2 branches covered.">                        if (count12 == 12) {</span>
+<span class="fc" id="L183">                            compresedOffsets[count] = datum12;</span>
+<span class="fc" id="L184">                            count++;</span>
+<span class="fc" id="L185">                            count12 = 0;</span>
+<span class="fc" id="L186">                            datum12 = minAllowed;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L193">        offsets360XL[rotationInDegrees] = compresedOffsets;</span>
+<span class="fc" id="L194">    }</span>
+
+    protected void populateXOffsetsInt(int rotationInDegrees) {
+
+<span class="nc" id="L198">        double rotationInRadians = rotationInDegrees * Math.PI / 180.;</span>
+<span class="nc" id="L199">        double mc = Math.cos(rotationInRadians);</span>
+<span class="nc" id="L200">        double ms = Math.sin(rotationInRadians);</span>
+        
+<span class="nc" id="L202">        int minAllowed = Integer.MIN_VALUE;</span>
+
+        //32 bits / itemBits = 6 values per item
+<span class="nc" id="L205">        int mask = (1 &lt;&lt; itemBits) - 1;</span>
+
+        // 144 / 6 = 24
+<span class="nc" id="L208">        int[] compresedOffsets = new int[24];</span>
+
+<span class="nc" id="L210">        int count = 0;</span>
+<span class="nc" id="L211">        int count6 = 0;</span>
+        
+        // move all numbers down to fill the signed portion of a long
+<span class="nc" id="L214">        int datum6 = minAllowed;</span>
+        
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx += cellDimension) {</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy += cellDimension) {</span>
+
+<span class="nc bnc" id="L219" title="All 2 branches missed.">                for (int dxc = 0; dxc &lt; cellDimension; ++dxc) {</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">                    for (int dyc = 0; dyc &lt; cellDimension; ++dyc) {</span>
+
+<span class="nc" id="L222">                        double xt = (((dx + dxc) * mc) + ((dy + dyc) * ms));</span>
+
+<span class="nc" id="L224">                        int v = (int) Math.round(xt);</span>
+
+                        // if it's a negative number, make the number a positive 
+                        // and times two then make the last bit to 1 to make it odd
+<span class="nc bnc" id="L228" title="All 2 branches missed.">                        int t = (v &lt; 0) ? ((-1 * v &lt;&lt; 1) | 1) : (v &lt;&lt; 1);</span>
+                        
+<span class="nc" id="L230">                        int shift = (itemBits * count6);</span>
+
+<span class="nc" id="L232">                        int shifted = (t &amp; mask) &lt;&lt; shift;</span>
+
+<span class="nc" id="L234">                        datum6 += shifted;</span>
+
+<span class="nc" id="L236">                        count6++;</span>
+
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                        if (count6 == 6) {</span>
+<span class="nc" id="L239">                            compresedOffsets[count] = datum6;</span>
+<span class="nc" id="L240">                            count++;</span>
+<span class="nc" id="L241">                            count6 = 0;</span>
+<span class="nc" id="L242">                            datum6 = minAllowed;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L249">        offsets360X[rotationInDegrees] = compresedOffsets;</span>
+<span class="nc" id="L250">    }</span>
+
+    protected void populateYOffsetsLong(int rotationInDegrees) {
+        
+<span class="fc" id="L254">        double rotationInRadians = rotationInDegrees * Math.PI / 180.;</span>
+<span class="fc" id="L255">        double mc = Math.cos(rotationInRadians);</span>
+<span class="fc" id="L256">        double ms = Math.sin(rotationInRadians);</span>
+
+        //64 bits / itemBits = 12 values per item
+        
+<span class="fc" id="L260">        long minAllowed = Long.MIN_VALUE;</span>
+        
+<span class="fc" id="L262">        long mask = (1L &lt;&lt; itemBits) - 1L;</span>
+
+        // 144 / 12 = 12
+<span class="fc" id="L265">        long[] compresedOffsets = new long[12];</span>
+        
+<span class="fc" id="L267">        int count = 0;</span>
+<span class="fc" id="L268">        int count12 = 0;</span>
+        
+        // move all numbers down to fill the signed portion of a long
+<span class="fc" id="L271">        long datum12 = minAllowed;</span>
+        
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDimension) {</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDimension) {</span>
+
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                for (int dxc = 0; dxc &lt; cellDimension; ++dxc) {</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">                    for (int dyc = 0; dyc &lt; cellDimension; ++dyc) {</span>
+
+<span class="fc" id="L279">                        double yt = (-((dx + dxc) * ms)) + ((dy + dyc) * mc);</span>
+
+<span class="fc" id="L281">                        int v = (int) Math.round(yt);</span>
+
+                        // if it's a negative number, make the number a positive 
+                        // and times two then make the last bit to 1 to make it odd
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                        int t = (v &lt; 0) ? ((-1 * v &lt;&lt; 1) | 1) : (v &lt;&lt; 1);</span>
+
+<span class="fc" id="L287">                        long shift = (long) (itemBits * count12);</span>
+
+<span class="fc" id="L289">                        long shifted = (t &amp; mask) &lt;&lt; shift;</span>
+
+<span class="fc" id="L291">                        datum12 += shifted;</span>
+
+<span class="fc" id="L293">                        count12++;</span>
+
+<span class="fc bfc" id="L295" title="All 2 branches covered.">                        if (count12 == 12) {</span>
+<span class="pc bpc" id="L296" title="1 of 4 branches missed.">if (dx==0 &amp;&amp; dy==0) {</span>
+<span class="nc" id="L297">int z = 1;</span>
+}
+<span class="fc" id="L299">                            compresedOffsets[count] = datum12;</span>
+<span class="fc" id="L300">                            count++;</span>
+<span class="fc" id="L301">                            count12 = 0;</span>
+<span class="fc" id="L302">                            datum12 = minAllowed;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L309">        offsets360YL[rotationInDegrees] = compresedOffsets;</span>
+<span class="fc" id="L310">    }</span>
+
+    protected void populateYOffsetsInt(int rotationInDegrees) {
+
+<span class="nc" id="L314">        double rotationInRadians = rotationInDegrees * Math.PI / 180.;</span>
+<span class="nc" id="L315">        double mc = Math.cos(rotationInRadians);</span>
+<span class="nc" id="L316">        double ms = Math.sin(rotationInRadians);</span>
+        
+<span class="nc" id="L318">        int minAllowed = Integer.MIN_VALUE;</span>
+
+        //32 bits / itemBits = 6 values per item
+<span class="nc" id="L321">        int mask = (1 &lt;&lt; itemBits) - 1;</span>
+
+        // 144 / 6 = 24
+<span class="nc" id="L324">        int[] compresedOffsets = new int[24];</span>
+
+<span class="nc" id="L326">        int count = 0;</span>
+<span class="nc" id="L327">        int count6 = 0;</span>
+        
+        // move all numbers down to fill the signed portion of a long
+<span class="nc" id="L330">        int datum6 = minAllowed;</span>
+        
+<span class="nc bnc" id="L332" title="All 2 branches missed.">        for (int dx = -range0; dx &lt; range0; dx += cellDimension) {</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            for (int dy = -range0; dy &lt; range0; dy += cellDimension) {</span>
+
+<span class="nc bnc" id="L335" title="All 2 branches missed.">                for (int dxc = 0; dxc &lt; cellDimension; ++dxc) {</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">                    for (int dyc = 0; dyc &lt; cellDimension; ++dyc) {</span>
+
+<span class="nc" id="L338">                        double yt = (-((dx + dxc) * ms)) + ((dy + dyc) * mc);</span>
+
+<span class="nc" id="L340">                        int v = (int) Math.round(yt);</span>
+                        
+                        // if it's a negative number, make the number a positive 
+                        // and times two then make the last bit to 1 to make it odd
+<span class="nc bnc" id="L344" title="All 2 branches missed.">                        int t = (v &lt; 0) ? ((-1 * v &lt;&lt; 1) | 1) : (v &lt;&lt; 1);</span>
+                        
+<span class="nc" id="L346">                        int shift = (itemBits * count6);</span>
+
+<span class="nc" id="L348">                        int shifted = (t &amp; mask) &lt;&lt; shift;</span>
+
+<span class="nc" id="L350">                        datum6 += shifted;</span>
+
+<span class="nc" id="L352">                        count6++;</span>
+
+<span class="nc bnc" id="L354" title="All 2 branches missed.">                        if (count6 == 6) {</span>
+<span class="nc" id="L355">                            compresedOffsets[count] = datum6;</span>
+<span class="nc" id="L356">                            count++;</span>
+<span class="nc" id="L357">                            count6 = 0;</span>
+<span class="nc" id="L358">                            datum6 = minAllowed;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="nc" id="L365">        offsets360Y[rotationInDegrees] = compresedOffsets;</span>
+<span class="nc" id="L366">    }</span>
+    
+    private void populateOffsets(long[] compresedOffsets, int[] outputOffsets) {
+
+<span class="fc" id="L370">        long minAllowed = Long.MIN_VALUE;</span>
+        
+        //64 bits / itemBits = 12 values per item
+<span class="fc" id="L373">        long mask = (1L &lt;&lt; itemBits) - 1L;</span>
+
+<span class="fc" id="L375">        int count = 0;</span>
+
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (int i = 0; i &lt; compresedOffsets.length; ++i) {</span>
+
+<span class="fc" id="L379">            long item = compresedOffsets[i];</span>
+
+            // read each of the 12 datum in the item
+<span class="fc bfc" id="L382" title="All 2 branches covered.">            for (int j = 0; j &lt; 12; ++j) {</span>
+
+<span class="fc" id="L384">                long v = ((item - minAllowed) &gt;&gt; (long) (j * itemBits)) &amp; mask;</span>
+                
+                // decode to negative
+<span class="fc bfc" id="L387" title="All 2 branches covered.">                long t = ((v &amp; 1) == 1) ? -1 * (v &gt;&gt; 1) : v &gt;&gt; 1;</span>
+
+<span class="fc" id="L389">                outputOffsets[count] = (int) t;</span>
+
+<span class="fc" id="L391">                count++;</span>
+            }
+        }
+<span class="fc" id="L394">    }</span>
+
+    private void populateOffsets(int[] compresedOffsets, int[] outputOffsets) {
+
+        //32 bits / itemBits = 6 values per item
+<span class="nc" id="L399">        int mask = (1 &lt;&lt; itemBits) - 1;</span>
+        
+<span class="nc" id="L401">        int minAllowed = Integer.MIN_VALUE;</span>
+
+<span class="nc" id="L403">        int count = 0;</span>
+
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        for (int i = 0; i &lt; compresedOffsets.length; ++i) {</span>
+
+<span class="nc" id="L407">            int item = compresedOffsets[i];</span>
+
+            // read each of the 6 datum in the item
+<span class="nc bnc" id="L410" title="All 2 branches missed.">            for (int j = 0; j &lt; 6; ++j) {</span>
+
+<span class="nc" id="L412">                int v = ((item - minAllowed) &gt;&gt; (j * itemBits)) &amp; mask;</span>
+                
+                // decode to negative
+<span class="nc bnc" id="L415" title="All 2 branches missed.">                int t = ((v &amp; 1) == 1) ? -1 * (v &gt;&gt; 1) : v &gt;&gt; 1;</span>
+
+<span class="nc" id="L417">                outputOffsets[count] = t;</span>
+
+<span class="nc" id="L419">                count++;</span>
+            }
+        }
+<span class="nc" id="L422">    }</span>
+
+    /**
+     * get the offset array for rotation by rotationInDegrees. &lt;em&gt;Note that this
+     * method is not thread safe - it reuses an internal array to avoid
+     * constructing a new one for each invocation. The user should not allow
+     * more than one thread to use getYOffsets simultaneously or more than one
+     * return from the method to be retained simultaneously because both returns
+     * will be the same instance.&lt;/em&gt;
+     *
+     * @param rotationInDegrees
+     * @return
+     */
+    public int[] getYOffsets(int rotationInDegrees) {
+
+<span class="fc" id="L437">        checkBounds(rotationInDegrees);</span>
+
+<span class="fc" id="L439">        populateIfMissingY(rotationInDegrees);</span>
+
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+
+<span class="fc" id="L443">            long[] compresedOffsets = offsets360YL[rotationInDegrees];</span>
+
+<span class="fc" id="L445">            populateOffsets(compresedOffsets, yOffsets);</span>
+
+<span class="fc" id="L447">        } else {</span>
+
+<span class="nc" id="L449">            int[] compresedOffsets = offsets360Y[rotationInDegrees];</span>
+
+<span class="nc" id="L451">            populateOffsets(compresedOffsets, yOffsets);</span>
+        }
+
+<span class="fc" id="L454">        return yOffsets;</span>
+    }
+
+    private void checkBounds(int rotationInDegrees) {
+
+<span class="pc bpc" id="L459" title="2 of 4 branches missed.">        if (rotationInDegrees &lt; 0 || rotationInDegrees &gt; 359) {</span>
+<span class="nc" id="L460">            throw new IllegalArgumentException(</span>
+                &quot;rotationInDegrees must be &gt;=0 and &lt; 360&quot;);
+        }
+<span class="fc" id="L463">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

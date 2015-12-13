@@ -388,103 +388,106 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
 <span class="fc" id="L389">        contourExtractor = new EdgeExtractorWithJunctions(img);</span>
         
-<span class="fc" id="L391">        List&lt;PairIntArray&gt; tmpEdges = contourExtractor.findEdges();</span>
-       
-<span class="fc" id="L393">        edges.clear();</span>
-<span class="fc" id="L394">        edges.addAll(tmpEdges);</span>
+        //TODO: for closed curves, might consider always ordering them the
+        // same here (counter clock wise)
         
-<span class="pc bpc" id="L396" title="1 of 2 branches missed.">        if (contourExtractor instanceof EdgeExtractorWithJunctions) {</span>
+<span class="fc" id="L394">        List&lt;PairIntArray&gt; tmpEdges = contourExtractor.findEdges();</span>
+       
+<span class="fc" id="L396">        edges.clear();</span>
+<span class="fc" id="L397">        edges.addAll(tmpEdges);</span>
+        
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">        if (contourExtractor instanceof EdgeExtractorWithJunctions) {</span>
 
-<span class="fc" id="L398">            junctionMap.clear();</span>
-<span class="fc" id="L399">            junctionLocationMap.clear();</span>
+<span class="fc" id="L401">            junctionMap.clear();</span>
+<span class="fc" id="L402">            junctionLocationMap.clear();</span>
             
-<span class="fc" id="L401">            Map&lt;Integer, Set&lt;Integer&gt;&gt; jm</span>
+<span class="fc" id="L404">            Map&lt;Integer, Set&lt;Integer&gt;&gt; jm</span>
                 = ((EdgeExtractorWithJunctions) contourExtractor)
-<span class="fc" id="L403">                .getJunctionMap();</span>
+<span class="fc" id="L406">                .getJunctionMap();</span>
 
-<span class="fc bfc" id="L405" title="All 2 branches covered.">            if (!jm.isEmpty()) {</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">            if (!jm.isEmpty()) {</span>
 
-<span class="fc" id="L407">                junctionMap.putAll(jm);</span>
+<span class="fc" id="L410">                junctionMap.putAll(jm);</span>
 
-<span class="fc" id="L409">                junctionLocationMap.putAll(</span>
+<span class="fc" id="L412">                junctionLocationMap.putAll(</span>
                     ((EdgeExtractorWithJunctions) contourExtractor)
-<span class="fc" id="L411">                    .getLocatorForJunctionAssociatedPoints()</span>
+<span class="fc" id="L414">                    .getLocatorForJunctionAssociatedPoints()</span>
                 );
             }
         }
         
-<span class="fc" id="L416">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+<span class="fc" id="L419">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
         
-<span class="fc" id="L418">        log.fine(&quot;edges extracted&quot;);</span>
-<span class="fc" id="L419">    }</span>
+<span class="fc" id="L421">        log.fine(&quot;edges extracted&quot;);</span>
+<span class="fc" id="L422">    }</span>
 
     protected void markTheClosedCurves() {
         
-<span class="fc" id="L423">        ClosedCurveAndJunctionFinder ccjFinder = </span>
+<span class="fc" id="L426">        ClosedCurveAndJunctionFinder ccjFinder = </span>
             new ClosedCurveAndJunctionFinder();
         
-<span class="fc" id="L426">        ccjFinder.findClosedCurves(edges);</span>
+<span class="fc" id="L429">        ccjFinder.findClosedCurves(edges);</span>
        
-<span class="fc" id="L428">    }</span>
+<span class="fc" id="L431">    }</span>
   
     public List&lt;PairIntArray&gt; getEdges() {
-<span class="fc" id="L431">        return edges;</span>
+<span class="fc" id="L434">        return edges;</span>
     }
     
     public List&lt;PairIntArray&gt; getSkylineEdges() {
-<span class="nc" id="L435">        return skylineEdges;</span>
+<span class="nc" id="L438">        return skylineEdges;</span>
     }
 
     protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
         int nExtraForDot, int value) {
         
-<span class="nc bnc" id="L441" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
-<span class="nc" id="L442">            int x = edge.getX(i);</span>
-<span class="nc" id="L443">            int y = edge.getY(i);</span>
-<span class="nc bnc" id="L444" title="All 2 branches missed.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
-<span class="nc" id="L445">                float xx = x + dx;</span>
-<span class="nc bnc" id="L446" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
-<span class="nc bnc" id="L447" title="All 2 branches missed.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
-<span class="nc" id="L448">                        dy++) {</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L445">            int x = edge.getX(i);</span>
+<span class="nc" id="L446">            int y = edge.getY(i);</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L448">                float xx = x + dx;</span>
+<span class="nc bnc" id="L449" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L451">                        dy++) {</span>
                         
-<span class="nc" id="L450">                        float yy = y + dy;</span>
-<span class="nc bnc" id="L451" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
-<span class="nc" id="L452">                            input.setValue((int) xx, (int) yy, value);</span>
+<span class="nc" id="L453">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L454" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L455">                            input.setValue((int) xx, (int) yy, value);</span>
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L458">    }</span>
+<span class="nc" id="L461">    }</span>
     
     public boolean getInitialized() {
         
-<span class="fc" id="L462">        return (state.ordinal() &gt;= </span>
-<span class="pc bpc" id="L463" title="1 of 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());</span>
+<span class="fc" id="L465">        return (state.ordinal() &gt;= </span>
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());</span>
     }
     
     public GreyscaleImage getImage() {
-<span class="fc" id="L467">        return img;</span>
+<span class="fc" id="L470">        return img;</span>
     }
 
     public Image getOriginalImage() {
-<span class="nc" id="L471">        return originalImg;</span>
+<span class="nc" id="L474">        return originalImg;</span>
     }
     
     public int getTrimmedXOffset() {
-<span class="fc" id="L475">        return trimmedXOffset;</span>
+<span class="fc" id="L478">        return trimmedXOffset;</span>
     }
     
     public int getTrimmedYOffset() {
-<span class="fc" id="L479">        return trimmedYOffset;</span>
+<span class="fc" id="L482">        return trimmedYOffset;</span>
     }
    
     public EdgeFilterProducts getEdgeFilterProducts() {
-<span class="nc" id="L483">        return filterProducts;</span>
+<span class="nc" id="L486">        return filterProducts;</span>
     }
     
     public Map&lt;Integer, Set&lt;Integer&gt;&gt; getJunctionMap() {        
-<span class="fc" id="L487">        return junctionMap;</span>
+<span class="fc" id="L490">        return junctionMap;</span>
     }
     
     /*

@@ -112,20 +112,20 @@ public class PairFloatArray {
      */
     public void removeRange(int idxLo, int idxHi) {
         
-<span class="pc bpc" id="L115" title="2 of 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
+<span class="nc bnc" id="L115" title="All 4 branches missed.">        if ((idxLo &lt; 0) || (idxLo &gt; (n - 1))) {</span>
 <span class="nc" id="L116">            throw new IllegalArgumentException(&quot;idxLo is out of range&quot;);</span>
         }
-<span class="pc bpc" id="L118" title="2 of 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">        if ((idxHi &lt; 0) || (idxHi &gt; (n - 1))) {</span>
 <span class="nc" id="L119">            throw new IllegalArgumentException(&quot;idxHi is out of range&quot;);</span>
         }
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (idxHi &lt; idxLo) {</span>
 <span class="nc" id="L122">            throw new IllegalArgumentException(&quot;idxHi has to be &gt;= idxLo&quot;);</span>
         }
         
-<span class="fc" id="L125">        int nRemove = idxHi - idxLo + 1;</span>
+<span class="nc" id="L125">        int nRemove = idxHi - idxLo + 1;</span>
 
-<span class="fc" id="L127">        int moveIdx = idxHi + 1;</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if (moveIdx &lt;= (n - 1)) {</span>
+<span class="nc" id="L127">        int moveIdx = idxHi + 1;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (moveIdx &lt;= (n - 1)) {</span>
 <span class="nc bnc" id="L129" title="All 2 branches missed.">            for (int moveToIdx = idxLo; moveToIdx &lt; (n - nRemove); moveToIdx++) {</span>
 <span class="nc" id="L130">                x[moveToIdx] = x[moveIdx];</span>
 <span class="nc" id="L131">                y[moveToIdx] = y[moveIdx];</span>
@@ -134,13 +134,13 @@ public class PairFloatArray {
         }
         
         // not necessary, but easier debugging to reset the last nRemove to 0
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int i = (n - nRemove); i &lt; n; i++) {</span>
-<span class="fc" id="L138">            x[i] = 0;</span>
-<span class="fc" id="L139">            y[i] = 0;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        for (int i = (n - nRemove); i &lt; n; i++) {</span>
+<span class="nc" id="L138">            x[i] = 0;</span>
+<span class="nc" id="L139">            y[i] = 0;</span>
         }
         
-<span class="fc" id="L142">        n -= nRemove;</span>
-<span class="fc" id="L143">    }</span>
+<span class="nc" id="L142">        n -= nRemove;</span>
+<span class="nc" id="L143">    }</span>
     
     public PairIntArray toPairIntArray() {
 <span class="nc" id="L146">        PairIntArray out = new PairIntArray();</span>

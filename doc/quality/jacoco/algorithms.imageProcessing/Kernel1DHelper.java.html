@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Kernel1DHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Kernel1DHelper.java</span></div><h1>Kernel1DHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import java.util.Set;
 
 /**
  *
  * @author nichole
  */
-<span class="fc" id="L10">public class Kernel1DHelper {</span>
+<span class="fc" id="L12">public class Kernel1DHelper {</span>
    
     /**
      * convolve point[xyIdx] with the kernel g.  if calcX is true, the 
@@ -25,14 +27,14 @@ import algorithms.util.PairIntArrayWithColor;
     public double convolvePointWithKernel(PairIntArray curve, int cIndex,
         float[] g, final boolean calcX) {
 
-<span class="fc" id="L28">        int h = g.length &gt;&gt; 1;</span>
+<span class="fc" id="L30">        int h = g.length &gt;&gt; 1;</span>
 
-<span class="fc" id="L30">        double sum = 0;</span>
+<span class="fc" id="L32">        double sum = 0;</span>
 
-<span class="fc" id="L32">        int curveLength = curve.getN();</span>
+<span class="fc" id="L34">        int curveLength = curve.getN();</span>
         
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
-<span class="fc bfc" id="L35" title="All 2 branches covered.">            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            &amp;&amp; (((PairIntArrayWithColor) curve).getColor() == 1);</span>
             
         /*
         correct for the edges.
@@ -53,21 +55,21 @@ import algorithms.util.PairIntArrayWithColor;
                  it if possible.
         */
                 
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
 
-<span class="fc" id="L58">            float gg = g[gIdx];</span>
+<span class="fc" id="L60">            float gg = g[gIdx];</span>
 
-<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (gg == 0) {</span>
-<span class="fc" id="L61">                continue;</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (gg == 0) {</span>
+<span class="fc" id="L63">                continue;</span>
             }
             
-<span class="fc" id="L64">            int x = gIdx - h;</span>
+<span class="fc" id="L66">            int x = gIdx - h;</span>
 
-<span class="fc" id="L66">            int curveIdx = cIndex + x;</span>
+<span class="fc" id="L68">            int curveIdx = cIndex + x;</span>
 
-<span class="fc bfc" id="L68" title="All 2 branches covered.">            if (curveIdx &lt; 0) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (curveIdx &lt; 0) {</span>
                 
-<span class="fc bfc" id="L70" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">                if (isClosedCurved) {</span>
                     // wrap around
                     /*
                     n-4 n-3 n-2 n-1  0   1   2   3   .   .   .  n-1
@@ -75,19 +77,19 @@ import algorithms.util.PairIntArrayWithColor;
                     */
                     // for the rare case when the kernel is so much larger than
                     //   the edge, will need to iterate
-<span class="fc bfc" id="L78" title="All 2 branches covered.">                    while (curveIdx &lt; 0) {</span>
-<span class="fc" id="L79">                        curveIdx = curve.getN() + curveIdx;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                    while (curveIdx &lt; 0) {</span>
+<span class="fc" id="L81">                        curveIdx = curve.getN() + curveIdx;</span>
                     }
                 } else {
                     //TODO: revisit this for range of kernel sizes vs edge sizes
                     // replicate
-<span class="fc" id="L84">                    curveIdx = -1*curveIdx - 1;</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">                    if (curveIdx &gt; (curveLength - 1)) {</span>
-<span class="fc" id="L86">                        curveIdx = curveLength - 1;</span>
+<span class="fc" id="L86">                    curveIdx = -1*curveIdx - 1;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                    if (curveIdx &gt; (curveLength - 1)) {</span>
+<span class="fc" id="L88">                        curveIdx = curveLength - 1;</span>
                     }
                 }
-<span class="fc bfc" id="L89" title="All 2 branches covered.">            } else if (curveIdx &gt;= (curveLength)) {</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (isClosedCurved) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            } else if (curveIdx &gt;= (curveLength)) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                if (isClosedCurved) {</span>
                     // wrap around
                     /*
                     0   1   2   3   .   .   .  n-1  0   1   2   3   4
@@ -95,92 +97,93 @@ import algorithms.util.PairIntArrayWithColor;
                     */
                     // for the rare case when the kernel is so much larger than
                     //   the edge, will need to iterate
-<span class="fc bfc" id="L98" title="All 2 branches covered.">                    while (curveIdx &gt;= (curveLength)) {</span>
-<span class="fc" id="L99">                        curveIdx = curveIdx - curve.getN();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                    while (curveIdx &gt;= (curveLength)) {</span>
+<span class="fc" id="L101">                        curveIdx = curveIdx - curve.getN();</span>
                     }
                 } else {
                     //TODO: revisit this for range of kernel sizes vs edge sizes
-<span class="fc" id="L103">                    int diff = curveIdx - curveLength;</span>
-<span class="fc" id="L104">                    curveIdx = curveLength - diff - 1;</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">                    if (curveIdx &lt; 0) {</span>
-<span class="fc" id="L106">                        curveIdx = 0;</span>
+<span class="fc" id="L105">                    int diff = curveIdx - curveLength;</span>
+<span class="fc" id="L106">                    curveIdx = curveLength - diff - 1;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                    if (curveIdx &lt; 0) {</span>
+<span class="fc" id="L108">                        curveIdx = 0;</span>
                     }
                 }
             }
             
             float point;
             
-<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (calcX) {</span>
-<span class="fc" id="L114">                point = curve.getX(curveIdx);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (calcX) {</span>
+<span class="fc" id="L116">                point = curve.getX(curveIdx);</span>
             } else {
-<span class="fc" id="L116">                point = curve.getY(curveIdx);</span>
+<span class="fc" id="L118">                point = curve.getY(curveIdx);</span>
             }
 
-<span class="fc" id="L119">            sum += (point * gg);</span>
+<span class="fc" id="L121">            sum += (point * gg);</span>
         }
 
-<span class="fc" id="L122">        return sum;</span>
+<span class="fc" id="L124">        return sum;</span>
     }
 
     /**
-     * convolve point[xyIdx] with the kernel g along a column if calcX is true.
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
      * @param img
      * @param col
      * @param row
      * @param g
-     * @param calcX
+     * @param calcX convolve along column if true, else row
      * @return 
      */
     public double convolvePointWithKernel(final GreyscaleImage img, int col, 
         int row, float[] g, final boolean calcX) {
 
-<span class="fc" id="L137">        int h = g.length &gt;&gt; 1;</span>
+<span class="fc" id="L140">        int h = g.length &gt;&gt; 1;</span>
 
-<span class="fc" id="L139">        double sum = 0;</span>
+<span class="fc" id="L142">        double sum = 0;</span>
 
-<span class="fc bfc" id="L141" title="All 2 branches covered.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
                 
-<span class="fc bfc" id="L143" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
 
-<span class="fc" id="L145">            float gg = g[gIdx];</span>
+<span class="fc" id="L148">            float gg = g[gIdx];</span>
 
-<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (gg == 0) {</span>
-<span class="fc" id="L148">                continue;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (gg == 0) {</span>
+<span class="fc" id="L151">                continue;</span>
             }
             
-<span class="fc" id="L151">            int idx = gIdx - h;</span>
+<span class="fc" id="L154">            int idx = gIdx - h;</span>
 
-<span class="fc bfc" id="L153" title="All 2 branches covered.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
 
-<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (cIdx &lt; 0) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (cIdx &lt; 0) {</span>
                 // replicate
-<span class="fc" id="L157">                cIdx = -1*cIdx - 1;</span>
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">                if (cIdx &gt; (len - 1)) {</span>
-<span class="nc" id="L159">                    cIdx = len - 1;</span>
+<span class="fc" id="L160">                cIdx = -1*cIdx - 1;</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">                if (cIdx &gt; (len - 1)) {</span>
+<span class="nc" id="L162">                    cIdx = len - 1;</span>
                 }
-<span class="fc bfc" id="L161" title="All 2 branches covered.">            } else if (cIdx &gt;= (len)) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            } else if (cIdx &gt;= (len)) {</span>
                 //TODO: revisit this for range of kernel sizes vs edge sizes
-<span class="fc" id="L163">                int diff = cIdx - len;</span>
-<span class="fc" id="L164">                cIdx = len - diff - 1;</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                if (cIdx &lt; 0) {</span>
-<span class="nc" id="L166">                    cIdx = 0;</span>
+<span class="fc" id="L166">                int diff = cIdx - len;</span>
+<span class="fc" id="L167">                cIdx = len - diff - 1;</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">                if (cIdx &lt; 0) {</span>
+<span class="nc" id="L169">                    cIdx = 0;</span>
                 }
             }
             
             float point;
             
-<span class="fc bfc" id="L172" title="All 2 branches covered.">            if (calcX) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (calcX) {</span>
                 // keep row constant
-<span class="fc" id="L174">                point = img.getValue(cIdx, row);</span>
+<span class="fc" id="L177">                point = img.getValue(cIdx, row);</span>
             } else {
                 // keep col constant
-<span class="fc" id="L177">                point = img.getValue(col, cIdx);</span>
+<span class="fc" id="L180">                point = img.getValue(col, cIdx);</span>
             }
 
-<span class="fc" id="L180">            sum += (point * gg);</span>
+<span class="fc" id="L183">            sum += (point * gg);</span>
         }
 
-<span class="fc" id="L183">        return sum;</span>
+<span class="fc" id="L186">        return sum;</span>
     }
     
     /**
@@ -195,69 +198,117 @@ import algorithms.util.PairIntArrayWithColor;
     public double[] convolvePointWithKernel(final Image img, int col, 
         int row, float[] g, final boolean calcX) {
 
-<span class="fc" id="L198">        int h = g.length &gt;&gt; 1;</span>
+<span class="fc" id="L201">        int h = g.length &gt;&gt; 1;</span>
 
-<span class="fc" id="L200">        double[] sum = new double[3];        </span>
+<span class="fc" id="L203">        double[] sum = new double[3];        </span>
 
-<span class="fc bfc" id="L202" title="All 2 branches covered.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        int len = calcX ? img.getWidth() : img.getHeight();</span>
         
-<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int color = 0; color &lt; 3; color++) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int color = 0; color &lt; 3; color++) {</span>
                 
-<span class="fc bfc" id="L206" title="All 2 branches covered.">            for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
 
-<span class="fc" id="L208">                float gg = g[gIdx];</span>
+<span class="fc" id="L211">                float gg = g[gIdx];</span>
 
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">                if (gg == 0) {</span>
-<span class="nc" id="L211">                    continue;</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">                if (gg == 0) {</span>
+<span class="nc" id="L214">                    continue;</span>
                 }
 
-<span class="fc" id="L214">                int idx = gIdx - h;</span>
+<span class="fc" id="L217">                int idx = gIdx - h;</span>
 
-<span class="fc bfc" id="L216" title="All 2 branches covered.">                int cIdx = calcX ? (col + idx) : (row + idx);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                int cIdx = calcX ? (col + idx) : (row + idx);</span>
 
-<span class="fc bfc" id="L218" title="All 2 branches covered.">                if (cIdx &lt; 0) {</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                if (cIdx &lt; 0) {</span>
                     // replicate
-<span class="fc" id="L220">                    cIdx = -1*cIdx - 1;</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                    if (cIdx &gt; (len - 1)) {</span>
-<span class="nc" id="L222">                        cIdx = len - 1;</span>
+<span class="fc" id="L223">                    cIdx = -1*cIdx - 1;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                    if (cIdx &gt; (len - 1)) {</span>
+<span class="nc" id="L225">                        cIdx = len - 1;</span>
                     }
-<span class="fc bfc" id="L224" title="All 2 branches covered.">                } else if (cIdx &gt;= (len)) {</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">                } else if (cIdx &gt;= (len)) {</span>
                     //TODO: revisit this for range of kernel sizes vs edge sizes
-<span class="fc" id="L226">                    int diff = cIdx - len;</span>
-<span class="fc" id="L227">                    cIdx = len - diff - 1;</span>
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">                    if (cIdx &lt; 0) {</span>
-<span class="nc" id="L229">                        cIdx = 0;</span>
+<span class="fc" id="L229">                    int diff = cIdx - len;</span>
+<span class="fc" id="L230">                    cIdx = len - diff - 1;</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">                    if (cIdx &lt; 0) {</span>
+<span class="nc" id="L232">                        cIdx = 0;</span>
                     }
                 }
 
                 float point;
 
-<span class="fc bfc" id="L235" title="All 2 branches covered.">                if (calcX) {</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">                if (calcX) {</span>
                     // keep row constant
-<span class="fc bfc" id="L237" title="All 2 branches covered.">                    if (color == 0) {</span>
-<span class="fc" id="L238">                        point = img.getR(cIdx, row);</span>
-<span class="fc bfc" id="L239" title="All 2 branches covered.">                    } else if (color == 1) {</span>
-<span class="fc" id="L240">                        point = img.getG(cIdx, row);</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">                    if (color == 0) {</span>
+<span class="fc" id="L241">                        point = img.getR(cIdx, row);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">                    } else if (color == 1) {</span>
+<span class="fc" id="L243">                        point = img.getG(cIdx, row);</span>
                     } else {
-<span class="fc" id="L242">                        point = img.getB(cIdx, row);</span>
+<span class="fc" id="L245">                        point = img.getB(cIdx, row);</span>
                     }
                 } else {
                     // keep col constant
-<span class="fc bfc" id="L246" title="All 2 branches covered.">                    if (color == 0) {</span>
-<span class="fc" id="L247">                        point = img.getR(col, cIdx);</span>
-<span class="fc bfc" id="L248" title="All 2 branches covered.">                    } else if (color == 1) {</span>
-<span class="fc" id="L249">                        point = img.getG(col, cIdx);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">                    if (color == 0) {</span>
+<span class="fc" id="L250">                        point = img.getR(col, cIdx);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">                    } else if (color == 1) {</span>
+<span class="fc" id="L252">                        point = img.getG(col, cIdx);</span>
                     } else {
-<span class="fc" id="L251">                        point = img.getB(col, cIdx);</span>
+<span class="fc" id="L254">                        point = img.getB(col, cIdx);</span>
                     }
                 }
 
-<span class="fc" id="L255">                sum[color] += (point * gg);</span>
+<span class="fc" id="L258">                sum[color] += (point * gg);</span>
             }
         }
         
-<span class="fc" id="L259">        return sum;</span>
+<span class="fc" id="L262">        return sum;</span>
     }
     
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
+     * @param points
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX convolve along column if true, else row
+     * @return 
+     */
+    public double convolvePointWithKernel(final Set&lt;PairInt&gt; points, int col, 
+        int row, float[] g, final boolean calcX) {
+
+<span class="fc" id="L278">        int h = g.length &gt;&gt; 1;</span>
+
+<span class="fc" id="L280">        double sum = 0;</span>
+                
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (int gIdx = 0; gIdx &lt; g.length; gIdx++) {</span>
+
+<span class="fc" id="L284">            float gg = g[gIdx];</span>
+
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">            if (gg == 0) {</span>
+<span class="nc" id="L287">                continue;</span>
+            }
+            
+<span class="fc" id="L290">            int idx = gIdx - h;</span>
+
+<span class="fc bfc" id="L292" title="All 2 branches covered.">            int cIdx = calcX ? (col + idx) : (row + idx);</span>
+
+<span class="fc" id="L294">            float point = 0;</span>
+            
+<span class="fc bfc" id="L296" title="All 2 branches covered.">            if (calcX) {</span>
+                // keep row constant
+<span class="fc bfc" id="L298" title="All 2 branches covered.">                if (points.contains(new PairInt(cIdx, row))) {</span>
+<span class="fc" id="L299">                    point = 1;</span>
+                }
+            } else {
+                // keep col constant
+<span class="fc bfc" id="L303" title="All 2 branches covered.">                if (points.contains(new PairInt(col, cIdx))) {</span>
+<span class="fc" id="L304">                    point = 1;</span>
+                }
+            }
+
+<span class="fc" id="L308">            sum += (point * gg);</span>
+        }
+
+<span class="fc" id="L311">        return sum;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -218,20 +218,20 @@
             while (true) {
                 do {
 <span class="fc" id="L220">                    store++;     </span>
-<span class="fc bfc" id="L221" title="All 4 branches covered.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">                } while ((store &lt;= idxHi) &amp;&amp; (a[store] &lt; x));</span>
                 do {
 <span class="fc" id="L223">                    idxMid--;</span>
 <span class="fc bfc" id="L224" title="All 2 branches covered.">                } while (a[idxMid] &gt; x);</span>
-<span class="fc bfc" id="L225" title="All 2 branches covered.">                if (store &gt; idxMid) {</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">                if (store &gt; idxMid) {</span>
 <span class="fc" id="L226">                    break;</span>
                 }
-<span class="fc" id="L228">                int swap = a[store];</span>
-<span class="fc" id="L229">                a[store] = a[idxMid];</span>
-<span class="fc" id="L230">                a[idxMid] = swap;</span>
-<span class="fc" id="L231">                int swap2 = b[store];</span>
-<span class="fc" id="L232">                b[store] = b[idxMid];</span>
-<span class="fc" id="L233">                b[idxMid] = swap2;</span>
-<span class="fc" id="L234">            }</span>
+<span class="nc" id="L228">                int swap = a[store];</span>
+<span class="nc" id="L229">                a[store] = a[idxMid];</span>
+<span class="nc" id="L230">                a[idxMid] = swap;</span>
+<span class="nc" id="L231">                int swap2 = b[store];</span>
+<span class="nc" id="L232">                b[store] = b[idxMid];</span>
+<span class="nc" id="L233">                b[idxMid] = swap2;</span>
+<span class="nc" id="L234">            }</span>
 <span class="fc" id="L235">            int swap = a[idxLo];</span>
 <span class="fc" id="L236">            a[idxLo] = a[idxMid];</span>
 <span class="fc" id="L237">            a[idxMid] = swap;</span>

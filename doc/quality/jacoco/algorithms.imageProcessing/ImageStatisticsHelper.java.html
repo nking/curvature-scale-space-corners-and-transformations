@@ -389,11 +389,11 @@ import java.util.Set;
 <span class="nc" id="L389">            width = 1;</span>
 <span class="pc bpc" id="L390" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
 <span class="nc" id="L391">            width = 5;</span>
-<span class="fc bfc" id="L392" title="All 2 branches covered.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
 <span class="fc" id="L393">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
-<span class="fc" id="L396">            width = 100;</span>
+<span class="nc" id="L396">            width = 100;</span>
         }
         
 <span class="fc" id="L399">        return examineImageBorders(input, width, useSturges);</span>

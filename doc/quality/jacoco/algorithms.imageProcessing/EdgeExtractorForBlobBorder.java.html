@@ -312,14 +312,14 @@ try {
 <span class="fc" id="L312">                routes.applyOffsets(-1*xOffset, -1*yOffset);</span>
 <span class="fc" id="L313">                boolean rm = false;</span>
 <span class="fc bfc" id="L314" title="All 2 branches covered.">                for (PairInt p : routes.getRoute0()) {</span>
-<span class="pc bpc" id="L315" title="3 of 6 branches missed.">                    if (p.getX() &lt; 0 || p.getY() &lt; 0 || (p.getX() &gt; (w - 1)) ||</span>
+<span class="pc bpc" id="L315" title="1 of 6 branches missed.">                    if (p.getX() &lt; 0 || p.getY() &lt; 0 || (p.getX() &gt; (w - 1)) ||</span>
 <span class="pc bpc" id="L316" title="1 of 2 branches missed.">                        (p.getY() &gt; (h - 1)) || </span>
-<span class="pc bpc" id="L317" title="1 of 2 branches missed.">                        (img.getValue(p.getX(), p.getY()) == 0)) {</span>
-<span class="nc" id="L318">                        rm = true;</span>
-<span class="nc" id="L319">                        break;</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                        (img.getValue(p.getX(), p.getY()) == 0)) {</span>
+<span class="fc" id="L318">                        rm = true;</span>
+<span class="fc" id="L319">                        break;</span>
                     }
 <span class="fc" id="L321">                }</span>
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">                if (!rm) {</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">                if (!rm) {</span>
 <span class="fc bfc" id="L323" title="All 2 branches covered.">                    for (PairInt p : routes.getRoute1()) {</span>
 <span class="pc bpc" id="L324" title="3 of 6 branches missed.">                        if (p.getX() &lt; 0 || p.getY() &lt; 0|| (p.getX() &gt; (w - 1)) ||</span>
 <span class="pc bpc" id="L325" title="1 of 2 branches missed.">                            (p.getY() &gt; (h - 1)) || </span>
@@ -329,13 +329,13 @@ try {
                         }
 <span class="fc" id="L330">                    }</span>
                 }
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">                if (rm) {</span>
-<span class="nc" id="L333">                    remove.add(Integer.valueOf(i));</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">                if (rm) {</span>
+<span class="fc" id="L333">                    remove.add(Integer.valueOf(i));</span>
                 }
             }
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">            for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L337">                int rmIdx = remove.get(i).intValue();</span>
-<span class="nc" id="L338">                butterFlySections2.remove(rmIdx);</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">            for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L337">                int rmIdx = remove.get(i).intValue();</span>
+<span class="fc" id="L338">                butterFlySections2.remove(rmIdx);</span>
             }
         }
         
@@ -547,16 +547,16 @@ try {
 <span class="fc" id="L547">            boolean isASpur = spurRemover.isASpur(x, y, points, imageWidth,</span>
                 imageHeight);
                 
-<span class="pc bpc" id="L550" title="1 of 2 branches missed.">            if (isASpur) {</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">            if (isASpur) {</span>
                 
-<span class="nc" id="L552">                curve.removeRange(idx, idx);</span>
+<span class="fc" id="L552">                curve.removeRange(idx, idx);</span>
                 
-<span class="nc" id="L554">                edited = true;</span>
+<span class="fc" id="L554">                edited = true;</span>
                 
             } else {
                 break;
             }
-<span class="nc" id="L559">        }</span>
+<span class="fc" id="L559">        }</span>
         
 <span class="fc" id="L561">        return edited;</span>
     }

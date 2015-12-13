@@ -22,239 +22,266 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * class for extracting blobs and their perimeters.
+ * 
  * @author nichole
  */
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">public class BlobsAndPerimeters {</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">public class BlobsAndPerimeters {</span>
     
-<span class="fc" id="L30">    protected static boolean modifyBlobs = true;</span>
+<span class="fc" id="L31">    protected static boolean modifyBlobs = true;</span>
     
     /**
      * the number of largest extracted perimeters is limited to this and
      * the number of blobs is subsequently trimmed to the same.  The variable
      * may be adjusted to a higher number for larger images.
      */
-<span class="fc" id="L37">    protected static int defaultNumberLimit = 20;</span>
+<span class="fc" id="L38">    protected static int defaultNumberLimit = 20;</span>
           
     public static List&lt;Set&lt;PairInt&gt;&gt; extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type, 
         boolean useBinned) {
         
-<span class="fc" id="L43">        List&lt;Set&lt;PairInt&gt;&gt; outputBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L44">        List&lt;Set&lt;PairInt&gt;&gt; outputBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
         // have removed this segmentation type:
-<span class="fc" id="L46">        boolean segmentedToLineDrawing = false;</span>
+<span class="fc" id="L47">        boolean segmentedToLineDrawing = false;</span>
         
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        int smallestGroupLimit = useBinned ? </span>
-<span class="fc" id="L49">            imgHelper.getSmallestGroupLimitBinned() : </span>
-<span class="fc" id="L50">            imgHelper.getSmallestGroupLimit();</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        int smallestGroupLimit = useBinned ? </span>
+<span class="fc" id="L50">            imgHelper.getSmallestGroupLimitBinned() : </span>
+<span class="fc" id="L51">            imgHelper.getSmallestGroupLimit();</span>
         
-<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (smallestGroupLimit == 0) {</span>
-<span class="nc" id="L53">            throw new IllegalStateException(&quot;smallestGroupLimit must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (smallestGroupLimit == 0) {</span>
+<span class="nc" id="L54">            throw new IllegalStateException(&quot;smallestGroupLimit must be &gt; 0&quot;);</span>
         }
         
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        int largestGroupLimit = useBinned ? </span>
-<span class="fc" id="L57">            imgHelper.getLargestGroupLimitBinned() : </span>
-<span class="fc" id="L58">            imgHelper.getLargestGroupLimit();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        int largestGroupLimit = useBinned ? </span>
+<span class="fc" id="L58">            imgHelper.getLargestGroupLimitBinned() : </span>
+<span class="fc" id="L59">            imgHelper.getLargestGroupLimit();</span>
         
         //TODO: refactor to use limits differently.  hard wiring an override here
-<span class="fc bfc" id="L61" title="All 4 branches covered.">        if (!useBinned &amp;&amp; type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
-<span class="fc" id="L62">            smallestGroupLimit = 5000;</span>
-<span class="fc" id="L63">            largestGroupLimit = 100000;</span>
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        if (!useBinned &amp;&amp; type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {</span>
+<span class="fc" id="L63">            smallestGroupLimit = 5000;</span>
+<span class="fc" id="L64">            largestGroupLimit = 100000;</span>
         }
         
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        GreyscaleImage segImg = useBinned ?</span>
-<span class="fc" id="L67">            imgHelper.getBinnedSegmentationImage(type) :</span>
-<span class="fc" id="L68">            imgHelper.getSegmentationImage(type);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        GreyscaleImage segImg = useBinned ?</span>
+<span class="fc" id="L68">            imgHelper.getBinnedSegmentationImage(type) :</span>
+<span class="fc" id="L69">            imgHelper.getSegmentationImage(type);</span>
             
-<span class="fc" id="L70">        boolean use8Neighbors = false;</span>
+<span class="fc" id="L71">        boolean use8Neighbors = false;</span>
                 
-<span class="fc" id="L72">        Map&lt;Integer, Integer&gt; freqMap = Histogram.createAFrequencyMap(segImg);</span>
+<span class="fc" id="L73">        Map&lt;Integer, Integer&gt; freqMap = Histogram.createAFrequencyMap(segImg);</span>
         
-        /*
-        TODO: for low resolution, should use defaultExtractBlobs. this code
-        doesn't currenly know resolution, so this section may need
-        to be revised with more testing.
-        */
-               
-<span class="fc" id="L80">        List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc" id="L81">        List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBoundaryBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+        // TODO: need to revise.
+        // extracting a default range of blob sizes while storing the full
+        // ranges present in histograms.
+        // The histograms are used to determine if a larger range of sizes
+        // should be used instead.
+        // The size ranges should probably be completely determined by the
+        // histograms and a default factor for the range, but for now,
+        // using fixed ranges for well behaved test images to improve all
+        // of the methods related to feature matching.
         
-<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Integer&gt; entry : freqMap.entrySet()) {            </span>
-<span class="fc" id="L84">            Integer pixValue = entry.getKey();</span>
-<span class="fc" id="L85">            defaultExtractBlobs(segImg, pixValue.intValue(), </span>
+<span class="fc" id="L85">        List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L86">        List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBoundaryBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+        
+<span class="fc" id="L88">        List&lt;HistogramHolder&gt; histograms = new ArrayList&lt;HistogramHolder&gt;();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Integer&gt; entry : freqMap.entrySet()) {            </span>
+            
+<span class="fc" id="L91">            Integer pixValue = entry.getKey();</span>
+            
+<span class="fc" id="L93">            HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(), </span>
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
                 outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
                 imgHelper.debugTag);
-<span class="fc" id="L89">        }</span>
+            
+<span class="fc" id="L98">            histograms.add(hist);</span>
+<span class="fc" id="L99">        }</span>
         
-<span class="fc" id="L91">        int nExcl = outputExcludedBlobs.size();</span>
-<span class="fc" id="L92">        int nIncl = outputBlobs.size();</span>
+        // calculate the total fraction of the areas of the histograms excluded
+        // by the default ranges.
+<span class="fc" id="L103">        float inclFrac = calcIncludedFraction(histograms, smallestGroupLimit, </span>
+            largestGroupLimit, imgHelper.debugTag);
+
+        //System.out.println(imgHelper.debugTag + &quot; inclFrac=&quot; + inclFrac);
+
+<span class="fc bfc" id="L108" title="All 4 branches covered.">        boolean redo = useBinned &amp;&amp; (inclFrac &lt; 1.0f);</span>
         
-<span class="pc bpc" id="L94" title="1 of 8 branches missed.">        boolean redo = useBinned &amp;&amp; </span>
-            ((nIncl == 0) || ((nExcl &gt;= 10) &amp;&amp; (nExcl &gt; nIncl)));
+        //TODO: consider if know the segmentation produces a binary image, whether
+        // to restrict the blob extraction to either value 0 or non-zero depending
+        // on the histogram.  if the segmentation were the wavelet transform, the
+        // comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
+        // Looks like that decision would need to occur at a higher level where both
+        // images were being looked at.  it seems like such a decision could be the
+        // wrong thing if the overlap of common objects in an image were small
+        // and the objects outside of an intersection had the opposite 
+        // intensity pattern.
+        // so, this change to use one value only of the segmented image is 
+        // possibly wrong sometimes.  (e.g. the checkerboard test images).
+        // NOTE: the way to avoid having excluded blob comparisons is of course
+        // to include everything, but need to keep the number of comparisons 
+        // small when possible
         
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (redo) {</span>
-<span class="fc" id="L100">            smallestGroupLimit = imgHelper.getSmallestGroupLimit();</span>
-<span class="fc" id="L101">            largestGroupLimit = imgHelper.getLargestGroupLimit();</span>
-<span class="fc" id="L102">            List&lt;Set&lt;PairInt&gt;&gt; tmpOutputBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc bfc" id="L103" title="All 2 branches covered.">            for (int i = 0; i &lt; outputExcludedBlobs.size(); ++i) {</span>
-<span class="fc" id="L104">                extractBlobs2(outputExcludedBlobs.get(i), </span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (redo) {</span>
+                        
+<span class="fc" id="L129">            smallestGroupLimit = imgHelper.getSmallestGroupLimit();</span>
+<span class="fc" id="L130">            largestGroupLimit = imgHelper.getLargestGroupLimit();</span>
+<span class="fc" id="L131">            List&lt;Set&lt;PairInt&gt;&gt; tmpOutputBlobs = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            for (int i = 0; i &lt; outputExcludedBlobs.size(); ++i) {</span>
+<span class="fc" id="L133">                extractBlobs2(outputExcludedBlobs.get(i), </span>
                     smallestGroupLimit, largestGroupLimit, tmpOutputBlobs,
-<span class="fc" id="L106">                    segImg.getWidth(), segImg.getHeight());</span>
+<span class="fc" id="L135">                    segImg.getWidth(), segImg.getHeight());</span>
             }
-<span class="fc bfc" id="L108" title="All 2 branches covered.">            for (int i = 0; i &lt; outputExcludedBoundaryBlobs.size(); ++i) {</span>
-<span class="fc" id="L109">                extractBlobs2(outputExcludedBoundaryBlobs.get(i), </span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int i = 0; i &lt; outputExcludedBoundaryBlobs.size(); ++i) {</span>
+<span class="fc" id="L138">                extractBlobs2(outputExcludedBoundaryBlobs.get(i), </span>
                     smallestGroupLimit, largestGroupLimit, tmpOutputBlobs,
-<span class="fc" id="L111">                    segImg.getWidth(), segImg.getHeight());</span>
+<span class="fc" id="L140">                    segImg.getWidth(), segImg.getHeight());</span>
             }
-            //TODO: may need to determine group size limits more robustly           
-<span class="fc" id="L114">            outputBlobs.clear();</span>
-<span class="fc" id="L115">            outputBlobs.addAll(tmpOutputBlobs);</span>
+            //outputBlobs.clear();
+<span class="fc" id="L143">            outputBlobs.addAll(tmpOutputBlobs);</span>
         }
         
-<span class="fc" id="L118">        removeRedundantBlobs(outputBlobs);</span>
+<span class="fc" id="L146">        removeRedundantBlobs(outputBlobs);</span>
         
-<span class="pc bpc" id="L120" title="1 of 4 branches missed.">        if (modifyBlobs &amp;&amp; !redo) {</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">        if (modifyBlobs &amp;&amp; !redo) {</span>
             // helps to fill in single pixel holes
-<span class="fc bfc" id="L122" title="All 2 branches covered.">            for (Set&lt;PairInt&gt; blob : outputBlobs) {</span>
-<span class="fc" id="L123">                growRadius(blob, segImg.getWidth(), segImg.getHeight());</span>
-<span class="fc" id="L124">            }</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            for (Set&lt;PairInt&gt; blob : outputBlobs) {</span>
+<span class="fc" id="L151">                growRadius(blob, segImg.getWidth(), segImg.getHeight());</span>
+<span class="fc" id="L152">            }</span>
         }
         
-<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (imgHelper.isInDebugMode()) {</span>
-<span class="fc" id="L128">            Image img0 = ImageIOHelper.convertImage(segImg);</span>
-<span class="fc" id="L129">            int c = 0;</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">            for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
-<span class="fc" id="L131">                Set&lt;PairInt&gt; blobSet = outputBlobs.get(i);</span>
-<span class="fc" id="L132">                int clr = ImageIOHelper.getNextColorRGB(c);</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">                for (PairInt p : blobSet) {</span>
-<span class="fc" id="L134">                    int x = p.getX();</span>
-<span class="fc" id="L135">                    int y = p.getY();</span>
-<span class="fc" id="L136">                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);</span>
-<span class="fc" id="L137">                }</span>
-<span class="fc" id="L138">                c++;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (imgHelper.isInDebugMode()) {</span>
+<span class="fc" id="L156">            Image img0 = ImageIOHelper.convertImage(segImg);</span>
+<span class="fc" id="L157">            int c = 0;</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
+<span class="fc" id="L159">                Set&lt;PairInt&gt; blobSet = outputBlobs.get(i);</span>
+<span class="fc" id="L160">                int clr = ImageIOHelper.getNextColorRGB(c);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                for (PairInt p : blobSet) {</span>
+<span class="fc" id="L162">                    int x = p.getX();</span>
+<span class="fc" id="L163">                    int y = p.getY();</span>
+<span class="fc" id="L164">                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);</span>
+<span class="fc" id="L165">                }</span>
+<span class="fc" id="L166">                c++;</span>
             }
             
-<span class="fc" id="L141">            MiscDebug.writeImage(img0, &quot;blobs_&quot; + imgHelper.getDebugTag() </span>
-<span class="fc" id="L142">                + &quot;_&quot; + MiscDebug.getCurrentTimeFormatted());            </span>
+<span class="fc" id="L169">            MiscDebug.writeImage(img0, &quot;blobs_&quot; + imgHelper.getDebugTag() </span>
+<span class="fc" id="L170">                + &quot;_&quot; + MiscDebug.getCurrentTimeFormatted());            </span>
         }
         
-<span class="fc" id="L145">        return outputBlobs;</span>
+<span class="fc" id="L173">        return outputBlobs;</span>
     }
 
     public static List&lt;PairIntArray&gt; extractBoundsOfBlobs(
         SegmentedImageHelper imgHelper, SegmentationType type, 
-        final List&lt;Set&lt;PairInt&gt;&gt; inOutBlobs,
-        boolean useBinned,
+        final List&lt;Set&lt;PairInt&gt;&gt; inOutBlobs, boolean useBinned,
         boolean discardWhenCavityIsSmallerThanBorder) {
         
         // TODO: method arguments are vulnerable to not being consistently from
         //   same origins, so refactor this (encapsulate) at some point
         
-<span class="fc" id="L157">        final List&lt;PairIntArray&gt; outputBounds = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="fc" id="L184">        final List&lt;PairIntArray&gt; outputBounds = new ArrayList&lt;PairIntArray&gt;();</span>
         
-<span class="fc" id="L159">        Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());</span>
+<span class="fc" id="L186">        Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());</span>
         
-<span class="fc bfc" id="L161" title="All 2 branches covered.">        GreyscaleImage segImg = useBinned ?</span>
-<span class="fc" id="L162">            imgHelper.getBinnedSegmentationImage(type) :</span>
-<span class="fc" id="L163">            imgHelper.getSegmentationImage(type);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        GreyscaleImage segImg = useBinned ?</span>
+<span class="fc" id="L189">            imgHelper.getBinnedSegmentationImage(type) :</span>
+<span class="fc" id="L190">            imgHelper.getSegmentationImage(type);</span>
         
-<span class="fc bfc" id="L165" title="All 2 branches covered.">        GreyscaleImage greyImg = useBinned ?</span>
-<span class="fc" id="L166">            imgHelper.getGreyscaleImageBinned() :</span>
-<span class="fc" id="L167">            imgHelper.getGreyscaleImage();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        GreyscaleImage greyImg = useBinned ?</span>
+<span class="fc" id="L193">            imgHelper.getGreyscaleImageBinned() :</span>
+<span class="fc" id="L194">            imgHelper.getGreyscaleImage();</span>
         
-<span class="fc" id="L169">        int width = segImg.getWidth();</span>
-<span class="fc" id="L170">        int height = segImg.getHeight();</span>
+<span class="fc" id="L196">        int width = segImg.getWidth();</span>
+<span class="fc" id="L197">        int height = segImg.getHeight();</span>
         
-<span class="fc" id="L172">        int numberLimit = defaultNumberLimit;</span>
-<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (useBinned) {</span>
-<span class="fc" id="L174">            int binFactor = imgHelper.getBinFactor();</span>
-<span class="fc" id="L175">            int limit = 1024/binFactor;</span>
-<span class="fc bfc" id="L176" title="All 4 branches covered.">            if (width &gt;= limit || height &gt;= limit) {</span>
-<span class="fc" id="L177">                numberLimit = 40;</span>
+<span class="fc" id="L199">        int numberLimit = defaultNumberLimit;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (useBinned) {</span>
+<span class="fc" id="L201">            int binFactor = imgHelper.getBinFactor();</span>
+<span class="fc" id="L202">            int limit = 1024/binFactor;</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">            if (width &gt;= limit || height &gt;= limit) {</span>
+<span class="fc" id="L204">                numberLimit = 30;</span>
             }
-<span class="fc" id="L179">        } else {</span>
-<span class="pc bpc" id="L180" title="2 of 4 branches missed.">            if (width &gt;= 1024 || height &gt;= 1024) {</span>
-<span class="nc" id="L181">                numberLimit = 40;</span>
+<span class="fc" id="L206">        } else {</span>
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">            if (width &gt;= 1024 || height &gt;= 1024) {</span>
+<span class="nc" id="L208">                numberLimit = 30;</span>
             }
         }
         
         // sort by descending size
-<span class="fc" id="L186">        int[] indexes = new int[inOutBlobs.size()];</span>
-<span class="fc" id="L187">        int[] lengths = new int[indexes.length];</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">        for (int i = 0; i &lt; inOutBlobs.size(); ++i) {</span>
-<span class="fc" id="L189">            indexes[i] = i;</span>
-<span class="fc" id="L190">            lengths[i] = inOutBlobs.get(i).size();</span>
+<span class="fc" id="L213">        int[] indexes = new int[inOutBlobs.size()];</span>
+<span class="fc" id="L214">        int[] lengths = new int[indexes.length];</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = 0; i &lt; inOutBlobs.size(); ++i) {</span>
+<span class="fc" id="L216">            indexes[i] = i;</span>
+<span class="fc" id="L217">            lengths[i] = inOutBlobs.get(i).size();</span>
         }
         
-<span class="fc" id="L193">        MultiArrayMergeSort.sortByDecr(lengths, indexes);</span>
+<span class="fc" id="L220">        MultiArrayMergeSort.sortByDecr(lengths, indexes);</span>
         
-<span class="fc" id="L195">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L222">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc" id="L197">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L224">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
-<span class="fc" id="L199">        log.info(&quot;nBlobs before filtered =&quot; + inOutBlobs.size());</span>
+<span class="fc" id="L226">        log.info(&quot;nBlobs before filtered =&quot; + inOutBlobs.size());</span>
         
-<span class="fc" id="L201">        int count = 0;</span>
+<span class="fc" id="L228">        int count = 0;</span>
         int idx;
-<span class="fc bfc" id="L203" title="All 4 branches covered.">        while ((outputBounds.size() &lt; numberLimit) &amp;&amp; (count &lt; inOutBlobs.size())) {</span>
+<span class="fc bfc" id="L230" title="All 4 branches covered.">        while ((outputBounds.size() &lt; numberLimit) &amp;&amp; (count &lt; inOutBlobs.size())) {</span>
             
-<span class="fc" id="L205">            idx = indexes[count];</span>
+<span class="fc" id="L232">            idx = indexes[count];</span>
             
-<span class="fc" id="L207">            Set&lt;PairInt&gt; blob = inOutBlobs.get(idx);</span>
+<span class="fc" id="L234">            Set&lt;PairInt&gt; blob = inOutBlobs.get(idx);</span>
             
-<span class="fc" id="L209">            EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();</span>
+<span class="fc" id="L236">            EdgeExtractorForBlobBorder extractor = new EdgeExtractorForBlobBorder();</span>
             
-<span class="fc" id="L211">            PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(blob, </span>
+<span class="fc" id="L238">            PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(blob, </span>
                 width, height, discardWhenCavityIsSmallerThanBorder);
             
-<span class="pc bpc" id="L214" title="1 of 4 branches missed.">            if ((closedEdge != null) &amp;&amp; (curveHelper.isAdjacent(closedEdge, 0, </span>
-<span class="fc" id="L215">                closedEdge.getN() - 1))) {</span>
+<span class="pc bpc" id="L241" title="1 of 4 branches missed.">            if ((closedEdge != null) &amp;&amp; (curveHelper.isAdjacent(closedEdge, 0, </span>
+<span class="fc" id="L242">                closedEdge.getN() - 1))) {</span>
 
-<span class="fc" id="L217">                outputBounds.add(closedEdge);</span>
+<span class="fc" id="L244">                outputBounds.add(closedEdge);</span>
                 
-<span class="fc" id="L219">                blobs2.add(blob);</span>
+<span class="fc" id="L246">                blobs2.add(blob);</span>
                 
             }
             
-<span class="fc" id="L223">            count++;</span>
-<span class="fc" id="L224">        }</span>
+<span class="fc" id="L250">            count++;</span>
+<span class="fc" id="L251">        }</span>
         
-<span class="fc" id="L226">        inOutBlobs.clear();</span>
-<span class="fc" id="L227">        inOutBlobs.addAll(blobs2);</span>
+<span class="fc" id="L253">        inOutBlobs.clear();</span>
+<span class="fc" id="L254">        inOutBlobs.addAll(blobs2);</span>
         
-<span class="pc bpc" id="L229" title="3 of 4 branches missed.">        assert (inOutBlobs.size() == outputBounds.size());</span>
+<span class="pc bpc" id="L256" title="3 of 4 branches missed.">        assert (inOutBlobs.size() == outputBounds.size());</span>
         
-<span class="fc" id="L231">        log.info(&quot;nBlobs after filtered to top =&quot; + inOutBlobs.size());</span>
+<span class="fc" id="L258">        log.info(&quot;nBlobs after filtered to top =&quot; + inOutBlobs.size());</span>
         
-<span class="fc bfc" id="L233" title="All 2 branches covered.">if (imgHelper.isInDebugMode()) {</span>
-<span class="fc" id="L234">    Image img0 = ImageIOHelper.convertImage(segImg);</span>
-<span class="fc bfc" id="L235" title="All 2 branches covered.">    for (int i = 0; i &lt; outputBounds.size(); ++i) {</span>
-<span class="fc" id="L236">        PairIntArray pa = outputBounds.get(i);</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">        for (int j = 0; j &lt; pa.getN(); ++j) {</span>
-<span class="fc" id="L238">            int x = pa.getX(j);</span>
-<span class="fc" id="L239">            int y = pa.getY(j);</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc bfc" id="L241" title="All 4 branches covered.">                if (j == 0 || (j == (pa.getN() - 1))) {</span>
-<span class="fc" id="L242">                    ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">if (imgHelper.isInDebugMode()) {</span>
+<span class="fc" id="L261">    Image img0 = ImageIOHelper.convertImage(segImg);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">    for (int i = 0; i &lt; outputBounds.size(); ++i) {</span>
+<span class="fc" id="L263">        PairIntArray pa = outputBounds.get(i);</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        for (int j = 0; j &lt; pa.getN(); ++j) {</span>
+<span class="fc" id="L265">            int x = pa.getX(j);</span>
+<span class="fc" id="L266">            int y = pa.getY(j);</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc bfc" id="L268" title="All 4 branches covered.">                if (j == 0 || (j == (pa.getN() - 1))) {</span>
+<span class="fc" id="L269">                    ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);</span>
                 } else {
-<span class="fc" id="L244">                    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);</span>
+<span class="fc" id="L271">                    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);</span>
                 }
-<span class="fc bfc" id="L246" title="All 2 branches covered.">            } else if (i == 1) {</span>
-<span class="fc" id="L247">                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            } else if (i == 1) {</span>
+<span class="fc" id="L274">                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);</span>
             } else {
-<span class="fc" id="L249">                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);</span>
+<span class="fc" id="L276">                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);</span>
             }
         }
     }
-<span class="fc" id="L253">    long ts = MiscDebug.getCurrentTimeFormatted();</span>
-<span class="fc" id="L254">    MiscDebug.writeImage(img0, &quot;blob_perimeters_&quot; + imgHelper.getDebugTag() + &quot;_&quot; + ts);</span>
+<span class="fc" id="L280">    long ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="fc" id="L281">    MiscDebug.writeImage(img0, &quot;blob_perimeters_&quot; + imgHelper.getDebugTag() + &quot;_&quot; + ts);</span>
 }
 
-<span class="fc" id="L257">         return outputBounds;</span>
+<span class="fc" id="L284">         return outputBounds;</span>
     }
 
     // worse case runtime is O(N_blob^2) to compare centroids and dimensions.
@@ -266,125 +293,125 @@ import java.util.logging.Logger;
         // the exterior because later feature matching should be better
         // for points outside of the blob which is largely similar content.
         
-<span class="fc" id="L269">        boolean preferExterior = true;</span>
+<span class="fc" id="L296">        boolean preferExterior = true;</span>
         
-<span class="fc" id="L271">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L298">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
         
-<span class="fc" id="L273">        Map&lt;PairInt, Integer&gt; blobCenters = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc" id="L300">        Map&lt;PairInt, Integer&gt; blobCenters = new HashMap&lt;PairInt, Integer&gt;();</span>
         
-<span class="fc" id="L275">        LinkedHashSet&lt;Integer&gt; remove = new LinkedHashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L302">        LinkedHashSet&lt;Integer&gt; remove = new LinkedHashSet&lt;Integer&gt;();</span>
         
-<span class="fc bfc" id="L277" title="All 2 branches covered.">        for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        for (int i = 0; i &lt; outputBlobs.size(); ++i) {</span>
             
-<span class="fc" id="L279">            Set&lt;PairInt&gt; blob = outputBlobs.get(i);</span>
+<span class="fc" id="L306">            Set&lt;PairInt&gt; blob = outputBlobs.get(i);</span>
             
-<span class="fc" id="L281">            double[] xyCen = curveHelper.calculateXYCentroids(blob);</span>
+<span class="fc" id="L308">            double[] xyCen = curveHelper.calculateXYCentroids(blob);</span>
             
-<span class="fc" id="L283">            PairInt p = new PairInt((int) Math.round(xyCen[0]), </span>
-<span class="fc" id="L284">                (int) Math.round(xyCen[1]));</span>
+<span class="fc" id="L310">            PairInt p = new PairInt((int) Math.round(xyCen[0]), </span>
+<span class="fc" id="L311">                (int) Math.round(xyCen[1]));</span>
             
-<span class="fc" id="L286">            Integer index = Integer.valueOf(i);</span>
+<span class="fc" id="L313">            Integer index = Integer.valueOf(i);</span>
             
             //keep larger dimension blob
-<span class="pc bpc" id="L289" title="1 of 2 branches missed.">            if (blobCenters.containsKey(p)) {</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">            if (blobCenters.containsKey(p)) {</span>
                 
                 // compare and keep exterior perimeter
-<span class="nc" id="L292">                int mapIdx = blobCenters.get(p).intValue();</span>
+<span class="fc" id="L319">                int mapIdx = blobCenters.get(p).intValue();</span>
                 
-<span class="nc" id="L294">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
+<span class="fc" id="L321">                Set&lt;PairInt&gt; mapBlob = outputBlobs.get(mapIdx);</span>
                 
                 //xMin, xMax, yMin, yMax
-<span class="nc" id="L297">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
-<span class="nc" id="L298">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
-<span class="nc" id="L299">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
-<span class="nc" id="L300">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
-<span class="nc" id="L301">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
-<span class="nc" id="L302">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
+<span class="fc" id="L324">                int[] minMaxXY1 = MiscMath.findMinMaxXY(blob);</span>
+<span class="fc" id="L325">                int[] minMaxXY2 = MiscMath.findMinMaxXY(mapBlob);</span>
+<span class="fc" id="L326">                int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
+<span class="fc" id="L327">                int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
+<span class="fc" id="L328">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
+<span class="fc" id="L329">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
                 
-<span class="nc bnc" id="L304" title="All 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
+<span class="pc bpc" id="L331" title="9 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
                     (!preferExterior &amp;&amp; (w1 &gt; w2) &amp;&amp; (h1 &gt; h2))) {
-<span class="nc" id="L306">                    remove.add(Integer.valueOf(i));</span>
-<span class="nc" id="L307">                    continue;</span>
+<span class="nc" id="L333">                    remove.add(Integer.valueOf(i));</span>
+<span class="nc" id="L334">                    continue;</span>
                 }
-<span class="nc" id="L309">                remove.add(Integer.valueOf(mapIdx));</span>
-<span class="nc" id="L310">                blobCenters.put(p, index);</span>
+<span class="fc" id="L336">                remove.add(Integer.valueOf(mapIdx));</span>
+<span class="fc" id="L337">                blobCenters.put(p, index);</span>
                 
-<span class="nc" id="L312">            } else {</span>
-<span class="fc" id="L313">                blobCenters.put(p, index);</span>
+<span class="fc" id="L339">            } else {</span>
+<span class="fc" id="L340">                blobCenters.put(p, index);</span>
             }
         }
         
-<span class="fc bfc" id="L317" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, Integer&gt; entry : blobCenters.entrySet()) {</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, Integer&gt; entry : blobCenters.entrySet()) {</span>
             
-<span class="fc" id="L319">            Integer index = entry.getValue();</span>
-<span class="fc" id="L320">            PairInt p = entry.getKey();</span>
-<span class="fc bfc" id="L321" title="All 2 branches covered.">            if (remove.contains(index)) {</span>
-<span class="fc" id="L322">                continue;</span>
+<span class="fc" id="L346">            Integer index = entry.getValue();</span>
+<span class="fc" id="L347">            PairInt p = entry.getKey();</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            if (remove.contains(index)) {</span>
+<span class="fc" id="L349">                continue;</span>
             }
             
-<span class="fc" id="L325">            Set&lt;PairInt&gt; blob1 = outputBlobs.get(index.intValue());</span>
+<span class="fc" id="L352">            Set&lt;PairInt&gt; blob1 = outputBlobs.get(index.intValue());</span>
             
-<span class="fc" id="L327">            int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);</span>
+<span class="fc" id="L354">            int[] minMaxXY1 = MiscMath.findMinMaxXY(blob1);</span>
             
-<span class="fc" id="L329">            int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
-<span class="fc" id="L330">            int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
+<span class="fc" id="L356">            int w1 = minMaxXY1[1] - minMaxXY1[0];</span>
+<span class="fc" id="L357">            int h1 = minMaxXY1[3] - minMaxXY1[2];</span>
             
             // look for another center within dx,dy=(3,3)
-<span class="fc bfc" id="L333" title="All 2 branches covered.">            for (Map.Entry&lt;PairInt, Integer&gt; entry2 : blobCenters.entrySet()) {</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            for (Map.Entry&lt;PairInt, Integer&gt; entry2 : blobCenters.entrySet()) {</span>
                 
-<span class="fc" id="L335">                Integer index2 = entry2.getValue();</span>
-<span class="fc bfc" id="L336" title="All 2 branches covered.">                if (index2.intValue() == index.intValue()) {</span>
-<span class="fc" id="L337">                    continue;</span>
+<span class="fc" id="L362">                Integer index2 = entry2.getValue();</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">                if (index2.intValue() == index.intValue()) {</span>
+<span class="fc" id="L364">                    continue;</span>
                 }
-<span class="fc bfc" id="L339" title="All 2 branches covered.">                if (remove.contains(index2)) {</span>
-<span class="fc" id="L340">                    continue;</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">                if (remove.contains(index2)) {</span>
+<span class="fc" id="L367">                    continue;</span>
                 }
                 
-<span class="fc" id="L343">                PairInt p2 = entry2.getKey();</span>
-<span class="fc" id="L344">                int diffX = Math.abs(p2.getX() - p.getX());</span>
-<span class="fc" id="L345">                int diffY = Math.abs(p2.getY() - p.getY());</span>
-<span class="fc bfc" id="L346" title="All 4 branches covered.">                if ((diffX &gt; 3) || (diffY &gt; 3)) {</span>
-<span class="fc" id="L347">                    continue;</span>
+<span class="fc" id="L370">                PairInt p2 = entry2.getKey();</span>
+<span class="fc" id="L371">                int diffX = Math.abs(p2.getX() - p.getX());</span>
+<span class="fc" id="L372">                int diffY = Math.abs(p2.getY() - p.getY());</span>
+<span class="fc bfc" id="L373" title="All 4 branches covered.">                if ((diffX &gt; 3) || (diffY &gt; 3)) {</span>
+<span class="fc" id="L374">                    continue;</span>
                 }
                 
                 // if arrive here, there were 2 blobs with near centers
-<span class="fc" id="L351">                Set&lt;PairInt&gt; blob2 = outputBlobs.get(index2.intValue());</span>
+<span class="fc" id="L378">                Set&lt;PairInt&gt; blob2 = outputBlobs.get(index2.intValue());</span>
                 //keep larger dimension blob
                 //xMin, xMax, yMin, yMax
-<span class="fc" id="L354">                int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);</span>
+<span class="fc" id="L381">                int[] minMaxXY2 = MiscMath.findMinMaxXY(blob2);</span>
                 
-<span class="fc" id="L356">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
-<span class="fc" id="L357">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
+<span class="fc" id="L383">                int w2 = minMaxXY2[1] - minMaxXY2[0];</span>
+<span class="fc" id="L384">                int h2 = minMaxXY2[3] - minMaxXY2[2];</span>
                 
-<span class="pc bpc" id="L359" title="6 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
+<span class="pc bpc" id="L386" title="6 of 12 branches missed.">                if ((preferExterior &amp;&amp; (w1 &lt; w2) &amp;&amp; (h1 &lt; h2)) || </span>
                     (!preferExterior &amp;&amp; (w1 &gt; w2) &amp;&amp; (h1 &gt; h2))) {
                     
                     // keep blob 2 for preferExterior
                     
-<span class="fc" id="L364">                    remove.add(index);</span>
+<span class="fc" id="L391">                    remove.add(index);</span>
                     
                 } else {
                     
                     // keep blob 1 for preferExterior
                     
-<span class="fc" id="L370">                    remove.add(index2);</span>
+<span class="fc" id="L397">                    remove.add(index2);</span>
                 }
-<span class="fc" id="L372">                break;</span>
+<span class="fc" id="L399">                break;</span>
             }
-<span class="fc" id="L374">        }</span>
-<span class="fc bfc" id="L375" title="All 2 branches covered.">        if (remove.isEmpty()) {</span>
-<span class="fc" id="L376">            return;</span>
+<span class="fc" id="L401">        }</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">        if (remove.isEmpty()) {</span>
+<span class="fc" id="L403">            return;</span>
         }
         
-<span class="fc" id="L379">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;(remove);</span>
+<span class="fc" id="L406">        List&lt;Integer&gt; rm = new ArrayList&lt;Integer&gt;(remove);</span>
         
-<span class="fc" id="L381">        Collections.sort(rm);</span>
+<span class="fc" id="L408">        Collections.sort(rm);</span>
         
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        for (int i = rm.size() - 1; i &gt; -1; --i) {</span>
-<span class="fc" id="L384">            int idx = rm.get(i).intValue();</span>
-<span class="fc" id="L385">            outputBlobs.remove(idx);</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">        for (int i = rm.size() - 1; i &gt; -1; --i) {</span>
+<span class="fc" id="L411">            int idx = rm.get(i).intValue();</span>
+<span class="fc" id="L412">            outputBlobs.remove(idx);</span>
         }
-<span class="fc" id="L387">    }</span>
+<span class="fc" id="L414">    }</span>
 
     /**
      * grow blob by 1 pixel radius, but exclude growing any image boundary
@@ -395,29 +422,29 @@ import java.util.logging.Logger;
      */
     protected static void growRadius(Set&lt;PairInt&gt; blob, int w, int h) {
         
-<span class="fc" id="L398">        int[] dxs8 = Misc.dx8;</span>
-<span class="fc" id="L399">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L425">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L426">        int[] dys8 = Misc.dy8;</span>
         
-<span class="fc" id="L401">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L428">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L403" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
-<span class="fc bfc" id="L404" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
                 
-<span class="fc" id="L406">                int x2 = p.getX() + dxs8[i];</span>
-<span class="fc" id="L407">                int y2 = p.getY() + dys8[i];</span>
+<span class="fc" id="L433">                int x2 = p.getX() + dxs8[i];</span>
+<span class="fc" id="L434">                int y2 = p.getY() + dys8[i];</span>
                 
                 // do not grow image boundary pixels too
-<span class="fc bfc" id="L410" title="All 8 branches covered.">                if ((x2 &lt; 1) || (y2 &lt; 1) || (x2 &gt; (w - 2)) || (y2 &gt; (h - 2))) {</span>
-<span class="fc" id="L411">                    continue;</span>
+<span class="fc bfc" id="L437" title="All 8 branches covered.">                if ((x2 &lt; 1) || (y2 &lt; 1) || (x2 &gt; (w - 2)) || (y2 &gt; (h - 2))) {</span>
+<span class="fc" id="L438">                    continue;</span>
                 }
                 
-<span class="fc" id="L414">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L441">                PairInt p2 = new PairInt(x2, y2);</span>
                 
-<span class="fc" id="L416">                tmp.add(p2);</span>
+<span class="fc" id="L443">                tmp.add(p2);</span>
             }
-<span class="fc" id="L418">        }</span>
-<span class="fc" id="L419">        blob.addAll(tmp);</span>
-<span class="fc" id="L420">    }</span>
+<span class="fc" id="L445">        }</span>
+<span class="fc" id="L446">        blob.addAll(tmp);</span>
+<span class="fc" id="L447">    }</span>
     
     /**
      * grow blob by 1 pixel radius if the pixel is in the original pixel
@@ -428,26 +455,26 @@ import java.util.logging.Logger;
     protected static void growRadius(Set&lt;PairInt&gt; blob, Set&lt;PairInt&gt; originalSet
         ) {
         
-<span class="fc" id="L431">        int[] dxs8 = Misc.dx8;</span>
-<span class="fc" id="L432">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L458">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L459">        int[] dys8 = Misc.dy8;</span>
         
-<span class="fc" id="L434">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L461">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L436" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
-<span class="fc bfc" id="L437" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
                 
-<span class="fc" id="L439">                int x2 = p.getX() + dxs8[i];</span>
-<span class="fc" id="L440">                int y2 = p.getY() + dys8[i];</span>
+<span class="fc" id="L466">                int x2 = p.getX() + dxs8[i];</span>
+<span class="fc" id="L467">                int y2 = p.getY() + dys8[i];</span>
                 
-<span class="fc" id="L442">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc" id="L469">                PairInt p2 = new PairInt(x2, y2);</span>
                 
-<span class="pc bpc" id="L444" title="1 of 2 branches missed.">                if (originalSet.contains(p2)) {</span>
-<span class="fc" id="L445">                    tmp.add(p2);</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">                if (originalSet.contains(p2)) {</span>
+<span class="fc" id="L472">                    tmp.add(p2);</span>
                 }
             }
-<span class="fc" id="L448">        }</span>
-<span class="fc" id="L449">        blob.addAll(tmp);</span>
-<span class="fc" id="L450">    }</span>
+<span class="fc" id="L475">        }</span>
+<span class="fc" id="L476">        blob.addAll(tmp);</span>
+<span class="fc" id="L477">    }</span>
 
     /**
      * shrink blob by 1 pixel radius
@@ -456,22 +483,22 @@ import java.util.logging.Logger;
     protected static void shrinkRadius(Set&lt;PairInt&gt; blob) {
 
         // any point in blob with a non-point neighbor gets removed
-<span class="fc" id="L459">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L486">        Set&lt;PairInt&gt; tmp = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L461">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L488">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
       
-<span class="fc bfc" id="L463" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        for (PairInt p : blob) {</span>
         
-<span class="fc" id="L465">            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob);</span>
+<span class="fc" id="L492">            int nN = curveHelper.countNeighbors(p.getX(), p.getY(), blob);</span>
 
-<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (nN == 8) {</span>
-<span class="fc" id="L468">                tmp.add(p);</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            if (nN == 8) {</span>
+<span class="fc" id="L495">                tmp.add(p);</span>
             }
-<span class="fc" id="L470">        }</span>
+<span class="fc" id="L497">        }</span>
         
-<span class="fc" id="L472">        blob.clear();</span>
-<span class="fc" id="L473">        blob.addAll(tmp);        </span>
-<span class="fc" id="L474">    }</span>
+<span class="fc" id="L499">        blob.clear();</span>
+<span class="fc" id="L500">        blob.addAll(tmp);        </span>
+<span class="fc" id="L501">    }</span>
     
     /**
      * extract blobs using a dfs search to find the blobs within the image
@@ -490,63 +517,77 @@ import java.util.logging.Logger;
      * to blobs not on the image boundaries.
      * @param debugTag
      */
-    private static void defaultExtractBlobs(GreyscaleImage segImg, 
+    private static HistogramHolder defaultExtractBlobs(GreyscaleImage segImg, 
         int pixelValue, int smallestGroupLimit, int largestGroupLimit, 
         boolean use8Neighbors, List&lt;Set&lt;PairInt&gt;&gt; outputBlobs, 
         List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBlobs,
         List&lt;Set&lt;PairInt&gt;&gt; outputExcludedBoundaryBlobs,
         String debugTag) {
         
-<span class="fc" id="L500">        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);</span>
+<span class="fc" id="L527">        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);</span>
             
-<span class="pc bpc" id="L502" title="1 of 2 branches missed.">        if (use8Neighbors) {</span>
-<span class="nc" id="L503">            finder.setToUse8Neighbors();</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">        if (use8Neighbors) {</span>
+<span class="nc" id="L530">            finder.setToUse8Neighbors();</span>
         }
-<span class="fc" id="L505">        finder.setMinimumNumberInCluster(smallestGroupLimit);</span>
-<span class="fc" id="L506">        finder.findGroups(pixelValue);</span>
-            
-<span class="fc" id="L508">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L532">        finder.setMinimumNumberInCluster(smallestGroupLimit);</span>
+<span class="fc" id="L533">        finder.findGroups(pixelValue);</span>
         
-<span class="fc" id="L510">        int nGroups = finder.getNumberOfGroups();</span>
-<span class="fc bfc" id="L511" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L512">            PairIntArray xy = finder.getXY(i);</span>
-<span class="fc" id="L513">            Set&lt;PairInt&gt; points = Misc.convert(xy);</span>
+<span class="fc" id="L535">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        
+<span class="fc" id="L537">        int nGroups = finder.getNumberOfGroups();</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L539">            PairIntArray xy = finder.getXY(i);</span>
+<span class="fc" id="L540">            Set&lt;PairInt&gt; points = Misc.convert(xy);</span>
             // skip blobs that are on the image boundaries because they
             // are incomplete
-<span class="fc bfc" id="L516" title="All 2 branches covered.">            if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, </span>
-<span class="fc" id="L517">                points, segImg.getWidth(), segImg.getHeight())) {</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">            if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, </span>
+<span class="fc" id="L544">                points, segImg.getWidth(), segImg.getHeight())) {</span>
                 
-<span class="fc" id="L519">                outputExcludedBoundaryBlobs.add(points);</span>
+<span class="fc" id="L546">                outputExcludedBoundaryBlobs.add(points);</span>
                 
             } else {                
-<span class="fc bfc" id="L522" title="All 2 branches covered.">                if (xy.getN() &lt; largestGroupLimit) {</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">                if (xy.getN() &lt; largestGroupLimit) {</span>
                     
-<span class="fc" id="L524">                    outputBlobs.add(points);</span>
+<span class="fc" id="L551">                    outputBlobs.add(points);</span>
                 } else {
-<span class="fc" id="L526">                    outputExcludedBlobs.add(points);</span>
+<span class="fc" id="L553">                    outputExcludedBlobs.add(points);</span>
                 }
             }
         }
-                
-<span class="fc bfc" id="L531" title="All 2 branches covered.">        if (!debugTag.equals(&quot;&quot;)) {</span>
-<span class="fc" id="L532">            List&lt;Integer&gt; sizes = new ArrayList&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">            for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L534">                PairIntArray xy = finder.getXY(i);</span>
-<span class="fc" id="L535">                sizes.add(Integer.valueOf(xy.getN()));</span>
+        
+        // build histogram to help edit the size ranges that will be kept.
+<span class="fc" id="L559">        List&lt;Integer&gt; sizes = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L560" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L561">            PairIntArray xy = finder.getXY(i);</span>
+<span class="fc" id="L562">            Set&lt;PairInt&gt; points = Misc.convert(xy);</span>
+<span class="fc bfc" id="L563" title="All 2 branches covered.">            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, </span>
+<span class="fc" id="L564">                points, segImg.getWidth(), segImg.getHeight())) {</span>
+<span class="fc" id="L565">                sizes.add(Integer.valueOf(xy.getN()));</span>
             }
-<span class="fc" id="L537">            HistogramHolder hist = Histogram.createSimpleHistogram(sizes);</span>
-<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (hist != null) {</span>
-<span class="fc" id="L539">                String label = &quot;blbSzs &quot; + Integer.toString(smallestGroupLimit) +</span>
-<span class="fc" id="L540">                    &quot;:&quot; + Integer.toString(largestGroupLimit);</span>
-                try {
-<span class="fc" id="L542">                    hist.plotHistogram(0, 25000, label, debugTag);</span>
-<span class="nc" id="L543">                } catch (IOException ex) {</span>
-<span class="nc" id="L544">                    Logger.getLogger(BlobsAndPerimeters.class.getName()).log(</span>
-                        Level.SEVERE, null, ex);
-<span class="fc" id="L546">                }</span>
+        }
+<span class="fc" id="L568">        HistogramHolder hist = Histogram.createSimpleHistogram(sizes);</span>
+        
+        /*
+        if (hist != null) {
+            try {
+                int yMaxIdx = MiscMath.findLastZeroIndex(hist);
+                float xMax = (yMaxIdx == -1) ? 25000 : hist.getXHist()[yMaxIdx];
+                xMax = (float)Math.ceil(xMax);
+                String label = debugTag + &quot; (0,&quot; + xMax + &quot;) &quot; 
+                    + &quot; def=(&quot; + smallestGroupLimit + &quot;,&quot; + largestGroupLimit + &quot;)&quot;
+                    + &quot; pixV=&quot; + pixelValue;                    
+                hist.plotHistogram(0, xMax, label, debugTag + &quot;_&quot; + MiscDebug.getCurrentTimeFormatted());
+                System.out.println(debugTag + &quot; pixV=&quot; + pixelValue + &quot; area=&quot;
+                    + hist.getHistArea());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobsAndPerimeters.class.getName()).log(
+                    Level.SEVERE, null, ex);
             }
-        }        
-<span class="fc" id="L549">    }</span>
+        }
+        */
+        
+<span class="fc" id="L589">        return hist;</span>
+    }
 
     /**
      * method to shrink the found blobs by '1' pixel, re-do search, then
@@ -563,43 +604,62 @@ import java.util.logging.Logger;
         List&lt;Set&lt;PairInt&gt;&gt; outputBlobs, 
         final int imageWidth, final int imageHeight) {
         
-<span class="fc" id="L566">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L607">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
                                         
-<span class="fc" id="L568">        Set&lt;PairInt&gt; points = inputBlobs;</span>
+<span class="fc" id="L609">        Set&lt;PairInt&gt; points = inputBlobs;</span>
 
-<span class="fc" id="L570">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
+<span class="fc" id="L611">        int[] minMaxXY = MiscMath.findMinMaxXY(points);</span>
 
-<span class="fc" id="L572">        Set&lt;PairInt&gt; pointsB4 = new HashSet&lt;PairInt&gt;(points);</span>
+<span class="fc" id="L613">        Set&lt;PairInt&gt; pointsB4 = new HashSet&lt;PairInt&gt;(points);</span>
 
-<span class="fc" id="L574">        shrinkRadius(points);</span>
+<span class="fc" id="L615">        shrinkRadius(points);</span>
 
-<span class="fc" id="L576">        DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();</span>
+<span class="fc" id="L617">        DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();</span>
 
-<span class="fc" id="L578">        finder2.setMinimumNumberInCluster(smallestGroupLimit - 4);</span>
+<span class="fc" id="L619">        finder2.setMinimumNumberInCluster(smallestGroupLimit - 4);</span>
 
-<span class="fc" id="L580">        finder2.findConnectedPointGroups(points, minMaxXY[1], minMaxXY[3]);</span>
+<span class="fc" id="L621">        finder2.findConnectedPointGroups(points, minMaxXY[1], minMaxXY[3]);</span>
             
-<span class="fc" id="L582">        int nGroups2 = finder2.getNumberOfGroups();</span>
+<span class="fc" id="L623">        int nGroups2 = finder2.getNumberOfGroups();</span>
 
-<span class="fc bfc" id="L584" title="All 2 branches covered.">        for (int ii = 0; ii &lt; nGroups2; ++ii) {</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">        for (int ii = 0; ii &lt; nGroups2; ++ii) {</span>
 
-<span class="fc" id="L586">            Set&lt;PairInt&gt; blob2 = finder2.getXY(ii);</span>
+<span class="fc" id="L627">            Set&lt;PairInt&gt; blob2 = finder2.getXY(ii);</span>
 
-<span class="pc bpc" id="L588" title="1 of 2 branches missed.">            if ((blob2.size() &lt; smallestGroupLimit) || </span>
-<span class="fc bfc" id="L589" title="All 2 branches covered.">                (blob2.size() &gt; largestGroupLimit)) {</span>
-<span class="fc" id="L590">                continue;</span>
+<span class="fc bfc" id="L629" title="All 2 branches covered.">            if ((blob2.size() &lt; smallestGroupLimit) || </span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">                (blob2.size() &gt; largestGroupLimit)) {</span>
+<span class="fc" id="L631">                continue;</span>
             }
 
-<span class="pc bpc" id="L593" title="1 of 2 branches missed.">            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, points, </span>
-                imageWidth, imageHeight)) {
-
-                // grow by '1' pixel to help maintain scale
-<span class="fc" id="L597">                growRadius(blob2, pointsB4);</span>
+            // grow by '1' pixel to help maintain scale
+<span class="fc" id="L635">            growRadius(blob2, pointsB4);</span>
                 
-<span class="fc" id="L599">                outputBlobs.add(blob2);</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">            if (!curveHelper.hasNumberOfPixelsOnImageBoundaries(3, blob2, </span>
+                imageWidth, imageHeight)) {
+                
+<span class="fc" id="L640">                outputBlobs.add(blob2);</span>
             }
         }
-<span class="fc" id="L602">    }</span>
+<span class="fc" id="L643">    }</span>
+
+    private static float calcIncludedFraction(List&lt;HistogramHolder&gt; histograms, 
+        int smallestGroupLimit, int largestGroupLimit, String debugTag) {
+        
+<span class="fc" id="L648">        int n = histograms.size();</span>
+                
+<span class="fc" id="L650">        float sumFrac = 0;</span>
+<span class="fc" id="L651">        int nFrac = 0;</span>
+<span class="fc bfc" id="L652" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L653">            HistogramHolder hist = histograms.get(i);</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">            if (hist != null) {</span>
+<span class="fc" id="L655">                sumFrac += hist.getHistAreaFractionOfTotal(</span>
+                    smallestGroupLimit, largestGroupLimit);
+<span class="fc" id="L657">                nFrac++;</span>
+            }
+        }
+        
+<span class="fc" id="L661">        return sumFrac/(float)nFrac;</span>
+    }
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

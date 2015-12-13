@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FeatureMatcherSettings.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">FeatureMatcherSettings.java</span></div><h1>FeatureMatcherSettings.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+<span class="fc" id="L3">public class FeatureMatcherSettings {</span>
+
+<span class="fc" id="L5">    private boolean useNormalizedFeatures = true;</span>
+<span class="fc" id="L6">    private String debugTag = &quot;&quot;;</span>
+<span class="fc" id="L7">    private boolean debug = false;</span>
+<span class="fc" id="L8">    private boolean startWithBinnedImages = true;</span>
+
+    public boolean useNormalizedFeatures() {
+<span class="fc" id="L11">        return useNormalizedFeatures;</span>
+    }
+
+    public void setUseNormalizedFeatures(boolean useNormalizedFeatures) {
+<span class="fc" id="L15">        this.useNormalizedFeatures = useNormalizedFeatures;</span>
+<span class="fc" id="L16">    }</span>
+
+    public String getDebugTag() {
+<span class="fc" id="L19">        return debugTag;</span>
+    }
+
+    public void setDebugTag(String debugTag) {
+<span class="fc" id="L23">        this.debugTag = debugTag;</span>
+<span class="fc" id="L24">    }</span>
+
+    public boolean debug() {
+<span class="fc" id="L27">        return debug;</span>
+    }
+
+    public void setDebug(boolean debug) {
+<span class="fc" id="L31">        this.debug = debug;</span>
+<span class="fc" id="L32">    }</span>
+
+    public boolean startWithBinnedImages() {
+<span class="fc" id="L35">        return startWithBinnedImages;</span>
+    }
+
+    public void setStartWithBinnedImages(boolean useBinnedImaged) {
+<span class="fc" id="L39">        this.startWithBinnedImages = useBinnedImaged;</span>
+<span class="fc" id="L40">    }</span>
+
+    public FeatureMatcherSettings copy() {
+        
+<span class="fc" id="L44">        FeatureMatcherSettings s = new FeatureMatcherSettings();</span>
+<span class="fc" id="L45">        s.setDebug(debug);</span>
+<span class="fc" id="L46">        s.setDebugTag(debugTag);</span>
+<span class="fc" id="L47">        s.setStartWithBinnedImages(startWithBinnedImages);</span>
+<span class="fc" id="L48">        s.setUseNormalizedFeatures(useNormalizedFeatures);</span>
+
+<span class="fc" id="L50">        return s;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

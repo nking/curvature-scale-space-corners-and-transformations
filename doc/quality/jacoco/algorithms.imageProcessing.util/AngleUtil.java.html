@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @author nichole
  */
-<span class="pc bpc" id="L11" title="1 of 2 branches missed.">public class AngleUtil {</span>
+<span class="fc" id="L11">public class AngleUtil {</span>
 
     /**
     calculates the difference of angles between pairs of points in set1 and 
@@ -86,51 +86,26 @@ import java.util.List;
                   |      
          QIII     |       QIV 
                  270
-        */
         
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (x == 0) {</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (y &gt;= 0) {</span>
-<span class="fc" id="L93">                return Math.PI/2;</span>
-            }
-<span class="fc" id="L95">            return (3./2.)*Math.PI;</span>
-        }
-<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (y == 0) {</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">            if (x &gt; 0) {</span>
-<span class="fc" id="L99">                return 0;</span>
-            }
-<span class="fc" id="L101">            return Math.PI;</span>
-        }
-        /*
-                  +Y
+        
+        Math.atan2 angles are:
                  90
-        QII       |       QI
-                  |     
+           135    |    45
                   |
-     180-------------------- +X  0, 360
-                  |   
-                  |      
-         QIII     |       QIV 
-                 270
+        180 ---------------  0
+                  |
+          -135    |   -45
+                 -90
+        so, for d &lt; 0, need 360+d
         */
-<span class="fc" id="L115">        double theta = Math.atan(y/x);</span>
-
-        // Q1, Q2, Q3, Q4
-<span class="fc" id="L118">        int q = 1;</span>
-<span class="fc bfc" id="L119" title="All 4 branches covered.">        if ((x &lt; 0) &amp;&amp; (y &gt;= 0)) {</span>
-<span class="fc" id="L120">            q = 2;</span>
-<span class="pc bpc" id="L121" title="1 of 4 branches missed.">        } else if ((x &lt; 0) &amp;&amp; (y &lt; 0)) {</span>
-<span class="fc" id="L122">            q = 3;</span>
-<span class="pc bpc" id="L123" title="1 of 4 branches missed.">        } else if ((x &gt;= 0) &amp;&amp; (y &lt; 0)) {</span>
-<span class="fc" id="L124">            q = 4;</span>
+        
+<span class="fc" id="L102">        double theta = Math.atan2(y, x);</span>
+        
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (theta &lt; 0) {</span>
+<span class="fc" id="L105">            theta += 2. * Math.PI;</span>
         }
         
-<span class="fc bfc" id="L127" title="All 4 branches covered.">        if (q == 2 || q == 3) {</span>
-<span class="fc" id="L128">            theta += Math.PI;</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        } else if (q == 4) {</span>
-<span class="fc" id="L130">            theta = 2*Math.PI + theta;</span>
-        }
-        
-<span class="fc" id="L133">        return theta;  </span>
+<span class="fc" id="L108">        return theta;  </span>
     }
     
     /**
@@ -142,10 +117,7 @@ import java.util.List;
      * @return 
      */
     public static double polarAngleCW(double x, double y) {
-        /*        
         
-        
-        */
         /*
                   +Y
                  270
@@ -157,52 +129,45 @@ import java.util.List;
                   |      
          QII      |       QI 
                   90
+        
+        Math.atan2 angles are:
+                 90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+          -135    |   -45
+                 -90
+        so need -1*d, then for d &lt; 0, need 360+d
         */
         
-<span class="fc" id="L162">        int q = getClockwiseQuadrant(x, y);</span>
-                
-<span class="pc bpc" id="L164" title="5 of 6 branches missed.">        assert((q &gt; 0) &amp;&amp; (q &lt; 5));</span>
+<span class="fc" id="L144">        double theta = -1 * Math.atan2(y, x);</span>
         
-<span class="fc bfc" id="L166" title="All 2 branches covered.">        double theta = (x == 0) ? Math.PI/2. : Math.atan(y/x);</span>
-        
-<span class="fc bfc" id="L168" title="All 2 branches covered.">        if (x == 0) {</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">            if (y == 0) {</span>
-<span class="fc" id="L170">                theta = 0;</span>
-<span class="fc bfc" id="L171" title="All 2 branches covered.">            } else if (y &gt; 0) {</span>
-<span class="fc" id="L172">                theta = 3*Math.PI/2.;</span>
-            }
-            // else Math.PI/2 is correct
-<span class="fc bfc" id="L175" title="All 2 branches covered.">        } else if (q == 1) {</span>
-<span class="fc" id="L176">            theta *= -1;</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">        } else if (q == 2) {</span>
-<span class="fc" id="L178">            theta = Math.PI - theta;</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        } else if (q == 3) {</span>
-<span class="fc" id="L180">            theta = Math.PI - theta;</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        } else if (q == 4) {</span>
-<span class="fc" id="L182">            theta = 2*Math.PI - theta;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (theta &lt; 0) {</span>
+<span class="fc" id="L147">            theta += 2. * Math.PI;</span>
         }
         
-<span class="fc" id="L185">        return theta;  </span>
+<span class="fc" id="L150">        return theta;  </span>
     }
     
     public static double[] correctForQuadrants(double rot0, double rot1, 
         boolean useRadians) {
         
-<span class="pc bpc" id="L191" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
-<span class="nc" id="L192">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
+<span class="nc" id="L157">            throw new IllegalArgumentException(</span>
                 &quot;rot0 and rot1 cannot be negative numbers&quot;);
         }
        
-<span class="fc" id="L196">        double[] corrected = new double[2];</span>
-<span class="fc" id="L197">        correctForQuadrants(rot0, rot1, useRadians, corrected);</span>
-<span class="fc" id="L198">        return corrected;</span>
+<span class="fc" id="L161">        double[] corrected = new double[2];</span>
+<span class="fc" id="L162">        correctForQuadrants(rot0, rot1, useRadians, corrected);</span>
+<span class="fc" id="L163">        return corrected;</span>
     }
     
     public static void correctForQuadrants(double rot0, double rot1, 
         boolean useRadians, double[] outputCorrectedForQuadrants) {
         
-<span class="pc bpc" id="L204" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
-<span class="nc" id="L205">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L169" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
+<span class="nc" id="L170">            throw new IllegalArgumentException(</span>
                 &quot;rot0 and rot1 cannot be negative numbers&quot;);
         }
         
@@ -214,33 +179,33 @@ import java.util.List;
                    90
         */
         
-<span class="fc" id="L217">        double twoPI = 2. * Math.PI;</span>
+<span class="fc" id="L182">        double twoPI = 2. * Math.PI;</span>
 
         // prefer to keep 360 instead of 0 because some of the invokers of this
         // method might prefer a fraction times results to be &gt; 0
-<span class="fc bfc" id="L221" title="All 2 branches covered.">        if (useRadians) {</span>
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            if (rot0 != twoPI) {</span>
-<span class="fc" id="L223">                rot0 = rot0 % twoPI;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (useRadians) {</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (rot0 != twoPI) {</span>
+<span class="fc" id="L188">                rot0 = rot0 % twoPI;</span>
             }
-<span class="pc bpc" id="L225" title="1 of 2 branches missed.">            if (rot1 != twoPI) {</span>
-<span class="fc" id="L226">                rot1 = rot1 % twoPI;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (rot1 != twoPI) {</span>
+<span class="fc" id="L191">                rot1 = rot1 % twoPI;</span>
             }
         } else {
-<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (rot0 != 360) {</span>
-<span class="fc" id="L230">                rot0 = rot0 % 360;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (rot0 != 360) {</span>
+<span class="fc" id="L195">                rot0 = rot0 % 360;</span>
             }
-<span class="fc bfc" id="L232" title="All 2 branches covered.">            if (rot1 != 360) {</span>
-<span class="fc" id="L233">                rot1 = rot1 % 360;</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            if (rot1 != 360) {</span>
+<span class="fc" id="L198">                rot1 = rot1 % 360;</span>
             }
         }
         int q0, q1;
-<span class="fc bfc" id="L237" title="All 2 branches covered.">        if (useRadians) {            </span>
-<span class="fc" id="L238">            q0 = getClockwiseQuadrantForRadians(rot0);</span>
-<span class="fc" id="L239">            q1 = getClockwiseQuadrantForRadians(rot1);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        if (useRadians) {            </span>
+<span class="fc" id="L203">            q0 = getClockwiseQuadrantForRadians(rot0);</span>
+<span class="fc" id="L204">            q1 = getClockwiseQuadrantForRadians(rot1);</span>
         } else {
-<span class="fc" id="L241">            twoPI = 360.;</span>
-<span class="fc" id="L242">            q0 = getClockwiseQuadrantForDegrees(rot0);</span>
-<span class="fc" id="L243">            q1 = getClockwiseQuadrantForDegrees(rot1);</span>
+<span class="fc" id="L206">            twoPI = 360.;</span>
+<span class="fc" id="L207">            q0 = getClockwiseQuadrantForDegrees(rot0);</span>
+<span class="fc" id="L208">            q1 = getClockwiseQuadrantForDegrees(rot1);</span>
         }
         
         /*
@@ -251,16 +216,16 @@ import java.util.List;
                    90
         */
         
-<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (q0 == 1) {</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">            if (q1 == 3) {</span>
-<span class="fc" id="L256">                double diff = rot1 - rot0;</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="fc" id="L258">                    rot0 += twoPI;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (q0 == 1) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (q1 == 3) {</span>
+<span class="fc" id="L221">                double diff = rot1 - rot0;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L223">                    rot0 += twoPI;</span>
                 }
-<span class="fc bfc" id="L260" title="All 2 branches covered.">            } else if (q1 == 4) {</span>
-<span class="fc" id="L261">                rot0 += twoPI;</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            } else if (q1 == 4) {</span>
+<span class="fc" id="L226">                rot0 += twoPI;</span>
             }
-<span class="fc bfc" id="L263" title="All 2 branches covered.">        } else if (q0 == 2) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        } else if (q0 == 2) {</span>
             /*
                   270
                III | IV
@@ -268,13 +233,13 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (q1 == 4) {</span>
-<span class="fc" id="L272">                double diff = rot1 - rot0;</span>
-<span class="fc bfc" id="L273" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="fc" id="L274">                    rot0 += twoPI;</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">            if (q1 == 4) {</span>
+<span class="fc" id="L237">                double diff = rot1 - rot0;</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L239">                    rot0 += twoPI;</span>
                 }
-<span class="fc" id="L276">            }</span>
-<span class="fc bfc" id="L277" title="All 2 branches covered.">        } else if (q0 == 3) {</span>
+<span class="fc" id="L241">            }</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        } else if (q0 == 3) {</span>
             /*
                   270
                III | IV
@@ -282,13 +247,13 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="fc bfc" id="L285" title="All 2 branches covered.">            if (q1 == 1) {</span>
-<span class="fc" id="L286">                double diff = rot0 - rot1;</span>
-<span class="fc bfc" id="L287" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="fc" id="L288">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L251">                double diff = rot0 - rot1;</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L253">                    rot1 += twoPI;</span>
                 }
-<span class="fc" id="L290">            }</span>
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">        } else if (q0 == 4) {</span>
+<span class="fc" id="L255">            }</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        } else if (q0 == 4) {</span>
             /*
                   270
                III | IV
@@ -296,25 +261,25 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (q1 == 1) {</span>
-<span class="fc" id="L300">                rot1 += twoPI;</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">            } else if (q1 == 2) {</span>
-<span class="fc" id="L302">                double diff = (rot0 - rot1);</span>
-<span class="fc bfc" id="L303" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
-<span class="fc" id="L304">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L265">                rot1 += twoPI;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            } else if (q1 == 2) {</span>
+<span class="fc" id="L267">                double diff = (rot0 - rot1);</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">                if (diff &gt; (twoPI/2.)) {</span>
+<span class="fc" id="L269">                    rot1 += twoPI;</span>
                 }
             }
         }
         
-<span class="fc" id="L309">        outputCorrectedForQuadrants[0] = rot0;</span>
-<span class="fc" id="L310">        outputCorrectedForQuadrants[1] = rot1;</span>
-<span class="fc" id="L311">    }</span>
+<span class="fc" id="L274">        outputCorrectedForQuadrants[0] = rot0;</span>
+<span class="fc" id="L275">        outputCorrectedForQuadrants[1] = rot1;</span>
+<span class="fc" id="L276">    }</span>
     
     private static void correctForQuadrantsWithoutMod(double rot0, double rot1, 
         boolean useRadians, double[] outputCorrectedForQuadrants) {
         
-<span class="pc bpc" id="L316" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
-<span class="nc" id="L317">            throw new IllegalArgumentException(&quot;angles must be non negative&quot;);</span>
+<span class="pc bpc" id="L281" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
+<span class="nc" id="L282">            throw new IllegalArgumentException(&quot;angles must be non negative&quot;);</span>
         }
         
         /*
@@ -327,14 +292,14 @@ import java.util.List;
 
         double twoPI;
         int q0, q1;
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">        if (useRadians) {</span>
-<span class="fc" id="L331">            twoPI = 2. * Math.PI;</span>
-<span class="fc" id="L332">            q0 = (int)(rot0/(0.5 * Math.PI)) + 1;</span>
-<span class="fc" id="L333">            q1 = (int)(rot1/(0.5 * Math.PI)) + 1;</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (useRadians) {</span>
+<span class="fc" id="L296">            twoPI = 2. * Math.PI;</span>
+<span class="fc" id="L297">            q0 = (int)(rot0/(0.5 * Math.PI)) + 1;</span>
+<span class="fc" id="L298">            q1 = (int)(rot1/(0.5 * Math.PI)) + 1;</span>
         } else {
-<span class="nc" id="L335">            twoPI = 360.;</span>
-<span class="nc" id="L336">            q0 = (int)(rot0/90.f) + 1;</span>
-<span class="nc" id="L337">            q1 = (int)(rot1/90.f) + 1;</span>
+<span class="nc" id="L300">            twoPI = 360.;</span>
+<span class="nc" id="L301">            q0 = (int)(rot0/90.f) + 1;</span>
+<span class="nc" id="L302">            q1 = (int)(rot1/90.f) + 1;</span>
         }
         
         /*
@@ -348,19 +313,19 @@ import java.util.List;
         //TODO: revisit these and consider only editing rot1, and adding to
         // method comments that only rot1 will be corrected w.r.t rot0
         
-<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (q0 == 1) {</span>
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">            if (q1 == 3) {</span>
-<span class="nc" id="L353">                double diff = rot1 - rot0;</span>
-<span class="nc bnc" id="L354" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
-<span class="nc" id="L355">                    rot0 += twoPI;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        if (q0 == 1) {</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            if (q1 == 3) {</span>
+<span class="nc" id="L318">                double diff = rot1 - rot0;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="nc" id="L320">                    rot0 += twoPI;</span>
                 }
-<span class="pc bpc" id="L357" title="1 of 2 branches missed.">            } else if (q1 == 4) {</span>
-<span class="nc" id="L358">                rot0 += twoPI;</span>
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">            } else if (q1 == 4) {</span>
+<span class="nc" id="L323">                rot0 += twoPI;</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
                 //double diff = rot1 - Math.PI - rot0;
-<span class="nc" id="L361">                rot0 += twoPI;</span>
+<span class="nc" id="L326">                rot0 += twoPI;</span>
             }
-<span class="fc bfc" id="L363" title="All 2 branches covered.">        } else if (q0 == 2) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        } else if (q0 == 2) {</span>
             /*
                   270
                III | IV
@@ -368,15 +333,15 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">            if (q1 == 4) {</span>
-<span class="nc" id="L372">                double diff = rot1 - rot0;</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
-<span class="nc" id="L374">                    rot0 += twoPI;</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">            if (q1 == 4) {</span>
+<span class="nc" id="L337">                double diff = rot1 - rot0;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="nc" id="L339">                    rot0 += twoPI;</span>
                 }
-<span class="pc bpc" id="L376" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
-<span class="nc" id="L377">                rot1 -= twoPI;</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
+<span class="nc" id="L342">                rot1 -= twoPI;</span>
             }
-<span class="fc bfc" id="L379" title="All 2 branches covered.">        } else if (q0 == 3) {</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        } else if (q0 == 3) {</span>
             /*
                   270
                III | IV
@@ -384,15 +349,15 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="pc bpc" id="L387" title="1 of 2 branches missed.">            if (q1 == 1) {</span>
-<span class="nc" id="L388">                double diff = rot0 - rot1;</span>
-<span class="nc bnc" id="L389" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
-<span class="nc" id="L390">                    rot1 += twoPI;</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">            if (q1 == 1) {</span>
+<span class="nc" id="L353">                double diff = rot0 - rot1;</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="nc" id="L355">                    rot1 += twoPI;</span>
                 }
-<span class="pc bpc" id="L392" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
-<span class="nc" id="L393">                rot1 -= twoPI;</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
+<span class="nc" id="L358">                rot1 -= twoPI;</span>
             }
-<span class="fc bfc" id="L395" title="All 2 branches covered.">        } else if (q0 == 4) {</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">        } else if (q0 == 4) {</span>
             /*
                   270
                III | IV
@@ -400,15 +365,15 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="fc bfc" id="L403" title="All 2 branches covered.">            if (q1 == 1) {</span>
-<span class="fc" id="L404">                rot1 += twoPI;</span>
-<span class="pc bpc" id="L405" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
-<span class="nc" id="L406">                double diff = (rot0 - rot1);</span>
-<span class="nc bnc" id="L407" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
-<span class="nc" id="L408">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L369">                rot1 += twoPI;</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
+<span class="nc" id="L371">                double diff = (rot0 - rot1);</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="nc" id="L373">                    rot1 += twoPI;</span>
                 }
-<span class="nc" id="L410">            }</span>
-<span class="pc bpc" id="L411" title="1 of 2 branches missed.">        } else if (q0 == 5) {</span>
+<span class="nc" id="L375">            }</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        } else if (q0 == 5) {</span>
             /*
                   270
                III | IV
@@ -416,18 +381,18 @@ import java.util.List;
                II  |  I  &lt;---V too
                    90
             */
-<span class="fc bfc" id="L419" title="All 2 branches covered.">            if (q1 == 1) {</span>
-<span class="fc" id="L420">                rot1 += twoPI;</span>
-<span class="pc bpc" id="L421" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
-<span class="nc" id="L422">                rot0 -= twoPI;</span>
-<span class="pc bpc" id="L423" title="1 of 2 branches missed.">            } else if (q1 == 3) {  </span>
-<span class="nc" id="L424">                rot0 -= twoPI;</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L385">                rot1 += twoPI;</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
+<span class="nc" id="L387">                rot0 -= twoPI;</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">            } else if (q1 == 3) {  </span>
+<span class="nc" id="L389">                rot0 -= twoPI;</span>
             }
         }
         
-<span class="fc" id="L428">        outputCorrectedForQuadrants[0] = rot0;</span>
-<span class="fc" id="L429">        outputCorrectedForQuadrants[1] = rot1;</span>
-<span class="fc" id="L430">    }</span>
+<span class="fc" id="L393">        outputCorrectedForQuadrants[0] = rot0;</span>
+<span class="fc" id="L394">        outputCorrectedForQuadrants[1] = rot1;</span>
+<span class="fc" id="L395">    }</span>
     
     public static float getAngleDifference(float rotDegrees0, float rotDegrees1) {
         
@@ -443,28 +408,28 @@ import java.util.List;
         logic below is for rot0 and rot1 between 0 and 360 so temporarily
         reduce angles to those ranges then add back the corrections.
         */
-<span class="fc" id="L446">        double rot0Orig = rotDegrees0;</span>
-<span class="fc" id="L447">        double rot1Orig = rotDegrees1;</span>
+<span class="fc" id="L411">        double rot0Orig = rotDegrees0;</span>
+<span class="fc" id="L412">        double rot1Orig = rotDegrees1;</span>
         
-<span class="fc" id="L449">        double[] rotations = correctForQuadrants(rotDegrees0,rotDegrees1, </span>
+<span class="fc" id="L414">        double[] rotations = correctForQuadrants(rotDegrees0,rotDegrees1, </span>
             false);
         
-<span class="fc" id="L452">        return (float)(rotations[0] - rotations[1]);</span>
+<span class="fc" id="L417">        return (float)(rotations[0] - rotations[1]);</span>
        
     }
     
     public static float getAngleAverageInDegrees(float rotDegrees0, float rotDegrees1) {
        
-<span class="fc" id="L458">        double angleAvg = getAngleAverage(rotDegrees0, rotDegrees1, false);</span>
+<span class="fc" id="L423">        double angleAvg = getAngleAverage(rotDegrees0, rotDegrees1, false);</span>
         
-<span class="fc" id="L460">        return (float) angleAvg;</span>
+<span class="fc" id="L425">        return (float) angleAvg;</span>
     }
     
     public static double getAngleAverageInRadians(double rotation0, double rotation1) {
        
-<span class="fc" id="L465">        double angleAvg = getAngleAverage(rotation0, rotation1, true);</span>
+<span class="fc" id="L430">        double angleAvg = getAngleAverage(rotation0, rotation1, true);</span>
         
-<span class="fc" id="L467">        return angleAvg;</span>
+<span class="fc" id="L432">        return angleAvg;</span>
     }
     
     protected static int getClockwiseQuadrantForDegrees(double rotationInDegrees) {
@@ -473,15 +438,15 @@ import java.util.List;
           ---------
           II  |  I
         */
-<span class="fc" id="L476">        int q = 1;</span>
-<span class="fc bfc" id="L477" title="All 2 branches covered.">        if (rotationInDegrees &gt;= 270) {</span>
-<span class="fc" id="L478">            q = 4;</span>
-<span class="fc bfc" id="L479" title="All 2 branches covered.">        } else if (rotationInDegrees &gt;= 180) {</span>
-<span class="fc" id="L480">            q = 3;</span>
-<span class="fc bfc" id="L481" title="All 2 branches covered.">        } else if (rotationInDegrees &gt;= 90) {</span>
-<span class="fc" id="L482">            q = 2;</span>
+<span class="fc" id="L441">        int q = 1;</span>
+<span class="fc bfc" id="L442" title="All 2 branches covered.">        if (rotationInDegrees &gt;= 270) {</span>
+<span class="fc" id="L443">            q = 4;</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">        } else if (rotationInDegrees &gt;= 180) {</span>
+<span class="fc" id="L445">            q = 3;</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">        } else if (rotationInDegrees &gt;= 90) {</span>
+<span class="fc" id="L447">            q = 2;</span>
         }
-<span class="fc" id="L484">        return q;</span>
+<span class="fc" id="L449">        return q;</span>
     }
     
     protected static int getClockwiseQuadrantForRadians(double rotation) {
@@ -491,23 +456,23 @@ import java.util.List;
           II  |  I
         */
         
-<span class="pc bpc" id="L494" title="1 of 2 branches missed.">        if (rotation &gt;= 2*Math.PI) {</span>
-<span class="nc" id="L495">            rotation = rotation % (2.*Math.PI);</span>
-<span class="pc bpc" id="L496" title="1 of 2 branches missed.">        } else if (rotation &lt; 0) {</span>
-<span class="nc bnc" id="L497" title="All 2 branches missed.">            while (rotation &lt; 0) {</span>
-<span class="nc" id="L498">                rotation += 2.*Math.PI;</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (rotation &gt;= 2*Math.PI) {</span>
+<span class="nc" id="L460">            rotation = rotation % (2.*Math.PI);</span>
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">        } else if (rotation &lt; 0) {</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">            while (rotation &lt; 0) {</span>
+<span class="nc" id="L463">                rotation += 2.*Math.PI;</span>
             }
         }
         
-<span class="fc" id="L502">        int q = 1;</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">        if (rotation &gt;= 3.*Math.PI/2.) {</span>
-<span class="fc" id="L504">            q = 4;</span>
-<span class="fc bfc" id="L505" title="All 2 branches covered.">        } else if (rotation &gt;= Math.PI) {</span>
-<span class="fc" id="L506">            q = 3;</span>
-<span class="fc bfc" id="L507" title="All 2 branches covered.">        } else if (rotation &gt;= Math.PI/2.) {</span>
-<span class="fc" id="L508">            q = 2;</span>
+<span class="fc" id="L467">        int q = 1;</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        if (rotation &gt;= 3.*Math.PI/2.) {</span>
+<span class="fc" id="L469">            q = 4;</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">        } else if (rotation &gt;= Math.PI) {</span>
+<span class="fc" id="L471">            q = 3;</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">        } else if (rotation &gt;= Math.PI/2.) {</span>
+<span class="fc" id="L473">            q = 2;</span>
         }
-<span class="fc" id="L510">        return q;</span>
+<span class="fc" id="L475">        return q;</span>
     }
     
     /**
@@ -526,9 +491,9 @@ import java.util.List;
                II  |  I
                    90
         */
-<span class="fc" id="L529">        double angleAvg = calcAngleAddition(rot0, rot1, useRadians)/2.;</span>
+<span class="fc" id="L494">        double angleAvg = calcAngleAddition(rot0, rot1, useRadians)/2.;</span>
       
-<span class="fc" id="L531">        return angleAvg;</span>
+<span class="fc" id="L496">        return angleAvg;</span>
     }
     
     /**
@@ -542,8 +507,8 @@ import java.util.List;
     public static double calcAngleAddition(double rot0, double rot1, 
         boolean useRadians) {
         
-<span class="pc bpc" id="L545" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
-<span class="nc" id="L546">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L510" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
+<span class="nc" id="L511">            throw new IllegalArgumentException(</span>
                 &quot;rot0 and rot1 cannot be negative numbers&quot;);
         }
         
@@ -559,22 +524,22 @@ import java.util.List;
         logic below is for rot0 and rot1 between 0 and 360 so temporarily
         reduce angles to those ranges then add back the corrections.
         */
-<span class="fc" id="L562">        double rot0Orig = rot0;</span>
-<span class="fc" id="L563">        double rot1Orig = rot1;</span>
+<span class="fc" id="L527">        double rot0Orig = rot0;</span>
+<span class="fc" id="L528">        double rot1Orig = rot1;</span>
         
-<span class="fc" id="L565">        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);</span>
+<span class="fc" id="L530">        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);</span>
         
-<span class="fc" id="L567">        double angleSum = (rotations[0] + rotations[1]);</span>
+<span class="fc" id="L532">        double angleSum = (rotations[0] + rotations[1]);</span>
         
         // add back any of the cycles in original values
-<span class="pc bpc" id="L570" title="1 of 2 branches missed.">        if (rot0 &lt; rot0Orig) {</span>
-<span class="nc" id="L571">            angleSum += (rot0Orig - rot0);</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">        if (rot0 &lt; rot0Orig) {</span>
+<span class="nc" id="L536">            angleSum += (rot0Orig - rot0);</span>
         }
-<span class="pc bpc" id="L573" title="1 of 2 branches missed.">        if (rot1 &lt; rot1Orig) {</span>
-<span class="nc" id="L574">            angleSum += (rot1Orig - rot1);</span>
+<span class="pc bpc" id="L538" title="1 of 2 branches missed.">        if (rot1 &lt; rot1Orig) {</span>
+<span class="nc" id="L539">            angleSum += (rot1Orig - rot1);</span>
         }
 
-<span class="fc" id="L577">        return angleSum;</span>
+<span class="fc" id="L542">        return angleSum;</span>
     }
     
     /**
@@ -592,8 +557,8 @@ import java.util.List;
     public static double calcAngleAddition(double rot0, double rot1, 
         boolean useRadians, double[] outputQuadrantCorrected) {
         
-<span class="pc bpc" id="L595" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
-<span class="nc" id="L596">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L560" title="2 of 4 branches missed.">        if (rot0 &lt; 0 || rot1 &lt; 0) {</span>
+<span class="nc" id="L561">            throw new IllegalArgumentException(</span>
                 &quot;rot0 and rot1 cannot be negative numbers&quot;);
         }
         
@@ -609,49 +574,49 @@ import java.util.List;
         logic below is for rot0 and rot1 between 0 and 360 so temporarily
         reduce angles to those ranges then add back the corrections.
         */
-<span class="fc" id="L612">        double rot0Orig = rot0;</span>
-<span class="fc" id="L613">        double rot1Orig = rot1;</span>
+<span class="fc" id="L577">        double rot0Orig = rot0;</span>
+<span class="fc" id="L578">        double rot1Orig = rot1;</span>
         
-<span class="fc" id="L615">        outputQuadrantCorrected[0] = rot0;</span>
-<span class="fc" id="L616">        outputQuadrantCorrected[1] = rot1;</span>
+<span class="fc" id="L580">        outputQuadrantCorrected[0] = rot0;</span>
+<span class="fc" id="L581">        outputQuadrantCorrected[1] = rot1;</span>
         
         // prefer to keep 360 instead of 0 because some of the invokers of this
         // method might prefer a fraction times results to be &gt; 0
-<span class="fc bfc" id="L620" title="All 2 branches covered.">        if (rot0 != 360) {</span>
-<span class="fc" id="L621">            rot0 = rot0 % 360;</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">        if (rot0 != 360) {</span>
+<span class="fc" id="L586">            rot0 = rot0 % 360;</span>
         }
-<span class="fc bfc" id="L623" title="All 2 branches covered.">        if (rot1 != 360) {</span>
-<span class="fc" id="L624">            rot1 = rot1 % 360;</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">        if (rot1 != 360) {</span>
+<span class="fc" id="L589">            rot1 = rot1 % 360;</span>
         }
         
         double twoPI;
-<span class="pc bpc" id="L628" title="1 of 2 branches missed.">        if (useRadians) {</span>
-<span class="nc" id="L629">            twoPI = 2. * Math.PI;</span>
+<span class="pc bpc" id="L593" title="1 of 2 branches missed.">        if (useRadians) {</span>
+<span class="nc" id="L594">            twoPI = 2. * Math.PI;</span>
         } else {
-<span class="fc" id="L631">            twoPI = 360.;</span>
+<span class="fc" id="L596">            twoPI = 360.;</span>
         }
        
-<span class="fc" id="L634">        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);</span>
-<span class="fc" id="L635">        outputQuadrantCorrected[0] = rotations[0];</span>
-<span class="fc" id="L636">        outputQuadrantCorrected[1] = rotations[1];</span>
-<span class="fc" id="L637">        rot0 = rotations[0];</span>
-<span class="fc" id="L638">        rot1 = rotations[1];</span>
+<span class="fc" id="L599">        double[] rotations = correctForQuadrants(rot0, rot1, useRadians);</span>
+<span class="fc" id="L600">        outputQuadrantCorrected[0] = rotations[0];</span>
+<span class="fc" id="L601">        outputQuadrantCorrected[1] = rotations[1];</span>
+<span class="fc" id="L602">        rot0 = rotations[0];</span>
+<span class="fc" id="L603">        rot1 = rotations[1];</span>
         
-<span class="fc" id="L640">        double angleSum = (rot0 + rot1);</span>
+<span class="fc" id="L605">        double angleSum = (rot0 + rot1);</span>
         
         // add back any of the cycles in original values if larger than 360
-<span class="pc bpc" id="L643" title="3 of 4 branches missed.">        if ((rot0 &gt; twoPI) &amp;&amp; (rot0 &lt; rot0Orig)) {</span>
-<span class="nc" id="L644">            double diff = (rot0Orig - rot0);</span>
-<span class="nc" id="L645">            angleSum += diff;</span>
-<span class="nc" id="L646">            outputQuadrantCorrected[0] += diff;</span>
+<span class="pc bpc" id="L608" title="3 of 4 branches missed.">        if ((rot0 &gt; twoPI) &amp;&amp; (rot0 &lt; rot0Orig)) {</span>
+<span class="nc" id="L609">            double diff = (rot0Orig - rot0);</span>
+<span class="nc" id="L610">            angleSum += diff;</span>
+<span class="nc" id="L611">            outputQuadrantCorrected[0] += diff;</span>
         }
-<span class="pc bpc" id="L648" title="3 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
-<span class="nc" id="L649">            double diff = (rot1Orig - rot1);</span>
-<span class="nc" id="L650">            angleSum += diff;</span>
-<span class="nc" id="L651">            outputQuadrantCorrected[1] += diff;</span>
+<span class="pc bpc" id="L613" title="3 of 4 branches missed.">        if ((rot1 &gt; twoPI) &amp;&amp; (rot1 &lt; rot1Orig)) {</span>
+<span class="nc" id="L614">            double diff = (rot1Orig - rot1);</span>
+<span class="nc" id="L615">            angleSum += diff;</span>
+<span class="nc" id="L616">            outputQuadrantCorrected[1] += diff;</span>
         }
 
-<span class="fc" id="L654">        return angleSum;</span>
+<span class="fc" id="L619">        return angleSum;</span>
     }
      
     /**
@@ -667,12 +632,12 @@ import java.util.List;
         double rotationInDegrees0, double rotationInDegrees1, 
         double[] outputQuadrantCorrected) {
         
-<span class="fc" id="L670">        boolean useRadians = false;</span>
+<span class="fc" id="L635">        boolean useRadians = false;</span>
         
-<span class="fc" id="L672">        double sum = calcAngleAddition(rotationInDegrees0, </span>
+<span class="fc" id="L637">        double sum = calcAngleAddition(rotationInDegrees0, </span>
             rotationInDegrees1, useRadians, outputQuadrantCorrected);
         
-<span class="fc" id="L675">        return sum/2.;</span>
+<span class="fc" id="L640">        return sum/2.;</span>
     }
 
     /**
@@ -736,52 +701,52 @@ import java.util.List;
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
        
-<span class="fc" id="L739">        MergeSort.sortByDecr(angles, 0, lastIndex);</span>
+<span class="fc" id="L704">        MergeSort.sortByDecr(angles, 0, lastIndex);</span>
         
         // visit in order of large values to low to store quadrant corrections
         
-<span class="fc" id="L743">        double[] quadrantCorrected = new double[2];</span>
+<span class="fc" id="L708">        double[] quadrantCorrected = new double[2];</span>
         
-<span class="fc" id="L745">        double avg = 0;</span>
-<span class="fc bfc" id="L746" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="fc" id="L710">        double avg = 0;</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
             
-<span class="fc" id="L748">            int v = angles[i];</span>
+<span class="fc" id="L713">            int v = angles[i];</span>
             
-<span class="fc bfc" id="L750" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L751">                avg = v;</span>
+<span class="fc bfc" id="L715" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L716">                avg = v;</span>
             } else {
-<span class="fc" id="L753">                double r1 = avg;</span>
-<span class="fc" id="L754">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
+<span class="fc" id="L718">                double r1 = avg;</span>
+<span class="fc" id="L719">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
                 
-<span class="pc bpc" id="L756" title="1 of 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="pc bpc" id="L721" title="1 of 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="nc" id="L758">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="nc" id="L723">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="pc bpc" id="L760" title="1 of 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
-<span class="fc" id="L761">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
+<span class="fc" id="L726">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }
         }
 
-<span class="fc" id="L766">        int n = lastIndex + 1;</span>
-<span class="fc bfc" id="L767" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="fc" id="L731">        int n = lastIndex + 1;</span>
+<span class="fc bfc" id="L732" title="All 2 branches covered.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="fc" id="L769">            int v = angles[i];</span>
+<span class="fc" id="L734">            int v = angles[i];</span>
 
             float c0;
 
-<span class="fc bfc" id="L773" title="All 2 branches covered.">            if (i == 0) {</span>
-<span class="fc" id="L774">                c0 = 1 &lt;&lt; (n - 1);</span>
+<span class="fc bfc" id="L738" title="All 2 branches covered.">            if (i == 0) {</span>
+<span class="fc" id="L739">                c0 = 1 &lt;&lt; (n - 1);</span>
             } else {
-<span class="fc" id="L776">                c0 = 1 &lt;&lt; (n - i);</span>
+<span class="fc" id="L741">                c0 = 1 &lt;&lt; (n - i);</span>
             }
 
-<span class="fc" id="L779">            float add = v * (c0 - n) / (n * c0);</span>
+<span class="fc" id="L744">            float add = v * (c0 - n) / (n * c0);</span>
 
-<span class="fc" id="L781">            avg += add;</span>
+<span class="fc" id="L746">            avg += add;</span>
         }
 
-<span class="fc" id="L784">        return (float)avg;</span>
+<span class="fc" id="L749">        return (float)avg;</span>
     }
     
     /**
@@ -801,51 +766,51 @@ import java.util.List;
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
        
-<span class="nc" id="L804">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
+<span class="nc" id="L769">        MultiArrayMergeSort.sortByDecr(angles, valuesToMakeIntoWeights, 0, lastIndex);</span>
         
         // visit in order of large values to low to store quadrant corrections
         
-<span class="nc" id="L808">        double[] quadrantCorrected = new double[2];</span>
+<span class="nc" id="L773">        double[] quadrantCorrected = new double[2];</span>
         
-<span class="nc" id="L810">        double sumWeights = 0;</span>
-<span class="nc" id="L811">        double avg = 0;</span>
-<span class="nc bnc" id="L812" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc" id="L775">        double sumWeights = 0;</span>
+<span class="nc" id="L776">        double avg = 0;</span>
+<span class="nc bnc" id="L777" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
             
-<span class="nc" id="L814">            int v = angles[i];</span>
+<span class="nc" id="L779">            int v = angles[i];</span>
             
-<span class="nc bnc" id="L816" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc bnc" id="L781" title="All 2 branches missed.">            if (i == 0) {</span>
                 
-<span class="nc" id="L818">                avg = v;</span>
+<span class="nc" id="L783">                avg = v;</span>
             
             } else {
                 
-<span class="nc" id="L822">                double r1 = avg;</span>
+<span class="nc" id="L787">                double r1 = avg;</span>
                 
-<span class="nc" id="L824">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
+<span class="nc" id="L789">                avg = getAngleAverageInDegrees(r1, v, quadrantCorrected);</span>
                 
-<span class="nc bnc" id="L826" title="All 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
+<span class="nc bnc" id="L791" title="All 2 branches missed.">                if (quadrantCorrected[0] != r1) {</span>
                     // TODO: this branch might not occur...revisit logic
-<span class="nc" id="L828">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
+<span class="nc" id="L793">                    angles[i - 1] = (int)Math.round(quadrantCorrected[0]);</span>
                 }
-<span class="nc bnc" id="L830" title="All 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
-<span class="nc" id="L831">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">                if (quadrantCorrected[1] != v) {</span>
+<span class="nc" id="L796">                    angles[i] = (int)Math.round(quadrantCorrected[1]);</span>
                 }
             }
             
-<span class="nc" id="L835">            sumWeights += valuesToMakeIntoWeights[i];</span>
+<span class="nc" id="L800">            sumWeights += valuesToMakeIntoWeights[i];</span>
         }
         
         // redo the mean using the quadrant corrected angles and the weights
-<span class="nc" id="L839">        double mean = 0;</span>
+<span class="nc" id="L804">        double mean = 0;</span>
 
-<span class="nc bnc" id="L841" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
 
-<span class="nc" id="L843">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
+<span class="nc" id="L808">            double v = angles[i] * ((double)valuesToMakeIntoWeights[i]/sumWeights);</span>
 
-<span class="nc" id="L845">            mean += v;</span>
+<span class="nc" id="L810">            mean += v;</span>
         }
 
-<span class="nc" id="L848">        return (float)mean;</span>
+<span class="nc" id="L813">        return (float)mean;</span>
     }
     
     /**
@@ -864,36 +829,36 @@ import java.util.List;
         //TODO: because 360 is usually the max value, if N is &gt; 80, can
         // use CountingSort here for better performance.
         // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
-<span class="nc" id="L867">        MultiArrayMergeSort.sortByDecr(angles, weights, 0, lastIndex);</span>
+<span class="nc" id="L832">        MultiArrayMergeSort.sortByDecr(angles, weights, 0, lastIndex);</span>
       
-<span class="nc" id="L869">        double[] corr = new double[2];</span>
+<span class="nc" id="L834">        double[] corr = new double[2];</span>
         
-<span class="nc bnc" id="L871" title="All 2 branches missed.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
-<span class="nc" id="L872">            double a0 = angles[i];</span>
+<span class="nc bnc" id="L836" title="All 2 branches missed.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="nc" id="L837">            double a0 = angles[i];</span>
             double a1;
-<span class="nc bnc" id="L874" title="All 2 branches missed.">            if (i == (angles.length - 1)) {</span>
-<span class="nc" id="L875">                a1 = angles[0];</span>
+<span class="nc bnc" id="L839" title="All 2 branches missed.">            if (i == (angles.length - 1)) {</span>
+<span class="nc" id="L840">                a1 = angles[0];</span>
             } else {
-<span class="nc" id="L877">                a1 = angles[i + 1];</span>
+<span class="nc" id="L842">                a1 = angles[i + 1];</span>
             }
-<span class="nc" id="L879">            correctForQuadrants(a0, a1, useRadians, corr);</span>
-<span class="nc" id="L880">            angles[i] = corr[0];</span>
-<span class="nc bnc" id="L881" title="All 2 branches missed.">            if (i == (angles.length - 1)) {</span>
-<span class="nc" id="L882">                angles[0] = corr[1];</span>
+<span class="nc" id="L844">            correctForQuadrants(a0, a1, useRadians, corr);</span>
+<span class="nc" id="L845">            angles[i] = corr[0];</span>
+<span class="nc bnc" id="L846" title="All 2 branches missed.">            if (i == (angles.length - 1)) {</span>
+<span class="nc" id="L847">                angles[0] = corr[1];</span>
             } else {
-<span class="nc" id="L884">                angles[i + 1] = corr[1];</span>
+<span class="nc" id="L849">                angles[i + 1] = corr[1];</span>
             }
         }
                    
         // redo the mean using the quadrant corrected angles and the weights
-<span class="nc" id="L889">        double mean = 0;</span>
+<span class="nc" id="L854">        double mean = 0;</span>
 
-<span class="nc bnc" id="L891" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
-<span class="nc" id="L892">            double v = angles[i] * weights[i];</span>
-<span class="nc" id="L893">            mean += v;</span>
+<span class="nc bnc" id="L856" title="All 2 branches missed.">        for (int i = 0; i &lt;= lastIndex; ++i) {</span>
+<span class="nc" id="L857">            double v = angles[i] * weights[i];</span>
+<span class="nc" id="L858">            mean += v;</span>
         }
 
-<span class="nc" id="L896">        return (float)mean;</span>
+<span class="nc" id="L861">        return (float)mean;</span>
     }
     
     /**
@@ -905,45 +870,45 @@ import java.util.List;
     public static void correctForQuadrants(List&lt;Double&gt; thetas, 
         boolean useRadians) {
         
-<span class="pc bpc" id="L908" title="1 of 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
-<span class="fc" id="L909">            return;</span>
+<span class="pc bpc" id="L873" title="1 of 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
+<span class="fc" id="L874">            return;</span>
         }
         
-<span class="fc" id="L912">        double[] angles = new double[thetas.size()];</span>
-<span class="fc" id="L913">        int[] indexes = new int[thetas.size()];</span>
+<span class="fc" id="L877">        double[] angles = new double[thetas.size()];</span>
+<span class="fc" id="L878">        int[] indexes = new int[thetas.size()];</span>
         
-<span class="fc bfc" id="L915" title="All 2 branches covered.">        for (int i = 0; i &lt; thetas.size(); ++i) {</span>
-<span class="fc" id="L916">            angles[i] = thetas.get(i).doubleValue();</span>
-<span class="fc" id="L917">            indexes[i] = i;</span>
+<span class="fc bfc" id="L880" title="All 2 branches covered.">        for (int i = 0; i &lt; thetas.size(); ++i) {</span>
+<span class="fc" id="L881">            angles[i] = thetas.get(i).doubleValue();</span>
+<span class="fc" id="L882">            indexes[i] = i;</span>
         }
         
-<span class="fc" id="L920">        MultiArrayMergeSort.sortByDecr(angles, indexes);</span>
+<span class="fc" id="L885">        MultiArrayMergeSort.sortByDecr(angles, indexes);</span>
       
-<span class="fc" id="L922">        double[] corr = new double[2];</span>
+<span class="fc" id="L887">        double[] corr = new double[2];</span>
         
-<span class="fc bfc" id="L924" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
-<span class="fc" id="L925">            double a0 = angles[i];</span>
+<span class="fc bfc" id="L889" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="fc" id="L890">            double a0 = angles[i];</span>
             double a1;
-<span class="fc bfc" id="L927" title="All 2 branches covered.">            if (i == (angles.length - 1)) {</span>
-<span class="fc" id="L928">                a1 = angles[0];</span>
+<span class="fc bfc" id="L892" title="All 2 branches covered.">            if (i == (angles.length - 1)) {</span>
+<span class="fc" id="L893">                a1 = angles[0];</span>
             } else {
-<span class="fc" id="L930">                a1 = angles[i + 1];</span>
+<span class="fc" id="L895">                a1 = angles[i + 1];</span>
             }
-<span class="fc" id="L932">            correctForQuadrantsWithoutMod(a0, a1, useRadians, corr);</span>
-<span class="fc" id="L933">            angles[i] = corr[0];</span>
-<span class="fc bfc" id="L934" title="All 2 branches covered.">            if (i == (angles.length - 1)) {</span>
-<span class="fc" id="L935">                angles[0] = corr[1];</span>
+<span class="fc" id="L897">            correctForQuadrantsWithoutMod(a0, a1, useRadians, corr);</span>
+<span class="fc" id="L898">            angles[i] = corr[0];</span>
+<span class="fc bfc" id="L899" title="All 2 branches covered.">            if (i == (angles.length - 1)) {</span>
+<span class="fc" id="L900">                angles[0] = corr[1];</span>
             } else {
-<span class="fc" id="L937">                angles[i + 1] = corr[1];</span>
+<span class="fc" id="L902">                angles[i + 1] = corr[1];</span>
             }
         }
         
-<span class="fc bfc" id="L941" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
-<span class="fc" id="L942">            int idx = indexes[i];</span>
-<span class="fc" id="L943">            double v = angles[i];</span>
-<span class="fc" id="L944">            thetas.set(idx, v);</span>
+<span class="fc bfc" id="L906" title="All 2 branches covered.">        for (int i = 0; i &lt; angles.length; ++i) {</span>
+<span class="fc" id="L907">            int idx = indexes[i];</span>
+<span class="fc" id="L908">            double v = angles[i];</span>
+<span class="fc" id="L909">            thetas.set(idx, v);</span>
         }        
-<span class="fc" id="L946">    }</span>
+<span class="fc" id="L911">    }</span>
     
     protected static int getClockwiseQuadrant(float rotationInDegrees) {
         /*
@@ -952,23 +917,23 @@ import java.util.List;
           II  |  I
         */
         
-<span class="nc bnc" id="L955" title="All 2 branches missed.">        if (rotationInDegrees &gt;= 360) {</span>
-<span class="nc" id="L956">            rotationInDegrees = rotationInDegrees % 360;</span>
-<span class="nc bnc" id="L957" title="All 2 branches missed.">        } else if (rotationInDegrees &lt; 0) {</span>
-<span class="nc bnc" id="L958" title="All 2 branches missed.">            while (rotationInDegrees &lt; 0) {</span>
-<span class="nc" id="L959">                rotationInDegrees += 360;</span>
+<span class="nc bnc" id="L920" title="All 2 branches missed.">        if (rotationInDegrees &gt;= 360) {</span>
+<span class="nc" id="L921">            rotationInDegrees = rotationInDegrees % 360;</span>
+<span class="nc bnc" id="L922" title="All 2 branches missed.">        } else if (rotationInDegrees &lt; 0) {</span>
+<span class="nc bnc" id="L923" title="All 2 branches missed.">            while (rotationInDegrees &lt; 0) {</span>
+<span class="nc" id="L924">                rotationInDegrees += 360;</span>
             }
         }
         
-<span class="nc" id="L963">        int q = 1;</span>
-<span class="nc bnc" id="L964" title="All 2 branches missed.">        if (rotationInDegrees &gt;= 270) {</span>
-<span class="nc" id="L965">            q = 4;</span>
-<span class="nc bnc" id="L966" title="All 2 branches missed.">        } else if (rotationInDegrees &gt;= 180) {</span>
-<span class="nc" id="L967">            q = 3;</span>
-<span class="nc bnc" id="L968" title="All 2 branches missed.">        } else if (rotationInDegrees &gt;= 90) {</span>
-<span class="nc" id="L969">            q = 2;</span>
+<span class="nc" id="L928">        int q = 1;</span>
+<span class="nc bnc" id="L929" title="All 2 branches missed.">        if (rotationInDegrees &gt;= 270) {</span>
+<span class="nc" id="L930">            q = 4;</span>
+<span class="nc bnc" id="L931" title="All 2 branches missed.">        } else if (rotationInDegrees &gt;= 180) {</span>
+<span class="nc" id="L932">            q = 3;</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">        } else if (rotationInDegrees &gt;= 90) {</span>
+<span class="nc" id="L934">            q = 2;</span>
         }
-<span class="nc" id="L971">        return q;</span>
+<span class="nc" id="L936">        return q;</span>
     }
     
     protected static int getClockwiseQuadrant(double xCoord, double yCoord) {
@@ -978,33 +943,33 @@ import java.util.List;
           II  |  I
         */
         
-<span class="fc" id="L981">        int q = 1;</span>
-<span class="fc bfc" id="L982" title="All 2 branches covered.">        if (xCoord == 0) {</span>
-<span class="fc bfc" id="L983" title="All 2 branches covered.">            if (yCoord == 0) {</span>
+<span class="nc" id="L946">        int q = 1;</span>
+<span class="nc bnc" id="L947" title="All 2 branches missed.">        if (xCoord == 0) {</span>
+<span class="nc bnc" id="L948" title="All 2 branches missed.">            if (yCoord == 0) {</span>
                 //TODO: might be more consistent for origin to be in 4
-<span class="fc" id="L985">                q = 1;</span>
-<span class="fc bfc" id="L986" title="All 2 branches covered.">            } else if (yCoord &gt; 0) {</span>
-<span class="fc" id="L987">                q = 4;</span>
+<span class="nc" id="L950">                q = 1;</span>
+<span class="nc bnc" id="L951" title="All 2 branches missed.">            } else if (yCoord &gt; 0) {</span>
+<span class="nc" id="L952">                q = 4;</span>
             } else {
-<span class="fc" id="L989">                q = 1;</span>
+<span class="nc" id="L954">                q = 1;</span>
             }
-<span class="fc bfc" id="L991" title="All 2 branches covered.">        } else if (yCoord == 0) {</span>
-<span class="fc bfc" id="L992" title="All 2 branches covered.">            if (xCoord &gt; 0) {</span>
-<span class="fc" id="L993">                q = 1;</span>
+<span class="nc bnc" id="L956" title="All 2 branches missed.">        } else if (yCoord == 0) {</span>
+<span class="nc bnc" id="L957" title="All 2 branches missed.">            if (xCoord &gt; 0) {</span>
+<span class="nc" id="L958">                q = 1;</span>
             } else {
-<span class="fc" id="L995">                q = 3;</span>
+<span class="nc" id="L960">                q = 3;</span>
             }            
-<span class="fc bfc" id="L997" title="All 4 branches covered.">        } else if ((xCoord &gt; 0) &amp;&amp; (yCoord &gt; 0)) {</span>
-<span class="fc" id="L998">            q = 4;</span>
-<span class="pc bpc" id="L999" title="1 of 4 branches missed.">        } else if ((xCoord &gt; 0) &amp;&amp; (yCoord &lt; 0)) {</span>
-<span class="fc" id="L1000">            q = 1;</span>
-<span class="pc bpc" id="L1001" title="1 of 4 branches missed.">        } else if ((xCoord &lt; 0) &amp;&amp; (yCoord &gt; 0)) {</span>
-<span class="fc" id="L1002">            q = 3;</span>
-<span class="pc bpc" id="L1003" title="2 of 4 branches missed.">        } else if ((xCoord &lt; 0) &amp;&amp; (yCoord &lt; 0)) {</span>
-<span class="fc" id="L1004">            q = 2;</span>
+<span class="nc bnc" id="L962" title="All 4 branches missed.">        } else if ((xCoord &gt; 0) &amp;&amp; (yCoord &gt; 0)) {</span>
+<span class="nc" id="L963">            q = 4;</span>
+<span class="nc bnc" id="L964" title="All 4 branches missed.">        } else if ((xCoord &gt; 0) &amp;&amp; (yCoord &lt; 0)) {</span>
+<span class="nc" id="L965">            q = 1;</span>
+<span class="nc bnc" id="L966" title="All 4 branches missed.">        } else if ((xCoord &lt; 0) &amp;&amp; (yCoord &gt; 0)) {</span>
+<span class="nc" id="L967">            q = 3;</span>
+<span class="nc bnc" id="L968" title="All 4 branches missed.">        } else if ((xCoord &lt; 0) &amp;&amp; (yCoord &lt; 0)) {</span>
+<span class="nc" id="L969">            q = 2;</span>
         }
         
-<span class="fc" id="L1007">        return q;</span>
+<span class="nc" id="L972">        return q;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

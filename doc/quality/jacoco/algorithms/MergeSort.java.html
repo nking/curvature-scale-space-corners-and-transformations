@@ -1,11 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MergeSort.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms</a> &gt; <span class="el_source">MergeSort.java</span></div><h1>MergeSort.java</h1><pre class="source lang-java linenums">package algorithms;
 
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author nichole
  */
-<span class="nc" id="L8">public class MergeSort {</span>
+<span class="nc" id="L11">public class MergeSort {</span>
+    
+    /**
+     * sort by increasing value a.x then a.y
+     *
+     * @param a array of points to be sorted
+     */
+    public static void sortByXThenY(List&lt;PairIntWithIndex&gt; a) {
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L20">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L24">            return;</span>
+        }
+        
+<span class="fc" id="L27">        sortByXThenY(a, 0, a.size() - 1);</span>
+              
+<span class="fc" id="L29">    }</span>
+    /**
+     * sort by increasing value a.y then a.x
+     *
+     * @param a array of points to be sorted
+     */
+    public static void sortByYThenX(List&lt;PairIntWithIndex&gt; a) {
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L37">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L41">            return;</span>
+        }
+        
+<span class="fc" id="L44">        sortByYThenX(a, 0, a.size() - 1);</span>
+              
+<span class="fc" id="L46">    }</span>
 
     /**
      * sort by decreasing value a1
@@ -13,61 +51,171 @@ import java.util.Arrays;
      * @param a array of points to be sorted
      */
     public static void sortByDecr(int[] a) {
-<span class="pc bpc" id="L16" title="1 of 2 branches missed.">        if (a == null) {</span>
-<span class="nc" id="L17">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L55">            throw new IllegalArgumentException(&quot;a cannot be null&quot;);</span>
         }
         
-<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L21">            return;</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L59">            return;</span>
         }
         
-<span class="fc" id="L24">        sortByDecr(a, 0, a.length - 1);</span>
+<span class="fc" id="L62">        sortByDecr(a, 0, a.length - 1);</span>
               
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L64">    }</span>
     
     public static void sortByDecr(int[] a, int idxLo, int idxHi) {
 
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
-<span class="nc" id="L31">            return;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (a.length &lt; 2) {</span>
+<span class="nc" id="L69">            return;</span>
         }
         
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
 
-<span class="fc" id="L36">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+<span class="fc" id="L74">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
             
-<span class="fc" id="L38">            sortByDecr(a, idxLo, indexMid);</span>
+<span class="fc" id="L76">            sortByDecr(a, idxLo, indexMid);</span>
             
-<span class="fc" id="L40">            sortByDecr(a, indexMid + 1, idxHi);</span>
+<span class="fc" id="L78">            sortByDecr(a, indexMid + 1, idxHi);</span>
             
-<span class="fc" id="L42">            mergeByDecr(a, idxLo, indexMid, idxHi);</span>
+<span class="fc" id="L80">            mergeByDecr(a, idxLo, indexMid, idxHi);</span>
         }
-<span class="fc" id="L44">    }</span>
+<span class="fc" id="L82">    }</span>
+    
+    public static void sortByXThenY(List&lt;PairIntWithIndex&gt; a, int idxLo, int idxHi) {
+
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L87">            return;</span>
+        }
+        
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L92">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L94">            sortByXThenY(a, idxLo, indexMid);</span>
+            
+<span class="fc" id="L96">            sortByXThenY(a, indexMid + 1, idxHi);</span>
+            
+<span class="fc" id="L98">            mergeByXThenY(a, idxLo, indexMid, idxHi);</span>
+        }
+<span class="fc" id="L100">    }</span>
+    
+    public static void sortByYThenX(List&lt;PairIntWithIndex&gt; a, int idxLo, int idxHi) {
+
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (a.size() &lt; 2) {</span>
+<span class="nc" id="L105">            return;</span>
+        }
+        
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (idxLo &lt; idxHi) {</span>
+
+<span class="fc" id="L110">            int indexMid = (idxLo + idxHi) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L112">            sortByYThenX(a, idxLo, indexMid);</span>
+            
+<span class="fc" id="L114">            sortByYThenX(a, indexMid + 1, idxHi);</span>
+            
+<span class="fc" id="L116">            mergeByYThenX(a, idxLo, indexMid, idxHi);</span>
+        }
+<span class="fc" id="L118">    }</span>
     
     private static void mergeByDecr(int[] a1, int idxLo, 
         int idxMid, int idxHi) {
 
-<span class="fc" id="L49">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
+<span class="fc" id="L123">        int[] a1Left = Arrays.copyOfRange(a1, idxLo, idxMid + 2);</span>
         
-<span class="fc" id="L51">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
+<span class="fc" id="L125">        int[] a1Right = Arrays.copyOfRange(a1, idxMid + 1, idxHi + 2);</span>
         
-<span class="fc" id="L53">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
-<span class="fc" id="L54">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L127">        a1Left[a1Left.length - 1] = Integer.MIN_VALUE;</span>
+<span class="fc" id="L128">        a1Right[a1Right.length - 1] = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L56">        int leftPos = 0;</span>
-<span class="fc" id="L57">        int rightPos = 0;</span>
+<span class="fc" id="L130">        int leftPos = 0;</span>
+<span class="fc" id="L131">        int rightPos = 0;</span>
 
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
-<span class="fc" id="L60">            int l = a1Left[leftPos];</span>
-<span class="fc" id="L61">            int r = a1Right[rightPos];</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (l &gt; r) {</span>
-<span class="fc" id="L63">                a1[k] = a1Left[leftPos];</span>
-<span class="fc" id="L64">                leftPos++;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L134">            int l = a1Left[leftPos];</span>
+<span class="fc" id="L135">            int r = a1Right[rightPos];</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (l &gt; r) {</span>
+<span class="fc" id="L137">                a1[k] = a1Left[leftPos];</span>
+<span class="fc" id="L138">                leftPos++;</span>
             } else {
-<span class="fc" id="L66">                a1[k] = a1Right[rightPos];</span>
-<span class="fc" id="L67">                rightPos++;</span>
+<span class="fc" id="L140">                a1[k] = a1Right[rightPos];</span>
+<span class="fc" id="L141">                rightPos++;</span>
             }
         }
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L144">    }</span>
     
+<span class="fc" id="L146">    private static PairIntWithIndex sentinel = new PairIntWithIndex(</span>
+        Integer.MAX_VALUE, Integer.MAX_VALUE, 0);
+    
+    private static void mergeByXThenY(List&lt;PairIntWithIndex&gt; a1, int idxLo, 
+        int idxMid, int idxHi) {
+
+<span class="fc" id="L152">        List&lt;PairIntWithIndex&gt; a1Left = new ArrayList&lt;PairIntWithIndex&gt;</span>
+<span class="fc" id="L153">            (a1.subList(idxLo, idxMid + 1));</span>
+        
+<span class="fc" id="L155">        List&lt;PairIntWithIndex&gt; a1Right = new ArrayList&lt;PairIntWithIndex&gt;</span>
+<span class="fc" id="L156">            (a1.subList(idxMid + 1, idxHi + 1));</span>
+                
+<span class="fc" id="L158">        a1Left.add(sentinel);</span>
+<span class="fc" id="L159">        a1Right.add(sentinel);</span>
+        
+<span class="fc" id="L161">        int leftPos = 0;</span>
+<span class="fc" id="L162">        int rightPos = 0;</span>
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L165">            PairIntWithIndex l = a1Left.get(leftPos);</span>
+<span class="fc" id="L166">            PairIntWithIndex r = a1Right.get(rightPos);</span>
+<span class="fc" id="L167">            boolean lft = false;</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            if (l.getX() &lt; r.getX()) {</span>
+<span class="fc" id="L169">                lft = true;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (l.getX() == r.getX()) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                if (l.getY() &lt; r.getY()) {</span>
+<span class="fc" id="L172">                    lft = true;</span>
+                }
+            }
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (lft) {</span>
+<span class="fc" id="L176">                a1.set(k, a1Left.get(leftPos));</span>
+<span class="fc" id="L177">                leftPos++;</span>
+            } else {
+<span class="fc" id="L179">                a1.set(k, a1Right.get(rightPos));</span>
+<span class="fc" id="L180">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L183">    }</span>
+    
+    private static void mergeByYThenX(List&lt;PairIntWithIndex&gt; a1, int idxLo, 
+        int idxMid, int idxHi) {
+
+<span class="fc" id="L188">        List&lt;PairIntWithIndex&gt; a1Left = new ArrayList&lt;PairIntWithIndex&gt;</span>
+<span class="fc" id="L189">            (a1.subList(idxLo, idxMid + 1));</span>
+        
+<span class="fc" id="L191">        List&lt;PairIntWithIndex&gt; a1Right = new ArrayList&lt;PairIntWithIndex&gt;</span>
+<span class="fc" id="L192">            (a1.subList(idxMid + 1, idxHi + 1));</span>
+                
+<span class="fc" id="L194">        a1Left.add(sentinel);</span>
+<span class="fc" id="L195">        a1Right.add(sentinel);</span>
+        
+<span class="fc" id="L197">        int leftPos = 0;</span>
+<span class="fc" id="L198">        int rightPos = 0;</span>
+
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (int k = idxLo; k &lt;= idxHi; k++) {</span>
+<span class="fc" id="L201">            PairIntWithIndex l = a1Left.get(leftPos);</span>
+<span class="fc" id="L202">            PairIntWithIndex r = a1Right.get(rightPos);</span>
+<span class="fc" id="L203">            boolean lft = false;</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            if (l.getY() &lt; r.getY()) {</span>
+<span class="fc" id="L205">                lft = true;</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">            } else if (l.getY() == r.getY()) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                if (l.getX() &lt; r.getX()) {</span>
+<span class="fc" id="L208">                    lft = true;</span>
+                }
+            }
+<span class="fc bfc" id="L211" title="All 2 branches covered.">            if (lft) {</span>
+<span class="fc" id="L212">                a1.set(k, a1Left.get(leftPos));</span>
+<span class="fc" id="L213">                leftPos++;</span>
+            } else {
+<span class="fc" id="L215">                a1.set(k, a1Right.get(rightPos));</span>
+<span class="fc" id="L216">                rightPos++;</span>
+            }
+        }
+<span class="fc" id="L219">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

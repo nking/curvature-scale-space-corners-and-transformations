@@ -596,8 +596,8 @@ import java.util.Set;
 <span class="fc" id="L596">                    } else {</span>
 <span class="fc" id="L597">                        int added = addEndpointsForHorizVertPatternOppos(x0, y0,</span>
                             pattern, routes, endPoints, useVert);
-<span class="pc bpc" id="L599" title="1 of 2 branches missed.">                        if (added == 0) {</span>
-<span class="nc" id="L600">                            routes = null;</span>
+<span class="fc bfc" id="L599" title="All 2 branches covered.">                        if (added == 0) {</span>
+<span class="fc" id="L600">                            routes = null;</span>
                         }
                     }
 <span class="fc" id="L603">                    break;</span>
@@ -1088,7 +1088,7 @@ import java.util.Set;
 <span class="fc" id="L1088">                PairInt minDistP = null;</span>
 <span class="fc bfc" id="L1089" title="All 2 branches covered.">                for (PairInt p2 : set) {</span>
 <span class="fc" id="L1090">                    int distSq = distSq(p, p2);</span>
-<span class="pc bpc" id="L1091" title="1 of 2 branches missed.">                    if (distSq &lt; minDistSq) {</span>
+<span class="fc bfc" id="L1091" title="All 2 branches covered.">                    if (distSq &lt; minDistSq) {</span>
 <span class="fc" id="L1092">                        minDistSq = distSq;</span>
 <span class="fc" id="L1093">                        minDistP = p2;</span>
                     }
@@ -1271,8 +1271,8 @@ import java.util.Set;
 <span class="pc bpc" id="L1271" title="1 of 2 branches missed.">        if (endPoints.size() &lt; 2) {</span>
 <span class="nc" id="L1272">            throw new IllegalStateException(&quot;error in algorithm&quot;);</span>
         }
-<span class="pc bpc" id="L1274" title="2 of 4 branches missed.">        if ((routes.ep0 != null) || (routes.ep1End != null)) {</span>
-<span class="nc" id="L1275">            return 0;</span>
+<span class="pc bpc" id="L1274" title="1 of 4 branches missed.">        if ((routes.ep0 != null) || (routes.ep1End != null)) {</span>
+<span class="fc" id="L1275">            return 0;</span>
         }
         //assert(routes.ep0 == null);
         //assert(routes.ep1End == null);
@@ -1681,8 +1681,8 @@ import java.util.Set;
     private void setNullEndpoints(Routes routes) {
 
 <span class="pc bpc" id="L1683" title="1 of 2 branches missed.">        if (!routes.getRoute0().isEmpty()) {</span>
-<span class="pc bpc" id="L1684" title="1 of 2 branches missed.">            if (routes.getEP0() == null) {</span>
-<span class="nc" id="L1685">                routes.ep0 = routes.getRoute0().iterator().next();</span>
+<span class="fc bfc" id="L1684" title="All 2 branches covered.">            if (routes.getEP0() == null) {</span>
+<span class="fc" id="L1685">                routes.ep0 = routes.getRoute0().iterator().next();</span>
             }
 <span class="fc bfc" id="L1687" title="All 2 branches covered.">            if (routes.getEP0End() == null) {</span>
 <span class="fc" id="L1688">                PairInt[] a = getFirstAndLast(routes.getRoute0().iterator());</span>
@@ -1694,9 +1694,9 @@ import java.util.Set;
 <span class="fc bfc" id="L1694" title="All 2 branches covered.">            if (routes.getEP1() == null) {</span>
 <span class="fc" id="L1695">                routes.ep1 = routes.getRoute1().iterator().next();</span>
             }
-<span class="pc bpc" id="L1697" title="1 of 2 branches missed.">            if (routes.getEP1End() == null) {</span>
-<span class="nc" id="L1698">                PairInt[] a = getFirstAndLast(routes.getRoute1().iterator());</span>
-<span class="nc" id="L1699">                routes.ep1End = a[1];</span>
+<span class="fc bfc" id="L1697" title="All 2 branches covered.">            if (routes.getEP1End() == null) {</span>
+<span class="fc" id="L1698">                PairInt[] a = getFirstAndLast(routes.getRoute1().iterator());</span>
+<span class="fc" id="L1699">                routes.ep1End = a[1];</span>
             }
         }
 <span class="fc" id="L1702">    }</span>
@@ -2397,7 +2397,7 @@ import java.util.Set;
                 }
 <span class="fc" id="L2398">                int diffX = Math.abs(p3.getX() - p0.getX());</span>
 <span class="fc" id="L2399">                int diffY = Math.abs(p3.getY() - p0.getY());</span>
-<span class="pc bpc" id="L2400" title="6 of 8 branches missed.">                if ((diffX == 0 &amp;&amp; diffY == 1) || (diffX == 1 &amp;&amp; diffY == 0)) {</span>
+<span class="pc bpc" id="L2400" title="4 of 8 branches missed.">                if ((diffX == 0 &amp;&amp; diffY == 1) || (diffX == 1 &amp;&amp; diffY == 0)) {</span>
 <span class="nc" id="L2401">                    continue;</span>
                 }
 <span class="fc" id="L2403">                int distSq = (diffX * diffX) + (diffY* diffY);</span>
@@ -2571,13 +2571,13 @@ import java.util.Set;
 <span class="fc" id="L2571">        int minDistSq = Integer.MAX_VALUE;</span>
 <span class="fc bfc" id="L2572" title="All 2 branches covered.">        for (PairInt p3 : set3) {</span>
 <span class="fc bfc" id="L2573" title="All 2 branches covered.">            for (PairInt p0 : set0) {</span>
-<span class="pc bpc" id="L2574" title="1 of 2 branches missed.">                if (p3.equals(p0)) {</span>
-<span class="nc" id="L2575">                    continue;</span>
+<span class="fc bfc" id="L2574" title="All 2 branches covered.">                if (p3.equals(p0)) {</span>
+<span class="fc" id="L2575">                    continue;</span>
                 }
 <span class="fc" id="L2577">                int diffX = Math.abs(p3.getX() - p0.getX());</span>
 <span class="fc" id="L2578">                int diffY = Math.abs(p3.getY() - p0.getY());</span>
-<span class="pc bpc" id="L2579" title="6 of 8 branches missed.">                if ((diffX == 0 &amp;&amp; diffY == 1) || (diffX == 1 &amp;&amp; diffY == 0)) {</span>
-<span class="nc" id="L2580">                    continue;</span>
+<span class="pc bpc" id="L2579" title="4 of 8 branches missed.">                if ((diffX == 0 &amp;&amp; diffY == 1) || (diffX == 1 &amp;&amp; diffY == 0)) {</span>
+<span class="fc" id="L2580">                    continue;</span>
                 }
 <span class="fc" id="L2582">                int distSq = (diffX * diffX) + (diffY* diffY);</span>
 <span class="pc bpc" id="L2583" title="1 of 2 branches missed.">                if (distSq &lt; minDistSq) {</span>
@@ -2587,10 +2587,10 @@ import java.util.Set;
                 }
 <span class="fc" id="L2588">            }</span>
 <span class="fc" id="L2589">        }</span>
-<span class="pc bpc" id="L2590" title="2 of 4 branches missed.">        if (s3 != null &amp;&amp; s0 != null) {</span>
+<span class="pc bpc" id="L2590" title="1 of 4 branches missed.">        if (s3 != null &amp;&amp; s0 != null) {</span>
 <span class="fc" id="L2591">            return new PairInt[]{s3, s0};</span>
         }
-<span class="nc" id="L2593">        return null;</span>
+<span class="fc" id="L2593">        return null;</span>
     }
 
     private PairInt[] findULWideDiagTopEndpoints(Set&lt;PairInt&gt; points, 
@@ -2742,11 +2742,11 @@ import java.util.Set;
 <span class="fc bfc" id="L2742" title="All 2 branches covered.">        if (!points.contains(p2)) {</span>
 <span class="fc" id="L2743">            return null;</span>
         }
-<span class="pc bpc" id="L2745" title="1 of 2 branches missed.">        if (!points.contains(p3)) {</span>
+<span class="fc bfc" id="L2745" title="All 2 branches covered.">        if (!points.contains(p3)) {</span>
 <span class="fc" id="L2746">            return null;</span>
         }
-<span class="nc bnc" id="L2748" title="All 2 branches missed.">        if (!points.contains(p11)) {</span>
-<span class="nc" id="L2749">            return null;</span>
+<span class="pc bpc" id="L2748" title="1 of 2 branches missed.">        if (!points.contains(p11)) {</span>
+<span class="fc" id="L2749">            return null;</span>
         }
 <span class="nc bnc" id="L2751" title="All 2 branches missed.">        if (!points.contains(p22)) {</span>
 <span class="nc" id="L2752">            return null;</span>
@@ -2818,11 +2818,11 @@ import java.util.Set;
 <span class="fc bfc" id="L2818" title="All 2 branches covered.">        if (!points.contains(p3)) {</span>
 <span class="fc" id="L2819">            return null;</span>
         }
-<span class="pc bpc" id="L2821" title="1 of 2 branches missed.">        if (!points.contains(p11)) {</span>
-<span class="nc" id="L2822">            return null;</span>
+<span class="fc bfc" id="L2821" title="All 2 branches covered.">        if (!points.contains(p11)) {</span>
+<span class="fc" id="L2822">            return null;</span>
         }
-<span class="pc bpc" id="L2824" title="1 of 2 branches missed.">        if (!points.contains(p22)) {</span>
-<span class="nc" id="L2825">            return null;</span>
+<span class="fc bfc" id="L2824" title="All 2 branches covered.">        if (!points.contains(p22)) {</span>
+<span class="fc" id="L2825">            return null;</span>
         }
         
         /*
@@ -3077,10 +3077,10 @@ import java.util.Set;
         // assert that sections does not contain any member of sections2
 <span class="fc bfc" id="L3078" title="All 2 branches covered.">        for (Routes r2: sections2) {</span>
 <span class="fc bfc" id="L3079" title="All 2 branches covered.">            for (Routes r: sections) {</span>
-<span class="pc bpc" id="L3080" title="1 of 2 branches missed.">                if (r.contains(r2)) {</span>
+<span class="fc bfc" id="L3080" title="All 2 branches covered.">                if (r.contains(r2)) {</span>
 <span class="fc" id="L3081">                    return false;</span>
                 }
-<span class="nc" id="L3083">            }</span>
+<span class="fc" id="L3083">            }</span>
 <span class="fc" id="L3084">        }</span>
 <span class="fc" id="L3085">        return true;</span>
     }

@@ -514,8 +514,8 @@ import thirdparty.HungarianAlgorithm;
 
 <span class="fc" id="L515">            int idx1 = match[i][0];</span>
 <span class="fc" id="L516">            int idx2 = match[i][1];</span>
-<span class="pc bpc" id="L517" title="1 of 4 branches missed.">            if (idx1 == -1 || idx2 == -1) {</span>
-<span class="fc" id="L518">                continue;</span>
+<span class="pc bpc" id="L517" title="2 of 4 branches missed.">            if (idx1 == -1 || idx2 == -1) {</span>
+<span class="nc" id="L518">                continue;</span>
             }
             
 <span class="fc bfc" id="L521" title="All 2 branches covered.">            if (idx2 &lt; idx1) {</span>
@@ -691,8 +691,8 @@ import thirdparty.HungarianAlgorithm;
             }
         }
         
-<span class="fc bfc" id="L694" title="All 2 branches covered.">        if (remove.size() == scales.size()) {</span>
-<span class="fc" id="L695">            return null;</span>
+<span class="pc bpc" id="L694" title="1 of 2 branches missed.">        if (remove.size() == scales.size()) {</span>
+<span class="nc" id="L695">            return null;</span>
         }
         
 <span class="fc bfc" id="L698" title="All 2 branches covered.">        if (!remove.isEmpty()) {</span>
@@ -1023,8 +1023,8 @@ import thirdparty.HungarianAlgorithm;
     private List&lt;Integer&gt; findOutliersUsingMedianOfDifferences(
         List&lt;? extends Number&gt; values) {
         
-<span class="pc bpc" id="L1026" title="1 of 2 branches missed.">        if (values.size() &lt; 3) {</span>
-<span class="nc" id="L1027">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L1026" title="All 2 branches covered.">        if (values.size() &lt; 3) {</span>
+<span class="fc" id="L1027">            return new ArrayList&lt;Integer&gt;();</span>
         }
         
         // number of permutations = n!/(2!*(n-2)! = n*(n-1)/2

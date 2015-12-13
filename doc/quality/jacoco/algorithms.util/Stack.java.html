@@ -50,11 +50,22 @@
 <span class="fc" id="L50">        return list.data;</span>
     }
     
-    public boolean isEmpty() {
-<span class="fc bfc" id="L54" title="All 2 branches covered.">        return (list == null);</span>
+    public T peekPopNext() {
+<span class="pc bpc" id="L54" title="2 of 4 branches missed.">        if (list == null || list.next == null) {</span>
+<span class="nc" id="L55">            return null;</span>
+        }
+<span class="fc" id="L57">        return list.next.data;</span>
     }
     
-<span class="fc" id="L57">    protected class Node&lt;S&gt; {</span>
+    public boolean isEmpty() {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        return (list == null);</span>
+    }
+    
+    public int size() {
+<span class="fc" id="L65">        return n;</span>
+    }
+    
+<span class="fc" id="L68">    protected class Node&lt;S&gt; {</span>
         Node&lt;S&gt; next = null;
         T data = null;
     }

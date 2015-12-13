@@ -3308,7 +3308,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L3308" title="All 2 branches covered.">            for (PairInt p2 : ones) {</span>
 <span class="fc" id="L3309">                int x = col + p2.getX();</span>
 <span class="fc" id="L3310">                int y = row + p2.getY();</span>
-<span class="pc bpc" id="L3311" title="2 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="pc bpc" id="L3311" title="1 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
 <span class="fc" id="L3312">                    foundPattern = false;</span>
 <span class="fc" id="L3313">                    break;</span>
                 }
@@ -4299,7 +4299,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L4299">                int diffYab = Math.abs(ya - yb);</span>
 <span class="fc" id="L4300">                int diffYbc = Math.abs(yb - yc);</span>
 
-<span class="pc bpc" id="L4302" title="2 of 10 branches missed.">                if ((diffYac == 1) &amp;&amp; (((diffYab == 0) &amp;&amp; (diffYbc == 1))</span>
+<span class="pc bpc" id="L4302" title="1 of 10 branches missed.">                if ((diffYac == 1) &amp;&amp; (((diffYab == 0) &amp;&amp; (diffYbc == 1))</span>
                     || ((diffYab == 1) &amp;&amp; (diffYbc == 0)))) {
                     
 <span class="pc bpc" id="L4305" title="4 of 8 branches missed.">                    if (((xa &lt; xb) &amp;&amp; (xb &lt; xc)) || ((xa &gt; xb) &amp;&amp; (xb &gt; xc))) {</span>

@@ -16,214 +16,341 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
 /**
  * miscellaneous boiler plate code
- * 
+ *
  * @author nichole
  */
-<span class="nc" id="L28">public class Misc {</span>
-    
-<span class="fc" id="L30">    public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
-<span class="fc" id="L31">    public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
-    
-<span class="fc" id="L33">    public static final int[] dx4 = new int[]{-1,  0, 1, 0};</span>
-<span class="fc" id="L34">    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};</span>
-    
+<span class="nc" id="L30">public class Misc {</span>
+
+<span class="fc" id="L32">    public static final int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="fc" id="L33">    public static final int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+
+<span class="fc" id="L35">    public static final int[] dx4 = new int[]{-1,  0, 1, 0};</span>
+<span class="fc" id="L36">    public static final int[] dy4 = new int[]{ 0, -1, 0, 1};</span>
+
     public static PairIntArray convertWithoutOrder(Set&lt;PairInt&gt; points) {
-<span class="fc" id="L37">        PairIntArray out = new PairIntArray(points.size());</span>
-<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L39">            out.add(p.getX(), p.getY());</span>
-<span class="fc" id="L40">        }</span>
-<span class="fc" id="L41">        return out;</span>
+<span class="fc" id="L39">        PairIntArray out = new PairIntArray(points.size());</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L41">            out.add(p.getX(), p.getY());</span>
+<span class="fc" id="L42">        }</span>
+<span class="fc" id="L43">        return out;</span>
     }
-    
+
     public static Set&lt;PairInt&gt; convert(PairIntArray points) {
-        
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L47">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L49">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
-        
-<span class="fc" id="L50">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
-        
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
-<span class="fc" id="L53">            out.add(new PairInt(points.getX(i), points.getY(i)));</span>
+
+<span class="fc" id="L52">        Set&lt;PairInt&gt; out = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (int i = 0; i &lt; points.getN(); ++i) {</span>
+<span class="fc" id="L55">            out.add(new PairInt(points.getX(i), points.getY(i)));</span>
         }
-        
-<span class="fc" id="L56">        return out;</span>
+
+<span class="fc" id="L58">        return out;</span>
     }
     
-    public static String persistToFile(String fileName, Set&lt;PairInt&gt; points) 
+    public static Map&lt;PairInt, Integer&gt; makePointIndexMap(PairIntArray edge) {
+        
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (edge == null) {</span>
+<span class="nc" id="L64">            throw new IllegalArgumentException(&quot;edge cannot be null&quot;);</span>
+        }
+        
+<span class="fc" id="L67">        Map&lt;PairInt, Integer&gt; map = new HashMap&lt;PairInt, Integer&gt;();</span>
+        
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; edge.getN(); ++i) {</span>
+<span class="fc" id="L70">            map.put(new PairInt(edge.getX(i), edge.getY(i)), Integer.valueOf(i));</span>
+        }
+        
+<span class="fc" id="L73">        return map;</span>
+    }
+
+    /**
+     * get the values of Math.sin(theta) for theta from 0 to Math.PI in 1 degree
+     * intervals.
+     * @return
+     */
+    public static double[] getSineThetaForPI() {
+<span class="nc" id="L82">        double d = 1. * Math.PI/180;</span>
+<span class="nc" id="L83">        double[] s = new double[180];</span>
+<span class="nc" id="L84">        double t = 0;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        for (int i = 0; i &lt; 180; ++i) {</span>
+<span class="nc" id="L86">            s[i] = Math.sin(t);</span>
+<span class="nc" id="L87">            t += d;</span>
+        }
+<span class="nc" id="L89">        return s;</span>
+    }
+    /**
+     * get the values of Math.cos(theta) for theta from 0 to Math.PI in 1 degree
+     * intervals.
+     * @return
+     */
+    public static double[] getCosineThetaForPI() {
+<span class="nc" id="L97">        double d = 1. * Math.PI/180;</span>
+<span class="nc" id="L98">        double[] c = new double[180];</span>
+<span class="nc" id="L99">        double t = 0;</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (int i = 0; i &lt; 180; ++i) {</span>
+<span class="nc" id="L101">            c[i] = Math.cos(t);</span>
+<span class="nc" id="L102">            t += d;</span>
+        }
+<span class="nc" id="L104">        return c;</span>
+    }
+
+    public static String persistToFile(String fileName, Set&lt;PairInt&gt; points)
         throws IOException {
-        
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (points == null) {</span>
-<span class="nc" id="L63">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
+
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (points == null) {</span>
+<span class="nc" id="L111">            throw new IllegalArgumentException(&quot;points cannot be null&quot;);</span>
         }
-                
-<span class="fc" id="L66">        String outFilePath = ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/&quot; +</span>
+
+<span class="fc" id="L114">        String outFilePath = ResourceFinder.findDirectory(&quot;bin&quot;) + &quot;/&quot; +</span>
             fileName;
-        
-<span class="fc" id="L69">        FileOutputStream fs = null;</span>
-<span class="fc" id="L70">        ObjectOutputStream os = null;</span>
-        
-        try {
-<span class="fc" id="L73">            File file = new File(outFilePath);</span>
-<span class="fc" id="L74">            file.delete();</span>
-<span class="fc" id="L75">            file.createNewFile();</span>
 
-<span class="fc" id="L77">            fs = new FileOutputStream(file);</span>
-<span class="fc" id="L78">            os = new ObjectOutputStream(fs);</span>
-                        
-<span class="fc" id="L80">            int count = 0;</span>
-            
-<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (PairInt point : points) {</span>
-                
-<span class="fc" id="L84">                os.writeInt(point.getX());</span>
-<span class="fc" id="L85">                os.writeInt(point.getY());</span>
-                
-<span class="fc bfc" id="L87" title="All 2 branches covered.">                if ((count % 10) == 0) {</span>
-<span class="fc" id="L88">                    os.flush();</span>
+<span class="fc" id="L117">        FileOutputStream fs = null;</span>
+<span class="fc" id="L118">        ObjectOutputStream os = null;</span>
+
+        try {
+<span class="fc" id="L121">            File file = new File(outFilePath);</span>
+<span class="fc" id="L122">            file.delete();</span>
+<span class="fc" id="L123">            file.createNewFile();</span>
+
+<span class="fc" id="L125">            fs = new FileOutputStream(file);</span>
+<span class="fc" id="L126">            os = new ObjectOutputStream(fs);</span>
+
+<span class="fc" id="L128">            int count = 0;</span>
+
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            for (PairInt point : points) {</span>
+
+<span class="fc" id="L132">                os.writeInt(point.getX());</span>
+<span class="fc" id="L133">                os.writeInt(point.getY());</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if ((count % 10) == 0) {</span>
+<span class="fc" id="L136">                    os.flush();</span>
                 }
-                
-<span class="fc" id="L91">                count++;</span>
-<span class="fc" id="L92">            }</span>
 
-<span class="fc" id="L94">            os.flush();</span>
+<span class="fc" id="L139">                count++;</span>
+<span class="fc" id="L140">            }</span>
+
+<span class="fc" id="L142">            os.flush();</span>
 
         } finally {
 
-<span class="pc bpc" id="L98" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L99">                os.close();</span>
+<span class="pc bpc" id="L146" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L147">                os.close();</span>
             }
-<span class="pc bpc" id="L101" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L102">                fs.close();</span>
-            }            
+<span class="pc bpc" id="L149" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L150">                fs.close();</span>
+            }
         }
-        
-<span class="fc" id="L106">        return outFilePath;</span>
+
+<span class="fc" id="L154">        return outFilePath;</span>
     }
-    
+
     public static PairIntArray deserializePairIntArray(String filePath) throws IOException {
-                    
-<span class="fc" id="L111">        FileInputStream fs = null;</span>
-<span class="fc" id="L112">        ObjectInputStream os = null;</span>
-        
-<span class="fc" id="L114">        PairIntArray out = new PairIntArray();</span>
-        
-        try {
-<span class="fc" id="L117">            File file = new File(filePath);</span>
 
-<span class="fc" id="L119">            fs = new FileInputStream(file);</span>
-<span class="fc" id="L120">            os = new ObjectInputStream(fs);</span>
-                        
+<span class="fc" id="L159">        FileInputStream fs = null;</span>
+<span class="fc" id="L160">        ObjectInputStream os = null;</span>
+
+<span class="fc" id="L162">        PairIntArray out = new PairIntArray();</span>
+
+        try {
+<span class="fc" id="L165">            File file = new File(filePath);</span>
+
+<span class="fc" id="L167">            fs = new FileInputStream(file);</span>
+<span class="fc" id="L168">            os = new ObjectInputStream(fs);</span>
+
             while (true) {
-<span class="fc" id="L123">                int x = os.readInt();</span>
-<span class="fc" id="L124">                int y = os.readInt();                </span>
-<span class="fc" id="L125">                out.add(x, y);</span>
-<span class="fc" id="L126">            }</span>
-<span class="fc" id="L127">        } catch (EOFException e) {</span>
+<span class="fc" id="L171">                int x = os.readInt();</span>
+<span class="fc" id="L172">                int y = os.readInt();</span>
+<span class="fc" id="L173">                out.add(x, y);</span>
+<span class="fc" id="L174">            }</span>
+<span class="fc" id="L175">        } catch (EOFException e) {</span>
             // expected
         } finally {
 
-<span class="pc bpc" id="L131" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L132">                os.close();</span>
+<span class="pc bpc" id="L179" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L180">                os.close();</span>
             }
-<span class="pc bpc" id="L134" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L135">                fs.close();</span>
-            }            
+<span class="pc bpc" id="L182" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L183">                fs.close();</span>
+            }
         }
-        
-<span class="fc" id="L139">        return out;</span>
+
+<span class="fc" id="L187">        return out;</span>
     }
-    
+
     public static Set&lt;PairInt&gt; deserializeSetPairInt(String filePath) throws IOException {
-                    
-<span class="fc" id="L144">        FileInputStream fs = null;</span>
-<span class="fc" id="L145">        ObjectInputStream os = null;</span>
-        
-<span class="fc" id="L147">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-        
-        try {
-<span class="fc" id="L150">            File file = new File(filePath);</span>
 
-<span class="fc" id="L152">            fs = new FileInputStream(file);</span>
-<span class="fc" id="L153">            os = new ObjectInputStream(fs);</span>
-                        
+<span class="fc" id="L192">        FileInputStream fs = null;</span>
+<span class="fc" id="L193">        ObjectInputStream os = null;</span>
+
+<span class="fc" id="L195">        Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+
+        try {
+<span class="fc" id="L198">            File file = new File(filePath);</span>
+
+<span class="fc" id="L200">            fs = new FileInputStream(file);</span>
+<span class="fc" id="L201">            os = new ObjectInputStream(fs);</span>
+
             while (true) {
-                
-<span class="fc" id="L157">                int x = os.readInt();</span>
-<span class="fc" id="L158">                int y = os.readInt();</span>
-                
-<span class="fc" id="L160">                PairInt p = new PairInt(x, y);</span>
-                
-<span class="fc" id="L162">                set.add(p);</span>
-<span class="fc" id="L163">            }</span>
-            
-<span class="fc" id="L165">        } catch (EOFException e) {</span>
+
+<span class="fc" id="L205">                int x = os.readInt();</span>
+<span class="fc" id="L206">                int y = os.readInt();</span>
+
+<span class="fc" id="L208">                PairInt p = new PairInt(x, y);</span>
+
+<span class="fc" id="L210">                set.add(p);</span>
+<span class="fc" id="L211">            }</span>
+
+<span class="fc" id="L213">        } catch (EOFException e) {</span>
             // expected
         } finally {
 
-<span class="pc bpc" id="L169" title="3 of 4 branches missed.">            if (os != null) {</span>
-<span class="pc" id="L170">                os.close();</span>
+<span class="pc bpc" id="L217" title="3 of 4 branches missed.">            if (os != null) {</span>
+<span class="pc" id="L218">                os.close();</span>
             }
-<span class="pc bpc" id="L172" title="3 of 4 branches missed.">            if (fs != null) {</span>
-<span class="pc" id="L173">                fs.close();</span>
-            }            
+<span class="pc bpc" id="L220" title="3 of 4 branches missed.">            if (fs != null) {</span>
+<span class="pc" id="L221">                fs.close();</span>
+            }
         }
-        
-<span class="fc" id="L177">        return set;</span>
+
+<span class="fc" id="L225">        return set;</span>
     }
-    
+
     public static int calculateSumOfEightNeighbors(GreyscaleImage img, int x, int y) {
-        
-<span class="nc" id="L182">        int sum = 0;</span>
-        
-<span class="nc bnc" id="L184" title="All 2 branches missed.">        for (int i = 0; i &lt; dx8.length; ++i) {</span>
-<span class="nc" id="L185">            int x1 = x + dx8[i];</span>
-<span class="nc" id="L186">            int y1 = y + dy8[i];</span>
-<span class="nc bnc" id="L187" title="All 6 branches missed.">            if (x1 &lt; 0 || y1 &lt; 0 || (x1 &gt; (img.getWidth() - 1)) || </span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">                (y1 &gt; (img.getHeight() - 1))) {</span>
-<span class="nc" id="L189">                continue;</span>
+
+<span class="nc" id="L230">        int sum = 0;</span>
+
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        for (int i = 0; i &lt; dx8.length; ++i) {</span>
+<span class="nc" id="L233">            int x1 = x + dx8[i];</span>
+<span class="nc" id="L234">            int y1 = y + dy8[i];</span>
+<span class="nc bnc" id="L235" title="All 6 branches missed.">            if (x1 &lt; 0 || y1 &lt; 0 || (x1 &gt; (img.getWidth() - 1)) ||</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                (y1 &gt; (img.getHeight() - 1))) {</span>
+<span class="nc" id="L237">                continue;</span>
             }
-<span class="nc" id="L191">            sum += img.getValue(x, y);</span>
+<span class="nc" id="L239">            sum += img.getValue(x, y);</span>
         }
-        
-<span class="nc" id="L194">        return sum;</span>
+
+<span class="nc" id="L242">        return sum;</span>
     }
-    
+
     /**
      * create x and y offsets for the neighbor points within d pixel radius.
      * The result is a two-dimensional array of length (2*d+1)^2 with the first
      * dimension being the x array and the 2nd dimension being the y array.
      * Note that the offset of (0,0) is in the middle of the arrays.
      * @param d the half radius of square of offsets, beginning at
-     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array 
+     * (-d,-d), (-d, -d+1),... to make a (2d+1)^2 two dimensional array
      * of offsets.
-     * @return 
+     * @return
      */
     public static float[][] createNeighborOffsets(int radiusFromCenter) {
-        
+
         //TODO: consider changing to use one dimensional array
-        
-<span class="fc" id="L211">        int n = 2*radiusFromCenter + 1;</span>
-        
-<span class="fc" id="L213">        float[][] xyout = new float[n*n][];</span>
-                
-<span class="fc" id="L215">        int count = 0;</span>
-<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (int x = -radiusFromCenter; x &lt;= radiusFromCenter; ++x) {</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">            for (int y = -radiusFromCenter; y &lt;= radiusFromCenter; ++y) {</span>
-                
-<span class="fc" id="L219">                xyout[count] = new float[]{x, y};</span>
-                
-<span class="fc" id="L221">                count++;</span>
+
+<span class="fc" id="L259">        int n = 2*radiusFromCenter + 1;</span>
+
+<span class="fc" id="L261">        float[][] xyout = new float[n*n][];</span>
+
+<span class="fc" id="L263">        int count = 0;</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        for (int x = -radiusFromCenter; x &lt;= radiusFromCenter; ++x) {</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">            for (int y = -radiusFromCenter; y &lt;= radiusFromCenter; ++y) {</span>
+
+<span class="fc" id="L267">                xyout[count] = new float[]{x, y};</span>
+
+<span class="fc" id="L269">                count++;</span>
             }
         }
-    
-<span class="fc" id="L225">        return xyout;</span>
+
+<span class="fc" id="L273">        return xyout;</span>
     }
 
+    public static Map&lt;Integer, Double&gt; getCosineThetaMapForPI() {
+
+<span class="nc" id="L278">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+
+<span class="nc" id="L280">        double d = 1. * Math.PI/180;</span>
+
+<span class="nc" id="L282">        double t = 0;</span>
+
+<span class="nc bnc" id="L284" title="All 2 branches missed.">        for (int i = 0; i &lt; 181; ++i) {</span>
+
+<span class="nc" id="L286">            double c = Math.cos(t);</span>
+
+<span class="nc" id="L288">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+
+<span class="nc" id="L290">            t += d;</span>
+        }
+
+<span class="nc" id="L293">        return map;</span>
+    }
+
+    public static Map&lt;Integer, Double&gt; getSineThetaMapForPI() {
+
+<span class="nc" id="L298">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+
+<span class="nc" id="L300">        double d = 1. * Math.PI/180;</span>
+
+<span class="nc" id="L302">        double t = 0;</span>
+
+<span class="nc bnc" id="L304" title="All 2 branches missed.">        for (int i = 0; i &lt; 181; ++i) {</span>
+
+<span class="nc" id="L306">            double c = Math.sin(t);</span>
+
+<span class="nc" id="L308">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+
+<span class="nc" id="L310">            t += d;</span>
+        }
+
+<span class="nc" id="L313">        return map;</span>
+    }
+
+    public static Map&lt;Integer, Double&gt; getCosineThetaMapForTwoPI() {
+        
+<span class="fc" id="L318">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+
+<span class="fc" id="L320">        double d = 1. * Math.PI/180;</span>
+
+<span class="fc" id="L322">        double t = 0;</span>
+
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        for (int i = 0; i &lt; 360; ++i) {</span>
+
+<span class="fc" id="L326">            double c = Math.cos(t);</span>
+
+<span class="fc" id="L328">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+
+<span class="fc" id="L330">            t += d;</span>
+        }
+
+<span class="fc" id="L333">        return map;</span>
+    }
+
+    public static Map&lt;Integer, Double&gt; getSineThetaMapForTwoPI() {
+        
+<span class="fc" id="L338">        Map&lt;Integer, Double&gt; map = new HashMap&lt;Integer, Double&gt;();</span>
+        
+<span class="fc" id="L340">        double d = 1. * Math.PI/180;</span>
+
+<span class="fc" id="L342">        double t = 0;</span>
+
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (int i = 0; i &lt; 360; ++i) {</span>
+
+<span class="fc" id="L346">            double c = Math.sin(t);</span>
+
+<span class="fc" id="L348">            map.put(Integer.valueOf(i), Double.valueOf(c));</span>
+
+<span class="fc" id="L350">            t += d;</span>
+        }
+
+<span class="fc" id="L353">        return map;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

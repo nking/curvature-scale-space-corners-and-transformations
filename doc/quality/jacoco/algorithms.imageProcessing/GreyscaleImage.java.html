@@ -713,18 +713,18 @@ import java.util.Arrays;
 
         GreyscaleImage img2;
         
-<span class="pc bpc" id="L716" title="1 of 2 branches missed.">        if (type.equals(Type.Bits32FullRangeInt)) {</span>
+<span class="nc bnc" id="L716" title="All 2 branches missed.">        if (type.equals(Type.Bits32FullRangeInt)) {</span>
 <span class="nc" id="L717">            img2 = new GreyscaleImage(width, height, type);</span>
 <span class="nc" id="L718">            System.arraycopy(a, 0, img2.a, 0, len);</span>
         } else {
-<span class="fc" id="L720">            img2 = new GreyscaleImage(width, height, Type.Bits32FullRangeInt);</span>
-<span class="fc bfc" id="L721" title="All 2 branches covered.">            for (int i = 0; i &lt; nPixels; ++i) {</span>
-<span class="fc" id="L722">                int v = getValue(i);</span>
-<span class="fc" id="L723">                img2.setValue(i, v);</span>
+<span class="nc" id="L720">            img2 = new GreyscaleImage(width, height, Type.Bits32FullRangeInt);</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">            for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="nc" id="L722">                int v = getValue(i);</span>
+<span class="nc" id="L723">                img2.setValue(i, v);</span>
             }
         }
            
-<span class="fc" id="L727">        return img2;</span>
+<span class="nc" id="L727">        return img2;</span>
     }
     
     public GreyscaleImage createWithDimensions() {

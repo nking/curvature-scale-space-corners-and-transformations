@@ -374,42 +374,42 @@ import java.util.logging.Logger;
         float binWidth, 
         float[] values, float[] valueErrors) {
 
-<span class="pc bpc" id="L377" title="3 of 6 branches missed.">        if (values == null || valueErrors == null || </span>
+<span class="nc bnc" id="L377" title="All 6 branches missed.">        if (values == null || valueErrors == null || </span>
             values.length != valueErrors.length) {
             
 <span class="nc" id="L380">            throw new IllegalArgumentException(</span>
                 &quot;values and valueErrors cannot be null and must be the same length&quot;);
         }
         
-<span class="fc" id="L384">        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);</span>
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (nBins &lt; 0) {</span>
+<span class="nc" id="L384">        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">        if (nBins &lt; 0) {</span>
 <span class="nc" id="L386">            nBins *= -1;</span>
         }
 
-<span class="fc" id="L389">        float[] xHist = new float[nBins];</span>
-<span class="fc" id="L390">        int[] yHist = new int[nBins];</span>
+<span class="nc" id="L389">        float[] xHist = new float[nBins];</span>
+<span class="nc" id="L390">        int[] yHist = new int[nBins];</span>
         
-<span class="fc" id="L392">        Histogram.createHistogram(values, nBins, minX, maxX, xHist, </span>
+<span class="nc" id="L392">        Histogram.createHistogram(values, nBins, minX, maxX, xHist, </span>
             yHist, binWidth);
 
-<span class="fc" id="L395">        float[] yHistFloat = new float[yHist.length];</span>
-<span class="fc bfc" id="L396" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
-<span class="fc" id="L397">            yHistFloat[i] = (float) yHist[i];</span>
+<span class="nc" id="L395">        float[] yHistFloat = new float[yHist.length];</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="nc" id="L397">            yHistFloat[i] = (float) yHist[i];</span>
         }
 
-<span class="fc" id="L400">        float[] yErrors = new float[xHist.length];</span>
-<span class="fc" id="L401">        float[] xErrors = new float[xHist.length];</span>
+<span class="nc" id="L400">        float[] yErrors = new float[xHist.length];</span>
+<span class="nc" id="L401">        float[] xErrors = new float[xHist.length];</span>
 
-<span class="fc" id="L403">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
+<span class="nc" id="L403">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
 
-<span class="fc" id="L405">        HistogramHolder histogram = new HistogramHolder();</span>
-<span class="fc" id="L406">        histogram.setXHist(xHist);</span>
-<span class="fc" id="L407">        histogram.setYHist(yHist);</span>
-<span class="fc" id="L408">        histogram.setYHistFloat(yHistFloat);</span>
-<span class="fc" id="L409">        histogram.setYErrors(yErrors);</span>
-<span class="fc" id="L410">        histogram.setXErrors(xErrors);</span>
+<span class="nc" id="L405">        HistogramHolder histogram = new HistogramHolder();</span>
+<span class="nc" id="L406">        histogram.setXHist(xHist);</span>
+<span class="nc" id="L407">        histogram.setYHist(yHist);</span>
+<span class="nc" id="L408">        histogram.setYHistFloat(yHistFloat);</span>
+<span class="nc" id="L409">        histogram.setYErrors(yErrors);</span>
+<span class="nc" id="L410">        histogram.setXErrors(xErrors);</span>
         
-<span class="fc" id="L412">        return histogram;</span>
+<span class="nc" id="L412">        return histogram;</span>
     }
     
     public static HistogramHolder createSimpleHistogram(int binWidth, 
@@ -1039,282 +1039,288 @@ import java.util.logging.Logger;
 <span class="fc" id="L1039">        return freqMap;</span>
     }
     
+    /**
+     * create an array of values and frequency for given img, 
+     * where returned points are x = value, y = count
+     * @param img
+     * @return 
+     */
     public static PairIntArray createADescendingSortbyFrequencyArray(GreyscaleImage img) {
         
-<span class="fc" id="L1044">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(img);</span>
+<span class="fc" id="L1050">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(img);</span>
         
-<span class="fc" id="L1046">        int[] v = new int[freqMap.size()];</span>
-<span class="fc" id="L1047">        int[] c = new int[freqMap.size()];</span>
+<span class="fc" id="L1052">        int[] v = new int[freqMap.size()];</span>
+<span class="fc" id="L1053">        int[] c = new int[freqMap.size()];</span>
         
-<span class="fc" id="L1049">        int idx = 0;</span>
+<span class="fc" id="L1055">        int idx = 0;</span>
         
-<span class="fc" id="L1051">        int cMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1057">        int cMax = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L1053">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
-<span class="fc bfc" id="L1054" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1059">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
+<span class="fc bfc" id="L1060" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="fc" id="L1056">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
+<span class="fc" id="L1062">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
             
-<span class="fc" id="L1058">            Integer value = entry.getKey();</span>
-<span class="fc" id="L1059">            Integer count = entry.getValue();</span>
+<span class="fc" id="L1064">            Integer value = entry.getKey();</span>
+<span class="fc" id="L1065">            Integer count = entry.getValue();</span>
             
-<span class="fc" id="L1061">            v[idx] = value.intValue();</span>
-<span class="fc" id="L1062">            c[idx] = count.intValue();</span>
+<span class="fc" id="L1067">            v[idx] = value.intValue();</span>
+<span class="fc" id="L1068">            c[idx] = count.intValue();</span>
             
-<span class="fc bfc" id="L1064" title="All 2 branches covered.">            if (c[idx] &gt; cMax) {</span>
-<span class="fc" id="L1065">                cMax = c[idx];</span>
+<span class="fc bfc" id="L1070" title="All 2 branches covered.">            if (c[idx] &gt; cMax) {</span>
+<span class="fc" id="L1071">                cMax = c[idx];</span>
             }
             
-<span class="fc" id="L1068">            idx++;</span>
-<span class="fc" id="L1069">        }</span>
+<span class="fc" id="L1074">            idx++;</span>
+<span class="fc" id="L1075">        }</span>
         
-<span class="pc bpc" id="L1071" title="3 of 4 branches missed.">        if ((cMax &gt; c.length) || (cMax &gt; 10000000)) {</span>
-<span class="fc" id="L1072">            MultiArrayMergeSort.sortByDecr(c, v);</span>
+<span class="pc bpc" id="L1077" title="3 of 4 branches missed.">        if ((cMax &gt; c.length) || (cMax &gt; 10000000)) {</span>
+<span class="fc" id="L1078">            MultiArrayMergeSort.sortByDecr(c, v);</span>
         } else {
-<span class="nc" id="L1074">            CountingSort.sortByDecr(c, v, cMax);</span>
+<span class="nc" id="L1080">            CountingSort.sortByDecr(c, v, cMax);</span>
         }
         
-<span class="fc" id="L1077">        PairIntArray p = new PairIntArray();</span>
+<span class="fc" id="L1083">        PairIntArray p = new PairIntArray();</span>
         
-<span class="fc bfc" id="L1079" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
-<span class="fc" id="L1080">            p.add(v[i], c[i]);</span>
+<span class="fc bfc" id="L1085" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
+<span class="fc" id="L1086">            p.add(v[i], c[i]);</span>
         }
         
-<span class="fc" id="L1083">        return p;</span>
+<span class="fc" id="L1089">        return p;</span>
     }
     
     public static PairIntArray createADescendingSortbyFrequencyArray(
         Set&lt;PairInt&gt; points, GreyscaleImage img) {
         
-<span class="fc" id="L1089">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(points, img);</span>
+<span class="fc" id="L1095">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(points, img);</span>
         
-<span class="fc" id="L1091">        int[] v = new int[freqMap.size()];</span>
-<span class="fc" id="L1092">        int[] c = new int[freqMap.size()];</span>
+<span class="fc" id="L1097">        int[] v = new int[freqMap.size()];</span>
+<span class="fc" id="L1098">        int[] c = new int[freqMap.size()];</span>
         
-<span class="fc" id="L1094">        int idx = 0;</span>
+<span class="fc" id="L1100">        int idx = 0;</span>
         
-<span class="fc" id="L1096">        int cMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1102">        int cMax = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L1098">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
-<span class="fc bfc" id="L1099" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1104">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
+<span class="fc bfc" id="L1105" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="fc" id="L1101">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
+<span class="fc" id="L1107">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
             
-<span class="fc" id="L1103">            Integer value = entry.getKey();</span>
-<span class="fc" id="L1104">            Integer count = entry.getValue();</span>
+<span class="fc" id="L1109">            Integer value = entry.getKey();</span>
+<span class="fc" id="L1110">            Integer count = entry.getValue();</span>
             
-<span class="fc" id="L1106">            v[idx] = value.intValue();</span>
-<span class="fc" id="L1107">            c[idx] = count.intValue();</span>
+<span class="fc" id="L1112">            v[idx] = value.intValue();</span>
+<span class="fc" id="L1113">            c[idx] = count.intValue();</span>
             
-<span class="fc bfc" id="L1109" title="All 2 branches covered.">            if (c[idx] &gt; cMax) {</span>
-<span class="fc" id="L1110">                cMax = c[idx];</span>
+<span class="fc bfc" id="L1115" title="All 2 branches covered.">            if (c[idx] &gt; cMax) {</span>
+<span class="fc" id="L1116">                cMax = c[idx];</span>
             }
             
-<span class="fc" id="L1113">            idx++;</span>
-<span class="fc" id="L1114">        }</span>
+<span class="fc" id="L1119">            idx++;</span>
+<span class="fc" id="L1120">        }</span>
         
-<span class="pc bpc" id="L1116" title="3 of 4 branches missed.">        if ((cMax &gt; c.length) || (cMax &gt; 10000000)) {</span>
-<span class="fc" id="L1117">            MultiArrayMergeSort.sortByDecr(c, v);</span>
+<span class="pc bpc" id="L1122" title="3 of 4 branches missed.">        if ((cMax &gt; c.length) || (cMax &gt; 10000000)) {</span>
+<span class="fc" id="L1123">            MultiArrayMergeSort.sortByDecr(c, v);</span>
         } else {
-<span class="nc" id="L1119">            CountingSort.sortByDecr(c, v, cMax);</span>
+<span class="nc" id="L1125">            CountingSort.sortByDecr(c, v, cMax);</span>
         }
         
-<span class="fc" id="L1122">        PairIntArray p = new PairIntArray();</span>
+<span class="fc" id="L1128">        PairIntArray p = new PairIntArray();</span>
         
-<span class="fc bfc" id="L1124" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
-<span class="fc" id="L1125">            p.add(v[i], c[i]);</span>
+<span class="fc bfc" id="L1130" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
+<span class="fc" id="L1131">            p.add(v[i], c[i]);</span>
         }
         
-<span class="fc" id="L1128">        return p;</span>
+<span class="fc" id="L1134">        return p;</span>
     }
     
     public static PairIntArray createADescendingSortByKeyArray(GreyscaleImage img) {
         
-<span class="fc" id="L1133">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(img);</span>
+<span class="fc" id="L1139">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(img);</span>
         
-<span class="fc" id="L1135">        int[] v = new int[freqMap.size()];</span>
-<span class="fc" id="L1136">        int[] c = new int[freqMap.size()];</span>
+<span class="fc" id="L1141">        int[] v = new int[freqMap.size()];</span>
+<span class="fc" id="L1142">        int[] c = new int[freqMap.size()];</span>
         
-<span class="fc" id="L1138">        int idx = 0;</span>
+<span class="fc" id="L1144">        int idx = 0;</span>
         
-<span class="fc" id="L1140">        int vMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1146">        int vMax = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L1142">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
-<span class="fc bfc" id="L1143" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1148">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
+<span class="fc bfc" id="L1149" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="fc" id="L1145">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
+<span class="fc" id="L1151">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
             
-<span class="fc" id="L1147">            Integer value = entry.getKey();</span>
-<span class="fc" id="L1148">            Integer count = entry.getValue();</span>
+<span class="fc" id="L1153">            Integer value = entry.getKey();</span>
+<span class="fc" id="L1154">            Integer count = entry.getValue();</span>
             
-<span class="fc" id="L1150">            v[idx] = value.intValue();</span>
-<span class="fc" id="L1151">            c[idx] = count.intValue();</span>
+<span class="fc" id="L1156">            v[idx] = value.intValue();</span>
+<span class="fc" id="L1157">            c[idx] = count.intValue();</span>
             
-<span class="pc bpc" id="L1153" title="1 of 2 branches missed.">            if (v[idx] &gt; vMax) {</span>
-<span class="fc" id="L1154">                vMax = v[idx];</span>
+<span class="pc bpc" id="L1159" title="1 of 2 branches missed.">            if (v[idx] &gt; vMax) {</span>
+<span class="fc" id="L1160">                vMax = v[idx];</span>
             }
             
-<span class="fc" id="L1157">            idx++;</span>
-<span class="fc" id="L1158">        }</span>
+<span class="fc" id="L1163">            idx++;</span>
+<span class="fc" id="L1164">        }</span>
         
-<span class="pc bpc" id="L1160" title="1 of 4 branches missed.">        if ((vMax &gt; v.length) || (vMax &gt; 10000000)) {</span>
-<span class="fc" id="L1161">            MultiArrayMergeSort.sortByDecr(v, c);</span>
+<span class="pc bpc" id="L1166" title="1 of 4 branches missed.">        if ((vMax &gt; v.length) || (vMax &gt; 10000000)) {</span>
+<span class="fc" id="L1167">            MultiArrayMergeSort.sortByDecr(v, c);</span>
         } else {
-<span class="fc" id="L1163">            CountingSort.sortByDecr(v, c, vMax);</span>
+<span class="fc" id="L1169">            CountingSort.sortByDecr(v, c, vMax);</span>
         }
         
-<span class="fc" id="L1166">        PairIntArray p = new PairIntArray();</span>
+<span class="fc" id="L1172">        PairIntArray p = new PairIntArray();</span>
         
-<span class="fc bfc" id="L1168" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
-<span class="fc" id="L1169">            p.add(v[i], c[i]);</span>
+<span class="fc bfc" id="L1174" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
+<span class="fc" id="L1175">            p.add(v[i], c[i]);</span>
         }
         
-<span class="fc" id="L1172">        return p;</span>
+<span class="fc" id="L1178">        return p;</span>
     }
 
     public static PairIntArray createADescendingSortByKeyArray(
         Set&lt;PairInt&gt; points, GreyscaleImage img) {
         
-<span class="fc" id="L1178">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(points, img);</span>
+<span class="fc" id="L1184">        Map&lt;Integer, Integer&gt; freqMap = createAFrequencyMap(points, img);</span>
         
-<span class="fc" id="L1180">        int[] v = new int[freqMap.size()];</span>
-<span class="fc" id="L1181">        int[] c = new int[freqMap.size()];</span>
+<span class="fc" id="L1186">        int[] v = new int[freqMap.size()];</span>
+<span class="fc" id="L1187">        int[] c = new int[freqMap.size()];</span>
         
-<span class="fc" id="L1183">        int idx = 0;</span>
+<span class="fc" id="L1189">        int idx = 0;</span>
         
-<span class="fc" id="L1185">        int vMax = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1191">        int vMax = Integer.MIN_VALUE;</span>
         
-<span class="fc" id="L1187">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
-<span class="fc bfc" id="L1188" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1193">        Iterator&lt;Entry&lt;Integer, Integer&gt; &gt; iter = freqMap.entrySet().iterator();</span>
+<span class="fc bfc" id="L1194" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
             
-<span class="fc" id="L1190">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
+<span class="fc" id="L1196">            Entry&lt;Integer, Integer&gt; entry = iter.next();</span>
             
-<span class="fc" id="L1192">            Integer value = entry.getKey();</span>
-<span class="fc" id="L1193">            Integer count = entry.getValue();</span>
+<span class="fc" id="L1198">            Integer value = entry.getKey();</span>
+<span class="fc" id="L1199">            Integer count = entry.getValue();</span>
             
-<span class="fc" id="L1195">            v[idx] = value.intValue();</span>
-<span class="fc" id="L1196">            c[idx] = count.intValue();</span>
+<span class="fc" id="L1201">            v[idx] = value.intValue();</span>
+<span class="fc" id="L1202">            c[idx] = count.intValue();</span>
             
-<span class="pc bpc" id="L1198" title="1 of 2 branches missed.">            if (v[idx] &gt; vMax) {</span>
-<span class="fc" id="L1199">                vMax = v[idx];</span>
+<span class="pc bpc" id="L1204" title="1 of 2 branches missed.">            if (v[idx] &gt; vMax) {</span>
+<span class="fc" id="L1205">                vMax = v[idx];</span>
             }
             
-<span class="fc" id="L1202">            idx++;</span>
-<span class="fc" id="L1203">        }</span>
+<span class="fc" id="L1208">            idx++;</span>
+<span class="fc" id="L1209">        }</span>
         
-<span class="pc bpc" id="L1205" title="1 of 4 branches missed.">        if ((vMax &gt; v.length) || (vMax &gt; 10000000)) {</span>
-<span class="fc" id="L1206">            MultiArrayMergeSort.sortByDecr(v, c);</span>
+<span class="pc bpc" id="L1211" title="1 of 4 branches missed.">        if ((vMax &gt; v.length) || (vMax &gt; 10000000)) {</span>
+<span class="fc" id="L1212">            MultiArrayMergeSort.sortByDecr(v, c);</span>
         } else {
-<span class="fc" id="L1208">            CountingSort.sortByDecr(v, c, vMax);</span>
+<span class="fc" id="L1214">            CountingSort.sortByDecr(v, c, vMax);</span>
         }
         
-<span class="fc" id="L1211">        PairIntArray p = new PairIntArray();</span>
+<span class="fc" id="L1217">        PairIntArray p = new PairIntArray();</span>
         
-<span class="fc bfc" id="L1213" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
-<span class="fc" id="L1214">            p.add(v[i], c[i]);</span>
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; i++) {</span>
+<span class="fc" id="L1220">            p.add(v[i], c[i]);</span>
         }
         
-<span class="fc" id="L1217">        return p;</span>
+<span class="fc" id="L1223">        return p;</span>
     }
     
     public static float measureFWHMOfStrongestPeak(HistogramHolder hist) {
         
-<span class="nc bnc" id="L1222" title="All 2 branches missed.">        if (hist == null) {</span>
-<span class="nc" id="L1223">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
+<span class="nc bnc" id="L1228" title="All 2 branches missed.">        if (hist == null) {</span>
+<span class="nc" id="L1229">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L1226">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L1232">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="nc" id="L1228">        return measureFWHM(hist, yMaxIdx);</span>
+<span class="nc" id="L1234">        return measureFWHM(hist, yMaxIdx);</span>
     }
     
     public static float[] measureFWHMOfAllPeaks(HistogramHolder hist, float frac) {
         
-<span class="nc bnc" id="L1233" title="All 2 branches missed.">        if (hist == null) {</span>
-<span class="nc" id="L1234">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
+<span class="nc bnc" id="L1239" title="All 2 branches missed.">        if (hist == null) {</span>
+<span class="nc" id="L1240">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L1237">        List&lt;Integer&gt; yPeakIndexes = MiscMath.findStrongPeakIndexes(hist, frac);</span>
+<span class="nc" id="L1243">        List&lt;Integer&gt; yPeakIndexes = MiscMath.findStrongPeakIndexes(hist, frac);</span>
 
-<span class="nc" id="L1239">        float[] fwhms = new float[yPeakIndexes.size()];</span>
+<span class="nc" id="L1245">        float[] fwhms = new float[yPeakIndexes.size()];</span>
         
-<span class="nc bnc" id="L1241" title="All 2 branches missed.">        for (int i = 0; i &lt; fwhms.length; i++) {</span>
+<span class="nc bnc" id="L1247" title="All 2 branches missed.">        for (int i = 0; i &lt; fwhms.length; i++) {</span>
             
-<span class="nc" id="L1243">            int yPeakIdx = yPeakIndexes.get(i).intValue();</span>
+<span class="nc" id="L1249">            int yPeakIdx = yPeakIndexes.get(i).intValue();</span>
             
-<span class="nc" id="L1245">            fwhms[i] = measureFWHM(hist, yPeakIdx);</span>
+<span class="nc" id="L1251">            fwhms[i] = measureFWHM(hist, yPeakIdx);</span>
         }
         
-<span class="nc" id="L1248">        return fwhms;</span>
+<span class="nc" id="L1254">        return fwhms;</span>
     }
     
     public static float measureFWHM(HistogramHolder hist, int yPeakIndex) {
         
-<span class="nc bnc" id="L1253" title="All 2 branches missed.">        if (hist == null) {</span>
-<span class="nc" id="L1254">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
+<span class="nc bnc" id="L1259" title="All 2 branches missed.">        if (hist == null) {</span>
+<span class="nc" id="L1260">            throw new IllegalArgumentException(&quot;hist cannot be null&quot;);</span>
         }
                 
-<span class="nc bnc" id="L1257" title="All 4 branches missed.">        if ((yPeakIndex == -1) || (yPeakIndex &gt; (hist.getXHist().length - 1))) {</span>
-<span class="nc" id="L1258">            return 0;</span>
+<span class="nc bnc" id="L1263" title="All 4 branches missed.">        if ((yPeakIndex == -1) || (yPeakIndex &gt; (hist.getXHist().length - 1))) {</span>
+<span class="nc" id="L1264">            return 0;</span>
         }
         
-<span class="nc" id="L1261">        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;</span>
+<span class="nc" id="L1267">        float halfPeak = hist.getYHist()[yPeakIndex]/2.f;</span>
         
-<span class="nc" id="L1263">        float x0 = Float.MIN_VALUE;</span>
-<span class="nc bnc" id="L1264" title="All 2 branches missed.">        if (yPeakIndex == 0) {</span>
-<span class="nc" id="L1265">            x0 = hist.getXHist()[0];</span>
+<span class="nc" id="L1269">        float x0 = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L1270" title="All 2 branches missed.">        if (yPeakIndex == 0) {</span>
+<span class="nc" id="L1271">            x0 = hist.getXHist()[0];</span>
         } else {
-<span class="nc bnc" id="L1267" title="All 2 branches missed.">            for (int i = 0; i &lt;= yPeakIndex; i++) {</span>
-<span class="nc" id="L1268">                float y = hist.getYHistFloat()[i];</span>
-<span class="nc bnc" id="L1269" title="All 2 branches missed.">                if (y == halfPeak) {</span>
-<span class="nc" id="L1270">                    x0 = hist.getXHist()[i];</span>
-<span class="nc bnc" id="L1271" title="All 2 branches missed.">                } else if (y &gt; halfPeak) {</span>
-<span class="nc bnc" id="L1272" title="All 2 branches missed.">                    if (i == 0) {</span>
-<span class="nc" id="L1273">                        x0 = hist.getXHist()[0];</span>
+<span class="nc bnc" id="L1273" title="All 2 branches missed.">            for (int i = 0; i &lt;= yPeakIndex; i++) {</span>
+<span class="nc" id="L1274">                float y = hist.getYHistFloat()[i];</span>
+<span class="nc bnc" id="L1275" title="All 2 branches missed.">                if (y == halfPeak) {</span>
+<span class="nc" id="L1276">                    x0 = hist.getXHist()[i];</span>
+<span class="nc bnc" id="L1277" title="All 2 branches missed.">                } else if (y &gt; halfPeak) {</span>
+<span class="nc bnc" id="L1278" title="All 2 branches missed.">                    if (i == 0) {</span>
+<span class="nc" id="L1279">                        x0 = hist.getXHist()[0];</span>
                     } else {
                         // interpret between i and i-1
-<span class="nc" id="L1276">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
-<span class="nc" id="L1277">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
-<span class="nc" id="L1278">                        float dy0h = y - halfPeak;</span>
-<span class="nc" id="L1279">                        float ratio = dy0h/dy01;</span>
-<span class="nc" id="L1280">                        x0 = hist.getXHist()[i] - (dx01 * ratio);</span>
+<span class="nc" id="L1282">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
+<span class="nc" id="L1283">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
+<span class="nc" id="L1284">                        float dy0h = y - halfPeak;</span>
+<span class="nc" id="L1285">                        float ratio = dy0h/dy01;</span>
+<span class="nc" id="L1286">                        x0 = hist.getXHist()[i] - (dx01 * ratio);</span>
                     }
-<span class="nc" id="L1282">                    break;</span>
+<span class="nc" id="L1288">                    break;</span>
                 }
             }
         }
         
-<span class="nc" id="L1287">        float x1 = Float.MIN_VALUE;</span>
-<span class="nc bnc" id="L1288" title="All 2 branches missed.">        if (yPeakIndex == (hist.getYHist().length - 1)) {</span>
-<span class="nc" id="L1289">            x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
+<span class="nc" id="L1293">        float x1 = Float.MIN_VALUE;</span>
+<span class="nc bnc" id="L1294" title="All 2 branches missed.">        if (yPeakIndex == (hist.getYHist().length - 1)) {</span>
+<span class="nc" id="L1295">            x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
         } else {
-<span class="nc bnc" id="L1291" title="All 2 branches missed.">            for (int i = (yPeakIndex + 1); i &lt; hist.getYHist().length; i++) {    </span>
-<span class="nc" id="L1292">                float y = hist.getYHist()[i];</span>
-<span class="nc bnc" id="L1293" title="All 2 branches missed.">                if (y == halfPeak) {</span>
-<span class="nc" id="L1294">                    x1 = hist.getXHist()[i];</span>
-<span class="nc bnc" id="L1295" title="All 2 branches missed.">                } else if (y &lt; halfPeak) {</span>
-<span class="nc bnc" id="L1296" title="All 2 branches missed.">                    if (i == (hist.getYHist().length - 1)) {</span>
-<span class="nc" id="L1297">                        x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
+<span class="nc bnc" id="L1297" title="All 2 branches missed.">            for (int i = (yPeakIndex + 1); i &lt; hist.getYHist().length; i++) {    </span>
+<span class="nc" id="L1298">                float y = hist.getYHist()[i];</span>
+<span class="nc bnc" id="L1299" title="All 2 branches missed.">                if (y == halfPeak) {</span>
+<span class="nc" id="L1300">                    x1 = hist.getXHist()[i];</span>
+<span class="nc bnc" id="L1301" title="All 2 branches missed.">                } else if (y &lt; halfPeak) {</span>
+<span class="nc bnc" id="L1302" title="All 2 branches missed.">                    if (i == (hist.getYHist().length - 1)) {</span>
+<span class="nc" id="L1303">                        x1 = hist.getXHist()[(hist.getYHist().length - 1)];</span>
                     } else {
                         // interpret between i and i-1
-<span class="nc" id="L1300">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
-<span class="nc" id="L1301">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
-<span class="nc" id="L1302">                        float dy0h = y - halfPeak;</span>
-<span class="nc" id="L1303">                        float ratio = dy0h/dy01;</span>
-<span class="nc" id="L1304">                        x1 = hist.getXHist()[i] - (dx01 * ratio);</span>
+<span class="nc" id="L1306">                        float dx01 = hist.getXHist()[i] - hist.getXHist()[i - 1];</span>
+<span class="nc" id="L1307">                        float dy01 = y - hist.getYHistFloat()[i - 1];</span>
+<span class="nc" id="L1308">                        float dy0h = y - halfPeak;</span>
+<span class="nc" id="L1309">                        float ratio = dy0h/dy01;</span>
+<span class="nc" id="L1310">                        x1 = hist.getXHist()[i] - (dx01 * ratio);</span>
                     }
-<span class="nc" id="L1306">                    break;</span>
+<span class="nc" id="L1312">                    break;</span>
                 }
             }
         }
         
-<span class="nc bnc" id="L1311" title="All 4 branches missed.">        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {</span>
-<span class="nc" id="L1312">            return 0;</span>
+<span class="nc bnc" id="L1317" title="All 4 branches missed.">        if ((x0 == Float.MIN_VALUE) || (x1 == Float.MIN_VALUE)) {</span>
+<span class="nc" id="L1318">            return 0;</span>
         }
         
-<span class="nc" id="L1315">        float fwhm = x1 - x0;</span>
+<span class="nc" id="L1321">        float fwhm = x1 - x0;</span>
             
-<span class="nc" id="L1317">        return fwhm;</span>
+<span class="nc" id="L1323">        return fwhm;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

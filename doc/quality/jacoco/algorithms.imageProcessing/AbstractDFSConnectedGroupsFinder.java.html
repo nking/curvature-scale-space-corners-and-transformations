@@ -45,57 +45,85 @@ public abstract class AbstractDFSConnectedGroupsFinder {
 <span class="nc" id="L45">    }</span>
 
     protected void processPair(PairInt uPoint, PairInt vPoint) {
-<span class="fc" id="L48">        Integer groupId = pointToGroupMap.get(uPoint);</span>
-<span class="fc bfc" id="L49" title="All 4 branches covered.">        if ((groupId != null) &amp;&amp; (pointToGroupMap.get(vPoint) == null)) {</span>
-<span class="fc" id="L50">            groupMembership.get(groupId).add(vPoint);</span>
-<span class="fc" id="L51">            pointToGroupMap.put(vPoint, groupId);</span>
-<span class="pc bpc" id="L52" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vPoint) != null)) {</span>
-<span class="nc" id="L53">            groupId = pointToGroupMap.get(vPoint);</span>
-<span class="nc" id="L54">            groupMembership.get(groupId).add(uPoint);</span>
-<span class="nc" id="L55">            pointToGroupMap.put(uPoint, groupId);</span>
-<span class="pc bpc" id="L56" title="1 of 4 branches missed.">        } else if ((groupId == null) &amp;&amp; (pointToGroupMap.get(vPoint) == null)) {</span>
-<span class="fc" id="L57">            groupId = Integer.valueOf(groupMembership.size());</span>
-<span class="fc" id="L58">            pointToGroupMap.put(uPoint, groupId);</span>
-<span class="fc" id="L59">            pointToGroupMap.put(vPoint, groupId);</span>
-<span class="fc" id="L60">            Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L61">            set.add(uPoint);</span>
-<span class="fc" id="L62">            set.add(vPoint);</span>
-<span class="fc" id="L63">            groupMembership.add(set);</span>
+<span class="fc" id="L48">        Integer uGroupId = pointToGroupMap.get(uPoint);</span>
+<span class="fc" id="L49">        Integer vGroupId = pointToGroupMap.get(vPoint);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (uGroupId == null) {</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            if (vGroupId == null) {</span>
+<span class="fc" id="L52">                uGroupId = Integer.valueOf(groupMembership.size());</span>
+<span class="fc" id="L53">                pointToGroupMap.put(uPoint, uGroupId);</span>
+<span class="fc" id="L54">                pointToGroupMap.put(vPoint, uGroupId);</span>
+<span class="fc" id="L55">                Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L56">                set.add(uPoint);</span>
+<span class="fc" id="L57">                set.add(vPoint);</span>
+<span class="fc" id="L58">                groupMembership.add(set);</span>
+<span class="fc" id="L59">            } else {</span>
+<span class="nc" id="L60">                groupMembership.get(vGroupId).add(uPoint);</span>
+<span class="nc" id="L61">                pointToGroupMap.put(uPoint, vGroupId);</span>
+            }
+        } else {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (vGroupId == null) {</span>
+<span class="fc" id="L65">                groupMembership.get(uGroupId).add(vPoint);</span>
+<span class="fc" id="L66">                pointToGroupMap.put(vPoint, uGroupId);</span>
+            } else {
+                // else vGroupId == uGroupId
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">                if (!vGroupId.equals(uGroupId)) {</span>
+                    // merge groups
+<span class="nc" id="L71">                    Set&lt;PairInt&gt; uGroup = groupMembership.get(uGroupId);</span>
+<span class="nc" id="L72">                    Set&lt;PairInt&gt; vGroup = groupMembership.get(vGroupId);</span>
+<span class="nc" id="L73">                    int nU = uGroup.size();</span>
+<span class="nc" id="L74">                    int nV = vGroup.size();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">                    if (nU &gt;= nV) {</span>
+                        // merge v into u
+<span class="nc" id="L77">                        uGroup.addAll(vGroup);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                        for (PairInt p : vGroup) {</span>
+<span class="nc" id="L79">                            pointToGroupMap.put(p, uGroupId);</span>
+<span class="nc" id="L80">                        }</span>
+<span class="nc" id="L81">                        vGroup.clear();</span>
+                    } else {
+                        // merge u into v
+<span class="nc" id="L84">                        vGroup.addAll(uGroup);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                        for (PairInt p : uGroup) {</span>
+<span class="nc" id="L86">                            pointToGroupMap.put(p, vGroupId);</span>
+<span class="nc" id="L87">                        }</span>
+<span class="nc" id="L88">                        uGroup.clear();</span>
+                    }
+                }
+            }
         }
-<span class="fc" id="L65">    }</span>
+<span class="fc" id="L93">    }</span>
 
     protected void process(PairInt uPoint) {
-<span class="fc" id="L68">        Integer groupId = pointToGroupMap.get(uPoint);</span>
-<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (groupId == null) {</span>
-<span class="fc" id="L70">            groupId = Integer.valueOf(groupMembership.size());</span>
-<span class="fc" id="L71">            pointToGroupMap.put(uPoint, groupId);</span>
-<span class="fc" id="L72">            Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L73">            set.add(uPoint);</span>
-<span class="fc" id="L74">            groupMembership.add(set);</span>
+<span class="fc" id="L96">        Integer groupId = pointToGroupMap.get(uPoint);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (groupId == null) {</span>
+<span class="fc" id="L98">            groupId = Integer.valueOf(groupMembership.size());</span>
+<span class="fc" id="L99">            pointToGroupMap.put(uPoint, groupId);</span>
+<span class="fc" id="L100">            Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L101">            set.add(uPoint);</span>
+<span class="fc" id="L102">            groupMembership.add(set);</span>
         }
-<span class="fc" id="L76">    }</span>
+<span class="fc" id="L104">    }</span>
 
     public void setMinimumNumberInCluster(int n) {
-<span class="nc" id="L79">        this.minimumNumberInCluster = n;</span>
-<span class="nc" id="L80">    }</span>
+<span class="nc" id="L107">        this.minimumNumberInCluster = n;</span>
+<span class="nc" id="L108">    }</span>
   
     public List&lt;Set&lt;PairInt&gt;&gt; getGroupMembershipList() {
-<span class="fc" id="L83">        return new ArrayList&lt;Set&lt;PairInt&gt;&gt;(groupMembership);</span>
+<span class="fc" id="L111">        return new ArrayList&lt;Set&lt;PairInt&gt;&gt;(groupMembership);</span>
     }
 
     public int getNumberOfGroups() {
-<span class="fc" id="L87">        return groupMembership.size();</span>
+<span class="fc" id="L115">        return groupMembership.size();</span>
     }
 
     public Map&lt;PairInt, Integer&gt; getPointToGroupIndexes() {
-<span class="nc" id="L91">        return pointToGroupMap;</span>
+<span class="nc" id="L119">        return pointToGroupMap;</span>
     }
 
     /**
      * remove groups smaller than minimumNumberInCluster
      */
     protected void prune() {
-<span class="fc" id="L98">        log.finest(&quot;number of groups before prune=&quot; + groupMembership.size());</span>
+<span class="fc" id="L126">        log.finest(&quot;number of groups before prune=&quot; + groupMembership.size());</span>
         //TODO: the data structures used could be written at the expense
         // of space complexity to reduce changes needed when group number
         // changes
@@ -105,45 +133,45 @@ public abstract class AbstractDFSConnectedGroupsFinder {
          * [------] 2
          */
         // iterate backwards so can move items up without conflict with iterator
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int i = groupMembership.size() - 1; i &gt; -1; i--) {</span>
-<span class="fc" id="L109">            Set&lt;PairInt&gt; group = groupMembership.get(i);</span>
-<span class="fc" id="L110">            int count = group.size();</span>
-<span class="fc" id="L111">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count + &quot; members before prune (min=&quot; + minimumNumberInCluster + &quot;)&quot;);</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (count &lt; minimumNumberInCluster) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int i = groupMembership.size() - 1; i &gt; -1; i--) {</span>
+<span class="fc" id="L137">            Set&lt;PairInt&gt; group = groupMembership.get(i);</span>
+<span class="fc" id="L138">            int count = group.size();</span>
+<span class="fc" id="L139">            log.finest(&quot;  group &quot; + i + &quot; has &quot; + count + &quot; members before prune (min=&quot; + minimumNumberInCluster + &quot;)&quot;);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (count &lt; minimumNumberInCluster) {</span>
                 // remove this group and move up all groups w/ index &gt; i by one index
-<span class="fc bfc" id="L114" title="All 2 branches covered.">                for (int j = i + 1; j &lt; groupMembership.size(); j++) {</span>
-<span class="fc" id="L115">                    int newGroupId = j - 1;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                for (int j = i + 1; j &lt; groupMembership.size(); j++) {</span>
+<span class="fc" id="L143">                    int newGroupId = j - 1;</span>
                     // update members in pointToGroupIndex
-<span class="fc" id="L117">                    Set&lt;PairInt&gt; latest = groupMembership.get(j);</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">                    for (PairInt p : latest) {</span>
-<span class="fc" id="L119">                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));</span>
-<span class="fc" id="L120">                    }</span>
+<span class="fc" id="L145">                    Set&lt;PairInt&gt; latest = groupMembership.get(j);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                    for (PairInt p : latest) {</span>
+<span class="fc" id="L147">                        pointToGroupMap.put(p, Integer.valueOf(newGroupId));</span>
+<span class="fc" id="L148">                    }</span>
                 }
-<span class="fc" id="L122">                Set&lt;PairInt&gt; removed = groupMembership.remove(i);</span>
+<span class="fc" id="L150">                Set&lt;PairInt&gt; removed = groupMembership.remove(i);</span>
             }
         }
-<span class="fc" id="L125">        log.finest(&quot;number of groups after prune=&quot; + groupMembership.size());</span>
-<span class="fc" id="L126">    }</span>
+<span class="fc" id="L153">        log.finest(&quot;number of groups after prune=&quot; + groupMembership.size());</span>
+<span class="fc" id="L154">    }</span>
 
     public int getNumberofGroupMembers(int groupId) {
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
-<span class="nc" id="L130">            return 0;</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L158">            return 0;</span>
         }
-<span class="pc bpc" id="L132" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
-<span class="nc" id="L133">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L161">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
         }
-<span class="fc" id="L135">        return groupMembership.get(groupId).size();</span>
+<span class="fc" id="L163">        return groupMembership.get(groupId).size();</span>
     }
 
     public Set&lt;PairInt&gt; getXY(int groupId) {
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
-<span class="nc" id="L140">            return new HashSet&lt;PairInt&gt;();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (groupMembership.isEmpty()) {</span>
+<span class="nc" id="L168">            return new HashSet&lt;PairInt&gt;();</span>
         }
-<span class="pc bpc" id="L142" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
-<span class="nc" id="L143">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
+<span class="pc bpc" id="L170" title="2 of 4 branches missed.">        if (groupId &gt; (groupMembership.size() - 1) || (groupId &lt; 0)) {</span>
+<span class="nc" id="L171">            throw new IllegalArgumentException(&quot;groupId=&quot; + groupId + &quot; is outside of range of nGroups=&quot; + groupMembership.size());</span>
         }
-<span class="fc" id="L145">        Set&lt;PairInt&gt; set = groupMembership.get(groupId);</span>
-<span class="fc" id="L146">        return set;</span>
+<span class="fc" id="L173">        Set&lt;PairInt&gt; set = groupMembership.get(groupId);</span>
+<span class="fc" id="L174">        return set;</span>
     }
     
 }

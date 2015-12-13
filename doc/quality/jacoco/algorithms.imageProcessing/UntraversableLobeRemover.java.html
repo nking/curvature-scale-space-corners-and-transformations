@@ -162,7 +162,7 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L162">            int maxIdx = -1;</span>
 <span class="fc bfc" id="L163" title="All 2 branches covered.">            for (int i = 0; i &lt; finder.getNumberOfGroups(); ++i) {</span>
 <span class="fc" id="L164">                int n = finder.getNumberofGroupMembers(i);</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                if (n &gt; nMax) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">                if (n &gt; nMax) {</span>
 <span class="fc" id="L166">                    nMax = n;</span>
 <span class="fc" id="L167">                    maxIdx = i;</span>
                 }
@@ -226,8 +226,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 
 <span class="fc" id="L227">        patternPoints = findPattern(x, y, points, pattern);</span>
 
-<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
-<span class="nc" id="L230">            return patternPoints;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (patternPoints != null) {</span>
+<span class="fc" id="L230">            return patternPoints;</span>
         }
 
 <span class="fc" id="L233">        swapYDirection(pattern);</span>
@@ -242,8 +242,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 
 <span class="fc" id="L243">        patternPoints = findPattern(x, y, points, pattern);</span>
 
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
-<span class="nc" id="L246">            return patternPoints;</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        if (patternPoints != null) {</span>
+<span class="fc" id="L246">            return patternPoints;</span>
         }
 
         // ----- diag pattern 2 ---
@@ -267,16 +267,16 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 
 <span class="fc" id="L268">        patternPoints = findPattern(x, y, points, pattern);</span>
 
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
-<span class="nc" id="L271">            return patternPoints;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (patternPoints != null) {</span>
+<span class="fc" id="L271">            return patternPoints;</span>
         }
 
 <span class="fc" id="L274">        swapYDirection(pattern);</span>
 
 <span class="fc" id="L276">        patternPoints = findPattern(x, y, points, pattern);</span>
 
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (patternPoints != null) {</span>
-<span class="nc" id="L279">            return patternPoints;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        if (patternPoints != null) {</span>
+<span class="fc" id="L279">            return patternPoints;</span>
         }
 
 <span class="fc" id="L282">        return patternPoints;</span>
@@ -586,8 +586,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L586">            neighbors.removeAll(junctionPoints);</span>
 
 <span class="fc bfc" id="L588" title="All 2 branches covered.">            if (!p.equals(jC)) {</span>
-<span class="pc bpc" id="L589" title="2 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
-<span class="nc" id="L590">                    return null;</span>
+<span class="pc bpc" id="L589" title="1 of 4 branches missed.">                if (neighbors.isEmpty() || neighbors.size() &gt; 2) {</span>
+<span class="fc" id="L590">                    return null;</span>
                 }
 <span class="fc bfc" id="L592" title="All 2 branches covered.">                if (neighbors.size() &gt; 1) {</span>
                     // keep the closest to jC
@@ -595,7 +595,7 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L595">                    PairInt minDistP = null;</span>
 <span class="fc bfc" id="L596" title="All 2 branches covered.">                    for (PairInt pN : neighbors) {</span>
 <span class="fc" id="L597">                        int distSq = distSq(jC, pN);</span>
-<span class="pc bpc" id="L598" title="1 of 2 branches missed.">                        if (distSq &lt; minDistSq) {</span>
+<span class="fc bfc" id="L598" title="All 2 branches covered.">                        if (distSq &lt; minDistSq) {</span>
 <span class="fc" id="L599">                            minDistSq = distSq;</span>
 <span class="fc" id="L600">                            minDistP = pN;</span>
                         }

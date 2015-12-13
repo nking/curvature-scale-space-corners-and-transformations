@@ -3,7 +3,7 @@
 /**
  * @author nichole
  */
-<span class="fc" id="L6">public class TriangleFunction {</span>
+<span class="nc" id="L6">public class TriangleFunction {</span>
 
     /**
      * &lt;pre&gt;
@@ -28,7 +28,7 @@
      */
     public GreyscaleImage calculateNextLevel(GreyscaleImage input, int j) {
 
-<span class="fc" id="L31">        return addOrSubtract(input, j, true);</span>
+<span class="nc" id="L31">        return addOrSubtract(input, j, true);</span>
     }
     
     /**
@@ -61,82 +61,82 @@
 
     private GreyscaleImage addOrSubtract(GreyscaleImage input, int j, boolean add) {
 
-<span class="fc" id="L64">        int w = input.getWidth();</span>
-<span class="fc" id="L65">        int h = input.getHeight();</span>
+<span class="nc" id="L64">        int w = input.getWidth();</span>
+<span class="nc" id="L65">        int h = input.getHeight();</span>
 
-<span class="fc" id="L67">        int s = 1 &lt;&lt; j;</span>
+<span class="nc" id="L67">        int s = 1 &lt;&lt; j;</span>
 
-<span class="fc" id="L69">        GreyscaleImage output = input.copyImage();</span>
+<span class="nc" id="L69">        GreyscaleImage output = input.copyImage();</span>
 
         // use separability, that is 1D operation on columns, then rows
         
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int row = 0; row &lt; h; ++row) {</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (int col = 0; col &lt; w; ++col) {</span>
-<span class="fc" id="L75">                int x0 = col - s;</span>
-<span class="fc" id="L76">                int x2 = col + 2;</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        for (int row = 0; row &lt; h; ++row) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            for (int col = 0; col &lt; w; ++col) {</span>
+<span class="nc" id="L75">                int x0 = col - s;</span>
+<span class="nc" id="L76">                int x2 = col + 2;</span>
 
                 // choosing &quot;continuity&quot; for boundary corrections
-<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (x0 &lt; 0) {</span>
-<span class="fc" id="L80">                    x0 = col;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                if (x0 &lt; 0) {</span>
+<span class="nc" id="L80">                    x0 = col;</span>
                 }
-<span class="fc bfc" id="L82" title="All 2 branches covered.">                if (x2 &gt; (w - 1)) {</span>
-<span class="fc" id="L83">                    x2 = col;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                if (x2 &gt; (w - 1)) {</span>
+<span class="nc" id="L83">                    x2 = col;</span>
                 }
 
                 // add:
                 //    c_(j + 1,k) = (1/4)*c_(j,k-(2^j)) + (1/2)*c_(j,k) + (1/4)*c_(j,k+(2^j))
                 // subtract:
                 //    w_(j+1,k) = (-1/4)*c_(j,k-(2^j)) + (1/2)*c_(j,k) - (1/4)*c_(j,k+(2^j))
-<span class="fc" id="L90">                double v0 = 0.25 * input.getValue(x0, row);</span>
-<span class="fc" id="L91">                double v1 = 0.5 * input.getValue(col, row);</span>
-<span class="fc" id="L92">                double v2 = 0.25 * input.getValue(x2, row);</span>
+<span class="nc" id="L90">                double v0 = 0.25 * input.getValue(x0, row);</span>
+<span class="nc" id="L91">                double v1 = 0.5 * input.getValue(col, row);</span>
+<span class="nc" id="L92">                double v2 = 0.25 * input.getValue(x2, row);</span>
                 double vSum;
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                if (add) {</span>
-<span class="fc" id="L95">                    vSum = v0 + v1 + v2;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                if (add) {</span>
+<span class="nc" id="L95">                    vSum = v0 + v1 + v2;</span>
                 } else {
 <span class="nc" id="L97">                    vSum = -1*v0 + v1 - v2;</span>
                 }
-<span class="fc" id="L99">                int v = (int) Math.round(vSum);</span>
+<span class="nc" id="L99">                int v = (int) Math.round(vSum);</span>
 
-<span class="fc" id="L101">                output.setValue(col, row, v);</span>
+<span class="nc" id="L101">                output.setValue(col, row, v);</span>
             }
         }
 
-<span class="fc" id="L105">        GreyscaleImage input2 = output.copyImage();</span>
+<span class="nc" id="L105">        GreyscaleImage input2 = output.copyImage();</span>
 
-<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (int col = 0; col &lt; w; ++col) {</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">            for (int row = 0; row &lt; h; ++row) {</span>
-<span class="fc" id="L109">                int y0 = row - s;</span>
-<span class="fc" id="L110">                int y2 = row + 2;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (int col = 0; col &lt; w; ++col) {</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            for (int row = 0; row &lt; h; ++row) {</span>
+<span class="nc" id="L109">                int y0 = row - s;</span>
+<span class="nc" id="L110">                int y2 = row + 2;</span>
 
                 // choosing &quot;continuity&quot; for boundary corrections
-<span class="fc bfc" id="L113" title="All 2 branches covered.">                if (y0 &lt; 0) {</span>
-<span class="fc" id="L114">                    y0 = row;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                if (y0 &lt; 0) {</span>
+<span class="nc" id="L114">                    y0 = row;</span>
                 }
-<span class="fc bfc" id="L116" title="All 2 branches covered.">                if (y2 &gt; (h - 1)) {</span>
-<span class="fc" id="L117">                    y2 = row;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (y2 &gt; (h - 1)) {</span>
+<span class="nc" id="L117">                    y2 = row;</span>
                 }
 
                 // add:
                 //    c_(j + 1,k) = (1/4)*c_(j,k-(2^j)) + (1/2)*c_(j,k) + (1/4)*c_(j,k+(2^j))
                 // subtract:
                 //    w_(j+1,k) = (-1/4)*c_(j,k-(2^j)) + (1/2)*c_(j,k) - (1/4)*c_(j,k+(2^j))
-<span class="fc" id="L124">                double v0 = 0.25 * input2.getValue(col, y0);</span>
-<span class="fc" id="L125">                double v1 = 0.5 * input2.getValue(col, row);</span>
-<span class="fc" id="L126">                double v2 = 0.25 * input2.getValue(col, y2);</span>
+<span class="nc" id="L124">                double v0 = 0.25 * input2.getValue(col, y0);</span>
+<span class="nc" id="L125">                double v1 = 0.5 * input2.getValue(col, row);</span>
+<span class="nc" id="L126">                double v2 = 0.25 * input2.getValue(col, y2);</span>
                 double vSum;
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">                if (add) {</span>
-<span class="fc" id="L129">                    vSum = v0 + v1 + v2;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (add) {</span>
+<span class="nc" id="L129">                    vSum = v0 + v1 + v2;</span>
                 } else {
 <span class="nc" id="L131">                    vSum = -1*v0 + v1 - v2;</span>
                 }
-<span class="fc" id="L133">                int v = (int) Math.round(vSum);</span>
+<span class="nc" id="L133">                int v = (int) Math.round(vSum);</span>
 
-<span class="fc" id="L135">                output.setValue(col, row, v);</span>
+<span class="nc" id="L135">                output.setValue(col, row, v);</span>
             }
         }
 
-<span class="fc" id="L139">        return output;</span>
+<span class="nc" id="L139">        return output;</span>
     }
 
 }
