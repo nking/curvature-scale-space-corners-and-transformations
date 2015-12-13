@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MiscStats;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -73,9 +74,10 @@ public class BlobScaleFinderWrapper {
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
      * @param settings
+     * @param rotatedOffsets
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, 
-        FeatureMatcherSettings settings) {
+        FeatureMatcherSettings settings, RotatedOffsets rotatedOffsets) {
 
         this.settings = settings.copy();
         
@@ -92,9 +94,11 @@ public class BlobScaleFinderWrapper {
             img2Helper = new BlobPerimeterHelper(img2);
         }
         
-        features1 = new IntensityFeatures(5, settings.useNormalizedFeatures());
+        features1 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
+            rotatedOffsets);
 
-        features2 = new IntensityFeatures(5, settings.useNormalizedFeatures());
+        features2 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
+            rotatedOffsets);
                         
         if (settings.startWithBinnedImages()) {
             
@@ -106,9 +110,11 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures(5, settings.useNormalizedFeatures());
+            featuresBinned1 = new IntensityFeatures(5, 
+                settings.useNormalizedFeatures(), rotatedOffsets);
             
-            featuresBinned2 = new IntensityFeatures(5, settings.useNormalizedFeatures());
+            featuresBinned2 = new IntensityFeatures(5, 
+                settings.useNormalizedFeatures(), rotatedOffsets);
             
         } else {
             

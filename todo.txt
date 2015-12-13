@@ -1,3 +1,6 @@
+*** -- need small improvements in segmentation or blob extraction for
+       books test image and checkerboard
+
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
       currently has a long runtime.

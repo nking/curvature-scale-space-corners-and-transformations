@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -11,47 +12,6 @@ public class IntensityFeaturesTest extends TestCase {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    public void test2() throws Exception {
-
-        // 2
-        int cellDim = IntensityFeatures.getDefaultCellDimForExtract();
-        
-        // 6
-        int nCellsAcross = IntensityFeatures.getDefaultNCellsAcrossForExtract();
-        int len = IntensityFeatures.getDefaultLengthForCellExtractOffsets();
-    
-        int[] xTrq0 = new int[len];
-        int[] yTrq0 = new int[xTrq0.length];
-        
-        int rotationInDegrees = 45;
-        
-        IntensityFeatures.populateRotationOffsetsQ0(cellDim, nCellsAcross,
-            rotationInDegrees, xTrq0, yTrq0);
-
-        int nColsHalf = nCellsAcross / 2;
-        int range0 = cellDim * nColsHalf;
-        
-        int n2 = cellDim * cellDim;
-        int idx = 0;
-        int oIdx = 0;
-        for (int dx = -range0; dx < range0; dx += cellDim) {
-            for (int dy = -range0; dy < range0; dy += cellDim) {
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < n2; ++i) {
-                    int xOff = xTrq0[idx];
-                    int yOff = yTrq0[idx];
-                    sb.append(String.format("(%d,%d) ", xOff, yOff));
-                    if (xOff==0 && yOff==0) {
-                        log.info("center at output index=" + oIdx);
-                    }
-                    idx++;
-                }
-                oIdx++;
-                log.info(String.format("%d   (%d, %d): %s", idx, dx, dy, sb.toString()));
-            }
-        }
-    }
- 
     public void test0() throws Exception {
         
         int cellDim = 2;
@@ -107,6 +67,8 @@ public class IntensityFeaturesTest extends TestCase {
                |5|5|6|7|7|
         */
         
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
+        
         int blockHalfWidths = 5;
         
         boolean useNormalizedIntensities = true;
@@ -129,7 +91,7 @@ public class IntensityFeaturesTest extends TestCase {
             
                 // values are cached so create a new instance for each "img"
                 IntensityFeatures features = new IntensityFeatures(blockHalfWidths,
-                    useNormalizedIntensities);
+                    useNormalizedIntensities, rOffsets);
         
                 int v = i;
                 if (!pos) {

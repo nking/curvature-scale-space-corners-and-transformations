@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.util.ResourceFinder;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -20,11 +21,14 @@ public class FeaturesTest extends TestCase {
 
     public void testIsWithinXBounds0() {
         
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
+        
         GreyscaleImage img = new GreyscaleImage(10, 10);
         GreyscaleImage gradientImg = img.createWithDimensions();
         GreyscaleImage thetaImg = img.createWithDimensions();
         
-        Features features = new Features(img, gradientImg, thetaImg, 2, false);
+        Features features = new Features(img, gradientImg, thetaImg, 2, false,
+            rOffsets);
         
         assertTrue(features.isWithinXBounds(2));
         assertFalse(features.isWithinXBounds(-2));
@@ -36,11 +40,14 @@ public class FeaturesTest extends TestCase {
     
     public void testIsWithinXBounds1() {
         
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
+        
         Image img = new Image(10, 10);
         GreyscaleImage gradientImg = new GreyscaleImage(10, 10);
         GreyscaleImage thetaImg = new GreyscaleImage(10, 10);
         
-        Features features = new Features(img, gradientImg, thetaImg, 2, false);
+        Features features = new Features(img, gradientImg, thetaImg, 2, false,
+            rOffsets);
         
         assertTrue(features.isWithinXBounds(2));
         assertFalse(features.isWithinXBounds(-2));
@@ -52,6 +59,8 @@ public class FeaturesTest extends TestCase {
 
     public void testExtractIntensity() {
         
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
+        
         boolean normalize = false;
         
         GreyscaleImage img = new GreyscaleImage(10, 10);
@@ -62,7 +71,8 @@ public class FeaturesTest extends TestCase {
         GreyscaleImage gradientImg = img.createWithDimensions();
         GreyscaleImage thetaImg = img.createWithDimensions();
         
-        Features features = new Features(img, gradientImg, thetaImg, 2, normalize);
+        Features features = new Features(img, gradientImg, thetaImg, 2, 
+            normalize, rOffsets);
         
         IntensityDescriptor desc = features.extractIntensity(5, 5, 0);
         assertNotNull(desc);
@@ -76,6 +86,8 @@ public class FeaturesTest extends TestCase {
     }
 
     public void testCalculateIntensityStat() throws Exception {
+        
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -114,13 +126,15 @@ public class FeaturesTest extends TestCase {
         boolean normalize = false;
         
         GreyscaleImage gradientImg = img.createWithDimensions();
-        Features features = new Features(img, gradientImg, thetaImg, 2, normalize);
+        Features features = new Features(img, gradientImg, thetaImg, 2,
+            normalize, rOffsets);
                 
         int x1 = 5;
         int y1 = 5;
         IntensityDescriptor desc1 = features.extractIntensity(x1, y1, 0);        
         
-        Features features2 = new Features(img2, gradientImg, thetaImg, 2, normalize);
+        Features features2 = new Features(img2, gradientImg, thetaImg, 2, 
+            normalize, rOffsets);
         int x2 = 6;
         int y2 = 4;
         IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, 0);
@@ -143,6 +157,8 @@ public class FeaturesTest extends TestCase {
     }
     
     public void estExtractIntensity2() throws Exception {
+        
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
         
         String filePath = ResourceFinder.findFileInTestResources("blox.gif");
         
@@ -167,7 +183,7 @@ public class FeaturesTest extends TestCase {
         boolean useNormalizedIntensities = false;
                 
         Features features = new Features(img, gXY, thetaImg, 
-            blockHalfWidths, useNormalizedIntensities);
+            blockHalfWidths, useNormalizedIntensities, rOffsets);
         
         int xCenter = 167;
         int yCenter = 109;

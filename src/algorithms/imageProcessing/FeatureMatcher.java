@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -61,6 +62,10 @@ public class FeatureMatcher {
         }
         
         IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
         
         int[] rotations = new int[5];
         
@@ -162,6 +167,10 @@ public class FeatureMatcher {
         
         IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
      
+        if (desc2 == null) {
+            return null;
+        }
+        
         // because anglediff compares closest angles:
         if (expectedRotationInDegrees > 180.) {
             expectedRotationInDegrees = 360 - expectedRotationInDegrees;
@@ -249,7 +258,8 @@ public class FeatureMatcher {
     public CorrespondenceList findSimilarFeatures(GreyscaleImage gsImg1, 
         CornerRegion[] cr1, GreyscaleImage gsImg2, 
         CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
-        float rotationInRadiansTol, int transXYTol, int dither) {
+        float rotationInRadiansTol, int transXYTol, int dither,
+        RotatedOffsets rotatedOffsets) {
         
         List<CornerRegion> filteredTransformedC1 = new ArrayList<CornerRegion>();
         List<CornerRegion> filteredC1 = new ArrayList<CornerRegion>();
@@ -284,10 +294,10 @@ public class FeatureMatcher {
         final boolean useNormalizedIntensities = true;
         
         IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
-            useNormalizedIntensities);
+            useNormalizedIntensities, rotatedOffsets);
         
         IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
-            useNormalizedIntensities);
+            useNormalizedIntensities, rotatedOffsets);
         
         int n1 = filteredC1.size();
         int n2 = filteredC2.size();

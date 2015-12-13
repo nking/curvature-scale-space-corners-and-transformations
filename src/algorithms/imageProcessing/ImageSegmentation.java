@@ -3109,17 +3109,17 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        GreyscaleImage fineCoeff = coeffs.get(coeffs.size() - 1);
+        GreyscaleImage coarsestCoeff = coeffs.get(coeffs.size() - 1);
         
-        for (int i = 0; i < fineCoeff.getNPixels(); ++i) {
-            if (fineCoeff.getValue(i) > 0) {
-                fineCoeff.setValue(i, 250);
+        for (int i = 0; i < coarsestCoeff.getNPixels(); ++i) {
+            if (coarsestCoeff.getValue(i) > 0) {
+                coarsestCoeff.setValue(i, 250);
             } else {
-                fineCoeff.setValue(i, 0);
+                coarsestCoeff.setValue(i, 0);
             }
         }
                
-        return fineCoeff;
+        return coarsestCoeff;
     }
     
     protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,

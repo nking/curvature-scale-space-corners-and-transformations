@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import java.util.HashMap;
@@ -76,12 +77,13 @@ public class Features extends IntensityFeatures {
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true (NOT YET IMPLEMENTED)
+     * @param rOffsets
      */
     public Features(final GreyscaleImage image, final GreyscaleImage theGradientImg,
         final GreyscaleImage theThetaImg, final int blockHalfWidths,
-        final boolean useNormalizedIntensities) {
+        final boolean useNormalizedIntensities, RotatedOffsets rOffsets) {
 
-        super(image, blockHalfWidths, useNormalizedIntensities);
+        super(image, blockHalfWidths, useNormalizedIntensities, rOffsets);
         
         this.gradientImg = theGradientImg;
         this.thetaImg = theThetaImg;
@@ -97,12 +99,14 @@ public class Features extends IntensityFeatures {
      * extract the 25 pixels centered on (xc, yc), bHalfW would be '2'
      * @param useNormalizedIntensities normalize the intensities extracted
      * from image if true (NOT YET IMPLEMENTED)
+     * @param rOffsets
      */
     public Features(final Image image, final GreyscaleImage theGradientImg,
         final GreyscaleImage theThetaImg, final int blockHalfWidths,
-        final boolean useNormalizedIntensities) {
+        final boolean useNormalizedIntensities,
+        RotatedOffsets rOffsets) {
 
-        super(image, blockHalfWidths, useNormalizedIntensities);
+        super(image, blockHalfWidths, useNormalizedIntensities, rOffsets);
         
         this.gradientImg = theGradientImg;
         this.thetaImg = theThetaImg;

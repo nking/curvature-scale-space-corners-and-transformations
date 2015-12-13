@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -22,6 +23,8 @@ public class BlobScaleFinderWrapperTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
         
         boolean rotate = false;
 
@@ -96,7 +99,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             settings.setDebugTag(fileName1Root);
             
             BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
-                img1Orig, img2Orig, settings);
+                img1Orig, img2Orig, settings, rOffsets);
             
             TransformationParameters params = scaleFinder.calculateScale();
 

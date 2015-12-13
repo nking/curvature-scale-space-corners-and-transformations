@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointInPolygon;
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -52,6 +53,8 @@ public class FeatureMatcherWrapper {
     //TODO: revise this...
     private int transXYTol = 20;
     
+    private RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2,
@@ -72,6 +75,7 @@ public class FeatureMatcherWrapper {
      * @param image1
      * @param image2
      * @param parameters 
+     * @param settings 
      */
     public FeatureMatcherWrapper(ImageExt image1, ImageExt image2, 
         TransformationParameters parameters, FeatureMatcherSettings settings) {
@@ -119,7 +123,7 @@ public class FeatureMatcherWrapper {
         NoSuchAlgorithmException {
                         
         BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(img1, 
-            img2, settings);
+            img2, settings, rotatedOffsets);
         
         params = scaleFinder.calculateScale();
         
@@ -374,7 +378,7 @@ public class FeatureMatcherWrapper {
             gsImg2,
             cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]), 
             parameters, scaleTol, rotationInRadiansTol, tolXY,
-            dither);
+            dither, rotatedOffsets);
 
         return cl;
     }
@@ -674,10 +678,10 @@ public class FeatureMatcherWrapper {
         FeatureMatcher featureMatcher = new FeatureMatcher();
         
         IntensityFeatures features1 = new IntensityFeatures(5, 
-            settings.useNormalizedFeatures());
+            settings.useNormalizedFeatures(), rotatedOffsets);
 
         IntensityFeatures features2 = new IntensityFeatures(5, 
-            settings.useNormalizedFeatures());
+            settings.useNormalizedFeatures(), rotatedOffsets);
         
         int rotD = Math.round(params.getRotationInDegrees());
         
