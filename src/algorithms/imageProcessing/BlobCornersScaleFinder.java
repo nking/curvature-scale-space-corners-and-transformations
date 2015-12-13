@@ -84,7 +84,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         List<List<T>> corners1List, List<List<T>> corners2List,
         int binFactor1, int binFactor2) {
 
-
+/*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -127,7 +127,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+*/
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),
@@ -229,6 +229,10 @@ System.out.println(sb.toString());
                 TransformationParameters params = mapper.getSolution();
                 int nEval = mapper.getNEval();
                 double cost = mapper.getSolutionCost();
+                
+                if (nEval < 2) {
+                    continue;
+                }
 
                 if (cost < minCost) {
                     if ((nEval < 3) && (maxNEval > 4)) {

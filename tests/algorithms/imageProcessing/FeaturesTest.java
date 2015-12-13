@@ -63,7 +63,7 @@ public class FeaturesTest extends TestCase {
         
         boolean normalize = false;
         
-        GreyscaleImage img = new GreyscaleImage(10, 10);
+        GreyscaleImage img = new GreyscaleImage(20, 20);
         for (int i = 0; i < img.getNPixels(); ++i) {
             img.setValue(i, 100);
         }
@@ -74,7 +74,7 @@ public class FeaturesTest extends TestCase {
         Features features = new Features(img, gradientImg, thetaImg, 2, 
             normalize, rOffsets);
         
-        IntensityDescriptor desc = features.extractIntensity(5, 5, 0);
+        IntensityDescriptor desc = features.extractIntensity(10, 10, 0);
         assertNotNull(desc);
         assertTrue(desc.isNormalized() == normalize);
         
@@ -95,7 +95,7 @@ public class FeaturesTest extends TestCase {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         
-        GreyscaleImage img = new GreyscaleImage(10, 10);
+        GreyscaleImage img = new GreyscaleImage(20, 20);
         for (int col = 0; col < img.getWidth(); ++col) {
             for (int row = 0; row < img.getHeight(); ++row) {                
                 int v = sr.nextInt(10);
@@ -108,7 +108,7 @@ public class FeaturesTest extends TestCase {
             }
         }
         
-        GreyscaleImage img2 = new GreyscaleImage(10, 10);
+        GreyscaleImage img2 = new GreyscaleImage(20, 20);
         for (int col = 0; col < img.getWidth(); ++col) {
             for (int row = 0; row < img.getHeight(); ++row) {                
                 int v = sr.nextInt(12);
@@ -129,14 +129,14 @@ public class FeaturesTest extends TestCase {
         Features features = new Features(img, gradientImg, thetaImg, 2,
             normalize, rOffsets);
                 
-        int x1 = 5;
-        int y1 = 5;
+        int x1 = 10;
+        int y1 = 10;
         IntensityDescriptor desc1 = features.extractIntensity(x1, y1, 0);        
         
         Features features2 = new Features(img2, gradientImg, thetaImg, 2, 
             normalize, rOffsets);
-        int x2 = 6;
-        int y2 = 4;
+        int x2 = 11;
+        int y2 = 9;
         IntensityDescriptor desc2 = features2.extractIntensity(x2, y2, 0);
         
         FeatureComparisonStat stat = Features.calculateIntensityStat(

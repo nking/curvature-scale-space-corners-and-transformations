@@ -994,9 +994,7 @@ public class MiscDebug {
         GreyscaleImage sImg2 = img2Grey.subImage(x2, y2, sWidth, sHeight);
         
         ImageDisplayer.displayImage(label1, sImg1);
-        ImageDisplayer.displayImage(label2, sImg2);
-        
-        int z = 1;
+        ImageDisplayer.displayImage(label2, sImg2);        
     }
     
     public static <T extends CornerRegion> void writeImage(Collection<T> cornerRegions, 

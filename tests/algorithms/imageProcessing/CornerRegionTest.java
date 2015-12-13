@@ -22,7 +22,7 @@ public class CornerRegionTest extends TestCase {
         
         float orientation = cr.getRelativeOrientationInDegrees();
         
-        assertTrue(Math.abs(orientation - 24) < 2);
+        assertTrue(Math.abs(orientation - 337.5) < 2);
     }
     
     public void test1() throws Exception {
@@ -58,7 +58,7 @@ public class CornerRegionTest extends TestCase {
         
         try {
             double orientation = cr.getRelativeOrientation();
-            assertTrue(Math.abs(orientation - (3*Math.PI/2.)) < (1.*Math.PI/180.));
+            assertTrue(Math.abs(orientation - 1) < 1);
         } catch (CornerRegionDegneracyException e) {
             caughtException = true;
         }

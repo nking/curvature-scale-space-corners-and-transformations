@@ -13,7 +13,7 @@ import algorithms.util.Stack;
   <pre>
   Solves the Convex Hull problem w/ a stack S of candidate points.
  
-  Given a set of Q points returns the vertices of the ConvexHull(Q) in counterclockwise
+  Given a set of Q points returns the vertices of the ConvexHull(Q) in clockwise
   order.   a convex hull is the smallest convex polygon that will include all points in Q.
  
   Graham's Scan runs in O(n lg n).

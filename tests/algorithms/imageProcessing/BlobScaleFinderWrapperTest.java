@@ -49,7 +49,7 @@ public class BlobScaleFinderWrapperTest extends TestCase {
                 case 2: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
-                    settings.setUseNormalizedFeatures(true);
+                    settings.setUseNormalizedFeatures(false);
                     break;
                 }
                 case 3: {

@@ -1,6 +1,3 @@
-*** -- need small improvements in segmentation or blob extraction for
-       books test image and checkerboard
-
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
       currently has a long runtime.
@@ -10,21 +7,6 @@
 
 ** -- use the added half dome test images to assert that matching same
       from other cameras is working
-
-***-- make the feature matcher offset arrays improvements below
-   -- consider comment below on cases where there are no matchable
-      blobs in an image, such as test image for half dome.
-      -- can treat all corners or corner regions as belonging to 
-         the same blob and match that way, but only if can reduce 
-         the number of points compared.
-         -- portions of edges could be used with distinct patterns
-            of concavity or convexity...
-            if sillhouettes appear to be present in one image but
-            not another, feature matching won't be possible but 
-            contour matching would be.
-** -- for the offset arrays in the feature matcher, could make these improvements:
-     -- edit use of feature matcher to use RotatedOffsets.java
-
 
 -- more ransac and epipolar solver tests.
    -- when revisiting the books epipolar test, see if evaluation needs to focus
