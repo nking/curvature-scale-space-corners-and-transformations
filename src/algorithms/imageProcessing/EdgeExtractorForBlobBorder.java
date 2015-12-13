@@ -173,7 +173,7 @@ log.fine(String.format("LIMIT: (%d,%d) nPerimeter=%d nCavity=%d", (int)Math.roun
         // expecting nBorder to be < nCavity
 
         if (discardWhenCavityIsSmallerThanBorder 
-            && ((nBorder > 0.8*nCavity) && 
+            && ((nBorder > 0.9*nCavity) && 
                 (Math.abs(nBorder - nCavity) > 0.1*nCavity))) {
            
             log.info(String.format(
@@ -203,7 +203,7 @@ int z = 1;
         lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);
-        
+                
         if (borderPixels.isEmpty()) {
             return null;
         }
@@ -228,11 +228,11 @@ MiscDebug.writeImage(img3, "border_before_spur_removal_" + ts);
             spurRm.setToDebug();
         }
         spurRm.remove(borderPixels, imageWidth, imageHeight);
-
+        
         if (borderPixels.isEmpty()) {
             return null;
         }
-        
+       
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
 for (PairInt p : borderPixels) {
@@ -272,7 +272,7 @@ log.fine("for " + ts + " start UntraversableLobeRemover");
 
         UntraversableLobeRemover remover = new UntraversableLobeRemover();
         remover.applyFilter(borderPixels, exclude, imageWidth, imageHeight);
-        
+                
         if (borderPixels.isEmpty()) {
             return null;
         }
@@ -376,7 +376,7 @@ MiscDebug.writeImage(img2, "before_single_curve_extraction_" + ts);
         extractor.overrideMaxNumberIterationsJunctionSplice(10);
         
         PairIntArray out = extractor.findAsSingleClosedEdge(butterFlySections2);
-       
+               
         if (out == null) {
             return null;
         }
@@ -417,7 +417,7 @@ MiscDebug.writeImage(img3, "border_before_reorder_endpoints");
 }
 
             if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
-                
+                                
                 extractor.reorderEndpointsIfNeeded(out);
                 
 if (debug) {        

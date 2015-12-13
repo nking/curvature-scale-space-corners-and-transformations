@@ -29,7 +29,7 @@ class UntraversableLobeRemover {
      */
     public boolean applyFilter(Set<PairInt> closedCurve, Set<PairInt> exclude,
         int imageWidth, int imageHeight) {
-
+        
         /*
         Example:
                          -3
@@ -797,7 +797,6 @@ MiscDebug.writeImage(img3, "removed_untr_lobe_"
         finds this lobe.
         */
         
-        boolean s01IdxLess = (s0Idx < s1Idx);
         AStar aStar = new AStar(points, adjList, s0Idx, s1Idx);
         path01 = aStar.search();
         int[] path01Alt = aStar.createSourceToSourcePath();
@@ -806,8 +805,7 @@ MiscDebug.writeImage(img3, "removed_untr_lobe_"
         } else if ((path01Alt != null) && (path01.length > path01Alt.length)) {
             path01 = path01Alt;
         }
-            
-        boolean s02IdxLess = (s0Idx < s2Idx);
+    
         aStar = new AStar(points, adjList, s0Idx, s2Idx);
         path02 = aStar.search();
         int[] path02Alt = aStar.createSourceToSourcePath();
@@ -817,7 +815,6 @@ MiscDebug.writeImage(img3, "removed_untr_lobe_"
             path02 = path02Alt;
         }
      
-        boolean s12IdxLess = (s1Idx < s2Idx);
         aStar = new AStar(points, adjList, s1Idx, s2Idx);
         path12 = aStar.search();
         int[] path12Alt = aStar.createSourceToSourcePath();
@@ -825,6 +822,30 @@ MiscDebug.writeImage(img3, "removed_untr_lobe_"
             path12 = path12Alt;
         } else if ((path12Alt != null) && (path12.length > path12Alt.length)) {
             path12 = path12Alt;
+        }
+        boolean allSameLength = false;
+        if ((path01 != null) && (path02 != null) && (path12 != null)
+            && (path01.length == path02.length) && (path01.length == path12.length)) {
+            allSameLength = true;
+        } else if ((path01 != null) && (path02 != null)
+            && (path01.length == path02.length)) {
+            allSameLength = true;
+        } else if ((path01 != null) && (path12 != null)
+            && (path01.length == path12.length)) {
+            allSameLength = true;
+        } else if ((path02 != null) && (path12 != null)
+            && (path02.length == path12.length)) {
+            allSameLength = true;
+        }
+        if (allSameLength) {
+            aStar = new AStar(points, adjList, s2Idx, s0Idx);
+            path12 = aStar.search();
+            path12Alt = aStar.createSourceToSourcePath();
+            if (path12 == null) {
+                path12 = path12Alt;
+            } else if ((path12Alt != null) && (path12.length > path12Alt.length)) {
+                path12 = path12Alt;
+            }
         }
        
         List<Set<PairInt>> paths = new ArrayList<Set<PairInt>>();

@@ -1,3 +1,14 @@
+*** matching improvements still needed:
+   ==> 2 corners are missing from a blob that would
+       lead to a good match in the books img2 lower points.
+       -- find where they get filtered out
+   -- somhow without any code changes, the checkerboard has a difference
+      in results and no random use in entire process.
+      -- the current process isn't finding correct match.
+         using unnormalized intensities helped and fixed the problem
+         intermittently, but use of ===> gradient descriptors may be
+         necessary too (same comment can be made for the books test matching).
+
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
       currently has a long runtime.
@@ -9,6 +20,9 @@
       from other cameras is working
 
 -- more ransac and epipolar solver tests.
+   ** change the plotter of epipolar results to plot the
+      points used for the solution as one color (green with white block behind)
+         and the points not used as red
    -- when revisiting the books epipolar test, see if evaluation needs to focus
       on dist from epipolar line as much as the number of points within tolerance.
       --> make the combined score

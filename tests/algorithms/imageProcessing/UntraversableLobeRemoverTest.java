@@ -118,4 +118,41 @@ public class UntraversableLobeRemoverTest extends TestCase {
         }
         MiscDebug.writeImage(img2, "blob_junction3.png");
     }
+    
+    public void testApplyFilter3() throws Exception {
+        
+        int w = 347;
+        int h = 277;
+        
+        String filePath = ResourceFinder.findFileInTestResources("tmp_blob_38286003_347_277.dat");
+        Set<PairInt> closedCurve = Misc.deserializeSetPairInt(filePath);
+        
+        int nBefore = closedCurve.size();
+        
+        PairIntArray closedCurve2 = new PairIntArray();
+        for (PairInt p : closedCurve) {
+            closedCurve2.add(p.getX(), p.getY());
+        }
+        
+        Image img = new Image(w, h);
+        MiscDebug.writeImage(closedCurve2, img, 0, "_butterfly2_4");
+        
+        // exclude the butterfly sections (theyre traversable in 2 ways)
+        ButterflySectionFinder finder = new ButterflySectionFinder();
+        List<Routes> sections = finder.findButterflySections(closedCurve2);        
+        Set<PairInt> exclude = new HashSet<PairInt>();
+        for (Routes r : sections) {
+            exclude.addAll(r.getRoute0());
+            exclude.addAll(r.getRoute1());
+        }
+        
+        UntraversableLobeRemover rm = new UntraversableLobeRemover();
+        rm.applyFilter(closedCurve, exclude, w, h);
+        
+        GreyscaleImage img2 = new GreyscaleImage(w, h);
+        for (PairInt p : closedCurve) {
+            img2.setValue(p.getX(), p.getY(), 255);
+        }
+        MiscDebug.writeImage(img2, "blob_junction4.png");
+    }
 }

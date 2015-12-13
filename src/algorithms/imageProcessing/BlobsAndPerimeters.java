@@ -197,18 +197,16 @@ public class BlobsAndPerimeters {
         int height = segImg.getHeight();
         
         int numberLimit = defaultNumberLimit;
-        if (useBinned) {
+        if ((inOutBlobs.size()/3) > defaultNumberLimit) {
+            numberLimit = 30;
+        } else {
             int binFactor = imgHelper.getBinFactor();
             int limit = 1024/binFactor;
             if (width >= limit || height >= limit) {
                 numberLimit = 30;
             }
-        } else {
-            if (width >= 1024 || height >= 1024) {
-                numberLimit = 30;
-            }
         }
-        
+       
         // sort by descending size
         int[] indexes = new int[inOutBlobs.size()];
         int[] lengths = new int[indexes.length];
