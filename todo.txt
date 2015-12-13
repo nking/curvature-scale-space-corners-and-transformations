@@ -1,12 +1,6 @@
 *** matching improvements still needed:
-   ==> 2 corners are missing from a blob that would
-       lead to a good match in the books img2 lower points.
-       -- find where they get filtered out
-   -- somhow without any code changes, the checkerboard has a difference
-      in results and no random use in entire process.
-      -- the current process isn't finding correct match.
-         using unnormalized intensities helped and fixed the problem
-         intermittently, but use of ===> gradient descriptors may be
+    -- checkerboard matches
+         use of ===> gradient descriptors may be
          necessary too (same comment can be made for the books test matching).
 
 ** -- impl a circle hough transform

@@ -3,12 +3,17 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -43,9 +48,11 @@ public class CornerCorrector {
         // but should probably have a minimum size that could include
         // 3 corners, one of which would be looked at for removal
         int sizeLimit = 15;
+        
+        //Image debugImg = new Image(imageWidth, imageHeight);
 
         HoughTransform ht = new HoughTransform();
-
+        
         for (int ii = 0; ii < edgeLists.size(); ++ii) {
 
             //NOTE: in testable method for this, should allow ability to
@@ -78,6 +85,16 @@ public class CornerCorrector {
                 outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
                 thetaTolerance, radiusTolerance);
                
+            /*
+            for (int j = 0; j < cornerRegions.size(); ++j) {
+                CornerRegion cr = cornerRegions.get(j);
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                System.out.println("plotting: (" + x + "," + y + ")");
+                ImageIOHelper.addPointToImage(x, y, debugImg, 0, 0, 2, 255, 0, 0);
+            }
+            */
+
             for (int iii = 0; iii < outputSortedGroups.size(); ++iii) {
 
                 Set<PairInt> group = outputSortedGroups.get(iii);
@@ -86,6 +103,13 @@ public class CornerCorrector {
                     break;
                 }
 
+                /*
+                int[] c = ImageIOHelper.getNextRGB(iii);
+                for (PairInt p : group) {
+                    debugImg.setRGB(p.getX(), p.getY(), c[0], c[1], c[2]);
+                }
+                */
+                
                 // quick look at line's theta.
                 // the artifacts are sometimes present in lines near
                 // vertical or near horizontal, so skipping if not those                    
@@ -111,7 +135,10 @@ public class CornerCorrector {
                         maxGroupIdx = eIdx;
                     }
                 }
-                boolean wrapAround = (minGroupIdx == 0) &&
+                
+                //TODO: this may need revision
+                //if needed, can set it to true to take longest evaluation every time
+                boolean wrapAround = (minGroupIdx < 10) &&
                     ((maxGroupIdx - minGroupIdx) > (group.size() + 5));
           
                 if (wrapAround) {
@@ -141,7 +168,6 @@ public class CornerCorrector {
                             cornerRegions.remove(cr);
                         }
                     }
-
                     continue;
                 }
 
@@ -149,7 +175,6 @@ public class CornerCorrector {
 
                 // NOTE: if junctions were present, would want to skip
                 // deleting a cornerRegion that was in a junction
-
                 // delete corners that are more than 2 indexes from
                 // line bounds, starting from last corner
                 for (int j = (cornerRegions.size() - 1); j > -1; --j) {
@@ -157,11 +182,22 @@ public class CornerCorrector {
                     int crIdx = cr.getIndexWithinCurve();
                     if ((crIdx > (minGroupIdx + 2)) &&
                         (crIdx < (maxGroupIdx - 2))) {
-                        cornerRegions.remove(cr);
+                        cornerRegions.remove(cr); 
                     }
                 }                    
             }
         }
+
+        /*
+        try {
+            ImageIOHelper.writeOutputImage(
+                ResourceFinder.findDirectory("bin")
+                + "/seg_hough_" + MiscDebug.getCurrentTimeFormatted() + ".png", debugImg);
+        } catch (IOException ex) {
+            Logger.getLogger(CornerCorrector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */
+
     }
 
     private static double distance(CornerRegion cr, PairInt p) {
