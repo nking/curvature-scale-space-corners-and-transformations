@@ -655,7 +655,7 @@ import thirdparty.HungarianAlgorithm;
             // this requires O(N^2/2) in space
 <span class="fc" id="L656">            List&lt;Integer&gt; remove = findOutliersUsingMedianOfDifferences(scales);</span>
           
-<span class="fc bfc" id="L658" title="All 2 branches covered.">            if (!remove.isEmpty()) {</span>
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">            if (!remove.isEmpty()) {</span>
 <span class="fc bfc" id="L659" title="All 2 branches covered.">                for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
 <span class="fc" id="L660">                    int idx = remove.get(i).intValue();</span>
 <span class="fc" id="L661">                    scales.remove(idx);</span>
@@ -691,8 +691,8 @@ import thirdparty.HungarianAlgorithm;
             }
         }
         
-<span class="pc bpc" id="L694" title="1 of 2 branches missed.">        if (remove.size() == scales.size()) {</span>
-<span class="nc" id="L695">            return null;</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">        if (remove.size() == scales.size()) {</span>
+<span class="fc" id="L695">            return null;</span>
         }
         
 <span class="fc bfc" id="L698" title="All 2 branches covered.">        if (!remove.isEmpty()) {</span>
@@ -1023,8 +1023,8 @@ import thirdparty.HungarianAlgorithm;
     private List&lt;Integer&gt; findOutliersUsingMedianOfDifferences(
         List&lt;? extends Number&gt; values) {
         
-<span class="fc bfc" id="L1026" title="All 2 branches covered.">        if (values.size() &lt; 3) {</span>
-<span class="fc" id="L1027">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="pc bpc" id="L1026" title="1 of 2 branches missed.">        if (values.size() &lt; 3) {</span>
+<span class="nc" id="L1027">            return new ArrayList&lt;Integer&gt;();</span>
         }
         
         // number of permutations = n!/(2!*(n-2)! = n*(n-1)/2
@@ -1046,8 +1046,8 @@ import thirdparty.HungarianAlgorithm;
         
 <span class="fc" id="L1047">        int idx = diffs.length/2;</span>
         double median;
-<span class="pc bpc" id="L1049" title="1 of 2 branches missed.">        if ((idx &amp; 1) == 0) {</span>
-<span class="nc" id="L1050">            median = (diffs[idx] + diffs[idx - 1])/2.f;</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">        if ((idx &amp; 1) == 0) {</span>
+<span class="fc" id="L1050">            median = (diffs[idx] + diffs[idx - 1])/2.f;</span>
         } else {
 <span class="fc" id="L1052">            median = diffs[idx];</span>
         }

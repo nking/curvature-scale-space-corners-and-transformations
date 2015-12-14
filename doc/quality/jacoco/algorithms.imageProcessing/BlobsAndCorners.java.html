@@ -16,7 +16,7 @@ import java.util.Set;
  * @author nichole
  */
 <span class="pc bpc" id="L18" title="1 of 2 branches missed.">public class BlobsAndCorners  {</span>
-    
+        
     /**
      * get a list of corner regions for the perimeters extracted from the
      * blobs.  (Note that the default construction of perimeters already
@@ -89,7 +89,7 @@ import java.util.Set;
 <span class="fc" id="L89">            int thetaTol = 1;</span>
 <span class="fc" id="L90">            int radiusTol = 7;</span>
             
-            //use hough transform for lines to remove corners from line artifacts
+           //use hough transform for lines to remove corners from line artifacts
 <span class="fc" id="L93">           CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, </span>
                cornerRegionLists, thetaTol, radiusTol, width, height);
         }

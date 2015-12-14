@@ -50,9 +50,9 @@ import java.util.Set;
                 
 <span class="fc" id="L51">                int index = sr.nextInt(n);</span>
                 
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                while (output.get(index).getN() == subsetSize) {</span>
-<span class="nc" id="L54">                    index++;</span>
-<span class="nc bnc" id="L55" title="All 2 branches missed.">                    if (index == n) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                while (output.get(index).getN() == subsetSize) {</span>
+<span class="fc" id="L54">                    index++;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                    if (index == n) {</span>
 <span class="nc" id="L56">                        index = 0;</span>
                     }
                 }
@@ -62,18 +62,18 @@ import java.util.Set;
             
             // fill up the first bin if it's smaller than subsetSize
 <span class="fc" id="L64">            int lastIdx = n - 1;</span>
-<span class="pc bpc" id="L65" title="3 of 4 branches missed.">            while ((output.get(0).getN() &lt; subsetSize) &amp;&amp; (lastIdx &gt; 0)) {</span>
-<span class="nc" id="L66">                int nToAdd = subsetSize - output.get(0).getN();</span>
-<span class="nc" id="L67">                PairIntArray p = output.get(lastIdx);</span>
-<span class="nc bnc" id="L68" title="All 2 branches missed.">                int canAdd = (p.getN() &lt; nToAdd) ? p.getN() : nToAdd;</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">                for (int i = 0; i &lt; canAdd; ++i) {</span>
-<span class="nc" id="L70">                    int idx = p.getN() - 1 - i;</span>
-<span class="nc" id="L71">                    output.get(0).add(p.getX(idx), p.getY(idx));</span>
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">            while ((output.get(0).getN() &lt; subsetSize) &amp;&amp; (lastIdx &gt; 0)) {</span>
+<span class="fc" id="L66">                int nToAdd = subsetSize - output.get(0).getN();</span>
+<span class="fc" id="L67">                PairIntArray p = output.get(lastIdx);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                int canAdd = (p.getN() &lt; nToAdd) ? p.getN() : nToAdd;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (int i = 0; i &lt; canAdd; ++i) {</span>
+<span class="fc" id="L70">                    int idx = p.getN() - 1 - i;</span>
+<span class="fc" id="L71">                    output.get(0).add(p.getX(idx), p.getY(idx));</span>
                 }
-<span class="nc bnc" id="L73" title="All 2 branches missed.">                for (int i = 0; i &lt; nToAdd; ++i) {</span>
-<span class="nc" id="L74">                    p.removeRange(p.getN() - 1, p.getN() - 1);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                for (int i = 0; i &lt; nToAdd; ++i) {</span>
+<span class="fc" id="L74">                    p.removeRange(p.getN() - 1, p.getN() - 1);</span>
                 }
-<span class="nc" id="L76">            }</span>
+<span class="fc" id="L76">            }</span>
             
 <span class="fc" id="L78">            return output;</span>
         

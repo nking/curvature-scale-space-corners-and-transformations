@@ -509,12 +509,12 @@ import java.util.List;
                  --------------------------------
                   sqrt( (x2-x1)^2 + (y2-y1)^2) )
         */
-<span class="nc" id="L512">        double numer = Math.abs((0.425 - 0.275) * (0.2625 - cieY) </span>
+<span class="fc" id="L512">        double numer = Math.abs((0.425 - 0.275) * (0.2625 - cieY) </span>
             - (0.275 - cieX) * (0.3875 - 0.2625));
         
-<span class="nc" id="L515">        double dist = numer/wd;</span>
+<span class="fc" id="L515">        double dist = numer/wd;</span>
         
-<span class="nc bnc" id="L517" title="All 2 branches missed.">        return (dist &lt;= 0.03333);//(dist &lt;= 0.075);</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">        return (dist &lt;= 0.03333);//(dist &lt;= 0.075);</span>
     }
     
 }

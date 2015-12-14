@@ -797,55 +797,45 @@ public class IntensityFeatures {
 <span class="fc" id="L797">        int n2 = cellDim * cellDim;</span>
         
         //index of center pixel in array of descriptor:
-        /*
-          3 [-][-][.][.][-][-][.][.]
-          2 [-][-][.][.][-][-][.][.]
-          1 [.][.][-][-][.][.][-][-]
-          0 [.][.][-][-] @ [.][-][-]
-         -1 [-][-][.][.][-][-][.][.]
-         -2 [-][-][.][.][-][-][.][.]
-         -3 [.][.][-][-][.][.][-][-]
-         -4 [.][.][-][-][.][.][-][-]
-            -4 -3 -2 -1  0  1  2  3 */
-<span class="fc" id="L810">        int centralPixelIndex = (nCellsAcross*nColsHalf) + nColsHalf;</span>
+<span class="fc" id="L800">        int centralPixelIndex = (nCellsAcross*nColsHalf) + nColsHalf;</span>
         
-<span class="fc" id="L812">        int count = 0;</span>
-<span class="fc" id="L813">        int idx = 0;</span>
-<span class="fc bfc" id="L814" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
-<span class="fc bfc" id="L815" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
-<span class="fc" id="L816">                boolean withinBounds = true;</span>
-<span class="fc" id="L817">                int cCount = 0;</span>
+<span class="fc" id="L802">        int count = 0;</span>
+<span class="fc" id="L803">        int idx = 0;</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">        for (int dx = -range0; dx &lt; range0; dx += cellDim) {</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">            for (int dy = -range0; dy &lt; range0; dy += cellDim) {</span>
+<span class="fc" id="L806">                boolean withinBounds = true;</span>
+<span class="fc" id="L807">                int cCount = 0;</span>
                 // ---- sum within the cell ----
-<span class="fc" id="L819">                int v = 0;</span>
-<span class="fc bfc" id="L820" title="All 2 branches covered.">                for (int i = 0; i &lt; n2; ++i) {</span>
-<span class="fc" id="L821">                    int xOff = xOffsets[idx];</span>
-<span class="fc" id="L822">                    int yOff = yOffsets[idx];</span>
-<span class="fc" id="L823">                    idx++;</span>
-<span class="fc" id="L824">                    int x = xOff + xCenter;</span>
-<span class="fc" id="L825">                    int y = yOff + yCenter;</span>
-<span class="fc bfc" id="L826" title="All 8 branches covered.">                    if ((x &lt; 0) || (x &gt; (w - 1)) || (y &lt; 0) || (y &gt; (h - 1))) {</span>
-<span class="fc" id="L827">                        withinBounds = false;</span>
-<span class="fc" id="L828">                        break;</span>
+<span class="fc" id="L809">                int v = 0;</span>
+<span class="fc bfc" id="L810" title="All 2 branches covered.">                for (int i = 0; i &lt; n2; ++i) {</span>
+<span class="fc" id="L811">                    int xOff = xOffsets[idx];</span>
+<span class="fc" id="L812">                    int yOff = yOffsets[idx];</span>
+<span class="fc" id="L813">                    idx++;</span>
+<span class="fc" id="L814">                    int x = xOff + xCenter;</span>
+<span class="fc" id="L815">                    int y = yOff + yCenter;</span>
+<span class="fc bfc" id="L816" title="All 8 branches covered.">                    if ((x &lt; 0) || (x &gt; (w - 1)) || (y &lt; 0) || (y &gt; (h - 1))) {</span>
+<span class="fc" id="L817">                        withinBounds = false;</span>
+<span class="fc" id="L818">                        break;</span>
                     }
-<span class="fc" id="L830">                    v += img.getValue(x, y);</span>
-<span class="fc" id="L831">                    cCount++;</span>
+<span class="fc" id="L820">                    v += img.getValue(x, y);</span>
+<span class="fc" id="L821">                    cCount++;</span>
                 }
-<span class="pc bpc" id="L833" title="1 of 4 branches missed.">                if (!withinBounds || (cCount == 0)) {</span>
-<span class="fc bfc" id="L834" title="All 2 branches covered.">                    if (count == centralPixelIndex) {</span>
-<span class="fc" id="L835">                        return null;</span>
+<span class="pc bpc" id="L823" title="1 of 4 branches missed.">                if (!withinBounds || (cCount == 0)) {</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">                    if (count == centralPixelIndex) {</span>
+<span class="fc" id="L825">                        return null;</span>
                     }
-<span class="fc" id="L837">                    output[count] = sentinel;</span>
-<span class="fc" id="L838">                    count++;</span>
-<span class="fc" id="L839">                    continue;</span>
+<span class="fc" id="L827">                    output[count] = sentinel;</span>
+<span class="fc" id="L828">                    count++;</span>
+<span class="fc" id="L829">                    continue;</span>
                 }
-<span class="fc" id="L841">                v /= (float) cCount;</span>
-<span class="fc" id="L842">                output[count] = v;</span>
-<span class="fc" id="L843">                count++;</span>
+<span class="fc" id="L831">                v /= (float) cCount;</span>
+<span class="fc" id="L832">                output[count] = v;</span>
+<span class="fc" id="L833">                count++;</span>
             }
         }
 
-<span class="fc" id="L847">        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);</span>
-<span class="fc" id="L848">        return desc;</span>
+<span class="fc" id="L837">        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);</span>
+<span class="fc" id="L838">        return desc;</span>
     }
     
     /**
@@ -880,24 +870,24 @@ public class IntensityFeatures {
         final int xCenter, final int yCenter) throws 
         CornerRegion.CornerRegionDegneracyException {
         
-<span class="pc bpc" id="L883" title="1 of 2 branches missed.">        if (img == null) {</span>
-<span class="nc" id="L884">            throw new IllegalStateException(&quot;img cannot be null&quot;);</span>
+<span class="pc bpc" id="L873" title="1 of 2 branches missed.">        if (img == null) {</span>
+<span class="nc" id="L874">            throw new IllegalStateException(&quot;img cannot be null&quot;);</span>
         }
 
-<span class="fc" id="L887">        checkBounds(img, xCenter, yCenter);</span>
+<span class="fc" id="L877">        checkBounds(img, xCenter, yCenter);</span>
         
-<span class="fc" id="L889">        PairInt p = new PairInt(xCenter, yCenter);</span>
+<span class="fc" id="L879">        PairInt p = new PairInt(xCenter, yCenter);</span>
         
-<span class="fc" id="L891">        Integer orientation = mapOf45DegOr.get(p);</span>
+<span class="fc" id="L881">        Integer orientation = mapOf45DegOr.get(p);</span>
         
-<span class="fc bfc" id="L893" title="All 2 branches covered.">        if (orientation == null) {</span>
+<span class="fc bfc" id="L883" title="All 2 branches covered.">        if (orientation == null) {</span>
             
-<span class="fc" id="L895">            orientation = calculate45DegOr(img, xCenter, yCenter);</span>
+<span class="fc" id="L885">            orientation = calculate45DegOr(img, xCenter, yCenter);</span>
             
-<span class="fc" id="L897">            mapOf45DegOr.put(p, orientation);</span>
+<span class="fc" id="L887">            mapOf45DegOr.put(p, orientation);</span>
         }
         
-<span class="fc" id="L900">        return orientation.intValue();</span>
+<span class="fc" id="L890">        return orientation.intValue();</span>
     }
 
     private Integer calculate45DegOr(GreyscaleImage img, int x, int y) 
@@ -911,240 +901,240 @@ public class IntensityFeatures {
                |5|5|6|7|7|
         */
 
-<span class="fc" id="L914">        float[] diffs = new float[8];</span>
+<span class="fc" id="L904">        float[] diffs = new float[8];</span>
         
-<span class="fc" id="L916">        int vCenter = img.getValue(x, y);</span>
+<span class="fc" id="L906">        int vCenter = img.getValue(x, y);</span>
         
-<span class="fc bfc" id="L918" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; ++i) {</span>
+<span class="fc bfc" id="L908" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; ++i) {</span>
             
-<span class="fc" id="L920">            int count = 0;</span>
-<span class="fc" id="L921">            float sum = 0;</span>
+<span class="fc" id="L910">            int count = 0;</span>
+<span class="fc" id="L911">            float sum = 0;</span>
             
-<span class="pc bpc" id="L923" title="1 of 9 branches missed.">            switch(i) {</span>
+<span class="pc bpc" id="L913" title="1 of 9 branches missed.">            switch(i) {</span>
                 
                 case 0: {
-<span class="fc" id="L926">                    int x2 = x + 1;</span>
-<span class="fc" id="L927">                    int y2 = y;</span>
-<span class="fc bfc" id="L928" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
-<span class="fc" id="L929">                        continue;</span>
+<span class="fc" id="L916">                    int x2 = x + 1;</span>
+<span class="fc" id="L917">                    int y2 = y;</span>
+<span class="fc bfc" id="L918" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
+<span class="fc" id="L919">                        continue;</span>
                     }
-<span class="fc" id="L931">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L932">                    count++;</span>
+<span class="fc" id="L921">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L922">                    count++;</span>
                     
-<span class="fc" id="L934">                    x2 = x + 2;</span>
-<span class="fc bfc" id="L935" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
+<span class="fc" id="L924">                    x2 = x + 2;</span>
+<span class="fc bfc" id="L925" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
+<span class="fc" id="L926">                        continue;</span>
+                    }
+<span class="fc" id="L928">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L929">                    count++;</span>
+<span class="fc" id="L930">                    break;</span>
+                }
+                case 1: {
+<span class="fc" id="L933">                    int x2 = x + 1;</span>
+<span class="fc" id="L934">                    int y2 = y + 1;</span>
+<span class="fc bfc" id="L935" title="All 4 branches covered.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
 <span class="fc" id="L936">                        continue;</span>
                     }
 <span class="fc" id="L938">                    sum += img.getValue(x2, y2);</span>
 <span class="fc" id="L939">                    count++;</span>
-<span class="fc" id="L940">                    break;</span>
-                }
-                case 1: {
-<span class="fc" id="L943">                    int x2 = x + 1;</span>
-<span class="fc" id="L944">                    int y2 = y + 1;</span>
-<span class="fc bfc" id="L945" title="All 4 branches covered.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L946">                        continue;</span>
-                    }
-<span class="fc" id="L948">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L949">                    count++;</span>
                     
-<span class="fc" id="L951">                    x2 = x + 2;</span>
-<span class="pc bpc" id="L952" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L953">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L954">                        count++;</span>
+<span class="fc" id="L941">                    x2 = x + 2;</span>
+<span class="pc bpc" id="L942" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L943">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L944">                        count++;</span>
                     }
                     
-<span class="fc" id="L957">                    x2 = x + 1;</span>
-<span class="fc" id="L958">                    y2 = y + 2;</span>
-<span class="pc bpc" id="L959" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L960">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L961">                        count++;</span>
+<span class="fc" id="L947">                    x2 = x + 1;</span>
+<span class="fc" id="L948">                    y2 = y + 2;</span>
+<span class="pc bpc" id="L949" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L950">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L951">                        count++;</span>
                     }
                     
-<span class="fc" id="L964">                    x2 = x + 2;</span>
-<span class="fc" id="L965">                    y2 = y + 2;</span>
-<span class="fc bfc" id="L966" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L967">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L968">                        count++;</span>
+<span class="fc" id="L954">                    x2 = x + 2;</span>
+<span class="fc" id="L955">                    y2 = y + 2;</span>
+<span class="fc bfc" id="L956" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L957">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L958">                        count++;</span>
                     }
                     break;
                 }
                 case 2: {
-<span class="fc" id="L973">                    int x2 = x;</span>
-<span class="fc" id="L974">                    int y2 = y + 1;</span>
-<span class="pc bpc" id="L975" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L976">                        continue;</span>
+<span class="fc" id="L963">                    int x2 = x;</span>
+<span class="fc" id="L964">                    int y2 = y + 1;</span>
+<span class="pc bpc" id="L965" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L966">                        continue;</span>
                     }
-<span class="fc" id="L978">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L979">                    count++;</span>
+<span class="fc" id="L968">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L969">                    count++;</span>
                     
-<span class="fc" id="L981">                    y2 = y + 2;</span>
-<span class="pc bpc" id="L982" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L983">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L984">                        count++;</span>
+<span class="fc" id="L971">                    y2 = y + 2;</span>
+<span class="pc bpc" id="L972" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L973">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L974">                        count++;</span>
                     }
                     break;
                 }
                 case 3: {
-<span class="fc" id="L989">                    int x2 = x - 1;</span>
-<span class="fc" id="L990">                    int y2 = y + 1;</span>
-<span class="fc bfc" id="L991" title="All 4 branches covered.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L992">                        continue;</span>
+<span class="fc" id="L979">                    int x2 = x - 1;</span>
+<span class="fc" id="L980">                    int y2 = y + 1;</span>
+<span class="fc bfc" id="L981" title="All 4 branches covered.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L982">                        continue;</span>
                     }
-<span class="fc" id="L994">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L995">                    count++;</span>
+<span class="fc" id="L984">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L985">                    count++;</span>
                     
-<span class="fc" id="L997">                    x2 = x - 2;</span>
-<span class="pc bpc" id="L998" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L999">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1000">                        count++;</span>
-                    }
-                    
-<span class="fc" id="L1003">                    x2 = x - 1;</span>
-<span class="fc" id="L1004">                    y2 = y + 2;</span>
-<span class="pc bpc" id="L1005" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1006">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1007">                        count++;</span>
+<span class="fc" id="L987">                    x2 = x - 2;</span>
+<span class="pc bpc" id="L988" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L989">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L990">                        count++;</span>
                     }
                     
-<span class="fc" id="L1010">                    x2 = x - 2;</span>
-<span class="fc" id="L1011">                    y2 = y + 2;</span>
-<span class="fc bfc" id="L1012" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1013">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1014">                        count++;</span>
+<span class="fc" id="L993">                    x2 = x - 1;</span>
+<span class="fc" id="L994">                    y2 = y + 2;</span>
+<span class="pc bpc" id="L995" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L996">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L997">                        count++;</span>
+                    }
+                    
+<span class="fc" id="L1000">                    x2 = x - 2;</span>
+<span class="fc" id="L1001">                    y2 = y + 2;</span>
+<span class="fc bfc" id="L1002" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1003">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1004">                        count++;</span>
                     }
                     break;
                 }
                 case 4: {
-<span class="fc" id="L1019">                    int x2 = x - 1;</span>
-<span class="fc" id="L1020">                    int y2 = y;</span>
-<span class="fc bfc" id="L1021" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
-<span class="fc" id="L1022">                        continue;</span>
+<span class="fc" id="L1009">                    int x2 = x - 1;</span>
+<span class="fc" id="L1010">                    int y2 = y;</span>
+<span class="fc bfc" id="L1011" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
+<span class="fc" id="L1012">                        continue;</span>
                     }
-<span class="fc" id="L1024">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1025">                    count++;</span>
+<span class="fc" id="L1014">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1015">                    count++;</span>
                     
-<span class="fc" id="L1027">                    x2 = x - 2;</span>
-<span class="fc bfc" id="L1028" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
-<span class="fc" id="L1029">                        continue;</span>
+<span class="fc" id="L1017">                    x2 = x - 2;</span>
+<span class="fc bfc" id="L1018" title="All 2 branches covered.">                    if (!isWithinXBounds(img, x2)) {</span>
+<span class="fc" id="L1019">                        continue;</span>
+                    }
+<span class="fc" id="L1021">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1022">                    count++;</span>
+<span class="fc" id="L1023">                    break;</span>
+                }
+                case 5: {
+<span class="fc" id="L1026">                    int x2 = x - 1;</span>
+<span class="fc" id="L1027">                    int y2 = y - 1;</span>
+<span class="pc bpc" id="L1028" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
+<span class="nc" id="L1029">                        continue;</span>
                     }
 <span class="fc" id="L1031">                    sum += img.getValue(x2, y2);</span>
 <span class="fc" id="L1032">                    count++;</span>
-<span class="fc" id="L1033">                    break;</span>
-                }
-                case 5: {
-<span class="fc" id="L1036">                    int x2 = x - 1;</span>
-<span class="fc" id="L1037">                    int y2 = y - 1;</span>
-<span class="pc bpc" id="L1038" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="nc" id="L1039">                        continue;</span>
-                    }
-<span class="fc" id="L1041">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1042">                    count++;</span>
                     
-<span class="fc" id="L1044">                    x2 = x - 2;</span>
-<span class="pc bpc" id="L1045" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1046">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1047">                        count++;</span>
+<span class="fc" id="L1034">                    x2 = x - 2;</span>
+<span class="pc bpc" id="L1035" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1036">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1037">                        count++;</span>
                     }
                     
-<span class="fc" id="L1050">                    x2 = x - 1;</span>
-<span class="fc" id="L1051">                    y2 = y - 2;</span>
-<span class="pc bpc" id="L1052" title="2 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1053">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1054">                        count++;</span>
+<span class="fc" id="L1040">                    x2 = x - 1;</span>
+<span class="fc" id="L1041">                    y2 = y - 2;</span>
+<span class="pc bpc" id="L1042" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1043">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1044">                        count++;</span>
                     }
                     
-<span class="fc" id="L1057">                    x2 = x - 2;</span>
-<span class="fc" id="L1058">                    y2 = y - 2;</span>
-<span class="pc bpc" id="L1059" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1060">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1061">                        count++;</span>
+<span class="fc" id="L1047">                    x2 = x - 2;</span>
+<span class="fc" id="L1048">                    y2 = y - 2;</span>
+<span class="fc bfc" id="L1049" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1050">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1051">                        count++;</span>
                     }
                     break;
                 }
                 case 6: {
-<span class="fc" id="L1066">                    int x2 = x;</span>
-<span class="fc" id="L1067">                    int y2 = y - 1;</span>
-<span class="pc bpc" id="L1068" title="2 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="nc" id="L1069">                        continue;</span>
+<span class="fc" id="L1056">                    int x2 = x;</span>
+<span class="fc" id="L1057">                    int y2 = y - 1;</span>
+<span class="pc bpc" id="L1058" title="2 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
+<span class="nc" id="L1059">                        continue;</span>
                     }
-<span class="fc" id="L1071">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1072">                    count++;</span>
+<span class="fc" id="L1061">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1062">                    count++;</span>
                     
-<span class="fc" id="L1074">                    y2 = y - 2;</span>
-<span class="pc bpc" id="L1075" title="2 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1076">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1077">                        count++;</span>
+<span class="fc" id="L1064">                    y2 = y - 2;</span>
+<span class="pc bpc" id="L1065" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1066">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1067">                        count++;</span>
                     }
                     break;
                 }
                 case 7: {
-<span class="fc" id="L1082">                    int x2 = x + 1;</span>
-<span class="fc" id="L1083">                    int y2 = y - 1;</span>
-<span class="pc bpc" id="L1084" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
-<span class="nc" id="L1085">                        continue;</span>
+<span class="fc" id="L1072">                    int x2 = x + 1;</span>
+<span class="fc" id="L1073">                    int y2 = y - 1;</span>
+<span class="pc bpc" id="L1074" title="1 of 4 branches missed.">                    if (!isWithinXBounds(img, x2) || !isWithinYBounds(img, y2)) {</span>
+<span class="nc" id="L1075">                        continue;</span>
                     }
-<span class="fc" id="L1087">                    sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1088">                    count++;</span>
+<span class="fc" id="L1077">                    sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1078">                    count++;</span>
                     
-<span class="fc" id="L1090">                    x2 = x + 2;</span>
-<span class="pc bpc" id="L1091" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1092">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1093">                        count++;</span>
-                    }
-                    
-<span class="fc" id="L1096">                    x2 = x + 1;</span>
-<span class="fc" id="L1097">                    y2 = y - 2;</span>
-<span class="pc bpc" id="L1098" title="2 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1099">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1100">                        count++;</span>
+<span class="fc" id="L1080">                    x2 = x + 2;</span>
+<span class="pc bpc" id="L1081" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1082">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1083">                        count++;</span>
                     }
                     
-<span class="fc" id="L1103">                    x2 = x + 2;</span>
-<span class="fc" id="L1104">                    y2 = y - 2;</span>
-<span class="pc bpc" id="L1105" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
-<span class="fc" id="L1106">                        sum += img.getValue(x2, y2);</span>
-<span class="fc" id="L1107">                        count++;</span>
+<span class="fc" id="L1086">                    x2 = x + 1;</span>
+<span class="fc" id="L1087">                    y2 = y - 2;</span>
+<span class="pc bpc" id="L1088" title="1 of 4 branches missed.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1089">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1090">                        count++;</span>
+                    }
+                    
+<span class="fc" id="L1093">                    x2 = x + 2;</span>
+<span class="fc" id="L1094">                    y2 = y - 2;</span>
+<span class="fc bfc" id="L1095" title="All 4 branches covered.">                    if (isWithinXBounds(img, x2) &amp;&amp; isWithinYBounds(img, y2)) {</span>
+<span class="fc" id="L1096">                        sum += img.getValue(x2, y2);</span>
+<span class="fc" id="L1097">                        count++;</span>
                     }
                     break;
                 }
             }
             
-<span class="pc bpc" id="L1113" title="1 of 2 branches missed.">            diffs[i] = (count &gt; 0) ? ((sum/(float)count) - vCenter): </span>
+<span class="pc bpc" id="L1103" title="1 of 2 branches missed.">            diffs[i] = (count &gt; 0) ? ((sum/(float)count) - vCenter): </span>
                 Float.MIN_VALUE;
         }
         
-<span class="fc" id="L1117">        float maxAbsDiff = Float.MIN_VALUE;</span>
-<span class="fc" id="L1118">        int maxAbsDiffIdx = -1;</span>
+<span class="fc" id="L1107">        float maxAbsDiff = Float.MIN_VALUE;</span>
+<span class="fc" id="L1108">        int maxAbsDiffIdx = -1;</span>
         
         // quick check that all values are not same
-<span class="fc" id="L1121">        boolean areSame = true;</span>
-<span class="fc bfc" id="L1122" title="All 2 branches covered.">        for (int i = 1; i &lt; 8; ++i) {</span>
-<span class="fc" id="L1123">            float d = diffs[i];</span>
-<span class="fc bfc" id="L1124" title="All 2 branches covered.">            if (d != diffs[i - 1]) {</span>
-<span class="fc" id="L1125">                areSame = false;</span>
-<span class="fc" id="L1126">                break;</span>
+<span class="fc" id="L1111">        boolean areSame = true;</span>
+<span class="fc bfc" id="L1112" title="All 2 branches covered.">        for (int i = 1; i &lt; 8; ++i) {</span>
+<span class="fc" id="L1113">            float d = diffs[i];</span>
+<span class="fc bfc" id="L1114" title="All 2 branches covered.">            if (d != diffs[i - 1]) {</span>
+<span class="fc" id="L1115">                areSame = false;</span>
+<span class="fc" id="L1116">                break;</span>
             }
         }
-<span class="fc bfc" id="L1129" title="All 2 branches covered.">        if (areSame) {</span>
-<span class="fc" id="L1130">            throw new CornerRegion.CornerRegionDegneracyException(</span>
+<span class="fc bfc" id="L1119" title="All 2 branches covered.">        if (areSame) {</span>
+<span class="fc" id="L1120">            throw new CornerRegion.CornerRegionDegneracyException(</span>
             &quot;cannot calculate orientation because all neighbors have same value&quot;);
         }
         
-<span class="fc bfc" id="L1134" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; ++i) {</span>
+<span class="fc bfc" id="L1124" title="All 2 branches covered.">        for (int i = 0; i &lt; 8; ++i) {</span>
             
-<span class="fc" id="L1136">            float d = diffs[i];</span>
+<span class="fc" id="L1126">            float d = diffs[i];</span>
             
-<span class="pc bpc" id="L1138" title="1 of 2 branches missed.">            if (d == Float.MIN_VALUE) {</span>
-<span class="nc" id="L1139">                continue;</span>
+<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">            if (d == Float.MIN_VALUE) {</span>
+<span class="nc" id="L1129">                continue;</span>
             }
             
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">            if (d &lt; 0) {</span>
-<span class="fc" id="L1143">                d *= -1;</span>
+<span class="fc bfc" id="L1132" title="All 2 branches covered.">            if (d &lt; 0) {</span>
+<span class="fc" id="L1133">                d *= -1;</span>
             }
-<span class="fc bfc" id="L1145" title="All 2 branches covered.">            if (d &gt; maxAbsDiff) {</span>
-<span class="fc" id="L1146">                maxAbsDiff = d;</span>
-<span class="fc" id="L1147">                maxAbsDiffIdx = i;</span>
+<span class="fc bfc" id="L1135" title="All 2 branches covered.">            if (d &gt; maxAbsDiff) {</span>
+<span class="fc" id="L1136">                maxAbsDiff = d;</span>
+<span class="fc" id="L1137">                maxAbsDiffIdx = i;</span>
             }
         }
         
@@ -1157,64 +1147,64 @@ public class IntensityFeatures {
         */ 
         
         // direction is &quot;downhill&quot;, so if max diff is +, use the opposite angle
-<span class="fc bfc" id="L1160" title="All 2 branches covered.">        boolean isNegative = diffs[maxAbsDiffIdx] &lt; 0;</span>
+<span class="fc bfc" id="L1150" title="All 2 branches covered.">        boolean isNegative = diffs[maxAbsDiffIdx] &lt; 0;</span>
         
-<span class="fc" id="L1162">        int angle = 0;</span>
-<span class="fc bfc" id="L1163" title="All 8 branches covered.">        switch(maxAbsDiffIdx) {</span>
+<span class="fc" id="L1152">        int angle = 0;</span>
+<span class="fc bfc" id="L1153" title="All 8 branches covered.">        switch(maxAbsDiffIdx) {</span>
             case 0: {
-<span class="fc bfc" id="L1165" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1166">                    return 0;</span>
+<span class="fc bfc" id="L1155" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1156">                    return 0;</span>
                 } else {
-<span class="fc" id="L1168">                    return 180;</span>
+<span class="fc" id="L1158">                    return 180;</span>
                 }
             }
             case 1: {
-<span class="fc bfc" id="L1172" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1173">                    return 45;</span>
+<span class="fc bfc" id="L1162" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1163">                    return 45;</span>
                 } else {
-<span class="fc" id="L1175">                    return 225;</span>
+<span class="fc" id="L1165">                    return 225;</span>
                 }
             }
             case 2: {
-<span class="fc bfc" id="L1179" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1180">                    return 90;</span>
+<span class="fc bfc" id="L1169" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1170">                    return 90;</span>
                 } else {
-<span class="fc" id="L1182">                    return 270;</span>
+<span class="fc" id="L1172">                    return 270;</span>
                 }
             }
             case 3: {
-<span class="fc bfc" id="L1186" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1187">                    return 135;</span>
+<span class="fc bfc" id="L1176" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1177">                    return 135;</span>
                 } else {
-<span class="fc" id="L1189">                    return 315;</span>
+<span class="fc" id="L1179">                    return 315;</span>
                 }
             }
             case 4: {
-<span class="fc bfc" id="L1193" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1194">                    return 180;</span>
+<span class="fc bfc" id="L1183" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1184">                    return 180;</span>
                 } else {
-<span class="fc" id="L1196">                    return 0;</span>
+<span class="fc" id="L1186">                    return 0;</span>
                 }
             }
             case 5: {
-<span class="fc bfc" id="L1200" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1201">                    return 225;</span>
+<span class="fc bfc" id="L1190" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1191">                    return 225;</span>
                 } else {
-<span class="fc" id="L1203">                    return 45;</span>
+<span class="fc" id="L1193">                    return 45;</span>
                 }
             }
             case 6: {
-<span class="fc bfc" id="L1207" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1208">                    return 270;</span>
+<span class="fc bfc" id="L1197" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1198">                    return 270;</span>
                 } else {
-<span class="fc" id="L1210">                    return 90;</span>
+<span class="fc" id="L1200">                    return 90;</span>
                 }
             } 
             default: {
-<span class="fc bfc" id="L1214" title="All 2 branches covered.">                if (isNegative) {</span>
-<span class="fc" id="L1215">                    return 315;</span>
+<span class="fc bfc" id="L1204" title="All 2 branches covered.">                if (isNegative) {</span>
+<span class="fc" id="L1205">                    return 315;</span>
                 } else {
-<span class="fc" id="L1217">                    return 135;</span>
+<span class="fc" id="L1207">                    return 135;</span>
                 }
             }
         }        

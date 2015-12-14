@@ -173,7 +173,7 @@ import java.util.logging.Logger;
         // expecting nBorder to be &lt; nCavity
 
 <span class="fc bfc" id="L175" title="All 4 branches covered.">        if (discardWhenCavityIsSmallerThanBorder </span>
-            &amp;&amp; ((nBorder &gt; 0.8*nCavity) &amp;&amp; 
+            &amp;&amp; ((nBorder &gt; 0.9*nCavity) &amp;&amp; 
 <span class="fc bfc" id="L177" title="All 2 branches covered.">                (Math.abs(nBorder - nCavity) &gt; 0.1*nCavity))) {</span>
            
 <span class="fc" id="L179">            log.info(String.format(</span>
@@ -203,7 +203,7 @@ int z = 1;
 <span class="fc" id="L203">        lt.applyLineThinner(borderPixels, 0, imageWidth, 0, imageHeight);</span>
 <span class="fc" id="L204">        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();</span>
 <span class="fc" id="L205">        pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);</span>
-        
+                
 <span class="pc bpc" id="L207" title="1 of 2 branches missed.">        if (borderPixels.isEmpty()) {</span>
 <span class="nc" id="L208">            return null;</span>
         }
@@ -228,11 +228,11 @@ int z = 1;
 <span class="fc" id="L228">            spurRm.setToDebug();</span>
         }
 <span class="fc" id="L230">        spurRm.remove(borderPixels, imageWidth, imageHeight);</span>
-
+        
 <span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (borderPixels.isEmpty()) {</span>
 <span class="nc" id="L233">            return null;</span>
         }
-        
+       
 <span class="fc bfc" id="L236" title="All 2 branches covered.">if (debug) {        </span>
 <span class="fc" id="L237">Image img3 = new Image(imageWidth, imageHeight);</span>
 <span class="fc bfc" id="L238" title="All 2 branches covered.">for (PairInt p : borderPixels) {</span>
@@ -272,7 +272,7 @@ try {
 
 <span class="fc" id="L273">        UntraversableLobeRemover remover = new UntraversableLobeRemover();</span>
 <span class="fc" id="L274">        remover.applyFilter(borderPixels, exclude, imageWidth, imageHeight);</span>
-        
+                
 <span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (borderPixels.isEmpty()) {</span>
 <span class="nc" id="L277">            return null;</span>
         }
@@ -312,7 +312,7 @@ try {
 <span class="fc" id="L312">                routes.applyOffsets(-1*xOffset, -1*yOffset);</span>
 <span class="fc" id="L313">                boolean rm = false;</span>
 <span class="fc bfc" id="L314" title="All 2 branches covered.">                for (PairInt p : routes.getRoute0()) {</span>
-<span class="pc bpc" id="L315" title="1 of 6 branches missed.">                    if (p.getX() &lt; 0 || p.getY() &lt; 0 || (p.getX() &gt; (w - 1)) ||</span>
+<span class="fc bfc" id="L315" title="All 6 branches covered.">                    if (p.getX() &lt; 0 || p.getY() &lt; 0 || (p.getX() &gt; (w - 1)) ||</span>
 <span class="pc bpc" id="L316" title="1 of 2 branches missed.">                        (p.getY() &gt; (h - 1)) || </span>
 <span class="fc bfc" id="L317" title="All 2 branches covered.">                        (img.getValue(p.getX(), p.getY()) == 0)) {</span>
 <span class="fc" id="L318">                        rm = true;</span>
@@ -376,9 +376,9 @@ try {
 <span class="fc" id="L376">        extractor.overrideMaxNumberIterationsJunctionSplice(10);</span>
         
 <span class="fc" id="L378">        PairIntArray out = extractor.findAsSingleClosedEdge(butterFlySections2);</span>
-       
-<span class="pc bpc" id="L380" title="1 of 2 branches missed.">        if (out == null) {</span>
-<span class="nc" id="L381">            return null;</span>
+               
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        if (out == null) {</span>
+<span class="fc" id="L381">            return null;</span>
         }
         
         /*
@@ -417,7 +417,7 @@ try {
 }
 
 <span class="pc bpc" id="L419" title="1 of 2 branches missed.">            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {</span>
-                
+                                
 <span class="nc" id="L421">                extractor.reorderEndpointsIfNeeded(out);</span>
                 
 <span class="nc bnc" id="L423" title="All 2 branches missed.">if (debug) {        </span>

@@ -592,7 +592,7 @@ import java.util.Set;
         }
 
         //TODO: review these limits
-<span class="pc bpc" id="L595" title="2 of 8 branches missed.">        if ((tS &lt; 0.2) &amp;&amp; (tR &gt;= 18.) &amp;&amp; (tTx &lt; tXConstraint)</span>
+<span class="pc bpc" id="L595" title="1 of 8 branches missed.">        if ((tS &lt; 0.2) &amp;&amp; (tR &gt;= 18.) &amp;&amp; (tTx &lt; tXConstraint)</span>
             &amp;&amp; (tTy &lt; tYConstraint)) {
 
 <span class="fc" id="L598">            return true;</span>
@@ -826,9 +826,9 @@ import java.util.Set;
                 new ArrayList&lt;TransformationParameters&gt;(similarSet);
 <span class="fc" id="L827">            int[] keep = filterForTranslationXUsingHist(similar);</span>
 <span class="fc" id="L828">            Set&lt;Integer&gt; unique = MiscStats.indexesNotPresent(keep, similar.size());</span>
-<span class="pc bpc" id="L829" title="1 of 2 branches missed.">            for (Integer ind : unique) {</span>
-<span class="nc" id="L830">                combinedParams.add(similar.get(ind.intValue()));</span>
-<span class="nc" id="L831">            }</span>
+<span class="fc bfc" id="L829" title="All 2 branches covered.">            for (Integer ind : unique) {</span>
+<span class="fc" id="L830">                combinedParams.add(similar.get(ind.intValue()));</span>
+<span class="fc" id="L831">            }</span>
             
 <span class="fc" id="L833">            filter(similar, keep);</span>
 <span class="fc" id="L834">            keep = filterForTranslationYUsingHist(similar);</span>

@@ -377,8 +377,8 @@ System.out.println(sb.toString());
 <span class="fc" id="L377">                    tolTransXY2 -= deltaTol;</span>
                 }
 <span class="fc" id="L379">                int dither2 = Math.round(dither * params.getScale());</span>
-<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                if (dither2 == 0) {</span>
-<span class="nc" id="L381">                    dither2 = 1;</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">                if (dither2 == 0) {</span>
+<span class="fc" id="L381">                    dither2 = 1;</span>
 <span class="fc bfc" id="L382" title="All 2 branches covered.">                } else if (dither2 &gt; dither) {</span>
                     // large dither makes runtime larger
 <span class="fc" id="L384">                    dither2 = dither;</span>
@@ -467,8 +467,8 @@ System.out.println(sb.toString());
 <span class="fc" id="L467">                        MiscStats.calculateTransformation(binFactor1, binFactor2,</span>
                             stats, new float[4]);
 
-<span class="pc bpc" id="L470" title="1 of 2 branches missed.">                    if (combinedParams == null) {</span>
-<span class="nc" id="L471">                        continue;</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">                    if (combinedParams == null) {</span>
+<span class="fc" id="L471">                        continue;</span>
                     }
 
 <span class="fc bfc" id="L474" title="All 2 branches covered.">                    if (MiscStats.standardDeviationsAreSmall(combinedParams)) {</span>
@@ -487,12 +487,12 @@ System.out.println(sb.toString());
                     }
                 }
 <span class="fc" id="L489">            }</span>
-<span class="pc bpc" id="L490" title="1 of 2 branches missed.">            if (!tolIsTooLarge) {</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">            if (!tolIsTooLarge) {</span>
 <span class="fc" id="L491">                break;</span>
             }
-<span class="nc" id="L493">            deltaTol++;</span>
+<span class="fc" id="L493">            deltaTol++;</span>
 
-<span class="nc" id="L495">            nIter++;</span>
+<span class="fc" id="L495">            nIter++;</span>
         }
 
 <span class="pc bpc" id="L498" title="1 of 2 branches missed.">        if (bestParams != null) {</span>

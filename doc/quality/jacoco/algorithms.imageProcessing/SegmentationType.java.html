@@ -2,6 +2,9 @@
 
 /**
 &lt;pre&gt;
+    GREYSCALE_WAVELET = greyscale segmentation based upon coarsest coefficient
+                        of a trous wavelet transform;
+    GREYSCALE_CANNY = greyscale segmentation based upon Canny edge detector;
     GREYSCALE_HIST = greyscale segmentation based on histogram with a black and
                      white mask
     GREYSCALE_KMPP = KMPP for k=2;
@@ -15,14 +18,14 @@
 &lt;/pre&gt;
 @author nichole
  */
-<span class="pc" id="L18">public enum SegmentationType {</span>
-
-<span class="fc" id="L20">    GREYSCALE_HIST,</span>
-<span class="fc" id="L21">    GREYSCALE_KMPP,</span>
-<span class="fc" id="L22">    DT_CLUSTERING,</span>
-<span class="fc" id="L23">    COLOR_POLARCIEXY_LARGE,</span>
-<span class="fc" id="L24">    COLOR_POLARCIEXY_ADAPT,</span>
-<span class="fc" id="L25">    COLOR_POLARCIEXY,</span>
-<span class="fc" id="L26">    ADAPTIVE_MEAN;</span>
+<span class="pc" id="L21">public enum SegmentationType {</span>
+<span class="fc" id="L22">    GREYSCALE_WAVELET, GREYSCALE_CANNY,</span>
+<span class="fc" id="L23">    GREYSCALE_HIST,</span>
+<span class="fc" id="L24">    GREYSCALE_KMPP,</span>
+<span class="fc" id="L25">    DT_CLUSTERING,</span>
+<span class="fc" id="L26">    COLOR_POLARCIEXY_LARGE,</span>
+<span class="fc" id="L27">    COLOR_POLARCIEXY_ADAPT,</span>
+<span class="fc" id="L28">    COLOR_POLARCIEXY,</span>
+<span class="fc" id="L29">    ADAPTIVE_MEAN;</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

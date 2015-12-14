@@ -19,26 +19,26 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
-<span class="nc bnc" id="L22" title="All 2 branches missed.">public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder {</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">public class DFSConnectedGroupsFinder2 extends AbstractDFSConnectedGroupsFinder {</span>
 
     private enum State {
         INITIALIZED, GROUPS_FOUND, GROUPS_PRUNED, POST_GROUP_CORRECTED
     }
     
-<span class="nc" id="L28">    private State state = null;</span>
+<span class="fc" id="L28">    private State state = null;</span>
     
     public DFSConnectedGroupsFinder2() {
     
-<span class="nc" id="L32">        super();</span>
+<span class="fc" id="L32">        super();</span>
         
-<span class="nc" id="L34">        minimumNumberInCluster = 1;</span>
+<span class="fc" id="L34">        minimumNumberInCluster = 1;</span>
         
-<span class="nc" id="L36">        state = State.INITIALIZED;</span>
-<span class="nc" id="L37">    }</span>
+<span class="fc" id="L36">        state = State.INITIALIZED;</span>
+<span class="fc" id="L37">    }</span>
     
     @Override
     Logger constructLogger() {
-<span class="nc" id="L41">        return Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());</span>
+<span class="fc" id="L41">        return Logger.getLogger(DFSConnectedGroupsFinder2.class.getName());</span>
     }
     
     /**
@@ -62,97 +62,97 @@ import java.util.logging.Logger;
         int maxValueForWrapAround, int toleranceInValue,
         int imageWidth, int imageHeight, boolean correctForWandering) {
           
-<span class="nc" id="L65">        findClustersIterative(pointValueMap, maxValueForWrapAround, </span>
+<span class="fc" id="L65">        findClustersIterative(pointValueMap, maxValueForWrapAround, </span>
             toleranceInValue, imageWidth, imageHeight);
         
-<span class="nc" id="L68">        prune();</span>
+<span class="fc" id="L68">        prune();</span>
                 
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        if (correctForWandering) {</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (correctForWandering) {</span>
 <span class="nc" id="L71">            correctRangesIfNeeded(pointValueMap, maxValueForWrapAround,</span>
                 toleranceInValue, imageWidth, imageHeight);
         }
-<span class="nc" id="L74">    }</span>
+<span class="fc" id="L74">    }</span>
 
     @Override
     protected void prune() {
         
-<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (!state.equals(State.GROUPS_FOUND)) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (!state.equals(State.GROUPS_FOUND)) {</span>
 <span class="nc" id="L80">            throw new IllegalStateException(</span>
                 &quot;findClustersIterative must be used before this&quot;);
         }
         
-<span class="nc" id="L84">        super.prune();</span>
+<span class="fc" id="L84">        super.prune();</span>
         
-<span class="nc" id="L86">        state = State.GROUPS_PRUNED;</span>
-<span class="nc" id="L87">    }</span>
+<span class="fc" id="L86">        state = State.GROUPS_PRUNED;</span>
+<span class="fc" id="L87">    }</span>
   
     protected void findClustersIterative(Map&lt;PairInt, Float&gt; pointValueMap, 
         int maxValueForWrapAround, int toleranceInValue,
         int imageWidth, int imageHeight) {
         
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (pointValueMap.isEmpty()) {</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (pointValueMap.isEmpty()) {</span>
 <span class="nc" id="L94">            state = State.GROUPS_FOUND;</span>
 <span class="nc" id="L95">            return;</span>
         }
         
-<span class="nc" id="L98">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L98">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc" id="L100">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
+<span class="fc" id="L100">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
         
         //O(N)
-<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (Entry&lt;PairInt, Float&gt; entry : pointValueMap.entrySet()) {</span>
-<span class="nc" id="L104">            stack.add(entry.getKey());</span>
-<span class="nc" id="L105">        }</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        for (Entry&lt;PairInt, Float&gt; entry : pointValueMap.entrySet()) {</span>
+<span class="fc" id="L104">            stack.add(entry.getKey());</span>
+<span class="fc" id="L105">        }</span>
                
-<span class="nc" id="L107">        visited.add(stack.peek());</span>
+<span class="fc" id="L107">        visited.add(stack.peek());</span>
 
-<span class="nc bnc" id="L109" title="All 2 branches missed.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
 
-<span class="nc" id="L111">            PairInt uPoint = stack.pop();</span>
+<span class="fc" id="L111">            PairInt uPoint = stack.pop();</span>
             
-<span class="nc" id="L113">            int uX = uPoint.getX();</span>
-<span class="nc" id="L114">            int uY = uPoint.getY();</span>
+<span class="fc" id="L113">            int uX = uPoint.getX();</span>
+<span class="fc" id="L114">            int uY = uPoint.getY();</span>
 
-<span class="nc" id="L116">            boolean foundANeighbor = false;</span>
+<span class="fc" id="L116">            boolean foundANeighbor = false;</span>
             
-<span class="nc" id="L118">            float uValue = pointValueMap.get(uPoint).floatValue();</span>
+<span class="fc" id="L118">            float uValue = pointValueMap.get(uPoint).floatValue();</span>
             
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
-<span class="nc bnc" id="L122" title="All 2 branches missed.">            for (int vX = (uX - 1); vX &lt;= (uX + 1); vX++) {</span>
-<span class="nc bnc" id="L123" title="All 4 branches missed.">                if ((vX &lt; 0) || (vX &gt; (imageWidth - 1))) {</span>
-<span class="nc" id="L124">                    continue;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            for (int vX = (uX - 1); vX &lt;= (uX + 1); vX++) {</span>
+<span class="fc bfc" id="L123" title="All 4 branches covered.">                if ((vX &lt; 0) || (vX &gt; (imageWidth - 1))) {</span>
+<span class="fc" id="L124">                    continue;</span>
                 }
                 
-<span class="nc bnc" id="L127" title="All 2 branches missed.">                for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
-<span class="nc bnc" id="L128" title="All 4 branches missed.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
-<span class="nc" id="L129">                        continue;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">                for (int vY = (uY - 1); vY &lt;= (uY + 1); vY++) {</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">                    if ((vY &lt; 0) || (vY &gt; (imageHeight - 1))) {</span>
+<span class="fc" id="L129">                        continue;</span>
                     }
                     
-<span class="nc" id="L132">                    PairInt vPoint = new PairInt(vX, vY);</span>
+<span class="fc" id="L132">                    PairInt vPoint = new PairInt(vX, vY);</span>
                     
-<span class="nc bnc" id="L134" title="All 2 branches missed.">                    if (vPoint.equals(uPoint)) {</span>
-<span class="nc" id="L135">                        continue;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                    if (vPoint.equals(uPoint)) {</span>
+<span class="fc" id="L135">                        continue;</span>
                     }
                     
-<span class="nc bnc" id="L138" title="All 2 branches missed.">                    if (!pointValueMap.containsKey(vPoint)) {</span>
-<span class="nc" id="L139">                        continue;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                    if (!pointValueMap.containsKey(vPoint)) {</span>
+<span class="fc" id="L139">                        continue;</span>
                     }
                     
-<span class="nc bnc" id="L142" title="All 2 branches missed.">                    if (visited.contains(vPoint)) {</span>
-<span class="nc" id="L143">                        continue;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                    if (visited.contains(vPoint)) {</span>
+<span class="fc" id="L143">                        continue;</span>
                     }
                     
-<span class="nc" id="L146">                    boolean similar = false;</span>
+<span class="fc" id="L146">                    boolean similar = false;</span>
                     
-<span class="nc" id="L148">                    float vValue = pointValueMap.get(vPoint).floatValue();</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">                    if (Math.abs(uValue - vValue) &lt;= toleranceInValue) {</span>
-<span class="nc" id="L150">                        similar = true;</span>
+<span class="fc" id="L148">                    float vValue = pointValueMap.get(vPoint).floatValue();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                    if (Math.abs(uValue - vValue) &lt;= toleranceInValue) {</span>
+<span class="fc" id="L150">                        similar = true;</span>
                     }
                     
                     // test wrap around
-<span class="nc bnc" id="L154" title="All 2 branches missed.">                    if (!similar) {</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">                        if (Math.abs(uValue - (vValue - maxValueForWrapAround)) &lt;= toleranceInValue) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                    if (!similar) {</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                        if (Math.abs(uValue - (vValue - maxValueForWrapAround)) &lt;= toleranceInValue) {</span>
 <span class="nc" id="L156">                            similar = true;</span>
                         }
                         /*
@@ -161,8 +161,8 @@ import java.util.logging.Logger;
                           v |  u      |
                         */
                     }
-<span class="nc bnc" id="L164" title="All 2 branches missed.">                    if (!similar) {</span>
-<span class="nc bnc" id="L165" title="All 2 branches missed.">                        if (Math.abs(vValue - (uValue - maxValueForWrapAround)) &lt;= toleranceInValue) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                    if (!similar) {</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                        if (Math.abs(vValue - (uValue - maxValueForWrapAround)) &lt;= toleranceInValue) {</span>
 <span class="nc" id="L166">                            similar = true;</span>
                         }
                         /*
@@ -172,28 +172,28 @@ import java.util.logging.Logger;
                         */
                     }
                     
-<span class="nc bnc" id="L175" title="All 2 branches missed.">                    if (!similar) {</span>
-<span class="nc" id="L176">                        continue;</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                    if (!similar) {</span>
+<span class="fc" id="L176">                        continue;</span>
                     }
                     
-<span class="nc" id="L179">                    visited.add(vPoint);</span>
+<span class="fc" id="L179">                    visited.add(vPoint);</span>
                     
-<span class="nc" id="L181">                    processPair(uPoint, vPoint);</span>
+<span class="fc" id="L181">                    processPair(uPoint, vPoint);</span>
                 
-<span class="nc" id="L183">                    stack.add(vPoint);</span>
+<span class="fc" id="L183">                    stack.add(vPoint);</span>
                     
-<span class="nc" id="L185">                    foundANeighbor = true;</span>
+<span class="fc" id="L185">                    foundANeighbor = true;</span>
                 }
             }
             
-<span class="nc bnc" id="L189" title="All 4 branches missed.">            if (!foundANeighbor &amp;&amp; (minimumNumberInCluster == 1)) {</span>
+<span class="pc bpc" id="L189" title="1 of 4 branches missed.">            if (!foundANeighbor &amp;&amp; (minimumNumberInCluster == 1)) {</span>
                 
-<span class="nc" id="L191">                process(uPoint);</span>
+<span class="fc" id="L191">                process(uPoint);</span>
             }
-<span class="nc" id="L193">        }</span>
+<span class="fc" id="L193">        }</span>
         
-<span class="nc" id="L195">        state = State.GROUPS_FOUND;</span>
-<span class="nc" id="L196">    }</span>
+<span class="fc" id="L195">        state = State.GROUPS_FOUND;</span>
+<span class="fc" id="L196">    }</span>
 
     private void correctRangesIfNeeded(Map&lt;PairInt, Float&gt; pointValueMap, 
         int maxValueForWrapAround, int toleranceInValue, int imageWidth, 

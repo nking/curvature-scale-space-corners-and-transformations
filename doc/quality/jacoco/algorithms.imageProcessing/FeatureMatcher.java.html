@@ -81,8 +81,8 @@ import thirdparty.HungarianAlgorithm;
                 int rot1;
                 try {
 <span class="fc" id="L83">                    rot1 = features1.calculate45DegreeOrientation(img1, x1d, y1d);</span>
-<span class="nc" id="L84">                } catch (CornerRegionDegneracyException e) {</span>
-<span class="nc" id="L85">                    continue;</span>
+<span class="fc" id="L84">                } catch (CornerRegionDegneracyException e) {</span>
+<span class="fc" id="L85">                    continue;</span>
 <span class="fc" id="L86">                }</span>
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
@@ -108,7 +108,7 @@ import thirdparty.HungarianAlgorithm;
                     
 <span class="fc" id="L109">                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(</span>
                         desc1, x1d, y1d, desc2, x2, y2);
-                   
+                
 <span class="fc bfc" id="L112" title="All 2 branches covered.">                    if (stat.getSumIntensitySqDiff() &lt; stat.getImg2PointIntensityErr()) {</span>
                        
 <span class="fc bfc" id="L114" title="All 2 branches covered.">                        if (best == null) {</span>
@@ -557,7 +557,7 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L557">            int x = c.getX()[c.getKMaxIdx()];</span>
 <span class="fc" id="L558">            int y = c.getY()[c.getKMaxIdx()];</span>
                 
-<span class="fc bfc" id="L560" title="All 4 branches covered.">            if ((x &lt; (minXY1[0] - transXYTol)) || (x &gt; (maxXY1[0] + transXYTol))) {</span>
+<span class="pc bpc" id="L560" title="1 of 4 branches missed.">            if ((x &lt; (minXY1[0] - transXYTol)) || (x &gt; (maxXY1[0] + transXYTol))) {</span>
 <span class="fc" id="L561">                continue;</span>
             }
 <span class="pc bpc" id="L563" title="2 of 4 branches missed.">            if ((y &lt; (minXY1[1] - transXYTol)) || (y &gt; (maxXY1[1] + transXYTol))) {</span>

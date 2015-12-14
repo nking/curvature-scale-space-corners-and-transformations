@@ -314,8 +314,8 @@ import java.util.Set;
 <span class="fc" id="L314">        xmin = MiscMath.roundDownByLargestPower(xmin);</span>
 
         // xmax &gt; 1 and xmin is between 0 and 1, round xmin down
-<span class="pc bpc" id="L317" title="1 of 6 branches missed.">        if ((xmax &gt; 1) &amp;&amp; (xmin &gt; 0) &amp;&amp; (xmin &lt; 1.0)) {</span>
-<span class="nc" id="L318">            xmin = 0;</span>
+<span class="fc bfc" id="L317" title="All 6 branches covered.">        if ((xmax &gt; 1) &amp;&amp; (xmin &gt; 0) &amp;&amp; (xmin &lt; 1.0)) {</span>
+<span class="fc" id="L318">            xmin = 0;</span>
         }
 
 <span class="fc" id="L321">        return new float[]{xmin, xmax};</span>
@@ -1279,7 +1279,7 @@ import java.util.Set;
 <span class="fc bfc" id="L1279" title="All 2 branches covered.">        for (int i = 0; i &lt; indexes.size(); ++i) {</span>
 <span class="fc" id="L1280">            idxs[i] = indexes.get(i).intValue();</span>
 <span class="fc" id="L1281">            c[i] = hist.getYHist()[idxs[i]];</span>
-<span class="pc bpc" id="L1282" title="1 of 2 branches missed.">            if (c[i] &gt; maxC) {</span>
+<span class="fc bfc" id="L1282" title="All 2 branches covered.">            if (c[i] &gt; maxC) {</span>
 <span class="fc" id="L1283">                maxC = c[i];</span>
             }
         }

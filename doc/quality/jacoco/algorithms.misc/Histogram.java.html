@@ -374,42 +374,42 @@ import java.util.logging.Logger;
         float binWidth, 
         float[] values, float[] valueErrors) {
 
-<span class="nc bnc" id="L377" title="All 6 branches missed.">        if (values == null || valueErrors == null || </span>
+<span class="pc bpc" id="L377" title="3 of 6 branches missed.">        if (values == null || valueErrors == null || </span>
             values.length != valueErrors.length) {
             
 <span class="nc" id="L380">            throw new IllegalArgumentException(</span>
                 &quot;values and valueErrors cannot be null and must be the same length&quot;);
         }
         
-<span class="nc" id="L384">        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);</span>
-<span class="nc bnc" id="L385" title="All 2 branches missed.">        if (nBins &lt; 0) {</span>
+<span class="fc" id="L384">        int nBins = (int)Math.ceil(((maxX - minX))/binWidth);</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (nBins &lt; 0) {</span>
 <span class="nc" id="L386">            nBins *= -1;</span>
         }
 
-<span class="nc" id="L389">        float[] xHist = new float[nBins];</span>
-<span class="nc" id="L390">        int[] yHist = new int[nBins];</span>
+<span class="fc" id="L389">        float[] xHist = new float[nBins];</span>
+<span class="fc" id="L390">        int[] yHist = new int[nBins];</span>
         
-<span class="nc" id="L392">        Histogram.createHistogram(values, nBins, minX, maxX, xHist, </span>
+<span class="fc" id="L392">        Histogram.createHistogram(values, nBins, minX, maxX, xHist, </span>
             yHist, binWidth);
 
-<span class="nc" id="L395">        float[] yHistFloat = new float[yHist.length];</span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
-<span class="nc" id="L397">            yHistFloat[i] = (float) yHist[i];</span>
+<span class="fc" id="L395">        float[] yHistFloat = new float[yHist.length];</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        for (int i = 0; i &lt; yHist.length; i++) {</span>
+<span class="fc" id="L397">            yHistFloat[i] = (float) yHist[i];</span>
         }
 
-<span class="nc" id="L400">        float[] yErrors = new float[xHist.length];</span>
-<span class="nc" id="L401">        float[] xErrors = new float[xHist.length];</span>
+<span class="fc" id="L400">        float[] yErrors = new float[xHist.length];</span>
+<span class="fc" id="L401">        float[] xErrors = new float[xHist.length];</span>
 
-<span class="nc" id="L403">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
+<span class="fc" id="L403">        calulateHistogramBinErrors(xHist, yHist, values, valueErrors, xErrors, yErrors);</span>
 
-<span class="nc" id="L405">        HistogramHolder histogram = new HistogramHolder();</span>
-<span class="nc" id="L406">        histogram.setXHist(xHist);</span>
-<span class="nc" id="L407">        histogram.setYHist(yHist);</span>
-<span class="nc" id="L408">        histogram.setYHistFloat(yHistFloat);</span>
-<span class="nc" id="L409">        histogram.setYErrors(yErrors);</span>
-<span class="nc" id="L410">        histogram.setXErrors(xErrors);</span>
+<span class="fc" id="L405">        HistogramHolder histogram = new HistogramHolder();</span>
+<span class="fc" id="L406">        histogram.setXHist(xHist);</span>
+<span class="fc" id="L407">        histogram.setYHist(yHist);</span>
+<span class="fc" id="L408">        histogram.setYHistFloat(yHistFloat);</span>
+<span class="fc" id="L409">        histogram.setYErrors(yErrors);</span>
+<span class="fc" id="L410">        histogram.setXErrors(xErrors);</span>
         
-<span class="nc" id="L412">        return histogram;</span>
+<span class="fc" id="L412">        return histogram;</span>
     }
     
     public static HistogramHolder createSimpleHistogram(int binWidth, 

@@ -360,7 +360,7 @@ public class FeatureMatcherWrapper {
 <span class="fc" id="L360">            tolXY = Math.round(Math.max(params.getStandardDeviations()[2], </span>
 <span class="fc" id="L361">                params.getStandardDeviations()[3]));</span>
 <span class="pc bpc" id="L362" title="1 of 2 branches missed.">            if (tolXY &lt; 3) {</span>
-<span class="fc" id="L363">                tolXY = 3;</span>
+<span class="nc" id="L363">                tolXY = 3;</span>
             }
         } else {
 <span class="nc" id="L366">            tolXY = transXYTol;</span>
@@ -370,7 +370,7 @@ public class FeatureMatcherWrapper {
         
         //TODO: revise this
 <span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (tolXY &gt; 3) {</span>
-<span class="nc" id="L373">            dither = 4;</span>
+<span class="fc" id="L373">            dither = 4;</span>
         }
         
 <span class="fc" id="L376">        CorrespondenceList cl = featureMatcher.findSimilarFeatures(gsImg1,</span>
@@ -736,11 +736,11 @@ public class FeatureMatcherWrapper {
 <span class="fc bfc" id="L736" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
 <span class="fc" id="L737">            PairInt imPt1 = stat.getImg1Point();</span>
 <span class="fc" id="L738">            PairInt imPt2 = stat.getImg2Point();</span>
-<span class="pc bpc" id="L739" title="2 of 4 branches missed.">            if (added1.contains(imPt1) || added2.contains(imPt2)) {</span>
+<span class="fc bfc" id="L739" title="All 4 branches covered.">            if (added1.contains(imPt1) || added2.contains(imPt2)) {</span>
                 //TODO: consider replacing the match with imPt1, imPt2 which is
                 // usually better from the small first solution.
                 // in that case, need to remove the added.adds below
-<span class="nc" id="L743">                continue;</span>
+<span class="fc" id="L743">                continue;</span>
             }
 <span class="fc" id="L745">            matched01.add(imPt1);</span>
 <span class="fc" id="L746">            matched02.add(imPt2);</span>
