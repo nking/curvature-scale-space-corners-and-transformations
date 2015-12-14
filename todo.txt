@@ -1,7 +1,10 @@
-*** matching improvements still needed:
-    -- checkerboard matches
-         use of ===> gradient descriptors may be
-         necessary too (same comment can be made for the books test matching).
+*** matching improvements still needed for checkerboard:
+    -- at the corner cleaning stage, 
+       if there were many corners removed, need to determine
+       if there are many intersecting lines of a minumum size,
+       and if yes to both, a better segmentation resulting in
+       fewer corners due to line artifacts would probably be
+       a segmentation image that is only canny edges.
 
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
