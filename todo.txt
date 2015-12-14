@@ -1,20 +1,5 @@
-*** matching improvements still needed for checkerboard:
-    -- at the corner cleaning stage, 
-       if there were many corners removed, need to determine
-       if there are many intersecting lines of a minumum size,
-       and if yes to both, a better segmentation resulting in
-       fewer corners due to line artifacts would probably be
-       a segmentation image that is only canny edges.
-
-** -- impl a circle hough transform
-   -- and explore elliptical transforms for the rainbow fitting which
-      currently has a long runtime.
-   -- low priority: 
-      explore using the hough transform for lines to find the astronomical
-      "fundamental plane" of 3 dimensional or multi-dimensional data.
-
-** -- use the added half dome test images to assert that matching same
-      from other cameras is working
+*** feature matcher should reuse the hough transform lines
+    instead of recalculating after corners.
 
 -- more ransac and epipolar solver tests.
    ** change the plotter of epipolar results to plot the
@@ -27,6 +12,17 @@
    -- consider implementing a version of LMedS to use in place of RANSAC as a comparison
    update the open agile story and close it
 -- update the command line runners.
+
+** -- impl a circle hough transform
+   -- and explore elliptical transforms for the rainbow fitting which
+      currently has a long runtime.
+   -- low priority: 
+      explore using the hough transform for lines to find the astronomical
+      "fundamental plane" of 3 dimensional or multi-dimensional data.
+
+** -- use the added half dome test images to assert that matching same
+      from other cameras is working
+
 -- change any debugging code to not run by default and change log levels where needed
 -- finish implementing recursive gaussian and gaussian derivative filters
 

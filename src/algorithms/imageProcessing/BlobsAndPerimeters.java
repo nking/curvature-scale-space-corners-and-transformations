@@ -175,9 +175,6 @@ public class BlobsAndPerimeters {
         final List<Set<PairInt>> inOutBlobs, boolean useBinned,
         boolean discardWhenCavityIsSmallerThanBorder) {
         
-        // TODO: method arguments are vulnerable to not being consistently from
-        //   same origins, so refactor this (encapsulate) at some point
-        
         final List<PairIntArray> outputBounds = new ArrayList<PairIntArray>();
         
         Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());

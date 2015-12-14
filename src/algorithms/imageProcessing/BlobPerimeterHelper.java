@@ -98,6 +98,20 @@ public class BlobPerimeterHelper {
         
         imgHelper.applySegmentation(type, applyToBinnedImage);
     }
+    
+    public void replaceSegmentationWithCanny(SegmentationType segmentationType, 
+        boolean useBinnedImage) {
+        
+        imgHelper.replaceSegmentationWithCanny(segmentationType, useBinnedImage);
+        
+        if (useBinnedImage) {
+            segBinnedBlobsMap.remove(segmentationType);
+            segBinnedBlobPerimetersMap.remove(segmentationType);
+        } else {
+            segBlobsMap.remove(segmentationType);
+            segBlobPerimetersMap.remove(segmentationType);
+        }
+    }
 
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
         return imgHelper.getSegmentationImage(type);
@@ -342,4 +356,5 @@ public class BlobPerimeterHelper {
     public String getDebugTag() {
         return imgHelper.getDebugTag();
     }
+
 }

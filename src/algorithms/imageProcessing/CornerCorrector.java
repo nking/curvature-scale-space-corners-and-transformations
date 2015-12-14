@@ -3,17 +3,12 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -55,7 +50,7 @@ public class CornerCorrector {
         
         for (int ii = 0; ii < edgeLists.size(); ++ii) {
 
-            //NOTE: in testable method for this, should allow ability to
+            // NOTE: in testable method for this, should allow ability to
             // pass in junctions and not delete corners that are in
             // junctions.
             // For these blob perimeters, there are not junctions.

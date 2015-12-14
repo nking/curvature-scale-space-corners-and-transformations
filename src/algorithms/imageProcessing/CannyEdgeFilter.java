@@ -53,6 +53,8 @@ public class CannyEdgeFilter {
     public static float defaultOutdoorLowThreshold = 3.5f;
     
     protected float lowThreshold = defaultLowThreshold;
+    
+    protected double lowThresholdApplied2Layer = Float.MIN_VALUE;
         
     private boolean useLineDrawingMode = false;
     
@@ -300,16 +302,16 @@ public class CannyEdgeFilter {
         ImageStatistics stats = filter2.removeLowIntensityPixels(input,
             imgHistogram);
         
-        double lowThresh = stats.getLowThresholdApplied();
+        lowThresholdApplied2Layer = stats.getLowThresholdApplied();
                 
-        log.info("2-layer filter: low thresh=" + lowThresh);
+        log.info("2-layer filter: low thresh=" + lowThresholdApplied2Layer);
         
-        double threshold2 = lowThresh * highThreshold;
+        double threshold2 = lowThresholdApplied2Layer * highThreshold;
         
         // count number of pixels between lowThresh and threshold2 and
         // above threshold2.  the later should help scale highThreshold
         // factor from 3 to 5 when needed.
-        int n0 = ImageStatisticsHelper.countPixels(input, (int)lowThresh, 
+        int n0 = ImageStatisticsHelper.countPixels(input, (int)lowThresholdApplied2Layer, 
             (int)threshold2);
         
         int n1 = ImageStatisticsHelper.countPixels(input,
@@ -851,4 +853,9 @@ public class CannyEdgeFilter {
     public HistogramHolder getImgHistogram() {
         return imgHistogram;
     }
+    
+    public double getLowThresholdApplied2Layer() {
+        return lowThresholdApplied2Layer;
+    }
+    
 }

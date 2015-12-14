@@ -2,6 +2,9 @@ package algorithms.imageProcessing;
 
 /**
 <pre>
+    GREYSCALE_WAVELET = greyscale segmentation based upon coarsest coefficient
+                        of a trous wavelet transform;
+    GREYSCALE_CANNY = greyscale segmentation based upon Canny edge detector;
     GREYSCALE_HIST = greyscale segmentation based on histogram with a black and
                      white mask
     GREYSCALE_KMPP = KMPP for k=2;
@@ -16,7 +19,7 @@ package algorithms.imageProcessing;
 @author nichole
  */
 public enum SegmentationType {
-
+    GREYSCALE_WAVELET, GREYSCALE_CANNY,
     GREYSCALE_HIST,
     GREYSCALE_KMPP,
     DT_CLUSTERING,

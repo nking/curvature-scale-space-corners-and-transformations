@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MedianSmooth;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public class MedianTransform {
 
         GreyscaleImage img0 = input.copyImage();
 
-        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
         int s = 1;
 
         MedianSmooth med = new MedianSmooth();
@@ -44,8 +45,10 @@ public class MedianTransform {
                 (outputTransformed.get(j).getHeight() < winL)) {
                 break;
             }
-            
-            outputTransformed.add(med.calculate(outputTransformed.get(j), winL, winL));
+
+            GreyscaleImage m = med.calculate(outputTransformed.get(j), winL, winL);
+
+            outputTransformed.add(m);
             
             outputCoeff.add(outputTransformed.get(j).subtract(outputTransformed.get(j + 1)));
 
@@ -85,7 +88,7 @@ public class MedianTransform {
 
         GreyscaleImage img0 = input.copyImage();
 
-        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
         int s = 1;
         int winL = 2*s + 1;
         
@@ -142,7 +145,7 @@ public class MedianTransform {
 
         GreyscaleImage img0 = input.copyImage();
 
-        int nr = (int)(Math.ceil(Math.log(imgDimen)/Math.log(2)));
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
         int s = 1;
         int winL = 2*s + 1;
         

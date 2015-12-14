@@ -1,10 +1,18 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -247,7 +255,9 @@ public class BlobScaleFinderWrapper {
             ////SegmentationType.COLOR_POLARCIEXY,
         //      SegmentationType.DT_CLUSTERING,
               //SegmentationType.GREYSCALE_KMPP,
-              SegmentationType.GREYSCALE_HIST,
+                SegmentationType.GREYSCALE_WAVELET,
+        //      SegmentationType.GREYSCALE_CANNY,
+        //      SegmentationType.GREYSCALE_HIST,
         //      SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
@@ -255,7 +265,9 @@ public class BlobScaleFinderWrapper {
             ////SegmentationType.COLOR_POLARCIEXY,
        //     SegmentationType.DT_CLUSTERING,
             //SegmentationType.GREYSCALE_KMPP,
-            SegmentationType.GREYSCALE_HIST,
+            SegmentationType.GREYSCALE_WAVELET,
+        //      SegmentationType.GREYSCALE_CANNY,
+        //      SegmentationType.GREYSCALE_HIST,
        //     SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
@@ -328,16 +340,34 @@ public class BlobScaleFinderWrapper {
                     }
                 }
 
+                boolean hasManyIntersectingLines = hasManyIntersectingLines(
+                    blobCornerHelper1, segmentationType1, useBinned);
+                
+                if (hasManyIntersectingLines) {
+                    // use canny edges segmentation to replace segmentationType1
+                    img1Helper.replaceSegmentationWithCanny(segmentationType1, 
+                        useBinned);
+                }
+                
+                hasManyIntersectingLines = hasManyIntersectingLines(
+                    blobCornerHelper2, segmentationType2, useBinned);
+                
+                if (hasManyIntersectingLines) {
+                    // use canny edges segmentation to replace segmentationType2
+                    img2Helper.replaceSegmentationWithCanny(segmentationType2, 
+                        useBinned);
+                }
+                
                 t0 = System.currentTimeMillis();
                 
-                blobCornerHelper1.generatePerimeterCorners(
-                    segmentationType1, useBinned);
-                
+                blobCornerHelper1.generatePerimeterCorners(segmentationType1, 
+                    useBinned);
+                                
                 t1 = System.currentTimeMillis();
                 
-                blobCornerHelper2.generatePerimeterCorners(
-                    segmentationType2, useBinned);
-
+                blobCornerHelper2.generatePerimeterCorners(segmentationType2, 
+                    useBinned);
+                
                 t2 = System.currentTimeMillis();
                 t1Sec = (t1 - t0)/1000;
                 t2Sec = (t2 - t1)/1000;
@@ -468,6 +498,98 @@ public class BlobScaleFinderWrapper {
         }
 
         return null;
+    }
+    
+    private boolean hasManyIntersectingLines(BlobCornerHelper blobCornerHelper,
+        SegmentationType segmentationType, boolean useBinnedImage) {
+        
+        //TODO: considering this to operate on the image itself rather than
+        // the perimeter lists
+        
+        List<PairIntArray> perimeterLists = blobCornerHelper.imgHelper.
+            getBlobPerimeters(segmentationType, useBinnedImage);
+                
+        int imageWidth = useBinnedImage ? 
+            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getWidth() :
+            blobCornerHelper.imgHelper.getGreyscaleImage().getWidth();
+        
+        int imageHeight = useBinnedImage ? 
+            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getHeight() :
+            blobCornerHelper.imgHelper.getGreyscaleImage().getHeight();
+        
+        int thetaTol = 1;
+        int radiusTol = 7;
+        int sizeLimit = 15;
+        
+        HoughTransform ht = new HoughTransform();
+        
+        // key={polar theta, radius}, value=number of lines with key
+        Map<PairInt, Integer> lineMap = new HashMap<PairInt, Integer>();
+        
+        for (int ii = 0; ii < perimeterLists.size(); ++ii) {
+
+            // NOTE: in testable method for this, should allow ability to
+            // pass in junctions and not delete corners that are in
+            // junctions.
+            // For these blob perimeters, there are not junctions.
+
+            PairIntArray edge = perimeterLists.get(ii);
+
+            Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap =
+               ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
+
+            List<PairInt> outSortedKeys = ht.sortByVotes(outputPolarCoordsPixMap);
+
+            // === find indiv lines within the edge ====
+
+            List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
+            Map<PairInt, PairInt> pixToTRMap = ht.createPixTRMapsFromSorted(
+                outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
+                thetaTol, radiusTol);
+            
+            for (Set<PairInt> line : outputSortedGroups) {
+                
+                if (line.size() < sizeLimit) {
+                    break;
+                }
+                
+                PairInt aPoint = line.iterator().next();
+                
+                PairInt tr = pixToTRMap.get(aPoint);                
+                
+                Integer count = lineMap.get(tr);
+                
+                if (count == null) {
+                    count = Integer.valueOf(1);
+                } else {
+                    count = Integer.valueOf(count.intValue() + 1);
+                }
+                
+                lineMap.put(tr, count);
+            }
+        }
+        
+        double avg = 0;
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (Entry<PairInt, Integer> entry : lineMap.entrySet()) {
+            int c = entry.getValue().intValue();
+            avg += c;
+            if (c < min) {
+                min = c;
+            } 
+            if (c > max) {
+                max = c;
+            }
+        }
+        avg /= (double)lineMap.size();
+        
+        if ((avg > 1.5) && (max > 1)) {
+            return true;
+        }
+        //log.info("avg=" + avg + " min=" + min + " max=" + max);
+        
+        return false;
     }
     
     public MatchingSolution getSolution() {

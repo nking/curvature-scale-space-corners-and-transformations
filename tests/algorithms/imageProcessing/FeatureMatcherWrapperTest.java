@@ -157,6 +157,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         assertNotNull(cl);
                 
         float scale = cl.getScale();
+        
         int rotationInDegrees = cl.getRotationInDegrees();
         
         log.info("scale for " + fileName1 + " =" + scale + " rotationDeg=" + 

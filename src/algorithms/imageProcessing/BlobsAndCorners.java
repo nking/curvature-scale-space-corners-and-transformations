@@ -16,7 +16,7 @@ import java.util.Set;
  * @author nichole
  */
 public class BlobsAndCorners  {
-    
+        
     /**
      * get a list of corner regions for the perimeters extracted from the
      * blobs.  (Note that the default construction of perimeters already
@@ -89,7 +89,7 @@ public class BlobsAndCorners  {
             int thetaTol = 1;
             int radiusTol = 7;
             
-            //use hough transform for lines to remove corners from line artifacts
+           //use hough transform for lines to remove corners from line artifacts
            CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
                cornerRegionLists, thetaTol, radiusTol, width, height);
         }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -254,15 +255,24 @@ public class SegmentedImageHelper {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         GreyscaleImage gsImg = getGreyscaleImageBinned();
-        
-        if (type.equals(SegmentationType.GREYSCALE_HIST)) {
+           
+        if (type.equals(SegmentationType.GREYSCALE_WAVELET)) {
             
-            //ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            //segImg = imageSegmentation.createGreyscale3(imgBinned);
-            
-            //TODO: change the name of GREYSCALE_HIST
             segImg = imageSegmentation.createGreyscale5(gsImg);
                         
+            imgBinnedSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_CANNY)) {
+            
+            segImg = imageSegmentation.createGreyscale6(gsImg);
+                        
+            imgBinnedSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_HIST)) {
+            
+            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
+            segImg = imageSegmentation.createGreyscale3(imgBinned);
+            
             imgBinnedSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
@@ -315,6 +325,38 @@ public class SegmentedImageHelper {
                 + MiscDebug.getCurrentTimeFormatted());
         }
     }
+    
+    
+    public void replaceSegmentationWithCanny(SegmentationType segmentationType, 
+        boolean useBinned) {
+        
+        try {
+            
+            applySegmentation(SegmentationType.GREYSCALE_CANNY, useBinned);
+            
+            if (useBinned) {
+                
+                GreyscaleImage segImg = getBinnedSegmentationImage(
+                    SegmentationType.GREYSCALE_CANNY);
+            
+                imgBinnedSegmentedMap.put(segmentationType, segImg);
+                
+            } else {
+                 
+                GreyscaleImage segImg = getSegmentationImage(
+                    SegmentationType.GREYSCALE_CANNY);
+                 
+                imgSegmentedMap.put(segmentationType, segImg);
+            }
+            
+        } catch (IOException ex) {
+            Logger.getLogger(SegmentedImageHelper.class.getName()).log(
+                Level.SEVERE, null, ex);
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(SegmentedImageHelper.class.getName()).log(
+                Level.SEVERE, null, ex);
+        }
+    }
 
     /**
      * apply segmentation type type to the greyscale or color binned image
@@ -341,14 +383,25 @@ public class SegmentedImageHelper {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-                
-        if (type.equals(SegmentationType.GREYSCALE_HIST)) {
-                        
-            //segImg = imageSegmentation.createGreyscale3(img);
-                        
-            //TODO: change the name of GREYSCALE_HIST
-            segImg = imageSegmentation.createGreyscale5(imgGrey.copyImage());
+        
+        segImg = imgGrey.copyImage();
+        
+        if (type.equals(SegmentationType.GREYSCALE_WAVELET)) {
             
+            segImg = imageSegmentation.createGreyscale5(segImg);
+                        
+            imgSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_CANNY)) {
+            
+            segImg = imageSegmentation.createGreyscale6(segImg);
+                        
+            imgSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_HIST)) {
+            
+            segImg = imageSegmentation.createGreyscale3(img);
+                        
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {
@@ -483,4 +536,5 @@ public class SegmentedImageHelper {
     public String getDebugTag() {
         return debugTag;
     }
+
 }
