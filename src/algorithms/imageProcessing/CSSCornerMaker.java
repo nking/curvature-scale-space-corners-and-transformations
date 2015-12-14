@@ -1,13 +1,11 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
-import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;

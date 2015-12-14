@@ -28,7 +28,6 @@ public class BlobsAndCorners  {
      * @param outdoorMode
      * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
-     * @param correctLineArtifacts
      * @return 
      */
     public static List<List<CornerRegion>> populateCorners(
@@ -36,8 +35,7 @@ public class BlobsAndCorners  {
         SegmentationType type, boolean useBinnedImage,
         final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,
-        final float factorIncreaseForCurvatureMinimum,
-        final boolean correctLineArtifacts) {
+        final float factorIncreaseForCurvatureMinimum) {
 
         List<List<CornerRegion>> cornerRegionLists = 
             new ArrayList<List<CornerRegion>>();
@@ -84,16 +82,6 @@ public class BlobsAndCorners  {
             }
         }
         
-        if (correctLineArtifacts) {
-            int binFactor = blobPerimeterHelper.getBinFactor();
-            int thetaTol = 1;
-            int radiusTol = 7;
-            
-           //use hough transform for lines to remove corners from line artifacts
-           CornerCorrector.removeCornersFromLineArtifacts(perimeterLists, 
-               cornerRegionLists, thetaTol, radiusTol, width, height);
-        }
-    
         if (blobPerimeterHelper.isInDebugMode()) {
             MiscDebug.writeEdgesAndCorners(perimeterLists, cornerRegionLists,
                 1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),

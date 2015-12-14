@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.HoughTransform;
+import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -27,6 +28,7 @@ public class CornerCorrector {
      * should not be deleted.  The set can be empty (as it would be for
      * a edges from only blobs).
      * 
+     * @param lines
      * @param edgeLists
      * @param cornerRegionLists
      * @param thetaTolerance
@@ -34,10 +36,16 @@ public class CornerCorrector {
      * @param imageWidth
      * @param imageHeight
      */
-    public static void removeCornersFromLineArtifacts(List<PairIntArray> edgeLists,
+    public static void removeCornersFromLineArtifacts(List<HoughTransformLines> lines,
+        List<PairIntArray> edgeLists,
         List<List<CornerRegion>> cornerRegionLists,
         int thetaTolerance, int radiusTolerance,
         int imageWidth, int imageHeight) {
+        
+        if (lines.size() != edgeLists.size()) {
+            throw new IllegalArgumentException(
+                "need the data structures lines and edgesList to hold data for same indexes.  expecting same sizes.");
+        }
         
         //TODO: sizeLimit may need to scale by binFactor, so be passed in as arg,
         // but should probably have a minimum size that could include
@@ -45,8 +53,6 @@ public class CornerCorrector {
         int sizeLimit = 15;
         
         //Image debugImg = new Image(imageWidth, imageHeight);
-
-        HoughTransform ht = new HoughTransform();
         
         for (int ii = 0; ii < edgeLists.size(); ++ii) {
 
@@ -65,21 +71,12 @@ public class CornerCorrector {
 
             Map<PairInt, Integer> pointEdgeIndexMap = Misc.makePointIndexMap(edge);
 
-            Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap =
-               ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
-
-            List<PairInt> outSortedKeys = ht.sortByVotes(outputPolarCoordsPixMap);
-
-            // === find indiv lines within the edge ====
-
-            //Map<PairInt, Set<PairInt>> polarCoordsPixMapOrig =
-            //    new HashMap<PairInt, Set<PairInt>>(outputPolarCoordsPixMap);
-
-            List<Set<PairInt>> outputSortedGroups = new ArrayList<Set<PairInt>>();
-            Map<PairInt, PairInt> pixToTRMap = ht.createPixTRMapsFromSorted(
-                outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
-                thetaTolerance, radiusTolerance);
-               
+            HoughTransformLines htl = lines.get(ii);
+            
+            Map<PairInt, PairInt> pixToTRMap = htl.getPixelToPolarCoordMap();
+            
+            List<Set<PairInt>> outputSortedGroups = htl.getSortedLineGroups();
+            
             /*
             for (int j = 0; j < cornerRegions.size(); ++j) {
                 CornerRegion cr = cornerRegions.get(j);

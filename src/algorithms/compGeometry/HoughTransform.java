@@ -168,7 +168,7 @@ public class HoughTransform {
         return outSortedKeys;
     }
     
-    public Map<PairInt, PairInt> createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
+    public HoughTransformLines createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
         List<Set<PairInt>> outputSortedGroups) {
         
@@ -176,12 +176,33 @@ public class HoughTransform {
         int radiusTol = 8;
         
         return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, 
-            outputSortedGroups, thetaTol, radiusTol);
+            thetaTol, radiusTol);
     }
     
-    public Map<PairInt, PairInt> createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
+    public class HoughTransformLines {
+        
+        private final Map<PairInt, PairInt> pixelToPolarCoordMap;
+        
+        private final List<Set<PairInt>> sortedLineGroups;
+        
+        public HoughTransformLines(Map<PairInt, PairInt> pixToTRMap,
+            List<Set<PairInt>> sortedGroups) {
+            this.pixelToPolarCoordMap = pixToTRMap;
+            this.sortedLineGroups = sortedGroups;
+        }
+        
+        public Map<PairInt, PairInt> getPixelToPolarCoordMap() {
+            return pixelToPolarCoordMap;
+        }
+        
+        public List<Set<PairInt>> getSortedLineGroups() {
+            return sortedLineGroups;
+        }
+    }
+    
+    public HoughTransformLines createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
-        List<Set<PairInt>> outputSortedGroups, int thetaTol, int radiusTol) {
+        int thetaTol, int radiusTol) {
         
         // using a DFS visitor pattern and a tolerance for contiguous neighbor
         // grouping to aggretate the (theta, radius) solutions of adjacent
@@ -197,12 +218,9 @@ public class HoughTransform {
         
         List<Set<PairInt>> sortedGroups = groupFinder.getSortedGroupsOfPoints();
         
-        if (sortedGroups != null) {
-            outputSortedGroups.clear();
-            outputSortedGroups.addAll(sortedGroups);
-        }
+        HoughTransformLines htl = new HoughTransformLines(pixToTRMap, sortedGroups);
         
-        return pixToTRMap;
+        return htl;
     }
     
 }
