@@ -1,24 +1,69 @@
-*** feature matcher should reuse the hough transform lines
-    instead of recalculating after corners.
-
 -- more ransac and epipolar solver tests.
+   -- improving the ransac sampling method (and making it useful for an
+      LMedS implementation too)
+      -- instead of choosing randomly uniformly from all pairs of points,
+         would like to choose points likely to be spatially distributed
+         across the intersection of points to achieve higher spatial coverage.
+         A form of stratified sampling with a probablity function upon distance 
+         from spatially distributed centers of cells, a.k.a. seeds, that span
+         the intersection of points.
+         A probability function based upon the value would for example
+         choose uniformly from [2, 2, 3, 3, 3, 4, 4, 4, 4] when the
+         original values to choose from were [2, 3, 4].
+         That probability function pattern is the inverse of what is
+         needed in order to preferentially sample points close to the
+         seed centers, that is distances from seed0 would
+         need to use a max distance and subtract from it before 
+         creating the distribution by value (or could use a normalized inverse).
+         -- need to consider how fine the grid of seeds should be in order
+            to sample well (that must be dependent upon the fact that the
+            sample size is only 7).
+         -- distance transform or watershed labelling could be used to
+            determine the distances from the seeds quickly.
+         -- the statistical determination of the number of iterations
+            needed possibly needs to change.
+
+   -- what is gradient weighted epipolar errors?
+
    ** change the plotter of epipolar results to plot the
       points used for the solution as one color (green with white block behind)
          and the points not used as red
+   -- consider for LMedS the first solution from feature matcher could be used
+      as a starter set to assess errors for guided sampling.
+         the merton college starter points are nearly 50 and about 7 errors
+         so eps of 20%, for example.
+
    -- when revisiting the books epipolar test, see if evaluation needs to focus
       on dist from epipolar line as much as the number of points within tolerance.
       --> make the combined score
-   -- consider places in the code where an M-estimator could be helpful
-   -- consider implementing a version of LMedS to use in place of RANSAC as a comparison
+
    update the open agile story and close it
+
+-- consider replacing some of the angle math for orientation w/
+   simple cross product of lines on both sides
+
+-- median absolute deviation
+6. Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. J. Am. Statistical Assoc. 1993;vol. 88(no. 424):1273–1283.
+
 -- update the command line runners.
 
+-- Parzen window method in pattern recognition
+
+** -- consider a detailed look at the books test matching.
+      the largest group of matches alone determines the solution, but
+      it looks like other group solutions should contribute, but might need larger tolerance
+
+** -- consider the extreme unlikely case of only circles in an image.  there wouldn't be stable
+      corners nor stable inflection points (except in the backgrounds possibly).
+      the sillhouette solution combined with object identification by shapes 
+          (such as using hough transform for circles)?
 ** -- impl a circle hough transform
    -- and explore elliptical transforms for the rainbow fitting which
       currently has a long runtime.
-   -- low priority: 
-      explore using the hough transform for lines to find the astronomical
-      "fundamental plane" of 3 dimensional or multi-dimensional data.
+      x2+Bxy+Cy2+Dx+Ey+F=0  and (B^2-4C)< 0
+         consider replacing the ellipse w/ a parabola (review choice of ellipse for easier fit to projected parabolas)
+      -- consider impl a skip list and fitting fewer points
+         https://www.sonycsl.co.jp/person/nielsen/visualcomputing/visualcomputing-chapter7-colorlowres.pdf
 
 ** -- use the added half dome test images to assert that matching same
       from other cameras is working
