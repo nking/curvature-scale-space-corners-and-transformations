@@ -14,6 +14,10 @@ Story: Write wrappers to handle the steps from scale calculation,
     state of completion: 
 
     comments regarding state:
+        added a new task 4 and greatly improved the feature matching
+        in task 1, see comments in Task 1.
+        currently working on Task 4 then will close the Tasks 
+        depending upong it.
 
     comments:
 
@@ -50,7 +54,14 @@ Task 1: new class FeatureMatcherWrapper
     comments:
         re-opened to change matching analysis to handle repeated patterns.
         Also increased the accuracy requirement.
-              
+        re-opened again for an extended period of time to improve the classes
+           it depends upon and the matching significantly.  the segmentation
+           has been changed and many changes in blob extraction, and the points
+           of interest choices has been reduced to corners and their matching
+           to combinations then best evaluations.
+           the total time that the major refactors took still have to be
+           estimated here to add to the above.
+
 ---------------------------------------------------------------------
 Task 2: new class EpipolarSolver
       
@@ -66,8 +77,15 @@ Task 2: new class EpipolarSolver
     amount of time used:
 
     state of completion: 
+        The class has been completed to wrap usage of 
+        FeatureMatcherWrapper and StereoProjectionTransformerFit
+        but have added a task to improve the spatial sampling of
+        points in the ransac solver and possibly compare to
+        an alternative to ransac as LMedS.
 
     comments:
+        task 1 was reopend and task 4 was started, blocking the 
+        completion of this until they are finished.
               
 ---------------------------------------------------------------------
 Task 3: tidy up PointMatcher
@@ -78,6 +96,40 @@ Task 3: tidy up PointMatcher
         show their utility.
 
     time estimate:  1 day
+  
+    amount of time used:
+
+    state of completion: 
+
+    comments:
+              
+---------------------------------------------------------------------
+Task 4: improve spatial sampling in ransac solver
+      
+    details:  
+        instead of choosing randomly uniformly from all pairs of points,
+         would like to choose points likely to be spatially distributed
+         across the intersection of points to achieve higher spatial coverage.
+         A form of stratified sampling with a probability function based upon
+         distance from spatially distributed centers of cells, a.k.a. seeds,
+         that span the intersection of points.
+         A probability function based upon the value would for example
+         choose uniformly from [2, 2, 3, 3, 3, 4, 4, 4, 4] when the
+         original values to choose from were [2, 3, 4].
+         That probability function pattern is the inverse of what is
+         needed in order to preferentially sample points close to the
+         seed centers, that is distances from seed0 would
+         need to use a max distance and subtract from it before
+         creating the distribution by value (or could use a normalized inverse).
+         -- need to consider how fine the grid of seeds should be in order
+            to sample well (that must be dependent upon the fact that the
+            sample size is only 7).
+         -- distance transform or watershed labelling could be used to
+            determine the distances from the seeds quickly.
+         -- the statistical determination of the number of iterations
+            needed possibly needs to change.
+
+    time estimate:  
   
     amount of time used:
 
