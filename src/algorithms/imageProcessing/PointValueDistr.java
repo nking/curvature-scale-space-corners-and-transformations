@@ -40,6 +40,19 @@ public class PointValueDistr {
      */
     public PairInt getForCumulativeValue(BigInteger value) {
         
+        int idx = getPointsIndexForCumulativeValue(value);
+ 
+        return points[idx];
+    }
+    
+    /**
+     * search for best match to value in the internal array of cumulative values.
+     * runtime complexity is O(lg(n_points)).
+     * @param value
+     * @return 
+     */
+    public int getPointsIndexForCumulativeValue(BigInteger value) {
+        
         // binary search for value
         
         int n = cumulativeValues.length;
@@ -75,11 +88,11 @@ public class PointValueDistr {
 
             } else {
                 // is equal
-                return points[midIdx];
+                return midIdx;
             }
         }
  
-        return points[midIdx];
+        return midIdx;
     }
     
 }

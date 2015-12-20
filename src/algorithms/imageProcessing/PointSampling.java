@@ -66,15 +66,18 @@ public class PointSampling {
         The cumulative indexes for [2, 3, 4] would then be [2, 5, 9].
         Choosing from a range between 0 and maxValue of 9 then selects in a 
         uniform manner from the value based probability distribution.
+        
+        ==> The next adjustment to that selection model is during the random
+        selection of the number.  Have to transform from its cumulative bit 
+        vector to the pv.points equivalent bit vector in order to make sure
+        the result is uniquely chosen pv.points indexes.
         */
         
-        // maximum value of the cumulative indexes:
-        BigInteger maxValue = pv.getMaxValue();
-        
-        BigInteger randomlyChosen = randomlyChooseKBitNumber(maxValue, sr, k);
+        // a bitvector in the reference frame of pv.points
+        BigInteger randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);
         
         while (alreadySelected.contains(randomlyChosen)) {
-            randomlyChosen = randomlyChooseKBitNumber(maxValue, sr, k);
+            randomlyChosen = randomlyChooseKBitNumber(pv, sr, k);
         }
         
         alreadySelected.add(randomlyChosen);
@@ -87,17 +90,8 @@ public class PointSampling {
         for (int i = (bitLength - 1); i > -1; --i) {
             
             if (randomlyChosen.testBit(i)) {
-                
-                // this index i represents a value in the cumulative index
-                
- //ERROR: error here in algorithm because can select
- //a point more than once
-                
-                BigInteger cumulativeIndex = new BigInteger(
-                    MiscMath.writeToBigEndianBytes(i));
-                 
-                // search in the cumulative indexes for this index
-                PairInt p = pv.getForCumulativeValue(cumulativeIndex);
+                               
+                PairInt p = pv.getPoints()[i];
                 
                 outputPoints.add(p);
             }
@@ -108,22 +102,18 @@ public class PointSampling {
     }
     
     /**
-     * randomly choose a k bit number between (1 << k) - 1 and
-     * the next number higher than maxValue which has k highbits all set.
-     * (For example, if used with the value distributions, maxValue is the
-     * number of cumulative values...the number returned from this method
-     * would have set bits that indicate the selected indexes to extract
-     * from the value distribution).
+     * randomly choose a k bit number that is a bit vector that has set bits
+     * representing the pv.points indexes selected.
+     * 
      * NOTE: keeping this nearly private until have tested range of values for k.
        needs to be correct for k=7.
+     
      * @param maxValue
      * @param sr
      * @param k
      * @return 
      */
-    // 
-    BigInteger randomlyChooseKBitNumber(BigInteger maxValue, Random sr,
-        int k) {
+    BigInteger randomlyChooseKBitNumber(PointValueDistr pv, Random sr, int k) {
         
         if (k != 7) {
             throw new IllegalArgumentException(
@@ -143,13 +133,17 @@ public class PointSampling {
              nCumulativeValues number of bits.
              = 127 << (nCumulativeValues - 7)
         
-        select random numbers between minimum and maximum usable bit vector
+        select random numbers between minimum and maximum usable bit vector.
+        
+        then convert that to the bit vector representing maxOriginalIndex.
+        
         and then if 7 bits exactly are not set, flip bits to the closest 
         lower number to arrive at 7 bits set, etc.
         */
                 
-        int bitCount = maxValue.bitCount();
-        int bitLength = maxValue.bitLength();
+        BigInteger maxCumulativeIndex = pv.getMaxValue();
+        
+        int bitLength = maxCumulativeIndex.bitLength();
         
         //String bs = maxValue.toString(2);
         //long v = maxValue.longValueExact();
@@ -167,10 +161,28 @@ public class PointSampling {
         
         int nBits = sr.nextInt(vMax + 1);
         BigInteger randomlyChosen = new BigInteger(nBits, sr);
+        
+        bitLength = randomlyChosen.bitLength();
+        
+        // --- create a bitstring in the reference frame of pv.points ---
+        BigInteger rc0 = BigInteger.ZERO;
+        for (int i = 0; i < bitLength; ++i) {
+            
+            if (randomlyChosen.testBit(i)) {
+                
+                int oIdx = pv.getPointsIndexForCumulativeValue(
+                    new BigInteger(MiscMath.writeToBigEndianBytes(i)));
+                
+                rc0 = rc0.add(new BigInteger(MiscMath.writeToBigEndianBytes(oIdx)));
+            }
+        }
+        
+        randomlyChosen = rc0;
+        
         bitLength = randomlyChosen.bitLength();
         String rbs = randomlyChosen.toString(2);
         
-        bitCount = randomlyChosen.bitCount();
+        int bitCount = randomlyChosen.bitCount();
         
         if (bitCount > k) {
             
@@ -215,7 +227,7 @@ public class PointSampling {
                 int j;
                 for (j = 0; j < bitLength; ++j) {
                     if (!randomlyChosen.testBit(j)) {
-                        randomlyChosen.flipBit(j);
+                        randomlyChosen = randomlyChosen.flipBit(j);
                         c++;
                     }
                     if (c == nBitsToSet) {
@@ -225,7 +237,7 @@ public class PointSampling {
                 int last = j;
                 for (j = (last + 1); j < bitLength; ++j) {
                     if (randomlyChosen.testBit(j)) {
-                        randomlyChosen.flipBit(j);
+                        randomlyChosen = randomlyChosen.flipBit(j);
                         break;
                     }
                 }

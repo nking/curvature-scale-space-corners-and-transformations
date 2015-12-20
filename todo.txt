@@ -4,9 +4,9 @@
       -- instead of choosing randomly uniformly from all pairs of points,
          would like to choose points likely to be spatially distributed
          across the intersection of points to achieve higher spatial coverage.
-         A form of stratified sampling with a probablity function upon distance 
-         from spatially distributed centers of cells, a.k.a. seeds, that span
-         the intersection of points.
+         A form of stratified sampling with a probability function based upon 
+         distance from spatially distributed centers of cells, a.k.a. seeds, 
+         that span the intersection of points.
          A probability function based upon the value would for example
          choose uniformly from [2, 2, 3, 3, 3, 4, 4, 4, 4] when the
          original values to choose from were [2, 3, 4].
@@ -23,8 +23,83 @@
          -- the statistical determination of the number of iterations
             needed possibly needs to change.
 
+   X (1) given a set of points,
+         determine the intersection and k seeds
+         -- find min and max x's and y's
+            -- bisect the data by k cells in y
+               -- determine the min and max for each stripe
+            -- bisect the data by k cells in x
+               -- determine the min and max for each cell
+            -- adjust cell sizes that are much smaller than the first 
+               determined (if cell is < 3*first cell cize, make it same as 
+               and remove the other cells)
+         -- test with concave datasets such as the dbscan
+design class to hold sampling
+
+   X (2) calculate the distance transform in the points
+         -- creating a point set of the seeds  
+         -- edit the distance transform to use a perimeter of the points for each
+            row in x and column in y instead of 0 and width or height as bounds.
+         -- let the algorithm finish, but extract only the
+            original points from the point set.
+         the runtime complexity is O(n_pixels = width*height).
+    
+         alternatives, knowing the seeds already would be to use Vornoi Fortunes.
+         That is O(n_points * lg2(n_points)).  (I currently only have voronoi half planes)
+
+         The merton college dataset for example has n_points = 100, but
+         n_pixels = 1024*768 so 
+            dt has rt 768,000 and voronoi has rt 100*lg2(100)=664
+         so for these datasets which are more sparse than dense,
+         voronoi is a better way to find cells then distances are O(n_points).
+
+    (2.5) consider implementing the bit vector random selector
+          compare to max and min runtime complexities for new method choose7RandomPoints
+             in PointSampling and choosing 7 points one at a time, both using
+             value based probability distributions.
+
+   X (3) try 2 ways, one with a value based on the distance and the other being
+         the reverse of the distance (where the max distance is determined by
+         the distance between seeds).
+         (a) make the value and index distance arrays to chose randomly from.
+         (b) make the reverse value and index distance arrays to choose randomly from.
+     (4) calculate nIterations as before without modifications yet.
+     (5) plot the points chosen using (3a).  plot the same using 3(b).
+         do this many times to see trends, but for each sample
+         (red points for chosen, and other color for all points).
+         make a combined plot too.
+     (6) compare plots of random sampling (standard manner) with results from (5)
+     (7) if one of the proposed sampling methods works well,
+         use that as the default in RANSAC.
+     (8) complete the epipolar tests
+         -- consider evaluation based upon not only sum of dist from epipolar lines
+            but also on the number of points (a combined calculation).
+         -- having chosen the preferred sampling, look in detail at the individual
+            solutions to make sure that the evaluation and final solution are the
+            best from among the solutions.
+     (9) implement or consider implementing the LMedS
+
    -- what is gradient weighted epipolar errors?
 
+   -- look again at my estimate for number of iterations.
+      a sony site uses for ransac a k iterations =
+          log(f)/( log(1 - a^4) ) where f = probability of failure, a = apriori inlier ratio
+      after each iteration, can recompute the number of inliers.
+              maxC = count of maximum consensus so far.
+              c = count of current consensus
+              a = c/(data set size)
+              then the recomputed k is a smaller number
+
+    -- instead of a grid of 9 cells to draw from as considered below, 
+       consider a monte carlo draw from uniformly random points of square of sides of length 2*r.
+       two 1D probability density functions for x and y:
+           probability of drawing a point inside unit dist is
+                  area_disk/area_square = (pi*r^2)/(2*r)^2 = pi/4 for r > 0
+           can see probability is indep of radius.
+           so then can assume r=1
+       Buffon's needle is a faster convergence of the monte carlo model.
+          -- http:// numbers.computation.free.fr/ Constants/ PiProgram/ pifast.html
+          
    ** change the plotter of epipolar results to plot the
       points used for the solution as one color (green with white block behind)
          and the points not used as red
@@ -36,6 +111,12 @@
    -- when revisiting the books epipolar test, see if evaluation needs to focus
       on dist from epipolar line as much as the number of points within tolerance.
       --> make the combined score
+
+   -- http://coewww.rutgers.edu/riul/research/papers/pdf/pbm.pdf
+      possibly can use the first solution from feature matcher before the 
+         entire image corners are added as the starter needed.
+
+      http://coewww.rutgers.edu/riul/research/code/GPBM/index.html
 
    update the open agile story and close it
 
