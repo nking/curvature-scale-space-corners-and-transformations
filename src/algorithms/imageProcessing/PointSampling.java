@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -20,8 +21,226 @@ import java.util.Set;
 public class PointSampling {
     
     /**
+     * NOT READY FOR USE YET
+     * 
+     * @param pv
+     * @param sr
+     * @param alreadySelected
+     * @param outputPoints 
+     */
+    public void choose7RandomPoints(PointValueDistr pv, Random sr, 
+        Set<BigInteger> alreadySelected, List<PairInt> outputPoints) {
+        
+        chooseKRandomPoints(pv, sr, alreadySelected, outputPoints, 7);
+    }
+    
+    // keeping this private until have tested range of values for k.
+    // needs to be correct for k=7
+    private void chooseKRandomPoints(PointValueDistr pv, Random sr, 
+        Set<BigInteger> alreadySelected, List<PairInt> outputPoints,
+        int k) {
+        
+        /*
+        choosing 7 indexes from an array with a single random number would
+        be as follows:
+        
+        example:
+            n=10 numbers in pv, k=7
+        
+        min bit vector = "0111 111"     = 127
+        max bit vector = "11 1111 1000" = (127 << 3) = 1016
+        
+        randomly selecting between numbers 127 and 1016.
+        if the number of set bits isn't k, find nearest next lowest value w/
+            the required number of set bits, etc.
+        
+        ==> That would be if wanting to treat each point as equally valued. <==
+        
+        This method instead wants to represent each value that many number of
+        times, so the PointValueDistr was created.
+        In PointValueDistr is a field called maxValue which holds the cumulative 
+        number of values without storing each one in an array.  
+        
+        For example, if the original values are [2, 3, 4], the probability 
+        distribution based upon value would be [2, 2, 3, 3, 3, 4, 4, 4, 4].
+        The cumulative indexes for [2, 3, 4] would then be [2, 5, 9].
+        Choosing from a range between 0 and maxValue of 9 then selects in a 
+        uniform manner from the value based probability distribution.
+        */
+        
+        // maximum value of the cumulative indexes:
+        BigInteger maxValue = pv.getMaxValue();
+        
+        BigInteger randomlyChosen = randomlyChooseKBitNumber(maxValue, sr, k);
+        
+        while (alreadySelected.contains(randomlyChosen)) {
+            randomlyChosen = randomlyChooseKBitNumber(maxValue, sr, k);
+        }
+        
+        alreadySelected.add(randomlyChosen);
+        
+        // read off the set bits in randomlyChosen to get the pairints from pv
+        
+        outputPoints.clear();
+        
+        int bitLength = randomlyChosen.bitLength();
+        for (int i = (bitLength - 1); i > -1; --i) {
+            
+            if (randomlyChosen.testBit(i)) {
+                
+                // this index i represents a value in the cumulative index
+                
+ //ERROR: error here in algorithm because can select
+ //a point more than once
+                
+                BigInteger cumulativeIndex = new BigInteger(
+                    MiscMath.writeToBigEndianBytes(i));
+                 
+                // search in the cumulative indexes for this index
+                PairInt p = pv.getForCumulativeValue(cumulativeIndex);
+                
+                outputPoints.add(p);
+            }
+            if (outputPoints.size() == k) {
+                break;
+            }
+        }
+    }
+    
+    /**
+     * randomly choose a k bit number between (1 << k) - 1 and
+     * the next number higher than maxValue which has k highbits all set.
+     * (For example, if used with the value distributions, maxValue is the
+     * number of cumulative values...the number returned from this method
+     * would have set bits that indicate the selected indexes to extract
+     * from the value distribution).
+     * NOTE: keeping this nearly private until have tested range of values for k.
+       needs to be correct for k=7.
+     * @param maxValue
+     * @param sr
+     * @param k
+     * @return 
+     */
+    // 
+    BigInteger randomlyChooseKBitNumber(BigInteger maxValue, Random sr,
+        int k) {
+        
+        if (k != 7) {
+            throw new IllegalArgumentException(
+            "algorithm is currently only tested for k=7");
+        }
+        
+        int minBitsValue = (1 << k) - 1;
+        
+        /*
+        wanting to choose 7 values from range 0 to nCumulativeValues using one 
+        random number where nCumulativeValues is the bit length of maxValue.
+        
+        bit vector with each bit holding a meaning of chosen ("1") or not ("0").
+        
+        the minimum usable bit vector is 7 bits set, = (1 << 7) - 1 = 127
+        the maximum usable bit vector is the top 7 bits set of
+             nCumulativeValues number of bits.
+             = 127 << (nCumulativeValues - 7)
+        
+        select random numbers between minimum and maximum usable bit vector
+        and then if 7 bits exactly are not set, flip bits to the closest 
+        lower number to arrive at 7 bits set, etc.
+        */
+                
+        int bitCount = maxValue.bitCount();
+        int bitLength = maxValue.bitLength();
+        
+        //String bs = maxValue.toString(2);
+        //long v = maxValue.longValueExact();
+        
+        // set top k bits to high... so far only designed for small k such as 7
+        int vMax = minBitsValue << (bitLength - k);
+        
+        // --- randomly choose a number between 0 and 2^nBits. ---
+        
+        // the random algorithms and BigInteger algorithm appear to be biased
+        // towards very large numbers when nBits is high, so
+        // working around that by randomly selecting nBits, then using
+        // the random from BigInteger or Random.
+        // TODO: test the distribution of numbers from this adapted pattern
+        
+        int nBits = sr.nextInt(vMax + 1);
+        BigInteger randomlyChosen = new BigInteger(nBits, sr);
+        bitLength = randomlyChosen.bitLength();
+        String rbs = randomlyChosen.toString(2);
+        
+        bitCount = randomlyChosen.bitCount();
+        
+        if (bitCount > k) {
+            
+            //keep the top k bits
+            BigInteger sum = BigInteger.ZERO;
+            int c = 0;
+            
+            for (int j = (bitLength - 1); j > -1; --j) {
+                if (randomlyChosen.testBit(j)) {
+                    BigInteger c2 = new BigInteger(
+                        MiscMath.writeToBigEndianBytes(1 << j));
+                    sum = sum.add(c2);
+                    c++;
+                    if (c == k) {
+                        break;
+                    }
+                }
+            }
+            
+            randomlyChosen = sum;
+            rbs = randomlyChosen.toString(2);
+            
+            int z = 1;
+            
+        } else if (bitCount < k) {
+
+            if (randomlyChosen.intValueExact() < minBitsValue) {
+                
+                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));
+                
+            } else {
+                
+                // plus one because unsetting a '1' and need to replace it, then 
+                // setting '0's below it
+                int nBitsToSet = k + 1 - bitCount;
+
+                // flip the low 0's to 1's and flip the next left 1 to 0
+                
+                bitLength = randomlyChosen.bitLength();
+                
+                int c = 0;
+                int j;
+                for (j = 0; j < bitLength; ++j) {
+                    if (!randomlyChosen.testBit(j)) {
+                        randomlyChosen.flipBit(j);
+                        c++;
+                    }
+                    if (c == nBitsToSet) {
+                        break;
+                    }
+                }
+                int last = j;
+                for (j = (last + 1); j < bitLength; ++j) {
+                    if (randomlyChosen.testBit(j)) {
+                        randomlyChosen.flipBit(j);
+                        break;
+                    }
+                }
+                
+                rbs = randomlyChosen.toString(2);
+                int z = 1;
+            }
+        }
+
+        return randomlyChosen;
+    }
+    
+    /**
      * Given a set of points, determine cells across the data (roughly k cells 
-     * for each dimension or roughly equal area) to create seeds, then create a 
+     * for each dimension of roughly equal area) to create seeds, then create a 
      * list of distance based values (distance of points from the nearest seeds) 
      * that is intended to be used for random selection of points from the total 
      * set in a spatially stratified manner, biased towards points closer to the 
@@ -39,11 +258,11 @@ public class PointSampling {
     
     /**
      * Given a set of points, determine cells across the data (roughly k cells 
-     * for each dimension or roughly equal area) to create seeds, then create a 
+     * for each dimension of roughly equal area) to create seeds, then create a 
      * list of distance based values (distance of points from the nearest seeds) 
      * that is intended to be used for random selection of points from the total 
-     * set in a spatially stratified manner, biased towards points closer to the 
-     * seed centers.
+     * set in a spatially stratified manner, biased towards points further from 
+     * the seed centers.
      * 
      * @param points 
      * @param numCellsPerDimensions 
@@ -55,14 +274,12 @@ public class PointSampling {
         return createSpatialDistBasedValues(points, numCellsPerDimensions, false);
     }
     
-    
     /**
      * Given a set of points, determine cells across the data (roughly k cells 
      * for each dimension or roughly equal area) to create seeds, then create a 
      * list of distance based values (distance of points from the nearest seeds) 
      * that is intended to be used for random selection of points from the total 
-     * set in a spatially stratified manner, biased towards points closer to the 
-     * seed centers.
+     * set in a spatially stratified manner.
      * 
      * @param points 
      * @param numCellsPerDimensions 
@@ -86,10 +303,12 @@ public class PointSampling {
         
         List<PairInt> seeds = centers(bounds);
         
-        // make an image with points being "1" and seeds being "0" and add
-        // the seeds to points
         int w = maxXY[0] + 1;
         int h = maxXY[1] + 1;
+        
+        // when n_points * log_2(n_points) is less than n_pixels, prefer
+        // vornoi instead of distance transform to find cells then calculate 
+        // distance of points to seeds.  TODO: impl vornoi fortunes.
         
         Map<PairInt, Integer> pointDistMap = useDistanceTransform(points, w, h, 
             seeds);

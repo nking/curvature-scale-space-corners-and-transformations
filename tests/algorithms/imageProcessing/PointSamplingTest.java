@@ -7,7 +7,9 @@ import algorithms.util.PairInt;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -44,82 +46,20 @@ public class PointSamplingTest extends TestCase {
         PointValueDistr pv = ps.createSpatialDistBasedValues(points,
             numCellsPerDimensions);
         
-        BigInteger maxValue = pv.getMaxValue();
-        int bitCount = maxValue.bitCount();
-        int bitLength = maxValue.bitLength();
-        String bs = maxValue.toString(2);
-        long v = maxValue.longValueExact();
-        // set top 7 bits to high
-        int vMax = 127 << (bitLength - 7); // 12 - 7 = 5; 127<<5 = 4096
-        
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         sr.setSeed(seed);
-        //int nBytes = 510; //(math.log((127<<(4064-7)))/math.log(2))/8.
-        //byte[] bytes = new byte[nBytes];
+        
+        Set<BigInteger> alreadySelected = new HashSet<BigInteger>();
+        List<PairInt> outputPoints = new ArrayList<PairInt>();
+                
         int nIter = 0;
         while (nIter < nMaxIter) {
-            //nBytes = sr.nextInt(510 + 1);
-            //bytes = new byte[nBytes];
-            //sr.nextBytes(bytes);
-            int nBits = sr.nextInt(vMax + 1);
-            BigInteger randomlyChosen = new BigInteger(nBits, sr);
-            bitLength = randomlyChosen.bitLength();
-            String rbs = randomlyChosen.toString(2);
-            bitCount = randomlyChosen.bitCount();
-            if (bitCount > 7) {
-                //keep the top 7 bits
-                BigInteger sum = BigInteger.ZERO;
-                int c = 0;
-                for (int j = (bitLength - 1); j > -1; --j) {
-                    if (randomlyChosen.testBit(j)) {
-                        BigInteger c2 = new BigInteger(
-                            MiscMath.writeToBigEndianBytes(1 << j));
-                        sum = sum.add(c2);
-                        c++;
-                        if (c == 7) {
-                            break;
-                        }
-                    }
-                }
-                randomlyChosen = sum;
-                rbs = randomlyChosen.toString(2);
-                int z = 1;
-            } else if (bitCount < 7) {
-                // need a total of 7 bits set by flipping the low 0's to 1's and
-                // flipping the next left 1 to 0
-                int nBitsToSet = 7 + 1 - bitCount;
-                if (randomlyChosen.intValueExact() < 127) {
-                    randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(127));
-                } else {
-                    bitLength = randomlyChosen.bitLength();
-                    int c = 0;
-                    int j;
-                    for (j = 0; j < bitLength; ++j) {
-                        if (!randomlyChosen.testBit(j)) {
-                            randomlyChosen.flipBit(j);
-                            c++;
-                        }
-                        if (c == nBitsToSet) {
-                            break;
-                        }
-                    }
-                    int last = j;
-                    for (j = (last + 1); j < bitLength; ++j) {
-                        if (randomlyChosen.testBit(j)) {
-                            randomlyChosen.flipBit(j);
-                            break;
-                        }
-                    }
-                    rbs = randomlyChosen.toString(2);
-                    int z = 1;
-                }
-            }
             
             //TODO: paused here
             
-            // read off the set bits to get the pairint from pv
-            
+            ps.choose7RandomPoints(pv, sr, alreadySelected, outputPoints);
+                        
             // plot the points
             
             //TODO: plot in separate tests checks that this pattern of random

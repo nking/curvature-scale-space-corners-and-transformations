@@ -32,6 +32,12 @@ public class PointValueDistr {
         return cumulativeValues;
     }
     
+    /**
+     * search for best match to value in the internal array of cumulative values.
+     * runtime complexity is O(lg(n_points)).
+     * @param value
+     * @return 
+     */
     public PairInt getForCumulativeValue(BigInteger value) {
         
         // binary search for value
@@ -40,7 +46,7 @@ public class PointValueDistr {
            
         int lowIdx = 0;
         int highIdx = n - 1;
-        int midIdx;
+        int midIdx = (highIdx + lowIdx) >> 1;
         
         while (lowIdx != highIdx) {
 
@@ -72,10 +78,8 @@ public class PointValueDistr {
                 return points[midIdx];
             }
         }
-
-        // should never arrive here
-        throw new IllegalStateException("Error in algorithm.  searching for "
-            + value.toString());
+ 
+        return points[midIdx];
     }
     
 }
