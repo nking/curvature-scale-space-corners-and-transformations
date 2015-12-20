@@ -101,7 +101,7 @@ public class WaterShedForPoints extends AbstractWaterShed {
      * @param points
      * @return
      */
-    protected Map<PairInt, Integer> lower(GreyscaleImage img, Set<PairInt> points) {
+    Map<PairInt, Integer> lower(GreyscaleImage img, Set<PairInt> points) {
 
         int w = img.getWidth();
         int h = img.getHeight();

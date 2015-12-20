@@ -1,16 +1,13 @@
-package algorithms.compGeometry;
+package algorithms.imageProcessing;
 
-import algorithms.compGeometry.PointPartitioner.Bounds;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.PointSampling;
-import algorithms.imageProcessing.PointValueDistr;
-import algorithms.misc.MiscDebug;
+import static algorithms.compGeometry.PointPartitionerTest.getWikipediaDBScanExampleData;
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
+import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -18,220 +15,121 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class PointPartitionerTest extends TestCase {
+public class PointSamplingTest extends TestCase {
     
-    public PointPartitionerTest() {
+    public PointSamplingTest() {
     }
 
-    public void testRandomSubsets() throws Exception {
+    public void testCreateSpatialProbabilityValues() throws NoSuchAlgorithmException {
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        sr.setSeed(seed);
-            
-        int n = 100;
+        /*
+        test:
+        dbscan
+        bl2003
+        checkerboard
+        merton
+        */
         
-        Set<PairInt> allPoints = new HashSet<PairInt>();
-        
-        PairIntArray set1 = new PairIntArray();
-        
-        for (int i = 0; i < n; ++i) {
-            int x = sr.nextInt(1000);
-            int y = sr.nextInt(1000);
-            PairInt p = new PairInt(x, y);
-            while (allPoints.contains(p)) {
-                x = sr.nextInt(1000);
-                y = sr.nextInt(1000);
-                p = new PairInt(x, y);
-            }
-            set1.add(x, y);
-            allPoints.add(p);
-        }
-        
-        PointPartitioner partitioner = new PointPartitioner();
-        List<PairIntArray> subsets = partitioner.randomSubsets(set1, 30);
-        
-        assertTrue(subsets.size() == 4);
-        
-        int nPoints = 0;
-        for (PairIntArray subset : subsets) {
-            nPoints += subset.getN();
-        }
-        assertTrue(nPoints == allPoints.size());
-        
-        for (PairIntArray subset : subsets) {
-            
-            assertTrue(subset.getN() <= 30);
-            
-            for (int i = 0; i < subset.getN(); ++i) {
-                PairInt p = new PairInt(subset.getX(i), subset.getY(i));
-                boolean removed = allPoints.remove(p);
-                assertTrue(removed);
-            }
-        }
-        
-        assertTrue(allPoints.isEmpty());
-    }
-    
-    public void testPartition() throws Exception {
-        
-        int width = 1000;
-        int height = 1000;
-        
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        sr.setSeed(seed);
-            
-        int n = 1000;
-        
-        Set<PairInt> allPoints = new HashSet<PairInt>();
-        
-        PairIntArray set1 = new PairIntArray();
-        
-        for (int i = 0; i < n; ++i) {
-            int x = sr.nextInt(width);
-            int y = sr.nextInt(height);
-            PairInt p = new PairInt(x, y);
-            while (allPoints.contains(p)) {
-                x = sr.nextInt(width);
-                y = sr.nextInt(height);
-                p = new PairInt(x, y);
-            }
-            set1.add(x, y);
-            allPoints.add(p);
-        }
-        
-        PointPartitioner partitioner = new PointPartitioner();
-        PairIntArray[] partitions = partitioner.partition(set1, 2);
-        
-        assertTrue(partitions.length == 4);
-        
-        int nPoints = 0;
-        for (PairIntArray subset : partitions) {
-            nPoints += subset.getN();
-        }
-        assertTrue(nPoints == allPoints.size());
-        
-        double nExpectedPerBin = (float)nPoints/4.;
-        // 3 times random error:
-        double nEps = 3*Math.sqrt(nPoints);
-                
-        for (PairIntArray subset : partitions) {
-             
-            assertTrue(subset.getN() >= (nExpectedPerBin - nEps));
-            
-            for (int i = 0; i < subset.getN(); ++i) {
-                PairInt p = new PairInt(subset.getX(i), subset.getY(i));
-                boolean removed = allPoints.remove(p);
-                assertTrue(removed);
-            }
-        }
-        
-        assertTrue(allPoints.isEmpty());
-    }
-    
-    public void testReduceByBinSampling() throws Exception {
-        
-        int width = 1000;
-        int height = 1000;
-        
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        sr.setSeed(seed);
-            
-        int n = 1000;
-        
-        Set<PairInt> allPoints = new HashSet<PairInt>();
-        
-        PairIntArray set1 = new PairIntArray();
-        
-        for (int i = 0; i < n; ++i) {
-            int x = sr.nextInt(width);
-            int y = sr.nextInt(height);
-            PairInt p = new PairInt(x, y);
-            while (allPoints.contains(p)) {
-                x = sr.nextInt(width);
-                y = sr.nextInt(height);
-                p = new PairInt(x, y);
-            }
-            set1.add(x, y);
-            allPoints.add(p);
-        }
-        
-        PointPartitioner partitioner = new PointPartitioner();
-        PairIntArray[] partitions = partitioner.reduceByBinSampling(set1, 2, 10);
-        
-        assertTrue(partitions.length == 2);
-        
-        int nPoints = 0;
-        for (PairIntArray subset : partitions) {
-            nPoints += subset.getN();
-        }
-        assertTrue(nPoints == allPoints.size());
-        
-        PairIntArray primaryPartition = partitions[0];
-        assertTrue(primaryPartition.getN() == (4 * 10));
-        
-        for (PairIntArray subset : partitions) {
-                         
-            for (int i = 0; i < subset.getN(); ++i) {
-                PairInt p = new PairInt(subset.getX(i), subset.getY(i));
-                boolean removed = allPoints.remove(p);
-                assertTrue(removed);
-            }
-        }
-        
-        assertTrue(allPoints.isEmpty());
-    }
-    
-    public void testFindCells() throws Exception {
-                
         Set<PairInt> points = getWikipediaDBScanExampleData();
         
-        PointPartitioner pp = new PointPartitioner();
+        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
+
+        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
+            points.size());
         
-        List<Bounds> bounds = pp.findCells(6, points);
-        
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        
-        int height = 1 + minMaxXY[3];
-        int width = 1 + minMaxXY[1];
-        
-        Image img = new Image(width, height);
-        
-        for (Bounds b : bounds) {
-            int x, y;
-            y = b.upperLeft.getY();
-            for (x = b.upperLeft.getX(); x < b.upperRight.getX(); ++x) {
-                img.setRGB(x, y, 0, 255, 0);
-            }
-            y = b.lowerLeft.getY();
-            for (x = b.lowerLeft.getX(); x < b.lowerRight.getX(); ++x) {
-                img.setRGB(x, y, 0, 255, 0);
-            }
-            x = b.lowerLeft.getX();
-            for (y = b.lowerLeft.getY(); y < b.upperLeft.getY(); ++y) {
-                img.setRGB(x, y, 0, 255, 0);
-            }
-            x = b.lowerRight.getX();
-            for (y = b.lowerRight.getY(); y < b.upperRight.getY(); ++y) {
-                img.setRGB(x, y, 0, 255, 0);
-            }
-        }
-        
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            img.setRGB(x, y, 255, 0, 0);
-        }
-        
-        MiscDebug.writeImage(img, "dbscan_cells");
+        int numCellsPerDimensions = 6;
         
         PointSampling ps = new PointSampling();
-        PointValueDistr pv = ps.createSpatialDistBasedValues(points, 6);
+        
+        PointValueDistr pv = ps.createSpatialDistBasedValues(points,
+            numCellsPerDimensions);
+        
+        BigInteger maxValue = pv.getMaxValue();
+        int bitCount = maxValue.bitCount();
+        int bitLength = maxValue.bitLength();
+        String bs = maxValue.toString(2);
+        long v = maxValue.longValueExact();
+        // set top 7 bits to high
+        int vMax = 127 << (bitLength - 7); // 12 - 7 = 5; 127<<5 = 4096
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        sr.setSeed(seed);
+        //int nBytes = 510; //(math.log((127<<(4064-7)))/math.log(2))/8.
+        //byte[] bytes = new byte[nBytes];
+        int nIter = 0;
+        while (nIter < nMaxIter) {
+            //nBytes = sr.nextInt(510 + 1);
+            //bytes = new byte[nBytes];
+            //sr.nextBytes(bytes);
+            int nBits = sr.nextInt(vMax + 1);
+            BigInteger randomlyChosen = new BigInteger(nBits, sr);
+            bitLength = randomlyChosen.bitLength();
+            String rbs = randomlyChosen.toString(2);
+            bitCount = randomlyChosen.bitCount();
+            if (bitCount > 7) {
+                //keep the top 7 bits
+                BigInteger sum = BigInteger.ZERO;
+                int c = 0;
+                for (int j = (bitLength - 1); j > -1; --j) {
+                    if (randomlyChosen.testBit(j)) {
+                        BigInteger c2 = new BigInteger(
+                            MiscMath.writeToBigEndianBytes(1 << j));
+                        sum = sum.add(c2);
+                        c++;
+                        if (c == 7) {
+                            break;
+                        }
+                    }
+                }
+                randomlyChosen = sum;
+                rbs = randomlyChosen.toString(2);
+                int z = 1;
+            } else if (bitCount < 7) {
+                // need a total of 7 bits set by flipping the low 0's to 1's and
+                // flipping the next left 1 to 0
+                int nBitsToSet = 7 + 1 - bitCount;
+                if (randomlyChosen.intValueExact() < 127) {
+                    randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(127));
+                } else {
+                    bitLength = randomlyChosen.bitLength();
+                    int c = 0;
+                    int j;
+                    for (j = 0; j < bitLength; ++j) {
+                        if (!randomlyChosen.testBit(j)) {
+                            randomlyChosen.flipBit(j);
+                            c++;
+                        }
+                        if (c == nBitsToSet) {
+                            break;
+                        }
+                    }
+                    int last = j;
+                    for (j = (last + 1); j < bitLength; ++j) {
+                        if (randomlyChosen.testBit(j)) {
+                            randomlyChosen.flipBit(j);
+                            break;
+                        }
+                    }
+                    rbs = randomlyChosen.toString(2);
+                    int z = 1;
+                }
+            }
+            
+            //TODO: paused here
+            
+            // read off the set bits to get the pairint from pv
+            
+            // plot the points
+            
+            //TODO: plot in separate tests checks that this pattern of random
+            // number generation produces uniform or quasi-uniform results
+            
+            nIter++;
+        }
         
     }
-    
+
     public static Set<PairInt> getWikipediaDBScanExampleData() {
 
         // dug these points out of http://upload.wikimedia.org/wikipedia/commons/0/05/DBSCAN-density-data.svg
@@ -363,5 +261,5 @@ public class PointPartitionerTest extends TestCase {
         
         return points;
     }
-        
+    
 }

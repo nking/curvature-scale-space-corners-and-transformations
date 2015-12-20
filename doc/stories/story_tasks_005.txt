@@ -125,7 +125,8 @@ Task 4: improve spatial sampling in ransac solver
             to sample well (that must be dependent upon the fact that the
             sample size is only 7).
          -- distance transform or watershed labelling could be used to
-            determine the distances from the seeds quickly.
+            determine the distances from the seeds quickly, both are semi-linear
+            in runtime complexity.
          -- the statistical determination of the number of iterations
             needed possibly needs to change.
 

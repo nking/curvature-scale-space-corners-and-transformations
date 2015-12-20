@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -1074,7 +1075,7 @@ public class MiscMath {
      * @param points
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
-    public static int[] findMinMaxXY(Set<PairInt> points) {
+    public static int[] findMinMaxXY(Collection<PairInt> points) {
         
         int xMin = Integer.MAX_VALUE;
         int xMax = Integer.MIN_VALUE;

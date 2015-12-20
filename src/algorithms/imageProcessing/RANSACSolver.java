@@ -59,8 +59,8 @@ public class RANSACSolver {
         if (matchedLeftXY.getN() < 7) {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
-                "the algorithms require 7 or more points."
-                + " matchedLeftXY.n=" + matchedLeftXY.getN());
+            "the algorithms require 7 or more points.  matchedLeftXY.n=" 
+            + matchedLeftXY.getN());
         }
 
         SimpleMatrix input1 =
@@ -190,7 +190,7 @@ public class RANSACSolver {
         which uses 0.6% of the maximum image dimension.
         */
         int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
-            nSet);
+            nPoints);
 
         float convergence = 0.5f * matchedLeftXY.numCols();
         if (convergence < 7) {
@@ -379,7 +379,8 @@ public class RANSACSolver {
         
         double limit = 0.2;
 
-        if ((bestFit.getMeanDistance() < limit) && bestFit.getStDevFromMean() < limit) {
+        if ((bestFit.getMeanDistance() < limit) && bestFit.getStDevFromMean()
+            < limit) {
             return true;
         }
         return false;
