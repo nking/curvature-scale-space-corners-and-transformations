@@ -40,6 +40,16 @@ public class PointSampling {
         Set<BigInteger> alreadySelected, List<PairInt> outputPoints,
         int k) {
         
+        // NOTE: ideally, want a way to forward index to gosper's hack
+        // without calculating every one of the results,
+        // and then choose randomly between 0 and the number of possible
+        // combinations, then use that randomly chosen number to pick the 
+        // combination (that is the bit vector) from the forward indexed 
+        // gosper's hack
+        //
+        // not having that, have implemented instead a possibly biased
+        // (haven't tested yet) k-bit random number selector.
+        
         /*
         choosing 7 indexes from an array with a single random number would
         be as follows:
@@ -124,7 +134,7 @@ public class PointSampling {
         
         /*
         wanting to choose 7 values from range 0 to nCumulativeValues using one 
-        random number where nCumulativeValues is the bit length of maxValue.
+        random number where nCumulativeValues is pv.maxValue.
         
         bit vector with each bit holding a meaning of chosen ("1") or not ("0").
         
@@ -135,7 +145,8 @@ public class PointSampling {
         
         select random numbers between minimum and maximum usable bit vector.
         
-        then convert that to the bit vector representing maxOriginalIndex.
+        then convert that to the bit vector representing maxOriginalIndex
+        where maxOriginalIndex is pv.points.size().
         
         and then if 7 bits exactly are not set, flip bits to the closest 
         lower number to arrive at 7 bits set, etc.
@@ -204,9 +215,7 @@ public class PointSampling {
             
             randomlyChosen = sum;
             rbs = randomlyChosen.toString(2);
-            
-            int z = 1;
-            
+                        
         } else if (bitCount < k) {
 
             if (randomlyChosen.intValueExact() < minBitsValue) {
@@ -243,7 +252,6 @@ public class PointSampling {
                 }
                 
                 rbs = randomlyChosen.toString(2);
-                int z = 1;
             }
         }
 
