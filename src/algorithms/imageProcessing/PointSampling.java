@@ -47,7 +47,7 @@ public class PointSampling {
         // combination (that is the bit vector) from the forward indexed 
         // gosper's hack
         //
-        // not having that, have implemented instead a possibly biased
+        // not having that yet, have implemented instead a possibly biased
         // (haven't tested yet) k-bit random number selector.
         
         /*

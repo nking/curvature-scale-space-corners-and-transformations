@@ -150,10 +150,7 @@ public class SubsetChooser {
     }
 
     /**
-     * highbit is 1 << entire_set_size (not subset size, k).
-     *
-     * @param x
-     * @param highbit
+     * @param x0
      * @return
      */
     private long nextSubset64(long x0) {
@@ -169,10 +166,7 @@ public class SubsetChooser {
     }
 
     /**
-     * highbit is 1 << entire_set_size (not subset size, k).
-     *
      * @param x
-     * @param highbit
      * @return
      */
     private BigInteger nextSubsetBigInteger(BigInteger x0) {
