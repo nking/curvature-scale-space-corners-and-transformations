@@ -46,7 +46,7 @@ public class PointSamplingTest extends TestCase {
         
         PointSampling ps = new PointSampling();
         
-        int nThrows = 100;
+        int nThrows = 10000;
         int nIter = 0;
         while (nIter < nThrows) {
             
@@ -84,7 +84,8 @@ public class PointSamplingTest extends TestCase {
 
     public void testRandomKBits() throws Exception {
         
-        // making a distribution of constant frequency values
+        // making a distribution of constant frequency values, that is,
+        // each value is '1' and cumulative adds it to previous sum
         int nPoints = 100;
         
         PairInt[] points = new PairInt[nPoints];
@@ -93,9 +94,9 @@ public class PointSamplingTest extends TestCase {
         for (int i = 0; i < nPoints; ++i) {
             points[i] = new PairInt(i, i);
             if (i == 0) {
-                cIndexes[i] = i;
+                cIndexes[i] = 1;
             } else {
-                cIndexes[i] = cIndexes[i - 1] + i;
+                cIndexes[i] = cIndexes[i - 1] + 1;
             }
             indexes[i] = i;
         }
@@ -118,7 +119,7 @@ public class PointSamplingTest extends TestCase {
         
         PointSampling ps = new PointSampling();
         
-        int nThrows = 100;
+        int nThrows = 10000;
         int nIter = 0;
         while (nIter < nThrows) {
             
@@ -151,6 +152,62 @@ public class PointSamplingTest extends TestCase {
             xPolygon, yPolygon, plotLabel);
         
         String filePath = plotter.writeFile("kbit_sampl_1");
+        
+    }
+    
+    public void testRandomKNumbers() throws Exception {
+        
+        // making a distribution of constant frequency values, that is,
+        // each value is '1' and cumulative adds it to previous sum
+        int nPoints = 100;
+        
+        PairInt[] points = new PairInt[nPoints];
+        float[] indexes = new float[nPoints];
+        for (int i = 0; i < nPoints; ++i) {
+            points[i] = new PairInt(i, i);
+            indexes[i] = i;
+        }
+                
+        int k = 7;
+        
+        float[] counts = new float[nPoints];
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        sr.setSeed(seed);
+        
+        int[] selected = new int[k];
+                
+        int nThrows = 10000;
+        int nIter = 0;
+        while (nIter < nThrows) {
+            
+            MiscMath.chooseRandomly(sr, selected, nPoints);
+                        
+            for (int i = 0; i < selected.length; ++i) {
+                int idx = selected[i];
+                counts[idx]++;
+            }
+            
+            nIter++;
+        }
+        
+        float[] xPolygon = null; 
+        float[] yPolygon = null; 
+        String plotLabel = "counts";
+        
+        // cIndexes, counts
+        float minX = 0;
+        float maxX = indexes[indexes.length - 1];
+        float minY = 0;
+        float maxY = nThrows;
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(minX, maxX, minY, maxY, indexes, counts,
+            xPolygon, yPolygon, plotLabel);
+        
+        String filePath = plotter.writeFile("knumber_sampl");
         
     }
 
