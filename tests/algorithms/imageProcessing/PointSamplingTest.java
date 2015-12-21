@@ -56,6 +56,9 @@ public class PointSamplingTest extends TestCase {
             
             for (int i = 0; i < bitLength; ++i) {
                 if (rkn.testBit(i)) {
+                    if (i > (nPoints - 1))
+                        counts[nPoints - 1]++;
+                    else 
                     counts[i]++;
                 }
             }

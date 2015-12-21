@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,7 +22,9 @@ import java.util.Set;
 public class PointSampling {
     
     /**
-     * NOT READY FOR USE YET
+     * NOT READY FOR USE YET.  The results are not uniform yet - there are
+     * irregularities for drawing the smallest indexes (less than 2*k) and
+     * for the largest indexes (larger than nPoints - 2*k).
      * 
      * @param pv
      * @param sr
@@ -113,6 +116,9 @@ public class PointSampling {
     /**
      * randomly choose a k bit number that is a bit vector that has set bits
      * representing the pv.points indexes selected.
+     * NOT READY FOR USE YET.  The results are not uniform yet - there are
+     * irregularities for drawing the smallest indexes (less than 2*k) and
+     * for the largest indexes (larger than nPoints - 2*k).
      * 
      * NOTE: keeping this nearly private until have tested range of values for k.
        needs to be correct for k=7.
@@ -166,8 +172,7 @@ public class PointSampling {
         // TODO: test the distribution of numbers from this adapted pattern
         
         int nBits = sr.nextInt(vMax - k) + k;
-        BigInteger randomlyChosen = new BigInteger(nBits - k, sr);
-        randomlyChosen = randomlyChosen.shiftLeft(k);
+        BigInteger randomlyChosen = new BigInteger(nBits, sr);
         
         int bitLength = randomlyChosen.bitLength();
         
@@ -195,6 +200,7 @@ public class PointSampling {
         if (bitCount > k) {
             
             //keep the top k bits
+                        
             BigInteger sum = BigInteger.ZERO;
             int c = 0;
             for (int j = (bitLength - 1); j > -1; --j) {
@@ -260,11 +266,14 @@ public class PointSampling {
     /**
      * randomly choose a k bit number that is a bit vector that has set bits
      * representing the pv.points indexes selected.
+     * NOT READY FOR USE YET.  The results are not uniform yet - there are
+     * irregularities for drawing the smallest indexes (less than 2*k) and
+     * for the largest indexes (larger than nPoints - 2*k).
      * 
      * NOTE: keeping this nearly private until have tested range of values for k.
        needs to be correct for k=7.
      
-     * @param maxValue
+     * @param nIndexes
      * @param sr
      * @param k
      * @return 
@@ -301,9 +310,8 @@ public class PointSampling {
         // the random from BigInteger or Random.
         
         int nBits = sr.nextInt(nIndexes - k) + k;
-        BigInteger randomlyChosen = new BigInteger(nBits - k, sr);
-        randomlyChosen = randomlyChosen.shiftLeft(k);
-                
+        BigInteger randomlyChosen = new BigInteger(nBits, sr);
+       
         //System.out.println("before: " + randomlyChosen.toString(2));
           
         int bitLength = randomlyChosen.bitLength();
@@ -313,6 +321,7 @@ public class PointSampling {
         if (bitCount > k) {
             
             //keep the top k bits
+            
             BigInteger sum = BigInteger.ZERO;
             int c = 0;
             for (int j = (bitLength - 1); j > -1; --j) {
@@ -326,7 +335,7 @@ public class PointSampling {
                     }
                 }
             }
-            
+
             randomlyChosen = sum;
                         
         } else if (bitCount < k) {
