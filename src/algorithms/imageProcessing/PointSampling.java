@@ -37,8 +37,7 @@ public class PointSampling {
     // keeping this private until have tested range of values for k.
     // needs to be correct for k=7
     private void chooseKRandomPoints(PointValueDistr pv, Random sr, 
-        Set<BigInteger> alreadySelected, List<PairInt> outputPoints,
-        int k) {
+        Set<BigInteger> alreadySelected, List<PairInt> outputPoints, int k) {
         
         // NOTE: ideally, want a way to forward index to gosper's hack
         // without calculating every one of the results,
@@ -47,7 +46,7 @@ public class PointSampling {
         // combination (that is the bit vector) from the forward indexed 
         // gosper's hack
         //
-        // not having that yet, have implemented instead a possibly biased
+        // Not having that yet, have implemented instead a possibly biased
         // (haven't tested yet) k-bit random number selector.
         
         /*
@@ -152,7 +151,10 @@ public class PointSampling {
         lower number to arrive at 7 bits set, etc.
         */
                 
-        BigInteger maxCumulativeIndex = pv.getMaxValue();
+// temporarily setting to draws from indexes instead of cumulative indexes
+        //BigInteger maxCumulativeIndex = pv.getMaxValue();
+        BigInteger maxCumulativeIndex = new BigInteger(
+            MiscMath.writeToBigEndianBytes(pv.getPoints().length));
         
         int bitLength = maxCumulativeIndex.bitLength();
         
@@ -160,7 +162,9 @@ public class PointSampling {
         //long v = maxValue.longValueExact();
         
         // set top k bits to high... so far only designed for small k such as 7
-        int vMax = minBitsValue << (bitLength - k);
+        // since each value is on or off in bit vector, maxValue is number of bits
+        //int vMax = minBitsValue << (bitLength - k);
+        int vMax = pv.getPoints().length;
         
         // --- randomly choose a number between 0 and 2^nBits. ---
         
@@ -170,11 +174,15 @@ public class PointSampling {
         // the random from BigInteger or Random.
         // TODO: test the distribution of numbers from this adapted pattern
         
-        int nBits = sr.nextInt(vMax + 1);
-        BigInteger randomlyChosen = new BigInteger(nBits, sr);
+        int nBits = sr.nextInt(vMax - k) + k;
+        BigInteger randomlyChosen = new BigInteger(nBits - k, sr);
+        randomlyChosen = randomlyChosen.shiftLeft(k);
         
         bitLength = randomlyChosen.bitLength();
         
+        //System.out.println("before: " + randomlyChosen.toString(2));
+        
+        /*
         // --- create a bitstring in the reference frame of pv.points ---
         BigInteger rc0 = BigInteger.ZERO;
         for (int i = 0; i < bitLength; ++i) {
@@ -189,9 +197,9 @@ public class PointSampling {
         }
         
         randomlyChosen = rc0;
-        
+        */
+                
         bitLength = randomlyChosen.bitLength();
-        String rbs = randomlyChosen.toString(2);
         
         int bitCount = randomlyChosen.bitCount();
         
@@ -200,11 +208,10 @@ public class PointSampling {
             //keep the top k bits
             BigInteger sum = BigInteger.ZERO;
             int c = 0;
-            
             for (int j = (bitLength - 1); j > -1; --j) {
                 if (randomlyChosen.testBit(j)) {
-                    BigInteger c2 = new BigInteger(
-                        MiscMath.writeToBigEndianBytes(1 << j));
+                    BigInteger c2 = BigInteger.ONE;
+                    c2 = c2.shiftLeft(j);
                     sum = sum.add(c2);
                     c++;
                     if (c == k) {
@@ -214,11 +221,10 @@ public class PointSampling {
             }
             
             randomlyChosen = sum;
-            rbs = randomlyChosen.toString(2);
                         
         } else if (bitCount < k) {
 
-            if (randomlyChosen.intValueExact() < minBitsValue) {
+            if (bitLength <= k) {
                 
                 randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));
                 
@@ -231,30 +237,34 @@ public class PointSampling {
                 // flip the low 0's to 1's and flip the next left 1 to 0
                 
                 bitLength = randomlyChosen.bitLength();
-                
                 int c = 0;
-                int j;
-                for (j = 0; j < bitLength; ++j) {
+                int last = 0;
+                for (int j = 0; j < bitLength; ++j) {
                     if (!randomlyChosen.testBit(j)) {
-                        randomlyChosen = randomlyChosen.flipBit(j);
+                        randomlyChosen = randomlyChosen.setBit(j);
                         c++;
+                        last = j;
                     }
                     if (c == nBitsToSet) {
                         break;
                     }
                 }
-                int last = j;
-                for (j = (last + 1); j < bitLength; ++j) {
+                
+                for (int j = (last + 1); j < bitLength; ++j) {
                     if (randomlyChosen.testBit(j)) {
-                        randomlyChosen = randomlyChosen.flipBit(j);
+                        if (j != (bitLength - 1)) {
+                            randomlyChosen = randomlyChosen.clearBit(j);
+                        } else {
+                            randomlyChosen = randomlyChosen.clearBit(last);
+                        }
                         break;
                     }
-                }
-                
-                rbs = randomlyChosen.toString(2);
+                }                
             }
         }
 
+        //System.out.println("after:  " + randomlyChosen.toString(2) + "\n");
+        
         return randomlyChosen;
     }
     

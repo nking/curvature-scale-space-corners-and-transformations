@@ -4,6 +4,7 @@ import static algorithms.compGeometry.PointPartitionerTest.getWikipediaDBScanExa
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -21,8 +22,80 @@ public class PointSamplingTest extends TestCase {
     
     public PointSamplingTest() {
     }
+    
+    public void testRandomKBits() throws Exception {
+        
+        // making a distribution of constant frequency values
+        int nPoints = 100;
+        
+        PairInt[] points = new PairInt[nPoints];
+        int[] cIndexes = new int[nPoints];
+        float[] indexes = new float[nPoints];
+        for (int i = 0; i < nPoints; ++i) {
+            points[i] = new PairInt(i, i);
+            if (i == 0) {
+                cIndexes[i] = i;
+            } else {
+                cIndexes[i] = cIndexes[i - 1] + i;
+            }
+            indexes[i] = i;
+        }
+        
+        BigInteger[] cBI = new BigInteger[nPoints];
+        for (int i = 0; i < nPoints; ++i) {
+            cBI[i] = new BigInteger(MiscMath.writeToBigEndianBytes(cIndexes[i]));
+        }
+        
+        PointValueDistr pv = new PointValueDistr(cBI[nPoints - 1], points, cBI);
+        
+        int k = 7;
+        
+        float[] counts = new float[nPoints];
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        sr.setSeed(seed);
+        
+        PointSampling ps = new PointSampling();
+        
+        int nThrows = 100;
+        int nIter = 0;
+        while (nIter < nThrows) {
+            
+            BigInteger rkn = ps.randomlyChooseKBitNumber(pv, sr, k);
+            
+            int bitLength = rkn.bitLength();
+            
+            for (int i = 0; i < bitLength; ++i) {
+                if (rkn.testBit(i)) {
+                    counts[i]++;
+                }
+            }
+            
+            nIter++;
+        }
+        
+        float[] xPolygon = null; 
+        float[] yPolygon = null; 
+        String plotLabel = "counts";
+        
+        // cIndexes, counts
+        float minX = 0;
+        float maxX = indexes[indexes.length - 1];
+        float minY = 0;
+        float maxY = nThrows;
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(minX, maxX, minY, maxY, 
+            indexes, counts,
+            xPolygon, yPolygon, plotLabel);
+        
+        String filePath = plotter.writeFile("kbit_sampl");
+        
+    }
 
-    public void testCreateSpatialProbabilityValues() throws NoSuchAlgorithmException {
+    public void estCreateSpatialProbabilityValues() throws NoSuchAlgorithmException {
         
         /*
         test:
