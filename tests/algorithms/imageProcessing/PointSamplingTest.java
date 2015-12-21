@@ -23,6 +23,65 @@ public class PointSamplingTest extends TestCase {
     public PointSamplingTest() {
     }
     
+    public void testRandomKBits0() throws Exception {
+        
+        // making a distribution of constant frequency values
+        int nPoints = 100;
+        
+        PairInt[] points = new PairInt[nPoints];
+        float[] indexes = new float[nPoints];
+        for (int i = 0; i < nPoints; ++i) {
+            points[i] = new PairInt(i, i);
+            indexes[i] = i;
+        }
+        
+        int k = 7;
+        
+        float[] counts = new float[nPoints];
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        sr.setSeed(seed);
+        
+        PointSampling ps = new PointSampling();
+        
+        int nThrows = 100;
+        int nIter = 0;
+        while (nIter < nThrows) {
+            
+            BigInteger rkn = ps.randomlyChooseKBitNumber(nPoints, sr, k);
+            
+            int bitLength = rkn.bitLength();
+            
+            for (int i = 0; i < bitLength; ++i) {
+                if (rkn.testBit(i)) {
+                    counts[i]++;
+                }
+            }
+            
+            nIter++;
+        }
+        
+        float[] xPolygon = null; 
+        float[] yPolygon = null; 
+        String plotLabel = "counts";
+        
+        // cIndexes, counts
+        float minX = 0;
+        float maxX = indexes[indexes.length - 1];
+        float minY = 0;
+        float maxY = nThrows;
+        
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(minX, maxX, minY, maxY, 
+            indexes, counts,
+            xPolygon, yPolygon, plotLabel);
+        
+        String filePath = plotter.writeFile("kbit_sampl_0");
+        
+    }
+
     public void testRandomKBits() throws Exception {
         
         // making a distribution of constant frequency values
@@ -91,7 +150,7 @@ public class PointSamplingTest extends TestCase {
             indexes, counts,
             xPolygon, yPolygon, plotLabel);
         
-        String filePath = plotter.writeFile("kbit_sampl");
+        String filePath = plotter.writeFile("kbit_sampl_1");
         
     }
 

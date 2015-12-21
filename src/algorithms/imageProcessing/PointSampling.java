@@ -129,6 +129,8 @@ public class PointSampling {
             "algorithm is currently only tested for k=7");
         }
         
+        int nPoints = pv.getPoints().length;
+        
         int minBitsValue = (1 << k) - 1;
         
         /*
@@ -151,20 +153,9 @@ public class PointSampling {
         lower number to arrive at 7 bits set, etc.
         */
                 
-// temporarily setting to draws from indexes instead of cumulative indexes
-        //BigInteger maxCumulativeIndex = pv.getMaxValue();
-        BigInteger maxCumulativeIndex = new BigInteger(
-            MiscMath.writeToBigEndianBytes(pv.getPoints().length));
-        
-        int bitLength = maxCumulativeIndex.bitLength();
-        
-        //String bs = maxValue.toString(2);
-        //long v = maxValue.longValueExact();
-        
-        // set top k bits to high... so far only designed for small k such as 7
-        // since each value is on or off in bit vector, maxValue is number of bits
-        //int vMax = minBitsValue << (bitLength - k);
-        int vMax = pv.getPoints().length;
+        BigInteger maxCumulativeIndex = pv.getMaxValue();
+                
+        int vMax = maxCumulativeIndex.intValueExact();
         
         // --- randomly choose a number between 0 and 2^nBits. ---
         
@@ -178,11 +169,10 @@ public class PointSampling {
         BigInteger randomlyChosen = new BigInteger(nBits - k, sr);
         randomlyChosen = randomlyChosen.shiftLeft(k);
         
-        bitLength = randomlyChosen.bitLength();
+        int bitLength = randomlyChosen.bitLength();
         
         //System.out.println("before: " + randomlyChosen.toString(2));
         
-        /*
         // --- create a bitstring in the reference frame of pv.points ---
         BigInteger rc0 = BigInteger.ZERO;
         for (int i = 0; i < bitLength; ++i) {
@@ -191,15 +181,132 @@ public class PointSampling {
                 
                 int oIdx = pv.getPointsIndexForCumulativeValue(
                     new BigInteger(MiscMath.writeToBigEndianBytes(i)));
-                
-                rc0 = rc0.add(new BigInteger(MiscMath.writeToBigEndianBytes(oIdx)));
+          
+                rc0 = rc0.setBit(oIdx);
             }
         }
         
         randomlyChosen = rc0;
-        */
                 
         bitLength = randomlyChosen.bitLength();
+        
+        int bitCount = randomlyChosen.bitCount();
+        
+        if (bitCount > k) {
+            
+            //keep the top k bits
+            BigInteger sum = BigInteger.ZERO;
+            int c = 0;
+            for (int j = (bitLength - 1); j > -1; --j) {
+                if (randomlyChosen.testBit(j)) {
+                    BigInteger c2 = BigInteger.ONE;
+                    c2 = c2.shiftLeft(j);
+                    sum = sum.add(c2);
+                    c++;
+                    if (c == k) {
+                        break;
+                    }
+                }
+            }
+            
+            randomlyChosen = sum;
+                        
+        } else if (bitCount < k) {
+
+            if (bitLength <= k) {
+                
+                randomlyChosen = new BigInteger(MiscMath.writeToBigEndianBytes(minBitsValue));
+                
+            } else {
+                
+                // plus one because unsetting a '1' and need to replace it, then 
+                // setting '0's below it
+                int nBitsToSet = k + 1 - bitCount;
+
+                // flip the low 0's to 1's and flip the next left 1 to 0
+                
+                bitLength = randomlyChosen.bitLength();
+                int c = 0;
+                int last = 0;
+                for (int j = 0; j < bitLength; ++j) {
+                    if (!randomlyChosen.testBit(j)) {
+                        randomlyChosen = randomlyChosen.setBit(j);
+                        c++;
+                        last = j;
+                    }
+                    if (c == nBitsToSet) {
+                        break;
+                    }
+                }
+                
+                for (int j = (last + 1); j < bitLength; ++j) {
+                    if (randomlyChosen.testBit(j)) {
+                        if (j != (bitLength - 1)) {
+                            randomlyChosen = randomlyChosen.clearBit(j);
+                        } else {
+                            randomlyChosen = randomlyChosen.clearBit(last);
+                        }
+                        break;
+                    }
+                }                
+            }
+        }
+
+        //System.out.println("after:  " + randomlyChosen.toString(2) + "\n");
+        
+        return randomlyChosen;
+    }
+    
+    /**
+     * randomly choose a k bit number that is a bit vector that has set bits
+     * representing the pv.points indexes selected.
+     * 
+     * NOTE: keeping this nearly private until have tested range of values for k.
+       needs to be correct for k=7.
+     
+     * @param maxValue
+     * @param sr
+     * @param k
+     * @return 
+     */
+    BigInteger randomlyChooseKBitNumber(int nIndexes, Random sr, int k) {
+        
+        if (k != 7) {
+            throw new IllegalArgumentException(
+            "algorithm is currently only tested for k=7");
+        }
+        
+        int minBitsValue = (1 << k) - 1;
+        
+        /*
+        wanting to choose 7 values from range 0 to nIndexes using one 
+        random number.
+        
+        bit vector with each bit holding a meaning of chosen ("1") or not ("0").
+        
+        the minimum usable bit vector is 7 bits set, = (1 << 7) - 1 = 127
+        the maximum usable bit vector is 1 << nIndexes
+        
+        select random numbers between minimum and maximum usable bit vector.
+        
+        and then if 7 bits exactly are not set, flip bits to the closest 
+        lower number to arrive at 7 bits set, etc.
+        */
+        
+        // --- randomly choose a number between 0 and 2^nBits. ---
+        
+        // the random algorithms and BigInteger algorithm appear to be biased
+        // towards very large numbers when nBits is high, so
+        // working around that by randomly selecting nBits, then using
+        // the random from BigInteger or Random.
+        
+        int nBits = sr.nextInt(nIndexes - k) + k;
+        BigInteger randomlyChosen = new BigInteger(nBits - k, sr);
+        randomlyChosen = randomlyChosen.shiftLeft(k);
+                
+        //System.out.println("before: " + randomlyChosen.toString(2));
+          
+        int bitLength = randomlyChosen.bitLength();
         
         int bitCount = randomlyChosen.bitCount();
         
