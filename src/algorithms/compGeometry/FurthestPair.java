@@ -47,6 +47,7 @@ public class FurthestPair {
             
         } catch (GrahamScanTooFewPointsException ex) {
             
+            // this can happen for colinear points reducting sorted size < 3
             Logger.getLogger(FurthestPair.class.getName()).log(Level.SEVERE, null, ex);
             
             return null;

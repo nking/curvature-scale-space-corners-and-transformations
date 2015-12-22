@@ -472,9 +472,9 @@ public class BlobScaleFinderWrapper {
                     params.getStandardDeviations()[2], 
                     params.getStandardDeviations()[3]));
 
-                boolean small = MiscStats.standardDeviationsAreSmall(params);
-                
-                if (small) {
+                //have changed the logic to handle this filter in the scale finder
+                //boolean small = MiscStats.standardDeviationsAreSmall(params);
+                //if (small) {
 
                     solutionAlgType = algType;
                     solutionSegmentationType1 = segmentationType1;
@@ -484,7 +484,7 @@ public class BlobScaleFinderWrapper {
                     solution = soln;
                     
                     return params;
-                }
+                //}
             }
 
             // if arrive here, have to decide to keep current segmentation and

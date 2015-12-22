@@ -347,6 +347,13 @@ System.out.println(sb.toString());
         float bestCost = Float.MAX_VALUE;
         float bestCost1Norm = Float.MAX_VALUE;
         List<FeatureComparisonStat> bestStats = null;
+        
+        // in the case that best is null, store and consider the best solution
+        // that has a larger scatter in parameters (standard deviations are large)
+        TransformationParameters bestParamsLg = null;
+        float bestCostLg = Float.MAX_VALUE;
+        float bestCost1NormLg = Float.MAX_VALUE;
+        List<FeatureComparisonStat> bestStatsLg = null;
 
         boolean tolIsTooLarge = false;
 
@@ -477,6 +484,7 @@ System.out.println(sb.toString());
                         bestParams = combinedParams;
                         bestStats = stats;
                         bestCost1Norm = cost1Norm;
+                        combinedParams.setNumberOfPointsUsed(stats.size());
                     } else if (MiscStats.standardDeviationsAreSmall(params)) {
                         //TODO: this suggests tolTransXY2 is too large
                         tolIsTooLarge = true;
@@ -484,6 +492,15 @@ System.out.println(sb.toString());
                         bestParams = params;
                         bestStats = stats;
                         bestCost1Norm = cost1Norm;
+                        params.setNumberOfPointsUsed(stats.size());
+                    } else {
+                        if (normalizedCost < bestCostLg) {
+                            bestCostLg = normalizedCost;
+                            bestParamsLg = combinedParams;
+                            bestStatsLg = stats;
+                            bestCost1NormLg = cost1Norm;
+                            combinedParams.setNumberOfPointsUsed(stats.size());
+                        }
                     }
                 }
             }
@@ -493,6 +510,67 @@ System.out.println(sb.toString());
             deltaTol++;
 
             nIter++;
+        }
+        
+        if ((bestParamsLg != null) && (bestParams != null)) {
+            
+            /*
+            When there are large projection effects, the standard deviation of 
+            parameters has a larger scatter, but bestParamsLg may actually be
+            the better solution over bestParams.
+            
+            Decide between the two based upon the stats sizes, norm costs,
+            and stdevs.
+            */
+            
+            if ((bestCost1NormLg < bestCost) && (bestStatsLg.size() > bestStats.size())) {            
+                  
+                // TODO: needs a careful look at the range of values in pixel descriptors
+                // and more testing to understand if this limit is always valid
+                int n = bestStatsLg.size();
+                for (int i = (n - 1); i > -1; --i) {
+                    FeatureComparisonStat stat = bestStatsLg.get(i);
+                    if (stat.getSumIntensitySqDiff() > 800) {
+                        bestStatsLg.remove(i);
+                    }
+                }
+                if (n < bestStatsLg.size()) {
+                    bestParamsLg = MiscStats.calculateTransformation(binFactor1, 
+                        binFactor2, bestStatsLg, new float[4]);
+                }
+                
+                float factor = Math.min(bestCost/bestCost1NormLg, 
+                    bestStatsLg.size()/bestStats.size());
+                
+                boolean t = true;
+                for (int i = 0; i < bestParams.getStandardDeviations().length; ++i) {
+                    float s0 = bestParams.getStandardDeviations()[i];
+                    float s1 = bestParamsLg.getStandardDeviations()[i];
+                    if (Math.abs(s0 - s1) > (factor * s0)) {
+                        t = false;
+                        break;
+                    }
+                }
+                
+//***** ===>                
+                //TODO: this is possibly a good place to compare pixels within
+                //unmatched blobs that are co-spatial in transformed reference
+                // frame.  to increase the number of matching points, knowing
+                // that larger projection effects have led to this solution.
+                
+                if (t) {
+                    if (binFactor1 != 1 || binFactor2 != 1) {
+                        for (int i = 0; i < bestStatsLg.size(); ++i) {
+                            FeatureComparisonStat stat = bestStatsLg.get(i);
+                            stat.setBinFactor1(binFactor1);
+                            stat.setBinFactor2(binFactor2);
+                        }
+                    }
+
+                    MatchingSolution soln = new MatchingSolution(bestParamsLg, bestStatsLg);
+                    return soln;
+                }
+            }                        
         }
 
         if (bestParams != null) {
