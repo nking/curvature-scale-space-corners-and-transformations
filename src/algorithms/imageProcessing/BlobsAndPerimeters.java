@@ -32,7 +32,7 @@ public class BlobsAndPerimeters {
      * the number of blobs is subsequently trimmed to the same.  The variable
      * may be adjusted to a higher number for larger images.
      */
-    protected static int defaultNumberLimit = 20;
+    protected static int defaultNumberLimit = 40;//20;
           
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type, 
@@ -192,12 +192,12 @@ public class BlobsAndPerimeters {
         
         int numberLimit = defaultNumberLimit;
         if ((inOutBlobs.size()/3) > defaultNumberLimit) {
-            numberLimit = 30;
+            numberLimit = 40;//30;
         } else {
             int binFactor = imgHelper.getBinFactor();
             int limit = 1024/binFactor;
             if (width >= limit || height >= limit) {
-                numberLimit = 30;
+                numberLimit = 40;//30;
             }
         }
        

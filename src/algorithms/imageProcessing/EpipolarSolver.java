@@ -193,6 +193,7 @@ public class EpipolarSolver {
                 epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);
             
             ImageIOHelper.addCurveToImage(leftLine, img1, 0, rgb[0], rgb[1], rgb[2]);
+            
         }
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
@@ -206,8 +207,22 @@ public class EpipolarSolver {
             
             ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
                 rgb[0], rgb[1], rgb[2]);
+            
         }
 
+        for (int ii = 0; ii < input1.numCols(); ii++) {
+            double x = input1.get(0, ii);
+            double y = input1.get(1, ii);
+            ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,
+                255, 0, 0);
+        }
+        for (int ii = 0; ii < input2.numCols(); ii++) {
+            double x2 = input2.get(0, ii);
+            double y2 = input2.get(1, ii);
+            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,
+                255, 0, 0);
+        }
+        
         String dirPath;
         try {
             dirPath = ResourceFinder.findDirectory("bin");

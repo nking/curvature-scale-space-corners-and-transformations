@@ -105,10 +105,16 @@ public class EpipolarSolverTest extends TestCase {
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                default: {
+                case 4: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
                     settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
+                    settings.setUseNormalizedFeatures(false);
                     break;
                 }
             }

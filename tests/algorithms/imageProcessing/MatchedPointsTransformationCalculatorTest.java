@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.PairInt;
 import junit.framework.TestCase;
 
 /**
@@ -231,4 +232,32 @@ public class MatchedPointsTransformationCalculatorTest extends TestCase {
         assertTrue(diffTransY < 0.001);
     }
 
+    public void testCalulateEuclidean90() {
+
+        PairInt c1Pt1 = new PairInt(209, 271);
+        PairInt c2Pt1 = new PairInt(30, 213);
+        
+        PairInt c1Pt2 = new PairInt(204, 283);
+        PairInt c2Pt2 = new PairInt(15, 209);
+
+        double centroidX1 = 0.0;
+        double centroidY1 = 0.0;
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+
+        TransformationParameters result = tc.calulateEuclidean(
+            c1Pt1.getX(), c1Pt1.getY(), c1Pt2.getX(), c1Pt2.getY(),
+            c2Pt1.getX(), c2Pt1.getY(), c2Pt2.getX(), c2Pt2.getY(), 0, 0);
+
+        float diffRotDeg = AngleUtil.getAngleDifference(
+           result.getRotationInDegrees(), 360 - 90);
+        float diffScale = Math.abs(result.getScale() - 1);
+        float diffTransX = Math.abs(result.getTranslationX() - 10);
+        float diffTransY = Math.abs(result.getTranslationY() - 0);
+
+        assertTrue(diffRotDeg < 10);
+        //assertTrue(diffScale == 0);
+        //assertTrue(diffTransX == 0);
+        //assertTrue(diffTransY == 0);
+    }
+    
 }

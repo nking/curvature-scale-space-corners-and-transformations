@@ -1392,9 +1392,13 @@ public class ButterflySectionFinder {
             assert(segment.p3.getY() > segment.p2.getY());
             assert(segment.p0.getY() > segment.p1.getY());
         }
-        
-        assert(p2MinDistSq <= 4);
-        assert(p3MinDistSq <= 4);
+
+        //TODO: revisit this logic and the steps before which could lead to it
+        //assert(p2MinDistSq <= 4);
+        //assert(p3MinDistSq <= 4);
+        if ((p2MinDistSq > 4) || (p3MinDistSq > 4)) {
+            return 0;
+        }
         
         /*   Vertical pattern
               R1 R0

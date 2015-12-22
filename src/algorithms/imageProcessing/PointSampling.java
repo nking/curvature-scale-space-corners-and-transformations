@@ -169,7 +169,6 @@ public class PointSampling {
         // towards very large numbers when nBits is high, so
         // working around that by randomly selecting nBits, then using
         // the random from BigInteger or Random.
-        // TODO: test the distribution of numbers from this adapted pattern
         
         int nBits = sr.nextInt(vMax - k) + k;
         BigInteger randomlyChosen = new BigInteger(nBits, sr);

@@ -214,7 +214,28 @@ public class PointSamplingTest extends TestCase {
         
     }
 
-    public void estCreateSpatialProbabilityValues() throws NoSuchAlgorithmException {
+    public void testRandomKNumbers2() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        System.out.println("SEED=" + seed);
+        //sr.setSeed(seed);
+                
+        int nBits = 4096;
+                
+        int nThrows = 1000;
+        int nIter = 0;
+        while (nIter < nThrows) {
+            
+            // biased towards high numbers.  never chooses below a high limit
+            BigInteger number = new BigInteger(nBits, sr);
+            System.out.println(number.toString());
+            
+            nIter++;
+        }        
+    }
+
+    public void testCreateSpatialProbabilityValues() throws NoSuchAlgorithmException {
         
         /*
         test:

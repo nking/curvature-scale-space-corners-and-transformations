@@ -29,7 +29,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
 
     private int nEval = -1;
 
-    protected final int dither = 4;//3;
+    protected final int dither = 3;//4;//3;
 
     protected final int rotationTolerance = 20;
 
@@ -124,7 +124,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         }
     }
 
-    /**
+    /*
      * for each corner in c1, find the smallest matching SSD in c2 and return
      * the indexes w.r.t. c2.
      * Note that the code does not attempt unique (bipartite matching) because
@@ -138,7 +138,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
      * @param img1 image from which to extract descriptors for features1
      * @param img2 image from which to extract descriptors for features2
      * @return
-     */
+     
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected CornersAndFeatureStat<T>[] getBestSSDC1ToC2(
         List<T> c1, List<T> c2,
@@ -154,8 +154,6 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
         Map<Integer, CornersAndFeatureStat<T>> index2Map = new HashMap<Integer,
             CornersAndFeatureStat<T>>();
 
-        FeatureMatcher featureMatcher = new FeatureMatcher();
-/*
 double[][] xy1 = new double[c1.size()][2];
 for (int i = 0; i < c1.size(); ++i) {
 CornerRegion cr = c1.get(i);
@@ -166,7 +164,9 @@ for (int i = 0; i < c2.size(); ++i) {
 CornerRegion cr = c2.get(i);
 xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 }
-*/
+
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
         for (int i = 0; i < c1.size(); ++i) {
 
             T region1 = c1.get(i);
@@ -209,6 +209,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 
         return indexes2;
     }
+    */
 
     /**
      * return all combinations of c1 and c2 corners.  note this method should
@@ -285,11 +286,12 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         */
         CornersAndFeatureStat<T>[] indexes2 = null;
 
-        if (false && c1.size() < 5 && c2.size() < 5) {
+        // unfortunately, cannot use the faster shortcut getBestSSDC1ToC2 for best results 
+        //if (c1.size() < 5 && c2.size() < 5) {
             indexes2 = getAllSSDC1ToC2(c1, c2, features1, features2, img1, img2);
-        } else {
+        /*} else {
             indexes2 = getBestSSDC1ToC2(c1, c2, features1, features2, img1, img2);
-        }
+        }*/
 
         // if want to filter by the best SSDs, could use a heap (inserts O(1))
         // and extract is O(1), and only extract the top 10 or so to make
@@ -406,13 +408,13 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         //     of evaluations.
         List<TransformationParameters> combinedParams = null;
 
-        if (c1.size() < 5 && c2.size() < 5) {
+        //if (c1.size() < 5 && c2.size() < 5) {
             combinedParams = MiscStats.filterToSimilarParamSets2(paramsMap,
                 binFactor1, binFactor2);
-        } else {
+        /*} else {
             combinedParams = MiscStats.filterToSimilarParamSets(paramsMap,
                 binFactor1, binFactor2);
-        }
+        }*/
         
         // --- evaluate transformations on all corners, starting w/ location ----
 

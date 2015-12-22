@@ -57,9 +57,9 @@ public class BlobScaleFinderWrapper {
     // use with img1Helper.getImage() or getGreyscaleImage(), but not both
     protected final IntensityFeatures features1;
     // use img2Helper.getGreyscaleImageBinned(), 
-    protected final IntensityFeatures featuresBinned1;
+    protected final IntensityFeatures2 featuresBinned1;
     protected final IntensityFeatures features2;
-    protected final IntensityFeatures featuresBinned2;
+    protected final IntensityFeatures2 featuresBinned2;
 
     private final FeatureMatcherSettings settings;
     
@@ -102,7 +102,7 @@ public class BlobScaleFinderWrapper {
 
             img2Helper = new BlobPerimeterHelper(img2);
         }
-        
+                
         features1 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
             rotatedOffsets);
 
@@ -119,11 +119,13 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures(5, 
+            featuresBinned1 = new IntensityFeatures2(5, 
                 settings.useNormalizedFeatures(), rotatedOffsets);
+            featuresBinned1.calculateGradientWithGreyscale(img1Helper.getGreyscaleImageBinned());
             
-            featuresBinned2 = new IntensityFeatures(5, 
+            featuresBinned2 = new IntensityFeatures2(5, 
                 settings.useNormalizedFeatures(), rotatedOffsets);
+            featuresBinned2.calculateGradientWithGreyscale(img2Helper.getGreyscaleImageBinned());
             
         } else {
             
@@ -345,8 +347,8 @@ public class BlobScaleFinderWrapper {
                     findLinesUsingHoughTransform(blobCornerHelper1,
                     segmentationType1, useBinned);
                 
-                boolean hasManyIntersectingLines1 = hasManyIntersectingLines(
-                    houghTransformLines1);
+                boolean hasManyIntersectingLines1 = 
+                    hasManyIntersectingLines(houghTransformLines1);
                 
                 if (hasManyIntersectingLines1) {
                     // use canny edges segmentation to replace segmentationType1
@@ -361,8 +363,8 @@ public class BlobScaleFinderWrapper {
                     findLinesUsingHoughTransform(blobCornerHelper2,
                     segmentationType2, useBinned);
                 
-                boolean hasManyIntersectingLines2 = hasManyIntersectingLines(
-                    houghTransformLines2);
+                boolean hasManyIntersectingLines2 = 
+                    hasManyIntersectingLines(houghTransformLines2);
                 
                 if (hasManyIntersectingLines2) {
                     // use canny edges segmentation to replace segmentationType2
@@ -383,11 +385,14 @@ public class BlobScaleFinderWrapper {
                 blobCornerHelper2.generatePerimeterCorners(segmentationType2, 
                     useBinned);
                 
-                removeLineArtifactCorners(houghTransformLines1, blobCornerHelper1,
-                    segmentationType1, useBinned);
-                
-                removeLineArtifactCorners(houghTransformLines2, blobCornerHelper2,
-                    segmentationType2, useBinned);
+                //if (hasManyIntersectingLines1) {
+                    removeLineArtifactCorners(houghTransformLines1, blobCornerHelper1,
+                        segmentationType1, useBinned);
+                //}
+                //if (hasManyIntersectingLines2) {
+                    removeLineArtifactCorners(houghTransformLines2, blobCornerHelper2,
+                        segmentationType2, useBinned);
+                //}
         
                 t2 = System.currentTimeMillis();
                 t1Sec = (t1 - t0)/1000;
