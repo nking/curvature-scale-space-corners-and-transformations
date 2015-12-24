@@ -616,7 +616,8 @@ System.out.println(sb.toString());
 
                         //TODO: possible problem here using same group limit size on both images
                         List<FeatureComparisonStat> stats2 = finder.extractFeatures(
-                            bestParamsLg, imgSeg1Tmp, imgSeg2Tmp, 
+                            bestParamsLg, img1, img2,
+                            imgSeg1Tmp, imgSeg2Tmp, 
                             binFactor1, binFactor2,
                             smallestGroupLimit, largestGroupLimit, 
                             features1.getRotatedOffsets(),
@@ -679,7 +680,7 @@ System.out.println(sb.toString());
                             stat.setBinFactor2(binFactor2);
                         }
                     }
-
+                    
                     MatchingSolution soln = new MatchingSolution(bestParamsLg, bestStatsLg);
                     return soln;
                 }

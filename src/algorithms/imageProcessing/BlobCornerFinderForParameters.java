@@ -22,8 +22,10 @@ import thirdparty.HungarianAlgorithm;
 public class BlobCornerFinderForParameters {
     
     public List<FeatureComparisonStat> extractFeatures(
-        TransformationParameters parameters, GreyscaleImage img1,
-        GreyscaleImage img2, int binFactor1, int binFactor2,
+        TransformationParameters parameters, 
+        GreyscaleImage img1, GreyscaleImage img2,
+        GreyscaleImage segImg1, GreyscaleImage segImg2, 
+        int binFactor1, int binFactor2,
         int smallestGroupLimit, int largestGroupLimit,
         RotatedOffsets rotatedOffsets, boolean debug, String debugTag) {
         
@@ -33,7 +35,7 @@ public class BlobCornerFinderForParameters {
         
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         
-        extractBlobs(blobs1, blobs2, img1, img2, binFactor1, binFactor2,
+        extractBlobs(blobs1, blobs2, segImg1, segImg2, binFactor1, binFactor2,
             smallestGroupLimit, largestGroupLimit, debug, debugTag);
         
         Transformer transformer = new Transformer();
@@ -56,7 +58,7 @@ public class BlobCornerFinderForParameters {
         List<Integer> matchedIndexes1 = new ArrayList<Integer>();
         List<Integer> matchedIndexes2 = new ArrayList<Integer>();
         
-        bipartiteMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
+        //bipartiteMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
         greedyDegenerateMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
         
         if (matchedIndexes1.isEmpty()) {
@@ -90,7 +92,6 @@ public class BlobCornerFinderForParameters {
         
         int dither = 1;
         double solutionScale = parameters.getScale();
-        
         int lowerLimitSSDError = 200;
         int upperLimitSSD = 1500;
         
