@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BlobCornerFinderForParameters.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">BlobCornerFinderForParameters.java</span></div><h1>BlobCornerFinderForParameters.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.compGeometry.PerimeterFinder;
+import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import thirdparty.HungarianAlgorithm;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L22">public class BlobCornerFinderForParameters {</span>
+    
+    public List&lt;FeatureComparisonStat&gt; extractFeatures(
+        TransformationParameters parameters, 
+        GreyscaleImage img1, GreyscaleImage img2,
+        GreyscaleImage segImg1, GreyscaleImage segImg2, 
+        int binFactor1, int binFactor2,
+        int smallestGroupLimit, int largestGroupLimit,
+        RotatedOffsets rotatedOffsets, boolean debug, String debugTag) {
+        
+<span class="fc" id="L32">        List&lt;FeatureComparisonStat&gt; allStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+        
+<span class="fc" id="L34">        List&lt;Set&lt;PairInt&gt;&gt; blobs1 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+        
+<span class="fc" id="L36">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+        
+<span class="fc" id="L38">        extractBlobs(blobs1, blobs2, segImg1, segImg2, binFactor1, binFactor2,</span>
+            smallestGroupLimit, largestGroupLimit, debug, debugTag);
+        
+<span class="fc" id="L41">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L42">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+                
+<span class="fc" id="L44">        double[][] xyCen1 = new double[blobs1.size()][];</span>
+<span class="fc" id="L45">        double[][] xyCenTr1 = new double[blobs1.size()][];</span>
+<span class="fc" id="L46">        double[][] xyCen2 = new double[blobs2.size()][];</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; blobs1.size(); ++i) {</span>
+<span class="fc" id="L48">            xyCen1[i] = curveHelper.calculateXYCentroids(blobs1.get(i));</span>
+<span class="fc" id="L49">            xyCenTr1[i] = transformer.applyTransformation(parameters, xyCen1[i][0], xyCen1[i][1]);</span>
+        }
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; blobs2.size(); ++i) {</span>
+<span class="fc" id="L52">            xyCen2[i] = curveHelper.calculateXYCentroids(blobs2.get(i));</span>
+        }
+        
+<span class="fc" id="L55">        float[] stdevs = parameters.getStandardDeviations();</span>
+<span class="fc" id="L56">        int transXYTol = Math.round(Math.max(stdevs[2], stdevs[3]));</span>
+        
+<span class="fc" id="L58">        List&lt;Integer&gt; matchedIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L59">        List&lt;Integer&gt; matchedIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+        
+        //bipartiteMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
+<span class="fc" id="L62">        greedyDegenerateMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);</span>
+        
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (matchedIndexes1.isEmpty()) {</span>
+<span class="nc" id="L65">            return allStats;</span>
+        }
+        
+<span class="fc" id="L68">        CornerRegion[][] blobs1Index1BPRs = extractBlobPerimeterRegions(blobs1, </span>
+<span class="fc" id="L69">            matchedIndexes1, img1.getWidth(), img1.getHeight());</span>
+        
+<span class="fc" id="L71">        CornerRegion[][] blobs1Index1BPRsTR = transform(blobs1Index1BPRs, </span>
+            parameters);
+        
+<span class="fc" id="L74">        CornerRegion[][] blobs2Index2BPRs = extractBlobPerimeterRegions(blobs2, </span>
+<span class="fc" id="L75">            matchedIndexes2, img2.getWidth(), img2.getHeight());</span>
+        
+<span class="fc" id="L77">        Map&lt;Integer, IntensityFeatureComparisonStats&gt; blobs1Index1Matches = </span>
+            new HashMap&lt;Integer, IntensityFeatureComparisonStats&gt;();
+        
+<span class="fc" id="L80">        Map&lt;Integer, IntensityFeatureComparisonStats&gt; blobs2Index2Matches = </span>
+            new HashMap&lt;Integer, IntensityFeatureComparisonStats&gt;();
+                
+<span class="fc" id="L83">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+<span class="fc" id="L84">        final int blockHalfWidth = 5;</span>
+<span class="fc" id="L85">        final boolean useNormalizedIntensities = true;</span>
+        
+<span class="fc" id="L87">        IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, </span>
+            useNormalizedIntensities, rotatedOffsets);
+        
+<span class="fc" id="L90">        IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,</span>
+            useNormalizedIntensities, rotatedOffsets);
+        
+<span class="fc" id="L93">        int dither = 1;</span>
+<span class="fc" id="L94">        double solutionScale = parameters.getScale();</span>
+<span class="fc" id="L95">        int lowerLimitSSDError = 200;</span>
+<span class="fc" id="L96">        int upperLimitSSD = 1500;</span>
+        
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedIndexes1.size(); ++i) {</span>
+            
+<span class="fc" id="L100">            Integer index1 = matchedIndexes1.get(i);</span>
+<span class="fc" id="L101">            Integer index2 = matchedIndexes2.get(i);</span>
+            
+<span class="fc" id="L103">            CornerRegion[] cr1 = blobs1Index1BPRs[index1.intValue()];</span>
+<span class="fc" id="L104">            CornerRegion[] cr1Tr = blobs1Index1BPRsTR[index1.intValue()];</span>
+<span class="fc" id="L105">            CornerRegion[] cr2 = blobs2Index2BPRs[index2.intValue()];</span>
+            
+            // compare pixels whose SSD error is relatively high, meaning,
+            // they aren't featureless patches as seen by autocorrelation
+<span class="fc" id="L109">            List&lt;FeatureComparisonStat&gt; stats = </span>
+<span class="fc" id="L110">                featureMatcher.findSimilarFeaturesAsStats(</span>
+                img1, cr1, cr1Tr, img2, cr2, features1, features2, 
+                parameters, dither, lowerLimitSSDError, upperLimitSSD, transXYTol,  
+                rotatedOffsets);
+            
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (stats.isEmpty()) {</span>
+<span class="fc" id="L116">                continue;</span>
+            }
+            
+<span class="fc" id="L119">            double solutionCost = calculateCombinedIntensityStat(stats);</span>
+            
+<span class="fc" id="L121">            IntensityFeatureComparisonStats ifcs = </span>
+<span class="fc" id="L122">                new IntensityFeatureComparisonStats(index1.intValue(), </span>
+<span class="fc" id="L123">                    index2.intValue(), solutionCost, solutionScale);</span>
+<span class="fc" id="L124">            ifcs.addAll(stats);</span>
+                   
+<span class="fc" id="L126">            IntensityFeatureComparisonStats ifcs1 = blobs1Index1Matches.get(index1);</span>
+<span class="fc" id="L127">            IntensityFeatureComparisonStats ifcs2 = blobs2Index2Matches.get(index2);</span>
+            
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (ifcs1 != null) {</span>
+<span class="pc bpc" id="L130" title="3 of 4 branches missed.">                if (ifcs2 != null &amp;&amp; ifcs2.equals(ifcs1)) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                    if (ifcs.getCost() &lt; ifcs1.getCost()) {</span>
+<span class="nc" id="L132">                        blobs1Index1Matches.put(index1, ifcs);</span>
+<span class="nc" id="L133">                        blobs2Index2Matches.put(index2, ifcs);</span>
+                    }
+                    continue;
+                }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                if (ifcs.getCost() &lt; ifcs1.getCost()) {</span>
+<span class="nc" id="L138">                    blobs1Index1Matches.put(index1, ifcs);</span>
+<span class="nc" id="L139">                    blobs2Index2Matches.put(index2, ifcs);</span>
+                }
+                continue;
+            } 
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            if (ifcs2 != null) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">                if (ifcs.getCost() &lt; ifcs2.getCost()) {</span>
+<span class="nc" id="L145">                    blobs1Index1Matches.put(index1, ifcs);</span>
+<span class="nc" id="L146">                    blobs2Index2Matches.put(index2, ifcs);</span>
+                }
+                continue;
+            }
+<span class="fc" id="L150">            blobs1Index1Matches.put(index1, ifcs);</span>
+<span class="fc" id="L151">            blobs2Index2Matches.put(index2, ifcs);</span>
+        }
+        
+        for (Entry&lt;Integer, IntensityFeatureComparisonStats&gt; entry :
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            blobs1Index1Matches.entrySet()) {</span>
+            
+<span class="fc" id="L157">            allStats.addAll(entry.getValue().getComparisonStats());</span>
+<span class="fc" id="L158">        }</span>
+        
+<span class="fc" id="L160">        return allStats;</span>
+    }
+    
+    private void extractBlobs(List&lt;Set&lt;PairInt&gt;&gt; outputBlobs1, 
+        List&lt;Set&lt;PairInt&gt;&gt; outputBlobs2,
+        GreyscaleImage img1, GreyscaleImage img2, int binFactor1, int binFactor2,
+        int smallestGroupLimit, int largestGroupLimit, boolean debug,
+        String debugTag) {
+        
+<span class="fc" id="L169">        List&lt;Set&lt;PairInt&gt;&gt; blobs1 = </span>
+<span class="fc" id="L170">            BlobsAndPerimeters.extractBlobsKeepBounded(</span>
+                img1, smallestGroupLimit, largestGroupLimit, binFactor1);
+        
+<span class="fc" id="L173">        outputBlobs1.addAll(blobs1);</span>
+        
+<span class="fc" id="L175">        List&lt;Set&lt;PairInt&gt;&gt; blobs2 = </span>
+<span class="fc" id="L176">            BlobsAndPerimeters.extractBlobsKeepBounded(</span>
+                img2, smallestGroupLimit, largestGroupLimit, binFactor2);
+        
+<span class="fc" id="L179">        outputBlobs2.addAll(blobs2);</span>
+        
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="fc" id="L182">            Image img0 = ImageIOHelper.convertImage(img1);</span>
+<span class="fc" id="L183">            int c = 0;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">            for (int i = 0; i &lt; blobs1.size(); ++i) {</span>
+<span class="fc" id="L185">                Set&lt;PairInt&gt; blobSet = blobs1.get(i);</span>
+<span class="fc" id="L186">                int clr = ImageIOHelper.getNextColorRGB(c);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                for (PairInt p : blobSet) {</span>
+<span class="fc" id="L188">                    int x = p.getX();</span>
+<span class="fc" id="L189">                    int y = p.getY();</span>
+<span class="fc" id="L190">                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);</span>
+<span class="fc" id="L191">                }</span>
+<span class="fc" id="L192">                c++;</span>
+            }
+            
+<span class="fc" id="L195">            MiscDebug.writeImage(img0, &quot;blobs1_ext_seg&quot; + debugTag + &quot;_&quot; + </span>
+<span class="fc" id="L196">                MiscDebug.getCurrentTimeFormatted());</span>
+            
+<span class="fc" id="L198">            img0 = ImageIOHelper.convertImage(img2);</span>
+<span class="fc" id="L199">            c = 0;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">            for (int i = 0; i &lt; blobs2.size(); ++i) {</span>
+<span class="fc" id="L201">                Set&lt;PairInt&gt; blobSet = blobs2.get(i);</span>
+<span class="fc" id="L202">                int clr = ImageIOHelper.getNextColorRGB(c);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                for (PairInt p : blobSet) {</span>
+<span class="fc" id="L204">                    int x = p.getX();</span>
+<span class="fc" id="L205">                    int y = p.getY();</span>
+<span class="fc" id="L206">                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);</span>
+<span class="fc" id="L207">                }</span>
+<span class="fc" id="L208">                c++;</span>
+            }
+            
+<span class="fc" id="L211">            MiscDebug.writeImage(img0, &quot;blobs2_ext_seg&quot; + debugTag + &quot;_&quot; + </span>
+<span class="fc" id="L212">                MiscDebug.getCurrentTimeFormatted());</span>
+        }
+<span class="fc" id="L214">    }</span>
+
+    private void bipartiteMatching(double[][] xy1, double[][] xy2, 
+        int transXYTol, List&lt;Integer&gt; outputMatchedIndexes1, 
+        List&lt;Integer&gt; outputMatchedIndexes2) {
+        
+<span class="nc" id="L220">        int n1 = xy1.length;</span>
+<span class="nc" id="L221">        int n2 = xy2.length;</span>
+        
+<span class="nc" id="L223">        float[][] cost = new float[n1][n2];</span>
+<span class="nc" id="L224">        float[][] costCopy = new float[n1][n2];</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc" id="L226">            cost[i] = new float[n2];</span>
+<span class="nc" id="L227">            costCopy[i] = new float[n2];</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L229">                double dist = distance(xy1[i], xy2[i]);</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                if (dist &gt; transXYTol) {</span>
+<span class="nc" id="L231">                    cost[i][j] = Float.MAX_VALUE;</span>
+                } else {
+<span class="nc" id="L233">                    cost[i][j] = (float)dist;</span>
+                }
+<span class="nc" id="L235">                costCopy[i][j] = cost[i][j];</span>
+            }
+        }
+        
+<span class="nc" id="L239">        boolean transposed = false;</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (cost.length &gt; cost[0].length) {</span>
+<span class="nc" id="L241">            cost = MatrixUtil.transpose(cost);</span>
+<span class="nc" id="L242">            transposed = true;</span>
+        }
+
+        // one pass thru to count for array sizes
+<span class="nc" id="L246">        HungarianAlgorithm b = new HungarianAlgorithm();</span>
+<span class="nc" id="L247">        int[][] match = b.computeAssignments(cost);</span>
+
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        for (int i = 0; i &lt; match.length; i++) {</span>
+<span class="nc" id="L250">            int idx1 = match[i][0];</span>
+<span class="nc" id="L251">            int idx2 = match[i][1];</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">            if (idx1 == -1 || idx2 == -1) {</span>
+<span class="nc" id="L253">                continue;</span>
+            }
+<span class="nc bnc" id="L255" title="All 2 branches missed.">            if (transposed) {</span>
+<span class="nc" id="L256">                int swap = idx1;</span>
+<span class="nc" id="L257">                idx1 = idx2;</span>
+<span class="nc" id="L258">                idx2 = swap;</span>
+            }
+<span class="nc bnc" id="L260" title="All 2 branches missed.">            if (costCopy[idx1][idx2] == Float.MAX_VALUE) {</span>
+<span class="nc" id="L261">                continue;</span>
+            }
+<span class="nc" id="L263">            outputMatchedIndexes1.add(Integer.valueOf(idx1));</span>
+<span class="nc" id="L264">            outputMatchedIndexes2.add(Integer.valueOf(idx2));</span>
+        }
+        
+<span class="nc" id="L267">    }</span>
+    
+    private void greedyDegenerateMatching(double[][] xy1, double[][] xy2, 
+        int transXYTol, List&lt;Integer&gt; outputMatchedIndexes1, 
+        List&lt;Integer&gt; outputMatchedIndexes2) {
+        
+<span class="fc" id="L273">        int n1 = xy1.length;</span>
+<span class="fc" id="L274">        int n2 = xy2.length;</span>
+        
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="fc" id="L278">                double dist = distance(xy1[i], xy2[i]);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (dist &gt; transXYTol) {</span>
+<span class="fc" id="L280">                    continue;</span>
+                }
+<span class="fc" id="L282">                outputMatchedIndexes1.add(Integer.valueOf(i));</span>
+<span class="fc" id="L283">                outputMatchedIndexes2.add(Integer.valueOf(j));</span>
+            }
+        }
+<span class="fc" id="L286">    }</span>
+
+    private double distance(double[] xy1, double[] xy2) {
+
+<span class="fc" id="L290">        double diffX = xy1[0] - xy2[0];</span>
+<span class="fc" id="L291">        double diffY = xy1[1] - xy2[1];</span>
+
+<span class="fc" id="L293">        double dist = Math.sqrt(diffX * diffX + diffY * diffY);</span>
+        
+<span class="fc" id="L295">        return dist;</span>
+    }
+
+    private CornerRegion[][] extractBlobPerimeterRegions(
+        List&lt;Set&lt;PairInt&gt;&gt; blobs, List&lt;Integer&gt; indexesToExtract,
+        int imageWidth, int imageHeight) {
+                
+<span class="fc" id="L302">        PerimeterFinder perimeterFinder = new PerimeterFinder();</span>
+        
+<span class="fc" id="L304">        int nIndexes = blobs.size();</span>
+        
+<span class="fc" id="L306">        CornerRegion[][] bprs = new CornerRegion[nIndexes][];</span>
+                
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (Integer index : indexesToExtract) {</span>
+            
+<span class="fc" id="L310">            int idx = index.intValue();</span>
+            
+<span class="fc" id="L312">            Set&lt;PairInt&gt; blob = blobs.get(idx);</span>
+            
+            // --- extract the perimeters ---
+<span class="fc" id="L315">            Set&lt;PairInt&gt; outputEmbeddedGapPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L316">            int imageMaxColumn = imageWidth - 1;</span>
+<span class="fc" id="L317">            int imageMaxRow = imageHeight - 1;</span>
+<span class="fc" id="L318">            int[] rowMinMax = new int[2];</span>
+<span class="fc" id="L319">            Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges = perimeterFinder.find(</span>
+                blob, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);       
+<span class="fc bfc" id="L321" title="All 2 branches covered.">            if (!outputEmbeddedGapPoints.isEmpty()) {</span>
+                // update the perimeter for &quot;filling in&quot; embedded points
+<span class="fc" id="L323">                perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, </span>
+                    rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+            }
+<span class="fc" id="L326">            Set&lt;PairInt&gt; borderPixels = perimeterFinder.getBorderPixels(</span>
+                rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+           
+<span class="fc" id="L329">            bprs[index.intValue()] = new CornerRegion[borderPixels.size()];</span>
+            
+<span class="fc" id="L331">            int count = 0;</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">            for (PairInt p : borderPixels) {</span>
+<span class="fc" id="L333">                CornerRegion cr = new CornerRegion(index.intValue(), 1, 0);</span>
+<span class="fc" id="L334">                cr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="fc" id="L335">                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());</span>
+<span class="fc" id="L336">                bprs[idx][count] = cr;</span>
+<span class="fc" id="L337">                count++;</span>
+<span class="fc" id="L338">            }</span>
+<span class="fc" id="L339">        }</span>
+        
+<span class="fc" id="L341">        return bprs;</span>
+    }
+
+    private CornerRegion[][] transform(CornerRegion[][] crs, 
+        TransformationParameters parameters) {
+        
+<span class="fc" id="L347">        CornerRegion[][] tr = new CornerRegion[crs.length][];</span>
+        
+<span class="fc" id="L349">        Transformer transformer = new Transformer();</span>
+        
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (int i = 0; i &lt; crs.length; ++i) {</span>
+            
+<span class="fc" id="L353">            CornerRegion[] crA = crs[i];</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            if (crA == null) {</span>
+<span class="fc" id="L355">                continue;</span>
+            }
+            
+<span class="fc" id="L358">            tr[i] = new CornerRegion[crA.length];</span>
+            
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            for (int j = 0; j &lt; crA.length; ++j) {</span>
+                
+<span class="fc" id="L362">                CornerRegion cr = crA[j];</span>
+<span class="fc" id="L363">                int kIdx = cr.getKMaxIdx();</span>
+                
+<span class="fc" id="L365">                double[] xy = transformer.applyTransformation(parameters, </span>
+<span class="fc" id="L366">                    cr.getX()[kIdx], cr.getY()[kIdx]);</span>
+                
+<span class="fc" id="L368">                CornerRegion crTr = new CornerRegion(i, 1, 0);</span>
+<span class="fc" id="L369">                crTr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="fc" id="L370">                crTr.set(0, Float.MIN_VALUE, </span>
+<span class="fc" id="L371">                    (int)Math.round(xy[0]), (int)Math.round(xy[1]));</span>
+<span class="fc" id="L372">                crTr.setIndexWithinCurve(j);</span>
+                
+<span class="fc" id="L374">                tr[i][j] = crTr;</span>
+            }
+        }
+        
+<span class="fc" id="L378">        return tr;</span>
+    }
+    
+    protected double calculateCombinedIntensityStat(List&lt;FeatureComparisonStat&gt; 
+        compStats) {
+        
+<span class="fc" id="L384">        double sum = 0;</span>
+        
+<span class="fc bfc" id="L386" title="All 2 branches covered.">        for (FeatureComparisonStat compStat : compStats) {</span>
+<span class="fc" id="L387">            sum += compStat.getSumIntensitySqDiff();</span>
+<span class="fc" id="L388">        }</span>
+        
+<span class="fc" id="L390">        sum /= (double) compStats.size();</span>
+        
+<span class="fc" id="L392">        return sum;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

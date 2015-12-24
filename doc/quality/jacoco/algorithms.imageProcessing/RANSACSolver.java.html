@@ -33,7 +33,7 @@ import org.ejml.simple.SimpleMatrix;
 <span class="fc" id="L33">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     /**
-     * NOT COMPLETELY READY FOR USE YET, BUT CLOSE
+     * NOT COMPLETELY READY FOR USE YET
      * calculate the epipolar projection among the given points with the
      * assumption that some of the points in the matched lists are not
      * true matches.
@@ -59,8 +59,8 @@ import org.ejml.simple.SimpleMatrix;
 <span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (matchedLeftXY.getN() &lt; 7) {</span>
             // cannot use this algorithm.
 <span class="nc" id="L61">            throw new IllegalArgumentException(</span>
-                &quot;the algorithms require 7 or more points.&quot;
-<span class="nc" id="L63">                + &quot; matchedLeftXY.n=&quot; + matchedLeftXY.getN());</span>
+            &quot;the algorithms require 7 or more points.  matchedLeftXY.n=&quot; 
+<span class="nc" id="L63">            + matchedLeftXY.getN());</span>
         }
 
 <span class="fc" id="L66">        SimpleMatrix input1 =</span>
@@ -190,7 +190,7 @@ import org.ejml.simple.SimpleMatrix;
         which uses 0.6% of the maximum image dimension.
         */
 <span class="fc" id="L192">        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(</span>
-            nSet);
+            nPoints);
 
 <span class="fc" id="L195">        float convergence = 0.5f * matchedLeftXY.numCols();</span>
 <span class="fc bfc" id="L196" title="All 2 branches covered.">        if (convergence &lt; 7) {</span>
@@ -360,9 +360,9 @@ import org.ejml.simple.SimpleMatrix;
 <span class="fc" id="L360">                return true;</span>
 
 <span class="fc" id="L362">            } else if (compareFit.getMeanDistance()</span>
-<span class="fc bfc" id="L363" title="All 2 branches covered.">                == bestFit.getMeanDistance()) {</span>
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">                == bestFit.getMeanDistance()) {</span>
 
-<span class="pc bpc" id="L365" title="1 of 2 branches missed.">                if (compareFit.getStDevFromMean()&lt; bestFit.getStDevFromMean()) {</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">                if (compareFit.getStDevFromMean()&lt; bestFit.getStDevFromMean()) {</span>
 
 <span class="nc" id="L367">                    return true;</span>
                 }
@@ -379,10 +379,11 @@ import org.ejml.simple.SimpleMatrix;
         
 <span class="nc" id="L380">        double limit = 0.2;</span>
 
-<span class="nc bnc" id="L382" title="All 4 branches missed.">        if ((bestFit.getMeanDistance() &lt; limit) &amp;&amp; bestFit.getStDevFromMean() &lt; limit) {</span>
-<span class="nc" id="L383">            return true;</span>
+<span class="nc bnc" id="L382" title="All 4 branches missed.">        if ((bestFit.getMeanDistance() &lt; limit) &amp;&amp; bestFit.getStDevFromMean()</span>
+            &lt; limit) {
+<span class="nc" id="L384">            return true;</span>
         }
-<span class="nc" id="L385">        return false;</span>
+<span class="nc" id="L386">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

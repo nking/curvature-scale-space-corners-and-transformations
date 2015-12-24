@@ -150,44 +150,38 @@ public class SubsetChooser {
     }
 
     /**
-     * highbit is 1 &lt;&lt; entire_set_size (not subset size, k).
-     *
-     * @param x
-     * @param highbit
+     * @param x0
      * @return
      */
     private long nextSubset64(long x0) {
 
-<span class="fc" id="L161">        long y = x0 &amp; -x0;  // = the least significant one bit of x</span>
-<span class="fc" id="L162">        long c = x0 + y;</span>
+<span class="fc" id="L158">        long y = x0 &amp; -x0;  // = the least significant one bit of x</span>
+<span class="fc" id="L159">        long c = x0 + y;</span>
 
-<span class="fc" id="L164">        x0 = c + (((c ^ x0) / y) &gt;&gt; 2);</span>
+<span class="fc" id="L161">        x0 = c + (((c ^ x0) / y) &gt;&gt; 2);</span>
 
-<span class="fc" id="L166">        count++;</span>
+<span class="fc" id="L163">        count++;</span>
 
-<span class="fc" id="L168">        return x0;</span>
+<span class="fc" id="L165">        return x0;</span>
     }
 
     /**
-     * highbit is 1 &lt;&lt; entire_set_size (not subset size, k).
-     *
      * @param x
-     * @param highbit
      * @return
      */
     private BigInteger nextSubsetBigInteger(BigInteger x0) {
 
-<span class="fc" id="L180">        BigInteger y = x0.and(x0.negate()); // = the least significant one bit of x</span>
-<span class="fc" id="L181">        BigInteger c = x0.add(y);</span>
+<span class="fc" id="L174">        BigInteger y = x0.and(x0.negate()); // = the least significant one bit of x</span>
+<span class="fc" id="L175">        BigInteger c = x0.add(y);</span>
         
         //x0 = c + (((c ^ x0) / y) &gt;&gt; 2);
-<span class="fc" id="L184">        BigInteger tmp = c.xor(x0).divide(y).shiftRight(2);</span>
+<span class="fc" id="L178">        BigInteger tmp = c.xor(x0).divide(y).shiftRight(2);</span>
         
-<span class="fc" id="L186">        x0 = c.add(tmp);</span>
+<span class="fc" id="L180">        x0 = c.add(tmp);</span>
 
-<span class="fc" id="L188">        count++;</span>
+<span class="fc" id="L182">        count++;</span>
 
-<span class="fc" id="L190">        return x0;</span>
+<span class="fc" id="L184">        return x0;</span>
     }
 
     protected int select64(int[] selected) {
@@ -202,20 +196,20 @@ public class SubsetChooser {
         System.out.format(&quot;%d\t%10s\n&quot;, x, str);
         */
 
-<span class="fc" id="L205">        int nBits = 0;</span>
-<span class="fc" id="L206">        int nOneBits = 0;</span>
-<span class="fc" id="L207">        long xp = x64;</span>
-<span class="fc bfc" id="L208" title="All 2 branches covered.">        while (xp &gt; 0) {</span>
-<span class="fc bfc" id="L209" title="All 2 branches covered.">            if ((xp &amp; 1) == 1) {</span>
-<span class="fc" id="L210">                int idx2 = n - 1 - nBits;</span>
-<span class="fc" id="L211">                selected[nOneBits] = idx2;</span>
-<span class="fc" id="L212">                nOneBits++;</span>
+<span class="fc" id="L199">        int nBits = 0;</span>
+<span class="fc" id="L200">        int nOneBits = 0;</span>
+<span class="fc" id="L201">        long xp = x64;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        while (xp &gt; 0) {</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if ((xp &amp; 1) == 1) {</span>
+<span class="fc" id="L204">                int idx2 = n - 1 - nBits;</span>
+<span class="fc" id="L205">                selected[nOneBits] = idx2;</span>
+<span class="fc" id="L206">                nOneBits++;</span>
             }
-<span class="fc" id="L214">            xp = xp &gt;&gt; 1;</span>
-<span class="fc" id="L215">            nBits++;</span>
+<span class="fc" id="L208">            xp = xp &gt;&gt; 1;</span>
+<span class="fc" id="L209">            nBits++;</span>
         }
 
-<span class="fc" id="L218">        return nOneBits;</span>
+<span class="fc" id="L212">        return nOneBits;</span>
     }
 
     protected int selectBigInteger(int[] selected) {
@@ -230,20 +224,20 @@ public class SubsetChooser {
         System.out.format(&quot;%d\t%10s\n&quot;, x, str);
         */
 
-<span class="fc" id="L233">        int nBits = 0;</span>
-<span class="fc" id="L234">        int nOneBits = 0;</span>
-<span class="fc" id="L235">        BigInteger xp = new BigInteger(x.toByteArray());</span>
-<span class="fc bfc" id="L236" title="All 2 branches covered.">        while (xp.compareTo(BigInteger.ZERO) &gt; 0) {</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">            if (xp.and(BigInteger.ONE).equals(BigInteger.ONE)) {</span>
-<span class="fc" id="L238">                int idx2 = n - 1 - nBits;</span>
-<span class="fc" id="L239">                selected[nOneBits] = idx2;</span>
-<span class="fc" id="L240">                nOneBits++;</span>
+<span class="fc" id="L227">        int nBits = 0;</span>
+<span class="fc" id="L228">        int nOneBits = 0;</span>
+<span class="fc" id="L229">        BigInteger xp = new BigInteger(x.toByteArray());</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        while (xp.compareTo(BigInteger.ZERO) &gt; 0) {</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">            if (xp.and(BigInteger.ONE).equals(BigInteger.ONE)) {</span>
+<span class="fc" id="L232">                int idx2 = n - 1 - nBits;</span>
+<span class="fc" id="L233">                selected[nOneBits] = idx2;</span>
+<span class="fc" id="L234">                nOneBits++;</span>
             }
-<span class="fc" id="L242">            xp = xp.shiftRight(1);</span>
-<span class="fc" id="L243">            nBits++;</span>
+<span class="fc" id="L236">            xp = xp.shiftRight(1);</span>
+<span class="fc" id="L237">            nBits++;</span>
         }
 
-<span class="fc" id="L246">        return nOneBits;</span>
+<span class="fc" id="L240">        return nOneBits;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

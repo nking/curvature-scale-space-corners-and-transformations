@@ -592,7 +592,7 @@ import java.util.Set;
         }
 
         //TODO: review these limits
-<span class="pc bpc" id="L595" title="1 of 8 branches missed.">        if ((tS &lt; 0.2) &amp;&amp; (tR &gt;= 18.) &amp;&amp; (tTx &lt; tXConstraint)</span>
+<span class="fc bfc" id="L595" title="All 8 branches covered.">        if ((tS &lt; 0.2) &amp;&amp; (tR &gt;= 18.) &amp;&amp; (tTx &lt; tXConstraint)</span>
             &amp;&amp; (tTy &lt; tYConstraint)) {
 
 <span class="fc" id="L598">            return true;</span>
@@ -612,137 +612,137 @@ import java.util.Set;
         Map&lt;PairInt, TransformationParameters&gt; paramsMap, int binFactor1,
         int binFactor2) {
         
-<span class="fc" id="L615">        int transTol = 30;</span>
-<span class="pc bpc" id="L616" title="1 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
-<span class="fc" id="L617">            transTol /= ((binFactor1 + binFactor2)/2.f);</span>
+<span class="nc" id="L615">        int transTol = 30;</span>
+<span class="nc bnc" id="L616" title="All 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
+<span class="nc" id="L617">            transTol /= ((binFactor1 + binFactor2)/2.f);</span>
         }
         
-<span class="fc" id="L620">        List&lt;Set&lt;TransformationParameters&gt;&gt; similarSets = </span>
+<span class="nc" id="L620">        List&lt;Set&lt;TransformationParameters&gt;&gt; similarSets = </span>
             new ArrayList&lt;Set&lt;TransformationParameters&gt;&gt;();
         
-<span class="fc" id="L623">        Set&lt;PairInt&gt; alreadyCombined = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L623">        Set&lt;PairInt&gt; alreadyCombined = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L625" title="All 2 branches covered.">        for (Map.Entry&lt;PairInt, TransformationParameters&gt; entry : paramsMap.entrySet()) {</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">        for (Map.Entry&lt;PairInt, TransformationParameters&gt; entry : paramsMap.entrySet()) {</span>
             
-<span class="fc bfc" id="L627" title="All 2 branches covered.">            if (alreadyCombined.contains(entry.getKey())) {</span>
-<span class="fc" id="L628">                continue;</span>
+<span class="nc bnc" id="L627" title="All 2 branches missed.">            if (alreadyCombined.contains(entry.getKey())) {</span>
+<span class="nc" id="L628">                continue;</span>
             }
                         
-<span class="fc" id="L631">            Set&lt;TransformationParameters&gt; set = new HashSet&lt;TransformationParameters&gt;();</span>
+<span class="nc" id="L631">            Set&lt;TransformationParameters&gt; set = new HashSet&lt;TransformationParameters&gt;();</span>
             
-<span class="fc" id="L633">            TransformationParameters params0 = entry.getValue();</span>
+<span class="nc" id="L633">            TransformationParameters params0 = entry.getValue();</span>
             
-<span class="fc bfc" id="L635" title="All 2 branches covered.">            for (Map.Entry&lt;PairInt, TransformationParameters&gt; entry2 : paramsMap.entrySet()) {</span>
-<span class="fc bfc" id="L636" title="All 2 branches covered.">                if (entry2.getKey().equals(entry.getKey()) || </span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">                    alreadyCombined.contains(entry2.getKey())) {</span>
-<span class="fc" id="L638">                    continue;</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">            for (Map.Entry&lt;PairInt, TransformationParameters&gt; entry2 : paramsMap.entrySet()) {</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">                if (entry2.getKey().equals(entry.getKey()) || </span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">                    alreadyCombined.contains(entry2.getKey())) {</span>
+<span class="nc" id="L638">                    continue;</span>
                 }
-<span class="fc" id="L640">                TransformationParameters compare = entry2.getValue();</span>
-<span class="fc" id="L641">                float diff = AngleUtil.getAngleDifference(</span>
-<span class="fc" id="L642">                    params0.getRotationInDegrees(), compare.getRotationInDegrees());</span>
-<span class="fc bfc" id="L643" title="All 2 branches covered.">                if (Math.abs(diff) &gt; 20) {</span>
-<span class="fc" id="L644">                    continue;</span>
+<span class="nc" id="L640">                TransformationParameters compare = entry2.getValue();</span>
+<span class="nc" id="L641">                float diff = AngleUtil.getAngleDifference(</span>
+<span class="nc" id="L642">                    params0.getRotationInDegrees(), compare.getRotationInDegrees());</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                if (Math.abs(diff) &gt; 20) {</span>
+<span class="nc" id="L644">                    continue;</span>
                 }
-<span class="fc" id="L646">                float avg = (params0.getScale() + compare.getScale())/2.f;</span>
-<span class="fc bfc" id="L647" title="All 2 branches covered.">                if (Math.abs(params0.getScale() - compare.getScale()) &gt; 0.2*avg) {</span>
-<span class="fc" id="L648">                    continue;</span>
+<span class="nc" id="L646">                float avg = (params0.getScale() + compare.getScale())/2.f;</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                if (Math.abs(params0.getScale() - compare.getScale()) &gt; 0.2*avg) {</span>
+<span class="nc" id="L648">                    continue;</span>
                 }
                                 
                 //TODO: may need to revise translation tolerance...
-<span class="fc" id="L652">                double diffX = Math.abs(params0.getTranslationX()- compare.getTranslationX());</span>
-<span class="fc" id="L653">                double diffY = Math.abs(params0.getTranslationY()- compare.getTranslationY());</span>
-<span class="fc bfc" id="L654" title="All 4 branches covered.">                if ((diffX &gt; transTol) || (diffY &gt; transTol)){</span>
-<span class="fc" id="L655">                    continue;</span>
+<span class="nc" id="L652">                double diffX = Math.abs(params0.getTranslationX()- compare.getTranslationX());</span>
+<span class="nc" id="L653">                double diffY = Math.abs(params0.getTranslationY()- compare.getTranslationY());</span>
+<span class="nc bnc" id="L654" title="All 4 branches missed.">                if ((diffX &gt; transTol) || (diffY &gt; transTol)){</span>
+<span class="nc" id="L655">                    continue;</span>
                 }
-<span class="fc bfc" id="L657" title="All 2 branches covered.">                if (!alreadyCombined.contains(entry.getKey())) {</span>
-<span class="fc" id="L658">                    alreadyCombined.add(entry.getKey());</span>
+<span class="nc bnc" id="L657" title="All 2 branches missed.">                if (!alreadyCombined.contains(entry.getKey())) {</span>
+<span class="nc" id="L658">                    alreadyCombined.add(entry.getKey());</span>
                 }
-<span class="fc" id="L660">                alreadyCombined.add(entry2.getKey());</span>
+<span class="nc" id="L660">                alreadyCombined.add(entry2.getKey());</span>
                 
-<span class="fc" id="L662">                set.add(params0);</span>
-<span class="fc" id="L663">                set.add(compare);</span>
-<span class="fc" id="L664">            }</span>
-<span class="fc bfc" id="L665" title="All 2 branches covered.">            if (!set.isEmpty()) {</span>
-<span class="fc" id="L666">                similarSets.add(set);</span>
+<span class="nc" id="L662">                set.add(params0);</span>
+<span class="nc" id="L663">                set.add(compare);</span>
+<span class="nc" id="L664">            }</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">            if (!set.isEmpty()) {</span>
+<span class="nc" id="L666">                similarSets.add(set);</span>
             }
-<span class="fc" id="L668">        }</span>
+<span class="nc" id="L668">        }</span>
                   
         // use histograms to remove translation outliers in similar sets
         
-<span class="fc" id="L672">        List&lt;TransformationParameters&gt; combinedParams = </span>
+<span class="nc" id="L672">        List&lt;TransformationParameters&gt; combinedParams = </span>
             new ArrayList&lt;TransformationParameters&gt;();
 
-<span class="fc bfc" id="L675" title="All 2 branches covered.">        for (Set&lt;TransformationParameters&gt; similarSet : similarSets) {</span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">        for (Set&lt;TransformationParameters&gt; similarSet : similarSets) {</span>
             
-<span class="fc" id="L677">            List&lt;TransformationParameters&gt; similar = </span>
+<span class="nc" id="L677">            List&lt;TransformationParameters&gt; similar = </span>
                 new ArrayList&lt;TransformationParameters&gt;(similarSet);
-<span class="fc" id="L679">            int[] keep = filterForTranslationXUsingHist(similar);</span>
-<span class="fc" id="L680">            filter(similar, keep);</span>
-<span class="fc" id="L681">            keep = filterForTranslationYUsingHist(similar);</span>
-<span class="fc" id="L682">            filter(similar, keep);</span>
+<span class="nc" id="L679">            int[] keep = filterForTranslationXUsingHist(similar);</span>
+<span class="nc" id="L680">            filter(similar, keep);</span>
+<span class="nc" id="L681">            keep = filterForTranslationYUsingHist(similar);</span>
+<span class="nc" id="L682">            filter(similar, keep);</span>
             
-<span class="pc bpc" id="L684" title="1 of 2 branches missed.">            if (similar.isEmpty()) {</span>
+<span class="nc bnc" id="L684" title="All 2 branches missed.">            if (similar.isEmpty()) {</span>
 <span class="nc" id="L685">                continue;</span>
-<span class="fc bfc" id="L686" title="All 2 branches covered.">            } else if (similar.size() == 1) {</span>
-<span class="fc" id="L687">                combinedParams.add(similar.get(0));</span>
-<span class="fc" id="L688">                continue;</span>
+<span class="nc bnc" id="L686" title="All 2 branches missed.">            } else if (similar.size() == 1) {</span>
+<span class="nc" id="L687">                combinedParams.add(similar.get(0));</span>
+<span class="nc" id="L688">                continue;</span>
             }
             
             //average them
             MatchedPointsTransformationCalculator
-<span class="fc" id="L693">                tc = new MatchedPointsTransformationCalculator();</span>
-<span class="fc" id="L694">            TransformationParameters params =  tc.averageWithoutRemoval(similar);</span>
-<span class="fc" id="L695">            combinedParams.add(params);</span>
-<span class="fc" id="L696">        }</span>
+<span class="nc" id="L693">                tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L694">            TransformationParameters params =  tc.averageWithoutRemoval(similar);</span>
+<span class="nc" id="L695">            combinedParams.add(params);</span>
+<span class="nc" id="L696">        }</span>
         
         // sometimes, the averaged params in similarSets are similar to one
         // another too, so one more round of checking for similarity
-<span class="fc" id="L700">        List&lt;TransformationParameters&gt; combinedParams2 = new ArrayList&lt;TransformationParameters&gt;();</span>
+<span class="nc" id="L700">        List&lt;TransformationParameters&gt; combinedParams2 = new ArrayList&lt;TransformationParameters&gt;();</span>
         
-<span class="fc" id="L702">        Set&lt;TransformationParameters&gt; alreadyCombined2 = new HashSet&lt;TransformationParameters&gt;();</span>
+<span class="nc" id="L702">        Set&lt;TransformationParameters&gt; alreadyCombined2 = new HashSet&lt;TransformationParameters&gt;();</span>
         
-<span class="fc bfc" id="L704" title="All 2 branches covered.">        for (TransformationParameters params0 : combinedParams) {</span>
-<span class="fc bfc" id="L705" title="All 2 branches covered.">            if (alreadyCombined2.contains(params0)) {</span>
-<span class="fc" id="L706">                continue;</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">        for (TransformationParameters params0 : combinedParams) {</span>
+<span class="nc bnc" id="L705" title="All 2 branches missed.">            if (alreadyCombined2.contains(params0)) {</span>
+<span class="nc" id="L706">                continue;</span>
             }
-<span class="fc" id="L708">            Set&lt;TransformationParameters&gt; set = new HashSet&lt;TransformationParameters&gt;();</span>
-<span class="fc" id="L709">            set.add(params0);</span>
-<span class="fc bfc" id="L710" title="All 2 branches covered.">            for (TransformationParameters compare : combinedParams) {</span>
-<span class="fc bfc" id="L711" title="All 2 branches covered.">                if (compare.equals(params0)) {</span>
-<span class="fc" id="L712">                    continue;</span>
+<span class="nc" id="L708">            Set&lt;TransformationParameters&gt; set = new HashSet&lt;TransformationParameters&gt;();</span>
+<span class="nc" id="L709">            set.add(params0);</span>
+<span class="nc bnc" id="L710" title="All 2 branches missed.">            for (TransformationParameters compare : combinedParams) {</span>
+<span class="nc bnc" id="L711" title="All 2 branches missed.">                if (compare.equals(params0)) {</span>
+<span class="nc" id="L712">                    continue;</span>
                 }
-<span class="fc bfc" id="L714" title="All 2 branches covered.">                if (alreadyCombined2.contains(compare)) {</span>
-<span class="fc" id="L715">                    continue;</span>
+<span class="nc bnc" id="L714" title="All 2 branches missed.">                if (alreadyCombined2.contains(compare)) {</span>
+<span class="nc" id="L715">                    continue;</span>
                 }
-<span class="fc" id="L717">                float diff = AngleUtil.getAngleDifference(</span>
-<span class="fc" id="L718">                    params0.getRotationInDegrees(), compare.getRotationInDegrees());</span>
-<span class="fc bfc" id="L719" title="All 2 branches covered.">                if (Math.abs(diff) &gt; 20) {</span>
-<span class="fc" id="L720">                    continue;</span>
+<span class="nc" id="L717">                float diff = AngleUtil.getAngleDifference(</span>
+<span class="nc" id="L718">                    params0.getRotationInDegrees(), compare.getRotationInDegrees());</span>
+<span class="nc bnc" id="L719" title="All 2 branches missed.">                if (Math.abs(diff) &gt; 20) {</span>
+<span class="nc" id="L720">                    continue;</span>
                 }
-<span class="fc" id="L722">                float avg = (params0.getScale() + compare.getScale())/2.f;</span>
-<span class="fc bfc" id="L723" title="All 2 branches covered.">                if (Math.abs(params0.getScale() - compare.getScale()) &gt; 0.2*avg) {</span>
-<span class="fc" id="L724">                    continue;</span>
+<span class="nc" id="L722">                float avg = (params0.getScale() + compare.getScale())/2.f;</span>
+<span class="nc bnc" id="L723" title="All 2 branches missed.">                if (Math.abs(params0.getScale() - compare.getScale()) &gt; 0.2*avg) {</span>
+<span class="nc" id="L724">                    continue;</span>
                 }
                 //TODO: may need to revise translation tolerance...
-<span class="fc" id="L727">                double diffX = Math.abs(params0.getTranslationX() - compare.getTranslationX());</span>
-<span class="fc" id="L728">                double diffY = Math.abs(params0.getTranslationY() - compare.getTranslationY());</span>
-<span class="fc bfc" id="L729" title="All 4 branches covered.">                if ((diffX &gt; transTol) || (diffY &gt; transTol)) {</span>
-<span class="fc" id="L730">                    continue;</span>
+<span class="nc" id="L727">                double diffX = Math.abs(params0.getTranslationX() - compare.getTranslationX());</span>
+<span class="nc" id="L728">                double diffY = Math.abs(params0.getTranslationY() - compare.getTranslationY());</span>
+<span class="nc bnc" id="L729" title="All 4 branches missed.">                if ((diffX &gt; transTol) || (diffY &gt; transTol)) {</span>
+<span class="nc" id="L730">                    continue;</span>
                 }
-<span class="fc" id="L732">                set.add(compare);</span>
-<span class="fc" id="L733">            }</span>
-<span class="fc" id="L734">            alreadyCombined2.addAll(set);</span>
-<span class="fc bfc" id="L735" title="All 2 branches covered.">            if (set.size() &gt; 1) {</span>
-<span class="fc" id="L736">                MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
-<span class="fc" id="L737">                TransformationParameters params =  tc.averageWithoutRemoval(</span>
+<span class="nc" id="L732">                set.add(compare);</span>
+<span class="nc" id="L733">            }</span>
+<span class="nc" id="L734">            alreadyCombined2.addAll(set);</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">            if (set.size() &gt; 1) {</span>
+<span class="nc" id="L736">                MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="nc" id="L737">                TransformationParameters params =  tc.averageWithoutRemoval(</span>
                     new ArrayList&lt;TransformationParameters&gt;(set));
-<span class="fc" id="L739">                combinedParams2.add(params);</span>
-<span class="fc" id="L740">            } else {</span>
-<span class="fc" id="L741">                combinedParams2.addAll(set);</span>
+<span class="nc" id="L739">                combinedParams2.add(params);</span>
+<span class="nc" id="L740">            } else {</span>
+<span class="nc" id="L741">                combinedParams2.addAll(set);</span>
             }
-<span class="fc" id="L743">        }</span>
+<span class="nc" id="L743">        }</span>
         
-<span class="fc" id="L745">        return combinedParams2;</span>
+<span class="nc" id="L745">        return combinedParams2;</span>
     }
     
     /**

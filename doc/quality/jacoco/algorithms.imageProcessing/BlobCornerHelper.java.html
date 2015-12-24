@@ -19,31 +19,25 @@ public class BlobCornerHelper {
         List&lt;List&lt;CornerRegion&gt;&gt;&gt;();
     
     protected final BlobPerimeterHelper imgHelper;
-    
-<span class="fc" id="L23">    private boolean correctLineArtifacts = true;</span>
-    
-<span class="fc" id="L25">    protected boolean debug = false;</span>
-    
-<span class="fc" id="L27">    protected String debugTag = &quot;&quot;;</span>
-    
-<span class="fc" id="L29">    public BlobCornerHelper(final BlobPerimeterHelper imgHelper) {</span>
         
-<span class="fc" id="L31">        this.imgHelper = imgHelper;</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L23">    protected boolean debug = false;</span>
+    
+<span class="fc" id="L25">    protected String debugTag = &quot;&quot;;</span>
+    
+<span class="fc" id="L27">    public BlobCornerHelper(final BlobPerimeterHelper imgHelper) {</span>
+        
+<span class="fc" id="L29">        this.imgHelper = imgHelper;</span>
+<span class="fc" id="L30">    }</span>
     
     public BlobCornerHelper(final BlobPerimeterHelper imgHelper, 
-<span class="fc" id="L35">        final String debugTag) {</span>
+<span class="fc" id="L33">        final String debugTag) {</span>
         
-<span class="fc" id="L37">        this.imgHelper = imgHelper;</span>
+<span class="fc" id="L35">        this.imgHelper = imgHelper;</span>
         
-<span class="fc" id="L39">        debug = false;</span>
+<span class="fc" id="L37">        debug = false;</span>
         
-<span class="fc" id="L41">        this.debugTag = debugTag;</span>
-<span class="fc" id="L42">    }</span>
-    
-    public void turnOffCorrectionForLineArtifacts() {
-<span class="nc" id="L45">        correctLineArtifacts = false;</span>
-<span class="nc" id="L46">    }</span>
+<span class="fc" id="L39">        this.debugTag = debugTag;</span>
+<span class="fc" id="L40">    }</span>
     
     /**
      * generate contours (or retrieve cached contours) for blob perimeters from 
@@ -55,100 +49,100 @@ public class BlobCornerHelper {
     public List&lt;List&lt;CornerRegion&gt;&gt; generatePerimeterCorners(
         SegmentationType type, boolean applyToBinnedImage) {
          
-<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
-<span class="fc" id="L59">            return generatePerimeterCornersForBinned(type);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
+<span class="fc" id="L53">            return generatePerimeterCornersForBinned(type);</span>
         } else {
-<span class="fc" id="L61">            return generatePerimeterCornersUnbinned(type);</span>
+<span class="fc" id="L55">            return generatePerimeterCornersUnbinned(type);</span>
         }
     }
     
     public List&lt;List&lt;CornerRegion&gt;&gt; getPerimeterCorners(
         SegmentationType type, boolean applyToBinnedImage) {
          
-<span class="fc" id="L68">        return generatePerimeterCorners(type, applyToBinnedImage);</span>
+<span class="fc" id="L62">        return generatePerimeterCorners(type, applyToBinnedImage);</span>
     }
     
     protected List&lt;List&lt;CornerRegion&gt;&gt; 
         generatePerimeterCornersUnbinned(SegmentationType type) {
         
-<span class="fc" id="L74">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segCornersMap.get(type);</span>
+<span class="fc" id="L68">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segCornersMap.get(type);</span>
 
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (corners != null) {</span>
-<span class="fc" id="L77">            return corners;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (corners != null) {</span>
+<span class="fc" id="L71">            return corners;</span>
         }
         
-<span class="fc" id="L80">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
+<span class="fc" id="L74">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
         
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (segImg == null) {</span>
             //TODO: consider changing logic to perform this if needed
-<span class="nc" id="L84">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(</span>
             &quot;segmented image hasn't been created yet.  error?&quot;);
         }
         
-<span class="fc" id="L88">        boolean useBinned = false;</span>
+<span class="fc" id="L82">        boolean useBinned = false;</span>
         
-<span class="fc" id="L90">        final boolean outdoorMode = false;</span>
+<span class="fc" id="L84">        final boolean outdoorMode = false;</span>
         
-<span class="fc" id="L92">        final boolean enableJaggedLineCorrections = false;</span>
+<span class="fc" id="L86">        final boolean enableJaggedLineCorrections = false;</span>
         
-<span class="fc" id="L94">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
-  
-<span class="fc" id="L96">        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
+<span class="fc" id="L88">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
+   
+<span class="fc" id="L90">        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
             outdoorMode, enableJaggedLineCorrections, 
-            factorIncreaseForCurvatureMinimum, correctLineArtifacts);
+            factorIncreaseForCurvatureMinimum);
        
-<span class="fc" id="L100">        segCornersMap.put(type, corners);</span>
+<span class="fc" id="L94">        segCornersMap.put(type, corners);</span>
         
-<span class="fc" id="L102">        return corners;</span>
+<span class="fc" id="L96">        return corners;</span>
     }
     
     protected List&lt;List&lt;CornerRegion&gt;&gt; 
         generatePerimeterCornersForBinned(SegmentationType type) {
          
-<span class="fc" id="L108">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segBinnedCornersMap.get(type);</span>
+<span class="fc" id="L102">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segBinnedCornersMap.get(type);</span>
 
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (corners != null) {</span>
-<span class="fc" id="L111">            return corners;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (corners != null) {</span>
+<span class="fc" id="L105">            return corners;</span>
         }
         
-<span class="fc" id="L114">        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);</span>
+<span class="fc" id="L108">        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);</span>
         
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (segImg == null) {</span>
             //TODO: consider changing logic to perform this if needed
-<span class="nc" id="L118">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L112">            throw new IllegalArgumentException(</span>
             &quot;segmented image hasn't been created yet.  error?&quot;);
         }
        
-<span class="fc" id="L122">        boolean useBinned = true;</span>
+<span class="fc" id="L116">        boolean useBinned = true;</span>
         
-<span class="fc" id="L124">        final boolean outdoorMode = false;</span>
+<span class="fc" id="L118">        final boolean outdoorMode = false;</span>
         
-<span class="fc" id="L126">        final boolean enableJaggedLineCorrections = false;</span>
+<span class="fc" id="L120">        final boolean enableJaggedLineCorrections = false;</span>
         
-<span class="fc" id="L128">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
+<span class="fc" id="L122">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
 
-<span class="fc" id="L130">        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
+<span class="fc" id="L124">        corners = BlobsAndCorners.populateCorners(imgHelper, type, useBinned,</span>
             outdoorMode, enableJaggedLineCorrections, 
-            factorIncreaseForCurvatureMinimum, correctLineArtifacts);
+            factorIncreaseForCurvatureMinimum);
         
-<span class="fc" id="L134">        segBinnedCornersMap.put(type, corners);</span>
+<span class="fc" id="L128">        segBinnedCornersMap.put(type, corners);</span>
         
-<span class="fc" id="L136">        return corners;        </span>
+<span class="fc" id="L130">        return corners;        </span>
     }
     
     public int sumPointsOfInterest(SegmentationType segmentationType, 
         boolean useBinned) {
         
-<span class="fc" id="L142">        List&lt;List&lt;CornerRegion&gt;&gt; corners = getPerimeterCorners(segmentationType, </span>
+<span class="fc" id="L136">        List&lt;List&lt;CornerRegion&gt;&gt; corners = getPerimeterCorners(segmentationType, </span>
             useBinned);
         
-<span class="fc" id="L145">        int n = 0;</span>
+<span class="fc" id="L139">        int n = 0;</span>
         
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (List&lt;CornerRegion&gt; list : corners) {</span>
-<span class="fc" id="L148">            n += list.size();</span>
-<span class="fc" id="L149">        }</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (List&lt;CornerRegion&gt; list : corners) {</span>
+<span class="fc" id="L142">            n += list.size();</span>
+<span class="fc" id="L143">        }</span>
         
-<span class="fc" id="L151">        return n;</span>
+<span class="fc" id="L145">        return n;</span>
     }
 
 }

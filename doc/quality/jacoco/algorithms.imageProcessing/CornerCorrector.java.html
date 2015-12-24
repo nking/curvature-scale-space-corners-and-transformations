@@ -2,6 +2,7 @@
 
 import algorithms.compGeometry.FurthestPair;
 import algorithms.compGeometry.HoughTransform;
+import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -14,7 +15,7 @@ import java.util.Set;
  *
  * @author nichole
  */
-<span class="nc" id="L17">public class CornerCorrector {</span>
+<span class="nc" id="L18">public class CornerCorrector {</span>
 
     /**
      * given parallel lists of edges and their corner regions, use a hough
@@ -27,6 +28,7 @@ import java.util.Set;
      * should not be deleted.  The set can be empty (as it would be for
      * a edges from only blobs).
      * 
+     * @param lines
      * @param edgeLists
      * @param cornerRegionLists
      * @param thetaTolerance
@@ -34,52 +36,47 @@ import java.util.Set;
      * @param imageWidth
      * @param imageHeight
      */
-    public static void removeCornersFromLineArtifacts(List&lt;PairIntArray&gt; edgeLists,
+    public static void removeCornersFromLineArtifacts(List&lt;HoughTransformLines&gt; lines,
+        List&lt;PairIntArray&gt; edgeLists,
         List&lt;List&lt;CornerRegion&gt;&gt; cornerRegionLists,
         int thetaTolerance, int radiusTolerance,
         int imageWidth, int imageHeight) {
         
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (lines.size() != edgeLists.size()) {</span>
+<span class="nc" id="L46">            throw new IllegalArgumentException(</span>
+                &quot;need the data structures lines and edgesList to hold data for same indexes.  expecting same sizes.&quot;);
+        }
+        
         //TODO: sizeLimit may need to scale by binFactor, so be passed in as arg,
         // but should probably have a minimum size that could include
         // 3 corners, one of which would be looked at for removal
-<span class="fc" id="L45">        int sizeLimit = 15;</span>
+<span class="fc" id="L53">        int sizeLimit = 15;</span>
         
         //Image debugImg = new Image(imageWidth, imageHeight);
-
-<span class="fc" id="L49">        HoughTransform ht = new HoughTransform();</span>
         
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int ii = 0; ii &lt; edgeLists.size(); ++ii) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int ii = 0; ii &lt; edgeLists.size(); ++ii) {</span>
 
             // NOTE: in testable method for this, should allow ability to
             // pass in junctions and not delete corners that are in
             // junctions.
             // For these blob perimeters, there are not junctions.
 
-<span class="fc" id="L58">            PairIntArray edge = edgeLists.get(ii);</span>
+<span class="fc" id="L64">            PairIntArray edge = edgeLists.get(ii);</span>
 
-<span class="fc" id="L60">            List&lt;CornerRegion&gt; cornerRegions = cornerRegionLists.get(ii);</span>
+<span class="fc" id="L66">            List&lt;CornerRegion&gt; cornerRegions = cornerRegionLists.get(ii);</span>
 
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (cornerRegions.size() &lt; 2) {</span>
-<span class="fc" id="L63">                continue;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            if (cornerRegions.size() &lt; 2) {</span>
+<span class="fc" id="L69">                continue;</span>
             }
 
-<span class="fc" id="L66">            Map&lt;PairInt, Integer&gt; pointEdgeIndexMap = Misc.makePointIndexMap(edge);</span>
+<span class="fc" id="L72">            Map&lt;PairInt, Integer&gt; pointEdgeIndexMap = Misc.makePointIndexMap(edge);</span>
 
-<span class="fc" id="L68">            Map&lt;PairInt, Set&lt;PairInt&gt;&gt; outputPolarCoordsPixMap =</span>
-<span class="fc" id="L69">               ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);</span>
-
-<span class="fc" id="L71">            List&lt;PairInt&gt; outSortedKeys = ht.sortByVotes(outputPolarCoordsPixMap);</span>
-
-            // === find indiv lines within the edge ====
-
-            //Map&lt;PairInt, Set&lt;PairInt&gt;&gt; polarCoordsPixMapOrig =
-            //    new HashMap&lt;PairInt, Set&lt;PairInt&gt;&gt;(outputPolarCoordsPixMap);
-
-<span class="fc" id="L78">            List&lt;Set&lt;PairInt&gt;&gt; outputSortedGroups = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc" id="L79">            Map&lt;PairInt, PairInt&gt; pixToTRMap = ht.createPixTRMapsFromSorted(</span>
-                outSortedKeys, outputPolarCoordsPixMap, outputSortedGroups,
-                thetaTolerance, radiusTolerance);
-               
+<span class="fc" id="L74">            HoughTransformLines htl = lines.get(ii);</span>
+            
+<span class="fc" id="L76">            Map&lt;PairInt, PairInt&gt; pixToTRMap = htl.getPixelToPolarCoordMap();</span>
+            
+<span class="fc" id="L78">            List&lt;Set&lt;PairInt&gt;&gt; outputSortedGroups = htl.getSortedLineGroups();</span>
+            
             /*
             for (int j = 0; j &lt; cornerRegions.size(); ++j) {
                 CornerRegion cr = cornerRegions.get(j);
@@ -90,12 +87,12 @@ import java.util.Set;
             }
             */
 
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">            for (int iii = 0; iii &lt; outputSortedGroups.size(); ++iii) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            for (int iii = 0; iii &lt; outputSortedGroups.size(); ++iii) {</span>
 
-<span class="fc" id="L95">                Set&lt;PairInt&gt; group = outputSortedGroups.get(iii);</span>
+<span class="fc" id="L92">                Set&lt;PairInt&gt; group = outputSortedGroups.get(iii);</span>
 
-<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (group.size() &lt; sizeLimit) {</span>
-<span class="fc" id="L98">                    break;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                if (group.size() &lt; sizeLimit) {</span>
+<span class="fc" id="L95">                    break;</span>
                 }
 
                 /*
@@ -108,62 +105,62 @@ import java.util.Set;
                 // quick look at line's theta.
                 // the artifacts are sometimes present in lines near
                 // vertical or near horizontal, so skipping if not those                    
-<span class="fc" id="L111">                PairInt aPoint = group.iterator().next();</span>
-<span class="fc" id="L112">                PairInt tr = pixToTRMap.get(aPoint);</span>
-<span class="fc" id="L113">                int vhLimit = 3;</span>
-<span class="fc bfc" id="L114" title="All 4 branches covered.">                if ((tr.getX() &gt; vhLimit) &amp;&amp; (Math.abs(tr.getX() - 90) &gt; vhLimit)</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(tr.getX() - 180) &gt; vhLimit)</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(tr.getX() - 270) &gt; vhLimit)</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">                    &amp;&amp; (Math.abs(tr.getX() - 360) &gt; vhLimit)</span>
+<span class="fc" id="L108">                PairInt aPoint = group.iterator().next();</span>
+<span class="fc" id="L109">                PairInt tr = pixToTRMap.get(aPoint);</span>
+<span class="fc" id="L110">                int vhLimit = 3;</span>
+<span class="fc bfc" id="L111" title="All 4 branches covered.">                if ((tr.getX() &gt; vhLimit) &amp;&amp; (Math.abs(tr.getX() - 90) &gt; vhLimit)</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(tr.getX() - 180) &gt; vhLimit)</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(tr.getX() - 270) &gt; vhLimit)</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">                    &amp;&amp; (Math.abs(tr.getX() - 360) &gt; vhLimit)</span>
                     ) {
-<span class="fc" id="L119">                    continue;</span>
+<span class="fc" id="L116">                    continue;</span>
                 }
                                 
-<span class="fc" id="L122">                int minGroupIdx = Integer.MAX_VALUE;</span>
-<span class="fc" id="L123">                int maxGroupIdx = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">                for (PairInt p : group) {</span>
-<span class="fc" id="L125">                    int eIdx = pointEdgeIndexMap.get(p).intValue();</span>
-<span class="fc bfc" id="L126" title="All 2 branches covered.">                    if (eIdx &lt; minGroupIdx) {</span>
-<span class="fc" id="L127">                        minGroupIdx = eIdx;</span>
+<span class="fc" id="L119">                int minGroupIdx = Integer.MAX_VALUE;</span>
+<span class="fc" id="L120">                int maxGroupIdx = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                for (PairInt p : group) {</span>
+<span class="fc" id="L122">                    int eIdx = pointEdgeIndexMap.get(p).intValue();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                    if (eIdx &lt; minGroupIdx) {</span>
+<span class="fc" id="L124">                        minGroupIdx = eIdx;</span>
                     }
-<span class="fc bfc" id="L129" title="All 2 branches covered.">                    if (eIdx &gt; maxGroupIdx) {</span>
-<span class="fc" id="L130">                        maxGroupIdx = eIdx;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                    if (eIdx &gt; maxGroupIdx) {</span>
+<span class="fc" id="L127">                        maxGroupIdx = eIdx;</span>
                     }
-<span class="fc" id="L132">                }</span>
+<span class="fc" id="L129">                }</span>
                 
                 //TODO: this may need revision
                 //if needed, can set it to true to take longest evaluation every time
-<span class="fc bfc" id="L136" title="All 2 branches covered.">                boolean wrapAround = (minGroupIdx &lt; 10) &amp;&amp;</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">                    ((maxGroupIdx - minGroupIdx) &gt; (group.size() + 5));</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">                boolean wrapAround = (minGroupIdx &lt; 10) &amp;&amp;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                    ((maxGroupIdx - minGroupIdx) &gt; (group.size() + 5));</span>
           
-<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (wrapAround) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">                if (wrapAround) {</span>
                     // determine points of furthest pair and then
                     // check every corner to see if it is in between and 
                     // larger than 2 pixels from furthest points
-<span class="fc" id="L143">                    FurthestPair fp = new FurthestPair();</span>
-<span class="fc" id="L144">                    PairInt[] furthest = fp.find(group);</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">                    if (furthest == null) {</span>
-<span class="nc" id="L146">                        continue;</span>
+<span class="fc" id="L140">                    FurthestPair fp = new FurthestPair();</span>
+<span class="fc" id="L141">                    PairInt[] furthest = fp.find(group);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                    if (furthest == null) {</span>
+<span class="fc" id="L143">                        continue;</span>
                     }
 
-<span class="fc" id="L149">                    double distBetweenEndPoints = distance(furthest[0], furthest[1]);</span>
+<span class="fc" id="L146">                    double distBetweenEndPoints = distance(furthest[0], furthest[1]);</span>
 
-<span class="fc bfc" id="L151" title="All 2 branches covered.">                    for (int j = (cornerRegions.size() - 1); j &gt; -1; --j) {</span>
-<span class="fc" id="L152">                        CornerRegion cr = cornerRegions.get(j);</span>
-<span class="fc" id="L153">                        double dist = distance(cr, furthest[0]);</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">                        if (dist &lt; 3) {</span>
-<span class="fc" id="L155">                            continue;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                    for (int j = (cornerRegions.size() - 1); j &gt; -1; --j) {</span>
+<span class="fc" id="L149">                        CornerRegion cr = cornerRegions.get(j);</span>
+<span class="fc" id="L150">                        double dist = distance(cr, furthest[0]);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                        if (dist &lt; 3) {</span>
+<span class="fc" id="L152">                            continue;</span>
                         }
-<span class="fc" id="L157">                        dist = distance(cr, furthest[1]);</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">                        if (dist &lt; 3) {</span>
-<span class="fc" id="L159">                            continue;</span>
+<span class="fc" id="L154">                        dist = distance(cr, furthest[1]);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">                        if (dist &lt; 3) {</span>
+<span class="fc" id="L156">                            continue;</span>
                         }
                         // if it is in between the 2 points, remove it
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">                        if (isInBetween(furthest, distBetweenEndPoints, cr)) {</span>
-<span class="nc" id="L163">                            cornerRegions.remove(cr);</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                        if (isInBetween(furthest, distBetweenEndPoints, cr)) {</span>
+<span class="nc" id="L160">                            cornerRegions.remove(cr);</span>
                         }
                     }
-<span class="fc" id="L166">                    continue;</span>
+<span class="fc" id="L163">                    continue;</span>
                 }
 
                 //the cornerRegions are ordered counter clock wise
@@ -172,12 +169,12 @@ import java.util.Set;
                 // deleting a cornerRegion that was in a junction
                 // delete corners that are more than 2 indexes from
                 // line bounds, starting from last corner
-<span class="fc bfc" id="L175" title="All 2 branches covered.">                for (int j = (cornerRegions.size() - 1); j &gt; -1; --j) {</span>
-<span class="fc" id="L176">                    CornerRegion cr = cornerRegions.get(j);</span>
-<span class="fc" id="L177">                    int crIdx = cr.getIndexWithinCurve();</span>
-<span class="fc bfc" id="L178" title="All 4 branches covered.">                    if ((crIdx &gt; (minGroupIdx + 2)) &amp;&amp;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                for (int j = (cornerRegions.size() - 1); j &gt; -1; --j) {</span>
+<span class="fc" id="L173">                    CornerRegion cr = cornerRegions.get(j);</span>
+<span class="fc" id="L174">                    int crIdx = cr.getIndexWithinCurve();</span>
+<span class="fc bfc" id="L175" title="All 4 branches covered.">                    if ((crIdx &gt; (minGroupIdx + 2)) &amp;&amp;</span>
                         (crIdx &lt; (maxGroupIdx - 2))) {
-<span class="fc" id="L180">                        cornerRegions.remove(cr); </span>
+<span class="fc" id="L177">                        cornerRegions.remove(cr); </span>
                     }
                 }                    
             }
@@ -193,35 +190,35 @@ import java.util.Set;
         }
         */
 
-<span class="fc" id="L196">    }</span>
+<span class="fc" id="L193">    }</span>
 
     private static double distance(CornerRegion cr, PairInt p) {
-<span class="fc" id="L199">        int x1 = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="fc" id="L200">        int y1 = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L196">        int x1 = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L197">        int y1 = cr.getY()[cr.getKMaxIdx()];</span>
 
-<span class="fc" id="L202">        int diffX = x1 - p.getX();</span>
-<span class="fc" id="L203">        int diffY = y1 - p.getY();</span>
+<span class="fc" id="L199">        int diffX = x1 - p.getX();</span>
+<span class="fc" id="L200">        int diffY = y1 - p.getY();</span>
 
-<span class="fc" id="L205">        return Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="fc" id="L202">        return Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 
     private static double distance(PairInt p1, PairInt p2) {
 
-<span class="fc" id="L210">        int diffX = p1.getX() - p2.getX();</span>
-<span class="fc" id="L211">        int diffY = p1.getY() - p2.getY();</span>
+<span class="fc" id="L207">        int diffX = p1.getX() - p2.getX();</span>
+<span class="fc" id="L208">        int diffY = p1.getY() - p2.getY();</span>
 
-<span class="fc" id="L213">        return Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="fc" id="L210">        return Math.sqrt(diffX * diffX + diffY * diffY);</span>
     }
 
     // assuming cr was tested as further from endPoints than 2 pixels
     private static boolean isInBetween(PairInt[] endPoints, double distBetweenEndPoints,
         CornerRegion cr) {
 
-<span class="fc" id="L220">        double d0 = distance(cr, endPoints[0]);</span>
+<span class="fc" id="L217">        double d0 = distance(cr, endPoints[0]);</span>
 
-<span class="fc" id="L222">        double d1 = distance(cr, endPoints[1]);</span>
+<span class="fc" id="L219">        double d1 = distance(cr, endPoints[1]);</span>
 
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        return (d0 + d1) &lt; distBetweenEndPoints;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        return (d0 + d1) &lt; distBetweenEndPoints;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

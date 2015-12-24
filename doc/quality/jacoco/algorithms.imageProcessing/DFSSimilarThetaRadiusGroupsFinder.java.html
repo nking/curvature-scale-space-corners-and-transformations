@@ -440,8 +440,8 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
 <span class="fc" id="L440">                int diffT = Math.abs(pTr1.getX() - pTr2.getX());</span>
 <span class="fc" id="L441">                int diffR = Math.abs(pTr1.getY() - pTr2.getY());</span>
                 
-<span class="pc bpc" id="L443" title="1 of 4 branches missed.">                if ((diffT &gt; thetaTol) || (diffR &gt; radiusTol)) {</span>
-<span class="fc" id="L444">                    continue;</span>
+<span class="pc bpc" id="L443" title="2 of 4 branches missed.">                if ((diffT &gt; thetaTol) || (diffR &gt; radiusTol)) {</span>
+<span class="nc" id="L444">                    continue;</span>
                 }
                 
                 // merge the smaller into the larger

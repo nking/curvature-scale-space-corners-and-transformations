@@ -32,7 +32,7 @@ import java.util.Set;
 <span class="fc bfc" id="L32" title="All 2 branches covered.">        for (PathStep step : path) {</span>
 <span class="fc" id="L33">            PairInt p = step.getCoords();</span>
 <span class="fc" id="L34">            Set&lt;PathStep&gt; nsNodes = noSolutionMap.get(p);</span>
-<span class="fc bfc" id="L35" title="All 2 branches covered.">            if (nsNodes == null) {</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">            if (nsNodes == null) {</span>
 <span class="fc" id="L36">                nsNodes = new HashSet&lt;PathStep&gt;();</span>
 <span class="fc" id="L37">                noSolutionMap.put(p, nsNodes);</span>
             }
@@ -44,8 +44,8 @@ import java.util.Set;
                 
 <span class="fc" id="L45">        Set&lt;PathStep&gt; states = noSolutionMap.get(step.getCoords());</span>
         
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (states == null) {</span>
-<span class="fc" id="L48">            return false;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (states == null) {</span>
+<span class="nc" id="L48">            return false;</span>
         }
         
 <span class="fc" id="L51">        return states.contains(step);</span>

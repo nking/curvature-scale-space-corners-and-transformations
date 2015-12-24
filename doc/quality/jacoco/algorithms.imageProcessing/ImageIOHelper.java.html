@@ -1027,7 +1027,7 @@ import javax.imageio.ImageIO;
 
 <span class="fc" id="L1028">            int xx = x + dx;</span>
 
-<span class="pc bpc" id="L1030" title="1 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc bfc" id="L1030" title="All 4 branches covered.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="fc" id="L1031">                continue;</span>
             }
 <span class="fc bfc" id="L1033" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
@@ -1094,13 +1094,13 @@ import javax.imageio.ImageIO;
 
 <span class="fc" id="L1095">            int xx = Math.round(x + dx);</span>
 
-<span class="fc bfc" id="L1097" title="All 4 branches covered.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="fc" id="L1098">                continue;</span>
+<span class="pc bpc" id="L1097" title="2 of 4 branches missed.">            if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="nc" id="L1098">                continue;</span>
             }
 <span class="fc bfc" id="L1100" title="All 2 branches covered.">            for (int dy = (-1*nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L1101">                int yy = Math.round(y + dy);</span>
-<span class="fc bfc" id="L1102" title="All 4 branches covered.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
-<span class="fc" id="L1103">                    continue;</span>
+<span class="pc bpc" id="L1102" title="2 of 4 branches missed.">                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="nc" id="L1103">                    continue;</span>
                 }
 <span class="fc" id="L1105">                input.setRGB(xx, yy, rClr, gClr, bClr);</span>
             }

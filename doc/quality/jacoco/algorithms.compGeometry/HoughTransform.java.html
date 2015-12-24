@@ -168,7 +168,7 @@ public class HoughTransform {
 <span class="fc" id="L168">        return outSortedKeys;</span>
     }
     
-    public Map&lt;PairInt, PairInt&gt; createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
+    public HoughTransformLines createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
         Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, 
         List&lt;Set&lt;PairInt&gt;&gt; outputSortedGroups) {
         
@@ -176,33 +176,51 @@ public class HoughTransform {
 <span class="nc" id="L176">        int radiusTol = 8;</span>
         
 <span class="nc" id="L178">        return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, </span>
-            outputSortedGroups, thetaTol, radiusTol);
+            thetaTol, radiusTol);
     }
     
-    public Map&lt;PairInt, PairInt&gt; createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
+    public class HoughTransformLines {
+        
+        private final Map&lt;PairInt, PairInt&gt; pixelToPolarCoordMap;
+        
+        private final List&lt;Set&lt;PairInt&gt;&gt; sortedLineGroups;
+        
+        public HoughTransformLines(Map&lt;PairInt, PairInt&gt; pixToTRMap,
+            List&lt;Set&lt;PairInt&gt;&gt; sortedGroups) {
+            this.pixelToPolarCoordMap = pixToTRMap;
+            this.sortedLineGroups = sortedGroups;
+        }
+        
+        public Map&lt;PairInt, PairInt&gt; getPixelToPolarCoordMap() {
+            return pixelToPolarCoordMap;
+        }
+        
+        public List&lt;Set&lt;PairInt&gt;&gt; getSortedLineGroups() {
+            return sortedLineGroups;
+        }
+    }
+    
+    public HoughTransformLines createPixTRMapsFromSorted(List&lt;PairInt&gt; sortedTRKeys,
         Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, 
-        List&lt;Set&lt;PairInt&gt;&gt; outputSortedGroups, int thetaTol, int radiusTol) {
+        int thetaTol, int radiusTol) {
         
         // using a DFS visitor pattern and a tolerance for contiguous neighbor
         // grouping to aggretate the (theta, radius) solutions of adjacent
         // points
-<span class="fc" id="L189">        DFSSimilarThetaRadiusGroupsFinder groupFinder = new </span>
+<span class="fc" id="L210">        DFSSimilarThetaRadiusGroupsFinder groupFinder = new </span>
             DFSSimilarThetaRadiusGroupsFinder();
         
-<span class="fc" id="L192">        boolean allowGaps = true;</span>
+<span class="fc" id="L213">        boolean allowGaps = true;</span>
         
         // note that thetaRadiusPixMap is altered by this method
-<span class="fc" id="L195">        Map&lt;PairInt, PairInt&gt; pixToTRMap = groupFinder.findConnectedPointGroups(</span>
+<span class="fc" id="L216">        Map&lt;PairInt, PairInt&gt; pixToTRMap = groupFinder.findConnectedPointGroups(</span>
             sortedTRKeys, thetaRadiusPixMap, thetaTol, radiusTol, allowGaps);
         
-<span class="fc" id="L198">        List&lt;Set&lt;PairInt&gt;&gt; sortedGroups = groupFinder.getSortedGroupsOfPoints();</span>
+<span class="fc" id="L219">        List&lt;Set&lt;PairInt&gt;&gt; sortedGroups = groupFinder.getSortedGroupsOfPoints();</span>
         
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (sortedGroups != null) {</span>
-<span class="fc" id="L201">            outputSortedGroups.clear();</span>
-<span class="fc" id="L202">            outputSortedGroups.addAll(sortedGroups);</span>
-        }
+<span class="fc" id="L221">        HoughTransformLines htl = new HoughTransformLines(pixToTRMap, sortedGroups);</span>
         
-<span class="fc" id="L205">        return pixToTRMap;</span>
+<span class="fc" id="L223">        return htl;</span>
     }
     
 }

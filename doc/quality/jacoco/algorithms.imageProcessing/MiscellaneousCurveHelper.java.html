@@ -2378,57 +2378,57 @@ import org.ejml.simple.*;
     public boolean hasAtLeastOneNonPointNeighbor(int x, int y,
         Set&lt;PairInt&gt; points, int imageWidth, int imageHeight) {
 
-<span class="fc bfc" id="L2381" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+<span class="nc bnc" id="L2381" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
 
-<span class="fc" id="L2383">            int x2 = x + eightNeighborsX[i];</span>
-<span class="fc" id="L2384">            int y2 = y + eightNeighborsY[i];</span>
+<span class="nc" id="L2383">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L2384">            int y2 = y + eightNeighborsY[i];</span>
 
-<span class="pc bpc" id="L2386" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="nc bnc" id="L2386" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                 (y2 &gt; (imageHeight - 1))) {
 <span class="nc" id="L2388">                continue;</span>
             }
 
-<span class="fc bfc" id="L2391" title="All 2 branches covered.">            if (!points.contains(new PairInt(x2, y2))) {</span>
-<span class="fc" id="L2392">                return true;</span>
+<span class="nc bnc" id="L2391" title="All 2 branches missed.">            if (!points.contains(new PairInt(x2, y2))) {</span>
+<span class="nc" id="L2392">                return true;</span>
             }
         }
 
-<span class="fc" id="L2396">        return false;</span>
+<span class="nc" id="L2396">        return false;</span>
     }
 
     public void findNeighborsWithAtLeastOneNonPoint(int x, int y,
         Set&lt;PairInt&gt; outputNeighbors, Set&lt;PairInt&gt; points,
         Set&lt;PairInt&gt; excludePoints, int imageWidth, int imageHeight) {
 
-<span class="fc" id="L2403">        outputNeighbors.clear();</span>
+<span class="nc" id="L2403">        outputNeighbors.clear();</span>
 
-<span class="fc bfc" id="L2405" title="All 2 branches covered.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+<span class="nc bnc" id="L2405" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
 
-<span class="fc" id="L2407">            int x2 = x + eightNeighborsX[i];</span>
-<span class="fc" id="L2408">            int y2 = y + eightNeighborsY[i];</span>
+<span class="nc" id="L2407">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L2408">            int y2 = y + eightNeighborsY[i];</span>
 
-<span class="pc bpc" id="L2410" title="4 of 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+<span class="nc bnc" id="L2410" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
                 (y2 &gt; (imageHeight - 1))) {
 <span class="nc" id="L2412">                continue;</span>
             }
 
-<span class="fc" id="L2415">            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(</span>
+<span class="nc" id="L2415">            boolean isPossiblyABorderPoint = hasAtLeastOneNonPointNeighbor(</span>
                 x2, y2, points, imageWidth, imageHeight);
 
-<span class="fc bfc" id="L2418" title="All 2 branches covered.">            if (!isPossiblyABorderPoint) {</span>
-<span class="fc" id="L2419">                continue;</span>
+<span class="nc bnc" id="L2418" title="All 2 branches missed.">            if (!isPossiblyABorderPoint) {</span>
+<span class="nc" id="L2419">                continue;</span>
             }
 
-<span class="fc" id="L2422">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc" id="L2422">            PairInt p2 = new PairInt(x2, y2);</span>
 
-<span class="fc bfc" id="L2424" title="All 2 branches covered.">            if (excludePoints.contains(p2)) {</span>
-<span class="fc" id="L2425">                continue;</span>
+<span class="nc bnc" id="L2424" title="All 2 branches missed.">            if (excludePoints.contains(p2)) {</span>
+<span class="nc" id="L2425">                continue;</span>
             }
-<span class="fc bfc" id="L2427" title="All 2 branches covered.">            if (points.contains(p2)) {</span>
-<span class="fc" id="L2428">                outputNeighbors.add(p2);</span>
+<span class="nc bnc" id="L2427" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L2428">                outputNeighbors.add(p2);</span>
             }
         }
-<span class="fc" id="L2431">    }</span>
+<span class="nc" id="L2431">    }</span>
 
     public boolean isAdjacent(PairIntArray edge, int idx1, int idx2) {
 

@@ -314,9 +314,9 @@ import java.util.List;
         // method comments that only rot1 will be corrected w.r.t rot0
         
 <span class="fc bfc" id="L316" title="All 2 branches covered.">        if (q0 == 1) {</span>
-<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            if (q1 == 3) {</span>
-<span class="nc" id="L318">                double diff = rot1 - rot0;</span>
-<span class="nc bnc" id="L319" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            if (q1 == 3) {</span>
+<span class="fc" id="L318">                double diff = rot1 - rot0;</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">                if (diff &gt; Math.PI) {</span>
 <span class="nc" id="L320">                    rot0 += twoPI;</span>
                 }
 <span class="pc bpc" id="L322" title="1 of 2 branches missed.">            } else if (q1 == 4) {</span>
@@ -349,10 +349,10 @@ import java.util.List;
                II  |  I
                    90
             */
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">            if (q1 == 1) {</span>
-<span class="nc" id="L353">                double diff = rot0 - rot1;</span>
-<span class="nc bnc" id="L354" title="All 2 branches missed.">                if (diff &gt; Math.PI) {</span>
-<span class="nc" id="L355">                    rot1 += twoPI;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">            if (q1 == 1) {</span>
+<span class="fc" id="L353">                double diff = rot0 - rot1;</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">                if (diff &gt; Math.PI) {</span>
+<span class="fc" id="L355">                    rot1 += twoPI;</span>
                 }
 <span class="pc bpc" id="L357" title="1 of 2 branches missed.">            } else if (q1 == 5) {</span>
 <span class="nc" id="L358">                rot1 -= twoPI;</span>
@@ -385,8 +385,8 @@ import java.util.List;
 <span class="fc" id="L385">                rot1 += twoPI;</span>
 <span class="pc bpc" id="L386" title="1 of 2 branches missed.">            } else if (q1 == 2) {</span>
 <span class="nc" id="L387">                rot0 -= twoPI;</span>
-<span class="pc bpc" id="L388" title="1 of 2 branches missed.">            } else if (q1 == 3) {  </span>
-<span class="nc" id="L389">                rot0 -= twoPI;</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">            } else if (q1 == 3) {  </span>
+<span class="fc" id="L389">                rot0 -= twoPI;</span>
             }
         }
         
@@ -870,8 +870,8 @@ import java.util.List;
     public static void correctForQuadrants(List&lt;Double&gt; thetas, 
         boolean useRadians) {
         
-<span class="pc bpc" id="L873" title="2 of 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
-<span class="nc" id="L874">            return;</span>
+<span class="pc bpc" id="L873" title="1 of 4 branches missed.">        if (thetas == null || thetas.size() &lt; 2) {</span>
+<span class="fc" id="L874">            return;</span>
         }
         
 <span class="fc" id="L877">        double[] angles = new double[thetas.size()];</span>

@@ -1469,7 +1469,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L1469">        return contigNonMembersConnectedToBounds;</span>
     }
 
-    /** NOT READY FOR USE
+    /* NOT READY FOR USE
      * Walk the border to find the perimeter border pixels.
      * Note that rowColRanges has to represent the contiguous point set called points.
      * Note also that this method removes spurs (single pixel width paths
@@ -1490,334 +1490,324 @@ import java.util.logging.Logger;
      * @param imageMaxRow the maximum row in the image from which the point
      * set was derived.
      * @return
-     */
     public PairIntArray getOrderedBorderPixels(Set&lt;PairInt&gt; points,
         Map&lt;Integer, List&lt;PairInt&gt;&gt; rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
 
-<span class="fc" id="L1498">        PerimeterFinderMemo memo = new PerimeterFinderMemo();</span>
+        PerimeterFinderMemo memo = new PerimeterFinderMemo();
 
-<span class="fc" id="L1500">        BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);</span>
+        BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);
 
-        /*
-        the algorithm uses rowColRanges to make a starting point and add it
-        to the path of steps.
+        //the algorithm uses rowColRanges to make a starting point and add it
+        //to the path of steps.
+        //
+        //for each currentStep, the state at the time of instantiation is stored
+        //in it's node.  the state is it's pixel location, a summary of all visited
+        //nodes at that moment, and the available moves for the pixel location.
+        //
+        //it's available moves are adjacent points that have at least one non-point
+        //neighbor (the goal is to find border points, so has to be on perimeter
+        //of points) and have not been visited yet.
+        //
+        //at each iteration, the currentStep is first checked against memo's list
+        //of known &quot;non-solution states&quot;.  if that exists, it backtracks (without
+        //storing backtrack state again).
+        //If the currentStep was not found by memo, its nextSteps are examined to
+        //choose the next step if any is possible, else backtrack if none are
+        //possible. (Note that backtracking stores the entire path in memo to
+        //capture the state of nodes that led to &quot;no solution&quot; and then removes
+        //currentStep from previous step's nextSteps, removes currentStep from visited
+        //and border,
+        //then removes currentStep from path and sets currentStep to last node in path).
+        //(Note, that the responsibility of updating a step's nextNodes to remove
+        //a point should only occur at backtrack stage after memoization in order
+        //to allow correct recognition of state later to avoid &quot;non-solution&quot; states).
+        // 
+        //If a next step is possible (did not backtrack), a PathStep is created
+        //for the nextStep and it is added to the path, border, and visited.
+        //
+        //then iteration continues until an end state is reached.
+        //end state is currentStep is adjacent to starter point after have left
+        //the start region, or all points have been visited or all paths tried &lt;--- review this
 
-        for each currentStep, the state at the time of instantiation is stored
-        in it's node.  the state is it's pixel location, a summary of all visited
-        nodes at that moment, and the available moves for the pixel location.
+        //example for memoization and backtracking.
+        //
+        //In this example, can see that when the path reaches node 20, needs to
+        //backtrack to node 1 and choose 1-&gt;4 instead of 1-&gt;2-&gt;3-&gt;4.
+        //
+        //Can see that nodes 5 to 18 are outside of an interaction distance with
+        //path nodes 1 through 4, so then, the paths from 5 to 18
+        //can be saved and restored if needed later instead of re-computing them 
+        //when '4' is next selected as the next node in a path.  the &quot;next move&quot; 
+        //after '4' would skip forward to '18' in a choice of one of the saved 
+        //paths from 5 to 18.
+        //
+        //have not implemented that below, but have implemented memoization
+        //for states that lead to no-solution, and avoidance of continuing on
+        //those paths in the future.
+        //
+        //see PerimeterFinderMemo.java, in progress...
+        //
+        //Reuse of successful paths is needed for this algorithm if the point sets
+        //are larger than a couple dozen points, UNLESS the method is given 
+        //points that are already an edge thinned to single pixel widths at all
+        //locations, including the diagonals.
+        //
+        //55
+        //54                     11   12
+        //53            9   10   14   13
+        //52            8   15
+        //51            7   16
+        //50            6   17
+        //49            5   20   18
+        //48            4   19
+        //47       1    2    3
+        //46       0
+        //   125  126  127  128  129  130
 
-        it's available moves are adjacent points that have at least one non-point
-        neighbor (the goal is to find border points, so has to be on perimeter
-        of points) and have not been visited yet.
+        PairIntArray border = new PairIntArray();
 
-        at each iteration, the currentStep is first checked against memo's list
-        of known &quot;non-solution states&quot;.  if that exists, it backtracks (without
-        storing backtrack state again).
-        If the currentStep was not found by memo, its nextSteps are examined to
-        choose the next step if any is possible, else backtrack if none are
-        possible. (Note that backtracking stores the entire path in memo to
-        capture the state of nodes that led to &quot;no solution&quot; and then removes
-        currentStep from previous step's nextSteps, removes currentStep from visited
-        and border,
-        then removes currentStep from path and sets currentStep to last node in path).
-        (Note, that the responsibility of updating a step's nextNodes to remove
-        a point should only occur at backtrack stage after memoization in order
-        to allow correct recognition of state later to avoid &quot;non-solution&quot; states).
-
-        If a next step is possible (did not backtrack), a PathStep is created
-        for the nextStep and it is added to the path, border, and visited.
-
-        then iteration continues until an end state is reached.
-        end state is currentStep is adjacent to starter point after have left
-        the start region, or all points have been visited or all paths tried &lt;--- review this
-        */
-
-        /*
-        example for memoization and backtracking.
-
-        In this example, can see that when the path reaches node 20, needs to
-        backtrack to node 1 and choose 1-&gt;4 instead of 1-&gt;2-&gt;3-&gt;4.
-
-        Can see that nodes 5 to 18 are outside of an interaction distance with
-        path nodes 1 through 4, so then, the paths from 5 to 18
-        can be saved and restored if needed later instead of re-computing them 
-        when '4' is next selected as the next node in a path.  the &quot;next move&quot; 
-        after '4' would skip forward to '18' in a choice of one of the saved 
-        paths from 5 to 18.
-
-        have not implemented that below, but have implemented memoization
-        for states that lead to no-solution, and avoidance of continuing on
-        those paths in the future.
-
-         see PerimeterFinderMemo.java, in progress...
-        
-        Reuse of successful paths is needed for this algorithm if the point sets
-        are larger than a couple dozen points, UNLESS the method is given 
-        points that are already an edge thinned to single pixel widths at all
-        locations, including the diagonals.
-
-        55
-        54                     11   12
-        53            9   10   14   13
-        52            8   15
-        51            7   16
-        50            6   17
-        49            5   20   18
-        48            4   19
-        47       1    2    3
-        46       0
-           125  126  127  128  129  130
-
-        */
-
-<span class="fc" id="L1574">        PairIntArray border = new PairIntArray();</span>
-
-<span class="pc bpc" id="L1576" title="1 of 2 branches missed.">        if (rowColRanges.isEmpty()) {</span>
-<span class="nc" id="L1577">            return border;</span>
+        if (rowColRanges.isEmpty()) {
+            return border;
         }
 
-<span class="pc bpc" id="L1580" title="1 of 2 branches missed.">        if (points.size() &lt; 5) {</span>
-<span class="nc" id="L1581">            throw new IllegalArgumentException(</span>
+        if (points.size() &lt; 5) {
+            throw new IllegalArgumentException(
             &quot;points.size() needs to be a least 5 points&quot;);
         }
 
-<span class="pc bpc" id="L1585" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L1586">            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,</span>
+        if (debug) {
+            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
                 rowMinMax, imageMaxColumn, imageMaxRow);
         }
 
-<span class="fc" id="L1590">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
         //xc,yc
-<span class="fc" id="L1593">        double[] xyCentroid = curveHelper.calculateXYCentroids(points);</span>
+        double[] xyCentroid = curveHelper.calculateXYCentroids(points);
 
-<span class="fc" id="L1595">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L1596">        Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
+        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();
+        Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();
 
         // ------- initialize with step 0 ------
-        /*
-        step 0 should be the smallest row and col,
-        but because it may be a single pixel width spur (which will not end in
-        a closed curve), have to make sure that the added point has at least
-        2 neighbors, else discard it and continue forward until have found a
-        starter point with 2 neighbors.
-        */
+        //step 0 should be the smallest row and col,
+        //but because it may be a single pixel width spur (which will not end in
+        //a closed curve), have to make sure that the added point has at least
+        //2 neighbors, else discard it and continue forward until have found a
+        //starter point with 2 neighbors.
 
-<span class="fc" id="L1607">        int y0 = rowMinMax[0];</span>
-<span class="fc" id="L1608">        List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(y0));</span>
-<span class="fc" id="L1609">        PairInt colRange = colRanges.get(0);</span>
-<span class="fc" id="L1610">        int x0 = colRange.getX();</span>
+        int y0 = rowMinMax[0];
+        List&lt;PairInt&gt; colRanges = rowColRanges.get(Integer.valueOf(y0));
+        PairInt colRange = colRanges.get(0);
+        int x0 = colRange.getX();
 
-        /*
-        storing the state of choices in a linked list.
-           each choice holds the col,row of that pixel and the neighbor points
-              for paths not chosen.
-        backtracking removes last node and chooses from next to last node
-        */
-<span class="fc" id="L1618">        LinkedList&lt;PathStep&gt; path = new LinkedList&lt;PathStep&gt;();</span>
-<span class="fc" id="L1619">        PathStep currentStep = null;</span>
+        //storing the state of choices in a linked list.
+        //   each choice holds the col,row of that pixel and the neighbor points
+        //      for paths not chosen.
+        //backtracking removes last node and chooses from next to last node
+        
+        LinkedList&lt;PathStep&gt; path = new LinkedList&lt;PathStep&gt;();
+        PathStep currentStep = null;
 
-<span class="fc" id="L1621">        curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0, neighbors,</span>
+        curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0, neighbors,
             points, visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="pc bpc" id="L1624" title="1 of 2 branches missed.">        if (neighbors.size() &lt; 2) {</span>
+        if (neighbors.size() &lt; 2) {
 
-<span class="nc bnc" id="L1626" title="All 2 branches missed.">            while (neighbors.size() &lt; 2) {</span>
-<span class="nc" id="L1627">                PairInt p = neighbors.iterator().next();</span>
-<span class="nc" id="L1628">                x0 = p.getX();</span>
-<span class="nc" id="L1629">                y0 = p.getY();</span>
-<span class="nc" id="L1630">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0,</span>
+            while (neighbors.size() &lt; 2) {
+                PairInt p = neighbors.iterator().next();
+                x0 = p.getX();
+                y0 = p.getY();
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0, y0,
                     neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
-<span class="nc" id="L1633">            }</span>
-<span class="nc" id="L1634">            border.add(x0, y0);</span>
-<span class="nc" id="L1635">            visited.add(new PairInt(x0, y0));</span>
+            }
+            border.add(x0, y0);
+            visited.add(new PairInt(x0, y0));
 
-<span class="nc" id="L1637">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
-<span class="nc" id="L1638">                bitVectorHelper.createBitstring(visited));</span>
+            currentStep = new PathStep(new PairInt(x0, y0), neighbors,
+                bitVectorHelper.createBitstring(visited));
 
-<span class="nc" id="L1640">            path.add(currentStep);</span>
+            path.add(currentStep);
 
-<span class="nc" id="L1642">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);
 
         } else {
 
-<span class="fc" id="L1646">            border.add(x0, y0);</span>
-<span class="fc" id="L1647">            visited.add(new PairInt(x0, y0));</span>
+            border.add(x0, y0);
+            visited.add(new PairInt(x0, y0));
 
-<span class="fc" id="L1649">            currentStep = new PathStep(new PairInt(x0, y0), neighbors,</span>
-<span class="fc" id="L1650">                bitVectorHelper.createBitstring(visited));</span>
+            currentStep = new PathStep(new PairInt(x0, y0), neighbors,
+                bitVectorHelper.createBitstring(visited));
 
-<span class="fc" id="L1652">            path.add(currentStep);</span>
+            path.add(currentStep);
 
-<span class="fc" id="L1654">            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+            log.fine(&quot;start point=(&quot; + x0 + &quot;,&quot; + y0 + &quot;)&quot;);
 
             // --- take the 2nd step if colRange.getY() is &gt; col, to make start
             //     direction clockwise ---
 
-<span class="fc bfc" id="L1659" title="All 2 branches covered.">            if (colRange.getY() &gt; colRange.getX()) {</span>
+            if (colRange.getY() &gt; colRange.getX()) {
 
-<span class="fc" id="L1661">                PairInt p = new PairInt(x0 + 1, y0);</span>
-<span class="fc" id="L1662">                border.add(x0 + 1, y0);</span>
-<span class="fc" id="L1663">                visited.add(p);</span>
-<span class="fc" id="L1664">                log.fine(&quot;adding (&quot; + (x0 + 1) + &quot;,&quot; + y0 + &quot;)&quot;);</span>
+                PairInt p = new PairInt(x0 + 1, y0);
+                border.add(x0 + 1, y0);
+                visited.add(p);
+                log.fine(&quot;adding (&quot; + (x0 + 1) + &quot;,&quot; + y0 + &quot;)&quot;);
 
-<span class="fc" id="L1666">                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, </span>
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(x0 + 1, y0, 
                     neighbors, points, visited,
                     imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1670">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1671">                    bitVectorHelper.createBitstring(visited));</span>
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
 
-<span class="fc" id="L1673">                path.add(currentStep);</span>
+                path.add(currentStep);
             }
         }
 
-        /* consider each move in all 8 directions in which move point is
-           !visited.constains(point) &amp;&amp; points.contains(point)
+        // consider each move in all 8 directions in which move point is
+        //   !visited.constains(point) &amp;&amp; points.contains(point)
+        //
+        //if more than one choice, prefer choice with fewer neighbors.
+        //
+        //if there are zero choices, remove the latest point from border and try again.
+        //
+        //repeat while col,row is not adjacent to x0,y0 and visited.size &lt; points.size. &lt;=== reviewing this when testing
 
-        if more than one choice, prefer choice with fewer neighbors.
+        boolean search = true;
 
-        if there are zero choices, remove the latest point from border and try again.
+        int earliestBacktrack = Integer.MAX_VALUE;
 
-        repeat while col,row is not adjacent to x0,y0 and visited.size &lt; points.size. &lt;=== reviewing this when testing
-        */
+        while (search) {
 
-<span class="fc" id="L1687">        boolean search = true;</span>
-
-<span class="fc" id="L1689">        int earliestBacktrack = Integer.MAX_VALUE;</span>
-
-<span class="fc bfc" id="L1691" title="All 2 branches covered.">        while (search) {</span>
-
-<span class="fc" id="L1693">            boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
+            boolean currentIsNoSolution = memo.isANoSolutionState(currentStep);
             
-<span class="fc bfc" id="L1695" title="All 4 branches covered.">            if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
+            if (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
 
-<span class="fc bfc" id="L1697" title="All 4 branches covered.">                while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {</span>
+                while (currentStep.getNextSteps().isEmpty() || currentIsNoSolution) {
 
-<span class="fc" id="L1699">                    log.fine(&quot;   removing (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
-<span class="fc" id="L1700">                        + currentStep.getCoords().getY() + &quot;)&quot;</span>
-<span class="fc" id="L1701">                        + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+                    log.fine(&quot;   removing (&quot; + currentStep.getCoords().getX() + &quot;,&quot;
+                        + currentStep.getCoords().getY() + &quot;)&quot;
+                        + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()
                     );
 
-<span class="pc bpc" id="L1704" title="1 of 2 branches missed.">                    if (border.getN() == 0) {</span>
-<span class="nc" id="L1705">                        return null;</span>
+                    if (border.getN() == 0) {
+                        return null;
                     }
 
                     // no solution for this path, so store state and backtrack
 
-<span class="fc bfc" id="L1710" title="All 2 branches covered.">                    if (!currentIsNoSolution) {</span>
+                    if (!currentIsNoSolution) {
                         // if currentIsNoSolution, state has already been stored
-<span class="fc" id="L1712">                        memo.storeNoSolutionState(path);</span>
+                        memo.storeNoSolutionState(path);
                     }
 
-<span class="fc" id="L1715">                    path.removeLast();</span>
+                    path.removeLast();
                     
-<span class="fc" id="L1717">                    PathStep nextStep = path.peekLast();</span>
+                    PathStep nextStep = path.peekLast();
 
-<span class="pc bpc" id="L1719" title="1 of 2 branches missed.">                    if (nextStep != null) {</span>
-<span class="fc" id="L1720">                        nextStep.getNextSteps().remove(currentStep.getCoords());</span>
+                    if (nextStep != null) {
+                        nextStep.getNextSteps().remove(currentStep.getCoords());
                     }
 
-<span class="fc" id="L1723">                    border.removeRange(border.getN() - 1, border.getN() - 1);</span>
+                    border.removeRange(border.getN() - 1, border.getN() - 1);
 
-<span class="fc" id="L1725">                    visited.remove(currentStep.getCoords());</span>
+                    visited.remove(currentStep.getCoords());
 
-<span class="fc bfc" id="L1727" title="All 2 branches covered.">                    if (path.size() &lt; earliestBacktrack) {</span>
-<span class="fc" id="L1728">                        earliestBacktrack = path.size();</span>
-<span class="fc" id="L1729">                        log.info(&quot;earliestBacktrack=&quot; + earliestBacktrack);</span>
+                    if (path.size() &lt; earliestBacktrack) {
+                        earliestBacktrack = path.size();
+                        log.info(&quot;earliestBacktrack=&quot; + earliestBacktrack);
                     }
 
-<span class="fc" id="L1732">                    currentStep = nextStep;</span>
+                    currentStep = nextStep;
 
-<span class="pc bpc" id="L1734" title="1 of 2 branches missed.">                    if (currentStep == null) {</span>
-<span class="nc" id="L1735">                        return border;</span>
+                    if (currentStep == null) {
+                        return border;
                     }
 
-<span class="fc" id="L1738">                    currentIsNoSolution = memo.isANoSolutionState(currentStep);</span>
-<span class="fc" id="L1739">                }</span>
+                    currentIsNoSolution = memo.isANoSolutionState(currentStep);
+                }
 
-<span class="fc bfc" id="L1741" title="All 2 branches covered.">            } else if (currentStep.getNextSteps().size() == 1) {</span>
+            } else if (currentStep.getNextSteps().size() == 1) {
 
-<span class="fc" id="L1743">                PairInt p = currentStep.getNextSteps().iterator().next();</span>
-<span class="fc" id="L1744">                border.add(p.getX(), p.getY());</span>
-<span class="fc" id="L1745">                visited.add(p);</span>
-<span class="fc" id="L1746">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
-<span class="fc" id="L1747">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+                PairInt p = currentStep.getNextSteps().iterator().next();
+                border.add(p.getX(), p.getY());
+                visited.add(p);
+                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;
+                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()
                 );
 
-<span class="fc" id="L1750">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
-<span class="fc" id="L1751">                    p.getY(), neighbors, points,</span>
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), 
+                    p.getY(), neighbors, points,
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1754">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1755">                    bitVectorHelper.createBitstring(visited));</span>
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
 
-<span class="fc" id="L1757">                path.add(currentStep);</span>
+                path.add(currentStep);
 
-<span class="fc" id="L1759">            } else {</span>
+            } else {
 
                 // choose the neighbor with the fewest neighbors and when there
                 // are ties, choose the one furthest from the centroid
 
-<span class="fc" id="L1764">                PairInt p = null;</span>
-<span class="fc" id="L1765">                int minNNeigbors = Integer.MAX_VALUE;</span>
+                PairInt p = null;
+                int minNNeigbors = Integer.MAX_VALUE;
 
-<span class="fc bfc" id="L1767" title="All 2 branches covered.">                for (PairInt pn : currentStep.getNextSteps()) {</span>
+                for (PairInt pn : currentStep.getNextSteps()) {
 
-<span class="fc" id="L1769">                    int x2 = pn.getX();</span>
-<span class="fc" id="L1770">                    int y2 = pn.getY();</span>
+                    int x2 = pn.getX();
+                    int y2 = pn.getY();
 
-<span class="fc" id="L1772">                    log.fine(&quot;   compare &quot; + &quot; (&quot; + x2 + &quot;,&quot; + y2 + &quot;)  to&quot;</span>
-<span class="fc" id="L1773">                        + &quot; (&quot; + currentStep.getCoords().getX() + &quot;,&quot;</span>
-<span class="fc" id="L1774">                        + currentStep.getCoords().getY() + &quot;)&quot;);</span>
+                    log.fine(&quot;   compare &quot; + &quot; (&quot; + x2 + &quot;,&quot; + y2 + &quot;)  to&quot;
+                        + &quot; (&quot; + currentStep.getCoords().getX() + &quot;,&quot;
+                        + currentStep.getCoords().getY() + &quot;)&quot;);
 
-<span class="fc" id="L1776">                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points,</span>
+                    int nNeighbors = curveHelper.countNeighbors(x2, y2, points,
                         imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc bfc" id="L1779" title="All 2 branches covered.">                    if (p == null) {</span>
+                    if (p == null) {
 
-<span class="fc" id="L1781">                        minNNeigbors = nNeighbors;</span>
-<span class="fc" id="L1782">                        p = pn;</span>
+                        minNNeigbors = nNeighbors;
+                        p = pn;
 
-<span class="fc bfc" id="L1784" title="All 2 branches covered.">                    } else if (nNeighbors &lt; minNNeigbors) {</span>
+                    } else if (nNeighbors &lt; minNNeigbors) {
 
-<span class="fc" id="L1786">                        minNNeigbors = nNeighbors;</span>
-<span class="fc" id="L1787">                        p = pn;</span>
+                        minNNeigbors = nNeighbors;
+                        p = pn;
 
-<span class="fc bfc" id="L1789" title="All 2 branches covered.">                    } else if (nNeighbors == minNNeigbors) {</span>
+                    } else if (nNeighbors == minNNeigbors) {
 
-<span class="fc" id="L1791">                        double distC = Math.sqrt(</span>
-<span class="fc" id="L1792">                            (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])</span>
+                        double distC = Math.sqrt(
+                            (p.getX() - xyCentroid[0])*(p.getX() - xyCentroid[0])
                             +
-<span class="fc" id="L1794">                            (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));</span>
+                            (p.getY() - xyCentroid[1])*(p.getY() - xyCentroid[1]));
 
-<span class="fc" id="L1796">                        double dist2 = Math.sqrt(</span>
+                        double dist2 = Math.sqrt(
                             (x2 - xyCentroid[0])*(x2 - xyCentroid[0])
                             +
                             (y2 - xyCentroid[1])*(y2 - xyCentroid[1]));
 
-<span class="fc bfc" id="L1801" title="All 2 branches covered.">                        if (dist2 &gt; distC) {</span>
-<span class="fc" id="L1802">                            p = pn;</span>
+                        if (dist2 &gt; distC) {
+                            p = pn;
                         }
                     }
-<span class="fc" id="L1805">                }</span>
+                }
 
-<span class="fc" id="L1807">                border.add(p.getX(), p.getY());</span>
-<span class="fc" id="L1808">                visited.add(p);</span>
-<span class="fc" id="L1809">                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;</span>
-<span class="fc" id="L1810">                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()</span>
+                border.add(p.getX(), p.getY());
+                visited.add(p);
+                log.fine(&quot;adding (&quot; + p.getX() + &quot;,&quot; + p.getY() + &quot;)&quot;
+                    + &quot; border.n=&quot; + border.getN() + &quot; path.size=&quot; + path.size()
                 );
 
-<span class="fc" id="L1813">                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), </span>
-<span class="fc" id="L1814">                    p.getY(), neighbors, points,</span>
+                curveHelper.findNeighborsWithAtLeastOneNonPoint(p.getX(), 
+                    p.getY(), neighbors, points,
                     visited, imageMaxColumn + 1, imageMaxRow + 1);
 
-<span class="fc" id="L1817">                currentStep = new PathStep(p, neighbors,</span>
-<span class="fc" id="L1818">                    bitVectorHelper.createBitstring(visited));</span>
+                currentStep = new PathStep(p, neighbors,
+                    bitVectorHelper.createBitstring(visited));
 
-<span class="fc" id="L1820">                path.add(currentStep);</span>
+                path.add(currentStep);
 
             }
 
@@ -1827,18 +1817,19 @@ import java.util.logging.Logger;
             //      bounded, excepting spurs which should be stored. do not want
             //      a path which turns around early, missing most of the points.
             //      can use point in polygon test...or an area test or centroid test...
-<span class="fc bfc" id="L1830" title="All 2 branches covered.">            if (border.getN() &gt; 8) {</span>
-<span class="fc bfc" id="L1831" title="All 2 branches covered.">                if ((Math.abs(currentStep.getCoords().getX() - x0) &lt; 2)</span>
-<span class="fc bfc" id="L1832" title="All 2 branches covered.">                    &amp;&amp; (Math.abs(currentStep.getCoords().getY() - y0) &lt; 2)) {</span>
-<span class="fc" id="L1833">                    search = false;</span>
+            if (border.getN() &gt; 8) {
+                if ((Math.abs(currentStep.getCoords().getX() - x0) &lt; 2)
+                    &amp;&amp; (Math.abs(currentStep.getCoords().getY() - y0) &lt; 2)) {
+                    search = false;
                 }
             }
-<span class="fc" id="L1836">        }</span>
+        }
 
-<span class="fc" id="L1838">        return border;</span>
+        return border;
     }
+    */
 
-<span class="fc" id="L1841">    static class Gap {</span>
+<span class="fc" id="L1832">    static class Gap {</span>
 
         private final int row;
 

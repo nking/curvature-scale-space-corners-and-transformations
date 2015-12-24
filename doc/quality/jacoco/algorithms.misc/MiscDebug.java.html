@@ -365,7 +365,7 @@ import java.util.logging.Logger;
                             }
 <span class="fc bfc" id="L366" title="All 2 branches covered.">                            for (int dy = (-1 * nE); dy &lt; (nE + 1); ++dy) {</span>
 <span class="fc" id="L367">                                int yy = row + dy;</span>
-<span class="pc bpc" id="L368" title="1 of 4 branches missed.">                                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="fc bfc" id="L368" title="All 4 branches covered.">                                if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="fc" id="L369">                                    continue;</span>
                                 }
 <span class="fc" id="L371">                                img2.setRGB(xx, yy, 255, 255, 255);</span>
@@ -387,12 +387,12 @@ import java.util.logging.Logger;
 <span class="fc" id="L387">                    int row = cr.getY()[cr.getKMaxIdx()];</span>
 <span class="fc bfc" id="L388" title="All 2 branches covered.">                    for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 <span class="fc" id="L389">                        int xx = col + dx;</span>
-<span class="pc bpc" id="L390" title="1 of 4 branches missed.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="nc" id="L391">                            continue;</span>
+<span class="fc bfc" id="L390" title="All 4 branches covered.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="fc" id="L391">                            continue;</span>
                         }
 <span class="fc bfc" id="L393" title="All 2 branches covered.">                        for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L394">                            int yy = row + dy;</span>
-<span class="pc bpc" id="L395" title="2 of 4 branches missed.">                            if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
+<span class="pc bpc" id="L395" title="1 of 4 branches missed.">                            if ((yy &lt; 0) || (yy &gt; (h - 1))) {</span>
 <span class="nc" id="L396">                                continue;</span>
                             }
 <span class="fc" id="L398">                            img2.setRGB(xx, yy, c);</span>

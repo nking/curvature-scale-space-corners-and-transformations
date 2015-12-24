@@ -118,14 +118,14 @@
     public int estimateNIterForFiftyPercentOutliersFor7Points(int nMatchedPoints) {
         
         double p;
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">        if (nMatchedPoints &lt;= 30) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (nMatchedPoints &lt;= 30) {</span>
 <span class="fc" id="L122">            p = 0.003;</span>
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 50) {</span>
-<span class="nc" id="L124">            p = 0.0048;</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 100) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        } else if (nMatchedPoints &lt;= 50) {</span>
+<span class="fc" id="L124">            p = 0.0048;</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        } else if (nMatchedPoints &lt;= 100) {</span>
 <span class="nc" id="L126">            p = 0.006;</span>
         } else  {
-<span class="nc" id="L128">            p = 0.0075;</span>
+<span class="fc" id="L128">            p = 0.0075;</span>
         }
         
 <span class="fc" id="L131">        int nIter = (int)Math.round(1./p);</span>
