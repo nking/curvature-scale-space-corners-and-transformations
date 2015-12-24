@@ -1,3 +1,17 @@
+-- consider making a wrapper for extreme case of projection having
+   a scale of 1 in x axis but a very different scale in y axis due
+   to perspective, for example, an upright rectangle in one image
+   and in the other image the same rectangle viewed at an inclined
+   angle so that the vertical extent takes half as many pixels.
+   The BlobScaleFinder prefers the best euclidean matching largest
+   number of points.
+   This new class would need to use bipartite matching of blobs and
+   then a filter if possible to remove inconsistent matches,
+   then straight to the epipolar solver.
+
+-- make use of IntensityFeatures2 the default and make
+   changes to the signature to remove the unused image.
+
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
       LMedS implementation too)
@@ -57,6 +71,16 @@ design class to hold sampling
           compare to max and min runtime complexities for new method choose7RandomPoints
              in PointSampling and choosing 7 points one at a time, both using
              value based probability distributions.
+
+          create a PointValueDistr with no value dependence and give it to
+              randomlyChooseKBitNumber for avalanche tests
+
+
+       on subject of forward indexed gosper's hack:
+          write out first few iterations of this to see if a formula is possible that
+          just takes index, nValues, k subset size and can return the index-th output of this
+          without using feedback:
+              x0 = x0 + (x0 & -x0) + ((((x0 + (x0 & -x0)) ^ x0) / (x0 & -x0)) >> 2);
 
    X (3) try 2 ways, one with a value based on the distance and the other being
          the reverse of the distance (where the max distance is determined by
