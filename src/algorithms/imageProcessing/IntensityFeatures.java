@@ -86,6 +86,7 @@ public class IntensityFeatures {
      * instance methods.
      * @param blockHalfWidths
      * @param useNormalizedIntensities 
+     * @param rotatedOffsets 
      */
     public IntensityFeatures(final int blockHalfWidths, final boolean 
         useNormalizedIntensities, RotatedOffsets rotatedOffsets) {
@@ -1210,4 +1211,7 @@ public class IntensityFeatures {
         }        
     }
     
+    public RotatedOffsets getRotatedOffsets() {
+        return rotatedOffsets;
+    }
 }

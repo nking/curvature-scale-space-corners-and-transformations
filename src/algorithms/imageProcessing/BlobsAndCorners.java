@@ -37,9 +37,6 @@ public class BlobsAndCorners  {
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum) {
 
-        List<List<CornerRegion>> cornerRegionLists = 
-            new ArrayList<List<CornerRegion>>();
-        
         List<PairIntArray> perimeterLists = blobPerimeterHelper.getBlobPerimeters(
             type, useBinnedImage);
         
@@ -52,6 +49,47 @@ public class BlobsAndCorners  {
         int height = useBinnedImage ? 
             blobPerimeterHelper.getGreyscaleImageBinned().getHeight() :
             blobPerimeterHelper.getGreyscaleImage().getHeight();
+        
+        List<List<CornerRegion>> cornerRegionLists = populateCorners(
+            perimeterLists, useBinnedImage, outdoorMode,
+            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
+            width, height);
+        
+        if (blobPerimeterHelper.isInDebugMode()) {
+            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerRegionLists,
+                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
+                "blob_corners_" + blobPerimeterHelper.getDebugTag() + "_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        return cornerRegionLists;
+    }
+    
+    /**
+     * get a list of corner regions for the perimeters extracted from the
+     * blobs.  (Note that the default construction of perimeters already
+     * orders them in counter clockwise manner.  That's necessary for
+     * consistent use of the corner region orientation.)
+     * @param perimeterLists
+     * @param useBinnedImage
+     * @param outdoorMode
+     * @param enableJaggedLineCorrections
+     * @param factorIncreaseForCurvatureMinimum
+     * @param width
+     * @param height
+     * @return 
+     */
+    public static List<List<CornerRegion>> populateCorners(
+        List<PairIntArray> perimeterLists, boolean useBinnedImage,
+        final boolean outdoorMode,
+        final boolean enableJaggedLineCorrections,
+        final float factorIncreaseForCurvatureMinimum,
+        int width, int height) {
+
+        List<List<CornerRegion>> cornerRegionLists = 
+            new ArrayList<List<CornerRegion>>();
+        
+        PairIntArray allCorners = new PairIntArray();
         
         Map<Integer, List<CornerRegion> > indexCornerRegionMap = 
             findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
@@ -82,13 +120,6 @@ public class BlobsAndCorners  {
             }
         }
         
-        if (blobPerimeterHelper.isInDebugMode()) {
-            MiscDebug.writeEdgesAndCorners(perimeterLists, cornerRegionLists,
-                1, blobPerimeterHelper.getGreyscaleImage(useBinnedImage),
-                "blob_corners_" + blobPerimeterHelper.getDebugTag() + "_" 
-                + MiscDebug.getCurrentTimeFormatted());
-        }
-
         assert(perimeterLists.size() == cornerRegionLists.size());
         
         return cornerRegionLists;

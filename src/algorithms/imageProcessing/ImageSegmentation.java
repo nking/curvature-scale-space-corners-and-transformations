@@ -3147,6 +3147,52 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
 
         return img;
     }
+    
+    /**
+     * segmentation algorithm using cieXY and rgb to make segmentation for
+     * the colors with CIE X or Y outside of the center region 
+     *
+     * @param input
+     * @return
+     */
+    public GreyscaleImage createGreyscale7(ImageExt input) {
+
+        Map<PairInt, Integer> pixelThetaDegreesMap = populatePixelLists3(input);
+        
+        // -- scale the valus to between 0 and 255 w/ wrap around --
+        
+        int count = 0;
+        float[] clrPolarCIEXY =new float[pixelThetaDegreesMap.size()];
+        for (Entry<PairInt, Integer> entry : pixelThetaDegreesMap.entrySet()) {
+            clrPolarCIEXY[count] = entry.getValue();
+            count++;
+        }
+        
+        float binWidth = 20;
+        HistogramHolder hist = Histogram.createSimpleHistogram(binWidth,
+            clrPolarCIEXY, Errors.populateYErrorsBySqrt(clrPolarCIEXY));
+        List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.1f);
+        int[] binCenters = createBinCenters360(hist, indexes);
+        
+        List<Set<PairInt>> colorPixelGroups = assignToNearestPolarCIECluster(
+            pixelThetaDegreesMap, binCenters);
+        
+        GreyscaleImage img = new GreyscaleImage(input.getWidth(), 
+            input.getHeight());
+        
+        int gClr = 255;
+        int s = 127/colorPixelGroups.size();
+        for (Set<PairInt> set : colorPixelGroups) {
+            for (PairInt p : set) {
+               img.setValue(p.getX(), p.getY(), gClr);
+            }
+            gClr -= s;
+        }
+        
+MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
+
+        return img;
+    }
 
     protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,
         Set<PairInt> points) {
@@ -3636,6 +3682,39 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                     Float.valueOf((float)thetaRadians));
             }
         }
+    }
+
+    private Map<PairInt, Integer> populatePixelLists3(ImageExt input) {
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        Map<PairInt, Integer> pixelCIETheta = new HashMap<PairInt, Integer>();
+            
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                int idx = input.getInternalIndex(i, j);
+
+                float cieX = input.getCIEX(idx);
+                float cieY = input.getCIEY(idx);
+
+                if (!cieC.isInLargeWhiteCenter(cieX, cieY) /*&& !veryGreen*/) {
+                    
+                    double thetaRadians = cieC.calculateXYTheta(cieX, cieY);
+                    
+                    double thetaDegrees = thetaRadians * 180./Math.PI;
+                    
+                    int thetaDegreesInt = (int)Math.round(thetaDegrees);
+
+                    pixelCIETheta.put(new PairInt(i, j), thetaDegreesInt);
+                }
+            }
+        }
+        
+        return pixelCIETheta;
     }
 
     private void growPixelsWithinRGBTolerance(Image img,

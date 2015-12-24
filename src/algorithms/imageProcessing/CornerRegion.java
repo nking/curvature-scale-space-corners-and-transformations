@@ -78,6 +78,9 @@ public class CornerRegion {
             throw new IllegalArgumentException("nPoints must be 0 or larger");
         }
 
+        /* orientation calculation is now handled in IntensityFeatures so
+        this rule no longer applies.
+        TODO: refactor to current usage regarding orientation.
         if (nPoints > 0) {
             if (nPoints < 3) {
                 throw new IllegalArgumentException(
@@ -87,7 +90,7 @@ public class CornerRegion {
                 throw new IllegalArgumentException(
                     "maxCurvatureIndex must be > 0 and less than nPoints-1");
             }
-        }
+        }*/
 
         this.kMaxIdx = maxCurvatureIndex;
 

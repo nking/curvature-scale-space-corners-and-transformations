@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
+import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
@@ -51,9 +52,6 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         assert(blobs2.size() == perimeters2.size());
         assert(blobs2.size() == corners2List.size());
 
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-  
         float dist = 2.5f;
         for (int i = 0; i < perimeters1.size(); ++i) {
             filterCorners(perimeters1.get(i), corners1List.get(i), dist);
@@ -71,20 +69,28 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             }
         }
 
-        MatchingSolution soln = match(features1, features2, img1, img2, perimeters1,
-            perimeters2, corners1List, corners2List, binFactor1, binFactor2);
+        MatchingSolution soln = match(img1Helper, img2Helper, 
+            features1, features2, img1, img2, corners1List, corners2List, 
+            useBinned1, useBinned2);
 
         return soln;
     }
 
     private <T extends CornerRegion> MatchingSolution match(
+        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
         IntensityFeatures features1, IntensityFeatures features2,
         GreyscaleImage img1, GreyscaleImage img2,
-        List<PairIntArray> perimeters1, List<PairIntArray> perimeters2,
         List<List<T>> corners1List, List<List<T>> corners2List,
-        int binFactor1, int binFactor2) {
+        boolean useBinned1, boolean useBinned2) {
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
 
 /*
+List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(
+    type1, useBinned1);
+List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
+    type2, useBinned2);
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -282,7 +288,7 @@ System.out.println(sb.toString());
         NearestPoints np2 = new NearestPoints(xC2, yC2);
 
         MatchingSolution soln = evaluateForBestUsingFeatures(
-            features1, features2, img1, img2,
+            img1Helper, img2Helper, features1, features2, img1, img2,
             trMap, corners1List, cr2List, np2, binFactor1, binFactor2);
 
         return soln;
@@ -294,6 +300,8 @@ System.out.println(sb.toString());
      * paramsMap are in the binned reference frame and corrections to that
      * are made for the returned solution.
      * @param <T>
+     * @param img1Helper
+     * @param img2Helper
      * @param features1
      * @param features2
      * @param img1
@@ -307,6 +315,7 @@ System.out.println(sb.toString());
      * @return
      */
     private <T extends CornerRegion> MatchingSolution evaluateForBestUsingFeatures(
+        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
         IntensityFeatures features1, IntensityFeatures features2,
         GreyscaleImage img1, GreyscaleImage img2,
         Map<PairInt, TransformationParameters> paramsMap,
@@ -552,13 +561,117 @@ System.out.println(sb.toString());
                     }
                 }
                 
-//***** ===>                
-                //TODO: this is possibly a good place to compare pixels within
-                //unmatched blobs that are co-spatial in transformed reference
-                // frame.  to increase the number of matching points, knowing
-                // that larger projection effects have led to this solution.
-                
                 if (t) {
+                    
+                    /*
+                    The large scatter in standard deviations implies that there
+                    my be large projection effects.
+                    For that reason, if there are not many points covering the 
+                    intersection of the transformation,
+                    using another segmenation and feature matching step to try to
+                    constrain more of the transformation.
+                    */
+
+                    int img1Width = img1.getWidth();
+                    int img1Height = img1.getWidth();
+                    int img2Width = img2.getWidth();
+                    int img2Height = img2.getHeight();
+
+                    int[] qCounts = 
+                        ImageStatisticsHelper.getQuadrantCountsForIntersection(
+                        bestParamsLg, bestStatsLg,
+                        img1Width, img1Height, img2Width, img2Height);
+
+                    boolean extractMoreFeatures = false;
+                    for (int count : qCounts) {
+                        if (count < 5) {
+                            extractMoreFeatures = true;
+                            break;
+                        }
+                    }
+
+                    if (extractMoreFeatures) {
+
+                        ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
+                        ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
+                        ImageProcessor imageProcessor = new ImageProcessor();
+                        int smallestGroupLimit, largestGroupLimit;
+                        if (binFactor1 == 1) {
+                            smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimit();
+                            largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimit();
+                        } else {
+                            imgExt1 = imageProcessor.binImage(imgExt1, binFactor1);
+                            smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimitBinned();
+                            largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimitBinned();
+                        }
+                        if (binFactor2 != 1) {
+                            imgExt2 = imageProcessor.binImage(imgExt2, binFactor2);
+                        }
+                        ImageSegmentation imageSegmentation = new ImageSegmentation();
+                        GreyscaleImage imgSeg1Tmp = imageSegmentation.createGreyscale7(imgExt1);
+                        GreyscaleImage imgSeg2Tmp = imageSegmentation.createGreyscale7(imgExt2);
+
+                        BlobCornerFinderForParameters finder = 
+                            new BlobCornerFinderForParameters();
+
+                        //TODO: possible problem here using same group limit size on both images
+                        List<FeatureComparisonStat> stats2 = finder.extractFeatures(
+                            bestParamsLg, imgSeg1Tmp, imgSeg2Tmp, 
+                            binFactor1, binFactor2,
+                            smallestGroupLimit, largestGroupLimit, 
+                            features1.getRotatedOffsets(),
+                            img1Helper.imgHelper.isInDebugMode(),
+                            img1Helper.imgHelper.getDebugTag());
+
+                        /*
+                        -- filter returned points already in statsLg unless the match
+                           is different and has smaller SSD
+                        -- recalculate transformation parameters
+                        */
+
+                        for (int i = (stats2.size() - 1); i > -1; --i) {
+
+                            FeatureComparisonStat fcs2 = stats2.get(i);
+                            PairInt p1 = fcs2.getImg1Point();
+                            PairInt p2 = fcs2.getImg2Point();
+
+                            boolean add = true;
+                            int rmIdx = -1;
+
+                            for (int j = 0; j < bestStatsLg.size(); ++j) {
+
+                                FeatureComparisonStat fcsb = bestStatsLg.get(j);
+                                PairInt s1 = fcsb.getImg1Point();
+                                PairInt s2 = fcsb.getImg2Point();
+
+                                if (p1.equals(s1)) {
+                                    if (!p2.equals(s2)) {
+                                        if (fcs2.getSumIntensitySqDiff() < fcsb.getSumIntensitySqDiff()) {
+                                            rmIdx = j;
+                                            break;
+                                        }
+                                    }
+                                    add = false;
+                                    break;
+                                }
+                            }
+                            if (rmIdx > -1) {
+                                bestStatsLg.remove(rmIdx);
+                            }
+                            if (!add) {
+                                stats2.remove(i);
+                            }
+                        }
+
+                        if (stats2.size() > 0) {
+
+                            bestStatsLg.addAll(stats2);
+
+                            bestParamsLg = MiscStats.calculateTransformation(binFactor1, 
+                                binFactor2, bestStatsLg, new float[4]);
+                        }
+                    }
+                
                     if (binFactor1 != 1 || binFactor2 != 1) {
                         for (int i = 0; i < bestStatsLg.size(); ++i) {
                             FeatureComparisonStat stat = bestStatsLg.get(i);

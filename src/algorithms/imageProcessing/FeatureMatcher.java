@@ -144,8 +144,7 @@ public class FeatureMatcher {
         int x2 = region2.getX()[kMaxIdx2];
         int y2 = region2.getY()[kMaxIdx2];
         
-        return ditherAndRotateForBestLocation2(
-            features1, features2, 
+        return ditherAndRotateForBestLocation2(features1, features2, 
             x1, y1, x2, y2, dither,
             expectedRotationInDegrees, rotationTol, img1, img2);
     }
@@ -260,6 +259,121 @@ public class FeatureMatcher {
         CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
         float rotationInRadiansTol, int transXYTol, int dither,
         RotatedOffsets rotatedOffsets) {
+      
+        List<FeatureComparisonStat> stats = 
+            findSimilarFeaturesAsStats(gsImg1, cr1, gsImg2, cr2, params, 
+                scaleTol, rotationInRadiansTol, transXYTol, dither,
+                rotatedOffsets);
+            
+        List<PairInt> matched1 = new ArrayList<PairInt>();
+        List<PairInt> matched2 = new ArrayList<PairInt>();
+
+        for (FeatureComparisonStat stat : stats) {
+            matched1.add(stat.getImg1Point());
+            matched2.add(stat.getImg2Point());
+        }
+        
+        int rangeRotation = Math.round(params.getStandardDeviations()[1]);
+        int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
+        int rangeTranslationY = Math.round(params.getStandardDeviations()[3]);
+
+        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
+            Math.round(params.getRotationInDegrees()),
+            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
+            rangeRotation, rangeTranslationX, rangeTranslationY,
+            matched1, matched2);
+
+        return cl;
+    }    
+        
+    public List<FeatureComparisonStat> findSimilarFeaturesAsStats(GreyscaleImage gsImg1, 
+        CornerRegion[] cr1, GreyscaleImage gsImg2, 
+        CornerRegion[] cr2, TransformationParameters params, float scaleTol, 
+        float rotationInRadiansTol, int transXYTol, int dither,
+        RotatedOffsets rotatedOffsets) {
+        
+        final int blockHalfWidth = 5;
+        final boolean useNormalizedIntensities = true;
+        
+        IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
+            useNormalizedIntensities, rotatedOffsets);
+        
+        IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
+            useNormalizedIntensities, rotatedOffsets);
+        
+        List<FeatureComparisonStat> stats = findSimilarFeaturesAsStats(gsImg1, 
+            cr1, gsImg2, cr2, features1, features2, params, scaleTol, 
+            rotationInRadiansTol, transXYTol, dither, rotatedOffsets);
+        
+        return stats;
+    }    
+    
+    public List<FeatureComparisonStat> findSimilarFeaturesAsStats(
+        GreyscaleImage gsImg1, CornerRegion[] cr1s, CornerRegion[] cr1Trs, 
+        GreyscaleImage gsImg2, CornerRegion[] cr2s, 
+        IntensityFeatures features1, IntensityFeatures features2, 
+        TransformationParameters parameters, int dither, 
+        int lowerLimitSSDError, int upperLimitSSD, int transXYTol,  
+        RotatedOffsets rotatedOffsets) {
+        
+        //for each combination of cr1 and cr2, find best stat if any between filters
+        
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        for (int idx1 = 0; idx1 < cr1s.length; ++idx1) {
+            
+            CornerRegion cr1 = cr1s[idx1];
+            CornerRegion cr1Tr = cr1Trs[idx1];
+            
+            int x1 = cr1.getX()[cr1.getKMaxIdx()];
+            int y1 = cr1.getY()[cr1.getKMaxIdx()];
+            
+            FeatureComparisonStat bestStat = null;
+            
+            for (int idx2 = 0; idx2 < cr2s.length; ++idx2) {
+                
+                CornerRegion cr2 = cr2s[idx2];
+                
+                int x2 = cr2.getX()[cr2.getKMaxIdx()];
+                int y2 = cr2.getY()[cr2.getKMaxIdx()];
+                
+                double diffX = cr1Tr.getX()[cr1Tr.getKMaxIdx()] - x2;
+                double diffY = cr1Tr.getY()[cr1Tr.getKMaxIdx()] - y2;
+                                
+                if ((diffX > transXYTol) || (diffY > transXYTol)) {
+                    continue;
+                }
+                                
+                FeatureComparisonStat stat = ditherAndRotateForBestLocation2(
+                    features1, features2, x1, y1, x2, y2, dither, gsImg1, gsImg2);
+                
+                if ((stat == null) || 
+                    (stat.getImg2PointIntensityErr() < lowerLimitSSDError) ||
+                    (stat.getSumIntensitySqDiff() > upperLimitSSD)) {
+                    continue;
+                }
+                
+                if ((bestStat == null) ||
+                    stat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                    
+                    bestStat = stat;
+                }
+            }
+            
+            if (bestStat != null) {
+                stats.add(bestStat);
+            }
+        }
+        
+        return stats;
+    }
+    
+    public List<FeatureComparisonStat> findSimilarFeaturesAsStats(GreyscaleImage gsImg1, 
+        CornerRegion[] cr1, GreyscaleImage gsImg2, 
+        CornerRegion[] cr2, IntensityFeatures features1, IntensityFeatures features2,
+        TransformationParameters params, float scaleTol, 
+        float rotationInRadiansTol, int transXYTol, int dither,
+        RotatedOffsets rotatedOffsets) {
         
         List<CornerRegion> filteredTransformedC1 = new ArrayList<CornerRegion>();
         List<CornerRegion> filteredC1 = new ArrayList<CornerRegion>();
@@ -290,15 +404,6 @@ public class FeatureMatcher {
         bipartite is n^3 but the n is < n1.
         */
        
-        final int blockHalfWidth = 5;
-        final boolean useNormalizedIntensities = true;
-        
-        IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
-            useNormalizedIntensities, rotatedOffsets);
-        
-        IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
-            useNormalizedIntensities, rotatedOffsets);
-        
         int n1 = filteredC1.size();
         int n2 = filteredC2.size();
         int nMaxMatchable = Math.min(n1, n2);
@@ -401,7 +506,7 @@ public class FeatureMatcher {
         }
         
         if (useBipartite) {
-            return useBipartiteMatching(cost, statMap, params);
+            return useBipartiteMatchingAsStats(cost, statMap, params);
         }
         
         // resolve any double matchings, but discard the higher cost matches
@@ -442,21 +547,15 @@ public class FeatureMatcher {
             return null;
         }
         
-        List<PairInt> matched1 = new ArrayList<PairInt>();
-        List<PairInt> matched2 = new ArrayList<PairInt>();
-
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
         float[] weights = new float[nc];
         double sumW = 0;
 
         nc = 0;
         for (Entry<Integer, FeatureComparisonStat> entry : index1StatMap.entrySet()) {
             FeatureComparisonStat fcs = entry.getValue();
-            int idx1 = fcs.getIndex1();
-            int idx2 = fcs.getIndex2();
-            PairInt p1 = fcs.getImg1Point();
-            PairInt p2 = fcs.getImg2Point();
-            matched1.add(p1.copy());
-            matched2.add(p2.copy());
+            stats.add(fcs);
             weights[nc] = fcs.getSumIntensitySqDiff();
             sumW += weights[nc];
             nc++;
@@ -474,18 +573,8 @@ public class FeatureMatcher {
             Arrays.fill(weights, a);
         }
 
-        int rangeRotation = Math.round(params.getStandardDeviations()[1]);
-        int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
-        int rangeTranslationY = Math.round(params.getStandardDeviations()[3]);
-
-        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
-            Math.round(params.getRotationInDegrees()),
-            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
-            rangeRotation, rangeTranslationX, rangeTranslationY,
-            matched1, matched2);
-
-        return cl;
-    }    
+        return stats;
+    }
     
     public static float[] calculateThetaDiff(List<FeatureComparisonStat> compStats) {
         
@@ -701,7 +790,7 @@ public class FeatureMatcher {
         }
     }
 
-    private CorrespondenceList useBipartiteMatching(float[][] cost,
+    private List<FeatureComparisonStat> useBipartiteMatchingAsStats(float[][] cost,
         Map<PairInt, FeatureComparisonStat> statMap, 
         TransformationParameters params) {
 
@@ -736,8 +825,7 @@ public class FeatureMatcher {
             }
         }
 
-        List<PairInt> matched1 = new ArrayList<PairInt>();
-        List<PairInt> matched2 = new ArrayList<PairInt>();
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
         
         int nc = 0;
 
@@ -759,30 +847,15 @@ public class FeatureMatcher {
                 continue;
             }
             
-            int x1 = stat.getImg1Point().getX();
-            int y1 = stat.getImg1Point().getY();
-            matched1.add(new PairInt(x1, y1));
-            int x2 = stat.getImg2Point().getX();
-            int y2 = stat.getImg2Point().getY();
-            matched2.add(new PairInt(x2, y2));
-
+            stats.add(stat);
+            
             nc++;
         }
 
-        if (matched1.size() < 7) {
+        if (stats.size() < 7) {
             return null;
         }
         
-        int rangeRotation = Math.round(params.getStandardDeviations()[1]);
-        int rangeTranslationX = Math.round(params.getStandardDeviations()[2]);
-        int rangeTranslationY = Math.round(params.getStandardDeviations()[3]);
-
-        CorrespondenceList cl = new CorrespondenceList(params.getScale(),
-            Math.round(params.getRotationInDegrees()),
-            Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
-            rangeRotation, rangeTranslationX, rangeTranslationY,
-            matched1, matched2);
-
-        return cl;
+        return stats;
     }
 }

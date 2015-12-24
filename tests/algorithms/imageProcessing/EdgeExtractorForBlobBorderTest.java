@@ -20,6 +20,7 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
     public EdgeExtractorForBlobBorderTest() {
     }
 
+    /*
     public void testExtractAndOrderTheBorder() {
 
         int width = 10;
@@ -60,6 +61,7 @@ public class EdgeExtractorForBlobBorderTest extends TestCase {
 
         assertTrue(expected.isEmpty());
     }
+    */
 
     public void testExtractAndOrderTheBorder0() {
 

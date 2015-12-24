@@ -174,27 +174,62 @@ public class BlobsAndPerimeters {
         SegmentedImageHelper imgHelper, SegmentationType type, 
         final List<Set<PairInt>> inOutBlobs, boolean useBinned,
         boolean discardWhenCavityIsSmallerThanBorder) {
-        
-        final List<PairIntArray> outputBounds = new ArrayList<PairIntArray>();
-        
+                
         Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());
         
         GreyscaleImage segImg = useBinned ?
             imgHelper.getBinnedSegmentationImage(type) :
             imgHelper.getSegmentationImage(type);
         
-        GreyscaleImage greyImg = useBinned ?
-            imgHelper.getGreyscaleImageBinned() :
-            imgHelper.getGreyscaleImage();
-        
         int width = segImg.getWidth();
         int height = segImg.getHeight();
+        
+        int binFactor = imgHelper.getBinFactor();
+        
+        final List<PairIntArray> outputBounds = extractBoundsOfBlobs( 
+            inOutBlobs, useBinned, discardWhenCavityIsSmallerThanBorder,
+            binFactor, width, height);
+        
+if (imgHelper.isInDebugMode()) {
+    Image img0 = ImageIOHelper.convertImage(segImg);
+    for (int i = 0; i < outputBounds.size(); ++i) {
+        PairIntArray pa = outputBounds.get(i);
+        for (int j = 0; j < pa.getN(); ++j) {
+            int x = pa.getX(j);
+            int y = pa.getY(j);
+            if (i == 0) {
+                if (j == 0 || (j == (pa.getN() - 1))) {
+                    ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
+                } else {
+                    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
+                }
+            } else if (i == 1) {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
+            } else {
+                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
+            }
+        }
+    }
+    long ts = MiscDebug.getCurrentTimeFormatted();
+    MiscDebug.writeImage(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts);
+}
+
+         return outputBounds;
+    }
+    
+    public static List<PairIntArray> extractBoundsOfBlobs( 
+        final List<Set<PairInt>> inOutBlobs, boolean useBinned,
+        boolean discardWhenCavityIsSmallerThanBorder,
+        int binFactor, int width, int height) {
+        
+        final List<PairIntArray> outputBounds = new ArrayList<PairIntArray>();
+        
+        Logger log = Logger.getLogger(BlobsAndPerimeters.class.getName());
         
         int numberLimit = defaultNumberLimit;
         if ((inOutBlobs.size()/3) > defaultNumberLimit) {
             numberLimit = 40;//30;
         } else {
-            int binFactor = imgHelper.getBinFactor();
             int limit = 1024/binFactor;
             if (width >= limit || height >= limit) {
                 numberLimit = 40;//30;
@@ -248,32 +283,8 @@ public class BlobsAndPerimeters {
         assert (inOutBlobs.size() == outputBounds.size());
         
         log.info("nBlobs after filtered to top =" + inOutBlobs.size());
-        
-if (imgHelper.isInDebugMode()) {
-    Image img0 = ImageIOHelper.convertImage(segImg);
-    for (int i = 0; i < outputBounds.size(); ++i) {
-        PairIntArray pa = outputBounds.get(i);
-        for (int j = 0; j < pa.getN(); ++j) {
-            int x = pa.getX(j);
-            int y = pa.getY(j);
-            if (i == 0) {
-                if (j == 0 || (j == (pa.getN() - 1))) {
-                    ImageIOHelper.addPointToImage(x, y, img0, 0, 200, 100, 0);
-                } else {
-                    ImageIOHelper.addPointToImage(x, y, img0, 0, 255, 0, 0);
-                }
-            } else if (i == 1) {
-                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 255, 0);
-            } else {
-                ImageIOHelper.addPointToImage(x, y, img0, 0, 0, 0, 255);
-            }
-        }
-    }
-    long ts = MiscDebug.getCurrentTimeFormatted();
-    MiscDebug.writeImage(img0, "blob_perimeters_" + imgHelper.getDebugTag() + "_" + ts);
-}
 
-         return outputBounds;
+        return outputBounds;
     }
 
     // worse case runtime is O(N_blob^2) to compare centroids and dimensions.
@@ -653,4 +664,33 @@ if (imgHelper.isInDebugMode()) {
         return sumFrac/(float)nFrac;
     }
 
+    public static List<Set<PairInt>> extractBlobsKeepBounded(GreyscaleImage img,
+        int smallestGroupLimit, int largestGroupLimit, int binFactor) {
+        
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(img);
+        
+        boolean use8Neighbors = true;
+        
+        List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
+        
+        List<HistogramHolder> histograms = new ArrayList<HistogramHolder>();
+        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {            
+            
+            Integer pixValue = entry.getKey();
+            
+            HistogramHolder hist = defaultExtractBlobs(img, pixValue.intValue(), 
+                smallestGroupLimit, largestGroupLimit, use8Neighbors, 
+                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, "");
+            
+            histograms.add(hist);
+        }
+        
+        //TODO: consider filtering outputExcludedBoundaryBlobs for size limits
+        //outputBlobs.addAll(outputExcludedBoundaryBlobs);
+        
+        return outputBlobs;
+    }
+    
 }

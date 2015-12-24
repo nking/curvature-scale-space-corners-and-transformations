@@ -36,7 +36,7 @@ public class EdgeExtractorForBlobBorder {
         debug = true;
     }
     
-    /**
+    /*
      * NOT READY FOR USE.
      * given the set of contiguous points, find the perimeter of them and order
      * the points into a closed single pixel width curve.  
@@ -46,7 +46,6 @@ public class EdgeExtractorForBlobBorder {
      * @param imageHeight
      * @param discardWhenCavityIsSmallerThanBorder
      * @return 
-     */
     PairIntArray extractAndOrderTheBorder(Set<PairInt> contiguousPoints,
         int imageWidth, int imageHeight, boolean discardWhenCavityIsSmallerThanBorder) {
         
@@ -105,6 +104,7 @@ MiscDebug.plotPoints(out, imageWidth, imageHeight, MiscDebug.getCurrentTimeForma
 }
         return out;
     }
+    */
     
     /**
      * given the set of contiguous points, find the perimeter of them and order

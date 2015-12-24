@@ -1370,6 +1370,7 @@ public class PerimeterFinderTest extends TestCase {
         assertTrue(idx == 0);
     }
     
+    /*
     public void testGetOrderedBorder() throws Exception {
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
@@ -1398,7 +1399,7 @@ public class PerimeterFinderTest extends TestCase {
         
         PairIntArray out = perimeterFinder.getOrderedBorderPixels(
             contiguousPoints, rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
-               
+             
         int rClr = 255;
         int gClr = 255;
         int bClr = 255;
@@ -1415,9 +1416,9 @@ public class PerimeterFinderTest extends TestCase {
         String outFilePath = dirPath + "/perimeter.png";
         
         ImageIOHelper.writeOutputImage(outFilePath, img);
-
+        
         System.out.println("border size=" + out.getN());
-    }
+    }*/
     
     public void testGetOrderedBorderE() throws Exception {
   

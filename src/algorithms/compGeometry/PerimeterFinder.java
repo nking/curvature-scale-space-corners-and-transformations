@@ -1469,7 +1469,7 @@ public class PerimeterFinder {
         return contigNonMembersConnectedToBounds;
     }
 
-    /** NOT READY FOR USE
+    /* NOT READY FOR USE
      * Walk the border to find the perimeter border pixels.
      * Note that rowColRanges has to represent the contiguous point set called points.
      * Note also that this method removes spurs (single pixel width paths
@@ -1490,7 +1490,6 @@ public class PerimeterFinder {
      * @param imageMaxRow the maximum row in the image from which the point
      * set was derived.
      * @return
-     */
     public PairIntArray getOrderedBorderPixels(Set<PairInt> points,
         Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
@@ -1499,77 +1498,72 @@ public class PerimeterFinder {
 
         BitVectorRepresentation bitVectorHelper = new BitVectorRepresentation(points);
 
-        /*
-        the algorithm uses rowColRanges to make a starting point and add it
-        to the path of steps.
+        //the algorithm uses rowColRanges to make a starting point and add it
+        //to the path of steps.
+        //
+        //for each currentStep, the state at the time of instantiation is stored
+        //in it's node.  the state is it's pixel location, a summary of all visited
+        //nodes at that moment, and the available moves for the pixel location.
+        //
+        //it's available moves are adjacent points that have at least one non-point
+        //neighbor (the goal is to find border points, so has to be on perimeter
+        //of points) and have not been visited yet.
+        //
+        //at each iteration, the currentStep is first checked against memo's list
+        //of known "non-solution states".  if that exists, it backtracks (without
+        //storing backtrack state again).
+        //If the currentStep was not found by memo, its nextSteps are examined to
+        //choose the next step if any is possible, else backtrack if none are
+        //possible. (Note that backtracking stores the entire path in memo to
+        //capture the state of nodes that led to "no solution" and then removes
+        //currentStep from previous step's nextSteps, removes currentStep from visited
+        //and border,
+        //then removes currentStep from path and sets currentStep to last node in path).
+        //(Note, that the responsibility of updating a step's nextNodes to remove
+        //a point should only occur at backtrack stage after memoization in order
+        //to allow correct recognition of state later to avoid "non-solution" states).
+        // 
+        //If a next step is possible (did not backtrack), a PathStep is created
+        //for the nextStep and it is added to the path, border, and visited.
+        //
+        //then iteration continues until an end state is reached.
+        //end state is currentStep is adjacent to starter point after have left
+        //the start region, or all points have been visited or all paths tried <--- review this
 
-        for each currentStep, the state at the time of instantiation is stored
-        in it's node.  the state is it's pixel location, a summary of all visited
-        nodes at that moment, and the available moves for the pixel location.
-
-        it's available moves are adjacent points that have at least one non-point
-        neighbor (the goal is to find border points, so has to be on perimeter
-        of points) and have not been visited yet.
-
-        at each iteration, the currentStep is first checked against memo's list
-        of known "non-solution states".  if that exists, it backtracks (without
-        storing backtrack state again).
-        If the currentStep was not found by memo, its nextSteps are examined to
-        choose the next step if any is possible, else backtrack if none are
-        possible. (Note that backtracking stores the entire path in memo to
-        capture the state of nodes that led to "no solution" and then removes
-        currentStep from previous step's nextSteps, removes currentStep from visited
-        and border,
-        then removes currentStep from path and sets currentStep to last node in path).
-        (Note, that the responsibility of updating a step's nextNodes to remove
-        a point should only occur at backtrack stage after memoization in order
-        to allow correct recognition of state later to avoid "non-solution" states).
-
-        If a next step is possible (did not backtrack), a PathStep is created
-        for the nextStep and it is added to the path, border, and visited.
-
-        then iteration continues until an end state is reached.
-        end state is currentStep is adjacent to starter point after have left
-        the start region, or all points have been visited or all paths tried <--- review this
-        */
-
-        /*
-        example for memoization and backtracking.
-
-        In this example, can see that when the path reaches node 20, needs to
-        backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
-
-        Can see that nodes 5 to 18 are outside of an interaction distance with
-        path nodes 1 through 4, so then, the paths from 5 to 18
-        can be saved and restored if needed later instead of re-computing them 
-        when '4' is next selected as the next node in a path.  the "next move" 
-        after '4' would skip forward to '18' in a choice of one of the saved 
-        paths from 5 to 18.
-
-        have not implemented that below, but have implemented memoization
-        for states that lead to no-solution, and avoidance of continuing on
-        those paths in the future.
-
-         see PerimeterFinderMemo.java, in progress...
-        
-        Reuse of successful paths is needed for this algorithm if the point sets
-        are larger than a couple dozen points, UNLESS the method is given 
-        points that are already an edge thinned to single pixel widths at all
-        locations, including the diagonals.
-
-        55
-        54                     11   12
-        53            9   10   14   13
-        52            8   15
-        51            7   16
-        50            6   17
-        49            5   20   18
-        48            4   19
-        47       1    2    3
-        46       0
-           125  126  127  128  129  130
-
-        */
+        //example for memoization and backtracking.
+        //
+        //In this example, can see that when the path reaches node 20, needs to
+        //backtrack to node 1 and choose 1->4 instead of 1->2->3->4.
+        //
+        //Can see that nodes 5 to 18 are outside of an interaction distance with
+        //path nodes 1 through 4, so then, the paths from 5 to 18
+        //can be saved and restored if needed later instead of re-computing them 
+        //when '4' is next selected as the next node in a path.  the "next move" 
+        //after '4' would skip forward to '18' in a choice of one of the saved 
+        //paths from 5 to 18.
+        //
+        //have not implemented that below, but have implemented memoization
+        //for states that lead to no-solution, and avoidance of continuing on
+        //those paths in the future.
+        //
+        //see PerimeterFinderMemo.java, in progress...
+        //
+        //Reuse of successful paths is needed for this algorithm if the point sets
+        //are larger than a couple dozen points, UNLESS the method is given 
+        //points that are already an edge thinned to single pixel widths at all
+        //locations, including the diagonals.
+        //
+        //55
+        //54                     11   12
+        //53            9   10   14   13
+        //52            8   15
+        //51            7   16
+        //50            6   17
+        //49            5   20   18
+        //48            4   19
+        //47       1    2    3
+        //46       0
+        //   125  126  127  128  129  130
 
         PairIntArray border = new PairIntArray();
 
@@ -1596,25 +1590,22 @@ public class PerimeterFinder {
         Set<PairInt> neighbors = new HashSet<PairInt>();
 
         // ------- initialize with step 0 ------
-        /*
-        step 0 should be the smallest row and col,
-        but because it may be a single pixel width spur (which will not end in
-        a closed curve), have to make sure that the added point has at least
-        2 neighbors, else discard it and continue forward until have found a
-        starter point with 2 neighbors.
-        */
+        //step 0 should be the smallest row and col,
+        //but because it may be a single pixel width spur (which will not end in
+        //a closed curve), have to make sure that the added point has at least
+        //2 neighbors, else discard it and continue forward until have found a
+        //starter point with 2 neighbors.
 
         int y0 = rowMinMax[0];
         List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(y0));
         PairInt colRange = colRanges.get(0);
         int x0 = colRange.getX();
 
-        /*
-        storing the state of choices in a linked list.
-           each choice holds the col,row of that pixel and the neighbor points
-              for paths not chosen.
-        backtracking removes last node and chooses from next to last node
-        */
+        //storing the state of choices in a linked list.
+        //   each choice holds the col,row of that pixel and the neighbor points
+        //      for paths not chosen.
+        //backtracking removes last node and chooses from next to last node
+        
         LinkedList<PathStep> path = new LinkedList<PathStep>();
         PathStep currentStep = null;
 
@@ -1674,15 +1665,14 @@ public class PerimeterFinder {
             }
         }
 
-        /* consider each move in all 8 directions in which move point is
-           !visited.constains(point) && points.contains(point)
-
-        if more than one choice, prefer choice with fewer neighbors.
-
-        if there are zero choices, remove the latest point from border and try again.
-
-        repeat while col,row is not adjacent to x0,y0 and visited.size < points.size. <=== reviewing this when testing
-        */
+        // consider each move in all 8 directions in which move point is
+        //   !visited.constains(point) && points.contains(point)
+        //
+        //if more than one choice, prefer choice with fewer neighbors.
+        //
+        //if there are zero choices, remove the latest point from border and try again.
+        //
+        //repeat while col,row is not adjacent to x0,y0 and visited.size < points.size. <=== reviewing this when testing
 
         boolean search = true;
 
@@ -1837,6 +1827,7 @@ public class PerimeterFinder {
 
         return border;
     }
+    */
 
     static class Gap {
 
