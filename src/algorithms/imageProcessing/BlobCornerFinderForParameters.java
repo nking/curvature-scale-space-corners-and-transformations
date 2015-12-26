@@ -275,7 +275,7 @@ public class BlobCornerFinderForParameters {
         
         for (int i = 0; i < n1; ++i) {
             for (int j = 0; j < n2; ++j) {
-                double dist = distance(xy1[i], xy2[i]);
+                double dist = distance(xy1[i], xy2[j]);
                 if (dist > transXYTol) {
                     continue;
                 }

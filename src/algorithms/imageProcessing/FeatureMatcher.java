@@ -264,6 +264,10 @@ public class FeatureMatcher {
             findSimilarFeaturesAsStats(gsImg1, cr1, gsImg2, cr2, params, 
                 scaleTol, rotationInRadiansTol, transXYTol, dither,
                 rotatedOffsets);
+        
+        if (stats == null) {
+            return null;
+        }
             
         List<PairInt> matched1 = new ArrayList<PairInt>();
         List<PairInt> matched2 = new ArrayList<PairInt>();
