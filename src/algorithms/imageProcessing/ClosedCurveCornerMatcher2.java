@@ -33,7 +33,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
 
     protected final int rotationTolerance = 20;
 
-    private static int tolerance = 3;//2;//4;
+    private static int tolerance = 3;//4;
 
     private static double maxDistance = Math.sqrt(2) * tolerance;
 
@@ -535,6 +535,9 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 
             List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
             int rotD = Math.round(params.getRotationInDegrees());
+            
+            // to avoid adding redundant best point pairs:
+            Map<PairInt, PairInt> statPairMap = new HashMap<PairInt, PairInt>();
 
             double sumSSD = 0;
             double sumDist = 0;
@@ -583,7 +586,12 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                     if (minStat == null) {
                         continue;
                     }
-
+                    
+                    PairInt existingP2 = statPairMap.get(minStat.getImg1Point());
+                    if (existingP2 != null && minStat.getImg2Point().equals(existingP2)) {
+                        continue;
+                    }
+                    
                     double diffX = xyTr[0] - minStatC2.getX()[minStatC2.getKMaxIdx()];
                     double diffY = xyTr[1] - minStatC2.getY()[minStatC2.getKMaxIdx()];
                     double dist = Math.sqrt(diffX*diffX + diffY*diffY);
@@ -592,6 +600,8 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                     sumSSD += minStat.getSumIntensitySqDiff();
                     nEval2++;
                     sumDist += dist;
+                    
+                    statPairMap.put(minStat.getImg1Point(), minStat.getImg2Point());
                 }
             }
 
@@ -626,7 +636,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             state = State.FAILED;
             return;
         }
-
+                
         solutionCost =  minCost;
         solutionStats = bestStats;
         state = State.SOLVED;

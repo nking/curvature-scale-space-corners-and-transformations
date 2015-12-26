@@ -543,19 +543,19 @@ if (imgHelper.isInDebugMode()) {
             Set<PairInt> points = Misc.convert(xy);
             // skip blobs that are on the image boundaries because they
             // are incomplete
-            if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+            /*if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
                 points, segImg.getWidth(), segImg.getHeight())) {
                 
                 outputExcludedBoundaryBlobs.add(points);
                 
-            } else {                
+            } else {*/            
                 if (xy.getN() < largestGroupLimit) {
                     
                     outputBlobs.add(points);
                 } else {
                     outputExcludedBlobs.add(points);
                 }
-            }
+            //}
         }
         
         // build histogram to help edit the size ranges that will be kept.

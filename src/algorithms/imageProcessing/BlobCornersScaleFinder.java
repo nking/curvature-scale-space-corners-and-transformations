@@ -1,9 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
-import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ScatterPointPlotterPNG;
@@ -13,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,28 +72,6 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             }
         }
 
-        MatchingSolution soln = match(img1Helper, img2Helper, 
-            features1, features2, img1, img2, corners1List, corners2List, 
-            useBinned1, useBinned2);
-
-        return soln;
-    }
-
-    private <T extends CornerRegion> MatchingSolution match(
-        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
-        IntensityFeatures features1, IntensityFeatures features2,
-        GreyscaleImage img1, GreyscaleImage img2,
-        List<List<T>> corners1List, List<List<T>> corners2List,
-        boolean useBinned1, boolean useBinned2) {
-        
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
-
-/*
-List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(
-    type1, useBinned1);
-List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
-    type2, useBinned2);
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -133,7 +114,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-*/
+
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),
@@ -174,11 +155,38 @@ for (int i = 0; i < im1ChkIdxs.length; ++i) {
 }
 System.out.println(sb.toString());
 */
+
+        MatchingSolution soln = match(img1Helper, img2Helper, 
+            features1, features2, img1, img2, corners1List, corners2List, 
+            useBinned1, useBinned2);
+
+        return soln;
+    }
+
+    private <T extends CornerRegion> MatchingSolution match(
+        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
+        IntensityFeatures features1, IntensityFeatures features2,
+        GreyscaleImage img1, GreyscaleImage img2,
+        List<List<T>> corners1List, List<List<T>> corners2List,
+        boolean useBinned1, boolean useBinned2) {
+        
+        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        
+        // filter these corners to remove featureless patches when possible
+        List<List<T>> filteredCorners1List = corners1List;
+            //filterByLowLimitError(corners1List,
+            //img1, features1, binFactor1, useBinned1, img1Helper.debugTag);
+        
+        List<List<T>> filteredCorners2List = corners2List;
+            //filterByLowLimitError(corners2List, 
+            //img2, features2, binFactor2, useBinned2, img2Helper.debugTag);
+
         Map<PairInt, TransformationParameters> trMap
             = new HashMap<PairInt, TransformationParameters>();
 
-        int n1 = corners1List.size();
-        int n2 = corners2List.size();
+        int n1 = filteredCorners1List.size();
+        int n2 = filteredCorners2List.size();
 
         if (n1 == 0 || n2 == 0) {
             return null;
@@ -197,12 +205,12 @@ System.out.println(sb.toString());
 
         for (int idx1 = 0; idx1 < n1; ++idx1) {
 
-            if (corners1List.get(idx1).size() < 3) {
+            List<T> corners1 = filteredCorners1List.get(idx1);
+            
+            if (corners1.size() < 3) {
                 continue;
             }
-
-            List<T> corners1 = corners1List.get(idx1);
-
+            
             /*
             first, see if nEval alone finds the true matches for curve to curve
             */
@@ -213,13 +221,13 @@ System.out.println(sb.toString());
 
             for (int idx2 = 0; idx2 < n2; ++idx2) {
 
-                if (corners2List.get(idx2).size() < 3) {
+                List<T> corners2 = filteredCorners2List.get(idx2);
+                
+                if (corners2.size() < 3) {
                     continue;
                 }
 
-                Integer index2 = Integer.valueOf(idx2);
-
-                List<T> corners2 = corners2List.get(idx2);
+                Integer index2 = Integer.valueOf(idx2);                
 
                 ClosedCurveCornerMatcher2<T> mapper =
                     new ClosedCurveCornerMatcher2<T>();
@@ -239,7 +247,16 @@ System.out.println(sb.toString());
                 if (nEval < 2) {
                     continue;
                 }
-
+                
+                /*
+                TODO: consider whether need to further use the SSD error as
+                a component in cost as the ability to distinguish a match for
+                the region.  A filter was applied above to remove the smallest
+                SSD errors because they are nearly featureless patches that 
+                might be more easily degenerate matches if similar regions are
+                present.
+                */
+                
                 if (cost < minCost) {
                     if ((nEval < 3) && (maxNEval > 4)) {
                         // do not accept if nEval is much lower than maxNEval
@@ -266,6 +283,18 @@ System.out.println(sb.toString());
                     maxNEvalParams);
             }
         }
+        
+// debug
+StringBuilder sb = new StringBuilder("trMap:\n");
+for (Entry<PairInt, TransformationParameters> entry : trMap.entrySet()) {
+    PairInt p = entry.getKey();
+    TransformationParameters params = entry.getValue();
+    String str = String.format("%.0f  (%d,%d)  s=%.1f tx=%d tx=%d\n",
+        params.getRotationInDegrees(), p.getX(), p.getY(),
+        params.getScale(), Math.round(params.getTranslationX()), Math.round(params.getTranslationY()));
+    sb.append(str);
+}
+log.info(sb.toString());
 
         int n2c = 0;
         for (List<T> corners2 : corners2List) {
@@ -338,6 +367,16 @@ System.out.println(sb.toString());
         List<TransformationParameters> parameterList =
             MiscStats.filterToSimilarParamSets2(paramsMap, binFactor1, binFactor2);
 
+// debug
+StringBuilder sb = new StringBuilder("consolidated params:\n");
+for (TransformationParameters params : parameterList) {
+    String str = String.format("%.0f  s=%.1f tx=%d tx=%d\n",
+        params.getRotationInDegrees(),
+        params.getScale(), Math.round(params.getTranslationX()), Math.round(params.getTranslationY()));
+    sb.append(str);
+}
+log.info(sb.toString());
+
         int n1 = 0;
         for (List<T> corners1 : corners1List) {
             n1 += corners1.size();
@@ -369,6 +408,8 @@ System.out.println(sb.toString());
         int nIter = 0;
 
         int deltaTol = 0;
+
+sb = new StringBuilder("EVAL:\n");
 
         while (nIter < 2) {
 
@@ -477,6 +518,12 @@ System.out.println(sb.toString());
                 
                 boolean t1 = (normalizedCost < bestCost);
                 
+String str = String.format("%.0f  s=%.1f tx=%d tx=%d  nEval=%d  normCost=%.3f\n",
+    params.getRotationInDegrees(),
+    params.getScale(), Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
+    nEval, normalizedCost);
+sb.append(str);                
+                
                 if (t1 && (nEval > 2)) {
 
                     TransformationParameters combinedParams =
@@ -521,6 +568,8 @@ System.out.println(sb.toString());
             nIter++;
         }
         
+log.info(sb.toString());
+        
         if ((bestParamsLg != null) && (bestParams != null)) {
             
             /*
@@ -532,8 +581,8 @@ System.out.println(sb.toString());
             and stdevs.
             */
             
-            if ((bestCost1NormLg < bestCost) && (bestStatsLg.size() > bestStats.size())) {            
-                  
+            if ((bestCost1NormLg < bestCost) && (bestStatsLg.size() > bestStats.size())) {
+                
                 // TODO: needs a careful look at the range of values in pixel descriptors
                 // and more testing to understand if this limit is always valid
                 int n = bestStatsLg.size();
@@ -591,7 +640,11 @@ System.out.println(sb.toString());
                     }
 
                     if (extractMoreFeatures) {
-
+String str = String.format("bestParamsLg = %.0f  s=%.1f tx=%d tx=%d\n",
+    bestParamsLg.getRotationInDegrees(),
+    bestParamsLg.getScale(), Math.round(bestParamsLg.getTranslationX()), Math.round(bestParamsLg.getTranslationY()));
+log.info(str);                        
+log.info("2nd segmentation for additional points");
                         ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
                         ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
                         ImageProcessor imageProcessor = new ImageProcessor();
@@ -670,6 +723,11 @@ System.out.println(sb.toString());
 
                             bestParamsLg = MiscStats.calculateTransformation(binFactor1, 
                                 binFactor2, bestStatsLg, new float[4]);
+
+str = String.format("bestParamsLg = %.0f  s=%.1f tx=%d tx=%d\n",
+    bestParamsLg.getRotationInDegrees(),
+    bestParamsLg.getScale(), Math.round(bestParamsLg.getTranslationX()), Math.round(bestParamsLg.getTranslationY()));
+log.info(str);
                         }
                     }
                 
@@ -696,6 +754,11 @@ System.out.println(sb.toString());
                     stat.setBinFactor2(binFactor2);
                 }
             }
+
+String str = String.format("bestParams = %.0f  s=%.1f tx=%d tx=%d\n",
+    bestParams.getRotationInDegrees(),
+    bestParams.getScale(), Math.round(bestParams.getTranslationX()), Math.round(bestParams.getTranslationY()));
+log.info(str);
 
             MatchingSolution soln = new MatchingSolution(bestParams, bestStats);
             return soln;
@@ -804,5 +867,110 @@ System.out.println(sb.toString());
                 }
             }
         }
+    }
+
+    /**
+     * calculate a low limit for the SSD errors from autocorrelation to use as
+     * a high pass filter for the corners.  Note that binFactor is not currently
+     * used but may be in the future, allowing adjusted descriptor sizes.
+     * @param <T>
+     * @param img
+     * @param features
+     * @param binFactor
+     * @param useBinned
+     * @return 
+     */
+    private <T extends CornerRegion> List<List<T>> filterByLowLimitError(
+        List<List<T>> cornerLists,
+        GreyscaleImage img, IntensityFeatures features, int binFactor, 
+        boolean useBinned, String debugTag) {
+        
+        /*
+        for normalized descriptors, using near 1.25%
+        math.pow((255.* 0.012), 2) * 36 = 340
+        math.pow((255.* 0.0125), 2) * 36 = 370
+        
+        for unnormalized, may need to determine it per image.  it should usually
+        be a higher limit.
+        10% is the very high limit of 23,409
+        */
+        
+ //histograms... lowLimit = 0.6 * 1st peak if y > 1 ?
+        float lowLimit = 100;
+        
+        List<List<T>> filteredCornerLists = new ArrayList<List<T>>();
+        
+        int nTot = 0;                
+        
+        List<List<Float>> ssdErrors = new ArrayList<List<Float>>();
+        for (int i = 0; i < cornerLists.size(); ++i) { 
+            
+            List<Float> normList = new ArrayList<Float>();
+            
+            List<T> corners = cornerLists.get(i);
+                        
+            for (T cr : corners) {
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                int rot0;
+                try {
+                    rot0 = features.calculate45DegreeOrientation(img, x, y);
+                    IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
+                    if (desc0 != null) {
+                        float e0 = desc0.sumSquaredError();
+                        normList.add(Float.valueOf(e0));
+                    }
+                } catch (CornerRegion.CornerRegionDegneracyException e) {
+                }
+                
+                nTot++;
+            }
+            ssdErrors.add(normList);
+        }
+        
+        float[] values = new float[nTot];
+        int count = 0;
+        for (List<Float> list : ssdErrors) {
+            for (Float err : list) {
+                values[count] = err.floatValue();
+                count++;
+            }
+        }
+        float binWidth = 150.f;
+        HistogramHolder hist = Histogram.createSimpleHistogram(
+            0.f, 4000.f, binWidth, values, 
+            Errors.populateYErrorsBySqrt(values));
+        try {
+            hist.plotHistogram("norm SSDErr " + debugTag, debugTag + "_norm_ssd_errors");           
+        } catch (IOException ex) {
+            Logger.getLogger(BlobCornersScaleFinder.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        for (int i = 0; i < cornerLists.size(); ++i) { 
+            
+            List<T> filtered = new ArrayList<T>();
+            
+            List<T> corners = cornerLists.get(i);
+                        
+            for (T cr : corners) {
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                int rot0;
+                try {
+                    rot0 = features.calculate45DegreeOrientation(img, x, y);
+                    IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
+                    if (desc0 != null) {
+                        float e0 = desc0.sumSquaredError();
+                        if (e0 > lowLimit) {
+                            filtered.add(cr);
+                            nTot++;
+                        }
+                    }
+                } catch (CornerRegion.CornerRegionDegneracyException e) {
+                }                
+            }
+            filteredCornerLists.add(filtered);
+        }
+        
+        return filteredCornerLists;
     }
 }

@@ -1,6 +1,11 @@
--- the 90 degree rotations need improvement
-   -- an error in use of angles somewhere that has no effect when
-      answer is rot=0, but has large effect when not?
+(1) correct problem w/ matching for test images of uw campus 
+    rotated 90 degrees
+    -- might need to use color descriptors
+    -- might be in part, featureless patches making false matches
+(2) remove rule for filtering out a blob that is touching the
+    image boundaries.
+    -- it's been partially removed but methods down stream of it
+       need to be adjusted to.
 
 -- consider making a wrapper for extreme case of projection having
    a scale of 1 in x axis but a very different scale in y axis due
@@ -147,9 +152,6 @@ design class to hold sampling
       http://coewww.rutgers.edu/riul/research/code/GPBM/index.html
 
    update the open agile story and close it
-
--- consider replacing some of the angle math for orientation w/
-   simple cross product of lines on both sides
 
 -- median absolute deviation
 6. Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. J. Am. Statistical Assoc. 1993;vol. 88(no. 424):1273–1283.
