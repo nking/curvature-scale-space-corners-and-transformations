@@ -29,15 +29,11 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
 
     private int nEval = -1;
 
-    protected final int dither = 3;//4;//3;
-
     protected final int rotationTolerance = 20;
 
     private static int tolerance = 3;//4;
 
     private static double maxDistance = Math.sqrt(2) * tolerance;
-
-    private static double ssdLimit = 1500;
 
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -50,8 +46,11 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
     }
 
     private State state = null;
+    
+    private final int dither;
 
-    public ClosedCurveCornerMatcher2() {
+    public ClosedCurveCornerMatcher2(int dither) {
+        this.dither = dither;
     }
 
     private void resetDefaults() {
@@ -119,7 +118,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
             cr2 = cornerRegion2;
             stat = compStat;
             dist = distance;
-            normalizedCost = (stat.getSumIntensitySqDiff()/ssdLimit)
+            normalizedCost = stat.getSumIntensitySqDiff()
                 * (dist/maxDistance);
         }
     }
@@ -251,9 +250,8 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                     features1, features2, region1, region2, dither,
                     img1, img2);
 
-                if ((compStat == null)
-                    || (compStat.getSumIntensitySqDiff() >= ssdLimit) ||
-                    (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())
+                if ((compStat == null) ||
+                    (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
                     ) {
                     continue;
                 }
@@ -571,15 +569,15 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                             features1, features2, pt1, corner2, dither2,
                             rotD, rotationTolerance, img1, img2);
                         
-                        if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
+                        if (compStat == null || 
+                            (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                            ) {
                             continue;
                         }
-                        if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
-                            if ((minStat == null)
-                                || (compStat.getSumIntensitySqDiff() < minStat.getSumIntensitySqDiff())) {
-                                minStat = compStat;
-                                minStatC2 = corner2;
-                            }
+                        if ((minStat == null)
+                            || (compStat.getSumIntensitySqDiff() < minStat.getSumIntensitySqDiff())) {
+                            minStat = compStat;
+                            minStatC2 = corner2;
                         }
                     }
 
@@ -618,7 +616,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             
             //float cost1 = 1.f/((float)nMaxMatchable*(float)nEval2);
             float cost1 = 1.f/(float)nEval2;
-            float cost2 = (float)(sumSSD/ssdLimit);
+            float cost2 = (float)sumSSD;
             float cost3 = (float)sumDist;
             float normCost = cost1 * cost2 * cost3;
         

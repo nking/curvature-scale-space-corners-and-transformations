@@ -98,8 +98,10 @@ public class BlobScaleFinderWrapperTest extends TestCase {
             
             settings.setDebugTag(fileName1Root);
             
+            int dither = 3;
+            
             BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(
-                img1Orig, img2Orig, settings, rOffsets);
+                img1Orig, img2Orig, settings, rOffsets, dither);
             
             TransformationParameters params = scaleFinder.calculateScale();
 

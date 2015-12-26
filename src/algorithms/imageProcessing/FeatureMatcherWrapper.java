@@ -25,6 +25,8 @@ public class FeatureMatcherWrapper {
     
     private final FeatureMatcherSettings settings;
     
+    protected final int dither = 3;//4;
+    
     private final ImageExt img1;
     private final ImageExt img2;
     
@@ -46,9 +48,7 @@ public class FeatureMatcherWrapper {
     private float scaleTol = 0.2f;
     
     private float rotationInRadiansTol = (float)(20. * Math.PI/180.);
-    
-    private double ssdLimit = 1500;
-    
+        
     //TODO: revise this...
     private int transXYTol = 20;
     
@@ -83,7 +83,7 @@ public class FeatureMatcherWrapper {
         img2 = image2;
         doDetermineScale = false;
         
-        this.settings = settings.copy();
+        this.settings = settings.copy();        
     }
     
     public CorrespondenceList matchFeatures() throws IOException, 
@@ -122,7 +122,7 @@ public class FeatureMatcherWrapper {
         NoSuchAlgorithmException {
                         
         BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(img1, 
-            img2, settings, rotatedOffsets);
+            img2, settings, rotatedOffsets, dither);
         
         params = scaleFinder.calculateScale();
         
@@ -141,6 +141,11 @@ public class FeatureMatcherWrapper {
         
         List<FeatureComparisonStat> stats = 
             scaleFinder.getSolution().getComparisonStats();
+        
+        if (stats == null || stats.isEmpty()) {
+            stateSet.add(State.COULD_NOT_DETERMINE_SCALE);
+            return null;
+        }
         
         CorrespondenceList cl = null;
         
@@ -167,9 +172,14 @@ public class FeatureMatcherWrapper {
             List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(stats);
 
             stats = revisedStats;
+            
+            TransformationParameters revisedParams = null;
+            
+            if (stats.size() > 0) {                
 
-            TransformationParameters revisedParams
-                = MiscStats.calculateTransformation(1, 1, stats, new float[4]);
+                revisedParams = MiscStats.calculateTransformation(1, 1, stats, 
+                    new float[4]);
+            }
 
             if (revisedParams != null) {
                 params = revisedParams;
@@ -366,13 +376,6 @@ public class FeatureMatcherWrapper {
             tolXY = transXYTol;
         }
         
-        int dither = 1;
-        
-        //TODO: revise this
-        if (tolXY > 3) {
-            dither = 4;
-        }
-        
         CorrespondenceList cl = featureMatcher.findSimilarFeatures(gsImg1,
             cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
             gsImg2,
@@ -425,9 +428,7 @@ public class FeatureMatcherWrapper {
         int rotD = Math.round(params.getRotationInDegrees());
         
         final int rotationTolerance = 20;
-        
-        final int dither = 4;
-        
+                
         for (int i = 0; i < stats.size(); ++i) {
             
             FeatureComparisonStat stat = stats.get(i);
@@ -445,13 +446,12 @@ public class FeatureMatcherWrapper {
                     x1, y1, x2, y2,
                     dither, rotD, rotationTolerance, gsImg1, gsImg2);
            
-            if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)) {
+            if (compStat == null || 
+                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
                 continue;
             }
 
-            if (compStat.getSumIntensitySqDiff() < compStat.getImg2PointIntensityErr()) {
-                revised.add(compStat);
-            }
+            revised.add(compStat);
         }
         
         return revised;

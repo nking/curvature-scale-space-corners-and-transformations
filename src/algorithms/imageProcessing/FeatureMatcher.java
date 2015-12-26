@@ -316,8 +316,7 @@ public class FeatureMatcher {
         GreyscaleImage gsImg1, CornerRegion[] cr1s, CornerRegion[] cr1Trs, 
         GreyscaleImage gsImg2, CornerRegion[] cr2s, 
         IntensityFeatures features1, IntensityFeatures features2, 
-        TransformationParameters parameters, int dither, 
-        int lowerLimitSSDError, int upperLimitSSD, int transXYTol,  
+        TransformationParameters parameters, int dither, int transXYTol,  
         RotatedOffsets rotatedOffsets) {
         
         //for each combination of cr1 and cr2, find best stat if any between filters
@@ -352,8 +351,7 @@ public class FeatureMatcher {
                     features1, features2, x1, y1, x2, y2, dither, gsImg1, gsImg2);
                 
                 if ((stat == null) || 
-                    (stat.getImg2PointIntensityErr() < lowerLimitSSDError) ||
-                    (stat.getSumIntensitySqDiff() > upperLimitSSD)) {
+                    (stat.getSumIntensitySqDiff() > stat.getImg2PointIntensityErr())) {
                     continue;
                 }
                 

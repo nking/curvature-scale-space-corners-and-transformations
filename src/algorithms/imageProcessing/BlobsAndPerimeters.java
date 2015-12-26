@@ -104,21 +104,6 @@ public class BlobsAndPerimeters {
 
         boolean redo = useBinned && (inclFrac < 1.0f);
         
-        //TODO: consider if know the segmentation produces a binary image, whether
-        // to restrict the blob extraction to either value 0 or non-zero depending
-        // on the histogram.  if the segmentation were the wavelet transform, the
-        // comparison of 0 to 0 or non-zero to non-zero seems to be a safe decision
-        // Looks like that decision would need to occur at a higher level where both
-        // images were being looked at.  it seems like such a decision could be the
-        // wrong thing if the overlap of common objects in an image were small
-        // and the objects outside of an intersection had the opposite 
-        // intensity pattern.
-        // so, this change to use one value only of the segmented image is 
-        // possibly wrong sometimes.  (e.g. the checkerboard test images).
-        // NOTE: the way to avoid having excluded blob comparisons is of course
-        // to include everything, but need to keep the number of comparisons 
-        // small when possible
-        
         // redo with default size limit and an algorithm to separate blobs connected
         // by only 1 pixel
         if (redo) {

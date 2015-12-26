@@ -75,6 +75,8 @@ public class BlobScaleFinderWrapper {
     private boolean solutionUsedBinned1 = false;
     private boolean solutionUsedBinned2 = false;
     
+    private final int dither;
+    
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -84,11 +86,15 @@ public class BlobScaleFinderWrapper {
      * image1 is transformed to using the resulting parameters,
      * @param settings
      * @param rotatedOffsets
+     * @param dither
      */
     public BlobScaleFinderWrapper(ImageExt img1, ImageExt img2, 
-        FeatureMatcherSettings settings, RotatedOffsets rotatedOffsets) {
+        FeatureMatcherSettings settings, RotatedOffsets rotatedOffsets,
+        int dither) {
 
         this.settings = settings.copy();
+        
+        this.dither = dither;
         
         if (settings.debug()) {
             
@@ -408,7 +414,7 @@ public class BlobScaleFinderWrapper {
         
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned, blobCornerHelper2, f2,
-                    segmentationType2, useBinned);
+                    segmentationType2, useBinned, dither);
 
                 n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, 
                     useBinned);

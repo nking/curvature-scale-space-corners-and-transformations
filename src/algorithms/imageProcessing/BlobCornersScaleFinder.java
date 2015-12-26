@@ -28,13 +28,11 @@ import java.util.logging.Logger;
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
-    private double ssdLimit = 1500;
-
     public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobCornerHelper img2Helper, IntensityFeatures features2,
-        SegmentationType type2, boolean useBinned2) {
+        SegmentationType type2, boolean useBinned2, int dither) {
 
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type1, useBinned1);
@@ -158,7 +156,7 @@ System.out.println(sb.toString());
 
         MatchingSolution soln = match(img1Helper, img2Helper, 
             features1, features2, img1, img2, corners1List, corners2List, 
-            useBinned1, useBinned2);
+            useBinned1, useBinned2, dither);
 
         return soln;
     }
@@ -168,7 +166,7 @@ System.out.println(sb.toString());
         IntensityFeatures features1, IntensityFeatures features2,
         GreyscaleImage img1, GreyscaleImage img2,
         List<List<T>> corners1List, List<List<T>> corners2List,
-        boolean useBinned1, boolean useBinned2) {
+        boolean useBinned1, boolean useBinned2, int dither) {
         
         int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
@@ -230,7 +228,7 @@ System.out.println(sb.toString());
                 Integer index2 = Integer.valueOf(idx2);                
 
                 ClosedCurveCornerMatcher2<T> mapper =
-                    new ClosedCurveCornerMatcher2<T>();
+                    new ClosedCurveCornerMatcher2<T>(dither);
 
                 boolean matched = mapper.matchCorners(features1, features2,
                     corners1, corners2, img1, img2, binFactor1, binFactor2);
@@ -318,7 +316,7 @@ log.info(sb.toString());
 
         MatchingSolution soln = evaluateForBestUsingFeatures(
             img1Helper, img2Helper, features1, features2, img1, img2,
-            trMap, corners1List, cr2List, np2, binFactor1, binFactor2);
+            trMap, corners1List, cr2List, np2, binFactor1, binFactor2, dither);
 
         return soln;
     }
@@ -349,7 +347,7 @@ log.info(sb.toString());
         GreyscaleImage img1, GreyscaleImage img2,
         Map<PairInt, TransformationParameters> paramsMap,
         List<List<T>> corners1List, List<T> corners2List,
-        NearestPoints np2, int binFactor1, int binFactor2) {
+        NearestPoints np2, int binFactor1, int binFactor2, int dither) {
 
         int tolTransXY = 5;//10;
 
@@ -388,8 +386,6 @@ log.info(sb.toString());
         Transformer transformer = new Transformer();
 
         final int rotationTolerance = 20;
-
-        final int dither = 4;
 
         TransformationParameters bestParams = null;
         float bestCost = Float.MAX_VALUE;
@@ -467,9 +463,8 @@ sb = new StringBuilder("EVAL:\n");
                                 features1, features2, cr, corner2, dither2,
                                 rotD, rotationTolerance, img1, img2);
                             
-                            if (compStat == null || (compStat.getSumIntensitySqDiff() >= ssdLimit)
-                                ||
-                                (compStat.getSumIntensitySqDiff() >= compStat.getImg2PointIntensityErr())) {
+                            if ((compStat == null) ||
+                                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
                                 continue;
                             }
 
@@ -510,7 +505,7 @@ sb = new StringBuilder("EVAL:\n");
                 sumDist /= (double)nEval;
 
                 float cost1Norm = 1.f/(float)nEval;
-                float cost2Norm = (float)(sumSSD/ssdLimit);
+                float cost2Norm = (float)sumSSD;
                 float cost3Norm = (float)sumDist;
                 float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
                
@@ -896,7 +891,7 @@ log.info(str);
         */
         
  //histograms... lowLimit = 0.6 * 1st peak if y > 1 ?
-        float lowLimit = 100;
+        float lowLimit = 0;
         
         List<List<T>> filteredCornerLists = new ArrayList<List<T>>();
         
@@ -918,6 +913,8 @@ log.info(str);
                     IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
                     if (desc0 != null) {
                         float e0 = desc0.sumSquaredError();
+String str = String.format("(%d,%d) ssdErr=%.1f", x, y, e0);
+log.info(str);
                         normList.add(Float.valueOf(e0));
                     }
                 } catch (CornerRegion.CornerRegionDegneracyException e) {

@@ -16,7 +16,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
     public FeatureMatcherWrapperTest() {
     }
     
-    public void test0() throws Exception {
+    public void est0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -60,7 +60,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 default: {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
-                    settings.setUseNormalizedFeatures(false);
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
             }
@@ -68,7 +68,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         }
     }
     
-    public void estRot90() throws Exception {
+    public void testRot90() throws Exception {
                 
         String fileName1, fileName2;
         

@@ -45,9 +45,11 @@ public class BlobScaleFindersTest extends TestCase {
         IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
         IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
 
+        int dither = 3;
+        
         MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1, type, useBinned,
-            bch2, features2, type, useBinned);
+            bch2, features2, type, useBinned, dither);
         
         assertNotNull(soln);
         
@@ -91,9 +93,11 @@ public class BlobScaleFindersTest extends TestCase {
         IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
         IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
 
+        int dither = 3;
+        
         MatchingSolution soln = bsFinder.solveForScale(
             bch1, features1, type, useBinned,
-            bch2, features2, type, useBinned);
+            bch2, features2, type, useBinned, dither);
 
         assertNotNull(soln);
         

@@ -92,8 +92,6 @@ public class BlobCornerFinderForParameters {
         
         int dither = 1;
         double solutionScale = parameters.getScale();
-        int lowerLimitSSDError = 200;
-        int upperLimitSSD = 1500;
         
         for (int i = 0; i < matchedIndexes1.size(); ++i) {
             
@@ -109,8 +107,7 @@ public class BlobCornerFinderForParameters {
             List<FeatureComparisonStat> stats = 
                 featureMatcher.findSimilarFeaturesAsStats(
                 img1, cr1, cr1Tr, img2, cr2, features1, features2, 
-                parameters, dither, lowerLimitSSDError, upperLimitSSD, transXYTol,  
-                rotatedOffsets);
+                parameters, dither, transXYTol, rotatedOffsets);
             
             if (stats.isEmpty()) {
                 continue;
