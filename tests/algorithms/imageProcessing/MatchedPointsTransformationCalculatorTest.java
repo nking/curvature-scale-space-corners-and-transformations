@@ -260,4 +260,30 @@ public class MatchedPointsTransformationCalculatorTest extends TestCase {
         //assertTrue(diffTransY == 0);
     }
     
+    public void test2() throws Exception {
+        
+        PairInt c1Pt1 = new PairInt(47, 202);
+        PairInt c1Pt2 = new PairInt(127, 157);
+        
+        PairInt c2Pt1 = new PairInt(164, 51);
+        PairInt c2Pt2 = new PairInt(212, 128);
+        
+        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+
+        TransformationParameters result = tc.calulateEuclidean(
+            c1Pt1.getX(), c1Pt1.getY(), c1Pt2.getX(), c1Pt2.getY(),
+            c2Pt1.getX(), c2Pt1.getY(), c2Pt2.getX(), c2Pt2.getY(), 0, 0);
+
+        float diffRotDeg = AngleUtil.getAngleDifference(
+           result.getRotationInDegrees(), 360 - 90);
+        float diffScale = Math.abs(result.getScale() - 1);
+        float diffTransX = Math.abs(result.getTranslationX() - 361);
+        float diffTransY = Math.abs(result.getTranslationY() - -4.4f);
+
+        assertTrue(diffRotDeg < 10);
+        assertTrue(diffScale < 0.05);
+        assertTrue(diffTransX < 5);
+        assertTrue(diffTransY < 5);
+        
+    }
 }

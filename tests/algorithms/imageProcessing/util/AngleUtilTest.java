@@ -121,6 +121,47 @@ public class AngleUtilTest extends TestCase {
         assertTrue(Math.abs(result - expected) < 0.1);
     }
     
+    public void testPolarAngleCW() throws Exception {
+        
+         /*
+                  +Y
+                 270
+        QIII      |       QIV
+                  |     
+                  |
+     180-------------------- +X  0, 360
+                  |   
+                  |      
+         QII      |       QI 
+                  90
+        */
+        double x, y, expected, result;
+        
+        x = 10;
+        y = 10;
+        expected = 315.*Math.PI/180.;
+        result = AngleUtil.polarAngleCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = -10;
+        y = 10;
+        expected = (45. + 180.)*Math.PI/180.;
+        result = AngleUtil.polarAngleCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = -10;
+        y = -10;
+        expected = (45. + 90.)*Math.PI/180.;
+        result = AngleUtil.polarAngleCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        x = 10;
+        y = -10;
+        expected = 45.*Math.PI/180.;
+        result = AngleUtil.polarAngleCW(x, y);
+        assertTrue(Math.abs(result - expected) < 0.1);
+    }
+    
     public void testAngleAddition() throws Exception {
         
         boolean useRadians = false;

@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -339,7 +338,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         theta *= -1;
             
         if (theta < 0) {
-            theta = 2 * Math.PI + theta;
+            theta += (2 * Math.PI);
         }
 
         double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
@@ -362,10 +361,10 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         double mc = Math.cos(theta);
         double ms = Math.sin(theta);
 
-        double tr1X1 = centroidX1*scale + ((set1X1 - centroidX1) * scale*mc)
+        double tr1X1 = centroidX1*scale + ((set1X1 - centroidX1) * scale * mc)
             + ((set1Y1 - centroidY1) *scale*ms);
 
-        double tr1Y1 = centroidY1*scale + (-(set1X1 - centroidX1) *scale*ms)
+        double tr1Y1 = centroidY1*scale + (-(set1X1 - centroidX1) * scale * ms)
             + ((set1Y1 - centroidY1) *scale*mc);
 
         double tr1X2 = centroidX1*scale + ((set1X2 - centroidX1) * scale*mc)
