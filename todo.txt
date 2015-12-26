@@ -1,5 +1,17 @@
 (1) correct problem w/ matching for test images of uw campus 
     rotated 90 degrees
+    -- in ClosedCurveCornerMatcher2, consider reducing dither to 1 or 2
+    to avoid letting the search wander too far and finding featureless
+    patches which might match better.
+    (note that that change should not be rotation dependent, so the
+    difference in matching between the 2 uw campus test images w/ no
+    rotation then w/ rotation of 90 degrees is not found yet).
+    -- in pursuit of this, have realized that the SSD error upper limit
+       should not be used because the patches w/ larger autocorrelation
+       can have more distinctive (less degenerative) matches.
+       -- changes in this may require changes in the cost function and re-testing
+    -- look at the SSD errors for curve corners in detail.  
+          are the corners w/ errors > 1500 good to have kept instead of removing?
     -- might need to use color descriptors
     -- might be in part, featureless patches making false matches
 (2) remove rule for filtering out a blob that is touching the
