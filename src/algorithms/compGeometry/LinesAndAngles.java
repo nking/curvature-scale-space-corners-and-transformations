@@ -1,6 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.util.PairInt;
 
 /**
  * adapted from 
@@ -41,6 +42,36 @@ public class LinesAndAngles {
     public static double direction(float x1, float y1, float x2, float y2, 
         float x3, float y3) {
 
+        double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));
+        
+        return d;
+    }
+    
+    /**
+     * calculate the direction of change for the 2 vectors 
+     * P1:P2 to P1:P3  returns negative when direction is clockwise,
+     * else if zero the vectors are collinear, else if positive the
+     * directions is counterclockwise.
+     * 
+     *           p2
+     *  p3      / 
+     *   \    /
+     *     p1
+     * 
+     * @param p1
+     * @param p2
+     * @param p3
+     * @return 
+     */
+    public static <T extends PairInt>  double direction(T p1, T p2, T p3) {
+        
+        int x1 = p1.getX();
+        int y1 = p1.getY();
+        int x2 = p2.getX();
+        int y2 = p2.getY();
+        int x3 = p3.getX();
+        int y3 = p3.getY();
+        
         double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));
         
         return d;

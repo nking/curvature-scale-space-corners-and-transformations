@@ -1,9 +1,10 @@
 package algorithms.imageProcessing;
 
-import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.convexHull.GrahamScanPairInt;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.misc.AverageUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
@@ -103,6 +104,79 @@ public class MiscellaneousCurveHelper {
 
         return ((n > 2) && (nNeg >= nPos)) || (nNeg > nPos);
      }
+    
+    /**
+     * determine whether the closed curve points are ordered in a counter clockwise
+     * manner by first computing the convex hull then
+     * calculating the cross product between adjacent edges in sequence around
+     * the polygon to determine if there are fewer that are positive (CCW)
+     * than negative (CW).
+     * The given closedCurve cannot intersect itself or have holes in it.
+     * NOTE: the answer returns true if the points are ordered in CW manner, but
+     * if one needs the answer w.r.t. viewing an image which has y increasing
+     * downward, need the opposite of the return here.
+     *
+     * @param closedCurve
+     * @return
+     */
+    public boolean curveIsOrderedClockwise2(PairIntArray closedCurve) {
+
+        if (closedCurve.getN() < 2) {
+            return false;
+        } else if (closedCurve.getN() < 4) {
+            return curveIsOrderedClockwise(closedCurve);
+        }
+        
+        int n = closedCurve.getN();
+        
+        PairIntWithIndex0[] p = new PairIntWithIndex0[n];
+        for (int i = 0; i < n; ++i) {
+            p[i] = new PairIntWithIndex0(closedCurve.getX(i), closedCurve.getY(i),  i);
+        }
+        
+        GrahamScanPairInt<PairIntWithIndex0> scan = new GrahamScanPairInt();
+        try {
+            scan.computeHull(p);
+            
+            // hull returns points in clockwise order
+            
+            n = scan.getHull().size() - 1;
+            //PairIntArray hull = new PairIntArray(n);
+            //List<Integer> hullCurveIndexes = new ArrayList<Integer>();
+            //int[] deltaIndexes = new int[n];
+            
+            // nPos or nNeg might be 1 and then other n-2 if there is wrap-around
+            int nNeg = 0;
+            int nPos = 0;
+            for (int i = 0; i < n; ++i) {
+                
+                PairIntWithIndex0 p0 = scan.getHull().get(i);
+                
+                //hull.add(Math.round(p0.getX()), Math.round(p0.getY()));
+                //hullCurveIndexes.add(Integer.valueOf(p0.getPixIndex()));
+                
+                // for CW input, expect these to be + numbers
+                int deltaIndex = scan.getHull().get(i + 1).getPixIndex() - p0.getPixIndex();
+                if (deltaIndex > 0) {
+                    nPos++;
+                } else {
+                    nNeg++;
+                }
+            }
+            
+            //boolean isCW = curveIsOrderedClockwise(hull);
+            //assert(isCW);
+            
+            if (nPos > nNeg) {
+                return true;
+            }
+            
+            return false;
+            
+        } catch (GrahamScanTooFewPointsException ex) {
+            return curveIsOrderedClockwise(closedCurve);
+        }
+    }
 
     public void additionalThinning45DegreeEdges(
         GreyscaleImage theta, GreyscaleImage input) {

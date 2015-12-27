@@ -1,5 +1,7 @@
 package algorithms;
 
+import algorithms.util.PairInt;
+
 /**
  *
  * @author nichole
@@ -553,6 +555,32 @@ public class QuickSort {
         sortBy1stThen2nd(a, b, 0, a.length - 1);
     }
     
+    public static <T extends PairInt> void sortByYThenX(T[] a) {
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        sortByYThenX(a, 0, a.length - 1);
+    }
+    
+    public static <T extends PairInt> void sortByYThenX(T[] a, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+            int idxMid = partitionByYThenX(a, idxLo, idxHi);
+            sortByYThenX(a, idxLo, idxMid - 1);
+            sortByYThenX(a, idxMid + 1, idxHi);
+        }
+    }
+    
     public static void sortBy1stThen2nd(float[] a, float[] b, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -738,6 +766,35 @@ public class QuickSort {
         float swap2 = b[store];
         b[store] = b[idxHi];
         b[idxHi] = swap2;
+        return store;
+    }
+    
+    private static <T extends PairInt> int partitionByYThenX(T[] a, int idxLo, 
+        int idxHi) {
+     
+        T x = a[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[i].getY() < x.getY()) {
+                doSwap = true;
+            } else if (a[i].getY() == x.getY()) {
+                if (a[i].getX() < x.getX()) {
+                    doSwap = true;
+                }
+            }
+            if (doSwap) {
+                store++;
+                T swap = a[store];
+                a[store] = a[i];
+                a[i] = swap;
+            }
+        }
+        store++;
+        T swap = a[store];
+        a[store] = a[idxHi];
+        a[idxHi] = swap;
         return store;
     }
     

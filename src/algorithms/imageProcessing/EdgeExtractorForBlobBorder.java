@@ -449,14 +449,7 @@ int z = 1;
                 }
             }
         }
-        
-        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
-            boolean isCW = curveHelper.curveIsOrderedClockwise(out);
-            if (isCW) {
-                out.reverse();
-            }
-        }
-        
+       
         // add the shifts back
         //PairIntArray out = output.get(0);
         
@@ -466,6 +459,13 @@ int z = 1;
             out.set(i, x, y);
         }
 
+        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+            boolean isCW = curveHelper.curveIsOrderedClockwise2(out);
+            if (isCW) {
+                out.reverse();
+            }
+        }
+        
 if (debug) {
 Image img3 = new Image(imageWidth, imageHeight);
 for (int j = 0; j < out.getN(); ++j) {

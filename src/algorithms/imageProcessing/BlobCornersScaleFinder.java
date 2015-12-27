@@ -205,7 +205,7 @@ System.out.println(sb.toString());
 
             List<T> corners1 = filteredCorners1List.get(idx1);
             
-            if (corners1.size() < 3) {
+            if (corners1.size() < 2) {
                 continue;
             }
             
@@ -221,7 +221,7 @@ System.out.println(sb.toString());
 
                 List<T> corners2 = filteredCorners2List.get(idx2);
                 
-                if (corners2.size() < 3) {
+                if (corners2.size() < 2) {
                     continue;
                 }
 
