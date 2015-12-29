@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.compGeometry.RotatedOffsets;
-import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;

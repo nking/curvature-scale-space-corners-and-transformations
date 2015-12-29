@@ -143,6 +143,38 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         isCW = helper.curveIsOrderedClockwise(cwCurve);
         
         assertFalse(isCW);
+     
+        cwCurve = new PairIntArray();
+        cwCurve.add(xc + 4, yc);
+        cwCurve.add(xc + 3, yc - 1);
+        cwCurve.add(xc, yc - 2);
+        cwCurve.add(xc - 3, yc - 2);
+        cwCurve.add(xc - 2, yc - 1);
+        cwCurve.add(xc - 3, yc);
+        cwCurve.add(xc - 1, yc + 3);
+        cwCurve.add(xc, yc + 4);
+        cwCurve.add(xc + 2, yc + 2);
+        
+        isCW = helper.curveIsOrderedClockwise2(cwCurve);
+        
+        assertTrue(isCW);
+        
+        cwCurve = new PairIntArray();
+        cwCurve.add(xc + 4, yc);
+        cwCurve.add(xc + 3, yc - 1);
+        cwCurve.add(xc, yc - 2);
+        cwCurve.add(xc - 3, yc - 2);
+        cwCurve.add(xc - 2, yc - 1);
+        cwCurve.add(xc - 3, yc);
+        cwCurve.add(xc - 1, yc + 3);
+        cwCurve.add(xc, yc + 4);
+        cwCurve.add(xc + 2, yc + 2);
+        
+        cwCurve.reverse();
+        
+        isCW = helper.curveIsOrderedClockwise2(cwCurve);
+        
+        assertFalse(isCW);
     }
    
     public void testCorrelation() {

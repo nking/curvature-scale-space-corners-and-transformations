@@ -87,6 +87,12 @@ public class BlobsAndPerimeters {
             
             Integer pixValue = entry.getKey();
             
+//NOTE: temporarily hard coding an assumption that the segmentation is the
+// one using a trous wavelet
+            if (pixValue < 1) {
+                continue;
+            }
+            
             HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(), 
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
                 outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
@@ -220,6 +226,9 @@ if (imgHelper.isInDebugMode()) {
                 numberLimit = 40;//30;
             }
         }
+                
+//NOTE: temporarily changing to use all blobs        
+        numberLimit = inOutBlobs.size();
        
         // sort by descending size
         int[] indexes = new int[inOutBlobs.size()];
@@ -522,25 +531,28 @@ if (imgHelper.isInDebugMode()) {
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
+//NOTE: temporarily removing upper limits to blob sizes while changing the
+// model for points of interest.
+        
         int nGroups = finder.getNumberOfGroups();
         for (int i = 0; i < nGroups; ++i) {
             PairIntArray xy = finder.getXY(i);
             Set<PairInt> points = Misc.convert(xy);
             // skip blobs that are on the image boundaries because they
             // are incomplete
-            if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+            /*if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
                 points, segImg.getWidth(), segImg.getHeight())) {
                 
                 outputExcludedBoundaryBlobs.add(points);
                 
-            } else {            
-                if (xy.getN() < largestGroupLimit) {
-                    
+            } else {*/          
+            //    if (xy.getN() < largestGroupLimit) {
+
                     outputBlobs.add(points);
-                } else {
-                    outputExcludedBlobs.add(points);
-                }
-            }
+            //    } else {
+            //        outputExcludedBlobs.add(points);
+            //    }
+            //}
         }
         
         // build histogram to help edit the size ranges that will be kept.

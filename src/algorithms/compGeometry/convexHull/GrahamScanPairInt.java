@@ -47,6 +47,7 @@ public class GrahamScanPairInt<T extends PairInt> {
      * @param input
      * @throws GrahamScanTooFewPointsException 
      */
+    @SuppressWarnings({"unchecked"})
     public void computeHull(T[] input) throws GrahamScanTooFewPointsException {
 
         if (input == null) {
@@ -95,7 +96,7 @@ public class GrahamScanPairInt<T extends PairInt> {
         
         points = new Stack<T>();
         
-        points.push((T)input[p0Index].copy());
+        points.push((T)(input[p0Index].copy()));
         points.push((T)input[1].copy());
         points.push((T)input[2].copy());
         

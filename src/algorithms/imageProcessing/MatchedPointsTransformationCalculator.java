@@ -345,8 +345,13 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
 
         double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));
 
+        if (sep1 == 0 || sep2 == 0) {
+            // the 2 points in set1 or set2 are the same point
+            return null;
+        }
+        
         double scale = sep2/sep1;
-
+        
         /*
         estimate translation:
 

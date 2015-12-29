@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -16,7 +17,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
     public FeatureMatcherWrapperTest() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -144,6 +145,32 @@ public class FeatureMatcherWrapperTest extends TestCase {
             Transformer transformer = new Transformer();
             img1 = (ImageExt) transformer.applyTransformation(img1,
                 params90, img1.getHeight(), img1.getWidth());
+            
+            /*
+            // reverse the intensities
+            for (int i = 0; i < img1.getNPixels(); ++i) {
+                int r = img1.getR(i);
+                int g = img1.getG(i);
+                int b = img1.getB(i);
+                img1.setRGB(i, 255-r, 255-g, 255-b);
+            }
+            */
+            
+            /*
+            MatchedPointsTransformationCalculator tc = 
+                new MatchedPointsTransformationCalculator();        
+            
+            TransformationParameters revParams = tc.swapReferenceFrames(params90);
+
+            transformer.transformToOrigin(0, 0, revParams);
+            
+            revParams.setTranslationX(revParams.getTranslationX() + 254);
+
+            ImageExt img1RevTr = img1.copyToImageExt();
+            img1RevTr = (ImageExt) transformer.applyTransformation(img1RevTr,
+                revParams, img1RevTr.getHeight(), img1RevTr.getWidth());
+            MiscDebug.writeImage(img1RevTr, "rot90_rev_trans");
+            */
             int z = 1;
         }
         

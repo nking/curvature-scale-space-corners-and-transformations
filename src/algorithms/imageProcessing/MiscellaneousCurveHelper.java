@@ -104,7 +104,7 @@ public class MiscellaneousCurveHelper {
 
         return ((n > 2) && (nNeg >= nPos)) || (nNeg > nPos);
      }
-    
+
     /**
      * determine whether the closed curve points are ordered in a counter clockwise
      * manner by first computing the convex hull then
@@ -134,7 +134,7 @@ public class MiscellaneousCurveHelper {
             p[i] = new PairIntWithIndex0(closedCurve.getX(i), closedCurve.getY(i),  i);
         }
         
-        GrahamScanPairInt<PairIntWithIndex0> scan = new GrahamScanPairInt();
+        GrahamScanPairInt<PairIntWithIndex0> scan = new GrahamScanPairInt<PairIntWithIndex0>();
         try {
             scan.computeHull(p);
             

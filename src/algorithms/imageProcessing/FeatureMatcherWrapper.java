@@ -169,7 +169,8 @@ public class FeatureMatcherWrapper {
 
             //stats need to be revised for the location in the full size
             //image in order to be usable for correspondence
-            List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(stats);
+            List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(
+                stats, binFactor1, binFactor2);
 
             stats = revisedStats;
             
@@ -413,17 +414,21 @@ public class FeatureMatcherWrapper {
     }
     
     private List<FeatureComparisonStat> reviseStatsForFullImages(
-        List<FeatureComparisonStat> stats) {
+        List<FeatureComparisonStat> stats, int prevBinFactor1, int prevBinFactor2) {
         
         List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
-        
-        IntensityFeatures features1 = new IntensityFeatures(5, 
+                
+        IntensityFeatures2 features1 = new IntensityFeatures2(5, 
             settings.useNormalizedFeatures(), rotatedOffsets);
+        features1.calculateGradientWithGreyscale(gsImg1);
 
-        IntensityFeatures features2 = new IntensityFeatures(5, 
+        IntensityFeatures2 features2 = new IntensityFeatures2(5, 
             settings.useNormalizedFeatures(), rotatedOffsets);
+        features2.calculateGradientWithGreyscale(gsImg2);
+
+        int dither2 = 1 * (Math.max(prevBinFactor1, prevBinFactor2));
         
         int rotD = Math.round(params.getRotationInDegrees());
         
@@ -444,7 +449,7 @@ public class FeatureMatcherWrapper {
                 featureMatcher.ditherAndRotateForBestLocation2(
                     features1, features2, 
                     x1, y1, x2, y2,
-                    dither, rotD, rotationTolerance, gsImg1, gsImg2);
+                    dither2, rotD, rotationTolerance, gsImg1, gsImg2);
            
             if (compStat == null || 
                 (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
@@ -513,6 +518,8 @@ public class FeatureMatcherWrapper {
     }
     
     private void printMatches(Collection<PairInt> m1, Collection<PairInt> m2) {
+    
+        log.info("writing " + m1.size() + " matches to images");
         
         int ts = MiscDebug.getCurrentTimeFormatted();
         GreyscaleImage gsImg1 = img1.copyToGreyscale();
