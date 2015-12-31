@@ -483,54 +483,16 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             rotation = theta_image1 - theta_image2 = 25 degrees
         */
             
-        /*
-        choosing pairs of points by optimal pairing for maximum distance.
-        since hungarian algorithm is set for min cost,
-            using 1/distance, and when i1==i2, using max value.
-        */
-        float[][] invDist = new float[matchedXY1.getN()][matchedXY1.getN()];
-
-        for (int i1 = 0; i1 < matchedXY1.getN(); ++i1) {
-            int x1 = matchedXY1.getX(i1);
-            int y1 = matchedXY1.getY(i1);
-            invDist[i1] = new float[matchedXY1.getN()];
-            for (int i2 = 0; i2 < matchedXY1.getN(); ++i2) {
-                if (i1 == i2) {
-                    invDist[i1][i2] = Float.MAX_VALUE;
-                    continue;
-                }
-                int x2 = matchedXY1.getX(i2);
-                int y2 = matchedXY1.getY(i2);
-                int diffX = x1 - x2;
-                int diffY = y1 - y2;
-                double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-                invDist[i1][i2] = (float)(1./dist);
-            }
-        }
-
-        //TODO: need a version of this method that uses matching < O(N^3)
-    
-        HungarianAlgorithm b = new HungarianAlgorithm();
-        int[][] match = b.computeAssignments(invDist);
+        //choosing pairs of points by pairing for maximum distance.
         
         Set<PairInt> pairIndexes = new HashSet<PairInt>();
-        for (int i = 0; i < match.length; i++) {
-
-            int idx1 = match[i][0];
-            int idx2 = match[i][1];
-            if (idx1 == -1 || idx2 == -1) {
-                continue;
-            }
-            
-            if (idx2 < idx1) {
-                int swap = idx1;
-                idx1 = idx2;
-                idx2 = swap;
-            }
-            
-            pairIndexes.add(new PairInt(idx1, idx2));
+        
+        if (matchedXY1.getN() < 100) {
+            useBipartiteMatching(matchedXY1, pairIndexes);
+        } else {
+            useGreedyMatching(matchedXY1, pairIndexes);
         }
-
+        
         AngleUtil angleUtil = new AngleUtil();
 
         float totW = 0;
@@ -1088,5 +1050,84 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         }
         
         return remove;
+    }
+
+    private void useBipartiteMatching(PairIntArray matchedXY1, 
+        Set<PairInt> pairIndexes) {
+        
+        float[][] invDist = new float[matchedXY1.getN()][matchedXY1.getN()];
+
+        for (int i1 = 0; i1 < matchedXY1.getN(); ++i1) {
+            int x1 = matchedXY1.getX(i1);
+            int y1 = matchedXY1.getY(i1);
+            invDist[i1] = new float[matchedXY1.getN()];
+            for (int i2 = 0; i2 < matchedXY1.getN(); ++i2) {
+                if (i1 == i2) {
+                    invDist[i1][i2] = Float.MAX_VALUE;
+                    continue;
+                }
+                int x2 = matchedXY1.getX(i2);
+                int y2 = matchedXY1.getY(i2);
+                int diffX = x1 - x2;
+                int diffY = y1 - y2;
+                double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+                invDist[i1][i2] = (float)(1./dist);
+            }
+        }
+
+        //TODO: need a version of this method that uses matching < O(N^3)
+    
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(invDist);
+        
+        for (int i = 0; i < match.length; i++) {
+
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            
+            if (idx2 < idx1) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            
+            pairIndexes.add(new PairInt(idx1, idx2));
+        }        
+    }
+    
+    private void useGreedyMatching(PairIntArray matchedXY1, 
+        Set<PairInt> pairIndexes) {
+
+        for (int i1 = 0; i1 < matchedXY1.getN(); ++i1) {
+            
+            int x1 = matchedXY1.getX(i1);
+            int y1 = matchedXY1.getY(i1);
+            
+            double maxDist = Double.MIN_VALUE;
+            int maxDistIdx = -1;
+            
+            for (int i2 = 0; i2 < matchedXY1.getN(); ++i2) {
+                
+                if (i1 == i2) {
+                    continue;
+                }
+                int x2 = matchedXY1.getX(i2);
+                int y2 = matchedXY1.getY(i2);
+                int diffX = x1 - x2;
+                int diffY = y1 - y2;
+                double dist = Math.sqrt(diffX*diffX + diffY*diffY);
+                if (dist > maxDist) {
+                    maxDist = dist;
+                    maxDistIdx = i2;
+                }
+            }
+            
+            if (maxDistIdx > -1) {
+                pairIndexes.add(new PairInt(i1, maxDistIdx));
+            }
+        }
     }
 }

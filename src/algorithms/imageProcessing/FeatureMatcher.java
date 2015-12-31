@@ -760,11 +760,24 @@ public class FeatureMatcher {
         
         return meanStDv;
     }
-
-    public static void removeIntensityOutliers(List<FeatureComparisonStat> compStats) {
+    
+    public static List<Integer> removeIntensityOutliers(List<FeatureComparisonStat> 
+        compStats) {
         
         if (compStats.size() < 3) {
-            return;
+            return new ArrayList<Integer>();
+        }
+        
+        float sigmaFactor = 1.25f;
+        
+        return removeIntensityOutliers(compStats, sigmaFactor);
+    }
+
+    public static List<Integer> removeIntensityOutliers(List<FeatureComparisonStat> 
+        compStats, float sigmaFactor) {
+        
+        if (compStats.size() < 3) {
+            return new ArrayList<Integer>();
         }
         
         int n = compStats.size();
@@ -777,9 +790,9 @@ public class FeatureMatcher {
             
             FeatureComparisonStat stat = compStats.get(i);
             
-            float diff = Math.abs(stat.getSumIntensitySqDiff() - meanStDv[0]);
+            float diff = stat.getSumIntensitySqDiff() - meanStDv[0];
             
-            if (diff > (1.25 * meanStDv[1])) {
+            if (diff > (sigmaFactor * meanStDv[1])) {
                 rm.add(Integer.valueOf(i));
             }
         }
@@ -790,6 +803,8 @@ public class FeatureMatcher {
             
             compStats.remove(idx);
         }
+        
+        return rm;
     }
 
     private List<FeatureComparisonStat> useBipartiteMatchingAsStats(float[][] cost,

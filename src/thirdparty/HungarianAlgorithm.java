@@ -31,7 +31,7 @@ public class HungarianAlgorithm {
      *
      * @param matrix cost matrix w/ first dimension being rows and 2nd being
      * columns.
-     * @return
+     * @return minimum cost bipartite matching
      */
     public int[][] computeAssignments(float[][] matrix) {
 

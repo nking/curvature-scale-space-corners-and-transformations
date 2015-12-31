@@ -5,6 +5,7 @@ import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -27,16 +28,6 @@ import java.util.logging.Logger;
  * @author nichole
  */
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
-    
-/*
-private int rot_0 = 0;
-private int rot_1 = 360;
-private int tx = 129;
-*/
-private int rot_0 = 270;
-private int rot_1 = 270;
-private int tx = (733/2);
-
 
     public MatchingSolution solveForScale(
         BlobCornerHelper img1Helper, IntensityFeatures features1,
@@ -79,7 +70,7 @@ private int tx = (733/2);
                 sortCornersToCCW(list);
             }
         }
-
+/*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[perimeters1.size()];
 float[] yPoints1 = new float[perimeters1.size()];
@@ -122,7 +113,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+*/
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),
@@ -254,7 +245,6 @@ System.out.println(sb.toString());
                 double cost = mapper.getSolutionCost();
 
                 if (nEval < 2) {
-log.info("    discarding due to nEval=" + nEval);
                     continue;
                 }
 
@@ -267,35 +257,6 @@ log.info("    discarding due to nEval=" + nEval);
                 present.
                 */
 
-log.info("       compare " + cost + " to " + minCost + "  and " + nEval + " to " + maxNEval);
-
-boolean dbg = false;
-String str = params.toString().replaceAll("\n", " ");
-if ((Math.abs(params.getScale() - 1) < 0.11) &&
-    ((Math.abs(params.getRotationInDegrees() - rot_0) < 15) || (Math.abs(params.getRotationInDegrees() - rot_1) < 15))
-    && (Math.abs(params.getTranslationX() - tx) < 50)) {
-    str = "*** " + str;
-    dbg = true;
-}
-if (dbg) {
-    StringBuilder sb = new StringBuilder("stats and errors:\n");
-    for (FeatureComparisonStat stat : mapper.getSolutionStats()) {
-        sb.append(String.format("%.1f (e=%.1f)   %s %s\n", stat.getSumIntensitySqDiff(),
-            stat.getImg2PointIntensityErr(), stat.getImg1Point().toString(),
-            stat.getImg2Point().toString()));
-    }
-    log.info(sb.toString());
-    if (minCostStats != null) {
-        sb = new StringBuilder("index1 best: stats and errors:\n");
-        for (FeatureComparisonStat stat : minCostStats) {
-            sb.append(String.format("%.1f (e=%.1f)   %s %s\n", stat.getSumIntensitySqDiff(),
-                stat.getImg2PointIntensityErr(), stat.getImg1Point().toString(),
-                stat.getImg2Point().toString()));
-        }
-        log.info(sb.toString());
-    }
-}
-
                 if (cost < minCost) {
                     if ((nEval < 3) && (maxNEval > 4)) {
                         // do not accept if nEval is much lower than maxNEval
@@ -306,7 +267,7 @@ if (dbg) {
                     maxNEvalIndex2 = index2;
                     minCost = cost;
                     minCostStats = mapper.getSolutionStats();
-log.info("       = becomes index1 BEST so far");
+
                 } else if ((maxNEval == 2) && (nEval > 3)) {
                     //TODO: may need to revise this
                     double avgCost = (cost + minCost)/2.;
@@ -316,7 +277,6 @@ log.info("       = becomes index1 BEST so far");
                         maxNEvalIndex2 = index2;
                         minCost = cost;
                         minCostStats = mapper.getSolutionStats();
-log.info("       = becomes index1 BEST so far");
                     }
                 }
             }
@@ -326,23 +286,6 @@ log.info("       = becomes index1 BEST so far");
                     maxNEvalParams);
             }
         }
-
-// debug
-StringBuilder sb = new StringBuilder("trMap:\n");
-for (Entry<PairInt, TransformationParameters> entry : trMap.entrySet()) {
-    PairInt p = entry.getKey();
-    TransformationParameters params = entry.getValue();
-    if ((Math.abs(params.getScale() - 1) < 0.11) &&
-        ((Math.abs(params.getRotationInDegrees() - rot_0) < 15) || (Math.abs(params.getRotationInDegrees() - rot_1) < 15))
-        && (Math.abs(params.getTranslationX() - tx) < 50)) {
-        sb.append("*** ");
-    }
-    String str = String.format("%.0f  (%d,%d)  s=%.1f tx=%d ty=%d\n",
-        params.getRotationInDegrees(), p.getX(), p.getY(),
-        params.getScale(), Math.round(params.getTranslationX()), Math.round(params.getTranslationY()));
-    sb.append(str);
-}
-log.info(sb.toString());
 
         int n2c = 0;
         for (List<T> corners2 : corners2List) {
@@ -415,22 +358,6 @@ log.info(sb.toString());
         List<TransformationParameters> parameterList =
             MiscStats.filterToSimilarParamSets2(paramsMap, binFactor1, binFactor2);
 
-// debug
-StringBuilder sb = new StringBuilder("consolidated params:\n");
-for (TransformationParameters params : parameterList) {
-    if ((Math.abs(params.getScale() - 1) < 0.11) &&
-        ((Math.abs(params.getRotationInDegrees() - rot_0) < 15) || (Math.abs(params.getRotationInDegrees() - rot_1) < 15))
-        && (Math.abs(params.getTranslationX() - tx) < 50)) {
-        sb.append("*** ");
-    }
-    String str = String.format("%.0f  s=%.1f tx=%d ty=%d n=%d\n",
-        params.getRotationInDegrees(),
-        params.getScale(), Math.round(params.getTranslationX()),
-        Math.round(params.getTranslationY()), params.getNumberOfPointsUsed());
-    sb.append(str);
-}
-log.info(sb.toString());
-
         int n1 = 0;
         for (List<T> corners1 : corners1List) {
             n1 += corners1.size();
@@ -447,418 +374,295 @@ log.info(sb.toString());
         float bestCost = Float.MAX_VALUE;
         float bestCost1Norm = Float.MAX_VALUE;
         List<FeatureComparisonStat> bestStats = null;
+        int bestTolTransXY2 = -1;
 
-        // in the case that best is null, store and consider the best solution
-        // that has a larger scatter in parameters (standard deviations are large)
-        TransformationParameters bestParamsLg = null;
-        float bestCostLg = Float.MAX_VALUE;
-        float bestCost1NormLg = Float.MAX_VALUE;
-        List<FeatureComparisonStat> bestStatsLg = null;
+        for (TransformationParameters params : parameterList) {
 
-        boolean tolIsTooLarge = false;
-
-        int nIter = 0;
-
-        int deltaTol = 0;
-
-sb = new StringBuilder("EVAL:\n");
-
-        while (nIter < 2) {
-
-            tolIsTooLarge = false;
-
-            for (TransformationParameters params : parameterList) {
-
-                double rotInRadians = params.getRotationInRadians();
-                double cos = Math.cos(rotInRadians);
-                double sin = Math.sin(rotInRadians);
-
-                int rotD = Math.round(params.getRotationInDegrees());
-
-                int tolTransXY2 = tolTransXY;
-                if (params.getScale() < 1) {
-                    tolTransXY2 = Math.round(tolTransXY * params.getScale());
-                }
-                if (tolTransXY2 == 0) {
-                    tolTransXY2 = 1;
-                }
-                if (tolTransXY2 > 1) {
-                    tolTransXY2 -= deltaTol;
-                }
-                int dither2 = Math.round(dither * params.getScale());
-                if (dither2 == 0) {
-                    dither2 = 1;
-                } else if (dither2 > dither) {
-                    // large dither makes runtime larger
-                    dither2 = dither;
-                }
-
-                int nEval = 0;
-                double sumSSD = 0;
-                double sumDist = 0;
-                List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
-
-                for (List<T> corners1 : corners1List) {
-
-                    for (T cr : corners1) {
-
-                        T crTr = transformer.applyTransformation(params, cr, cos, sin);
-
-                        Set<Integer> indexes2 = np2.findNeighborIndexes(
-                            crTr.getX()[crTr.getKMaxIdx()],
-                            crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
-
-                        for (Integer index : indexes2) {
-
-                            int idx2 = index.intValue();
-
-                            T corner2 = corners2List.get(idx2);
-
-                            FeatureComparisonStat compStat =
-                                featureMatcher.ditherAndRotateForBestLocation2(
-                                features1, features2, cr, corner2, dither2,
-                                rotD, rotationTolerance, img1, img2);
-
-                            if ((compStat == null) ||
-                                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
-                                ) {
-                                continue;
-                            }
-
-                            double xTr = (compStat.getImg1Point().getX() *
-                                params.getScale() * cos) +
-                                (compStat.getImg1Point().getY() *
-                                params.getScale() * sin);
-                            xTr += params.getTranslationX();
-
-                            double yTr = (-compStat.getImg1Point().getX() *
-                                params.getScale() * sin) +
-                                (compStat.getImg1Point().getY() *
-                                params.getScale()* cos);
-                            yTr += params.getTranslationY();
-
-                            double dist = distance(xTr, yTr,
-                                compStat.getImg2Point().getX(),
-                                compStat.getImg2Point().getY());
-
-                            stats.add(compStat);
-
-                            sumDist += Math.abs(dist);
-                            sumSSD += compStat.getSumIntensitySqDiff();
-                            nEval++;
-                        }
-                    }
-                }
-
-                if (nEval == 0) {
-                    continue;
-                }
-
-                // distance needs to be adjusted by scale, else the cost prefers
-                // small scale solutions
-                sumDist /= params.getScale();
-
-                sumSSD /= (double)nEval;
-                sumDist /= (double)nEval;
-
-                // add '1' to sums so a zero doesn't cancel out the result of the other cost components
-                float cost1Norm = 1.f/(float)nEval;
-                float cost2Norm = (float)sumSSD + 1;
-                float cost3Norm = ((float)sumDist + 0.01f)/(float)tolTransXY2;
-                float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
-
-                //TODO: cost1Norm's proportion in normalizedCost should be higher
-
-                boolean t1 = (normalizedCost < bestCost);
-
-boolean dbg = false;
-if ((Math.abs(params.getScale() - 1) < 0.11) &&
-    ((Math.abs(params.getRotationInDegrees() - rot_0) < 15) || (Math.abs(params.getRotationInDegrees() - rot_1) < 15))
-    && (Math.abs(params.getTranslationX() - tx) < 50)) {
-    sb.append("*** ");
-    dbg = true;
-}
-String str = String.format("%.0f  s=%.1f tx=%d ty=%d  nEval=%d  normCost=%.3f  nEval=%d\n",
-    params.getRotationInDegrees(),
-    params.getScale(), Math.round(params.getTranslationX()), Math.round(params.getTranslationY()),
-    nEval, normalizedCost, nEval);
-sb.append(str);
-if (dbg) {
-    sb.append("  stats and errors:\n");
-    for (FeatureComparisonStat stat : stats) {
-        sb.append(String.format("    %.1f (e=%.1f)   %s %s\n", stat.getSumIntensitySqDiff(),
-            stat.getImg2PointIntensityErr(), stat.getImg1Point().toString(),
-            stat.getImg2Point().toString()));
-    }
-    if (bestStats != null) {
-        sb = new StringBuilder("  best: stats and errors:\n");
-        for (FeatureComparisonStat stat : bestStats) {
-            sb.append(String.format("    %.1f (e=%.1f)   %s %s\n", stat.getSumIntensitySqDiff(),
-                stat.getImg2PointIntensityErr(), stat.getImg1Point().toString(),
-                stat.getImg2Point().toString()));
-        }
-    }
-}
-                if (t1 && (nEval > 2)) {
-
-                    TransformationParameters combinedParams =
-                        MiscStats.calculateTransformation(binFactor1, binFactor2,
-                            stats, new float[4]);
-
-                    if (combinedParams == null) {
-                        continue;
-                    }
-
-                    if (MiscStats.standardDeviationsAreSmall(combinedParams)) {
-                        tolIsTooLarge = false;
-                        bestCost = normalizedCost;
-                        bestParams = combinedParams;
-                        bestStats = stats;
-                        bestCost1Norm = cost1Norm;
-                        combinedParams.setNumberOfPointsUsed(stats.size());
-
-if (dbg) {
-str = String.format("cmbnd %.0f  s=%.1f tx=%d ty=%d normCost=%.3f  n=%d\n",
-    combinedParams.getRotationInDegrees(),
-    combinedParams.getScale(), Math.round(combinedParams.getTranslationX()),
-    Math.round(combinedParams.getTranslationY()), normalizedCost, stats.size());
-sb.append(str);
-}
-
-                    } else if (MiscStats.standardDeviationsAreSmall(params)) {
-                        //TODO: this suggests tolTransXY2 is too large
-                        tolIsTooLarge = true;
-                        bestCost = normalizedCost;
-                        bestParams = params;
-                        bestStats = stats;
-                        bestCost1Norm = cost1Norm;
-                        params.setNumberOfPointsUsed(stats.size());
-                    } else {
-                        if (normalizedCost < bestCostLg) {
-                            bestCostLg = normalizedCost;
-                            bestParamsLg = combinedParams;
-                            bestStatsLg = stats;
-                            bestCost1NormLg = cost1Norm;
-                            combinedParams.setNumberOfPointsUsed(stats.size());
-                        }
-                    }
-                }
+            if (!paramsAreValid(params)) {
+                continue;
             }
-            if (!tolIsTooLarge) {
-                break;
-            }
-            deltaTol++;
-
-            nIter++;
-        }
-
-log.info(sb.toString());
-if (bestParams != null) {
-String str = String.format("bestParams = %.0f  s=%.1f tx=%d ty=%d  n=%d\n",
-    bestParams.getRotationInDegrees(),
-    bestParams.getScale(), Math.round(bestParams.getTranslationX()), 
-    Math.round(bestParams.getTranslationY()), bestParams.getNumberOfPointsUsed());
-log.info(str);
-}
-        if (paramsAreValid(bestParamsLg) && (bestParams != null) && (bestCostLg < bestCost)) {
             
-            /*
-            When there are large projection effects, the standard deviation of
-            parameters has a larger scatter, but bestParamsLg may actually be
-            the better solution over bestParams.
+            double rotInRadians = params.getRotationInRadians();
+            double cos = Math.cos(rotInRadians);
+            double sin = Math.sin(rotInRadians);
 
-            Decide between the two based upon the stats sizes, norm costs,
-            and stdevs.
-            */
+            int rotD = Math.round(params.getRotationInDegrees());
 
-            /*
-            // count number of stats with errors
-            float minSSDError = Float.MAX_VALUE;
-            float maxSSDError = Float.MIN_VALUE;
-            float[] seB = new float[bestStats.size()];
-            for (int i = 0; i < bestStats.size(); ++i) {
-                float ssdErr = bestStats.get(i).getImg2PointIntensityErr();
-                if (ssdErr < minSSDError) {
-                    minSSDError = ssdErr;
-                }
-                if (ssdErr > maxSSDError) {
-                    maxSSDError = ssdErr;
-                }
-                seB[i] = ssdErr;
+            int tolTransXY2 = tolTransXY;
+            if (params.getScale() < 1) {
+                tolTransXY2 = Math.round(tolTransXY * params.getScale());
             }
-            float[] seBLg = new float[bestStatsLg.size()];
-            for (int i = 0; i < bestStatsLg.size(); ++i) {
-                float ssdErr = bestStatsLg.get(i).getImg2PointIntensityErr();
-                if (ssdErr < minSSDError) {
-                    minSSDError = ssdErr;
-                }
-                if (ssdErr > maxSSDError) {
-                    maxSSDError = ssdErr;
-                }
-                seBLg[i] = ssdErr;
+            if (tolTransXY2 == 0) {
+                tolTransXY2 = 1;
+            }
+            int dither2 = Math.round(dither * params.getScale());
+            if (dither2 == 0) {
+                dither2 = 1;
+            } else if (dither2 > dither) {
+                // large dither makes runtime larger
+                dither2 = dither;
             }
 
-            float binWidth = 100.f;
-            HistogramHolder histB = Histogram.createSimpleHistogram(minSSDError,
-                maxSSDError, binWidth, seB, Errors.populateYErrorsBySqrt(seB));
-            HistogramHolder histBLg = Histogram.createSimpleHistogram(minSSDError,
-                maxSSDError, binWidth, seBLg, Errors.populateYErrorsBySqrt(seBLg));
+            int nEval = 0;
+            double sumSSD = 0;
+            double sumDist = 0;
+            List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+            List<Double> distances = new ArrayList<Double>();
 
-            int nBest = bestStats.size();
-            int nBestLg = bestStatsLg.size();
-            int diffN = nBestLg - nBest;
+            for (List<T> corners1 : corners1List) {
 
-            if ((bestCostLg < bestCost)) {
-            */
-              
+                for (T cr : corners1) {
 
-                float f1 = bestCost/bestCostLg;
-                float f2 = (float)bestStatsLg.size()/(float)bestStats.size();
-                float factor = Math.max(f1, f2);
+                    T crTr = transformer.applyTransformation(params, cr, cos, sin);
 
-                boolean t = true;
-                for (int i = 0; i < bestParams.getStandardDeviations().length; ++i) {
-                    float s0 = bestParams.getStandardDeviations()[i];
-                    float s1 = bestParamsLg.getStandardDeviations()[i];
-                    if (Math.abs(s0 - s1) > (factor * s0)) {
-                        t = false;
-                        break;
+                    Set<Integer> indexes2 = np2.findNeighborIndexes(
+                        crTr.getX()[crTr.getKMaxIdx()],
+                        crTr.getY()[crTr.getKMaxIdx()], tolTransXY2);
+
+                    double bestCostPerIndex = Double.MAX_VALUE;
+                    Integer bestCostPerIndexIndex = null;
+                    FeatureComparisonStat bestCostPerIndexStat = null;
+                    double bestCostPerIndexDist = Double.MAX_VALUE;
+                    
+                    for (Integer index : indexes2) {
+
+                        int idx2 = index.intValue();
+
+                        T corner2 = corners2List.get(idx2);
+
+                        FeatureComparisonStat compStat =
+                            featureMatcher.ditherAndRotateForBestLocation2(
+                            features1, features2, cr, corner2, dither2,
+                            rotD, rotationTolerance, img1, img2);
+
+                        if ((compStat == null) ||
+                            (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                            ) {
+                            continue;
+                        }
+
+                        double xTr = (compStat.getImg1Point().getX() *
+                            params.getScale() * cos) +
+                            (compStat.getImg1Point().getY() *
+                            params.getScale() * sin);
+                        xTr += params.getTranslationX();
+
+                        double yTr = (-compStat.getImg1Point().getX() *
+                            params.getScale() * sin) +
+                            (compStat.getImg1Point().getY() *
+                            params.getScale()* cos);
+                        yTr += params.getTranslationY();
+
+                        double dist = distance(xTr, yTr,
+                            compStat.getImg2Point().getX(),
+                            compStat.getImg2Point().getY());
+
+                        double cost = 
+                            (((float)dist + 0.01f)/(float)tolTransXY2) *
+                            ((float)compStat.getSumIntensitySqDiff() + 1);
+                        
+                        if (cost < bestCostPerIndex) {
+                            bestCostPerIndex = cost;
+                            bestCostPerIndexIndex = index;
+                            bestCostPerIndexStat = compStat;
+                            bestCostPerIndexDist = dist;
+                        }
+                    }
+                                        
+                    if (bestCostPerIndexIndex != null) {
+                        // cost is 
+                        stats.add(bestCostPerIndexStat);
+                        distances.add(Double.valueOf(bestCostPerIndexDist));
+                        sumDist += bestCostPerIndexDist;
+                        sumSSD += bestCostPerIndexStat.getSumIntensitySqDiff();
+                        nEval++;
                     }
                 }
+            }
+            
+            List<Integer> removedIndexes = MiscStats.filterForDegeneracy(stats);
+            for (int i = (removedIndexes.size() - 1); i > -1; --i) {
+                int rmIdx = removedIndexes.get(i);
+                distances.remove(rmIdx);
+            }
+            
+            removedIndexes = FeatureMatcher.removeIntensityOutliers(stats, 1.25f); 
+            if (removedIndexes.size() < distances.size()) {
+                for (int i = (removedIndexes.size() - 1); i > -1; --i) {
+                    int rmIdx = removedIndexes.get(i);
+                    distances.remove(rmIdx);
+                }
+                sumSSD = 0;
+                sumDist = 0;
+                for (int i = 0; i < stats.size(); ++i) {
+                    sumSSD += stats.get(i).getSumIntensitySqDiff();
+                    sumDist += distances.get(i).doubleValue();
+                }
+                nEval = stats.size();
+            }
+            
+            if (nEval == 0) {
+                continue;
+            }
 
-                if (t) {
+            // distance needs to be adjusted by scale, else the cost prefers
+            // small scale solutions
+            sumDist /= params.getScale();
 
-                    /*
-                    The large scatter in standard deviations implies that there
-                    my be large projection effects.
-                    For that reason, if there are not many points covering the
-                    intersection of the transformation,
-                    using another segmenation and feature matching step to try to
-                    constrain more of the transformation.
-                    */
+            sumSSD /= (double)nEval;
+            sumDist /= (double)nEval;
 
-                    int img1Width = img1.getWidth();
-                    int img1Height = img1.getWidth();
-                    int img2Width = img2.getWidth();
-                    int img2Height = img2.getHeight();
+            // add '1' to sums so a zero doesn't cancel out the result of the other cost components
+            float cost1Norm = 1.f/(float)nEval;
+            float cost2Norm = (float)sumSSD + 1;
+            float cost3Norm = ((float)sumDist + 0.01f)/(float)tolTransXY2;
+            float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
 
-                    int[] qCounts =
-                        ImageStatisticsHelper.getQuadrantCountsForIntersection(
-                        bestParamsLg, bestStatsLg,
-                        img1Width, img1Height, img2Width, img2Height);
+            //TODO: cost1Norm's proportion in normalizedCost should be higher
 
-                    boolean extractMoreFeatures = false;
-                    for (int count : qCounts) {
-                        if (count < 5) {
-                            extractMoreFeatures = true;
+            boolean t1 = (normalizedCost < bestCost);
+
+            if (t1 && (nEval > 2)) {
+                bestCost = normalizedCost;
+                bestParams = params;
+                bestStats = stats;
+                bestCost1Norm = cost1Norm;
+                params.setNumberOfPointsUsed(stats.size());
+                bestTolTransXY2 = tolTransXY2;
+            }
+        }
+
+        boolean extractMore = true;
+            
+        if (bestParams != null) {
+            
+            int n = bestStats.size();
+            
+            double[] sumDistSSD = null;
+            float sigmaFactor = 1.5f;            
+            int nIter = 0;
+            int nMaxIter = 5;
+            while ((nIter == 0) || (nIter < nMaxIter)) {            
+                sumDistSSD = MiscStats.filterStatsForTranslation(bestParams, 
+                    bestStats, sigmaFactor);
+                if (sumDistSSD != null && !bestStats.isEmpty()) {
+                    break;
+                }                
+                sigmaFactor += 1;
+                nIter++;
+            }            
+            
+            if (sumDistSSD != null) {
+                                
+                TransformationParameters combinedParams =
+                    MiscStats.calculateTransformation(1, 1, bestStats,
+                        new float[4], false);
+                
+                if (combinedParams != null) {
+                    bestParams = combinedParams;
+                    float cost1Norm = 1.f/(float)bestStats.size();
+                    float cost2Norm = (float)sumDistSSD[1] + 1;
+                    float cost3Norm = ((float)sumDistSSD[0] + 0.01f)/(float)bestTolTransXY2;
+                    bestCost = cost1Norm * cost2Norm * cost3Norm;
+                    
+                } else {
+                    extractMore = false;
+                }
+            } else {
+                extractMore = false;
+            }
+        }
+        
+        if (extractMore) {
+
+            extractMore = false;
+            
+            int img1Width = img1.getWidth();
+            int img1Height = img1.getWidth();
+            int img2Width = img2.getWidth();
+            int img2Height = img2.getHeight();
+
+            int[] qCounts =
+                ImageStatisticsHelper.getQuadrantCountsForIntersection(
+                bestParams, bestStats,
+                img1Width, img1Height, img2Width, img2Height);
+
+            for (int count : qCounts) {
+                if (count < 5) {
+                    extractMore = true;
+                    break;
+                }
+            }
+
+            if (extractMore) {
+
+                ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
+                ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
+                ImageProcessor imageProcessor = new ImageProcessor();
+                int smallestGroupLimit, largestGroupLimit;
+                if (binFactor1 == 1) {
+                    smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimit();
+                    largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimit();
+                } else {
+                    imgExt1 = imageProcessor.binImage(imgExt1, binFactor1);
+                    smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimitBinned();
+                    largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimitBinned();
+                }
+                if (binFactor2 != 1) {
+                    imgExt2 = imageProcessor.binImage(imgExt2, binFactor2);
+                }
+                ImageSegmentation imageSegmentation = new ImageSegmentation();
+                GreyscaleImage imgSeg1Tmp = imageSegmentation.createGreyscale7(imgExt1);
+                GreyscaleImage imgSeg2Tmp = imageSegmentation.createGreyscale7(imgExt2);
+
+                BlobCornerFinderForParameters finder = new BlobCornerFinderForParameters();
+
+                //TODO: possible problem here using same group limit size on both images
+                List<FeatureComparisonStat> stats2 = finder.extractFeatures(
+                    bestParams, img1, img2,
+                    imgSeg1Tmp, imgSeg2Tmp,
+                    binFactor1, binFactor2,
+                    smallestGroupLimit, largestGroupLimit,
+                    features1.getRotatedOffsets(),
+                    img1Helper.imgHelper.isInDebugMode(),
+                    img1Helper.imgHelper.getDebugTag());
+                
+                /*
+                if there are degenerate matches for either pt1 or pt2, keep
+                the one with smallest SSD 
+                */
+                
+                List<Integer> removedIndexes = MiscStats.filterForDegeneracy(bestStats);
+                List<Integer> removedIndexes2 = MiscStats.filterForDegeneracy(stats2);
+                
+                log.info("filtered points for degeneracies");
+                
+                if (removedIndexes.size() > 1 || removedIndexes2.size() > 1) {
+
+                    double[] sumDistSSD = null;
+                    float sigmaFactor = 1.5f;
+                    int nIter = 0;
+                    int nMaxIter = 5;
+                    while ((nIter == 0) || (nIter < nMaxIter)) {
+                        sumDistSSD = MiscStats.filterStatsForTranslation(bestParams,
+                            bestStats, sigmaFactor);
+                        if (sumDistSSD != null && !bestStats.isEmpty()) {
                             break;
                         }
+                        sigmaFactor += 1;
+                        nIter++;
                     }
 
-                    if (extractMoreFeatures) {
-String str = String.format("bestParamsLg = %.0f  s=%.1f tx=%d ty=%d\n",
-    bestParamsLg.getRotationInDegrees(),
-    bestParamsLg.getScale(), Math.round(bestParamsLg.getTranslationX()), Math.round(bestParamsLg.getTranslationY()));
-log.info(str);
-log.info("2nd segmentation for additional points");
-                        ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
-                        ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
-                        ImageProcessor imageProcessor = new ImageProcessor();
-                        int smallestGroupLimit, largestGroupLimit;
-                        if (binFactor1 == 1) {
-                            smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimit();
-                            largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimit();
-                        } else {
-                            imgExt1 = imageProcessor.binImage(imgExt1, binFactor1);
-                            smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimitBinned();
-                            largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimitBinned();
-                        }
-                        if (binFactor2 != 1) {
-                            imgExt2 = imageProcessor.binImage(imgExt2, binFactor2);
-                        }
-                        ImageSegmentation imageSegmentation = new ImageSegmentation();
-                        GreyscaleImage imgSeg1Tmp = imageSegmentation.createGreyscale7(imgExt1);
-                        GreyscaleImage imgSeg2Tmp = imageSegmentation.createGreyscale7(imgExt2);
-
-                        BlobCornerFinderForParameters finder =
-                            new BlobCornerFinderForParameters();
-
-                        //TODO: possible problem here using same group limit size on both images
-                        List<FeatureComparisonStat> stats2 = finder.extractFeatures(
-                            bestParamsLg, img1, img2,
-                            imgSeg1Tmp, imgSeg2Tmp,
-                            binFactor1, binFactor2,
-                            smallestGroupLimit, largestGroupLimit,
-                            features1.getRotatedOffsets(),
-                            img1Helper.imgHelper.isInDebugMode(),
-                            img1Helper.imgHelper.getDebugTag());
-
-                        /*
-                        -- filter returned points already in statsLg unless the match
-                           is different and has smaller SSD
-                        -- recalculate transformation parameters
-                        */
-
-                        for (int i = (stats2.size() - 1); i > -1; --i) {
-
-                            FeatureComparisonStat fcs2 = stats2.get(i);
-                            PairInt p1 = fcs2.getImg1Point();
-                            PairInt p2 = fcs2.getImg2Point();
-
-                            boolean add = true;
-                            int rmIdx = -1;
-
-                            for (int j = 0; j < bestStatsLg.size(); ++j) {
-
-                                FeatureComparisonStat fcsb = bestStatsLg.get(j);
-                                PairInt s1 = fcsb.getImg1Point();
-                                PairInt s2 = fcsb.getImg2Point();
-
-                                if (p1.equals(s1)) {
-                                    if (!p2.equals(s2)) {
-                                        if (fcs2.getSumIntensitySqDiff() < fcsb.getSumIntensitySqDiff()) {
-                                            rmIdx = j;
-                                            break;
-                                        }
-                                    }
-                                    add = false;
-                                    break;
-                                }
-                            }
-                            if (rmIdx > -1) {
-                                bestStatsLg.remove(rmIdx);
-                            }
-                            if (!add) {
-                                stats2.remove(i);
-                            }
-                        }
-
-                        if (stats2.size() > 0) {
-
-                            bestStatsLg.addAll(stats2);
-
-                            bestParamsLg = MiscStats.calculateTransformation(binFactor1,
-                                binFactor2, bestStatsLg, new float[4]);
-
-str = String.format("bestParamsLg = %.0f  s=%.1f tx=%d ty=%d\n",
-    bestParamsLg.getRotationInDegrees(),
-    bestParamsLg.getScale(), Math.round(bestParamsLg.getTranslationX()), Math.round(bestParamsLg.getTranslationY()));
-log.info(str);
-                        }
-                    }
-
-                    if (binFactor1 != 1 || binFactor2 != 1) {
-                        for (int i = 0; i < bestStatsLg.size(); ++i) {
-                            FeatureComparisonStat stat = bestStatsLg.get(i);
-                            stat.setBinFactor1(binFactor1);
-                            stat.setBinFactor2(binFactor2);
-                        }
-                    }
-
-                    MatchingSolution soln = new MatchingSolution(bestParamsLg, bestStatsLg);
-                    return soln;
+                    log.info("filtered points for translation outliers");
+                    
+                    log.info("calculateTransformation for " + bestStats.size() 
+                        + " stats");
+                    
+                    bestParams = MiscStats.calculateTransformation(binFactor1,
+                        binFactor2, bestStats, new float[4], false);
+        
                 }
-            //}
+            }
         }
 
         if (bestParams != null) {
@@ -870,12 +674,6 @@ log.info(str);
                     stat.setBinFactor2(binFactor2);
                 }
             }
-
-String str = String.format("bestParams = %.0f  s=%.1f tx=%d ty=%d n=%d\n",
-    bestParams.getRotationInDegrees(),
-    bestParams.getScale(), Math.round(bestParams.getTranslationX()), 
-    Math.round(bestParams.getTranslationY()), bestParams.getNumberOfPointsUsed());
-log.info(str);
 
             MatchingSolution soln = new MatchingSolution(bestParams, bestStats);
             return soln;
@@ -1035,8 +833,6 @@ log.info(str);
                     IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
                     if (desc0 != null) {
                         float e0 = desc0.sumSquaredError();
-String str = String.format("(%d,%d) ssdErr=%.1f", x, y, e0);
-log.info(str);
                         normList.add(Float.valueOf(e0));
                     }
                 } catch (CornerRegion.CornerRegionDegneracyException e) {
@@ -1102,4 +898,5 @@ log.info(str);
         }
         return true;
     }
+    
 }

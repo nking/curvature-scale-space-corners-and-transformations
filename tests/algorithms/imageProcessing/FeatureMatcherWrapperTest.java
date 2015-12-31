@@ -25,7 +25,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
          
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 5; ++i) {
             
             switch(i) {
                 case 0: {
@@ -61,7 +61,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 default: {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
-                    settings.setUseNormalizedFeatures(true);
+                    settings.setUseNormalizedFeatures(false);
                     break;
                 }
             }
@@ -77,7 +77,9 @@ public class FeatureMatcherWrapperTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
                 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 5; ++i) {
+            fileName1 = null;
+            fileName2 = null;
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
@@ -123,6 +125,10 @@ public class FeatureMatcherWrapperTest extends TestCase {
     private void runCorrespondenceList(String fileName1, String fileName2, 
         FeatureMatcherSettings settings, boolean rotateBy90) throws Exception {
         
+        if (fileName1 == null) {
+            return;
+        }
+        
         int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
         idx = fileName2.lastIndexOf(".");
@@ -147,16 +153,6 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 params90, img1.getHeight(), img1.getWidth());
             
             /*
-            // reverse the intensities
-            for (int i = 0; i < img1.getNPixels(); ++i) {
-                int r = img1.getR(i);
-                int g = img1.getG(i);
-                int b = img1.getB(i);
-                img1.setRGB(i, 255-r, 255-g, 255-b);
-            }
-            */
-            
-            /*
             MatchedPointsTransformationCalculator tc = 
                 new MatchedPointsTransformationCalculator();        
             
@@ -164,8 +160,14 @@ public class FeatureMatcherWrapperTest extends TestCase {
 
             transformer.transformToOrigin(0, 0, revParams);
             
-            revParams.setTranslationX(revParams.getTranslationX() + 254);
+            revParams.setTranslationX(revParams.getTranslationX() - 246);
+            
+            revParams.setTranslationY(revParams.getTranslationY() + 12);
 
+            revParams.setRotationInDegrees(revParams.getRotationInDegrees() - 10);
+            
+            log.info("revParams: " + revParams.toString());
+            
             ImageExt img1RevTr = img1.copyToImageExt();
             img1RevTr = (ImageExt) transformer.applyTransformation(img1RevTr,
                 revParams, img1RevTr.getHeight(), img1RevTr.getWidth());

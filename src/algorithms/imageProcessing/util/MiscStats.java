@@ -4,6 +4,7 @@ import algorithms.imageProcessing.FeatureComparisonStat;
 import algorithms.imageProcessing.FeatureMatcher;
 import algorithms.imageProcessing.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.TransformationParameters;
+import algorithms.imageProcessing.Transformer;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -13,10 +14,13 @@ import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  *
@@ -891,11 +895,16 @@ public class MiscStats {
     
     public static TransformationParameters calculateTransformation(int binFactor1, 
         int binFactor2, List<FeatureComparisonStat> compStats, 
-        float[] outputScaleRotTransXYStDev) {
+        float[] outputScaleRotTransXYStDev, boolean removeIntensityOutliers) {
         
         assert (compStats.isEmpty() == false);
         
-        FeatureMatcher.removeIntensityOutliers(compStats);
+        Logger log = Logger.getLogger(MiscStats.class.getName());
+                
+        if (removeIntensityOutliers) {
+            log.info("filter for intensity outliers");
+            FeatureMatcher.removeIntensityOutliers(compStats);
+        }
         
         if (compStats.size() < 2) {
             return null;
@@ -952,6 +961,8 @@ public class MiscStats {
             float a = 1.f/weights.length;
             Arrays.fill(weights, a);
         }
+        
+        log.info("calc euclidean transform");
         
         TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
             matchedXY2, weights, centroidX1, centroidY1, 
@@ -1106,5 +1117,187 @@ public class MiscStats {
         }
         
         return new int[]{0, sortedValues.length - 1};
+    }
+    
+    public static double[] filterStatsForTranslation(
+        TransformationParameters params, List<FeatureComparisonStat> compStats, 
+        float sigmaFactor) {
+        
+        assert(!compStats.isEmpty());
+                
+        if (compStats.size() < 2) {
+            return null;
+        }
+        
+        Transformer transformer = new Transformer();
+        
+        double sumTx = 0;
+        double sumTy = 0;
+        double[] diffX = new double[compStats.size()];
+        double[] diffY = new double[compStats.size()];
+        
+        for (int i = 0; i < compStats.size(); ++i) {
+            
+            FeatureComparisonStat compStat = compStats.get(i);
+            
+            int x1 = compStat.getImg1Point().getX();
+            int y1 = compStat.getImg1Point().getY();
+                        
+            int x2 = compStat.getImg2Point().getX();
+            int y2 = compStat.getImg2Point().getY();
+            
+            double[] xy1Tr = transformer.applyTransformation(params, x1, y1);
+            
+            diffX[i] = xy1Tr[0] - x1;
+            diffY[i] = xy1Tr[1] - y1;
+            
+            sumTx += diffX[i];
+            sumTy += diffY[i];
+        }
+        
+        double length = (double)compStats.size();
+        
+        double avgTx = sumTx/length;
+        double avgTy = sumTy/length;
+        
+        double stDevX = 0;
+        double stDevY = 0;
+        for (int i = 0; i < diffX.length; ++i) {
+            double d = diffX[i] - avgTx;
+            stDevX += (d*d);
+            d = diffY[i] - avgTy;
+            stDevY += (d*d);
+        }
+        stDevX = (Math.sqrt(stDevX/(length - 1.0f)));
+        stDevY = (Math.sqrt(stDevY/(length - 1.0f)));
+
+        double sumDist = 0;
+        double sumSSD = 0;
+        for (int i = (compStats.size() - 1); i > -1; --i) {
+                        
+            double dx = Math.abs(diffX[i] - avgTx);
+            double dy = Math.abs(diffY[i] - avgTy);
+            
+            if ((dx > (sigmaFactor * stDevX)) || (dy > (sigmaFactor * stDevY))) {
+                sumDist += Math.sqrt(diffX[i]*diffX[i] + diffY[i]*diffY[i]); 
+                sumSSD += compStats.get(i).getSumIntensitySqDiff();
+                compStats.remove(i);
+            }
+        }
+        length = compStats.size();
+        
+        double[] sumDistSSD = new double[2];
+        sumDistSSD[0] = (sumDist/params.getScale())/length;
+        sumDistSSD[1] = sumSSD/length;
+        
+        return sumDistSSD;
+    }
+
+    public static List<Integer> filterForDegeneracy(List<FeatureComparisonStat> 
+        stats) {
+           
+        Map<PairInt, List<Integer>> pointIndexes = new HashMap<PairInt, List<Integer>>();
+        
+        // filter for same pt1 first
+        FeatureComparisonStat[] statsCp = new FeatureComparisonStat[stats.size()];
+        
+        for (int i = 0; i < stats.size(); ++i) {
+            FeatureComparisonStat stat = stats.get(i);
+            statsCp[i] = stat;
+            List<Integer> indexes = pointIndexes.get(stat.getImg1Point());
+            if (indexes == null) {
+                indexes = new ArrayList<Integer>();
+            }
+            indexes.add(Integer.valueOf(i));
+            pointIndexes.put(stat.getImg1Point(), indexes);
+        }
+        
+        for (Entry<PairInt, List<Integer>> entry : pointIndexes.entrySet()) {
+            List<Integer> indexes = entry.getValue();
+            if (indexes.size() < 2) {
+                continue;
+            }
+            float minCost = Float.MAX_VALUE;
+            Integer minCostIndex = null;
+            for (Integer index : indexes) {
+                FeatureComparisonStat stat = statsCp[index.intValue()];
+                if (stat == null) {
+                    continue;
+                }
+                float cost = stat.getSumIntensitySqDiff();
+                if (cost < minCost) {
+                    minCost = cost;
+                    minCostIndex = index;
+                }
+            }
+            if (minCostIndex != null) {
+                for (Integer index : indexes) {
+                    if (index.equals(minCostIndex)) {
+                        continue;
+                    }
+                    statsCp[index.intValue()] = null;
+                } 
+            }
+        }
+        
+        pointIndexes.clear();
+        
+        // filter for same point2
+        
+        for (int i = 0; i < statsCp.length; ++i) {
+            FeatureComparisonStat stat = statsCp[i];
+            if (stat == null) {
+                continue;
+            }
+            List<Integer> indexes = pointIndexes.get(stat.getImg2Point());
+            if (indexes == null) {
+                indexes = new ArrayList<Integer>();
+            }
+            indexes.add(Integer.valueOf(i));
+            pointIndexes.put(stat.getImg2Point(), indexes);
+        }
+        
+        for (Entry<PairInt, List<Integer>> entry : pointIndexes.entrySet()) {
+            List<Integer> indexes = entry.getValue();
+            if (indexes.size() < 2) {
+                continue;
+            }
+            float minCost = Float.MAX_VALUE;
+            Integer minCostIndex = null;
+            for (Integer index : indexes) {
+                FeatureComparisonStat stat = statsCp[index.intValue()];
+                if (stat == null) {
+                    continue;
+                }
+                float cost = stat.getSumIntensitySqDiff();
+                if (cost < minCost) {
+                    minCost = cost;
+                    minCostIndex = index;
+                }
+            }
+            if (minCostIndex != null) {
+                for (Integer index : indexes) {
+                    if (index.equals(minCostIndex)) {
+                        continue;
+                    }
+                    statsCp[index.intValue()] = null;
+                } 
+            }
+        }
+        
+        stats.clear();
+        // store removed indexes
+        List<Integer> removed = new ArrayList<Integer>();
+        
+        for (int i = 0; i < statsCp.length; ++i) {
+            FeatureComparisonStat stat = statsCp[i];
+            if (stat == null) {
+                removed.add(Integer.valueOf(i));
+                continue;
+            }
+            stats.add(stat);
+        }
+        
+        return removed;
     }
 }

@@ -1,12 +1,4 @@
-(1) correct problem w/ matching for test images of uw campus 
-    rotated 90 degrees
-
-    -- its improved at some runtime expense but still needs
-      other improvements:
-      -- books test shows after paramsLg is chosen the stage 
-         of adding more points needs to be improved.
-
-(2) remove rule for filtering out a blob that is touching the
+-- remove rule for filtering out a blob that is touching the
     image boundaries.
     -- it's been partially removed but methods down stream of it
        need to be adjusted to.
