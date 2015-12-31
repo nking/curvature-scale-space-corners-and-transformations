@@ -14,6 +14,7 @@ import algorithms.util.PairIntArray;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1297,6 +1298,8 @@ public class MiscStats {
             }
             stats.add(stat);
         }
+        
+        Collections.sort(removed);
         
         return removed;
     }
