@@ -288,7 +288,7 @@ public class ContourFinder {
 <span class="fc" id="L288">                float tNext</span>
 <span class="fc" id="L289">                    = scaleSpaceImage.getScaleSpaceImage()[sigmaIndex][tIndex + 1];</span>
 
-<span class="fc bfc" id="L291" title="All 4 branches covered.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
+<span class="pc bpc" id="L291" title="1 of 4 branches missed.">                isASinglePeak = (t[rightIndexBelow] &lt; tNext) || (tNext &lt; 0);</span>
             }
         }
 
@@ -460,7 +460,7 @@ public class ContourFinder {
 <span class="fc" id="L460">        if ((tLeftIndex</span>
 <span class="fc bfc" id="L461" title="All 2 branches covered.">            &gt; (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))</span>
             || (tRightIndex
-<span class="fc bfc" id="L463" title="All 2 branches covered.">            &gt; (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))) {</span>
+<span class="pc bpc" id="L463" title="1 of 2 branches missed.">            &gt; (scaleSpaceImage.getScaleSpaceImage()[sigmaIndex].length - 1))) {</span>
 <span class="fc" id="L464">            return;</span>
         }
 
@@ -505,10 +505,10 @@ public class ContourFinder {
 
             // TODO: improve correction for wrap around.
             // Also, this only includes peaks found at end, not beginning.
-<span class="pc bpc" id="L508" title="1 of 8 branches missed.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
+<span class="pc bpc" id="L508" title="3 of 8 branches missed.">            if ((leftIndex &gt; -1) &amp;&amp; (leftIndex == (t.length - 1))</span>
                 &amp;&amp; (t[leftIndex] &gt;= 0.9)
                 &amp;&amp; (t[0] &lt; 0.1)) {
-<span class="fc" id="L511">                rightIndex = 0;</span>
+<span class="nc" id="L511">                rightIndex = 0;</span>
             }
 
 <span class="fc bfc" id="L514" title="All 2 branches covered.">            if (leftIndex &gt; -1) {</span>
@@ -594,20 +594,20 @@ public class ContourFinder {
 <span class="fc" id="L594">            boolean rightIsTaller = (right.getPeakSigma()</span>
 <span class="fc bfc" id="L595" title="All 2 branches covered.">                &gt; left.getPeakSigma());</span>
 
-<span class="fc bfc" id="L597" title="All 4 branches covered.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L597" title="1 of 4 branches missed.">            if (leftIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L599">                contours.remove(right);</span>
 <span class="fc" id="L600">                resort = true;</span>
-<span class="pc bpc" id="L601" title="1 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="pc bpc" id="L601" title="2 of 4 branches missed.">            } else if (rightIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
 
 <span class="fc" id="L603">                contours.remove(left);</span>
 <span class="fc" id="L604">                resort = true;</span>
             } else {
 
-<span class="pc bpc" id="L607" title="2 of 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
+<span class="nc bnc" id="L607" title="All 4 branches missed.">                if (leftIsTaller &amp;&amp; (right.getPeakDetails().length == 2)) {</span>
                     // left has 1 peak
-<span class="fc" id="L609">                    contours.remove(right);</span>
-<span class="fc" id="L610">                    resort = true;</span>
+<span class="nc" id="L609">                    contours.remove(right);</span>
+<span class="nc" id="L610">                    resort = true;</span>
 <span class="nc bnc" id="L611" title="All 4 branches missed.">                } else if (rightIsTaller &amp;&amp; (left.getPeakDetails().length == 2)) {</span>
                     // right has 1 peak
 <span class="nc" id="L613">                    contours.remove(left);</span>

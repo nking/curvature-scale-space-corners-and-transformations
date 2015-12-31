@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LinesAndAngles.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">LinesAndAngles.java</span></div><h1>LinesAndAngles.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
 
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.util.PairInt;
 
 /**
  * adapted from 
@@ -8,15 +9,15 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
  * under MIT License (MIT), Nichole King 2013
  * 
  */
-<span class="nc" id="L11">public class LinesAndAngles {</span>
+<span class="nc" id="L12">public class LinesAndAngles {</span>
     
     public static double distSquared(double x1, double y1, double x2, double y2) {
 
-<span class="nc" id="L15">        double dx2 = (x2 - x1);</span>
-<span class="nc" id="L16">        dx2 *= dx2;</span>
-<span class="nc" id="L17">        double dy2 = (y2 - y1);</span>
-<span class="nc" id="L18">        dy2 *= dy2;</span>
-<span class="nc" id="L19">        return dx2 + dy2;</span>
+<span class="nc" id="L16">        double dx2 = (x2 - x1);</span>
+<span class="nc" id="L17">        dx2 *= dx2;</span>
+<span class="nc" id="L18">        double dy2 = (y2 - y1);</span>
+<span class="nc" id="L19">        dy2 *= dy2;</span>
+<span class="nc" id="L20">        return dx2 + dy2;</span>
     }
     
     /**
@@ -41,9 +42,39 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
     public static double direction(float x1, float y1, float x2, float y2, 
         float x3, float y3) {
 
-<span class="fc" id="L44">        double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));</span>
+<span class="fc" id="L45">        double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));</span>
         
-<span class="fc" id="L46">        return d;</span>
+<span class="fc" id="L47">        return d;</span>
+    }
+    
+    /**
+     * calculate the direction of change for the 2 vectors 
+     * P1:P2 to P1:P3  returns negative when direction is clockwise,
+     * else if zero the vectors are collinear, else if positive the
+     * directions is counterclockwise.
+     * 
+     *           p2
+     *  p3      / 
+     *   \    /
+     *     p1
+     * 
+     * @param p1
+     * @param p2
+     * @param p3
+     * @return 
+     */
+    public static &lt;T extends PairInt&gt;  double direction(T p1, T p2, T p3) {
+        
+<span class="fc" id="L68">        int x1 = p1.getX();</span>
+<span class="fc" id="L69">        int y1 = p1.getY();</span>
+<span class="fc" id="L70">        int x2 = p2.getX();</span>
+<span class="fc" id="L71">        int y2 = p2.getY();</span>
+<span class="fc" id="L72">        int x3 = p3.getX();</span>
+<span class="fc" id="L73">        int y3 = p3.getY();</span>
+        
+<span class="fc" id="L75">        double d = ((x2 - x1)*(y3 - y1)) - ((y2 - y1)*(x3 - x1));</span>
+        
+<span class="fc" id="L77">        return d;</span>
     }
     
     /**
@@ -65,10 +96,10 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
     public static double direction(PairIntWithIndex p1, PairIntWithIndex p2, 
         PairIntWithIndex p3) {
 
-<span class="nc" id="L68">        double d = ((p2.getX() - p1.getX())*(p3.getY() - p1.getY())) -</span>
-<span class="nc" id="L69">            ((p2.getY() - p1.getY())*(p3.getX() - p1.getX()));</span>
+<span class="nc" id="L99">        double d = ((p2.getX() - p1.getX())*(p3.getY() - p1.getY())) -</span>
+<span class="nc" id="L100">            ((p2.getY() - p1.getY())*(p3.getX() - p1.getX()));</span>
                 
-<span class="nc" id="L71">        return d;</span>
+<span class="nc" id="L102">        return d;</span>
     }
     
     /**
@@ -100,7 +131,7 @@ import algorithms.imageProcessing.util.PairIntWithIndex;
     public static double crossProduct(double x1, double y1, double x2, 
         double y2) {
         
-<span class="fc" id="L103">        return ((x1*y2) - (x2*y1));</span>
+<span class="fc" id="L134">        return ((x1*y2) - (x2*y1));</span>
     }
     
 }

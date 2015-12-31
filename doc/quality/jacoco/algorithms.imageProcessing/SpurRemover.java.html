@@ -838,9 +838,9 @@ import java.util.Set;
 <span class="fc bfc" id="L838" title="All 2 branches covered.">            for (PairInt p2 : pr.ones) {</span>
 <span class="fc" id="L839">                int x = col + p2.getX();</span>
 <span class="fc" id="L840">                int y = row + p2.getY();</span>
-<span class="pc bpc" id="L841" title="4 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
-<span class="nc" id="L842">                    foundPattern = false;</span>
-<span class="nc" id="L843">                    break;</span>
+<span class="pc bpc" id="L841" title="3 of 8 branches missed.">                if ((x &lt; 0) || (y &lt; 0) || (x &gt; (w - 1)) || (y &gt; (h - 1))) {</span>
+<span class="fc" id="L842">                    foundPattern = false;</span>
+<span class="fc" id="L843">                    break;</span>
                 }
 <span class="fc" id="L845">                PairInt p3 = new PairInt(x, y);</span>
 <span class="pc bpc" id="L846" title="1 of 2 branches missed.">                if (tmpPointsRemoved.contains(p3) ||</span>

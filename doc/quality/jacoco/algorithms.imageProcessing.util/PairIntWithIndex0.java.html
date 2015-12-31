@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PairIntWithIndex0.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">PairIntWithIndex0.java</span></div><h1>PairIntWithIndex0.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+
+import algorithms.util.PairInt;
+
+/**
+ *
+ * @author nichole
+ */
+public class PairIntWithIndex0 extends algorithms.util.PairInt {
+
+    int pixIdx;
+
+    public PairIntWithIndex0(int xPoint, int yPoint, int thePixIndex) {
+<span class="fc" id="L14">        super(xPoint, yPoint);</span>
+<span class="fc" id="L15">        pixIdx = thePixIndex;</span>
+<span class="fc" id="L16">    }</span>
+    
+    public int getPixIndex() {
+<span class="fc" id="L19">        return pixIdx;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (!(obj instanceof algorithms.util.PairInt)) {</span>
+<span class="nc" id="L26">            return false;</span>
+        }
+
+<span class="nc" id="L29">        PairInt other = (PairInt) obj;</span>
+
+<span class="nc bnc" id="L31" title="All 4 branches missed.">        return (this.getX() == other.getX()) &amp;&amp; (this.getY() == other.getY());</span>
+    }
+
+    @Override
+    public int hashCode() {
+
+<span class="nc" id="L37">        int hash = fnvHashCode(this.getX(), this.getY());</span>
+
+<span class="nc" id="L39">        return hash;</span>
+    }
+
+    @Override
+    public PairInt copy() {
+<span class="fc" id="L44">         return new PairIntWithIndex0(getX(), getY(), pixIdx);</span>
+    }
+
+    @Override
+    public String toString() {
+
+<span class="nc" id="L50">        StringBuilder sb = new StringBuilder(super.toString());</span>
+<span class="nc" id="L51">        sb.append(&quot; pixIdx=&quot;).append(Integer.toString(pixIdx));</span>
+
+<span class="nc" id="L53">        return sb.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

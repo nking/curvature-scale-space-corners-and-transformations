@@ -31,7 +31,7 @@ import java.util.*;
      *
      * @param matrix cost matrix w/ first dimension being rows and 2nd being
      * columns.
-     * @return
+     * @return minimum cost bipartite matching
      */
     public int[][] computeAssignments(float[][] matrix) {
 
@@ -79,16 +79,16 @@ import java.util.*;
 
 <span class="fc" id="L80">                changed = makeMoreZeroes(matrix, coveredRows, coveredCols);</span>
 
-<span class="fc bfc" id="L82" title="All 2 branches covered.">                if (!changed) {</span>
-<span class="fc" id="L83">                    break;</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                if (!changed) {</span>
+<span class="nc" id="L83">                    break;</span>
                 }
 
 <span class="fc" id="L86">                primedZero = primeSomeUncoveredZero(matrix, primesByRow,</span>
                     coveredRows, coveredCols);
             }
 
-<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (!changed) {</span>
-<span class="fc" id="L91">                break;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (!changed) {</span>
+<span class="nc" id="L91">                break;</span>
             }
 
             // check if there is a starred zero in the primed zero's row
@@ -338,8 +338,8 @@ import java.util.*;
             }
         }
 
-<span class="fc bfc" id="L341" title="All 2 branches covered.">        if (minUncoveredValue == Float.MAX_VALUE) {</span>
-<span class="fc" id="L342">            return false;</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (minUncoveredValue == Float.MAX_VALUE) {</span>
+<span class="nc" id="L342">            return false;</span>
         }
 
 <span class="fc" id="L345">        boolean didNotChange = true;</span>

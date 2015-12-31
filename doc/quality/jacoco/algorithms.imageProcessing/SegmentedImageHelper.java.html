@@ -262,11 +262,11 @@ public class SegmentedImageHelper {
                         
 <span class="fc" id="L263">            imgBinnedSegmentedMap.put(type, segImg);</span>
             
-<span class="fc bfc" id="L265" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_CANNY)) {</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.GREYSCALE_CANNY)) {</span>
             
-<span class="fc" id="L267">            segImg = imageSegmentation.createGreyscale6(gsImg);</span>
+<span class="nc" id="L267">            segImg = imageSegmentation.createGreyscale6(gsImg);</span>
                         
-<span class="fc" id="L269">            imgBinnedSegmentedMap.put(type, segImg);</span>
+<span class="nc" id="L269">            imgBinnedSegmentedMap.put(type, segImg);</span>
             
 <span class="fc bfc" id="L271" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_HIST)) {</span>
             
@@ -332,16 +332,16 @@ public class SegmentedImageHelper {
         
         try {
             
-<span class="fc" id="L335">            applySegmentation(SegmentationType.GREYSCALE_CANNY, useBinned);</span>
+<span class="nc" id="L335">            applySegmentation(SegmentationType.GREYSCALE_CANNY, useBinned);</span>
             
-<span class="pc bpc" id="L337" title="1 of 2 branches missed.">            if (useBinned) {</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            if (useBinned) {</span>
                 
-<span class="fc" id="L339">                GreyscaleImage segImg = getBinnedSegmentationImage(</span>
+<span class="nc" id="L339">                GreyscaleImage segImg = getBinnedSegmentationImage(</span>
                     SegmentationType.GREYSCALE_CANNY);
             
-<span class="fc" id="L342">                imgBinnedSegmentedMap.put(segmentationType, segImg);</span>
+<span class="nc" id="L342">                imgBinnedSegmentedMap.put(segmentationType, segImg);</span>
                 
-<span class="fc" id="L344">            } else {</span>
+<span class="nc" id="L344">            } else {</span>
                  
 <span class="nc" id="L346">                GreyscaleImage segImg = getSegmentationImage(</span>
                     SegmentationType.GREYSCALE_CANNY);
@@ -355,8 +355,8 @@ public class SegmentedImageHelper {
 <span class="nc" id="L355">        } catch (NoSuchAlgorithmException ex) {</span>
 <span class="nc" id="L356">            Logger.getLogger(SegmentedImageHelper.class.getName()).log(</span>
                 Level.SEVERE, null, ex);
-<span class="pc" id="L358">        }</span>
-<span class="fc" id="L359">    }</span>
+<span class="nc" id="L358">        }</span>
+<span class="nc" id="L359">    }</span>
 
     /**
      * apply segmentation type type to the greyscale or color binned image

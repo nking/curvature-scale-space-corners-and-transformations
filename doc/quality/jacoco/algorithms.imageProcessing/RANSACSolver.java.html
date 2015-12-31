@@ -56,11 +56,11 @@ import org.ejml.simple.SimpleMatrix;
 <span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
 <span class="nc" id="L57">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (matchedLeftXY.getN() &lt; 7) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (matchedLeftXY.getN() &lt; 7) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L61">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L61">            throw new IllegalArgumentException(</span>
             &quot;the algorithms require 7 or more points.  matchedLeftXY.n=&quot; 
-<span class="nc" id="L63">            + matchedLeftXY.getN());</span>
+<span class="fc" id="L63">            + matchedLeftXY.getN());</span>
         }
 
 <span class="fc" id="L66">        SimpleMatrix input1 =</span>

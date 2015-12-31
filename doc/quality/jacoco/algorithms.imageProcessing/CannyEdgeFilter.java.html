@@ -155,8 +155,8 @@ public class CannyEdgeFilter {
 <span class="fc" id="L155">            useOutdoorMode = true;</span>
         }
         
-<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (settings.getDoNotNormalizeByHistogram()) {</span>
-<span class="fc" id="L159">            doNotNormalizeByHistogram = true;</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (settings.getDoNotNormalizeByHistogram()) {</span>
+<span class="nc" id="L159">            doNotNormalizeByHistogram = true;</span>
         }
         
 <span class="fc bfc" id="L162" title="All 2 branches covered.">        if (settings.getUseLineDrawingMode()) {</span>
@@ -730,7 +730,7 @@ public class CannyEdgeFilter {
 
     protected void applyHistogramEqualization(final GreyscaleImage input) {
          
-<span class="pc bpc" id="L733" title="1 of 4 branches missed.">        if (!doNotNormalizeByHistogram &amp;&amp; !histogramEqualizationCheckFinished) {</span>
+<span class="pc bpc" id="L733" title="2 of 4 branches missed.">        if (!doNotNormalizeByHistogram &amp;&amp; !histogramEqualizationCheckFinished) {</span>
             
 <span class="fc" id="L735">            boolean doEqualization = histogramEqualizationIsNeeded(input);</span>
             
@@ -855,7 +855,7 @@ public class CannyEdgeFilter {
     }
     
     public double getLowThresholdApplied2Layer() {
-<span class="fc" id="L858">        return lowThresholdApplied2Layer;</span>
+<span class="nc" id="L858">        return lowThresholdApplied2Layer;</span>
     }
     
 }

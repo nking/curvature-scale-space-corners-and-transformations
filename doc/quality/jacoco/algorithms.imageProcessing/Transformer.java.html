@@ -641,12 +641,12 @@ import java.util.logging.Logger;
     public &lt;T extends CornerRegion&gt; T applyTransformation(
         TransformationParameters params, T cr) {
         
-<span class="fc" id="L644">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="nc" id="L644">        double rotInRadians = params.getRotationInRadians();</span>
         
-<span class="fc" id="L646">        double cos = Math.cos(rotInRadians);</span>
-<span class="fc" id="L647">        double sin = Math.sin(rotInRadians);</span>
+<span class="nc" id="L646">        double cos = Math.cos(rotInRadians);</span>
+<span class="nc" id="L647">        double sin = Math.sin(rotInRadians);</span>
                 
-<span class="fc" id="L649">        return applyTransformation(params, cr, cos, sin);</span>
+<span class="nc" id="L649">        return applyTransformation(params, cr, cos, sin);</span>
     }
     
     @SuppressWarnings({&quot;unchecked&quot;})

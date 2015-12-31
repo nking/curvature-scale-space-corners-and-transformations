@@ -82,8 +82,8 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
 
 <span class="fc" id="L83">        Map&lt;PairInt, PairInt&gt; pixToTRMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
 
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (sortedThetaRadiusKeys.isEmpty()) {</span>
-<span class="nc" id="L86">            return pixToTRMap;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (sortedThetaRadiusKeys.isEmpty()) {</span>
+<span class="fc" id="L86">            return pixToTRMap;</span>
         }
 
 <span class="fc" id="L89">        Map&lt;PairInt, PairInt&gt; pixToTRMapNotAggr = new HashMap&lt;PairInt, PairInt&gt;();</span>
@@ -349,8 +349,8 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
     private void mergeIfGapWithinTolerance(Map&lt;PairInt, PairInt&gt; pixToTRMap, 
         int thetaTol, int radiusTol) {
         
-<span class="pc bpc" id="L352" title="2 of 4 branches missed.">        if (sortedGroups == null || sortedGroups.isEmpty()) {</span>
-<span class="nc" id="L353">            return;</span>
+<span class="pc bpc" id="L352" title="1 of 4 branches missed.">        if (sortedGroups == null || sortedGroups.isEmpty()) {</span>
+<span class="fc" id="L353">            return;</span>
         }
         
 <span class="fc" id="L356">        int n = sortedGroups.size();</span>

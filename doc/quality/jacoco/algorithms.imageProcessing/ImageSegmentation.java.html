@@ -218,8 +218,8 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L218" title="All 2 branches covered.">            if (idx == 0) {</span>
 
 <span class="fc" id="L220">                int bisectorBelowHalfLength = (360 - binCenters[nc - 1] + vc)/2;</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                if ((vc - theta) &gt; bisectorBelowHalfLength) {</span>
-<span class="nc" id="L222">                    idx = nc - 1;</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">                if ((vc - theta) &gt; bisectorBelowHalfLength) {</span>
+<span class="fc" id="L222">                    idx = nc - 1;</span>
                 }
 
 <span class="fc" id="L225">            } else {</span>
@@ -236,8 +236,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L236">        }</span>
 
 <span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = (groups.size() - 1); i &gt; -1; --i) {</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">            if (groups.get(i).isEmpty()) {</span>
-<span class="nc" id="L240">                groups.remove(i);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">            if (groups.get(i).isEmpty()) {</span>
+<span class="fc" id="L240">                groups.remove(i);</span>
             }
         }
 
@@ -2812,9 +2812,9 @@ import java.util.logging.Logger;
 
 <span class="fc" id="L2813">        int n = indexes.size();</span>
 
-<span class="pc bpc" id="L2815" title="1 of 2 branches missed.">        if (n == 1) {</span>
+<span class="fc bfc" id="L2815" title="All 2 branches covered.">        if (n == 1) {</span>
 
-<span class="nc" id="L2817">            int[] binCenters = new int[n + 1];</span>
+<span class="fc" id="L2817">            int[] binCenters = new int[n + 1];</span>
 
             /*
             examples for n=1
@@ -2831,22 +2831,22 @@ import java.util.logging.Logger;
                 -- 270+(330-180)=  270 + 150 - 360 = 60
             */
 
-<span class="nc" id="L2834">            int vc = Math.round(hist.getXHist()[indexes.get(0).intValue()]);</span>
+<span class="fc" id="L2834">            int vc = Math.round(hist.getXHist()[indexes.get(0).intValue()]);</span>
 
-<span class="nc bnc" id="L2836" title="All 2 branches missed.">            if (vc == 180) {</span>
+<span class="pc bpc" id="L2836" title="1 of 2 branches missed.">            if (vc == 180) {</span>
 <span class="nc" id="L2837">                binCenters[0] = 90;</span>
 <span class="nc" id="L2838">                binCenters[1] = 270;</span>
-<span class="nc bnc" id="L2839" title="All 2 branches missed.">            } else if (vc &lt; 180) {</span>
-<span class="nc" id="L2840">                int delta = 180 - vc;</span>
-<span class="nc" id="L2841">                binCenters[0] = 360 - (delta - 90);</span>
-<span class="nc" id="L2842">                binCenters[1] = 270 - delta;</span>
-<span class="nc" id="L2843">            } else {</span>
-<span class="nc" id="L2844">                int delta = vc - 180;</span>
-<span class="nc" id="L2845">                binCenters[0] = 90 + delta;</span>
-<span class="nc" id="L2846">                binCenters[1] = 270 + delta - 360;</span>
+<span class="fc bfc" id="L2839" title="All 2 branches covered.">            } else if (vc &lt; 180) {</span>
+<span class="fc" id="L2840">                int delta = 180 - vc;</span>
+<span class="fc" id="L2841">                binCenters[0] = 360 - (delta - 90);</span>
+<span class="fc" id="L2842">                binCenters[1] = 270 - delta;</span>
+<span class="fc" id="L2843">            } else {</span>
+<span class="fc" id="L2844">                int delta = vc - 180;</span>
+<span class="fc" id="L2845">                binCenters[0] = 90 + delta;</span>
+<span class="fc" id="L2846">                binCenters[1] = 270 + delta - 360;</span>
             }
 
-<span class="nc" id="L2849">            return binCenters;</span>
+<span class="fc" id="L2849">            return binCenters;</span>
         }
 
 <span class="fc" id="L2852">        int[] binCenters = new int[n];</span>
@@ -3130,22 +3130,22 @@ MiscDebug.writeImage(input, &quot;_after3_illumc0_&quot; + MiscDebug.getCurrentT
      */
     public GreyscaleImage createGreyscale6(GreyscaleImage input) {
 
-<span class="fc" id="L3133">        CannyEdgeFilter filter = new CannyEdgeFilter();</span>
-<span class="fc" id="L3134">        filter.applyFilter(input.copyImage());</span>
+<span class="nc" id="L3133">        CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+<span class="nc" id="L3134">        filter.applyFilter(input.copyImage());</span>
 
-<span class="fc" id="L3136">        double thresh = filter.getLowThresholdApplied2Layer() + 2;</span>
+<span class="nc" id="L3136">        double thresh = filter.getLowThresholdApplied2Layer() + 2;</span>
 
-<span class="fc" id="L3138">        GreyscaleImage img = filter.getEdgeFilterProducts().getGradientXY();</span>
+<span class="nc" id="L3138">        GreyscaleImage img = filter.getEdgeFilterProducts().getGradientXY();</span>
 
-<span class="fc bfc" id="L3140" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc bfc" id="L3141" title="All 2 branches covered.">            if (img.getValue(i) &gt; thresh) {</span>
-<span class="fc" id="L3142">                img.setValue(i, 250);</span>
+<span class="nc bnc" id="L3140" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc bnc" id="L3141" title="All 2 branches missed.">            if (img.getValue(i) &gt; thresh) {</span>
+<span class="nc" id="L3142">                img.setValue(i, 250);</span>
             } else {
-<span class="fc" id="L3144">                img.setValue(i, 0);</span>
+<span class="nc" id="L3144">                img.setValue(i, 0);</span>
             }
         }
 
-<span class="fc" id="L3148">        return img;</span>
+<span class="nc" id="L3148">        return img;</span>
     }
     
     /**

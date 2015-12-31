@@ -390,11 +390,11 @@ import java.util.Set;
 <span class="nc" id="L390">            width = 1;</span>
 <span class="pc bpc" id="L391" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
 <span class="nc" id="L392">            width = 5;</span>
-<span class="pc bpc" id="L393" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        } else if (input.getWidth() &lt; 1000) {</span>
 <span class="fc" id="L394">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
-<span class="nc" id="L397">            width = 100;</span>
+<span class="fc" id="L397">            width = 100;</span>
         }
         
 <span class="fc" id="L400">        return examineImageBorders(input, width, useSturges);</span>
@@ -477,17 +477,17 @@ import java.util.Set;
         parameters, List&lt;FeatureComparisonStat&gt; stats,
         int img1Width, int img1Height, int img2Width, int img2Height) {
         
-<span class="fc" id="L480">        int[] counts = getQuadrantCountsForIntersection(parameters, stats,</span>
+<span class="nc" id="L480">        int[] counts = getQuadrantCountsForIntersection(parameters, stats,</span>
             img1Width, img1Height, img2Width, img2Height);
         
-<span class="fc" id="L483">        int nq = 0;</span>
-<span class="fc bfc" id="L484" title="All 2 branches covered.">        for (int c : counts) {</span>
-<span class="fc bfc" id="L485" title="All 2 branches covered.">            if (c &gt; 0) {</span>
-<span class="fc" id="L486">                nq++;</span>
+<span class="nc" id="L483">        int nq = 0;</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        for (int c : counts) {</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">            if (c &gt; 0) {</span>
+<span class="nc" id="L486">                nq++;</span>
             }
         }
         
-<span class="fc bfc" id="L490" title="All 2 branches covered.">        return (nq == 4);</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">        return (nq == 4);</span>
     }
     
     /**

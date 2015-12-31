@@ -102,16 +102,16 @@ public class BlobPerimeterHelper {
     public void replaceSegmentationWithCanny(SegmentationType segmentationType, 
         boolean useBinnedImage) {
         
-<span class="fc" id="L105">        imgHelper.replaceSegmentationWithCanny(segmentationType, useBinnedImage);</span>
+<span class="nc" id="L105">        imgHelper.replaceSegmentationWithCanny(segmentationType, useBinnedImage);</span>
         
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (useBinnedImage) {</span>
-<span class="fc" id="L108">            segBinnedBlobsMap.remove(segmentationType);</span>
-<span class="fc" id="L109">            segBinnedBlobPerimetersMap.remove(segmentationType);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (useBinnedImage) {</span>
+<span class="nc" id="L108">            segBinnedBlobsMap.remove(segmentationType);</span>
+<span class="nc" id="L109">            segBinnedBlobPerimetersMap.remove(segmentationType);</span>
         } else {
 <span class="nc" id="L111">            segBlobsMap.remove(segmentationType);</span>
 <span class="nc" id="L112">            segBlobPerimetersMap.remove(segmentationType);</span>
         }
-<span class="fc" id="L114">    }</span>
+<span class="nc" id="L114">    }</span>
 
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
 <span class="fc" id="L117">        return imgHelper.getSegmentationImage(type);</span>
