@@ -5,7 +5,6 @@ import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +26,8 @@ public class BlobCornerFinderForParameters {
         GreyscaleImage segImg1, GreyscaleImage segImg2, 
         int binFactor1, int binFactor2,
         int smallestGroupLimit, int largestGroupLimit,
-        RotatedOffsets rotatedOffsets, boolean debug, String debugTag) {
+        RotatedOffsets rotatedOffsets, boolean filterOutImageBoundaryBlobs,
+        boolean debug, String debugTag) {
         
         List<FeatureComparisonStat> allStats = new ArrayList<FeatureComparisonStat>();
         
@@ -36,7 +36,8 @@ public class BlobCornerFinderForParameters {
         List<Set<PairInt>> blobs2 = new ArrayList<Set<PairInt>>();
         
         extractBlobs(blobs1, blobs2, segImg1, segImg2, binFactor1, binFactor2,
-            smallestGroupLimit, largestGroupLimit, debug, debugTag);
+            smallestGroupLimit, largestGroupLimit, filterOutImageBoundaryBlobs,
+            debug, debugTag);
         
         Transformer transformer = new Transformer();
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
@@ -46,7 +47,8 @@ public class BlobCornerFinderForParameters {
         double[][] xyCen2 = new double[blobs2.size()][];
         for (int i = 0; i < blobs1.size(); ++i) {
             xyCen1[i] = curveHelper.calculateXYCentroids(blobs1.get(i));
-            xyCenTr1[i] = transformer.applyTransformation(parameters, xyCen1[i][0], xyCen1[i][1]);
+            xyCenTr1[i] = transformer.applyTransformation(parameters, 
+                xyCen1[i][0], xyCen1[i][1]);
         }
         for (int i = 0; i < blobs2.size(); ++i) {
             xyCen2[i] = curveHelper.calculateXYCentroids(blobs2.get(i));
@@ -59,7 +61,8 @@ public class BlobCornerFinderForParameters {
         List<Integer> matchedIndexes2 = new ArrayList<Integer>();
         
         //bipartiteMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
-        greedyDegenerateMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, matchedIndexes2);
+        greedyDegenerateMatching(xyCenTr1, xyCen2, transXYTol, matchedIndexes1, 
+            matchedIndexes2);
         
         if (matchedIndexes1.isEmpty()) {
             return allStats;
@@ -160,18 +163,20 @@ public class BlobCornerFinderForParameters {
     private void extractBlobs(List<Set<PairInt>> outputBlobs1, 
         List<Set<PairInt>> outputBlobs2,
         GreyscaleImage img1, GreyscaleImage img2, int binFactor1, int binFactor2,
-        int smallestGroupLimit, int largestGroupLimit, boolean debug,
-        String debugTag) {
+        int smallestGroupLimit, int largestGroupLimit, 
+        boolean filterOutImageBoundaryBlobs, boolean debug, String debugTag) {
         
         List<Set<PairInt>> blobs1 = 
             BlobsAndPerimeters.extractBlobsKeepBounded(
-                img1, smallestGroupLimit, largestGroupLimit, binFactor1);
+                img1, smallestGroupLimit, largestGroupLimit, binFactor1,
+                filterOutImageBoundaryBlobs);
         
         outputBlobs1.addAll(blobs1);
         
         List<Set<PairInt>> blobs2 = 
             BlobsAndPerimeters.extractBlobsKeepBounded(
-                img2, smallestGroupLimit, largestGroupLimit, binFactor2);
+                img2, smallestGroupLimit, largestGroupLimit, binFactor2,
+                filterOutImageBoundaryBlobs);
         
         outputBlobs2.addAll(blobs2);
         

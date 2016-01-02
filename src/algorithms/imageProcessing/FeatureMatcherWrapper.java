@@ -26,6 +26,11 @@ public class FeatureMatcherWrapper {
 
     private final FeatureMatcherSettings settings;
 
+    // dither of 1 is fine for rotation of 0, but for larger rotations,
+    // the segmentation using greyscale7 sometimes produces some differences
+    // due to the order of two 1-D B3 spline operations (which are much faster
+    // than a single 2-D B3 spline, so they are used even w/ the small variance
+    // with rotation) so a dither=3 is necessary.
     protected final int dither = 3;//4;
 
     private final ImageExt img1;
@@ -70,8 +75,8 @@ public class FeatureMatcherWrapper {
 
     /**
      * constructor accepting transformation parameters.  Note, for best results,
-     * the standard deviations within parameters should be populated because they
-     * are used as tolerances in matching.
+     * the standard deviations within parameters should be populated because 
+     * they are used as tolerances in matching.
      * @param image1
      * @param image2
      * @param parameters

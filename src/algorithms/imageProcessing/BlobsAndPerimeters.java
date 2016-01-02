@@ -33,24 +33,35 @@ public class BlobsAndPerimeters {
      * may be adjusted to a higher number for larger images.
      */
     protected static int defaultNumberLimit = 40;//20;
+    
+    public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
+        SegmentedImageHelper imgHelper, SegmentationType type, 
+        boolean useBinned, boolean filterOutImageBoundaryBlobs) {
+        
+        boolean filterOutZeroPixels = true;
+        
+        return extractBlobsFromSegmentedImage(imgHelper, type, useBinned, 
+            filterOutImageBoundaryBlobs, filterOutZeroPixels);
+    }
           
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type, 
-        boolean useBinned) {
-        
+        boolean useBinned, boolean filterOutImageBoundaryBlobs, 
+        boolean filterOutZeroPixels) {
+
         List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
-        
+
         // have removed this segmentation type:
         boolean segmentedToLineDrawing = false;
-        
+
         int smallestGroupLimit = useBinned ? 
             imgHelper.getSmallestGroupLimitBinned() : 
             imgHelper.getSmallestGroupLimit();
-        
+
         if (smallestGroupLimit == 0) {
             throw new IllegalStateException("smallestGroupLimit must be > 0");
         }
-        
+
         int largestGroupLimit = useBinned ? 
             imgHelper.getLargestGroupLimitBinned() : 
             imgHelper.getLargestGroupLimit();
@@ -87,16 +98,14 @@ public class BlobsAndPerimeters {
             
             Integer pixValue = entry.getKey();
             
-//NOTE: temporarily hard coding an assumption that the segmentation is the
-// one using a trous wavelet
-            if (pixValue < 1) {
+            if (filterOutZeroPixels && (pixValue < 1)) {
                 continue;
             }
             
             HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(), 
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
                 outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
-                imgHelper.debugTag);
+                filterOutImageBoundaryBlobs, imgHelper.debugTag);
             
             histograms.add(hist);
         }
@@ -519,7 +528,7 @@ if (imgHelper.isInDebugMode()) {
         boolean use8Neighbors, List<Set<PairInt>> outputBlobs, 
         List<Set<PairInt>> outputExcludedBlobs,
         List<Set<PairInt>> outputExcludedBoundaryBlobs,
-        String debugTag) {
+        boolean filterOutImageBoundaryBlobs, String debugTag) {
         
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(segImg);
             
@@ -531,28 +540,25 @@ if (imgHelper.isInDebugMode()) {
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-//NOTE: temporarily removing upper limits to blob sizes while changing the
-// model for points of interest.
-        
         int nGroups = finder.getNumberOfGroups();
         for (int i = 0; i < nGroups; ++i) {
             PairIntArray xy = finder.getXY(i);
             Set<PairInt> points = Misc.convert(xy);
             // skip blobs that are on the image boundaries because they
             // are incomplete
-            /*if (curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
+            if (filterOutImageBoundaryBlobs &&
+                curveHelper.hasNumberOfPixelsOnImageBoundaries(3, 
                 points, segImg.getWidth(), segImg.getHeight())) {
                 
                 outputExcludedBoundaryBlobs.add(points);
                 
-            } else {*/          
-            //    if (xy.getN() < largestGroupLimit) {
-
-                    outputBlobs.add(points);
-            //    } else {
-            //        outputExcludedBlobs.add(points);
-            //    }
-            //}
+            } else {         
+            // if (xy.getN() < largestGroupLimit) {
+                   outputBlobs.add(points);
+            // } else {
+            //     outputExcludedBlobs.add(points);
+            // }
+            }
         }
         
         // build histogram to help edit the size ranges that will be kept.
@@ -662,7 +668,8 @@ if (imgHelper.isInDebugMode()) {
     }
 
     public static List<Set<PairInt>> extractBlobsKeepBounded(GreyscaleImage img,
-        int smallestGroupLimit, int largestGroupLimit, int binFactor) {
+        int smallestGroupLimit, int largestGroupLimit, int binFactor,
+        boolean filterOutImageBoundaryBlobs) {
         
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(img);
         
@@ -679,7 +686,8 @@ if (imgHelper.isInDebugMode()) {
             
             HistogramHolder hist = defaultExtractBlobs(img, pixValue.intValue(), 
                 smallestGroupLimit, largestGroupLimit, use8Neighbors, 
-                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, "");
+                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs, 
+                filterOutImageBoundaryBlobs, "");
             
             histograms.add(hist);
         }

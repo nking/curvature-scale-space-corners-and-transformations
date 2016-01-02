@@ -170,16 +170,31 @@ public class BlobPerimeterHelper {
 
     public List<PairIntArray> getBlobPerimeters(SegmentationType type, boolean 
         useBinnedImage) {
+        
+        boolean filterOutImageBoundaryBlobs = false;
+        
+        boolean filterOutZeroPixels = true;
+                
+        return getBlobPerimeters(type, useBinnedImage, 
+            filterOutImageBoundaryBlobs, filterOutZeroPixels);
+    }
+    
+    public List<PairIntArray> getBlobPerimeters(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs, 
+        boolean filterOutZeroPixels) {
                 
         if (useBinnedImage) {
-            return getBinnedBlobPerimeters(type);
+            return getBinnedBlobPerimeters(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
         } else {
-            return getUnbinnedBlobPerimeters(type);
+            return getUnbinnedBlobPerimeters(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
         }
        
     }
-
-    private List<PairIntArray> getUnbinnedBlobPerimeters(SegmentationType type) {
+    
+    private List<PairIntArray> getUnbinnedBlobPerimeters(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
                 
         List<PairIntArray> blobPerimeters = null;
         
@@ -210,7 +225,8 @@ public class BlobPerimeterHelper {
             long t0 = System.currentTimeMillis();
             
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-                imgHelper, type, useBinned);
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
             
             long t1 = System.currentTimeMillis();
             long t1Sec = (t1 - t0)/1000;
@@ -249,8 +265,9 @@ public class BlobPerimeterHelper {
         
         return blobPerimeters;
     }
-
-    private List<PairIntArray> getBinnedBlobPerimeters(SegmentationType type) {
+    
+    private List<PairIntArray> getBinnedBlobPerimeters(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
         
         if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             throw new IllegalStateException(
@@ -272,7 +289,8 @@ public class BlobPerimeterHelper {
         if (blobs == null) {
             
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-                imgHelper, type, useBinned);
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
             
             segBinnedBlobsMap.put(type, blobs);
         }
@@ -291,16 +309,50 @@ public class BlobPerimeterHelper {
     
     public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
         useBinnedImage) {
+        
+        boolean filterOutImageBoundaryBlobs = false;
+        
+        return getBlobs(type, useBinnedImage, filterOutImageBoundaryBlobs);
+    }
+    
+    public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs) {
                 
+        boolean filterOutZeroPixels = true;
+        
         if (useBinnedImage) {
-            return getBinnedBlobs(type);
+            return getBinnedBlobs(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
         } else {
-            return getUnbinnedBlobs(type);
+            return getUnbinnedBlobs(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
         }
-       
+    }
+    
+    public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs,
+        boolean filterOutZeroPixels) {
+                        
+        if (useBinnedImage) {
+            return getBinnedBlobs(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+        } else {
+            return getUnbinnedBlobs(type, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+        }
     }
 
-    private List<Set<PairInt>> getBinnedBlobs(SegmentationType type) {
+    private List<Set<PairInt>> getBinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs) {
+        
+        boolean filterOutZeroPixels = true;
+        
+        return getBinnedBlobs(type, filterOutImageBoundaryBlobs, 
+            filterOutZeroPixels);
+    }
+    
+    private List<Set<PairInt>> getBinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
         
         if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
             throw new IllegalStateException(
@@ -314,7 +366,8 @@ public class BlobPerimeterHelper {
         if (blobs == null) {
             
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-                imgHelper, type, useBinned);
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
             
             segBinnedBlobsMap.put(type, blobs);
         }
@@ -322,7 +375,8 @@ public class BlobPerimeterHelper {
         return blobs;            
     }
 
-    private List<Set<PairInt>> getUnbinnedBlobs(SegmentationType type) {
+    private List<Set<PairInt>> getUnbinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
         
         List<Set<PairInt>> blobs = null;
         
@@ -337,7 +391,8 @@ public class BlobPerimeterHelper {
         if (blobs == null) {
             
             blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-                imgHelper, type, useBinned);
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
             
             if (type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
                 segLargeBlobsMap.put(type, blobs);

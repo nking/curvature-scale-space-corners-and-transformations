@@ -1,9 +1,14 @@
--- remove rule for filtering out a blob that is touching the
-    image boundaries.
-    -- it's been partially removed but methods down stream of it
-       need to be adjusted to.
+-- make tests for greysclae7 looking at rotational invariance.
+   -- impl a verison of the a trous wavelet which uses single 2-D B3 spline
+      and see if perfect rotational invariance is the result.
+-- reduce the number of combinations used now that the solution appears to
+   be more stable
+-- review the logic for filtering out blobs that are on the image boundaries
+   and make any subsequent methods consistent.
+-- finish the changes for IntensityFeatures2 for consistent use of
+   that class.
 
--- consider making a wrapper for extreme case of projection having
+-- consider in near future, making a wrapper for extreme case of projection having
    a scale of 1 in x axis but a very different scale in y axis due
    to perspective, for example, an upright rectangle in one image
    and in the other image the same rectangle viewed at an inclined
@@ -13,9 +18,6 @@
    This new class would need to use bipartite matching of blobs and
    then a filter if possible to remove inconsistent matches,
    then straight to the epipolar solver.
-
--- make use of IntensityFeatures2 the default and make
-   changes to the signature to remove the unused image.
 
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an

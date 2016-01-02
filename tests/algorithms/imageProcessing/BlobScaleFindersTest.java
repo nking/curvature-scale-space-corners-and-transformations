@@ -32,7 +32,7 @@ public class BlobScaleFindersTest extends TestCase {
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
         bph1.applySegmentation(type, useBinned);
         BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
-
+        
         bch1.generatePerimeterCorners(type, useBinned);
 
         BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
@@ -74,7 +74,7 @@ public class BlobScaleFindersTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
-        
+                
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
         bph1.applyEqualization();
         bph1.applySegmentation(type, useBinned);

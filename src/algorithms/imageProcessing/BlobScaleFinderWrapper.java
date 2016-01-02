@@ -3,16 +3,20 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -347,7 +351,7 @@ public class BlobScaleFinderWrapper {
                         blobCornerHelper2 = new BlobCornerHelper(img2Helper);
                     }
                 }
-
+                
                 List<HoughTransformLines> houghTransformLines1 = 
                     findLinesUsingHoughTransform(blobCornerHelper1,
                     segmentationType1, useBinned);
@@ -359,6 +363,14 @@ public class BlobScaleFinderWrapper {
                     // use canny edges segmentation to replace segmentationType1
                     img1Helper.replaceSegmentationWithCanny(segmentationType1, 
                         useBinned);
+                    
+                    boolean filterOutImageBoundaryBlobs = true;
+                    boolean filterOutZeroPixels = false;
+                                        
+                    // pre-make the blobs using non-default variables:
+                    img1Helper.getBlobs(segmentationType1, useBinned,
+                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
+       
                     houghTransformLines1 = 
                         findLinesUsingHoughTransform(blobCornerHelper1,
                         segmentationType1, useBinned);
@@ -375,6 +387,14 @@ public class BlobScaleFinderWrapper {
                     // use canny edges segmentation to replace segmentationType2
                     img2Helper.replaceSegmentationWithCanny(segmentationType2, 
                         useBinned);
+                    
+                    boolean filterOutImageBoundaryBlobs = true;
+                    boolean filterOutZeroPixels = false;
+                    
+                    // pre-make the blobs using non-default variables:
+                    img2Helper.getBlobs(segmentationType2, useBinned,
+                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
+                    
                     houghTransformLines2 = 
                         findLinesUsingHoughTransform(blobCornerHelper2,
                         segmentationType2, useBinned);
@@ -410,7 +430,7 @@ public class BlobScaleFinderWrapper {
                 if (settings.debug()) {
                     bsFinder.setToDebug();
                 }
-        
+                        
                 soln = bsFinder.solveForScale(blobCornerHelper1, f1,
                     segmentationType1, useBinned, blobCornerHelper2, f2,
                     segmentationType2, useBinned, dither);
@@ -583,9 +603,9 @@ public class BlobScaleFinderWrapper {
         
         int sizeLimit = 15;
         
-        // key={polar theta, radius}, value=number of lines with key
-        Map<PairInt, Integer> lineMap = new HashMap<PairInt, Integer>();
-                
+        // key=polar theta, value=radius
+        Map<Integer, Set<Integer>> thetaRadiusMap = new HashMap<Integer, Set<Integer>>();
+        
         for (int ii = 0; ii < lineList.size(); ++ii) {
 
             HoughTransformLines htl = lineList.get(ii);
@@ -601,40 +621,156 @@ public class BlobScaleFinderWrapper {
                 
                 PairInt aPoint = line.iterator().next();
                 
-                PairInt tr = pixToTRMap.get(aPoint);                
+                PairInt tr = pixToTRMap.get(aPoint);
                 
-                Integer count = lineMap.get(tr);
+                Integer theta = Integer.valueOf(tr.getX());
                 
-                if (count == null) {
-                    count = Integer.valueOf(1);
-                } else {
-                    count = Integer.valueOf(count.intValue() + 1);
+                Integer radius = Integer.valueOf(tr.getY());
+                
+                Set<Integer> rs = thetaRadiusMap.get(theta);
+                
+                if (rs == null) {
+                    rs = new HashSet<Integer>();
                 }
+                rs.add(radius);
                 
-                lineMap.put(tr, count);
+                thetaRadiusMap.put(theta, rs);
             }
         }
         
-        double avg = 0;
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        for (Entry<PairInt, Integer> entry : lineMap.entrySet()) {
-            int c = entry.getValue().intValue();
-            avg += c;
-            if (c < min) {
-                min = c;
-            } 
-            if (c > max) {
-                max = c;
+        List<Set<PairInt>> groupIndexes = new ArrayList<Set<PairInt>>();
+        Map<PairInt, Integer> trIndexMap = new HashMap<PairInt, Integer>();
+                
+        Stack<PairInt> trStack = new Stack<PairInt>();
+        for (Entry<Integer, Set<Integer>> entry : thetaRadiusMap.entrySet()) {
+            Integer theta = entry.getKey();
+            int t = theta.intValue();
+            for (Integer radius : entry.getValue()) {
+                int r = radius.intValue();
+                PairInt tr1 = new PairInt(t, r);
+                trStack.add(tr1);
             }
         }
-        avg /= (double)lineMap.size();
         
-        if ((avg > 1.5) && (max > 1)) {
+        Set<PairInt> visited = new HashSet<PairInt>();
+        nxtLbl:
+        while (!trStack.isEmpty()) {
+            PairInt tr1 = trStack.pop();
+            if (visited.contains(tr1)) {
+                continue;
+            }
+            int t = tr1.getX();
+            Integer theta = Integer.valueOf(t);
+            int r = tr1.getY();
+            // look for another theta in thetaRadiusMap with adj radius
+            for (Entry<Integer, Set<Integer>> entry2 : thetaRadiusMap.entrySet()) {
+                Integer theta2 = entry2.getKey();
+                if (theta.equals(theta2)) {
+                    continue;
+                }
+                int t2 = theta2.intValue();
+                for (int dr = -2; dr <= +2; ++dr) {
+                    Integer srchR = Integer.valueOf(r + dr);
+                    if (entry2.getValue().contains(srchR)) {
+                        if (((t % 90) == 0) || ((t2 % 90) == 0)) {
+                            PairInt tr2 = new PairInt(t2, srchR.intValue());
+                            boolean added = processPair(tr1, tr2, groupIndexes, trIndexMap);
+                            if (added) {
+                                trStack.add(tr1);
+                                trStack.add(tr2);
+                                continue nxtLbl;
+                            }
+                        }
+                    }
+                }
+            }
+            visited.add(tr1);
+        }
+        
+        // remove empty groups
+        while (true) {
+            boolean didRm = false;
+            for (int i = 0; i < groupIndexes.size(); ++i) {
+                if (groupIndexes.get(i).size() == 0) {
+                    groupIndexes.remove(i);
+                    didRm = true;
+                    break;
+                }
+            }
+            if (!didRm) {
+                break;
+            }
+        }
+        if (groupIndexes.size() < 4) {
+            return false;
+        }
+        int[] counts = new int[groupIndexes.size()];
+        for (int i = 0; i < groupIndexes.size(); ++i) {
+            counts[i] = groupIndexes.get(i).size();
+        }
+        Arrays.sort(counts);
+        int med = counts[counts.length/2];
+        if (med < 3) {
+            return false;
+        }
+        double[] avgAndStDev = MiscMath.getAvgAndStDev(counts, counts.length);
+        if (avgAndStDev[0] < 3) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private boolean processPair(PairInt tr1, PairInt tr2, 
+        List<Set<PairInt>> groupIndexes, Map<PairInt, Integer> trIndexMap) {
+    
+        Integer gId1 = trIndexMap.get(tr1);
+        Integer gId2 = trIndexMap.get(tr2);
+        if (gId1 == null) {
+            if (gId2 == null) {
+                gId1 = Integer.valueOf(groupIndexes.size());
+                trIndexMap.put(tr1, gId1);
+                trIndexMap.put(tr2, gId1);
+                Set<PairInt> set = new HashSet<PairInt>();
+                set.add(tr1);
+                set.add(tr2);
+                groupIndexes.add(set);
+                return true;
+            } else {
+                groupIndexes.get(gId2).add(tr1);
+                trIndexMap.put(tr1, gId2);
+                return true;
+            }
+        } else if (gId2 == null) {
+            groupIndexes.get(gId1).add(tr2);
+            trIndexMap.put(tr2, gId1);
             return true;
+        } else {
+            // else gId2 == gId1
+            if (!gId2.equals(gId1)) {
+                // merge groups
+                Set<PairInt> uGroup = groupIndexes.get(gId1);
+                Set<PairInt> vGroup = groupIndexes.get(gId2);
+                int nU = uGroup.size();
+                int nV = vGroup.size();
+                if (nU >= nV) {
+                    // merge v into u
+                    uGroup.addAll(vGroup);
+                    for (PairInt p : vGroup) {
+                        trIndexMap.put(p, gId1);
+                    }
+                    vGroup.clear();
+                } else {
+                    // merge u into v
+                    vGroup.addAll(uGroup);
+                    for (PairInt p : uGroup) {
+                        trIndexMap.put(p, gId2);
+                    }
+                    uGroup.clear();
+                }
+                return true;
+            }
         }
-        //log.info("avg=" + avg + " min=" + min + " max=" + max);
-        
         return false;
     }
     

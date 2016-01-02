@@ -33,17 +33,14 @@ public class StereoProjectionTransformerTest extends TestCase {
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
         
-        
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
         settings.setUseNormalizedFeatures(false);
         
-//temporarily disabling while improving feature matching
-        try {
         EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);
         StereoProjectionTransformerFit fit = solver.solve();
-        
+
         int[] x1 = new int[]{248,341,154,341,341,339,341,249,341,155,};
         int[] y1 = new int[]{109,204,295,204,204,295,204,205,204,201,};
         int[] x2 = new int[]{264,169,354,169,169,170,169,264,169,353,};
@@ -59,8 +56,6 @@ public class StereoProjectionTransformerTest extends TestCase {
         //PairFloatArray calculateDistancesFromEpipolar(
         //SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
         //SimpleMatrix matchedRightPoints) {
-        } catch (Exception e) {
-        }
     }
     
     /*

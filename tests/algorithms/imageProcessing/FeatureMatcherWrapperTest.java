@@ -25,7 +25,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
          
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -112,6 +112,8 @@ public class FeatureMatcherWrapperTest extends TestCase {
                     break;
                 }
                 default: {
+                    // rotated checkerboard needs a different analysis of
+                    // matched features.  such a wrapper is in the planning stages
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
