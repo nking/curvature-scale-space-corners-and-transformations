@@ -1,12 +1,20 @@
 -- feature matching still needs improvements
+   (1) finish the changes for IntensityFeatures2 for consistent use of
+       that class.
+   (2) change the curve by curve matching to use a logic switch to
+       either compare corner features or all perimeter point features,
+       depending upon the number of corners per curve.
+      -- the books test specifically needs this imrprovement, and probably also venturi
+      -- after have that fixed, compare the total runtime for using unbinned images
+         and presumably corners (more corners at higher res)
+         to the runtime for using binned images and perimeter points (when corners are too small in number)
+
 -- reduce the number of combinations used now that the solution appears to
    be more stable
 -- considering adding back in the last addition of matched features for 
    canny edge corners and a strict known transformation.
 -- review the logic for filtering out blobs that are on the image boundaries
    and make any subsequent methods consistent.
--- finish the changes for IntensityFeatures2 for consistent use of
-   that class.
 
 -- consider in near future, making a wrapper for extreme case of projection having
    a scale of 1 in x axis but a very different scale in y axis due
