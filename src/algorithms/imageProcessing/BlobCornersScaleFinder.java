@@ -594,7 +594,7 @@ System.out.println(sb.toString());
             }
         }
         
-        if (extractMore) {
+        if (extractMore && bestParams != null) {
 
             extractMore = false;
             

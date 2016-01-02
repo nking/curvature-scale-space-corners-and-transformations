@@ -1,6 +1,4 @@
--- make tests for greyscale7 looking at rotational invariance.
-   -- impl a verison of the a trous wavelet which uses single 2-D B3 spline
-      and see if perfect rotational invariance is the result.
+-- feature matching still needs improvements
 -- reduce the number of combinations used now that the solution appears to
    be more stable
 -- considering adding back in the last addition of matched features for 

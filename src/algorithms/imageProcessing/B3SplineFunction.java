@@ -11,13 +11,15 @@ public class B3SplineFunction {
      * The implementation follows pseudocode in
      * http://www.multiresolution.com/svbook.pdf
      *
-     * The runtime complexity is O(N_pixels).
+     * The runtime complexity is O(N_pixels) and internally uses 2 1-D operations.
      *
      * Handling boundaries:
      * "mirror" :      c(k + N) = c(N −k)
      * "periodicity" : (c(k + N) = c(N))
      * "continuity"  : (c(k + N) = c(k))
      * </pre>
+     * @param input
+     * @return
     */
     public GreyscaleImage calculate(GreyscaleImage input) {
 
@@ -27,44 +29,48 @@ public class B3SplineFunction {
         GreyscaleImage output = input.copyImage();
 
         // use separability, that is 1D operation on columns, then rows
-        
+
         for (int row = 0; row < h; ++row) {
             for (int col = 0; col < w; ++col) {
-                // choosing "continuity" for boundary corrections
-                int x0 = col - 2;
-                if (x0 < 0) {
-                    x0 = col;
-                }
-                int x1 = col - 1;
-                if (x1 < 0) {
-                    x1 = col;
-                }
-                int x2 = col;
-                int x3 = col + 1;
-                if (x3 > (w - 1)) {
-                    x3 = col;
-                }
-                int x4 = col + 2;
-                if (x4 > (w - 1)) {
-                    x4 = col;
-                }
-                /*
-                (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3) 
-                1/16, 1/4, 3/8, 1/4, 1/16
-                */
-                double v0 = input.getValue(x0, row);
-                double v1 = input.getValue(x1, row);
-                double v2 = input.getValue(x2, row);
-                double v3 = input.getValue(x3, row);
-                double v4 = input.getValue(x4, row);
-                v0 *= (1./16.);
-                v1 *= (1./4.);
-                v2 *= (3./8.);
-                v3 *= (1./4.);
-                v4 *= (1./16.);
-                int v = (int) Math.round(v0 + v1 + v2 + v3 + v4);
 
-                output.setValue(col, row, v);
+                // choosing "continuity" for boundary corrections
+
+                int vSum = 0;
+                for (int dx = -2; dx <= 2; ++dx) {
+
+                    int xi = col + dx;
+                    if ((xi < 0) || (xi > (w - 1))) {
+                        xi = col;
+                    }
+
+                    int v = input.getValue(xi, row);
+
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+                    switch (dx) {
+                        // -2 and +2
+                        case -1:
+                        case 1:
+                            v <<= 2;
+                            break;
+                        case 0:
+                            v <<= 1;
+                            v *= 3;
+                            break;
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+                    vSum += v;
+                }
+
+                vSum >>= 4;
+
+                output.setValue(col, row, vSum);
             }
         }
 
@@ -72,39 +78,307 @@ public class B3SplineFunction {
 
         for (int col = 0; col < w; ++col) {
             for (int row = 0; row < h; ++row) {
+
                 // choosing "continuity" for boundary corrections
-                int y0 = row - 2;
-                if (y0 < 0) {
-                    y0 = row;
+
+                int vSum = 0;
+                for (int dy = -2; dy <= 2; ++dy) {
+
+                    int yi = row + dy;
+                    if ((yi < 0) || (yi > (h - 1))) {
+                        yi = row;
+                    }
+
+                    int v = input2.getValue(col, yi);
+
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+                    switch (dy) {
+                        // -2 and +2
+                        case -1:
+                        case 1:
+                            v <<= 2;
+                            break;
+                        case 0:
+                            v <<= 1;
+                            v *= 3;
+                            break;
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+                    vSum += v;
                 }
-                int y1 = row - 1;
-                if (y1 < 0) {
-                    y1 = row;
+
+                vSum >>= 4;
+
+                output.setValue(col, row, vSum);
+            }
+        }
+
+        return output;
+    }
+
+    protected int interpolate1D(int x, int y, GreyscaleImage img,
+        boolean calcForX) {
+
+        if (calcForX) {
+            return interpolate1DX(x, y, img);
+        } else {
+            return interpolate1DY(x, y, img);
+        }
+    }
+
+    /**
+     * interpolate values around (x,y) along x in img using a B3 spline.  Note that
+     * an int is used for the internal logic, so expecting that every pixel in
+     * img has value less than (Integer.MAX_VALUE)^1/3.
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    public int interpolate1DX(int x, int y, GreyscaleImage img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        /*
+        (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+        1/16, 1/4, 3/8, 1/4, 1/16
+        1/16*(1, 4, 6, 4, 1)
+        */
+        int vSum = 0;
+        for (int dx = -2; dx <= 2; ++dx) {
+
+            int xi = x + dx;
+            if ((xi < 0) || (xi > (w - 1))) {
+                xi = x;
+            }
+
+            int v = img.getValue(xi, y);
+
+            switch(dx) {
+                // -2 and +2
+                case -1:
+                case 1:
+                    v <<= 2;
+                    break;
+                case 0:
+                    v <<= 1;
+                    v *= 3;
+                    break;
+                // case -2 and +2 are factor 1
+                default:
+                    break;
+            }
+
+            vSum += v;
+        }
+
+        vSum >>= 4;
+
+        return vSum;
+    }
+
+    /**
+     * interpolate values around (x,y) along y in img using a B3 spline.  Note that
+     * an int is used for the internal logic, so expecting that every pixel in
+     * img has value less than (Integer.MAX_VALUE)^1/3.
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    protected int interpolate1DY(int x, int y, GreyscaleImage img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        /*
+        (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+        1/16, 1/4, 3/8, 1/4, 1/16
+        
+        1/16*(1, 4, 6, 4, 1)
+        */
+        int vSum = 0;
+        for (int dy = -2; dy <= 2; ++dy) {
+
+            int yi = y + dy;
+            if ((yi < 0) || (yi > (h - 1))) {
+                yi = y;
+            }
+
+            int v = img.getValue(x, yi);
+
+            switch(dy) {
+                // -2 and +2
+                case -1:
+                case 1:
+                    v <<= 2;
+                    break;
+                case 0:
+                    v <<= 1;
+                    v *= 3;
+                    break;
+                // case -2 and +2 are factor 1
+                default:
+                    break;
+            }
+
+            vSum += v;
+        }
+        
+        vSum >>= 4;
+
+        return vSum;
+    }
+
+    /**
+     * interpolate values around (x,y) along y in img using a B3 spline.  Note that
+     * an int is used for the internal logic, so expecting that every pixel in
+     * img has value less than (Integer.MAX_VALUE)^1/3.
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    protected int interpolate2D(int x, int y, GreyscaleImage img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        /*        
+         1/256  1/64   3/128    1/64    1/256
+         1/64   1/16   3/32     1/16    1/64
+         3/128  3/32   9/64     3/32    3/128
+         1/64   1/16   3/32     1/16    1/64
+         1/256  1/64   3/128    1/64    1/256
+
+         (1/256) *   |   1    4   3*2    4    1 |
+                     |   4   16   3*8   16    4 |
+                     | 3*2  3*8   9*4  3*8  3*2 |
+                     |   4   16   3*8   16    4 |
+                     |   1    4   3*2    4    1 |
+        */
+
+        int vSum = 0;
+
+        for (int dy = -2; dy <= 2; ++dy) {
+            int yi = y + dy;
+            if ((yi < 0) || (yi > (h - 1))) {
+                yi = y;
+            }
+            for (int dx = -2; dx <= 2; ++dx) {
+                int xi = x + dx;
+                if ((xi < 0) || (xi > (w - 1))) {
+                    xi = x;
                 }
-                int y2 = row;
-                int y3 = row + 1;
-                if (y3 > (h - 1)) {
-                    y3 = row;
-                }
-                int y4 = row + 2;
-                if (y4 > (h - 1)) {
-                    y4 = row;
-                }
-                /*
-                (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3) 
-                1/16, 1/4, 3/8, 1/4, 1/16
-                */
-                double v0 = input2.getValue(col, y0);
-                double v1 = input2.getValue(col, y1);
-                double v2 = input2.getValue(col, y2);
-                double v3 = input2.getValue(col, y3);
-                double v4 = input2.getValue(col, y4);
-                v0 *= (1./16.);
-                v1 *= (1./4.);
-                v2 *= (3./8.);
-                v3 *= (1./4.);
-                v4 *= (1./16.);
-                int v = (int) Math.round(v0 + v1 + v2 + v3 + v4);
+                int v = img.getValue(xi, yi);
+                switch(dx) {
+                    case -2:
+                    case 2:
+                        switch(dy) {
+                            case -1:
+                            case 1:
+                                v <<= 2;
+                                break;
+                            case 0:
+                                v <<= 1;
+                                v *= 3;
+                                break;
+                            // rows -2 and +2 are factors of 1
+                            default:
+                                break;
+                        }
+                        break;
+                    case -1:
+                    case 1:
+                        switch(dy) {
+                            // -2, 2 are 4
+                            case -2:
+                            case 2:
+                                v <<= 2;
+                                break;
+                            // rows -1, 1 are 16
+                            case -1:
+                            case 1:
+                                v <<= 4;
+                                break;
+                            case 0:
+                                v <<= 3;
+                                v *= 3;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case 0:
+                        switch(dy) {
+                            // -2, 2 are 6
+                            case -2:
+                            case 2:
+                                v <<= 1;
+                                v *= 3;
+                                break;
+                            // rows -1, 1 are 24
+                            case -1:
+                            case 1:
+                                v <<= 3;
+                                v *= 3;
+                                break;
+                            case 0:
+                                v <<= 2;
+                                v *= 9;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                } // end switch(dx)
+                vSum += v;
+            }
+        }
+
+        vSum >>= 8;
+
+        return vSum;
+    }
+
+    protected GreyscaleImage calculate2D(GreyscaleImage img) {
+
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        /*
+         1/256  1/64   3/128    1/64    1/256
+         1/64   1/16   3/32     1/16    1/64
+         3/128  3/32   9/64     3/32    3/128
+         1/64   1/16   3/32     1/16    1/64
+         1/256  1/64   3/128    1/64    1/256
+
+         (1/256) *   |   1    4   3*2    4    1 |
+                     |   4   16   3*8   16    4 |
+                     | 3*2  3*8   9*4  3*8  3*2 |
+                     |   4   16   3*8   16    4 |
+                     |   1    4   3*2    4    1 |
+        */
+
+        GreyscaleImage output = img.createWithDimensions();
+
+        for (int row = 0; row < h; ++row) {
+            for (int col = 0; col < w; ++col) {
+
+                int v = interpolate2D(col, row, img);
 
                 output.setValue(col, row, v);
             }
@@ -112,5 +386,4 @@ public class B3SplineFunction {
 
         return output;
     }
-
 }

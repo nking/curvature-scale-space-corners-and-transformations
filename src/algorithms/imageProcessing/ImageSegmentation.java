@@ -3098,21 +3098,28 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
         List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
 
-        wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);
+        boolean use1D = false;
+        if (use1D) {
+            wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);
+        } else {
+            wt.calculateWithB3SplineScalingFunction2(input, transformed, coeffs);
+        }
 
-        if (true) {
+        /*
             for (int i = 0; i < coeffs.size(); ++i) {
                 GreyscaleImage img = coeffs.get(i);
                 String str = "coeff_" + Integer.toString(i) + "_" +
                     MiscDebug.getCurrentTimeFormatted();
                 MiscDebug.writeImage(img, str);
             }
-        }
+        */
 
         GreyscaleImage coarsestCoeff = coeffs.get(coeffs.size() - 1);
+        
+        int limit = use1D ? 2 : 1;
 
         for (int i = 0; i < coarsestCoeff.getNPixels(); ++i) {
-            if (coarsestCoeff.getValue(i) > 0) {
+            if (coarsestCoeff.getValue(i) > limit) {
                 coarsestCoeff.setValue(i, 250);
             } else {
                 coarsestCoeff.setValue(i, 0);

@@ -498,8 +498,8 @@ public class Transformer {
         yt_0 = yr_0 + transY = y1
         */
         
-        GreyscaleImage output = new GreyscaleImage(outputWidth, 
-            outputHeight);
+        GreyscaleImage output = new GreyscaleImage(outputWidth, outputHeight, 
+            input.getType());
         
         for (int x = 0; x < input.getWidth(); x++) {
             for (int y = 0; y < input.getHeight(); y++) {

@@ -88,6 +88,43 @@ public class ATrousWaveletTransform {
         }
         
     }
+    
+    /**
+     * same as calculateWithB3SplineScalingFunction except that it uses a 2-D
+     * scaling function and the runtime is 2.5 times longer.
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    void calculateWithB3SplineScalingFunction2(GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+
+        B3SplineFunction scalingFunction = new B3SplineFunction();
+        
+        outputTransformed.add(input.copyToSignedImage());
+        
+        outputCoeff.add(input.createSignedWithDimensions());
+
+        for (int j = 0; j < nr; ++j) {
+            
+            GreyscaleImage cJ = outputTransformed.get(j);
+ 
+            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);
+           
+            outputTransformed.add(cJPlus1);
+            
+            // c_(j,k) − c_(j+1,k)
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+        }
+        
+    }
 
     public GreyscaleImage reconstruct(GreyscaleImage c0, 
         List<GreyscaleImage> mmCoeff) {

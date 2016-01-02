@@ -477,6 +477,9 @@ public class ImageStatisticsHelper {
         parameters, List<FeatureComparisonStat> stats,
         int img1Width, int img1Height, int img2Width, int img2Height) {
         
+        if (parameters == null || stats.size() < 4) {
+            return false;
+        }
         int[] counts = getQuadrantCountsForIntersection(parameters, stats,
             img1Width, img1Height, img2Width, img2Height);
         
@@ -508,6 +511,10 @@ public class ImageStatisticsHelper {
     public static int[] getQuadrantCountsForIntersection(TransformationParameters 
         parameters, List<FeatureComparisonStat> stats,
         int img1Width, int img1Height, int img2Width, int img2Height) {
+        
+        if (parameters == null) {
+            return new int[4];
+        }
         
         /*
         calculate the intersection of the 2 images.

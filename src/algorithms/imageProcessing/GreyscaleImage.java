@@ -187,7 +187,11 @@ public class GreyscaleImage {
             a = new int[len];
 
             aL = null;
-        }        
+        }
+        
+        if (minAllowed < 0) {
+            fill(0);
+        }
     }
     
     /**
