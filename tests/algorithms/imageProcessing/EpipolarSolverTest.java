@@ -244,6 +244,8 @@ public class EpipolarSolverTest extends TestCase {
         }
         
         // until add back the extra features step in the feature matcher, just catch the too few points exception
+        // the books test for example, produces precise but few points.  
+        //     it needs a different analysis of matched features because of the rectification.
         try {
         StereoProjectionTransformerFit fit = solver.solve();
         

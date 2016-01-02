@@ -28,9 +28,11 @@ public class BlobsAndPerimetersTest extends TestCase {
         boolean useBinned = false;
         
         boolean filterOutImageBoundaryBlobs = true;
+        boolean filterOutZeroValuePixels = false;
         List<Set<PairInt>> blobs = 
             BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-            imgHelper, type, useBinned, filterOutImageBoundaryBlobs);
+            imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+            filterOutZeroValuePixels);
                 
         // 1 of the blobs is touching image boundaries so is filtered out
         assertEquals(2, blobs.size());

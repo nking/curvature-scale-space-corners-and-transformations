@@ -1,8 +1,10 @@
--- make tests for greysclae7 looking at rotational invariance.
+-- make tests for greyscale7 looking at rotational invariance.
    -- impl a verison of the a trous wavelet which uses single 2-D B3 spline
       and see if perfect rotational invariance is the result.
 -- reduce the number of combinations used now that the solution appears to
    be more stable
+-- considering adding back in the last addition of matched features for 
+   canny edge corners and a strict known transformation.
 -- review the logic for filtering out blobs that are on the image boundaries
    and make any subsequent methods consistent.
 -- finish the changes for IntensityFeatures2 for consistent use of
