@@ -24,7 +24,7 @@ public class BlobCornerHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("blox.gif");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
 
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "blox");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "blox");
         bph.increaseLargestGroupLimit(100000);
 
         assertEquals(1, bph.getBinFactor(true));
@@ -33,14 +33,12 @@ public class BlobCornerHelperTest extends TestCase {
 
         bph.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
 
-        BlobCornerHelper bch = new BlobCornerHelper(bph, "blox");
-
         List<List<CornerRegion>> cList1 =
-            bch.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
+            bph.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
                 useBinned);
 
         List<List<CornerRegion>> cList2 =
-            bch.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
+            bph.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
                 useBinned);
 
         assertNotNull(cList1);
@@ -49,9 +47,9 @@ public class BlobCornerHelperTest extends TestCase {
         assertTrue(cList1.size() >= 5);
         assertTrue(cList2.size() >= 5);
 
-        int nNonZero1 = bch.sumPointsOfInterest(
+        int nNonZero1 = bph.sumPointsOfInterest(
             SegmentationType.GREYSCALE_KMPP, useBinned);
-        int nNonZero2 = bch.sumPointsOfInterest(
+        int nNonZero2 = bph.sumPointsOfInterest(
             SegmentationType.COLOR_POLARCIEXY, useBinned);
 
         assertTrue(nNonZero1 >= 2*5);
@@ -65,7 +63,7 @@ public class BlobCornerHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("lena.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
 
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "lena");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "lena");
         bph.increaseLargestGroupLimit(100000);
 
         bph.createBinnedGreyscaleImage(300);
@@ -76,14 +74,12 @@ public class BlobCornerHelperTest extends TestCase {
 
         bph.applySegmentation(SegmentationType.COLOR_POLARCIEXY, useBinned);
 
-        BlobCornerHelper bch = new BlobCornerHelper(bph, "lena");
-
         List<List<CornerRegion>> cList1 =
-            bch.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
+            bph.generatePerimeterCorners(SegmentationType.GREYSCALE_KMPP,
                 useBinned);
 
         List<List<CornerRegion>> cList2 =
-            bch.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
+            bph.generatePerimeterCorners(SegmentationType.COLOR_POLARCIEXY,
                 useBinned);
 
         assertNotNull(cList1);
@@ -92,9 +88,9 @@ public class BlobCornerHelperTest extends TestCase {
         assertTrue(cList1.size() >= 5);
         assertTrue(cList2.size() >= 10);
 
-        int nNonZero1 = bch.sumPointsOfInterest(
+        int nNonZero1 = bph.sumPointsOfInterest(
             SegmentationType.GREYSCALE_KMPP, useBinned);
-        int nNonZero2 = bch.sumPointsOfInterest(
+        int nNonZero2 = bph.sumPointsOfInterest(
             SegmentationType.COLOR_POLARCIEXY, useBinned);
 
         assertTrue(nNonZero1 >= 2*5);

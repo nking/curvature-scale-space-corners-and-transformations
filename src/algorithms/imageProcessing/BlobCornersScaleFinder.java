@@ -5,18 +5,15 @@ import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
-import algorithms.misc.MiscDebug;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ScatterPointPlotterPNG;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,9 +27,9 @@ import java.util.logging.Logger;
 public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
 
     public MatchingSolution solveForScale(
-        BlobCornerHelper img1Helper, IntensityFeatures features1,
+        BlobPerimeterCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
-        BlobCornerHelper img2Helper, IntensityFeatures features2,
+        BlobPerimeterCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2, int dither) {
         
         boolean filterOutImageBoundaryBlobs = false;
@@ -44,9 +41,9 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
     }
     
     public MatchingSolution solveForScale(
-        BlobCornerHelper img1Helper, IntensityFeatures features1,
+        BlobPerimeterCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
-        BlobCornerHelper img2Helper, IntensityFeatures features2,
+        BlobPerimeterCornerHelper img2Helper, IntensityFeatures features2,
         SegmentationType type2, boolean useBinned2, int dither,
         boolean filterOutImageBoundaryBlobs, 
         boolean filterOutZeroPixels) {
@@ -55,37 +52,52 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
             type1, useBinned1);
         List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
             type2, useBinned2);
-        List<Set<PairInt>> blobs1 = img1Helper.imgHelper.getBlobs(type1, 
+        List<Set<PairInt>> blobs1 = img1Helper.getBlobs(type1, 
             useBinned1, filterOutImageBoundaryBlobs);
-        List<Set<PairInt>> blobs2 = img2Helper.imgHelper.getBlobs(type2, 
+        List<Set<PairInt>> blobs2 = img2Helper.getBlobs(type2, 
             useBinned2, filterOutImageBoundaryBlobs);
-        List<PairIntArray> perimeters1 = img1Helper.imgHelper.getBlobPerimeters(
+        List<PairIntArray> perimeters1 = img1Helper.getBlobPerimeters(
             type1, useBinned1, filterOutImageBoundaryBlobs, filterOutZeroPixels);
-        List<PairIntArray> perimeters2 = img2Helper.imgHelper.getBlobPerimeters(
+        List<PairIntArray> perimeters2 = img2Helper.getBlobPerimeters(
             type2, useBinned2, filterOutImageBoundaryBlobs, filterOutZeroPixels);
 
-        GreyscaleImage img1 = img1Helper.imgHelper.getGreyscaleImage(useBinned1);
-        GreyscaleImage img2 = img2Helper.imgHelper.getGreyscaleImage(useBinned2);
+        GreyscaleImage img1 = img1Helper.getGreyscaleImage(useBinned1);
+        GreyscaleImage img2 = img2Helper.getGreyscaleImage(useBinned2);
 
         assert(blobs1.size() == perimeters1.size());
         assert(blobs1.size() == corners1List.size());
         assert(blobs2.size() == perimeters2.size());
         assert(blobs2.size() == corners2List.size());
 
+        boolean allEdgesEmpty1 = true;
+        boolean allEdgesEmpty2 = true;
+        
         float dist = 2.5f;
         for (int i = 0; i < perimeters1.size(); ++i) {
-            filterCorners(perimeters1.get(i), corners1List.get(i), dist);
+            PairIntArray edge = perimeters1.get(i);
+            if (edge.getN() > 0) {
+                filterCorners(edge, corners1List.get(i), dist);
+                allEdgesEmpty1 = false;
+            }
         }
         for (int i = 0; i < perimeters2.size(); ++i) {
-            filterCorners(perimeters2.get(i), corners2List.get(i), dist);
+            PairIntArray edge = perimeters2.get(i);
+            if (edge.getN() > 0) {
+                filterCorners(edge, corners2List.get(i), dist);
+                allEdgesEmpty2 = false;
+            }
         }
 
         if (true) {
-            for (List<CornerRegion> list : corners1List) {
-                sortCornersToCCW(list);
+            if (!allEdgesEmpty1) {
+                for (List<CornerRegion> list : corners1List) {
+                    sortCornersToCCW(list);
+                }
             }
-            for (List<CornerRegion> list : corners2List) {
-                sortCornersToCCW(list);
+            if (!allEdgesEmpty2) {
+                for (List<CornerRegion> list : corners2List) {
+                    sortCornersToCCW(list);
+                }
             }
         }
 /*
@@ -181,15 +193,15 @@ System.out.println(sb.toString());
     }
 
     private <T extends CornerRegion> MatchingSolution match(
-        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
+        BlobPerimeterCornerHelper img1Helper, BlobPerimeterCornerHelper img2Helper,
         IntensityFeatures features1, IntensityFeatures features2,
         GreyscaleImage img1, GreyscaleImage img2,
         List<List<T>> corners1List, List<List<T>> corners2List,
         boolean useBinned1, boolean useBinned2, int dither,
         boolean filterOutImageBoundaryBlobs) {
 
-        int binFactor1 = img1Helper.imgHelper.getBinFactor(useBinned1);
-        int binFactor2 = img2Helper.imgHelper.getBinFactor(useBinned2);
+        int binFactor1 = img1Helper.getBinFactor(useBinned1);
+        int binFactor2 = img2Helper.getBinFactor(useBinned2);
 
         // filter these corners to remove featureless patches when possible
         List<List<T>> filteredCorners1List = corners1List;
@@ -355,7 +367,7 @@ System.out.println(sb.toString());
      * @return
      */
     private <T extends CornerRegion> MatchingSolution evaluateForBestUsingFeatures(
-        BlobCornerHelper img1Helper, BlobCornerHelper img2Helper,
+        BlobPerimeterCornerHelper img1Helper, BlobPerimeterCornerHelper img2Helper,
         IntensityFeatures features1, IntensityFeatures features2,
         GreyscaleImage img1, GreyscaleImage img2,
         Map<PairInt, TransformationParameters> paramsMap,
@@ -480,7 +492,7 @@ System.out.println(sb.toString());
 
                         double cost = 
                             (((float)dist + 0.01f)/(float)tolTransXY2) *
-                            ((float)compStat.getSumIntensitySqDiff() + 1);
+                            (compStat.getSumIntensitySqDiff() + 1);
                         
                         if (cost < bestCostPerIndex) {
                             bestCostPerIndex = cost;
@@ -619,17 +631,17 @@ System.out.println(sb.toString());
                 
                 //TODO: consider canny edges instead of this...
 
-                ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
-                ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
+                ImageExt imgExt1 = img1Helper.getImage().copyToImageExt();
+                ImageExt imgExt2 = img2Helper.getImage().copyToImageExt();
                 ImageProcessor imageProcessor = new ImageProcessor();
                 int smallestGroupLimit, largestGroupLimit;
                 if (binFactor1 == 1) {
-                    smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimit();
-                    largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimit();
+                    smallestGroupLimit = img1Helper.getSmallestGroupLimit();
+                    largestGroupLimit = img1Helper.getLargestGroupLimit();
                 } else {
                     imgExt1 = imageProcessor.binImage(imgExt1, binFactor1);
-                    smallestGroupLimit = img1Helper.imgHelper.getSmallestGroupLimitBinned();
-                    largestGroupLimit = img1Helper.imgHelper.getLargestGroupLimitBinned();
+                    smallestGroupLimit = img1Helper.getSmallestGroupLimitBinned();
+                    largestGroupLimit = img1Helper.getLargestGroupLimitBinned();
                 }
                 if (binFactor2 != 1) {
                     imgExt2 = imageProcessor.binImage(imgExt2, binFactor2);
@@ -647,8 +659,8 @@ System.out.println(sb.toString());
                     binFactor1, binFactor2,
                     smallestGroupLimit, largestGroupLimit,
                     features1.getRotatedOffsets(), filterOutImageBoundaryBlobs,
-                    img1Helper.imgHelper.isInDebugMode(),
-                    img1Helper.imgHelper.getDebugTag());
+                    img1Helper.isInDebugMode(),
+                    img1Helper.getDebugTag());
                 
                 /*
                 if there are degenerate matches for either pt1 or pt2, keep

@@ -548,8 +548,10 @@ public class PointSampling {
     private Map<PairInt, Integer> useDistanceTransform(Set<PairInt> points, 
         int w, int h, List<PairInt> seeds) {
              
-        com.climbwithyourfeet.clustering.DistanceTransform dt = 
-            new com.climbwithyourfeet.clustering.DistanceTransform();
+        com.climbwithyourfeet.clustering.DistanceTransform
+            <com.climbwithyourfeet.clustering.util.PairInt> dt = 
+            new com.climbwithyourfeet.clustering.DistanceTransform
+            <com.climbwithyourfeet.clustering.util.PairInt>();
         
         Set<com.climbwithyourfeet.clustering.util.PairInt> seedPoints
             = new HashSet<com.climbwithyourfeet.clustering.util.PairInt>();

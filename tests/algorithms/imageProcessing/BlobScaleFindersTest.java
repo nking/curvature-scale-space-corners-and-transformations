@@ -34,24 +34,21 @@ public class BlobScaleFindersTest extends TestCase {
 
         SegmentationType type = SegmentationType.GREYSCALE_HIST;
         
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        BlobPerimeterCornerHelper bph1 = new BlobPerimeterCornerHelper(img1, "1");
         bph1.applySegmentation(type, useBinned);
-        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
-        
-        bch1.generatePerimeterCorners(type, useBinned);
+        bph1.generatePerimeterCorners(type, useBinned);
 
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        BlobPerimeterCornerHelper bph2 = new BlobPerimeterCornerHelper(img2, "2");
         bph2.applySegmentation(type, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
-        bch2.generatePerimeterCorners(type, useBinned);
+        bph2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
         int dither = 3;
         
         MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1, type, useBinned,
-            bch2, features2, type, useBinned, dither);
+            bph1, features1, type, useBinned,
+            bph2, features2, type, useBinned, dither);
         
         assertNotNull(soln);
         
@@ -82,26 +79,23 @@ public class BlobScaleFindersTest extends TestCase {
 
         SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
 
-        BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
+        BlobPerimeterCornerHelper bph1 = new BlobPerimeterCornerHelper(img1, "1");
         bph1.applyEqualization();
         bph1.applySegmentation(type, useBinned);
-        BlobCornerHelper bch1 = new BlobCornerHelper(bph1, "1");
+        bph1.generatePerimeterCorners(type, useBinned);
 
-        bch1.generatePerimeterCorners(type, useBinned);
-
-        BlobPerimeterHelper bph2 = new BlobPerimeterHelper(img2, "2");
+        BlobPerimeterCornerHelper bph2 = new BlobPerimeterCornerHelper(img2, "2");
         bph2.applyEqualization();
         bph2.applySegmentation(type, useBinned);
-        BlobCornerHelper bch2 = new BlobCornerHelper(bph2, "2");
-        bch2.generatePerimeterCorners(type, useBinned);
+        bph2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
         int dither = 3;
         
         MatchingSolution soln = bsFinder.solveForScale(
-            bch1, features1, type, useBinned,
-            bch2, features2, type, useBinned, dither);
+            bph1, features1, type, useBinned,
+            bph2, features2, type, useBinned, dither);
 
         assertNotNull(soln);
         

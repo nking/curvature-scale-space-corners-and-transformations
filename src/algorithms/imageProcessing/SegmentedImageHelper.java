@@ -299,16 +299,7 @@ public class SegmentedImageHelper {
                 imgBinned, fracLowerLimitPolarCIEXY, true);
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgBinnedSegmentedMap.put(type, segImg);
-            
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)
-            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
-            
-            // not expecting to use binned color images:
-            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(
-                imgBinned, fracLowerLimitPolarCIEXY, false);
-            imgBinnedSegmentedMap.put(type, segImg);
-            
+                   
         } else if (type.equals(SegmentationType.ADAPTIVE_MEAN)) {
          
             segImg = gsImg.copyImage();
@@ -425,13 +416,6 @@ public class SegmentedImageHelper {
             segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
                 fracLowerLimitPolarCIEXY, true);
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
-            imgSegmentedMap.put(type, segImg);
-            
-        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY) 
-            || type.equals(SegmentationType.COLOR_POLARCIEXY_LARGE)) {
-            
-            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
-                fracLowerLimitPolarCIEXY, true);
             imgSegmentedMap.put(type, segImg);
             
         } else if (type.equals(SegmentationType.ADAPTIVE_MEAN)) {

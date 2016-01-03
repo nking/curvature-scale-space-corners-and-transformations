@@ -31,7 +31,7 @@ public class FeatureMatcherWrapper {
     // due to the order of two 1-D B3 spline operations (which are much faster
     // than a single 2-D B3 spline, so they are used even w/ the small variance
     // with rotation) so a dither=3 is necessary.
-    protected final int dither = 3;//4;
+    public static final int dither = DitherDefault.dither;
 
     private final ImageExt img1;
     private final ImageExt img2;

@@ -53,6 +53,10 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         List<PairInt> sortedThetaRadiusKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, int thetaTol,
         int radiusTol, boolean allowGaps) {
+        
+        if (sortedThetaRadiusKeys.size() == 0) {
+            return new HashMap<PairInt, PairInt>();
+        }
 
         Map<PairInt, PairInt> pixToTRMap = findConnectedPointGroupsIterative(
             sortedThetaRadiusKeys, thetaRadiusPixMap, thetaTol, radiusTol);

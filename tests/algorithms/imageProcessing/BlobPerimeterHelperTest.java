@@ -26,7 +26,7 @@ public class BlobPerimeterHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("blox.gif");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "blox");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "blox");
         bph.increaseLargestGroupLimit(100000);
         
         assertEquals(1, bph.getBinFactor(true));
@@ -40,8 +40,7 @@ public class BlobPerimeterHelperTest extends TestCase {
         
         assertNotNull(segImg);
         
-        segImg = bph.getSegmentationImage(
-            SegmentationType.COLOR_POLARCIEXY);
+        segImg = bph.getSegmentationImage(SegmentationType.COLOR_POLARCIEXY);
         
         assertNotNull(segImg);
         

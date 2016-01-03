@@ -31,7 +31,7 @@ public class BlobsAndCorners  {
      * @return 
      */
     public static List<List<CornerRegion>> populateCorners(
-        final BlobPerimeterHelper blobPerimeterHelper,
+        final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage,
         final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,

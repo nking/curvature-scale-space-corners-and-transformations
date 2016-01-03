@@ -26,7 +26,7 @@ public class BlobsAndContours  {
     protected static String debugTag = "";
 
     public static List<List<CurvatureScaleSpaceContour>> populateContours(
-        final BlobPerimeterHelper blobPerimeterHelper,
+        final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage) {
 
         List<List<CurvatureScaleSpaceContour>> contours
@@ -380,7 +380,7 @@ public class BlobsAndContours  {
         return remove;
     }
 
-    public static List<List<BlobPerimeterRegion>> populateRegions(BlobPerimeterHelper 
+    public static List<List<BlobPerimeterRegion>> populateRegions(BlobPerimeterCornerHelper 
         imgHelper, List<List<CurvatureScaleSpaceContour>> contours, 
         SegmentationType type, boolean useBinned) {
         

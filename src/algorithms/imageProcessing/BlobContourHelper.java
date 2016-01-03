@@ -26,18 +26,18 @@ public class BlobContourHelper {
         segBinnedBPRMap = new HashMap<SegmentationType, 
         List<List<BlobPerimeterRegion>>>();
     
-    protected final BlobPerimeterHelper imgHelper;
+    protected final BlobPerimeterCornerHelper imgHelper;
     
     protected boolean debug = false;
     
     protected String debugTag = "";
     
-    public BlobContourHelper(final BlobPerimeterHelper imgHelper) {
+    public BlobContourHelper(final BlobPerimeterCornerHelper imgHelper) {
         
         this.imgHelper = imgHelper;
     }
     
-    public BlobContourHelper(final BlobPerimeterHelper imgHelper, 
+    public BlobContourHelper(final BlobPerimeterCornerHelper imgHelper, 
         final String debugTag) {
         
         this.imgHelper = imgHelper;

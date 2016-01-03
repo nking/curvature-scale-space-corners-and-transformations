@@ -48,11 +48,8 @@ public class BlobScaleFinderWrapper {
     }
     protected AlgType algType = AlgType.CORNERS_COMBINATIONS;
 
-    protected final BlobPerimeterHelper img1Helper;
-    protected final BlobPerimeterHelper img2Helper;
-
-    protected BlobCornerHelper blobCornerHelper1 = null;
-    protected BlobCornerHelper blobCornerHelper2 = null;
+    protected final BlobPerimeterCornerHelper img1Helper;
+    protected final BlobPerimeterCornerHelper img2Helper;
 
     protected BlobContourHelper blobContourHelper1 = null;
     protected BlobContourHelper blobContourHelper2 = null;
@@ -101,15 +98,15 @@ public class BlobScaleFinderWrapper {
         
         if (settings.debug()) {
             
-            img1Helper = new BlobPerimeterHelper(img1, settings.getDebugTag() + "_1");
+            img1Helper = new BlobPerimeterCornerHelper(img1, settings.getDebugTag() + "_1");
 
-            img2Helper = new BlobPerimeterHelper(img2, settings.getDebugTag() + "_2");
+            img2Helper = new BlobPerimeterCornerHelper(img2, settings.getDebugTag() + "_2");
             
         } else {
             
-            img1Helper = new BlobPerimeterHelper(img1);
+            img1Helper = new BlobPerimeterCornerHelper(img1);
 
-            img2Helper = new BlobPerimeterHelper(img2);
+            img2Helper = new BlobPerimeterCornerHelper(img2);
         }
               
         // delaying creation of gradient images for full images until needed:
@@ -282,7 +279,6 @@ public class BlobScaleFinderWrapper {
                 SegmentationType.GREYSCALE_WAVELET,
         //      SegmentationType.GREYSCALE_CANNY,
         //      SegmentationType.GREYSCALE_HIST,
-        //      SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
         SegmentationType[] seg2 = new SegmentationType[]{
@@ -292,7 +288,6 @@ public class BlobScaleFinderWrapper {
             SegmentationType.GREYSCALE_WAVELET,
         //      SegmentationType.GREYSCALE_CANNY,
         //      SegmentationType.GREYSCALE_HIST,
-       //     SegmentationType.COLOR_POLARCIEXY_LARGE,
             ////SegmentationType.ADAPTIVE_MEAN
         };
         
@@ -352,89 +347,99 @@ public class BlobScaleFinderWrapper {
             
             if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
-                if (blobCornerHelper1 == null) {
-                    if (settings.debug()) {
-                        blobCornerHelper1 = new BlobCornerHelper(img1Helper, 
-                            settings.getDebugTag() + "_!");
-                        blobCornerHelper2 = new BlobCornerHelper(img2Helper, 
-                            settings.getDebugTag() + "_2");
-                    } else {
-                        blobCornerHelper1 = new BlobCornerHelper(img1Helper);
-                        blobCornerHelper2 = new BlobCornerHelper(img2Helper);
-                    }
-                }
+                // extracts the corners and points in between them to have 10 corners
+                // per curve if possible:
+                img1Helper.extractBlobPerimeterAsCornerRegions(segmentationType1, 
+                    useBinned);
+                img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
+                    useBinned);
                 
                 List<HoughTransformLines> houghTransformLines1 = 
-                    findLinesUsingHoughTransform(blobCornerHelper1,
+                    findLinesUsingHoughTransform(img1Helper,
                     segmentationType1, useBinned);
                 
                 boolean hasManyIntersectingLines1 = 
                     hasManyIntersectingLines(houghTransformLines1);
                 
-                if (hasManyIntersectingLines1) {
-                    // use canny edges segmentation to replace segmentationType1
-                    img1Helper.replaceSegmentationWithCanny(segmentationType1, 
-                        useBinned);
-                    
-                    boolean filterOutImageBoundaryBlobs = true;
-                    boolean filterOutZeroPixels = false;
-                                        
-                    // pre-make the blobs using non-default variables:
-                    img1Helper.getBlobs(segmentationType1, useBinned,
-                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
-       
-                    houghTransformLines1 = 
-                        findLinesUsingHoughTransform(blobCornerHelper1,
-                        segmentationType1, useBinned);
-                }
-                
-                List<HoughTransformLines> houghTransformLines2 = 
-                    findLinesUsingHoughTransform(blobCornerHelper2,
+                 List<HoughTransformLines> houghTransformLines2 = 
+                    findLinesUsingHoughTransform(img2Helper,
                     segmentationType2, useBinned);
                 
                 boolean hasManyIntersectingLines2 = 
                     hasManyIntersectingLines(houghTransformLines2);
                 
-                if (hasManyIntersectingLines2) {
-                    // use canny edges segmentation to replace segmentationType2
-                    img2Helper.replaceSegmentationWithCanny(segmentationType2, 
-                        useBinned);
+                boolean useCanny = false;//hasManyIntersectingLines1 || hasManyIntersectingLines2;
+                
+                //TODO: decide whether if one image requires canny segmentation,
+                // they should both switch to canny segmentation
+                
+                if (useCanny) {
+                    
+                    log.info("replacing segmentation with canny edges for img1");
+                    
+                    segmentationType1 = SegmentationType.GREYSCALE_CANNY;
+                    
+                    img1Helper.applySegmentation(segmentationType1, useBinned);
+                    
+                    //img1Helper.replaceSegmentationWithCanny(segmentationType1, 
+                    //    useBinned);
                     
                     boolean filterOutImageBoundaryBlobs = true;
                     boolean filterOutZeroPixels = false;
+                               
+                    // pre-make the blobs using non-default variables:
+                    img1Helper.getBlobs(segmentationType1, useBinned,
+                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
+                    img1Helper.extractBlobPerimeterAsCornerRegions(
+                        segmentationType1, useBinned);
+       
+                    houghTransformLines1 = 
+                        findLinesUsingHoughTransform(img1Helper,
+                        segmentationType1, useBinned);
+                
+                    log.info("replacing segmentation with canny edges for img2");
+                    
+                    segmentationType2 = SegmentationType.GREYSCALE_CANNY;
+                    
+                    img2Helper.applySegmentation(segmentationType2, useBinned);
+                    
+                    // use canny edges segmentation to replace segmentationType2
+                    //img2Helper.replaceSegmentationWithCanny(segmentationType2, 
+                    //    useBinned);
                     
                     // pre-make the blobs using non-default variables:
                     img2Helper.getBlobs(segmentationType2, useBinned,
                         filterOutImageBoundaryBlobs, filterOutZeroPixels);
-                    
-                    houghTransformLines2 = 
-                        findLinesUsingHoughTransform(blobCornerHelper2,
-                        segmentationType2, useBinned);
+                    img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
+                        useBinned);
+                
+                    houghTransformLines2 = findLinesUsingHoughTransform(
+                        img2Helper, segmentationType2, useBinned);
                 }
                 
                 t0 = System.currentTimeMillis();
                 
-                blobCornerHelper1.generatePerimeterCorners(segmentationType1, 
+                img1Helper.generatePerimeterCorners(segmentationType1, 
                     useBinned);
 
                 t1 = System.currentTimeMillis();
                 
-                blobCornerHelper2.generatePerimeterCorners(segmentationType2, 
+                img2Helper.generatePerimeterCorners(segmentationType2, 
                     useBinned);
                 
                 //if (hasManyIntersectingLines1) {
-                    removeLineArtifactCorners(houghTransformLines1, blobCornerHelper1,
+                    removeLineArtifactCorners(houghTransformLines1, img1Helper,
                         segmentationType1, useBinned);
                 //}
                 //if (hasManyIntersectingLines2) {
-                    removeLineArtifactCorners(houghTransformLines2, blobCornerHelper2,
+                    removeLineArtifactCorners(houghTransformLines2, img2Helper,
                         segmentationType2, useBinned);
                 //}
         
                 t2 = System.currentTimeMillis();
                 t1Sec = (t1 - t0)/1000;
                 t2Sec = (t2 - t1)/1000;
-                 Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
+                Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
                     + t1Sec + " sec corners1(sec)=" + t2Sec + " sec");
             
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
@@ -443,13 +448,13 @@ public class BlobScaleFinderWrapper {
                     bsFinder.setToDebug();
                 }
                         
-                soln = bsFinder.solveForScale(blobCornerHelper1, f1,
-                    segmentationType1, useBinned, blobCornerHelper2, f2,
+                soln = bsFinder.solveForScale(img1Helper, f1,
+                    segmentationType1, useBinned, img2Helper, f2,
                     segmentationType2, useBinned, dither);
 
-                n1 = blobCornerHelper1.sumPointsOfInterest(segmentationType1, 
+                n1 = img1Helper.sumPointsOfInterest(segmentationType1, 
                     useBinned);
-                n2 = blobCornerHelper2.sumPointsOfInterest(segmentationType2, 
+                n2 = img2Helper.sumPointsOfInterest(segmentationType2, 
                     useBinned);
 
             } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
@@ -564,19 +569,19 @@ public class BlobScaleFinderWrapper {
     }
     
     private List<HoughTransformLines> findLinesUsingHoughTransform(
-        BlobCornerHelper blobCornerHelper,
+        BlobPerimeterCornerHelper blobCornerHelper,
         SegmentationType segmentationType, boolean useBinnedImage) {
      
-        List<PairIntArray> perimeterLists = blobCornerHelper.imgHelper.
+        List<PairIntArray> perimeterLists = blobCornerHelper.
             getBlobPerimeters(segmentationType, useBinnedImage);
                 
         int imageWidth = useBinnedImage ? 
-            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getWidth() :
-            blobCornerHelper.imgHelper.getGreyscaleImage().getWidth();
+            blobCornerHelper.getGreyscaleImageBinned().getWidth() :
+            blobCornerHelper.getGreyscaleImage().getWidth();
         
         int imageHeight = useBinnedImage ? 
-            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getHeight() :
-            blobCornerHelper.imgHelper.getGreyscaleImage().getHeight();
+            blobCornerHelper.getGreyscaleImageBinned().getHeight() :
+            blobCornerHelper.getGreyscaleImage().getHeight();
         
         int thetaTol = 1;
         int radiusTol = 7;
@@ -593,6 +598,13 @@ public class BlobScaleFinderWrapper {
             // For these blob perimeters, there are not junctions.
 
             PairIntArray edge = perimeterLists.get(ii);
+            
+            if (edge.getN() == 0) {
+                HoughTransformLines htl = ht.new HoughTransformLines(
+                    new HashMap<PairInt, PairInt>(), new ArrayList<Set<PairInt>>());
+                lineList.add(htl);
+                continue;
+            }
 
             Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap =
                ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
@@ -624,6 +636,10 @@ public class BlobScaleFinderWrapper {
             
             Map<PairInt, PairInt> pixToTRMap = htl.getPixelToPolarCoordMap();
             List<Set<PairInt>> outputSortedGroups = htl.getSortedLineGroups();
+            
+            if (outputSortedGroups == null) {
+                continue;
+            }
             
             for (Set<PairInt> line : outputSortedGroups) {
                 
@@ -787,22 +803,22 @@ public class BlobScaleFinderWrapper {
     }
     
     private void removeLineArtifactCorners(List<HoughTransformLines> 
-        houghTransformLines, BlobCornerHelper blobCornerHelper, 
+        houghTransformLines, BlobPerimeterCornerHelper blobCornerHelper, 
         SegmentationType segmentationType, boolean useBinnedImage) {
         
-        List<PairIntArray> perimeterLists = blobCornerHelper.imgHelper.
+        List<PairIntArray> perimeterLists = blobCornerHelper.
             getBlobPerimeters(segmentationType, useBinnedImage);
                 
         List<List<CornerRegion>> cornerRegionLists = 
             blobCornerHelper.getPerimeterCorners(segmentationType, useBinnedImage);
             
         int imageWidth = useBinnedImage ? 
-            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getWidth() :
-            blobCornerHelper.imgHelper.getGreyscaleImage().getWidth();
+            blobCornerHelper.getGreyscaleImageBinned().getWidth() :
+            blobCornerHelper.getGreyscaleImage().getWidth();
         
         int imageHeight = useBinnedImage ? 
-            blobCornerHelper.imgHelper.getGreyscaleImageBinned().getHeight() :
-            blobCornerHelper.imgHelper.getGreyscaleImage().getHeight();
+            blobCornerHelper.getGreyscaleImageBinned().getHeight() :
+            blobCornerHelper.getGreyscaleImage().getHeight();
         
         int thetaTol = 1;
         int radiusTol = 7;
@@ -846,7 +862,7 @@ public class BlobScaleFinderWrapper {
             return null;
         }
         
-        return blobCornerHelper1.generatePerimeterCorners(
+        return img1Helper.generatePerimeterCorners(
             solutionSegmentationType1, solutionUsedBinned1);
     }
     
@@ -856,7 +872,7 @@ public class BlobScaleFinderWrapper {
             return null;
         }
         
-        return blobCornerHelper2.generatePerimeterCorners(
+        return img2Helper.generatePerimeterCorners(
             solutionSegmentationType2, solutionUsedBinned2);
     }
     

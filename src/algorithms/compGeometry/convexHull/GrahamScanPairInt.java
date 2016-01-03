@@ -138,6 +138,7 @@ public class GrahamScanPairInt<T extends PairInt> {
         return this.hull;
     }
 
+    @SuppressWarnings({"unchecked"})
     protected void populateHull() throws GrahamScanTooFewPointsException {
 
         if (points == null) {

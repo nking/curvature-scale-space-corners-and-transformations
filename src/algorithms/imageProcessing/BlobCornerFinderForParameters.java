@@ -68,13 +68,15 @@ public class BlobCornerFinderForParameters {
             return allStats;
         }
         
-        CornerRegion[][] blobs1Index1BPRs = extractBlobPerimeterRegions(blobs1, 
+        CornerRegion[][] blobs1Index1BPRs = 
+            BlobsAndPerimeters.extractBlobPerimeterAsCornerRegions(blobs1, 
             matchedIndexes1, img1.getWidth(), img1.getHeight());
         
         CornerRegion[][] blobs1Index1BPRsTR = transform(blobs1Index1BPRs, 
             parameters);
         
-        CornerRegion[][] blobs2Index2BPRs = extractBlobPerimeterRegions(blobs2, 
+        CornerRegion[][] blobs2Index2BPRs = 
+            BlobsAndPerimeters.extractBlobPerimeterAsCornerRegions(blobs2, 
             matchedIndexes2, img2.getWidth(), img2.getHeight());
         
         Map<Integer, IntensityFeatureComparisonStats> blobs1Index1Matches = 
@@ -297,52 +299,6 @@ public class BlobCornerFinderForParameters {
         double dist = Math.sqrt(diffX * diffX + diffY * diffY);
         
         return dist;
-    }
-
-    private CornerRegion[][] extractBlobPerimeterRegions(
-        List<Set<PairInt>> blobs, List<Integer> indexesToExtract,
-        int imageWidth, int imageHeight) {
-                
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-        
-        int nIndexes = blobs.size();
-        
-        CornerRegion[][] bprs = new CornerRegion[nIndexes][];
-                
-        for (Integer index : indexesToExtract) {
-            
-            int idx = index.intValue();
-            
-            Set<PairInt> blob = blobs.get(idx);
-            
-            // --- extract the perimeters ---
-            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
-            int imageMaxColumn = imageWidth - 1;
-            int imageMaxRow = imageHeight - 1;
-            int[] rowMinMax = new int[2];
-            Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
-                blob, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);       
-            if (!outputEmbeddedGapPoints.isEmpty()) {
-                // update the perimeter for "filling in" embedded points
-                perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
-                    rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
-            }
-            Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
-                rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
-           
-            bprs[index.intValue()] = new CornerRegion[borderPixels.size()];
-            
-            int count = 0;
-            for (PairInt p : borderPixels) {
-                CornerRegion cr = new CornerRegion(index.intValue(), 1, 0);
-                cr.setFlagThatNeighborsHoldDummyValues();
-                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
-                bprs[idx][count] = cr;
-                count++;
-            }
-        }
-        
-        return bprs;
     }
 
     private CornerRegion[][] transform(CornerRegion[][] crs, 

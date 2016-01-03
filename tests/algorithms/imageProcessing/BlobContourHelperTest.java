@@ -26,7 +26,7 @@ public class BlobContourHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("blox.gif");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "blox");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "blox");
         bph.increaseLargestGroupLimit(100000);
         
         assertEquals(1, bph.getBinFactor(true));
@@ -67,7 +67,7 @@ public class BlobContourHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("valve_gaussian.png");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "valve");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "valve");
         bph.increaseLargestGroupLimit(100000);
                 
         bph.createBinnedGreyscaleImage(300);
@@ -110,14 +110,14 @@ public class BlobContourHelperTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("blox.gif");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        BlobPerimeterHelper bph = new BlobPerimeterHelper(img, "blox3_1");
+        BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(img, "blox3_1");
         bph.increaseLargestGroupLimit(100000);
         
         assertEquals(1, bph.getBinFactor(true));
         
         bph.applySegmentation(SegmentationType.ADAPTIVE_MEAN, useBinned);
         
-        bph.applySegmentation(SegmentationType.COLOR_POLARCIEXY_LARGE, useBinned);
+        bph.applySegmentation(SegmentationType.GREYSCALE_WAVELET, useBinned);
         
         BlobContourHelper bch = new BlobContourHelper(bph, "blox3_2");
        
@@ -126,7 +126,7 @@ public class BlobContourHelperTest extends TestCase {
                 useBinned);
         
         List<List<CurvatureScaleSpaceContour>> contoursList2 = 
-            bch.generatePerimeterContours(SegmentationType.COLOR_POLARCIEXY_LARGE, 
+            bch.generatePerimeterContours(SegmentationType.GREYSCALE_WAVELET, 
                 useBinned);
         
         assertNotNull(contoursList1);
@@ -138,7 +138,7 @@ public class BlobContourHelperTest extends TestCase {
         int nNonZero1 = bch.sumPointsOfInterest(
             SegmentationType.ADAPTIVE_MEAN, useBinned);
         int nNonZero2 = bch.sumPointsOfInterest(
-            SegmentationType.COLOR_POLARCIEXY_LARGE, useBinned);
+            SegmentationType.GREYSCALE_WAVELET, useBinned);
         
         //assertTrue(nNonZero1 >= 2*5);
         //assertTrue(nNonZero2 >= 2*5);

@@ -289,11 +289,11 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         */
         CornersAndFeatureStat<T>[] indexes2 = null;
 
-        /*if (c1.size() < 5 && c2.size() < 5) {
+        if (c1.size() < 5 && c2.size() < 5) {
             indexes2 = getAllSSDC1ToC2(c1, c2, features1, features2, img1, img2);
-        } else {*/
+        } else {
             indexes2 = getBestSSDC1ToC2(c1, c2, features1, features2, img1, img2);
-        //}
+        }
 
         // if want to filter by the best SSDs, could use a heap (inserts O(1))
         // and extract is O(1), and only extract the top 10 or so to make
@@ -380,7 +380,7 @@ int nTop = nIndexes2;
 
                 PairInt c1Pt2 = cfs2.stat.getImg1Point();
                 PairInt c2Pt2 = cfs2.stat.getImg2Point();
-             //5:14 17:14  
+
                 TransformationParameters params = tc.calulateEuclidean(
                     c1Pt1.getX(), c1Pt1.getY(),
                     c1Pt2.getX(), c1Pt2.getY(),

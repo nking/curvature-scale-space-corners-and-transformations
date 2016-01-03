@@ -142,19 +142,17 @@ public class ImageSegmentationTest extends TestCase {
             
             SegmentationType type = SegmentationType.GREYSCALE_HIST;
             
-            BlobPerimeterHelper imgHelper1 = new BlobPerimeterHelper(img1, fileNameRoot1);
+            BlobPerimeterCornerHelper imgHelper1 = new BlobPerimeterCornerHelper(img1, fileNameRoot1);
             imgHelper1.createBinnedGreyscaleImage(binnedImageMaxDimension);
             imgHelper1.applySegmentation(type, true);
-            BlobCornerHelper blobCornerHelper1 = new BlobCornerHelper(imgHelper1);
             List<List<CornerRegion>> cornerRegions1 = 
-                blobCornerHelper1.generatePerimeterCorners(type, true);
+                imgHelper1.generatePerimeterCorners(type, true);
             
-            BlobPerimeterHelper imgHelper2 = new BlobPerimeterHelper(img2, fileNameRoot2);
+            BlobPerimeterCornerHelper imgHelper2 = new BlobPerimeterCornerHelper(img2, fileNameRoot2);
             imgHelper2.createBinnedGreyscaleImage(binnedImageMaxDimension);
             imgHelper2.applySegmentation(type, true);
-            BlobCornerHelper blobCornerHelper2 = new BlobCornerHelper(imgHelper2);
             List<List<CornerRegion>> cornerRegions2 = 
-                blobCornerHelper2.generatePerimeterCorners(type, true);
+                imgHelper2.generatePerimeterCorners(type, true);
             
             int z0 = 1;
         }
@@ -242,12 +240,11 @@ public class ImageSegmentationTest extends TestCase {
             */
             
             img = ImageIOHelper.readImageExt(filePath);
-            BlobPerimeterHelper imgHelper = new BlobPerimeterHelper(img, fileNameRoot);
+            BlobPerimeterCornerHelper imgHelper = new BlobPerimeterCornerHelper(img, fileNameRoot);
             imgHelper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             imgHelper.applySegmentation(SegmentationType.GREYSCALE_HIST, true);
-            BlobCornerHelper blobCornerHelper = new BlobCornerHelper(imgHelper);
             List<List<CornerRegion>> cornerRegions2 = 
-                blobCornerHelper.generatePerimeterCorners(SegmentationType.GREYSCALE_HIST, true);
+                imgHelper.generatePerimeterCorners(SegmentationType.GREYSCALE_HIST, true);
            
             ImageExt img4 = gsImg.copyToColorGreyscaleExt();
             List<Set<PairInt>> blobs = imgHelper.getBlobs(SegmentationType.GREYSCALE_HIST, true);

@@ -1,13 +1,8 @@
--- feature matching still needs improvements
-   change the curve by curve matching to use a logic switch to
-       either compare corner features or all perimeter point features,
-       depending upon the number of corners per curve.
-      -- the books test specifically needs this imrprovement, and probably also venturi
-      -- after have that fixed, compare the total runtime for using unbinned images
-         and presumably corners (more corners at higher res)
-         to the runtime for using binned images and perimeter points (when corners are too small in number)
+-- feature matching still needs improvements:
+   the creation of corner regions to match is now very good,
+   but the analysis of the comparisons needs to be improved.
 
--- reduce the number of combinations used now that the solution appears to
+-- reduce the number of combinations used when the solution appears to
    be more stable
 -- considering adding back in the last addition of matched features for 
    canny edge corners and a strict known transformation.

@@ -46,6 +46,10 @@ public class CornerCorrector {
             throw new IllegalArgumentException(
                 "need the data structures lines and edgesList to hold data for same indexes.  expecting same sizes.");
         }
+        if (cornerRegionLists.size() != edgeLists.size()) {
+            throw new IllegalArgumentException(
+                "need the data structures cornerRegionLists and edgesList to hold data for same indexes.  expecting same sizes.");
+        }
         
         //TODO: sizeLimit may need to scale by binFactor, so be passed in as arg,
         // but should probably have a minimum size that could include
@@ -65,7 +69,7 @@ public class CornerCorrector {
 
             List<CornerRegion> cornerRegions = cornerRegionLists.get(ii);
 
-            if (cornerRegions.size() < 2) {
+            if (cornerRegions.size() < 2 || edge.getN() < 2) {
                 continue;
             }
 

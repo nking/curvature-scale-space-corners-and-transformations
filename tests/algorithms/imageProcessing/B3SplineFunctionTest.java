@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import junit.framework.TestCase;

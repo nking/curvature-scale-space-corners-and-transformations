@@ -89,14 +89,13 @@ public class HoughTransformTest extends TestCase {
                 img2 = imageProcessor.binImage(img2, binFactor2);
             }
 
-            BlobPerimeterHelper bph = new BlobPerimeterHelper(
+            BlobPerimeterCornerHelper bph = new BlobPerimeterCornerHelper(
                 ImageIOHelper.readImageExt(filePath1), fileNameRoot);
             bph.createBinnedGreyscaleImage(binnedImageMaxDimension);
             bph.applySegmentation(type, useBinned);
-            BlobCornerHelper bch = new BlobCornerHelper(bph, fileNameRoot);
             
             List<List<CornerRegion>> cornerRegionLists =
-                bch.generatePerimeterCorners(type, useBinned);
+                bph.generatePerimeterCorners(type, useBinned);
 
             GreyscaleImage segImg1 = useBinned ?
                 bph.getBinnedSegmentationImage(type) :

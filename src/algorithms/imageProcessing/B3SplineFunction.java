@@ -134,9 +134,7 @@ public class B3SplineFunction {
     }
 
     /**
-     * interpolate values around (x,y) along x in img using a B3 spline.  Note that
-     * an int is used for the internal logic, so expecting that every pixel in
-     * img has value less than (Integer.MAX_VALUE)^1/3.
+     * interpolate values around (x,y) along x in img using a B3 spline.
      *
      * @param x
      * @param y
@@ -187,9 +185,7 @@ public class B3SplineFunction {
     }
 
     /**
-     * interpolate values around (x,y) along y in img using a B3 spline.  Note that
-     * an int is used for the internal logic, so expecting that every pixel in
-     * img has value less than (Integer.MAX_VALUE)^1/3.
+     * interpolate values around (x,y) along y in img using a B3 spline.
      *
      * @param x
      * @param y
@@ -241,9 +237,7 @@ public class B3SplineFunction {
     }
 
     /**
-     * interpolate values around (x,y) along y in img using a B3 spline.  Note that
-     * an int is used for the internal logic, so expecting that every pixel in
-     * img has value less than (Integer.MAX_VALUE)^1/3.
+     * interpolate values around (x,y) along y in img using a B3 spline. 
      *
      * @param x
      * @param y
@@ -354,6 +348,13 @@ public class B3SplineFunction {
         return vSum;
     }
 
+    /**
+     * calculate the B3 Spline for every pixel in the image.  The runtime
+     * complexity is roughly linear, but is 2.5 times larger than the
+     * calculate(img) which uses two 1-D splines for each pixel.
+     * @param img
+     * @return 
+     */
     protected GreyscaleImage calculate2D(GreyscaleImage img) {
 
         int w = img.getWidth();
