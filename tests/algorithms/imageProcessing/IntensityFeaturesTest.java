@@ -73,8 +73,9 @@ public class IntensityFeaturesTest extends TestCase {
         
         boolean useNormalizedIntensities = true;
         
-        GreyscaleImage img = new GreyscaleImage(25, 25, GreyscaleImage.Type.Bits32FullRangeInt);
-        
+        GreyscaleImage img = new GreyscaleImage(25, 25, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+                
         boolean[] sign = new boolean[]{true, false};
         /*
                |3|3|2|1|1|
@@ -193,7 +194,9 @@ public class IntensityFeaturesTest extends TestCase {
                 img.setValue(xc + 1, yc - 2, v);
                 img.setValue(xc + 2, yc - 2, v);
                 
-                int orientation = features.calculate45DegreeOrientation(img, 2, 2);
+                features.calculateGradientWithGreyscale(img);
+                
+                int orientation = features.calculate45DegreeOrientation(2, 2);
                 
                 switch(i) {
                     case 0: {

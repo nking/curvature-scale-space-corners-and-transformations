@@ -36,6 +36,12 @@ public class IntensityFeatures {
     protected final boolean useBinnedCellIntensities = true;
     
     /**
+     * created by method calculateGradientWithGreyscale and kept for use
+     * with calculate45DegreeOrientation internally.
+     */
+    protected GreyscaleImage gXY = null;
+    
+    /**
     key = pixel coordinates of center of frame;
     value = map with key = rotation (in degrees) of the frame and value = the
      *     extracted descriptor
@@ -56,6 +62,16 @@ public class IntensityFeatures {
     
     protected final RotatedOffsets rotatedOffsets;
     
+    /**
+     * Constructor that keeps a reference to the image.  Note, the constructor
+     * without the image argument is preferred followed by using methods that
+     * accept the image as an argument because that as a model allows the JVM
+     * to manage references and garbage collection better.
+     * @param image
+     * @param blockHalfWidths
+     * @param useNormalizedIntensities
+     * @param rotatedOffsets 
+     */
     public IntensityFeatures(final GreyscaleImage image, 
         final int blockHalfWidths, final boolean useNormalizedIntensities,
         RotatedOffsets rotatedOffsets) {
@@ -68,6 +84,16 @@ public class IntensityFeatures {
         this.rotatedOffsets = rotatedOffsets;
     }
     
+    /**
+     * Constructor that keeps a reference to the image.  Note, the constructor
+     * without the image argument is preferred followed by using methods that
+     * accept the image as an argument because that as a model allows the JVM
+     * to manage references and garbage collection better.
+     * @param image
+     * @param blockHalfWidths
+     * @param useNormalizedIntensities
+     * @param rotatedOffsets 
+     */
     public IntensityFeatures(final Image image, 
         final int blockHalfWidths, final boolean useNormalizedIntensities,
         RotatedOffsets rotatedOffsets) {
@@ -98,7 +124,31 @@ public class IntensityFeatures {
         this.xyOffsets = Misc.createNeighborOffsets(bHalfW);
         this.rotatedOffsets = rotatedOffsets;
     }
+    
+    public boolean gradientWasCreated() {
+        return (gXY != null);
+    }
 
+    /**
+     * create the gradient of the given greyscale image in order to use it
+     * internally for the method calculate45DegreeOrientation.
+     * @param gsImg 
+     */
+    public void calculateGradientWithGreyscale(GreyscaleImage gsImg) {
+        
+        if (gXY != null) {
+            throw new IllegalArgumentException("the gradient image has already"
+            + " been created");
+        }
+        
+        // temporary check for whether gradient image for orientation is needed
+        CannyEdgeFilter filter = new CannyEdgeFilter();
+        
+        filter.applyFilter(gsImg.copyImage());
+        
+        gXY = filter.getEdgeFilterProducts().getGradientXY();
+    }
+    
     /**
      * extract the intensity from the image for the given block center and
      * return it in a descriptor.
@@ -837,6 +887,28 @@ public class IntensityFeatures {
 
         IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
         return desc;
+    }
+    
+    /**
+     * calculate the orientation of the pixel at (x, y) using the gradient image
+     * created with calculateGradientWithGreyscale.  The method finds the 
+     * direction of the largest difference from (x, y) and if negative that 
+     * direction is returned else the direction opposite of it.
+     * @param x
+     * @param y
+     * @return
+     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
+     */
+    public int calculate45DegreeOrientation(int x, int y) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        if (gXY == null) {
+            throw new IllegalArgumentException("gradient image is null, so use"
+                + " calculateGradientWithGreyscale to create it before using"
+                + " this method");
+        }
+        
+        return calculate45DegreeOrientation(gXY, x, y); 
     }
     
     /**

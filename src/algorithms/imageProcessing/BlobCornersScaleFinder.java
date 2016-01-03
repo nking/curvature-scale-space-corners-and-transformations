@@ -616,6 +616,8 @@ System.out.println(sb.toString());
             }
 
             if (extractMore) {
+                
+                //TODO: consider canny edges instead of this...
 
                 ImageExt imgExt1 = img1Helper.imgHelper.getImage().copyToImageExt();
                 ImageExt imgExt2 = img2Helper.imgHelper.getImage().copyToImageExt();
@@ -850,7 +852,7 @@ System.out.println(sb.toString());
                 int y = cr.getY()[cr.getKMaxIdx()];
                 int rot0;
                 try {
-                    rot0 = features.calculate45DegreeOrientation(img, x, y);
+                    rot0 = features.calculate45DegreeOrientation(x, y);
                     IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
                     if (desc0 != null) {
                         float e0 = desc0.sumSquaredError();
@@ -892,7 +894,7 @@ System.out.println(sb.toString());
                 int y = cr.getY()[cr.getKMaxIdx()];
                 int rot0;
                 try {
-                    rot0 = features.calculate45DegreeOrientation(img, x, y);
+                    rot0 = features.calculate45DegreeOrientation(x, y);
                     IntensityDescriptor desc0 = features.extractIntensity(img, x, y, rot0);
                     if (desc0 != null) {
                         float e0 = desc0.sumSquaredError();

@@ -60,9 +60,9 @@ public class BlobScaleFinderWrapper {
     // use with img1Helper.getImage() or getGreyscaleImage(), but not both
     protected final IntensityFeatures features1;
     // use img2Helper.getGreyscaleImageBinned(), 
-    protected final IntensityFeatures2 featuresBinned1;
+    protected final IntensityFeatures featuresBinned1;
     protected final IntensityFeatures features2;
-    protected final IntensityFeatures2 featuresBinned2;
+    protected final IntensityFeatures featuresBinned2;
 
     private final FeatureMatcherSettings settings;
     
@@ -111,7 +111,8 @@ public class BlobScaleFinderWrapper {
 
             img2Helper = new BlobPerimeterHelper(img2);
         }
-                
+              
+        // delaying creation of gradient images for full images until needed:
         features1 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
             rotatedOffsets);
 
@@ -128,11 +129,11 @@ public class BlobScaleFinderWrapper {
             
             binFactor2 = img2Helper.getBinFactor();
             
-            featuresBinned1 = new IntensityFeatures2(5, 
+            featuresBinned1 = new IntensityFeatures(5, 
                 settings.useNormalizedFeatures(), rotatedOffsets);
             featuresBinned1.calculateGradientWithGreyscale(img1Helper.getGreyscaleImageBinned());
             
-            featuresBinned2 = new IntensityFeatures2(5, 
+            featuresBinned2 = new IntensityFeatures(5, 
                 settings.useNormalizedFeatures(), rotatedOffsets);
             featuresBinned2.calculateGradientWithGreyscale(img2Helper.getGreyscaleImageBinned());
             
@@ -232,6 +233,17 @@ public class BlobScaleFinderWrapper {
             new boolean[]{true, false} : new boolean[]{false};
         
         for (boolean ub : useBinned) {
+            
+            if (!ub) {
+                if (!features1.gradientWasCreated()) {
+                    features1.calculateGradientWithGreyscale(
+                        img1Helper.getGreyscaleImage());
+                }
+                if (!features2.gradientWasCreated()) {
+                    features2.calculateGradientWithGreyscale(
+                        img2Helper.getGreyscaleImage());
+                }
+            }
             
             if (params == null) {
                 algType = AlgType.CORNERS_COMBINATIONS;

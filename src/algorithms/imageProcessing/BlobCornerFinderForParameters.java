@@ -89,9 +89,11 @@ public class BlobCornerFinderForParameters {
         
         IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
             useNormalizedIntensities, rotatedOffsets);
+        features1.calculateGradientWithGreyscale(img1);
         
         IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
             useNormalizedIntensities, rotatedOffsets);
+        features2.calculateGradientWithGreyscale(img2);
         
         int dither = 1;
         double solutionScale = parameters.getScale();

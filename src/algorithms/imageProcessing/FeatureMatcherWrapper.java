@@ -412,11 +412,11 @@ public class FeatureMatcherWrapper {
 
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
-        IntensityFeatures2 features1 = new IntensityFeatures2(5,
+        IntensityFeatures features1 = new IntensityFeatures(5,
             settings.useNormalizedFeatures(), rotatedOffsets);
         features1.calculateGradientWithGreyscale(gsImg1);
 
-        IntensityFeatures2 features2 = new IntensityFeatures2(5,
+        IntensityFeatures features2 = new IntensityFeatures(5,
             settings.useNormalizedFeatures(), rotatedOffsets);
         features2.calculateGradientWithGreyscale(gsImg2);
 

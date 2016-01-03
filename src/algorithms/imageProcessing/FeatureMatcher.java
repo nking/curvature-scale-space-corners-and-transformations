@@ -56,7 +56,7 @@ public class FeatureMatcher {
         
         int rot2;
         try {
-            rot2 = features2.calculate45DegreeOrientation(img2, x2, y2);
+            rot2 = features2.calculate45DegreeOrientation(x2, y2);
         } catch (CornerRegionDegneracyException e) {
             return null;
         }
@@ -80,7 +80,7 @@ public class FeatureMatcher {
                 
                 int rot1;
                 try {
-                    rot1 = features1.calculate45DegreeOrientation(img1, x1d, y1d);
+                    rot1 = features1.calculate45DegreeOrientation(x1d, y1d);
                 } catch (CornerRegionDegneracyException e) {
                     continue;
                 }
@@ -159,7 +159,7 @@ public class FeatureMatcher {
         
         int rot2;
         try {
-            rot2 = features2.calculate45DegreeOrientation(img2, x2, y2);
+            rot2 = features2.calculate45DegreeOrientation(x2, y2);
         } catch (CornerRegionDegneracyException e) {
             return null;
         }
@@ -194,7 +194,7 @@ public class FeatureMatcher {
                 
                 int rot1;
                 try {
-                    rot1 = features1.calculate45DegreeOrientation(img1, x1d, y1d);
+                    rot1 = features1.calculate45DegreeOrientation(x1d, y1d);
                 } catch (CornerRegionDegneracyException e) {
                     continue;
                 }
@@ -301,9 +301,10 @@ public class FeatureMatcher {
         
         IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
             useNormalizedIntensities, rotatedOffsets);
-        
+        features1.calculateGradientWithGreyscale(gsImg1);
         IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth,
             useNormalizedIntensities, rotatedOffsets);
+        features2.calculateGradientWithGreyscale(gsImg2);
         
         List<FeatureComparisonStat> stats = findSimilarFeaturesAsStats(gsImg1, 
             cr1, gsImg2, cr2, features1, features2, params, scaleTol, 

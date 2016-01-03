@@ -26,6 +26,11 @@ public class BlobScaleFindersTest extends TestCase {
 
         String filePath2 = ResourceFinder.findFileInTestResources("brown_lowe_2003_image2.jpg");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        
+        IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
+        features1.calculateGradientWithGreyscale(img1.copyToGreyscale());
+        IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
+        features2.calculateGradientWithGreyscale(img2.copyToGreyscale());
 
         SegmentationType type = SegmentationType.GREYSCALE_HIST;
         
@@ -41,9 +46,6 @@ public class BlobScaleFindersTest extends TestCase {
         bch2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
-        IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
 
         int dither = 3;
         
@@ -72,9 +74,14 @@ public class BlobScaleFindersTest extends TestCase {
 
         String filePath2 = ResourceFinder.findFileInTestResources("venturi_mountain_j6_0010.png");
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        
+        IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
+        features1.calculateGradientWithGreyscale(img1.copyToGreyscale());
+        IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
+        features2.calculateGradientWithGreyscale(img2.copyToGreyscale());
 
         SegmentationType type = SegmentationType.COLOR_POLARCIEXY;
-                
+
         BlobPerimeterHelper bph1 = new BlobPerimeterHelper(img1, "1");
         bph1.applyEqualization();
         bph1.applySegmentation(type, useBinned);
@@ -89,9 +96,6 @@ public class BlobScaleFindersTest extends TestCase {
         bch2.generatePerimeterCorners(type, useBinned);
 
         BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-
-        IntensityFeatures features1 = new IntensityFeatures(5, true, rOffsets);
-        IntensityFeatures features2 = new IntensityFeatures(5, true, rOffsets);
 
         int dither = 3;
         
