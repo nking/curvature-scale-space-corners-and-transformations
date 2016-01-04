@@ -118,8 +118,8 @@ xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
 xPoints2[i] = (float)xy2[i][0];
 yPoints2[i] = (float)xy2[i][1];
 }
-
-ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
+*/
+/*ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
 plotter.plotLabeledPoints(0, img1.getWidth(), 0, img1.getHeight(), xPoints1, yPoints1,
 "img1", "X", "Y");
 ScatterPointPlotterPNG plotter2 = new ScatterPointPlotterPNG();
@@ -131,7 +131,8 @@ try {
 } catch (IOException ex) {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
-
+*/
+/*
 StringBuilder sb = new StringBuilder("xy1:\n");
 for (int i = 0; i < xy1.length; ++i) {
     sb.append(String.format("[%2d] (%3d, %3d)\n", i,
@@ -143,15 +144,12 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-*/
-/*
+
 PairInt[] im1Chk = new PairInt[]{
-    new PairInt(59, 178), new PairInt(42, 110), new PairInt(27, 105),
-    new PairInt(68,  80), new PairInt(25,  55), new PairInt(80, 144)
+    new PairInt(107, 267), new PairInt(100, 290), new PairInt(48, 89)
 };
 PairInt[] im2Chk = new PairInt[]{
-    new PairInt(189, 179), new PairInt(164, 109), new PairInt(164, 109),
-    new PairInt(189, 179), new PairInt(154,  59), new PairInt(193, 146)
+    new PairInt(32, 108), new PairInt(8, 100), new PairInt(226, 62)
 };
 int[] im1ChkIdxs = new int[im1Chk.length];
 int[] im2ChkIdxs = new int[im2Chk.length];
@@ -160,7 +158,7 @@ for (int i = 0; i < im1Chk.length; ++i) {
     for (int j = 0; j < xy1.length; ++j) {
         double diffX = p.getX() - xy1[j][0];
         double diffY = p.getY() - xy1[j][1];
-        if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) {
+        if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
             im1ChkIdxs[i] = j;
             break;
         }
@@ -171,7 +169,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
     for (int j = 0; j < xy2.length; ++j) {
         double diffX = p.getX() - xy2[j][0];
         double diffY = p.getY() - xy2[j][1];
-        if (Math.abs(diffX) < 20 && Math.abs(diffY) < 20) {
+        if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
             im2ChkIdxs[i] = j;
             break;
         }
@@ -184,7 +182,7 @@ for (int i = 0; i < im1ChkIdxs.length; ++i) {
 }
 System.out.println(sb.toString());
 */
-
+        
         MatchingSolution soln = match(img1Helper, img2Helper,
             features1, features2, img1, img2, corners1List, corners2List,
             useBinned1, useBinned2, dither, filterOutImageBoundaryBlobs);
@@ -221,7 +219,7 @@ System.out.println(sb.toString());
         if (n1 == 0 || n2 == 0) {
             return null;
         }
-
+        
         /*
         -- get best TransformationParameters for each idx1
            (this is at most 40 of them)
@@ -249,6 +247,9 @@ System.out.println(sb.toString());
             Integer maxNEvalIndex2 = null;
             double minCost = Double.MAX_VALUE;
             List<FeatureComparisonStat> minCostStats = null;
+
+List<Double> costs = new ArrayList<Double>();
+double costForTrueSoln = -1;
 
             for (int idx2 = 0; idx2 < n2; ++idx2) {
 
@@ -279,15 +280,6 @@ System.out.println(sb.toString());
                     continue;
                 }
 
-                /*
-                TODO: consider whether need to further use the SSD error as
-                a component in cost as the ability to distinguish a match for
-                the region.  A filter was applied above to remove the smallest
-                SSD errors because they are nearly featureless patches that
-                might be more easily degenerate matches if similar regions are
-                present.
-                */
-
                 if (cost < minCost) {
                     if ((nEval < 3) && (maxNEval > 4)) {
                         // do not accept if nEval is much lower than maxNEval
@@ -298,7 +290,6 @@ System.out.println(sb.toString());
                     maxNEvalIndex2 = index2;
                     minCost = cost;
                     minCostStats = mapper.getSolutionStats();
-
                 } else if ((maxNEval == 2) && (nEval > 3)) {
                     //TODO: may need to revise this
                     double avgCost = (cost + minCost)/2.;
@@ -335,7 +326,7 @@ System.out.println(sb.toString());
                 n2c++;
             }
         }
-
+               
         NearestPoints np2 = new NearestPoints(xC2, yC2);
 
         MatchingSolution soln = evaluateForBestUsingFeatures(
@@ -554,7 +545,7 @@ System.out.println(sb.toString());
             //TODO: cost1Norm's proportion in normalizedCost should be higher
 
             boolean t1 = (normalizedCost < bestCost);
-
+           
             if (t1 && (nEval > 2)) {
                 bestCost = normalizedCost;
                 bestParams = params;
@@ -567,6 +558,7 @@ System.out.println(sb.toString());
 
         boolean extractMore = true;
             
+        // calculate the quality array
         if (bestParams != null) {
             
             int n = bestStats.size();
@@ -575,9 +567,11 @@ System.out.println(sb.toString());
             float sigmaFactor = 1.5f;            
             int nIter = 0;
             int nMaxIter = 5;
-            while ((nIter == 0) || (nIter < nMaxIter)) {            
+            while ((nIter == 0) || (nIter < nMaxIter)) {   
+                log.info("before bestStats.size()=" + bestStats.size());
                 sumDistSSD = MiscStats.filterStatsForTranslation(bestParams, 
                     bestStats, sigmaFactor);
+                log.info("after bestStats.size()=" + bestStats.size());
                 if (sumDistSSD != null && !bestStats.isEmpty()) {
                     break;
                 }                
@@ -606,7 +600,7 @@ System.out.println(sb.toString());
             }
         }
         
-        if (extractMore && bestParams != null) {
+        if (false && extractMore && bestParams != null) {
 
             extractMore = false;
             

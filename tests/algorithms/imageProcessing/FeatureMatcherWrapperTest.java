@@ -24,8 +24,8 @@ public class FeatureMatcherWrapperTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
-         
-        for (int i = 0; i < 6; ++i) {
+      
+        for (int i = 0; i < 5; ++i) {
             
             switch(i) {
                 case 0: {
@@ -155,21 +155,27 @@ public class FeatureMatcherWrapperTest extends TestCase {
                 params90, img1.getHeight(), img1.getWidth());
             
             /*
+            venturi:
+                tx += -50
+                ty += -1
+                rot += 0
+            books:
+                tx += -74 ---> total is 620 when rot=270
+                ty += -0
+                rot += 0
+            */
+            
+            /*
             MatchedPointsTransformationCalculator tc = 
                 new MatchedPointsTransformationCalculator();        
             
             TransformationParameters revParams = tc.swapReferenceFrames(params90);
-
             transformer.transformToOrigin(0, 0, revParams);
-            
-            revParams.setTranslationX(revParams.getTranslationX() - 246);
-            
-            revParams.setTranslationY(revParams.getTranslationY() + 12);
-
-            revParams.setRotationInDegrees(revParams.getRotationInDegrees() - 10);
-            
+            revParams.setTranslationX(revParams.getTranslationX() + -74);            
+            revParams.setTranslationY(revParams.getTranslationY() + -0);
+            revParams.setRotationInDegrees(revParams.getRotationInDegrees() - 0);
             log.info("revParams: " + revParams.toString());
-            
+
             ImageExt img1RevTr = img1.copyToImageExt();
             img1RevTr = (ImageExt) transformer.applyTransformation(img1RevTr,
                 revParams, img1RevTr.getHeight(), img1RevTr.getWidth());

@@ -502,6 +502,8 @@ public class BlobScaleFinderWrapper {
                 
                 TransformationParameters params = soln.getParams();
                 
+                assert(params.getStandardDeviations() != null);
+                
                 log.info("params for type"
                     + " (" + segmentationType1.name() + ", binned=" + useBinned + ")"
                     + " (" + segmentationType2.name() + ", binned=" + useBinned + ")"

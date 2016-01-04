@@ -20,7 +20,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
     // a minimum number to use when calculating the sums of SSDs for
     // normalized intensities
     private float lowerLimitSSD = 200.f;
-
+    
     /**
      * the costs calculated here are small fractions, so they need to be
      * multiplied by a large constant for use with the Fibonacci heap
@@ -288,11 +288,17 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         if no match, the entry contains a null.
         */
         CornersAndFeatureStat<T>[] indexes2 = null;
-
-        if (c1.size() < 5 && c2.size() < 5) {
+        
+        boolean keepAllCombinations = true;
+        
+        if (keepAllCombinations) {
             indexes2 = getAllSSDC1ToC2(c1, c2, features1, features2, img1, img2);
         } else {
-            indexes2 = getBestSSDC1ToC2(c1, c2, features1, features2, img1, img2);
+            if (c1.size() < 5 && c2.size() < 5) {
+                indexes2 = getAllSSDC1ToC2(c1, c2, features1, features2, img1, img2);
+            } else {
+                indexes2 = getBestSSDC1ToC2(c1, c2, features1, features2, img1, img2);
+            }
         }
 
         // if want to filter by the best SSDs, could use a heap (inserts O(1))
@@ -304,15 +310,18 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                 nIndexes2++;
             }
         }
-//TODO: temporarily using all transformations until rotation matches are improved        
-int nTop = nIndexes2; 
-        /*
+        
         int nTop;
-        if (c1.size() < 5 && c2.size() < 5) {
+        if (keepAllCombinations) {
             nTop = nIndexes2;
         } else {
-            nTop = (nIndexes2 < 11) ? nIndexes2 : 10;
-        }*/
+            if (c1.size() < 5 && c2.size() < 5) {
+                nTop = nIndexes2;
+            } else {
+                nTop = (nIndexes2 < 11) ? nIndexes2 : 10;
+            }
+        }
+        
         if (nTop != nIndexes2) {
             Heap heap = new Heap();
             for (int i = 0; i < indexes2.length; ++i) {
@@ -332,23 +341,6 @@ int nTop = nIndexes2;
                 count++;
             }
         }
-
-        /*
-        If one knew that that best SSD match of a point in curve1 to
-        point in curve2 were true for at least 2 points in the curves,
-        then one could use a pattern of solution starter points of
-          pt 1 = curve1[0] w/ best SSD match in curve2
-          pt 2 = curve1[1] w/ best SSD match in curve2
-          written as (pt1, pt2) for one solution starter
-                     (pt1, pt3) for another solution starter
-                     (pt1, pt4)  ""
-                     (pt2, pt3)  ""
-                     (pt2, pt4)  ""
-                     (pt3, pt4)  ""
-                     which is n!/(k!(n-k)!)
-                     since k is always 2, can rewrite it as n*(n-1)/2.
-        for a curve with 4 corners, the heap would have 6 solution starter nodes
-        */
 
         MatchedPointsTransformationCalculator
             tc = new MatchedPointsTransformationCalculator();
@@ -410,91 +402,106 @@ int nTop = nIndexes2;
         //     of evaluations.
         List<TransformationParameters> combinedParams = null;
 
-        //if (c1.size() < 5 && c2.size() < 5) {
+        if (keepAllCombinations) {
             combinedParams = MiscStats.filterToSimilarParamSets2(paramsMap,
                 binFactor1, binFactor2);
-        /*} else {
-            combinedParams = MiscStats.filterToSimilarParamSets(paramsMap,
-                binFactor1, binFactor2);
-        }*/
+        } else {
+            if (c1.size() < 5 && c2.size() < 5) {
+                combinedParams = MiscStats.filterToSimilarParamSets2(paramsMap,
+                    binFactor1, binFactor2);
+            } else {
+                combinedParams = MiscStats.filterToSimilarParamSets(paramsMap,
+                    binFactor1, binFactor2);
+            }
+        }
         
         // --- evaluate transformations on all corners, starting w/ location ----
 
         Transformer transformer = new Transformer();
         
-        // order params by summed distances, to later evaluate the top 2 or so
-        Heap orderedParams = new Heap();
-        for (TransformationParameters params : combinedParams) {
+        List<TransformationParameters> combinedParams2 = 
+            new ArrayList<TransformationParameters>();
+        
+        int topK;
+        
+        if (keepAllCombinations) {
+            combinedParams2.addAll(combinedParams);
+            topK = combinedParams2.size();
+        } else {
+            Heap orderedParams = new Heap();
+            for (TransformationParameters params : combinedParams) {
+                double sumDist = 0;
+                int nEval2 = 0;
+                int tolTransXY = tolerance;
+                if (params.getScale() < 1) {
+                    tolTransXY = Math.round(tolerance * params.getScale());
+                }
+                if (params.getStandardDeviations() != null) {
+                    tolTransXY = (int)Math.ceil(Math.max(
+                        Math.abs(params.getStandardDeviations()[2]),
+                        Math.abs(params.getStandardDeviations()[3])
+                        ));
+                }
+                if (tolTransXY == 0) {
+                    tolTransXY = 1;
+                }
 
-            double sumDist = 0;
-            int nEval2 = 0;
-            int tolTransXY = tolerance;
-            if (params.getScale() < 1) {
-                tolTransXY = Math.round(tolerance * params.getScale());
-            }
-            if (params.getStandardDeviations() != null) {
-                tolTransXY = (int)Math.ceil(Math.max(
-                    Math.abs(params.getStandardDeviations()[2]),
-                    Math.abs(params.getStandardDeviations()[3])
-                    ));
-            }
-            if (tolTransXY == 0) {
-                tolTransXY = 1;
-            }
+                for (int ipt1 = 0; ipt1 < c1.size(); ++ipt1) {
+                    T pt1 = c1.get(ipt1);
 
-            for (int ipt1 = 0; ipt1 < c1.size(); ++ipt1) {
-                T pt1 = c1.get(ipt1);
+                    double[] xyTr = transformer.applyTransformation(params,
+                        pt1.getX()[pt1.getKMaxIdx()], pt1.getY()[pt1.getKMaxIdx()]);
 
-                double[] xyTr = transformer.applyTransformation(params,
-                    pt1.getX()[pt1.getKMaxIdx()], pt1.getY()[pt1.getKMaxIdx()]);
+                    Set<PairInt> candidates = np.findNeighbors(
+                        (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]),
+                        tolTransXY);
 
-                Set<PairInt> candidates = np.findNeighbors(
-                    (int) Math.round(xyTr[0]), (int) Math.round(xyTr[1]),
-                    tolTransXY);
+                    if (candidates != null && candidates.size() > 0) {
+                        for (PairInt p : candidates) {
+                            double diffX = xyTr[0] - p.getX();
+                            double diffY = xyTr[1] - p.getY();
 
-                if (candidates != null && candidates.size() > 0) {
-                    for (PairInt p : candidates) {
-                        double diffX = xyTr[0] - p.getX();
-                        double diffY = xyTr[1] - p.getY();
+                            double dist = Math.sqrt(diffX*diffX + diffY*diffY);
 
-                        double dist = Math.sqrt(diffX*diffX + diffY*diffY);
-
-                        nEval2++;
-                        sumDist += dist;
+                            nEval2++;
+                            sumDist += dist;
+                        }
                     }
                 }
-            }
-            if (nEval2 == 0) {
-                continue;
-            }
+                if (nEval2 == 0) {
+                    continue;
+                }
 
-            // distance needs to be adjusted by scale, else the cost prefers
-            // small scale solutions
-            sumDist /= params.getScale();
-            sumDist /= (double)nEval2;
-            // store in heap.  use nEval and dist as cost
-            float cost1 = 1.f/(float)nEval2;
-            float cost2 = (float)(sumDist + 1)/(float)tolTransXY;
-            float normalizedCost = cost1 * cost2;
-
-            
-            long costL = (long)(normalizedCost * heapKeyFactor);
-            HeapNode node = new HeapNode(costL);
-            node.setData(params);
-            orderedParams.insert(node);
+                // distance needs to be adjusted by scale, else the cost prefers
+                // small scale solutions
+                sumDist /= params.getScale();
+                sumDist /= (double)nEval2;
+                // store in heap.  use nEval and dist as cost
+                float cost1 = 1.f/(float)nEval2;
+                float cost2 = (float)(sumDist + 1)/(float)tolTransXY;
+                float normalizedCost = cost1 * cost2;
+    
+                long costL = (long)(normalizedCost * heapKeyFactor);
+                HeapNode node = new HeapNode(costL);
+                node.setData(params);
+                orderedParams.insert(node);
+            }
+            if (c1.size() < 5 && c2.size() < 5) {
+                topK = (int) orderedParams.getNumberOfNodes();
+            } else {
+                topK = c2.size() / 2;
+            }
+            int count = 0;
+            while ((orderedParams.getNumberOfNodes() > 0) && (count < topK)) {
+                TransformationParameters params = (TransformationParameters)
+                    orderedParams.extractMin().getData();
+                combinedParams2.add(params);
+                count++;
+            }
         }
 
-        int topK;
-        if (c1.size() < 5 && c2.size() < 5) {
-            topK = (int)orderedParams.getNumberOfNodes();
-        } else {
-            topK = c2.size()/2;
-        }
-//NOTE: temporarily keeping all transformations until rotated frame solutions are improved        
-topK = (int)orderedParams.getNumberOfNodes();
         // --- evaluate transformations on all corners, use features ----
-
-        // --- evaluate the params: transform c1 and count matches to c2
+        //     transform c1 and count matches to c2
         List<FeatureComparisonStat> bestStats = null;
         TransformationParameters bestParams = null;
         int maxNEval = Integer.MIN_VALUE;
@@ -505,13 +512,10 @@ topK = (int)orderedParams.getNumberOfNodes();
         int nMaxMatchable = Math.min(c1.size(), c2.size());
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
-
-        int count = 0;
         
-        while ((orderedParams.getNumberOfNodes() > 0) && (count < topK)) {
+//log.info("EVAL by dist and SSD:\n");
 
-            TransformationParameters params = (TransformationParameters)
-                orderedParams.extractMin().getData();
+        for (TransformationParameters params : combinedParams2) {
 
             int tolXY = tolerance;
             if (params.getScale() < 1) {
@@ -534,8 +538,6 @@ topK = (int)orderedParams.getNumberOfNodes();
                 // large dither makes runtime larger
                 dither2 = dither;
             }
-
-            count++;
 
             int rotD = Math.round(params.getRotationInDegrees());
             
@@ -592,12 +594,12 @@ topK = (int)orderedParams.getNumberOfNodes();
                 double diffY = xyTr[1] - minStatC2.getY()[minStatC2.getKMaxIdx()];
                 double dist = Math.sqrt(diffX*diffX + diffY*diffY);
                 
-                if (minStat.getImg2PointIntensityErr() > lowerLimitSSD) {
+                //if (minStat.getImg2PointIntensityErr() > lowerLimitSSD) {
                     stats.add(minStat);
                     distances.add(Double.valueOf(dist));
                     sumSSD += minStat.getSumIntensitySqDiff();
                     sumDist += dist;  
-                }
+                //}
             }
 
             if (stats.size() < 2) {
@@ -633,7 +635,7 @@ topK = (int)orderedParams.getNumberOfNodes();
             float cost3 = (sumDist < tolXY) ? 0.01f : ((float)sumDist + 0.01f)/(float)tolXY;
             //float normCost = cost1 * cost2 * cost3;
             float normCost = cost1 * cost2 * cost3;
-
+            
             if (normCost < minCost) {
                 maxNEval = nEval2;
                 bestParams = params;

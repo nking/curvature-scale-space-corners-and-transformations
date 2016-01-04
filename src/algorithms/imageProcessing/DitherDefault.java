@@ -6,5 +6,5 @@ package algorithms.imageProcessing;
  */
 public class DitherDefault {
     
-    public static int dither = 2;//3;//4;
+    public static int dither = 3;//2;//4;
 }

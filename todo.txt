@@ -2,6 +2,14 @@
    the creation of corner regions to match is now very good,
    but the analysis of the comparisons needs to be improved.
 
+   -- all but books have better matching now
+      -- might need to consider keeping top 10 or so for each index1
+         best in BlobCornersScaleFinder, then looking at most frequent
+         parameters solution before evaluation.
+      -- the books test images should be better matched by the next
+         class for a matcher which will not use euclidean transformations
+         for evaluation
+
 -- reduce the number of combinations used when the solution appears to
    be more stable
 -- considering adding back in the last addition of matched features for 

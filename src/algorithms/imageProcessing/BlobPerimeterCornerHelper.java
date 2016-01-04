@@ -501,7 +501,7 @@ public class BlobPerimeterCornerHelper {
         int imageHeight = gsImg.getHeight();
         
         boolean useBinned = true;
-        boolean discardWhenCavityIsSmallerThanBorder = true;
+        boolean discardWhenCavityIsSmallerThanBorder = false;
         
         List<PairIntArray> perimeterLists = segBinnedBlobPerimetersMap.get(type);
         
@@ -624,14 +624,12 @@ public class BlobPerimeterCornerHelper {
             final boolean outdoorMode = false;
             final boolean enableJaggedLineCorrections = false;
             final float factorIncreaseForCurvatureMinimum = 1.f;
-            
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-            
+                        
             corners = BlobsAndCorners.populateCorners(this, type, useBinned,
                 outdoorMode, enableJaggedLineCorrections, 
                 factorIncreaseForCurvatureMinimum);
             assert(corners.size() == perimeterLists.size());
-            int k = 10;
+            int k = 5;
             for (int i = 0; i < corners.size(); ++i) {
                 PairIntArray edge = perimeterLists.get(i);
                 int n = edge.getN();
