@@ -12,32 +12,51 @@
 
 start of rough outline of requirements of a non-euclidean matcher:
 
+CurveCornerEuclideanMatcher
+    -- given dither, and two lists of corner regions,
+       finds the best and second best match for each point
+       and discards the matches that have SSD_best/SSD_second_best < 0.8-ish.
+       (Mikolajczyk and Schmid 2005))
+       -- currently, the algorithm compares each corner in list 2 to 
+          each corner in list 2, and performs 
+          a set of alternate tries around the point in list 1,
+          so the matching is ~O(N^2) ignoring the dithering pattern.
+    -- follows that with greedy or optimal bipartite matching
+       to ensure unique matches.
+
 NonEuclideanSegmentFeatureMatcher:
     -- uses atrous based segmentation
     -- extract blobs and blob corners
-    -- presumably using blob corners as additional spatial information
-       still makes sense to help form a spatially consistent solution.
-    -- corner to corner comparisons, regardless of curve membership:
-       -- find best and second best match (or more) for each corner.
-          -- if best is some amount better than 2nd best, it's kept as
-             a match.  
-             (rtio between SSD best and 2nd best exceeds thresh = 0.9)
-                 from (Mikolajczyk and Schmid 2005))
-             determine the best among these as control points.
-             then, for the well determined points, if there are many undetermined
-             corner regions left,
-             could consider dividing the space using delanauy triangulation.
-             then for remaining unmatched corner regions, look at the triangulation
-             space it is in w.r.t. control points and find the corresponding
-             triangulation space in the other image w.r.t. the matches of the 
-             control points and determine match if any.
-             This is an adaptation of the Geiger et al. 2010 approach for making depth 
-             estimates for disparity maps of rectified stereo images.
+    -- the matching of blob to blob corners or all corners to all corners
+       will be performed using the checkerboard test data to derive
+       best practices. 
+    -- regardless of curve membership uses CurveCornerEuclideanMatcher w/ a 
+       dither of 2 or 3.
+    -- two different kinds of analysis of the matched and remaining
+       unmatched points.
+         -- if can assume that the geometry is such that objects have
+            not moved and the perspective has not changed much,
+            can use an adaptation of the method suggested by Geiger et al. 2010.
+            the well determined points just found become the control points.
+            then delanauy triangulation for all points, then find unmatched by
+            interpolating between control points, that is searching within
+            the delanauy space in other image that is bounded by the cells
+            of the control points.
+    -- are the results fewer false positives than NonEuclideanInvHessianFeatureMatcher?
 
 NonEuclideanInvHessianFeatureMatcher:
     -- begins with finding the inverse hessian points
-    -- shares some of the matching of NonEuclideanSegmentFeatureMatcher with a base class.
-       (it will not combine information from groups of points, just points singly)
+    -- uses CurveCornerEuclideanMatcher for all corners and a dither of 0 or 1
+    -- are these results enough to provide good correspondence
+       for the epipolar solver?  
+       No need to bootstrap more points from these?
+       -- are there too many false positives?
+
+-- for calculation of orientation angle in IntensityFeatures,
+   for the method that uses first derivative, might need to alter the
+   method to find the minimum of the absolute values of thte differences
+   (an approx of zero crossings).
+   the current method is consistently determined, but might be improvable.
   
 -- for the checkerboard test images:
    if not well solved by the non-euclidean trans solver,
