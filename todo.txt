@@ -12,7 +12,7 @@
 
 start of rough outline of requirements of a non-euclidean matcher:
 
-CurveCornerMatcher
+CornerMatcher
     -- given dither, and two lists of corner regions,
        finds the best and second best match for each point
        and discards the matches that have SSD_best/SSD_second_best < 0.8-ish.
@@ -30,7 +30,7 @@ NonEuclideanSegmentFeatureMatcher:
     -- the matching of blob to blob corners or all corners to all corners
        will be performed using the checkerboard test data to derive
        best practices. 
-    -- regardless of curve membership uses CurveCornerMatcher w/ a 
+    -- regardless of curve membership uses CornerMatcher w/ a 
        dither of 2 or 3.
     -- two different kinds of analysis of the matched and remaining
        unmatched points.
@@ -46,7 +46,7 @@ NonEuclideanSegmentFeatureMatcher:
 
 NonEuclideanInvHessianFeatureMatcher:
     -- begins with finding the inverse hessian points
-    -- uses CurveCornerEuclideanMatcher for all corners and a dither of 0 or 1
+    -- uses CornerMatcher for all corners and a dither of 0 or 1
     -- are these results enough to provide good correspondence
        for the epipolar solver?  
        No need to bootstrap more points from these?
