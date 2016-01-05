@@ -261,8 +261,8 @@ double costForTrueSoln = -1;
 
                 Integer index2 = Integer.valueOf(idx2);
 
-                ClosedCurveCornerMatcher2<T> mapper =
-                    new ClosedCurveCornerMatcher2<T>(dither);
+                CurveCornerEuclideanMatcher<T> mapper =
+                    new CurveCornerEuclideanMatcher<T>(dither);
 
                 boolean matched = mapper.matchCorners(features1, features2,
                     corners1, corners2, img1, img2, binFactor1, binFactor2);

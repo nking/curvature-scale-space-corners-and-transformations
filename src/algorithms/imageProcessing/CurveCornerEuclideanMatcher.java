@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
+public class CurveCornerEuclideanMatcher<T extends CornerRegion> {
 
     // a minimum number to use when calculating the sums of SSDs for
     // normalized intensities
@@ -53,7 +53,7 @@ public class ClosedCurveCornerMatcher2<T extends CornerRegion> {
     
     private final int dither;
 
-    public ClosedCurveCornerMatcher2(int dither) {
+    public CurveCornerEuclideanMatcher(int dither) {
         this.dither = dither;
     }
 
