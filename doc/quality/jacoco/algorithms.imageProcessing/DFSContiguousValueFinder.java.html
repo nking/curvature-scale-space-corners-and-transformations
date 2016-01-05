@@ -70,8 +70,8 @@ public class DFSContiguousValueFinder {
 <span class="nc" id="L70">    }</span>
     
     public void setToUse8Neighbors() {
-<span class="fc" id="L73">        use4Neighbors = false;</span>
-<span class="fc" id="L74">    }</span>
+<span class="nc" id="L73">        use4Neighbors = false;</span>
+<span class="nc" id="L74">    }</span>
        
     /**
      * NOTE: to keep the performance reasonable, bin the image so that
@@ -127,12 +127,12 @@ public class DFSContiguousValueFinder {
         
         int[] dxs;
         int[] dys;
-<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (use4Neighbors) {</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        if (use4Neighbors) {</span>
 <span class="fc" id="L131">            dxs = Misc.dx4;</span>
 <span class="fc" id="L132">            dys = Misc.dy4;</span>
         } else {
-<span class="fc" id="L134">            dxs = Misc.dx8;</span>
-<span class="fc" id="L135">            dys = Misc.dy8;</span>
+<span class="nc" id="L134">            dxs = Misc.dx8;</span>
+<span class="nc" id="L135">            dys = Misc.dy8;</span>
         }
         
 <span class="fc" id="L138">        java.util.Stack&lt;Integer&gt; stack = new java.util.Stack&lt;Integer&gt;();</span>

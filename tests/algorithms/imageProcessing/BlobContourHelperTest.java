@@ -132,16 +132,11 @@ public class BlobContourHelperTest extends TestCase {
         assertNotNull(contoursList1);
         assertNotNull(contoursList2);
         
-        //assertTrue(contoursList1.size() >= 5);
-        //assertTrue(contoursList2.size() >= 5);
-        
         int nNonZero1 = bch.sumPointsOfInterest(
             SegmentationType.ADAPTIVE_MEAN, useBinned);
         int nNonZero2 = bch.sumPointsOfInterest(
             SegmentationType.GREYSCALE_WAVELET, useBinned);
         
-        //assertTrue(nNonZero1 >= 2*5);
-        //assertTrue(nNonZero2 >= 2*5);
     }
 
 }

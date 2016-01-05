@@ -103,24 +103,6 @@ public class BlobPerimeterCornerHelper {
         imgHelper.applySegmentation(type, applyToBinnedImage);
     }
     
-    public void replaceSegmentationWithCanny(SegmentationType segmentationType, 
-        boolean applyToBinnedImage) {
-        
-        imgHelper.replaceSegmentationWithCanny(segmentationType, applyToBinnedImage);
-        
-        if (applyToBinnedImage) {
-            segBinnedBlobsMap.remove(segmentationType);
-            segBinnedBlobPerimetersMap.remove(segmentationType);
-            assert(!segBinnedBlobsMap.containsKey(segmentationType));
-            assert(!segBinnedBlobPerimetersMap.containsKey(segmentationType));
-        } else {
-            segBlobsMap.remove(segmentationType);
-            segBlobPerimetersMap.remove(segmentationType);
-            assert(!segBlobsMap.containsKey(segmentationType));
-            assert(!segBlobPerimetersMap.containsKey(segmentationType));
-        }
-    }
-
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
         return imgHelper.getSegmentationImage(type);
     }

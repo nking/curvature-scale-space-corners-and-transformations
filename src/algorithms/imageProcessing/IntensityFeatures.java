@@ -128,6 +128,10 @@ public class IntensityFeatures {
     public boolean gradientWasCreated() {
         return (gXY != null);
     }
+    
+    public GreyscaleImage getGradientImage() {
+        return gXY;
+    }
 
     /**
      * create the gradient of the given greyscale image in order to use it
@@ -140,13 +144,11 @@ public class IntensityFeatures {
             throw new IllegalArgumentException("the gradient image has already"
             + " been created");
         }
-        
-        // temporary check for whether gradient image for orientation is needed
+                
         CannyEdgeFilter filter = new CannyEdgeFilter();
-        
-        filter.applyFilter(gsImg.copyImage());
-        
+        filter.applyFilter(gsImg.copyImage());        
         gXY = filter.getEdgeFilterProducts().getGradientXY();
+        
     }
     
     /**

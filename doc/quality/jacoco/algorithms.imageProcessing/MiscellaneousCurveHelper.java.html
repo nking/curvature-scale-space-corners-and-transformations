@@ -1176,7 +1176,7 @@ import org.ejml.simple.*;
 <span class="fc bfc" id="L1176" title="All 4 branches covered.">                            } else if ((diff32 &lt; diff10) &amp;&amp; (diff32 &lt; diff21)) {</span>
                                 // matches the range r2 to r3, don't merge
 <span class="fc" id="L1178">                                continue;</span>
-<span class="pc bpc" id="L1179" title="1 of 4 branches missed.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
+<span class="fc bfc" id="L1179" title="All 4 branches covered.">                            } else if ((diff10 &lt; diff32) &amp;&amp; (diff10 &lt; diff21)) {</span>
                                 // matches the range r0 to r1, don't merge
 <span class="fc" id="L1181">                                continue;</span>
                             }
@@ -1242,8 +1242,8 @@ import org.ejml.simple.*;
 <span class="fc" id="L1242">        Boolean widthIsAlongX = null;</span>
 <span class="fc bfc" id="L1243" title="All 4 branches covered.">        while ((dx == 0) || (dy == 0)) {</span>
 <span class="fc" id="L1244">            i++;</span>
-<span class="pc bpc" id="L1245" title="1 of 2 branches missed.">            if (i &gt;= stopIndex) {</span>
-<span class="nc" id="L1246">                return lineSegmentRanges;</span>
+<span class="fc bfc" id="L1245" title="All 2 branches covered.">            if (i &gt;= stopIndex) {</span>
+<span class="fc" id="L1246">                return lineSegmentRanges;</span>
             }
 <span class="fc" id="L1248">            dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L1249">            dy = (curve.getY(i) - curve.getY(i - 1));</span>

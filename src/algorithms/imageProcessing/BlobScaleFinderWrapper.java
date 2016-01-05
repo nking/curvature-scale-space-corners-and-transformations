@@ -381,9 +381,6 @@ public class BlobScaleFinderWrapper {
                     
                     img1Helper.applySegmentation(segmentationType1, useBinned);
                     
-                    //img1Helper.replaceSegmentationWithCanny(segmentationType1, 
-                    //    useBinned);
-                    
                     boolean filterOutImageBoundaryBlobs = true;
                     boolean filterOutZeroPixels = false;
                                
@@ -402,10 +399,6 @@ public class BlobScaleFinderWrapper {
                     segmentationType2 = SegmentationType.GREYSCALE_CANNY;
                     
                     img2Helper.applySegmentation(segmentationType2, useBinned);
-                    
-                    // use canny edges segmentation to replace segmentationType2
-                    //img2Helper.replaceSegmentationWithCanny(segmentationType2, 
-                    //    useBinned);
                     
                     // pre-make the blobs using non-default variables:
                     img2Helper.getBlobs(segmentationType2, useBinned,

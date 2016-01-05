@@ -88,20 +88,57 @@ import java.util.List;
         }
         
 <span class="fc" id="L90">    }</span>
+    
+    /**
+     * same as calculateWithB3SplineScalingFunction except that it uses a 2-D
+     * scaling function and the runtime is 2.5 times longer.
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    void calculateWithB3SplineScalingFunction2(GreyscaleImage input,
+        List&lt;GreyscaleImage&gt; outputTransformed, List&lt;GreyscaleImage&gt; outputCoeff) {
+
+<span class="fc" id="L103">        int imgDimen = Math.min(input.getWidth(), input.getHeight());</span>
+
+<span class="fc" id="L105">        int nr = (int)(Math.log(imgDimen)/Math.log(2));</span>
+
+<span class="fc" id="L107">        B3SplineFunction scalingFunction = new B3SplineFunction();</span>
+        
+<span class="fc" id="L109">        outputTransformed.add(input.copyToSignedImage());</span>
+        
+<span class="fc" id="L111">        outputCoeff.add(input.createSignedWithDimensions());</span>
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (int j = 0; j &lt; nr; ++j) {</span>
+            
+<span class="fc" id="L115">            GreyscaleImage cJ = outputTransformed.get(j);</span>
+ 
+<span class="fc" id="L117">            GreyscaleImage cJPlus1 = scalingFunction.calculate2D(cJ);</span>
+           
+<span class="fc" id="L119">            outputTransformed.add(cJPlus1);</span>
+            
+            // c_(j,k) − c_(j+1,k)
+<span class="fc" id="L122">            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);</span>
+            
+<span class="fc" id="L124">            outputCoeff.add(wJPlus1);</span>
+        }
+        
+<span class="fc" id="L127">    }</span>
 
     public GreyscaleImage reconstruct(GreyscaleImage c0, 
         List&lt;GreyscaleImage&gt; mmCoeff) {
 
-<span class="nc" id="L95">        int nr = mmCoeff.size();</span>
+<span class="nc" id="L132">        int nr = mmCoeff.size();</span>
 
-<span class="nc" id="L97">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
+<span class="nc" id="L134">        GreyscaleImage output = c0.copyToFullRangeIntImage();</span>
 
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (int j = 0; j &lt; nr; ++j) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        for (int j = 0; j &lt; nr; ++j) {</span>
            
-<span class="nc" id="L101">            output = output.add(mmCoeff.get(j));</span>
+<span class="nc" id="L138">            output = output.add(mmCoeff.get(j));</span>
         }
 
-<span class="nc" id="L104">        return output;</span>
+<span class="nc" id="L141">        return output;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

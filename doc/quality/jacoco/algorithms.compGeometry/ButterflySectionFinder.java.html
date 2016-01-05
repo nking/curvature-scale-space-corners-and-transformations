@@ -1434,7 +1434,7 @@ import java.util.Set;
          -3 -2 -1  0  1
         */   
         
-<span class="fc bfc" id="L1437" title="All 4 branches covered.">        if ((p2MinDistSq &gt; p3MinDistSq) &amp;&amp; (p3MinIdx == 1)) {</span>
+<span class="pc bpc" id="L1437" title="1 of 4 branches missed.">        if ((p2MinDistSq &gt; p3MinDistSq) &amp;&amp; (p3MinIdx == 1)) {</span>
             // append to end of route1             R1:[start  stop]  p3  p2 
             //and insert at beginning of route0    R0:[stop  start]  p0  p1 
 <span class="fc" id="L1440">            LinkedHashSet&lt;PairInt&gt; tmp0 = new LinkedHashSet&lt;PairInt&gt;();</span>
@@ -1447,7 +1447,7 @@ import java.util.Set;
 <span class="fc" id="L1447">            routes.route1.add(segment.p2);</span>
 <span class="fc" id="L1448">            tmp0.addAll(routes.route0);</span>
 <span class="fc" id="L1449">            routes.route0 = tmp0;</span>
-<span class="pc bpc" id="L1450" title="1 of 4 branches missed.">        } else if ((p2MinDistSq &lt; p3MinDistSq) &amp;&amp; (p2MinIdx == 0)) {            </span>
+<span class="pc bpc" id="L1450" title="2 of 4 branches missed.">        } else if ((p2MinDistSq &lt; p3MinDistSq) &amp;&amp; (p2MinIdx == 0)) {            </span>
             // insert at beginning of route1    p3  p2  R1:[start  stop]
             // append to end of route0          p0  p1  R0:[stop  start]
 <span class="fc" id="L1453">            LinkedHashSet&lt;PairInt&gt; tmp1 = new LinkedHashSet&lt;PairInt&gt;();</span>

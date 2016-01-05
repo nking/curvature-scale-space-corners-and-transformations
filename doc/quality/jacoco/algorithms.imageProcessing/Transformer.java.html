@@ -498,8 +498,8 @@ import java.util.logging.Logger;
         yt_0 = yr_0 + transY = y1
         */
         
-<span class="fc" id="L501">        GreyscaleImage output = new GreyscaleImage(outputWidth, </span>
-            outputHeight);
+<span class="fc" id="L501">        GreyscaleImage output = new GreyscaleImage(outputWidth, outputHeight, </span>
+<span class="fc" id="L502">            input.getType());</span>
         
 <span class="fc bfc" id="L504" title="All 2 branches covered.">        for (int x = 0; x &lt; input.getWidth(); x++) {</span>
 <span class="fc bfc" id="L505" title="All 2 branches covered.">            for (int y = 0; y &lt; input.getHeight(); y++) {</span>
@@ -520,8 +520,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L520">                    int x2 = (int)Math.round(xt);</span>
 <span class="fc" id="L521">                    int y2 = (int)Math.round(yt);</span>
                     
-<span class="pc bpc" id="L523" title="3 of 6 branches missed.">                    if ((x2 &gt; -1) &amp;&amp; (x2 &lt; (output.getWidth() - 1) &amp;&amp;</span>
-<span class="pc bpc" id="L524" title="1 of 2 branches missed.">                        (y2 &gt; -1) &amp;&amp; (y2 &lt; (output.getHeight() - 1)))) {</span>
+<span class="pc bpc" id="L523" title="2 of 6 branches missed.">                    if ((x2 &gt; -1) &amp;&amp; (x2 &lt; (output.getWidth() - 1) &amp;&amp;</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">                        (y2 &gt; -1) &amp;&amp; (y2 &lt; (output.getHeight() - 1)))) {</span>
                         
 <span class="fc" id="L526">                        output.setValue(x2, y2, pix);</span>
                     }
@@ -641,12 +641,12 @@ import java.util.logging.Logger;
     public &lt;T extends CornerRegion&gt; T applyTransformation(
         TransformationParameters params, T cr) {
         
-<span class="nc" id="L644">        double rotInRadians = params.getRotationInRadians();</span>
+<span class="fc" id="L644">        double rotInRadians = params.getRotationInRadians();</span>
         
-<span class="nc" id="L646">        double cos = Math.cos(rotInRadians);</span>
-<span class="nc" id="L647">        double sin = Math.sin(rotInRadians);</span>
+<span class="fc" id="L646">        double cos = Math.cos(rotInRadians);</span>
+<span class="fc" id="L647">        double sin = Math.sin(rotInRadians);</span>
                 
-<span class="nc" id="L649">        return applyTransformation(params, cr, cos, sin);</span>
+<span class="fc" id="L649">        return applyTransformation(params, cr, cos, sin);</span>
     }
     
     @SuppressWarnings({&quot;unchecked&quot;})
@@ -922,33 +922,33 @@ import java.util.logging.Logger;
     public void transformToOrigin(int originX, int originY, 
         TransformationParameters params) {
         
-<span class="nc" id="L925">        double ox = params.getOriginX();</span>
-<span class="nc" id="L926">        double oy = params.getOriginY();</span>
+<span class="fc" id="L925">        double ox = params.getOriginX();</span>
+<span class="fc" id="L926">        double oy = params.getOriginY();</span>
         
-<span class="nc" id="L928">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
-<span class="nc" id="L929">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
+<span class="fc" id="L928">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+<span class="fc" id="L929">        TransformationParameters revParams = tc.swapReferenceFrames(params);</span>
 
-<span class="nc" id="L931">        double tx = revParams.getTranslationX();</span>
-<span class="nc" id="L932">        double ty = revParams.getTranslationY();</span>
+<span class="fc" id="L931">        double tx = revParams.getTranslationX();</span>
+<span class="fc" id="L932">        double ty = revParams.getTranslationY();</span>
         
-<span class="nc" id="L934">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
-<span class="nc" id="L935">        double sine = Math.sin(revParams.getRotationInRadians());</span>
-<span class="nc" id="L936">        double scale = revParams.getScale();</span>
+<span class="fc" id="L934">        double cosine = Math.cos(revParams.getRotationInRadians());</span>
+<span class="fc" id="L935">        double sine = Math.sin(revParams.getRotationInRadians());</span>
+<span class="fc" id="L936">        double scale = revParams.getScale();</span>
         
-<span class="nc" id="L938">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
-<span class="nc" id="L939">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
+<span class="fc" id="L938">        double deltaX = (ox * scale) + ((tx - ox) * scale * cosine) + ((ty - oy) * scale * sine);</span>
+<span class="fc" id="L939">        double deltaY = (oy * scale) + (-(tx - ox) * scale * sine) + ((ty - oy) * scale * cosine);</span>
         
-<span class="nc" id="L941">        double txP = revParams.getTranslationX() - deltaX;</span>
-<span class="nc" id="L942">        double tyP = revParams.getTranslationY() - deltaY;</span>
+<span class="fc" id="L941">        double txP = revParams.getTranslationX() - deltaX;</span>
+<span class="fc" id="L942">        double tyP = revParams.getTranslationY() - deltaY;</span>
         
-<span class="nc" id="L944">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
+<span class="fc" id="L944">        double[] xyT2 = applyTransformation(params, txP, tyP);</span>
       
-<span class="nc" id="L946">        params.setOriginX(originX);</span>
-<span class="nc" id="L947">        params.setOriginY(originY);</span>
-<span class="nc" id="L948">        params.setTranslationX((float)xyT2[0]);</span>
-<span class="nc" id="L949">        params.setTranslationY((float)xyT2[1]);</span>
+<span class="fc" id="L946">        params.setOriginX(originX);</span>
+<span class="fc" id="L947">        params.setOriginY(originY);</span>
+<span class="fc" id="L948">        params.setTranslationX((float)xyT2[0]);</span>
+<span class="fc" id="L949">        params.setTranslationY((float)xyT2[1]);</span>
         
-<span class="nc" id="L951">    }</span>
+<span class="fc" id="L951">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

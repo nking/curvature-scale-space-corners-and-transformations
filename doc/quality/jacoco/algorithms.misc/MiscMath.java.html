@@ -1838,40 +1838,40 @@ import java.util.Set;
 
     public static int[] findMinXY2(CornerRegion[] cr) {
         
-<span class="nc" id="L1841">        int minX = Integer.MAX_VALUE;</span>
-<span class="nc" id="L1842">        int minY = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1841">        int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1842">        int minY = Integer.MAX_VALUE;</span>
         
-<span class="nc bnc" id="L1844" title="All 2 branches missed.">        for (CornerRegion c : cr) {</span>
-<span class="nc" id="L1845">            int x = c.getX()[c.getKMaxIdx()];</span>
-<span class="nc" id="L1846">            int y = c.getY()[c.getKMaxIdx()];</span>
-<span class="nc bnc" id="L1847" title="All 2 branches missed.">            if (x &lt; minX) {</span>
-<span class="nc" id="L1848">                minX = x;</span>
+<span class="fc bfc" id="L1844" title="All 2 branches covered.">        for (CornerRegion c : cr) {</span>
+<span class="fc" id="L1845">            int x = c.getX()[c.getKMaxIdx()];</span>
+<span class="fc" id="L1846">            int y = c.getY()[c.getKMaxIdx()];</span>
+<span class="fc bfc" id="L1847" title="All 2 branches covered.">            if (x &lt; minX) {</span>
+<span class="fc" id="L1848">                minX = x;</span>
             }
-<span class="nc bnc" id="L1850" title="All 2 branches missed.">            if (y &lt; minY) {</span>
-<span class="nc" id="L1851">                minY = y;</span>
+<span class="fc bfc" id="L1850" title="All 2 branches covered.">            if (y &lt; minY) {</span>
+<span class="fc" id="L1851">                minY = y;</span>
             }
         }
         
-<span class="nc" id="L1855">        return new int[]{minX, minY};</span>
+<span class="fc" id="L1855">        return new int[]{minX, minY};</span>
     }
     
     public static int[] findMaxXY2(CornerRegion[] cr) {
         
-<span class="nc" id="L1860">        int maxX = Integer.MIN_VALUE;</span>
-<span class="nc" id="L1861">        int maxY = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1860">        int maxX = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1861">        int maxY = Integer.MIN_VALUE;</span>
         
-<span class="nc bnc" id="L1863" title="All 2 branches missed.">        for (CornerRegion c : cr) {</span>
-<span class="nc" id="L1864">            int x = c.getX()[c.getKMaxIdx()];</span>
-<span class="nc" id="L1865">            int y = c.getY()[c.getKMaxIdx()];</span>
-<span class="nc bnc" id="L1866" title="All 2 branches missed.">            if (x &gt; maxX) {</span>
-<span class="nc" id="L1867">                maxX = x;</span>
+<span class="fc bfc" id="L1863" title="All 2 branches covered.">        for (CornerRegion c : cr) {</span>
+<span class="fc" id="L1864">            int x = c.getX()[c.getKMaxIdx()];</span>
+<span class="fc" id="L1865">            int y = c.getY()[c.getKMaxIdx()];</span>
+<span class="fc bfc" id="L1866" title="All 2 branches covered.">            if (x &gt; maxX) {</span>
+<span class="fc" id="L1867">                maxX = x;</span>
             }
-<span class="nc bnc" id="L1869" title="All 2 branches missed.">            if (y &gt; maxY) {</span>
-<span class="nc" id="L1870">                maxY = y;</span>
+<span class="fc bfc" id="L1869" title="All 2 branches covered.">            if (y &gt; maxY) {</span>
+<span class="fc" id="L1870">                maxY = y;</span>
             }
         }
         
-<span class="nc" id="L1874">        return new int[]{maxX, maxY};</span>
+<span class="fc" id="L1874">        return new int[]{maxX, maxY};</span>
     }
 
 }

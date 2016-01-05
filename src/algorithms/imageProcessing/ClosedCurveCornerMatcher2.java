@@ -284,8 +284,8 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
         int binFactor1, int binFactor2) {
 
         /*
-        for each point in curve c1, the best matching point by features in c2 is given.
-        if no match, the entry contains a null.
+        for each point in curve c1, the best matching point by features in c2 
+        is given.  if no match, the entry contains a null.
         */
         CornersAndFeatureStat<T>[] indexes2 = null;
         
@@ -301,9 +301,6 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             }
         }
 
-        // if want to filter by the best SSDs, could use a heap (inserts O(1))
-        // and extract is O(1), and only extract the top 10 or so to make
-        // combinations from.
         int nIndexes2 = 0;
         for (CornersAndFeatureStat<T> cfs : indexes2) {
             if (cfs != null) {

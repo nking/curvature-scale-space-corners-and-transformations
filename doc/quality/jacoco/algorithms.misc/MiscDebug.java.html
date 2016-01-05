@@ -388,7 +388,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L388">                    int row = cr.getY()[cr.getKMaxIdx()];</span>
 <span class="fc bfc" id="L389" title="All 2 branches covered.">                    for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 <span class="fc" id="L390">                        int xx = col + dx;</span>
-<span class="fc bfc" id="L391" title="All 4 branches covered.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L391" title="1 of 4 branches missed.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="fc" id="L392">                            continue;</span>
                         }
 <span class="fc bfc" id="L394" title="All 2 branches covered.">                        for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
@@ -1001,37 +1001,37 @@ import java.util.logging.Logger;
     public static &lt;T extends CornerRegion&gt; void writeImage(Collection&lt;T&gt; cornerRegions, 
         Image img, String fileSuffix) throws IOException {
        
-<span class="nc" id="L1004">        int rClr = 255;</span>
-<span class="nc" id="L1005">        int gClr = 0;</span>
-<span class="nc" id="L1006">        int bClr = 0;</span>
+<span class="fc" id="L1004">        int rClr = 255;</span>
+<span class="fc" id="L1005">        int gClr = 0;</span>
+<span class="fc" id="L1006">        int bClr = 0;</span>
         
-<span class="nc bnc" id="L1008" title="All 2 branches missed.">        for (T cr : cornerRegions) {</span>
-<span class="nc" id="L1009">            int kMaxIdx = cr.getKMaxIdx();</span>
-<span class="nc" id="L1010">            int x = cr.getX()[kMaxIdx];</span>
-<span class="nc" id="L1011">            int y = cr.getY()[kMaxIdx];</span>
-<span class="nc" id="L1012">            float k = cr.getK()[kMaxIdx];</span>
-<span class="nc" id="L1013">            int pointSize = 1;//+ Math.round((k - 0.1f)/0.1f);</span>
-<span class="nc bnc" id="L1014" title="All 2 branches missed.">            if (pointSize &lt; 0) {</span>
+<span class="fc bfc" id="L1008" title="All 2 branches covered.">        for (T cr : cornerRegions) {</span>
+<span class="fc" id="L1009">            int kMaxIdx = cr.getKMaxIdx();</span>
+<span class="fc" id="L1010">            int x = cr.getX()[kMaxIdx];</span>
+<span class="fc" id="L1011">            int y = cr.getY()[kMaxIdx];</span>
+<span class="fc" id="L1012">            float k = cr.getK()[kMaxIdx];</span>
+<span class="fc" id="L1013">            int pointSize = 1;//+ Math.round((k - 0.1f)/0.1f);</span>
+<span class="pc bpc" id="L1014" title="1 of 2 branches missed.">            if (pointSize &lt; 0) {</span>
 <span class="nc" id="L1015">                pointSize = 1;</span>
             }
             
-<span class="nc bnc" id="L1018" title="All 2 branches missed.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
-<span class="nc" id="L1019">                float xx = x + dx;</span>
-<span class="nc bnc" id="L1020" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
-<span class="nc bnc" id="L1021" title="All 2 branches missed.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
-<span class="nc" id="L1022">                        float yy = y + dy;</span>
-<span class="nc bnc" id="L1023" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
-<span class="nc" id="L1024">                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
+<span class="fc bfc" id="L1018" title="All 2 branches covered.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
+<span class="fc" id="L1019">                float xx = x + dx;</span>
+<span class="pc bpc" id="L1020" title="1 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="fc bfc" id="L1021" title="All 2 branches covered.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
+<span class="fc" id="L1022">                        float yy = y + dy;</span>
+<span class="pc bpc" id="L1023" title="2 of 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
+<span class="fc" id="L1024">                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
                 }
             }
-<span class="nc" id="L1029">        }</span>
+<span class="fc" id="L1029">        }</span>
         
-<span class="nc" id="L1031">        String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="nc" id="L1032">        String sep = System.getProperty(&quot;file.separator&quot;);</span>
-<span class="nc" id="L1033">        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + &quot;.png&quot;, img);</span>
-<span class="nc" id="L1034">    }</span>
+<span class="fc" id="L1031">        String dirPath = algorithms.util.ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="fc" id="L1032">        String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="fc" id="L1033">        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + &quot;.png&quot;, img);</span>
+<span class="fc" id="L1034">    }</span>
 
     public static void debugPlot(List&lt;CurvatureScaleSpaceContour&gt; result, ImageExt 
         img, int xOffset, int yOffset, String fileSuffix) {

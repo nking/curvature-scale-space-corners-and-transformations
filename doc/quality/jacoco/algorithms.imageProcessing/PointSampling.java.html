@@ -548,28 +548,30 @@ import java.util.Set;
     private Map&lt;PairInt, Integer&gt; useDistanceTransform(Set&lt;PairInt&gt; points, 
         int w, int h, List&lt;PairInt&gt; seeds) {
              
-<span class="fc" id="L551">        com.climbwithyourfeet.clustering.DistanceTransform dt = </span>
-            new com.climbwithyourfeet.clustering.DistanceTransform();
+        com.climbwithyourfeet.clustering.DistanceTransform
+<span class="fc" id="L552">            &lt;com.climbwithyourfeet.clustering.util.PairInt&gt; dt = </span>
+            new com.climbwithyourfeet.clustering.DistanceTransform
+            &lt;com.climbwithyourfeet.clustering.util.PairInt&gt;();
         
-<span class="fc" id="L554">        Set&lt;com.climbwithyourfeet.clustering.util.PairInt&gt; seedPoints</span>
+<span class="fc" id="L556">        Set&lt;com.climbwithyourfeet.clustering.util.PairInt&gt; seedPoints</span>
             = new HashSet&lt;com.climbwithyourfeet.clustering.util.PairInt&gt;();
         
-<span class="fc bfc" id="L557" title="All 2 branches covered.">        for (PairInt p : seeds) {</span>
-<span class="fc" id="L558">            com.climbwithyourfeet.clustering.util.PairInt p2 = new</span>
-<span class="fc" id="L559">                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), p.getY());</span>
-<span class="fc" id="L560">            seedPoints.add(p2);</span>
-<span class="fc" id="L561">        }</span>
+<span class="fc bfc" id="L559" title="All 2 branches covered.">        for (PairInt p : seeds) {</span>
+<span class="fc" id="L560">            com.climbwithyourfeet.clustering.util.PairInt p2 = new</span>
+<span class="fc" id="L561">                com.climbwithyourfeet.clustering.util.PairInt(p.getX(), p.getY());</span>
+<span class="fc" id="L562">            seedPoints.add(p2);</span>
+<span class="fc" id="L563">        }</span>
         
-<span class="fc" id="L563">        int[][] distances = dt.applyMeijsterEtAl(seedPoints, w, h);</span>
+<span class="fc" id="L565">        int[][] distances = dt.applyMeijsterEtAl(seedPoints, w, h);</span>
         
-<span class="fc" id="L565">        Map&lt;PairInt, Integer&gt; distMap = new HashMap&lt;PairInt, Integer&gt;();</span>
-<span class="fc bfc" id="L566" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L567">            int distSq = distances[p.getX()][p.getY()];</span>
-<span class="fc" id="L568">            Integer dist = Integer.valueOf((int)Math.round(Math.sqrt(distSq)));</span>
-<span class="fc" id="L569">            distMap.put(p, dist);</span>
-<span class="fc" id="L570">        }</span>
+<span class="fc" id="L567">        Map&lt;PairInt, Integer&gt; distMap = new HashMap&lt;PairInt, Integer&gt;();</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L569">            int distSq = distances[p.getX()][p.getY()];</span>
+<span class="fc" id="L570">            Integer dist = Integer.valueOf((int)Math.round(Math.sqrt(distSq)));</span>
+<span class="fc" id="L571">            distMap.put(p, dist);</span>
+<span class="fc" id="L572">        }</span>
         
-<span class="fc" id="L572">        return distMap;</span>
+<span class="fc" id="L574">        return distMap;</span>
     }    
     
 }

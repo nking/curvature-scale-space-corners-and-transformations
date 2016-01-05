@@ -1,4 +1,4 @@
--- feature matching still needs improvements:
+-- Feature matching still needs improvements:
    the creation of corner regions to match is now very good,
    but the analysis of the comparisons needs to be improved.
 
@@ -10,21 +10,40 @@
          class for a matcher which will not use euclidean transformations
          for evaluation
 
--- reduce the number of combinations used when the solution appears to
-   be more stable
--- considering adding back in the last addition of matched features for 
-   canny edge corners and a strict known transformation.
+start of rough outline of requirements of a non-euclidean matcher:
 
--- consider in near future, making a wrapper for extreme case of projection having
-   a scale of 1 in x axis but a very different scale in y axis due
-   to perspective, for example, an upright rectangle in one image
-   and in the other image the same rectangle viewed at an inclined
-   angle so that the vertical extent takes half as many pixels.
-   The BlobScaleFinder prefers the best euclidean matching largest
-   number of points.
-   This new class would need to use bipartite matching of blobs and
-   then a filter if possible to remove inconsistent matches,
-   then straight to the epipolar solver.
+NonEuclideanSegmentFeatureMatcher:
+    -- uses atrous based segmentation
+    -- extract blobs and blob corners
+    -- presumably using blob corners as additional spatial information
+       still makes sense to help form a spatially consistent solution.
+    -- corner to corner comparisons, regardless of curve membership:
+       -- find best and second best match (or more) for each corner.
+          -- if best is some amount better than 2nd best, it's kept as
+             a match.  
+             (rtio between SSD best and 2nd best exceeds thresh = 0.9)
+                 from (Mikolajczyk and Schmid 2005))
+             determine the best among these as control points.
+             then, for the well determined points, if there are many undetermined
+             corner regions left,
+             could consider dividing the space using delanauy triangulation.
+             then for remaining unmatched corner regions, look at the triangulation
+             space it is in w.r.t. control points and find the corresponding
+             triangulation space in the other image w.r.t. the matches of the 
+             control points and determine match if any.
+             This is an adaptation of the Geiger et al. 2010 approach for making depth 
+             estimates for disparity maps of rectified stereo images.
+
+NonEuclideanInvHessianFeatureMatcher:
+    -- begins with finding the inverse hessian points
+    -- shares some of the matching of NonEuclideanSegmentFeatureMatcher with a base class.
+       (it will not combine information from groups of points, just points singly)
+  
+-- for the checkerboard test images:
+   if not well solved by the non-euclidean trans solver,
+   consider adding a flag at a higher setting in the finder settings
+   to allow immediate change of segmentation to canny segmentation
+   (see the middle of the blob corners scale finder for data w/ grids).
 
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
@@ -157,6 +176,10 @@ design class to hold sampling
       http://coewww.rutgers.edu/riul/research/code/GPBM/index.html
 
    update the open agile story and close it
+
+-- for line drawings, should use an edge detector that is a a second
+   derivative operator instead of the canny first deriv operator.
+   see the canny edge detector for lines...
 
 -- median absolute deviation
 6. Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. J. Am. Statistical Assoc. 1993;vol. 88(no. 424):1273–1283.

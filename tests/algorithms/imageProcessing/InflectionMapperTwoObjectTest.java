@@ -139,7 +139,7 @@ mapper.debugImg2 = img2.copyToGreyscale();
             for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
                 float xx = x + dx;
                 if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); 
+                    for (int dy = (-1*nExtraForDot); dy <= (nExtraForDot + 1); 
                         dy++) {
                         float yy = y + dy;
                         if ((yy > -1) && (yy < (input.getHeight() - 1))) {

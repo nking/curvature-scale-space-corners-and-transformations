@@ -11,107 +11,381 @@
      * The implementation follows pseudocode in
      * http://www.multiresolution.com/svbook.pdf
      *
-     * The runtime complexity is O(N_pixels).
+     * The runtime complexity is O(N_pixels) and internally uses 2 1-D operations.
      *
      * Handling boundaries:
      * &quot;mirror&quot; :      c(k + N) = c(N −k)
      * &quot;periodicity&quot; : (c(k + N) = c(N))
      * &quot;continuity&quot;  : (c(k + N) = c(k))
      * &lt;/pre&gt;
+     * @param input
+     * @return
     */
     public GreyscaleImage calculate(GreyscaleImage input) {
 
-<span class="fc" id="L24">        int w = input.getWidth();</span>
-<span class="fc" id="L25">        int h = input.getHeight();</span>
+<span class="fc" id="L26">        int w = input.getWidth();</span>
+<span class="fc" id="L27">        int h = input.getHeight();</span>
 
-<span class="fc" id="L27">        GreyscaleImage output = input.copyImage();</span>
+<span class="fc" id="L29">        GreyscaleImage output = input.copyImage();</span>
 
         // use separability, that is 1D operation on columns, then rows
-        
-<span class="fc bfc" id="L31" title="All 2 branches covered.">        for (int row = 0; row &lt; h; ++row) {</span>
-<span class="fc bfc" id="L32" title="All 2 branches covered.">            for (int col = 0; col &lt; w; ++col) {</span>
-                // choosing &quot;continuity&quot; for boundary corrections
-<span class="fc" id="L34">                int x0 = col - 2;</span>
-<span class="fc bfc" id="L35" title="All 2 branches covered.">                if (x0 &lt; 0) {</span>
-<span class="fc" id="L36">                    x0 = col;</span>
-                }
-<span class="fc" id="L38">                int x1 = col - 1;</span>
-<span class="fc bfc" id="L39" title="All 2 branches covered.">                if (x1 &lt; 0) {</span>
-<span class="fc" id="L40">                    x1 = col;</span>
-                }
-<span class="fc" id="L42">                int x2 = col;</span>
-<span class="fc" id="L43">                int x3 = col + 1;</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">                if (x3 &gt; (w - 1)) {</span>
-<span class="fc" id="L45">                    x3 = col;</span>
-                }
-<span class="fc" id="L47">                int x4 = col + 2;</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">                if (x4 &gt; (w - 1)) {</span>
-<span class="fc" id="L49">                    x4 = col;</span>
-                }
-                /*
-                (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3) 
-                1/16, 1/4, 3/8, 1/4, 1/16
-                */
-<span class="fc" id="L55">                double v0 = input.getValue(x0, row);</span>
-<span class="fc" id="L56">                double v1 = input.getValue(x1, row);</span>
-<span class="fc" id="L57">                double v2 = input.getValue(x2, row);</span>
-<span class="fc" id="L58">                double v3 = input.getValue(x3, row);</span>
-<span class="fc" id="L59">                double v4 = input.getValue(x4, row);</span>
-<span class="fc" id="L60">                v0 *= (1./16.);</span>
-<span class="fc" id="L61">                v1 *= (1./4.);</span>
-<span class="fc" id="L62">                v2 *= (3./8.);</span>
-<span class="fc" id="L63">                v3 *= (1./4.);</span>
-<span class="fc" id="L64">                v4 *= (1./16.);</span>
-<span class="fc" id="L65">                int v = (int) Math.round(v0 + v1 + v2 + v3 + v4);</span>
 
-<span class="fc" id="L67">                output.setValue(col, row, v);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int row = 0; row &lt; h; ++row) {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            for (int col = 0; col &lt; w; ++col) {</span>
+
+                // choosing &quot;continuity&quot; for boundary corrections
+
+<span class="fc" id="L38">                int vSum = 0;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+
+<span class="fc" id="L41">                    int xi = col + dx;</span>
+<span class="fc bfc" id="L42" title="All 4 branches covered.">                    if ((xi &lt; 0) || (xi &gt; (w - 1))) {</span>
+<span class="fc" id="L43">                        xi = col;</span>
+                    }
+
+<span class="fc" id="L46">                    int v = input.getValue(xi, row);</span>
+
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+<span class="fc bfc" id="L53" title="All 3 branches covered.">                    switch (dx) {</span>
+                        // -2 and +2
+                        case -1:
+                        case 1:
+<span class="fc" id="L57">                            v &lt;&lt;= 2;</span>
+<span class="fc" id="L58">                            break;</span>
+                        case 0:
+<span class="fc" id="L60">                            v &lt;&lt;= 1;</span>
+<span class="fc" id="L61">                            v *= 3;</span>
+<span class="fc" id="L62">                            break;</span>
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+<span class="fc" id="L68">                    vSum += v;</span>
+                }
+
+<span class="fc" id="L71">                vSum &gt;&gt;= 4;</span>
+
+<span class="fc" id="L73">                output.setValue(col, row, vSum);</span>
             }
         }
 
-<span class="fc" id="L71">        GreyscaleImage input2 = output.copyImage();</span>
+<span class="fc" id="L77">        GreyscaleImage input2 = output.copyImage();</span>
 
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int col = 0; col &lt; w; ++col) {</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (int row = 0; row &lt; h; ++row) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int col = 0; col &lt; w; ++col) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            for (int row = 0; row &lt; h; ++row) {</span>
+
                 // choosing &quot;continuity&quot; for boundary corrections
-<span class="fc" id="L76">                int y0 = row - 2;</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (y0 &lt; 0) {</span>
-<span class="fc" id="L78">                    y0 = row;</span>
-                }
-<span class="fc" id="L80">                int y1 = row - 1;</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (y1 &lt; 0) {</span>
-<span class="fc" id="L82">                    y1 = row;</span>
-                }
-<span class="fc" id="L84">                int y2 = row;</span>
-<span class="fc" id="L85">                int y3 = row + 1;</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">                if (y3 &gt; (h - 1)) {</span>
-<span class="fc" id="L87">                    y3 = row;</span>
-                }
-<span class="fc" id="L89">                int y4 = row + 2;</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (y4 &gt; (h - 1)) {</span>
-<span class="fc" id="L91">                    y4 = row;</span>
-                }
-                /*
-                (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3) 
-                1/16, 1/4, 3/8, 1/4, 1/16
-                */
-<span class="fc" id="L97">                double v0 = input2.getValue(col, y0);</span>
-<span class="fc" id="L98">                double v1 = input2.getValue(col, y1);</span>
-<span class="fc" id="L99">                double v2 = input2.getValue(col, y2);</span>
-<span class="fc" id="L100">                double v3 = input2.getValue(col, y3);</span>
-<span class="fc" id="L101">                double v4 = input2.getValue(col, y4);</span>
-<span class="fc" id="L102">                v0 *= (1./16.);</span>
-<span class="fc" id="L103">                v1 *= (1./4.);</span>
-<span class="fc" id="L104">                v2 *= (3./8.);</span>
-<span class="fc" id="L105">                v3 *= (1./4.);</span>
-<span class="fc" id="L106">                v4 *= (1./16.);</span>
-<span class="fc" id="L107">                int v = (int) Math.round(v0 + v1 + v2 + v3 + v4);</span>
 
-<span class="fc" id="L109">                output.setValue(col, row, v);</span>
+<span class="fc" id="L84">                int vSum = 0;</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+
+<span class="fc" id="L87">                    int yi = row + dy;</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">                    if ((yi &lt; 0) || (yi &gt; (h - 1))) {</span>
+<span class="fc" id="L89">                        yi = row;</span>
+                    }
+
+<span class="fc" id="L92">                    int v = input2.getValue(col, yi);</span>
+
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+<span class="fc bfc" id="L99" title="All 3 branches covered.">                    switch (dy) {</span>
+                        // -2 and +2
+                        case -1:
+                        case 1:
+<span class="fc" id="L103">                            v &lt;&lt;= 2;</span>
+<span class="fc" id="L104">                            break;</span>
+                        case 0:
+<span class="fc" id="L106">                            v &lt;&lt;= 1;</span>
+<span class="fc" id="L107">                            v *= 3;</span>
+<span class="fc" id="L108">                            break;</span>
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+<span class="fc" id="L114">                    vSum += v;</span>
+                }
+
+<span class="fc" id="L117">                vSum &gt;&gt;= 4;</span>
+
+<span class="fc" id="L119">                output.setValue(col, row, vSum);</span>
             }
         }
 
-<span class="fc" id="L113">        return output;</span>
+<span class="fc" id="L123">        return output;</span>
     }
 
+    protected int interpolate1D(int x, int y, GreyscaleImage img,
+        boolean calcForX) {
+
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        if (calcForX) {</span>
+<span class="nc" id="L130">            return interpolate1DX(x, y, img);</span>
+        } else {
+<span class="nc" id="L132">            return interpolate1DY(x, y, img);</span>
+        }
+    }
+
+    /**
+     * interpolate values around (x,y) along x in img using a B3 spline.
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    public int interpolate1DX(int x, int y, GreyscaleImage img) {
+
+<span class="fc" id="L146">        int w = img.getWidth();</span>
+<span class="fc" id="L147">        int h = img.getHeight();</span>
+
+        /*
+        (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+        1/16, 1/4, 3/8, 1/4, 1/16
+        1/16*(1, 4, 6, 4, 1)
+        */
+<span class="fc" id="L154">        int vSum = 0;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+
+<span class="fc" id="L157">            int xi = x + dx;</span>
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">            if ((xi &lt; 0) || (xi &gt; (w - 1))) {</span>
+<span class="nc" id="L159">                xi = x;</span>
+            }
+
+<span class="fc" id="L162">            int v = img.getValue(xi, y);</span>
+
+<span class="fc bfc" id="L164" title="All 3 branches covered.">            switch(dx) {</span>
+                // -2 and +2
+                case -1:
+                case 1:
+<span class="fc" id="L168">                    v &lt;&lt;= 2;</span>
+<span class="fc" id="L169">                    break;</span>
+                case 0:
+<span class="fc" id="L171">                    v &lt;&lt;= 1;</span>
+<span class="fc" id="L172">                    v *= 3;</span>
+<span class="fc" id="L173">                    break;</span>
+                // case -2 and +2 are factor 1
+                default:
+                    break;
+            }
+
+<span class="fc" id="L179">            vSum += v;</span>
+        }
+
+<span class="fc" id="L182">        vSum &gt;&gt;= 4;</span>
+
+<span class="fc" id="L184">        return vSum;</span>
+    }
+
+    /**
+     * interpolate values around (x,y) along y in img using a B3 spline.
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    protected int interpolate1DY(int x, int y, GreyscaleImage img) {
+
+<span class="fc" id="L197">        int w = img.getWidth();</span>
+<span class="fc" id="L198">        int h = img.getHeight();</span>
+
+        /*
+        (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+        1/16, 1/4, 3/8, 1/4, 1/16
+        
+        1/16*(1, 4, 6, 4, 1)
+        */
+<span class="fc" id="L206">        int vSum = 0;</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+
+<span class="fc" id="L209">            int yi = y + dy;</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">            if ((yi &lt; 0) || (yi &gt; (h - 1))) {</span>
+<span class="nc" id="L211">                yi = y;</span>
+            }
+
+<span class="fc" id="L214">            int v = img.getValue(x, yi);</span>
+
+<span class="fc bfc" id="L216" title="All 3 branches covered.">            switch(dy) {</span>
+                // -2 and +2
+                case -1:
+                case 1:
+<span class="fc" id="L220">                    v &lt;&lt;= 2;</span>
+<span class="fc" id="L221">                    break;</span>
+                case 0:
+<span class="fc" id="L223">                    v &lt;&lt;= 1;</span>
+<span class="fc" id="L224">                    v *= 3;</span>
+<span class="fc" id="L225">                    break;</span>
+                // case -2 and +2 are factor 1
+                default:
+                    break;
+            }
+
+<span class="fc" id="L231">            vSum += v;</span>
+        }
+        
+<span class="fc" id="L234">        vSum &gt;&gt;= 4;</span>
+
+<span class="fc" id="L236">        return vSum;</span>
+    }
+
+    /**
+     * interpolate values around (x,y) along y in img using a B3 spline. 
+     *
+     * @param x
+     * @param y
+     * @param img
+     * @return
+     */
+    protected int interpolate2D(int x, int y, GreyscaleImage img) {
+
+<span class="fc" id="L249">        int w = img.getWidth();</span>
+<span class="fc" id="L250">        int h = img.getHeight();</span>
+
+        /*        
+         1/256  1/64   3/128    1/64    1/256
+         1/64   1/16   3/32     1/16    1/64
+         3/128  3/32   9/64     3/32    3/128
+         1/64   1/16   3/32     1/16    1/64
+         1/256  1/64   3/128    1/64    1/256
+
+         (1/256) *   |   1    4   3*2    4    1 |
+                     |   4   16   3*8   16    4 |
+                     | 3*2  3*8   9*4  3*8  3*2 |
+                     |   4   16   3*8   16    4 |
+                     |   1    4   3*2    4    1 |
+        */
+
+<span class="fc" id="L266">        int vSum = 0;</span>
+
+<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (int dy = -2; dy &lt;= 2; ++dy) {</span>
+<span class="fc" id="L269">            int yi = y + dy;</span>
+<span class="fc bfc" id="L270" title="All 4 branches covered.">            if ((yi &lt; 0) || (yi &gt; (h - 1))) {</span>
+<span class="fc" id="L271">                yi = y;</span>
+            }
+<span class="fc bfc" id="L273" title="All 2 branches covered.">            for (int dx = -2; dx &lt;= 2; ++dx) {</span>
+<span class="fc" id="L274">                int xi = x + dx;</span>
+<span class="fc bfc" id="L275" title="All 4 branches covered.">                if ((xi &lt; 0) || (xi &gt; (w - 1))) {</span>
+<span class="fc" id="L276">                    xi = x;</span>
+                }
+<span class="fc" id="L278">                int v = img.getValue(xi, yi);</span>
+<span class="pc bpc" id="L279" title="1 of 4 branches missed.">                switch(dx) {</span>
+                    case -2:
+                    case 2:
+<span class="fc bfc" id="L282" title="All 3 branches covered.">                        switch(dy) {</span>
+                            case -1:
+                            case 1:
+<span class="fc" id="L285">                                v &lt;&lt;= 2;</span>
+<span class="fc" id="L286">                                break;</span>
+                            case 0:
+<span class="fc" id="L288">                                v &lt;&lt;= 1;</span>
+<span class="fc" id="L289">                                v *= 3;</span>
+<span class="fc" id="L290">                                break;</span>
+                            // rows -2 and +2 are factors of 1
+                            default:
+<span class="fc" id="L293">                                break;</span>
+                        }
+                        break;
+                    case -1:
+                    case 1:
+<span class="pc bpc" id="L298" title="1 of 4 branches missed.">                        switch(dy) {</span>
+                            // -2, 2 are 4
+                            case -2:
+                            case 2:
+<span class="fc" id="L302">                                v &lt;&lt;= 2;</span>
+<span class="fc" id="L303">                                break;</span>
+                            // rows -1, 1 are 16
+                            case -1:
+                            case 1:
+<span class="fc" id="L307">                                v &lt;&lt;= 4;</span>
+<span class="fc" id="L308">                                break;</span>
+                            case 0:
+<span class="fc" id="L310">                                v &lt;&lt;= 3;</span>
+<span class="fc" id="L311">                                v *= 3;</span>
+<span class="fc" id="L312">                                break;</span>
+                            default:
+<span class="nc" id="L314">                                break;</span>
+                        }
+                        break;
+                    case 0:
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">                        switch(dy) {</span>
+                            // -2, 2 are 6
+                            case -2:
+                            case 2:
+<span class="fc" id="L322">                                v &lt;&lt;= 1;</span>
+<span class="fc" id="L323">                                v *= 3;</span>
+<span class="fc" id="L324">                                break;</span>
+                            // rows -1, 1 are 24
+                            case -1:
+                            case 1:
+<span class="fc" id="L328">                                v &lt;&lt;= 3;</span>
+<span class="fc" id="L329">                                v *= 3;</span>
+<span class="fc" id="L330">                                break;</span>
+                            case 0:
+<span class="fc" id="L332">                                v &lt;&lt;= 2;</span>
+<span class="fc" id="L333">                                v *= 9;</span>
+<span class="fc" id="L334">                                break;</span>
+                            default:
+<span class="nc" id="L336">                                break;</span>
+                        }
+                        break;
+                    default:
+                        break;
+                } // end switch(dx)
+<span class="fc" id="L342">                vSum += v;</span>
+            }
+        }
+
+<span class="fc" id="L346">        vSum &gt;&gt;= 8;</span>
+
+<span class="fc" id="L348">        return vSum;</span>
+    }
+
+    /**
+     * calculate the B3 Spline for every pixel in the image.  The runtime
+     * complexity is roughly linear, but is 2.5 times larger than the
+     * calculate(img) which uses two 1-D splines for each pixel.
+     * @param img
+     * @return 
+     */
+    protected GreyscaleImage calculate2D(GreyscaleImage img) {
+
+<span class="fc" id="L360">        int w = img.getWidth();</span>
+<span class="fc" id="L361">        int h = img.getHeight();</span>
+
+        /*
+         1/256  1/64   3/128    1/64    1/256
+         1/64   1/16   3/32     1/16    1/64
+         3/128  3/32   9/64     3/32    3/128
+         1/64   1/16   3/32     1/16    1/64
+         1/256  1/64   3/128    1/64    1/256
+
+         (1/256) *   |   1    4   3*2    4    1 |
+                     |   4   16   3*8   16    4 |
+                     | 3*2  3*8   9*4  3*8  3*2 |
+                     |   4   16   3*8   16    4 |
+                     |   1    4   3*2    4    1 |
+        */
+
+<span class="fc" id="L377">        GreyscaleImage output = img.createWithDimensions();</span>
+
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (int row = 0; row &lt; h; ++row) {</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">            for (int col = 0; col &lt; w; ++col) {</span>
+
+<span class="fc" id="L382">                int v = interpolate2D(col, row, img);</span>
+
+<span class="fc" id="L384">                output.setValue(col, row, v);</span>
+            }
+        }
+
+<span class="fc" id="L388">        return output;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

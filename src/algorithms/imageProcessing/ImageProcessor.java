@@ -932,6 +932,58 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
+    
+    public void applyFirstDerivGaussian(GreyscaleImage input, SIGMA sigma,
+        int minValueRange, int maxValueRange) {
+
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(sigma);
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        GreyscaleImage output = input.copyImage();
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);
+                
+                int v = (int)Math.round(conv);
+                
+                if (v < minValueRange) {
+                    v = minValueRange;
+                } else if (v > maxValueRange) {
+                    v = maxValueRange;
+                }
+                
+                output.setValue(i, j, v);
+            }
+        }
+
+        input.resetTo(output);
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);
+                
+                int v = (int)Math.round(conv);
+                
+                if (v < minValueRange) {
+                    v = minValueRange;
+                } else if (v > maxValueRange) {
+                    v = maxValueRange;
+                }
+                
+                output.setValue(i, j, v);
+            }
+        }
+
+        input.resetTo(output);
+    }
 
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX) {

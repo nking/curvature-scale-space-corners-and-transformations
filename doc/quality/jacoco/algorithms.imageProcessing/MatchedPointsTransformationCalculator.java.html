@@ -345,9 +345,9 @@ import thirdparty.HungarianAlgorithm;
 
 <span class="fc" id="L346">        double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));</span>
 
-<span class="pc bpc" id="L348" title="2 of 4 branches missed.">        if (sep1 == 0 || sep2 == 0) {</span>
+<span class="pc bpc" id="L348" title="1 of 4 branches missed.">        if (sep1 == 0 || sep2 == 0) {</span>
             // the 2 points in set1 or set2 are the same point
-<span class="nc" id="L350">            return null;</span>
+<span class="fc" id="L350">            return null;</span>
         }
         
 <span class="fc" id="L353">        double scale = sep2/sep1;</span>
@@ -487,10 +487,10 @@ import thirdparty.HungarianAlgorithm;
         
 <span class="fc" id="L488">        Set&lt;PairInt&gt; pairIndexes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (matchedXY1.getN() &lt; 100) {</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (matchedXY1.getN() &lt; 100) {</span>
 <span class="fc" id="L491">            useBipartiteMatching(matchedXY1, pairIndexes);</span>
         } else {
-<span class="fc" id="L493">            useGreedyMatching(matchedXY1, pairIndexes);</span>
+<span class="nc" id="L493">            useGreedyMatching(matchedXY1, pairIndexes);</span>
         }
         
 <span class="fc" id="L496">        AngleUtil angleUtil = new AngleUtil();</span>
@@ -1101,34 +1101,34 @@ import thirdparty.HungarianAlgorithm;
     private void useGreedyMatching(PairIntArray matchedXY1, 
         Set&lt;PairInt&gt; pairIndexes) {
 
-<span class="fc bfc" id="L1104" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; matchedXY1.getN(); ++i1) {</span>
+<span class="nc bnc" id="L1104" title="All 2 branches missed.">        for (int i1 = 0; i1 &lt; matchedXY1.getN(); ++i1) {</span>
             
-<span class="fc" id="L1106">            int x1 = matchedXY1.getX(i1);</span>
-<span class="fc" id="L1107">            int y1 = matchedXY1.getY(i1);</span>
+<span class="nc" id="L1106">            int x1 = matchedXY1.getX(i1);</span>
+<span class="nc" id="L1107">            int y1 = matchedXY1.getY(i1);</span>
             
-<span class="fc" id="L1109">            double maxDist = Double.MIN_VALUE;</span>
-<span class="fc" id="L1110">            int maxDistIdx = -1;</span>
+<span class="nc" id="L1109">            double maxDist = Double.MIN_VALUE;</span>
+<span class="nc" id="L1110">            int maxDistIdx = -1;</span>
             
-<span class="fc bfc" id="L1112" title="All 2 branches covered.">            for (int i2 = 0; i2 &lt; matchedXY1.getN(); ++i2) {</span>
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">            for (int i2 = 0; i2 &lt; matchedXY1.getN(); ++i2) {</span>
                 
-<span class="fc bfc" id="L1114" title="All 2 branches covered.">                if (i1 == i2) {</span>
-<span class="fc" id="L1115">                    continue;</span>
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">                if (i1 == i2) {</span>
+<span class="nc" id="L1115">                    continue;</span>
                 }
-<span class="fc" id="L1117">                int x2 = matchedXY1.getX(i2);</span>
-<span class="fc" id="L1118">                int y2 = matchedXY1.getY(i2);</span>
-<span class="fc" id="L1119">                int diffX = x1 - x2;</span>
-<span class="fc" id="L1120">                int diffY = y1 - y2;</span>
-<span class="fc" id="L1121">                double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
-<span class="fc bfc" id="L1122" title="All 2 branches covered.">                if (dist &gt; maxDist) {</span>
-<span class="fc" id="L1123">                    maxDist = dist;</span>
-<span class="fc" id="L1124">                    maxDistIdx = i2;</span>
+<span class="nc" id="L1117">                int x2 = matchedXY1.getX(i2);</span>
+<span class="nc" id="L1118">                int y2 = matchedXY1.getY(i2);</span>
+<span class="nc" id="L1119">                int diffX = x1 - x2;</span>
+<span class="nc" id="L1120">                int diffY = y1 - y2;</span>
+<span class="nc" id="L1121">                double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="nc bnc" id="L1122" title="All 2 branches missed.">                if (dist &gt; maxDist) {</span>
+<span class="nc" id="L1123">                    maxDist = dist;</span>
+<span class="nc" id="L1124">                    maxDistIdx = i2;</span>
                 }
             }
             
-<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">            if (maxDistIdx &gt; -1) {</span>
-<span class="fc" id="L1129">                pairIndexes.add(new PairInt(i1, maxDistIdx));</span>
+<span class="nc bnc" id="L1128" title="All 2 branches missed.">            if (maxDistIdx &gt; -1) {</span>
+<span class="nc" id="L1129">                pairIndexes.add(new PairInt(i1, maxDistIdx));</span>
             }
         }
-<span class="fc" id="L1132">    }</span>
+<span class="nc" id="L1132">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -31,7 +31,7 @@ import java.util.Set;
      * @return 
      */
     public static List&lt;List&lt;CornerRegion&gt;&gt; populateCorners(
-        final BlobPerimeterHelper blobPerimeterHelper,
+        final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage,
         final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,
@@ -134,7 +134,7 @@ import java.util.Set;
 
 <span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int ii = 0; ii &lt; list.size(); ++ii) {</span>
 <span class="fc" id="L136">            CornerRegion cr = list.get(ii);</span>
-<span class="fc bfc" id="L137" title="All 4 branches covered.">            if (ii == 0 &amp;&amp; cr.getIndexWithinCurve() != 0) {</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">            if (ii == 0 &amp;&amp; cr.getIndexWithinCurve() != 0) {</span>
                 // adding test point for clockwise calculation
 <span class="fc" id="L139">                int idx = cr.getIndexWithinCurve()/2;</span>
 <span class="fc" id="L140">                tmpCornerChk.add(curve.getX(idx), curve.getY(idx));</span>

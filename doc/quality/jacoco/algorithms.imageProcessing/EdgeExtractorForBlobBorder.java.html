@@ -568,8 +568,8 @@ try {
         
 <span class="fc" id="L569">        int idxB = extractor.findAdjacentToBottomAtTop(curve);</span>
         
-<span class="pc bpc" id="L571" title="2 of 4 branches missed.">        if (idxA == -1 || idxB == -1) {</span>
-<span class="nc" id="L572">            return false;</span>
+<span class="pc bpc" id="L571" title="1 of 4 branches missed.">        if (idxA == -1 || idxB == -1) {</span>
+<span class="fc" id="L572">            return false;</span>
         }
         
         /*
@@ -617,9 +617,9 @@ try {
         
 <span class="fc bfc" id="L618" title="All 4 branches covered.">        boolean trimBeginning = ((idxA &lt; mid) &amp;&amp; (idxB &lt; mid));</span>
         
-<span class="pc bpc" id="L620" title="1 of 4 branches missed.">        boolean trimEnd = ((idxA &gt; mid) &amp;&amp; (idxB &gt; mid));</span>
+<span class="fc bfc" id="L620" title="All 4 branches covered.">        boolean trimEnd = ((idxA &gt; mid) &amp;&amp; (idxB &gt; mid));</span>
         
-<span class="pc bpc" id="L622" title="1 of 4 branches missed.">        if (trimBeginning || trimEnd) {</span>
+<span class="fc bfc" id="L622" title="All 4 branches covered.">        if (trimBeginning || trimEnd) {</span>
             
 <span class="pc bpc" id="L624" title="1 of 2 branches missed.">            if (idxB &lt; idxA) {</span>
 <span class="nc" id="L625">                int swap = idxB;</span>
@@ -629,7 +629,7 @@ try {
             
             // looking for the point between them where there is no
             // other point within a circular radius of 1            
-<span class="pc bpc" id="L632" title="1 of 2 branches missed.">            for (int i = idxA; i &lt; idxB; ++i) {</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">            for (int i = idxA; i &lt; idxB; ++i) {</span>
                 
 <span class="fc" id="L634">                int x1 = curve.getX(i);</span>
 <span class="fc" id="L635">                int y1 = curve.getY(i);</span>
@@ -644,7 +644,7 @@ try {
                 
 <span class="fc" id="L645">                PairInt p1 = new PairInt(x1, y1);</span>
                                 
-<span class="pc bpc" id="L647" title="1 of 2 branches missed.">                for (PairInt p2 : neighbors1) {</span>
+<span class="fc bfc" id="L647" title="All 2 branches covered.">                for (PairInt p2 : neighbors1) {</span>
                     
 <span class="fc" id="L649">                    int x2 = p2.getX();</span>
 <span class="fc" id="L650">                    int y2 = p2.getY();</span>

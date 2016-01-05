@@ -306,6 +306,14 @@ public class SegmentedImageHelper {
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
             imgBinnedSegmentedMap.put(type, segImg);
             
+        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+            
+            // not expecting to use binned color images:
+            ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(
+                imgBinned, fracLowerLimitPolarCIEXY, false);
+            imgBinnedSegmentedMap.put(type, segImg);
+         
         } else {
             throw new UnsupportedOperationException("did not add impl for " 
                 + type.name());
@@ -317,38 +325,6 @@ public class SegmentedImageHelper {
         }
     }
     
-    
-    public void replaceSegmentationWithCanny(SegmentationType segmentationType, 
-        boolean useBinned) {
-        
-        try {
-            
-            applySegmentation(SegmentationType.GREYSCALE_CANNY, useBinned);
-            
-            if (useBinned) {
-                
-                GreyscaleImage segImg = getBinnedSegmentationImage(
-                    SegmentationType.GREYSCALE_CANNY);
-            
-                imgBinnedSegmentedMap.put(segmentationType, segImg);
-                
-            } else {
-                 
-                GreyscaleImage segImg = getSegmentationImage(
-                    SegmentationType.GREYSCALE_CANNY);
-                 
-                imgSegmentedMap.put(segmentationType, segImg);
-            }
-            
-        } catch (IOException ex) {
-            Logger.getLogger(SegmentedImageHelper.class.getName()).log(
-                Level.SEVERE, null, ex);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(SegmentedImageHelper.class.getName()).log(
-                Level.SEVERE, null, ex);
-        }
-    }
-
     /**
      * apply segmentation type type to the greyscale or color binned image
      * depending upon the segmentation type. k is the number of segmentation
@@ -422,6 +398,12 @@ public class SegmentedImageHelper {
             
             segImg = imgGrey.copyImage();
             imageProcessor.applyAdaptiveMeanThresholding(segImg, 2);
+            imgSegmentedMap.put(type, segImg);
+            
+        } else if (type.equals(SegmentationType.COLOR_POLARCIEXY)) {
+            
+            segImg = imageSegmentation.applyUsingPolarCIEXYAndFrequency(img, 
+                fracLowerLimitPolarCIEXY, true);
             imgSegmentedMap.put(type, segImg);
             
         } else {

@@ -53,22 +53,26 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         List&lt;PairInt&gt; sortedThetaRadiusKeys,
         Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, int thetaTol,
         int radiusTol, boolean allowGaps) {
-
-<span class="fc" id="L57">        Map&lt;PairInt, PairInt&gt; pixToTRMap = findConnectedPointGroupsIterative(</span>
-            sortedThetaRadiusKeys, thetaRadiusPixMap, thetaTol, radiusTol);
-
-<span class="fc" id="L60">        createGroups(pixToTRMap, thetaTol, radiusTol);</span>
-
-<span class="fc" id="L62">        prune();</span>
         
-<span class="fc" id="L64">        sortedGroups = sortResults();</span>
-        
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (allowGaps) {</span>
-<span class="fc" id="L67">            mergeIfGapWithinTolerance(pixToTRMap, thetaTol, radiusTol);</span>
-<span class="fc" id="L68">            pruneSortedGroups();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (sortedThetaRadiusKeys.size() == 0) {</span>
+<span class="fc" id="L58">            return new HashMap&lt;PairInt, PairInt&gt;();</span>
         }
 
-<span class="fc" id="L71">        return pixToTRMap;</span>
+<span class="fc" id="L61">        Map&lt;PairInt, PairInt&gt; pixToTRMap = findConnectedPointGroupsIterative(</span>
+            sortedThetaRadiusKeys, thetaRadiusPixMap, thetaTol, radiusTol);
+
+<span class="fc" id="L64">        createGroups(pixToTRMap, thetaTol, radiusTol);</span>
+
+<span class="fc" id="L66">        prune();</span>
+        
+<span class="fc" id="L68">        sortedGroups = sortResults();</span>
+        
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (allowGaps) {</span>
+<span class="fc" id="L71">            mergeIfGapWithinTolerance(pixToTRMap, thetaTol, radiusTol);</span>
+<span class="fc" id="L72">            pruneSortedGroups();</span>
+        }
+
+<span class="fc" id="L75">        return pixToTRMap;</span>
     }
 
     /**
@@ -80,155 +84,155 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
         Map&lt;PairInt, Set&lt;PairInt&gt;&gt; thetaRadiusPixMap, int thetaTol,
         int radiusTol) {
 
-<span class="fc" id="L83">        Map&lt;PairInt, PairInt&gt; pixToTRMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="fc" id="L87">        Map&lt;PairInt, PairInt&gt; pixToTRMap = new HashMap&lt;PairInt, PairInt&gt;();</span>
 
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (sortedThetaRadiusKeys.isEmpty()) {</span>
-<span class="fc" id="L86">            return pixToTRMap;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (sortedThetaRadiusKeys.isEmpty()) {</span>
+<span class="nc" id="L90">            return pixToTRMap;</span>
         }
 
-<span class="fc" id="L89">        Map&lt;PairInt, PairInt&gt; pixToTRMapNotAggr = new HashMap&lt;PairInt, PairInt&gt;();</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (Entry&lt;PairInt, Set&lt;PairInt&gt;&gt; entry : thetaRadiusPixMap.entrySet()) {</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">            for (PairInt p : entry.getValue()) {</span>
-<span class="fc" id="L92">                pixToTRMapNotAggr.put(p, entry.getKey());</span>
-<span class="fc" id="L93">            }</span>
-<span class="fc" id="L94">        }</span>
+<span class="fc" id="L93">        Map&lt;PairInt, PairInt&gt; pixToTRMapNotAggr = new HashMap&lt;PairInt, PairInt&gt;();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (Entry&lt;PairInt, Set&lt;PairInt&gt;&gt; entry : thetaRadiusPixMap.entrySet()) {</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            for (PairInt p : entry.getValue()) {</span>
+<span class="fc" id="L96">                pixToTRMapNotAggr.put(p, entry.getKey());</span>
+<span class="fc" id="L97">            }</span>
+<span class="fc" id="L98">        }</span>
 
-<span class="fc" id="L96">        int[] dxs8 = Misc.dx8;</span>
-<span class="fc" id="L97">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L100">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L101">        int[] dys8 = Misc.dy8;</span>
 
         // pairint is coords (x, y)
-<span class="fc" id="L100">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L104">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
 
         // contains pairint of coords(x, y)
-<span class="fc" id="L103">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
+<span class="fc" id="L107">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
 
         // need the smallest indexes to be visited first, so add to the stack
         // (which is LIFO) in reverse
         //O(N)
-<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (int i = (sortedThetaRadiusKeys.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L109">            stack.addAll(thetaRadiusPixMap.get(sortedThetaRadiusKeys.get(i)));</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = (sortedThetaRadiusKeys.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L113">            stack.addAll(thetaRadiusPixMap.get(sortedThetaRadiusKeys.get(i)));</span>
         }
 
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
 
-<span class="fc" id="L114">            PairInt uPoint = stack.pop();</span>
+<span class="fc" id="L118">            PairInt uPoint = stack.pop();</span>
 
-<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (visited.contains(uPoint)) {</span>
-<span class="fc" id="L117">                continue;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (visited.contains(uPoint)) {</span>
+<span class="fc" id="L121">                continue;</span>
             }
 
-<span class="fc" id="L120">            PairInt uTR = pixToTRMap.get(uPoint);</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (uTR == null) {</span>
-<span class="fc" id="L122">                uTR = pixToTRMapNotAggr.get(uPoint);</span>
+<span class="fc" id="L124">            PairInt uTR = pixToTRMap.get(uPoint);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (uTR == null) {</span>
+<span class="fc" id="L126">                uTR = pixToTRMapNotAggr.get(uPoint);</span>
             }
 
             // search neighbors having same (theta, radius) within tolerance
             // of uPoint for an existing solution in pixToMap.
 
-<span class="fc" id="L128">            PairInt trStore = uTR;</span>
+<span class="fc" id="L132">            PairInt trStore = uTR;</span>
 
-<span class="fc" id="L130">            int minDiffT = Integer.MAX_VALUE;</span>
-<span class="fc" id="L131">            PairInt minDiffT_TR = null;</span>
-<span class="fc" id="L132">            PairInt minDiffT_Coord = null;</span>
-<span class="fc" id="L133">            int minDiffR = Integer.MAX_VALUE;</span>
-<span class="fc" id="L134">            PairInt minDiffR_TR = null;</span>
-<span class="fc" id="L135">            PairInt minDiffR_Coord = null;</span>
+<span class="fc" id="L134">            int minDiffT = Integer.MAX_VALUE;</span>
+<span class="fc" id="L135">            PairInt minDiffT_TR = null;</span>
+<span class="fc" id="L136">            PairInt minDiffT_Coord = null;</span>
+<span class="fc" id="L137">            int minDiffR = Integer.MAX_VALUE;</span>
+<span class="fc" id="L138">            PairInt minDiffR_TR = null;</span>
+<span class="fc" id="L139">            PairInt minDiffR_Coord = null;</span>
 
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
-<span class="fc" id="L138">                int vX = uPoint.getX() + dxs8[i];</span>
-<span class="fc" id="L139">                int vY = uPoint.getY() + dys8[i];</span>
-<span class="fc" id="L140">                PairInt vPoint = new PairInt(vX, vY);</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">                if (!pixToTRMapNotAggr.containsKey(vPoint)) {</span>
-<span class="fc" id="L142">                    continue;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
+<span class="fc" id="L142">                int vX = uPoint.getX() + dxs8[i];</span>
+<span class="fc" id="L143">                int vY = uPoint.getY() + dys8[i];</span>
+<span class="fc" id="L144">                PairInt vPoint = new PairInt(vX, vY);</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                if (!pixToTRMapNotAggr.containsKey(vPoint)) {</span>
+<span class="fc" id="L146">                    continue;</span>
                 }
-<span class="fc" id="L144">                PairInt vTR = pixToTRMap.get(vPoint);</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">                if (vTR == null) {</span>
-<span class="fc" id="L146">                    vTR = pixToTRMapNotAggr.get(vPoint);</span>
+<span class="fc" id="L148">                PairInt vTR = pixToTRMap.get(vPoint);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (vTR == null) {</span>
+<span class="fc" id="L150">                    vTR = pixToTRMapNotAggr.get(vPoint);</span>
                 }
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">                if (vTR != null) {</span>
-<span class="fc bfc" id="L149" title="All 2 branches covered.">                    if (vTR.equals(trStore)) {</span>
-<span class="fc" id="L150">                        continue;</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">                if (vTR != null) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                    if (vTR.equals(trStore)) {</span>
+<span class="fc" id="L154">                        continue;</span>
                     }
 
-<span class="fc" id="L153">                    int diffT = Math.abs(trStore.getX() - vTR.getX());</span>
-<span class="fc" id="L154">                    int diffR = Math.abs(trStore.getY() - vTR.getY());</span>
+<span class="fc" id="L157">                    int diffT = Math.abs(trStore.getX() - vTR.getX());</span>
+<span class="fc" id="L158">                    int diffR = Math.abs(trStore.getY() - vTR.getY());</span>
 
-<span class="pc bpc" id="L156" title="1 of 4 branches missed.">                    if ((diffT &lt;= thetaTol) &amp;&amp; (diffR &lt;= radiusTol)) {</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">                        if (diffT &lt; minDiffT) {</span>
-<span class="fc" id="L158">                            minDiffT = diffT;</span>
-<span class="fc" id="L159">                            minDiffT_TR = vTR;</span>
-<span class="fc" id="L160">                            minDiffT_Coord = vPoint;</span>
+<span class="pc bpc" id="L160" title="1 of 4 branches missed.">                    if ((diffT &lt;= thetaTol) &amp;&amp; (diffR &lt;= radiusTol)) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                        if (diffT &lt; minDiffT) {</span>
+<span class="fc" id="L162">                            minDiffT = diffT;</span>
+<span class="fc" id="L163">                            minDiffT_TR = vTR;</span>
+<span class="fc" id="L164">                            minDiffT_Coord = vPoint;</span>
                         }
-<span class="fc bfc" id="L162" title="All 2 branches covered.">                        if (diffR &lt; minDiffR) {</span>
-<span class="fc" id="L163">                            minDiffR = diffR;</span>
-<span class="fc" id="L164">                            minDiffR_TR = vTR;</span>
-<span class="fc" id="L165">                            minDiffR_Coord = vPoint;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                        if (diffR &lt; minDiffR) {</span>
+<span class="fc" id="L167">                            minDiffR = diffR;</span>
+<span class="fc" id="L168">                            minDiffR_TR = vTR;</span>
+<span class="fc" id="L169">                            minDiffR_Coord = vPoint;</span>
                         }
                     }
                 }
 
-<span class="fc" id="L170">                int nU = thetaRadiusPixMap.get(uTR).size();</span>
+<span class="fc" id="L174">                int nU = thetaRadiusPixMap.get(uTR).size();</span>
 
-<span class="pc bpc" id="L172" title="1 of 4 branches missed.">                if (minDiffT_TR != null &amp;&amp; minDiffR_TR != null) {</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">                    if (minDiffR &lt; minDiffT) {</span>
-<span class="nc" id="L174">                        int nV = thetaRadiusPixMap.get(minDiffR_TR).size();</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">                        if (nV &gt;= nU) {</span>
-<span class="nc" id="L176">                            trStore = minDiffR_TR;</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">                        } else if (nV &lt; nU) {</span>
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">                if (minDiffT_TR != null &amp;&amp; minDiffR_TR != null) {</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">                    if (minDiffR &lt; minDiffT) {</span>
+<span class="nc" id="L178">                        int nV = thetaRadiusPixMap.get(minDiffR_TR).size();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                        if (nV &gt;= nU) {</span>
+<span class="nc" id="L180">                            trStore = minDiffR_TR;</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">                        } else if (nV &lt; nU) {</span>
                             //reassign minDiffR_Coord
-<span class="nc" id="L179">                            thetaRadiusPixMap.get(minDiffR_TR).remove(minDiffR_Coord);</span>
-<span class="nc" id="L180">                            thetaRadiusPixMap.get(trStore).add(minDiffR_Coord);</span>
-<span class="nc" id="L181">                            pixToTRMap.put(minDiffR_Coord, trStore);</span>
-<span class="nc" id="L182">                            stack.add(minDiffR_Coord);</span>
+<span class="nc" id="L183">                            thetaRadiusPixMap.get(minDiffR_TR).remove(minDiffR_Coord);</span>
+<span class="nc" id="L184">                            thetaRadiusPixMap.get(trStore).add(minDiffR_Coord);</span>
+<span class="nc" id="L185">                            pixToTRMap.put(minDiffR_Coord, trStore);</span>
+<span class="nc" id="L186">                            stack.add(minDiffR_Coord);</span>
                         }
-<span class="nc" id="L184">                    } else {</span>
-<span class="fc" id="L185">                        int nV = thetaRadiusPixMap.get(minDiffT_TR).size();</span>
-<span class="fc bfc" id="L186" title="All 2 branches covered.">                        if (nV &gt;= nU) {</span>
-<span class="fc" id="L187">                            trStore = minDiffT_TR;</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">                        } else if (nV &lt; nU) {</span>
+<span class="nc" id="L188">                    } else {</span>
+<span class="fc" id="L189">                        int nV = thetaRadiusPixMap.get(minDiffT_TR).size();</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                        if (nV &gt;= nU) {</span>
+<span class="fc" id="L191">                            trStore = minDiffT_TR;</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                        } else if (nV &lt; nU) {</span>
                             //reassign minDiffT_Coord
-<span class="fc" id="L190">                            thetaRadiusPixMap.get(minDiffT_TR).remove(minDiffT_Coord);</span>
-<span class="fc" id="L191">                            thetaRadiusPixMap.get(trStore).add(minDiffT_Coord);</span>
-<span class="fc" id="L192">                            pixToTRMap.put(minDiffT_Coord, trStore);</span>
-<span class="fc" id="L193">                            stack.add(minDiffT_Coord);</span>
+<span class="fc" id="L194">                            thetaRadiusPixMap.get(minDiffT_TR).remove(minDiffT_Coord);</span>
+<span class="fc" id="L195">                            thetaRadiusPixMap.get(trStore).add(minDiffT_Coord);</span>
+<span class="fc" id="L196">                            pixToTRMap.put(minDiffT_Coord, trStore);</span>
+<span class="fc" id="L197">                            stack.add(minDiffT_Coord);</span>
                         }
-<span class="fc" id="L195">                    }</span>
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">                } else if (minDiffT_TR != null) {</span>
-<span class="nc" id="L197">                    int nV = thetaRadiusPixMap.get(minDiffT_TR).size();</span>
-<span class="nc bnc" id="L198" title="All 2 branches missed.">                    if (nV &gt;= nU) {</span>
-<span class="nc" id="L199">                        trStore = minDiffT_TR;</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">                    } else if (nV &lt; nU) {</span>
+<span class="fc" id="L199">                    }</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">                } else if (minDiffT_TR != null) {</span>
+<span class="nc" id="L201">                    int nV = thetaRadiusPixMap.get(minDiffT_TR).size();</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">                    if (nV &gt;= nU) {</span>
+<span class="nc" id="L203">                        trStore = minDiffT_TR;</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">                    } else if (nV &lt; nU) {</span>
                         //reassign minDiffT_Coord
-<span class="nc" id="L202">                        thetaRadiusPixMap.get(minDiffT_TR).remove(minDiffT_Coord);</span>
-<span class="nc" id="L203">                        thetaRadiusPixMap.get(trStore).add(minDiffT_Coord);</span>
-<span class="nc" id="L204">                        pixToTRMap.put(minDiffT_Coord, trStore);</span>
-<span class="nc" id="L205">                        stack.add(minDiffT_Coord);</span>
+<span class="nc" id="L206">                        thetaRadiusPixMap.get(minDiffT_TR).remove(minDiffT_Coord);</span>
+<span class="nc" id="L207">                        thetaRadiusPixMap.get(trStore).add(minDiffT_Coord);</span>
+<span class="nc" id="L208">                        pixToTRMap.put(minDiffT_Coord, trStore);</span>
+<span class="nc" id="L209">                        stack.add(minDiffT_Coord);</span>
                     }
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">                } else if (minDiffR_TR != null) {</span>
-<span class="nc" id="L208">                    int nV = thetaRadiusPixMap.get(minDiffR_TR).size();</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">                    if (nV &gt;= nU) {</span>
-<span class="nc" id="L210">                        trStore = minDiffR_TR;</span>
-<span class="nc bnc" id="L211" title="All 2 branches missed.">                    } else if (nV &lt; nU) {</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                } else if (minDiffR_TR != null) {</span>
+<span class="nc" id="L212">                    int nV = thetaRadiusPixMap.get(minDiffR_TR).size();</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                    if (nV &gt;= nU) {</span>
+<span class="nc" id="L214">                        trStore = minDiffR_TR;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">                    } else if (nV &lt; nU) {</span>
                         //reassign minDiffR_Coord
-<span class="nc" id="L213">                        thetaRadiusPixMap.get(minDiffR_TR).remove(minDiffR_Coord);</span>
-<span class="nc" id="L214">                        thetaRadiusPixMap.get(trStore).add(minDiffR_Coord);</span>
-<span class="nc" id="L215">                        pixToTRMap.put(minDiffR_Coord, trStore);</span>
-<span class="nc" id="L216">                        stack.add(minDiffR_Coord);</span>
+<span class="nc" id="L217">                        thetaRadiusPixMap.get(minDiffR_TR).remove(minDiffR_Coord);</span>
+<span class="nc" id="L218">                        thetaRadiusPixMap.get(trStore).add(minDiffR_Coord);</span>
+<span class="nc" id="L219">                        pixToTRMap.put(minDiffR_Coord, trStore);</span>
+<span class="nc" id="L220">                        stack.add(minDiffR_Coord);</span>
                     }
                 }
             }
 
-<span class="fc" id="L221">            pixToTRMap.put(uPoint, trStore);</span>
+<span class="fc" id="L225">            pixToTRMap.put(uPoint, trStore);</span>
 
-<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (!trStore.equals(uTR)) {</span>
-<span class="fc" id="L224">                thetaRadiusPixMap.get(trStore).add(uPoint);</span>
-<span class="fc" id="L225">                thetaRadiusPixMap.get(uTR).remove(uPoint);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (!trStore.equals(uTR)) {</span>
+<span class="fc" id="L228">                thetaRadiusPixMap.get(trStore).add(uPoint);</span>
+<span class="fc" id="L229">                thetaRadiusPixMap.get(uTR).remove(uPoint);</span>
             }
 
-<span class="fc" id="L228">            visited.add(uPoint);</span>
-<span class="fc" id="L229">        }</span>
+<span class="fc" id="L232">            visited.add(uPoint);</span>
+<span class="fc" id="L233">        }</span>
 
-<span class="fc" id="L231">        return pixToTRMap;</span>
+<span class="fc" id="L235">        return pixToTRMap;</span>
     }
 
     /**
@@ -237,93 +241,93 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
      * @return
      */
     public List&lt;Set&lt;PairInt&gt;&gt; getSortedGroupsOfPoints() {
-<span class="fc" id="L240">        return sortedGroups;</span>
+<span class="fc" id="L244">        return sortedGroups;</span>
     }
 
     private List&lt;Set&lt;PairInt&gt;&gt; sortResults() {
 
-<span class="fc" id="L245">        int n = this.getNumberOfGroups();</span>
+<span class="fc" id="L249">        int n = this.getNumberOfGroups();</span>
 
-<span class="fc" id="L247">        int[] c = new int[n];</span>
-<span class="fc" id="L248">        int[] indexes = new int[n];</span>
+<span class="fc" id="L251">        int[] c = new int[n];</span>
+<span class="fc" id="L252">        int[] indexes = new int[n];</span>
 
-<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L251">            c[i] = getXY(i).size();</span>
-<span class="fc" id="L252">            indexes[i] = i;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L255">            c[i] = getXY(i).size();</span>
+<span class="fc" id="L256">            indexes[i] = i;</span>
         }
 
-<span class="fc" id="L255">        MultiArrayMergeSort.sortByDecr(c, indexes);</span>
+<span class="fc" id="L259">        MultiArrayMergeSort.sortByDecr(c, indexes);</span>
 
-<span class="fc" id="L257">        List&lt;Set&lt;PairInt&gt;&gt; sortedList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L261">        List&lt;Set&lt;PairInt&gt;&gt; sortedList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
 
-<span class="fc bfc" id="L259" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L260">            int idx = indexes[i];</span>
-<span class="fc" id="L261">            sortedList.add(getXY(idx));</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L264">            int idx = indexes[i];</span>
+<span class="fc" id="L265">            sortedList.add(getXY(idx));</span>
         }
 
-<span class="fc" id="L264">        return sortedList;</span>
+<span class="fc" id="L268">        return sortedList;</span>
     }
 
     private void createGroups(Map&lt;PairInt, PairInt&gt; pixToTRMap, int thetaTol,
         int radiusTol) {
 
-<span class="fc" id="L270">        int[] dxs8 = Misc.dx8;</span>
-<span class="fc" id="L271">        int[] dys8 = Misc.dy8;</span>
+<span class="fc" id="L274">        int[] dxs8 = Misc.dx8;</span>
+<span class="fc" id="L275">        int[] dys8 = Misc.dy8;</span>
 
         // pairint is coords (x, y)
-<span class="fc" id="L274">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L278">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
 
         // contains pairint of coords(x, y)
-<span class="fc" id="L277">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
+<span class="fc" id="L281">        java.util.Stack&lt;PairInt&gt; stack = new java.util.Stack&lt;PairInt&gt;();</span>
 
         // need the smallest indexes to be visited first, so add to the stack
         // (which is LIFO) in reverse
         //O(N)
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : pixToTRMap.entrySet()) {</span>
-<span class="fc" id="L283">            stack.add(entry.getKey());</span>
-<span class="fc" id="L284">        }</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        for (Entry&lt;PairInt, PairInt&gt; entry : pixToTRMap.entrySet()) {</span>
+<span class="fc" id="L287">            stack.add(entry.getKey());</span>
+<span class="fc" id="L288">        }</span>
 
-<span class="fc bfc" id="L286" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
 
-<span class="fc" id="L288">            PairInt uPoint = stack.pop();</span>
+<span class="fc" id="L292">            PairInt uPoint = stack.pop();</span>
 
-<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (visited.contains(uPoint)) {</span>
-<span class="fc" id="L291">                continue;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            if (visited.contains(uPoint)) {</span>
+<span class="fc" id="L295">                continue;</span>
             }
 
-<span class="fc" id="L294">            PairInt uTR = pixToTRMap.get(uPoint);</span>
+<span class="fc" id="L298">            PairInt uTR = pixToTRMap.get(uPoint);</span>
 
-<span class="fc" id="L296">            boolean processed = false;</span>
+<span class="fc" id="L300">            boolean processed = false;</span>
 
-<span class="fc bfc" id="L298" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs8.length; ++i) {</span>
 
-<span class="fc" id="L300">                int vX = uPoint.getX() + dxs8[i];</span>
-<span class="fc" id="L301">                int vY = uPoint.getY() + dys8[i];</span>
+<span class="fc" id="L304">                int vX = uPoint.getX() + dxs8[i];</span>
+<span class="fc" id="L305">                int vY = uPoint.getY() + dys8[i];</span>
 
-<span class="fc" id="L303">                PairInt vPoint = new PairInt(vX, vY);</span>
+<span class="fc" id="L307">                PairInt vPoint = new PairInt(vX, vY);</span>
 
-<span class="fc" id="L305">                PairInt vTR = pixToTRMap.get(vPoint);</span>
+<span class="fc" id="L309">                PairInt vTR = pixToTRMap.get(vPoint);</span>
 
-<span class="fc bfc" id="L307" title="All 2 branches covered.">                if (vTR == null) {</span>
-<span class="fc" id="L308">                    continue;</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                if (vTR == null) {</span>
+<span class="fc" id="L312">                    continue;</span>
                 }
 
-<span class="fc" id="L311">                int diffT = Math.abs(uTR.getX() - vTR.getX());</span>
-<span class="fc" id="L312">                int diffR = Math.abs(uTR.getY() - vTR.getY());</span>
-<span class="pc bpc" id="L313" title="1 of 4 branches missed.">                if ((diffT &lt;= thetaTol) &amp;&amp; (diffR &lt;= radiusTol)) {</span>
-<span class="fc" id="L314">                    processPair(uPoint, vPoint);</span>
-<span class="fc" id="L315">                    processed = true;</span>
-<span class="fc" id="L316">                    stack.add(vPoint);</span>
+<span class="fc" id="L315">                int diffT = Math.abs(uTR.getX() - vTR.getX());</span>
+<span class="fc" id="L316">                int diffR = Math.abs(uTR.getY() - vTR.getY());</span>
+<span class="pc bpc" id="L317" title="1 of 4 branches missed.">                if ((diffT &lt;= thetaTol) &amp;&amp; (diffR &lt;= radiusTol)) {</span>
+<span class="fc" id="L318">                    processPair(uPoint, vPoint);</span>
+<span class="fc" id="L319">                    processed = true;</span>
+<span class="fc" id="L320">                    stack.add(vPoint);</span>
                 }
             }
 
-<span class="fc bfc" id="L320" title="All 2 branches covered.">            if (!processed) {</span>
-<span class="fc" id="L321">                process(uPoint);</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">            if (!processed) {</span>
+<span class="fc" id="L325">                process(uPoint);</span>
             }
 
-<span class="fc" id="L324">            visited.add(uPoint);</span>
-<span class="fc" id="L325">        }</span>
-<span class="fc" id="L326">    }</span>
+<span class="fc" id="L328">            visited.add(uPoint);</span>
+<span class="fc" id="L329">        }</span>
+<span class="fc" id="L330">    }</span>
 
     /**
      * iterate over groups to see if the closest pair of points are within
@@ -349,64 +353,64 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
     private void mergeIfGapWithinTolerance(Map&lt;PairInt, PairInt&gt; pixToTRMap, 
         int thetaTol, int radiusTol) {
         
-<span class="pc bpc" id="L352" title="1 of 4 branches missed.">        if (sortedGroups == null || sortedGroups.isEmpty()) {</span>
-<span class="fc" id="L353">            return;</span>
+<span class="pc bpc" id="L356" title="2 of 4 branches missed.">        if (sortedGroups == null || sortedGroups.isEmpty()) {</span>
+<span class="nc" id="L357">            return;</span>
         }
         
-<span class="fc" id="L356">        int n = sortedGroups.size();</span>
+<span class="fc" id="L360">        int n = sortedGroups.size();</span>
         
         // search will skip a group when size is less than this
-<span class="fc" id="L359">        int minSize = 1;//3;</span>
+<span class="fc" id="L363">        int minSize = 1;//3;</span>
         
-<span class="fc" id="L361">        int distSqTol = radiusTol * radiusTol;</span>
+<span class="fc" id="L365">        int distSqTol = radiusTol * radiusTol;</span>
         
-<span class="fc" id="L363">        Stack&lt;Integer&gt; stack = new Stack&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L364" title="All 2 branches covered.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L365">            stack.add(Integer.valueOf(i));</span>
+<span class="fc" id="L367">        Stack&lt;Integer&gt; stack = new Stack&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L369">            stack.add(Integer.valueOf(i));</span>
         }
         
-<span class="fc" id="L368">        Set&lt;Integer&gt; visited = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L372">        Set&lt;Integer&gt; visited = new HashSet&lt;Integer&gt;();</span>
         
         //TODO: walk through merge patterns to determine if the algorithm
         // always terminates (stack becomes empty).
         
-<span class="fc bfc" id="L373" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
             
-<span class="fc" id="L375">            Integer index = stack.pop();</span>
+<span class="fc" id="L379">            Integer index = stack.pop();</span>
             
-<span class="fc bfc" id="L377" title="All 2 branches covered.">            if (visited.contains(index)) {</span>
-<span class="fc" id="L378">                continue;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">            if (visited.contains(index)) {</span>
+<span class="fc" id="L382">                continue;</span>
             }
             
-<span class="fc" id="L381">            int i = index.intValue();</span>
+<span class="fc" id="L385">            int i = index.intValue();</span>
             
-<span class="fc" id="L383">            Set&lt;PairInt&gt; group = sortedGroups.get(i);</span>
+<span class="fc" id="L387">            Set&lt;PairInt&gt; group = sortedGroups.get(i);</span>
             
-<span class="fc bfc" id="L385" title="All 2 branches covered.">            if (group.size() &lt; minSize) {</span>
-<span class="fc" id="L386">                continue;</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">            if (group.size() &lt; minSize) {</span>
+<span class="fc" id="L390">                continue;</span>
             }
             
-<span class="fc" id="L389">            PairInt s1 = group.iterator().next();</span>
-<span class="fc" id="L390">            PairInt tr1 = pixToTRMap.get(s1);</span>
+<span class="fc" id="L393">            PairInt s1 = group.iterator().next();</span>
+<span class="fc" id="L394">            PairInt tr1 = pixToTRMap.get(s1);</span>
             
-<span class="fc" id="L392">            visited.add(index);</span>
+<span class="fc" id="L396">            visited.add(index);</span>
             
-<span class="fc bfc" id="L394" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; ++j) {</span>
+<span class="fc bfc" id="L398" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; ++j) {</span>
                 
-<span class="fc" id="L396">                Set&lt;PairInt&gt; group2 = sortedGroups.get(j);</span>
+<span class="fc" id="L400">                Set&lt;PairInt&gt; group2 = sortedGroups.get(j);</span>
                 
-<span class="fc bfc" id="L398" title="All 2 branches covered.">                if (group2.size() &lt; minSize) {</span>
-<span class="fc" id="L399">                    continue;</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">                if (group2.size() &lt; minSize) {</span>
+<span class="fc" id="L403">                    continue;</span>
                 }
                 
-<span class="fc" id="L402">                PairInt s2 = group2.iterator().next();</span>
-<span class="fc" id="L403">                PairInt tr2 = pixToTRMap.get(s2);</span>
+<span class="fc" id="L406">                PairInt s2 = group2.iterator().next();</span>
+<span class="fc" id="L407">                PairInt tr2 = pixToTRMap.get(s2);</span>
                 
-<span class="fc bfc" id="L405" title="All 2 branches covered.">                if (Math.abs(tr2.getX() - tr1.getX()) &gt; (2 * thetaTol)) {</span>
-<span class="fc" id="L406">                    continue;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">                if (Math.abs(tr2.getX() - tr1.getX()) &gt; (2 * thetaTol)) {</span>
+<span class="fc" id="L410">                    continue;</span>
                 }
-<span class="fc bfc" id="L408" title="All 2 branches covered.">                if (Math.abs(tr2.getY() - tr1.getY()) &gt; (2 * radiusTol)) {</span>
-<span class="fc" id="L409">                    continue;</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">                if (Math.abs(tr2.getY() - tr1.getY()) &gt; (2 * radiusTol)) {</span>
+<span class="fc" id="L413">                    continue;</span>
                 }
                 
                 /*
@@ -416,85 +420,85 @@ public class DFSSimilarThetaRadiusGroupsFinder extends AbstractDFSConnectedGroup
                 algorithm to only
                    compare the members if they are from different sets
                 */
-<span class="fc" id="L419">                ClosestPairBetweenSets cp = new ClosestPairBetweenSets();</span>
+<span class="fc" id="L423">                ClosestPairBetweenSets cp = new ClosestPairBetweenSets();</span>
                 
-<span class="fc" id="L421">                ClosestPairBetweenSets.ClosestPairInt result = </span>
-<span class="fc" id="L422">                    cp.findClosestPair(group, group2);</span>
+<span class="fc" id="L425">                ClosestPairBetweenSets.ClosestPairInt result = </span>
+<span class="fc" id="L426">                    cp.findClosestPair(group, group2);</span>
                 
-<span class="pc bpc" id="L424" title="1 of 4 branches missed.">                if ((result == null) || (result.getSeparationSquared() &gt; distSqTol)) {</span>
-<span class="fc" id="L425">                    continue;</span>
+<span class="pc bpc" id="L428" title="1 of 4 branches missed.">                if ((result == null) || (result.getSeparationSquared() &gt; distSqTol)) {</span>
+<span class="fc" id="L429">                    continue;</span>
                 }
                 
                 PairIntWithIndex p1, p2;
-<span class="fc bfc" id="L429" title="All 2 branches covered.">                if (result.getPoint0().getPixIndex() == 1) {</span>
-<span class="fc" id="L430">                    p1 = result.getPoint0();</span>
-<span class="fc" id="L431">                    p2 = result.getPoint1();</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                if (result.getPoint0().getPixIndex() == 1) {</span>
+<span class="fc" id="L434">                    p1 = result.getPoint0();</span>
+<span class="fc" id="L435">                    p2 = result.getPoint1();</span>
                 } else {
-<span class="fc" id="L433">                    p1 = result.getPoint1();</span>
-<span class="fc" id="L434">                    p2 = result.getPoint0();</span>
+<span class="fc" id="L437">                    p1 = result.getPoint1();</span>
+<span class="fc" id="L438">                    p2 = result.getPoint0();</span>
                 }
                 
-<span class="fc" id="L437">                PairInt pTr1 = pixToTRMap.get(new PairInt(p1.getX(), p1.getY()));</span>
-<span class="fc" id="L438">                PairInt pTr2 = pixToTRMap.get(new PairInt(p2.getX(), p2.getY()));</span>
+<span class="fc" id="L441">                PairInt pTr1 = pixToTRMap.get(new PairInt(p1.getX(), p1.getY()));</span>
+<span class="fc" id="L442">                PairInt pTr2 = pixToTRMap.get(new PairInt(p2.getX(), p2.getY()));</span>
                 
-<span class="fc" id="L440">                int diffT = Math.abs(pTr1.getX() - pTr2.getX());</span>
-<span class="fc" id="L441">                int diffR = Math.abs(pTr1.getY() - pTr2.getY());</span>
+<span class="fc" id="L444">                int diffT = Math.abs(pTr1.getX() - pTr2.getX());</span>
+<span class="fc" id="L445">                int diffR = Math.abs(pTr1.getY() - pTr2.getY());</span>
                 
-<span class="pc bpc" id="L443" title="2 of 4 branches missed.">                if ((diffT &gt; thetaTol) || (diffR &gt; radiusTol)) {</span>
-<span class="nc" id="L444">                    continue;</span>
+<span class="pc bpc" id="L447" title="2 of 4 branches missed.">                if ((diffT &gt; thetaTol) || (diffR &gt; radiusTol)) {</span>
+<span class="nc" id="L448">                    continue;</span>
                 }
                 
                 // merge the smaller into the larger
-<span class="fc" id="L448">                int nU = group.size();</span>
-<span class="fc" id="L449">                int nV = group2.size();</span>
-<span class="pc bpc" id="L450" title="1 of 2 branches missed.">                if (nU &gt;= nV) {</span>
+<span class="fc" id="L452">                int nU = group.size();</span>
+<span class="fc" id="L453">                int nV = group2.size();</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">                if (nU &gt;= nV) {</span>
                     // merge v into u
-<span class="fc" id="L452">                    group.addAll(group2);</span>
-<span class="fc" id="L453">                    group2.clear();</span>
-<span class="fc" id="L454">                    stack.add(Integer.valueOf(i));</span>
+<span class="fc" id="L456">                    group.addAll(group2);</span>
+<span class="fc" id="L457">                    group2.clear();</span>
+<span class="fc" id="L458">                    stack.add(Integer.valueOf(i));</span>
                 } else {
                     // merge u into v
-<span class="nc" id="L457">                    group2.addAll(group);</span>
-<span class="nc" id="L458">                    group.clear();</span>
-<span class="nc" id="L459">                    stack.add(Integer.valueOf(j));</span>
+<span class="nc" id="L461">                    group2.addAll(group);</span>
+<span class="nc" id="L462">                    group.clear();</span>
+<span class="nc" id="L463">                    stack.add(Integer.valueOf(j));</span>
                 }
-<span class="fc" id="L461">                visited.clear();</span>
+<span class="fc" id="L465">                visited.clear();</span>
             }
-<span class="fc" id="L463">        }</span>
+<span class="fc" id="L467">        }</span>
         
-<span class="fc" id="L465">    }</span>
+<span class="fc" id="L469">    }</span>
 
     private void pruneSortedGroups() {
         
-<span class="fc" id="L469">        int n0 = this.sortedGroups.size();</span>
+<span class="fc" id="L473">        int n0 = this.sortedGroups.size();</span>
         
-<span class="fc bfc" id="L471" title="All 2 branches covered.">        for (int i = (n0 - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L472">            Set&lt;PairInt&gt; group = sortedGroups.get(i);</span>
-<span class="fc bfc" id="L473" title="All 2 branches covered.">            if (group.size() == 0) {</span>
-<span class="fc" id="L474">                sortedGroups.remove(i);</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">        for (int i = (n0 - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L476">            Set&lt;PairInt&gt; group = sortedGroups.get(i);</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">            if (group.size() == 0) {</span>
+<span class="fc" id="L478">                sortedGroups.remove(i);</span>
             }
         }
         
-<span class="fc" id="L478">        int n = this.sortedGroups.size();</span>
+<span class="fc" id="L482">        int n = this.sortedGroups.size();</span>
 
-<span class="fc" id="L480">        int[] c = new int[n];</span>
-<span class="fc" id="L481">        int[] indexes = new int[n];</span>
+<span class="fc" id="L484">        int[] c = new int[n];</span>
+<span class="fc" id="L485">        int[] indexes = new int[n];</span>
 
-<span class="fc bfc" id="L483" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L484">            c[i] = sortedGroups.get(i).size();</span>
-<span class="fc" id="L485">            indexes[i] = i;</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L488">            c[i] = sortedGroups.get(i).size();</span>
+<span class="fc" id="L489">            indexes[i] = i;</span>
         }
 
-<span class="fc" id="L488">        MultiArrayMergeSort.sortByDecr(c, indexes);</span>
+<span class="fc" id="L492">        MultiArrayMergeSort.sortByDecr(c, indexes);</span>
 
-<span class="fc" id="L490">        List&lt;Set&lt;PairInt&gt;&gt; sortedList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L494">        List&lt;Set&lt;PairInt&gt;&gt; sortedList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
 
-<span class="fc bfc" id="L492" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L493">            int idx = indexes[i];</span>
-<span class="fc" id="L494">            sortedList.add(sortedGroups.get(idx));</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L497">            int idx = indexes[i];</span>
+<span class="fc" id="L498">            sortedList.add(sortedGroups.get(idx));</span>
         }
 
-<span class="fc" id="L497">        sortedGroups = sortedList;</span>
-<span class="fc" id="L498">    }</span>
+<span class="fc" id="L501">        sortedGroups = sortedList;</span>
+<span class="fc" id="L502">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

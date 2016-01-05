@@ -138,33 +138,34 @@ public class GrahamScanPairInt&lt;T extends PairInt&gt; {
 <span class="fc" id="L138">        return this.hull;</span>
     }
 
+    @SuppressWarnings({&quot;unchecked&quot;})
     protected void populateHull() throws GrahamScanTooFewPointsException {
 
-<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (points == null) {</span>
-<span class="fc" id="L144">            throw new GrahamScanTooFewPointsException(</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (points == null) {</span>
+<span class="fc" id="L145">            throw new GrahamScanTooFewPointsException(</span>
             &quot;Points cannot be null.  Use computeHull first.&quot;);
         }
         
-<span class="fc" id="L148">        int n = points.size() + 1;</span>
+<span class="fc" id="L149">        int n = points.size() + 1;</span>
 
-<span class="fc" id="L150">        this.hull = new ArrayList&lt;T&gt;();</span>
+<span class="fc" id="L151">        this.hull = new ArrayList&lt;T&gt;();</span>
                 
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
-<span class="fc" id="L153">            hull.add(points.pop());</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
+<span class="fc" id="L154">            hull.add(points.pop());</span>
         }
         
-<span class="fc" id="L156">        this.hull.add((T)hull.get(0).copy());</span>
-<span class="fc" id="L157">    }</span>
+<span class="fc" id="L157">        this.hull.add((T)hull.get(0).copy());</span>
+<span class="fc" id="L158">    }</span>
 
     @Override
     public String toString() {
-<span class="nc" id="L161">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (hull != null) {</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">            for (int i = 0; i &lt; hull.size(); ++i) {</span>
-<span class="nc" id="L164">                sb.append(hull.get(i));</span>
+<span class="nc" id="L162">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (hull != null) {</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            for (int i = 0; i &lt; hull.size(); ++i) {</span>
+<span class="nc" id="L165">                sb.append(hull.get(i));</span>
             }
         }
-<span class="nc" id="L167">        return sb.toString();</span>
+<span class="nc" id="L168">        return sb.toString();</span>
     }
 
 }

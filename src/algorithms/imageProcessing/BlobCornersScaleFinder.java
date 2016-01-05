@@ -366,7 +366,7 @@ double costForTrueSoln = -1;
         NearestPoints np2, int binFactor1, int binFactor2, int dither,
         boolean filterOutImageBoundaryBlobs) {
 
-        int tolTransXY = 5;//10;
+        int tolTransXY = 5;
 
         double maxDistance = Math.sqrt(2) * tolTransXY;
 
@@ -376,9 +376,11 @@ double costForTrueSoln = -1;
               use nEval, SSD and dist to return a normalized cost
         */
 
+        // this method only keeps transformations if more than one is similar
         //List<TransformationParameters> parameterList =
         //    MiscStats.filterToSimilarParamSets(paramsMap, binFactor1, binFactor2);
 
+        // this method keeps all transformations and combines the similar ones
         List<TransformationParameters> parameterList =
             MiscStats.filterToSimilarParamSets2(paramsMap, binFactor1, binFactor2);
 
@@ -536,13 +538,11 @@ double costForTrueSoln = -1;
             sumSSD /= (double)nEval;
             sumDist /= (double)nEval;
 
-            // add '1' to sums so a zero doesn't cancel out the result of the other cost components
+            // add eps to sums so a zero doesn't cancel out the result of the other cost components
             float cost1Norm = 1.f/(float)nEval;
             float cost2Norm = (float)sumSSD + 1;
             float cost3Norm = ((float)sumDist + 0.01f)/(float)tolTransXY2;
             float normalizedCost = cost1Norm * cost2Norm * cost3Norm;
-
-            //TODO: cost1Norm's proportion in normalizedCost should be higher
 
             boolean t1 = (normalizedCost < bestCost);
            
@@ -555,8 +555,6 @@ double costForTrueSoln = -1;
                 bestTolTransXY2 = tolTransXY2;
             }
         }
-
-        boolean extractMore = true;
             
         // calculate the quality array
         if (bestParams != null) {
@@ -591,105 +589,6 @@ double costForTrueSoln = -1;
                     float cost2Norm = (float)sumDistSSD[1] + 1;
                     float cost3Norm = ((float)sumDistSSD[0] + 0.01f)/(float)bestTolTransXY2;
                     bestCost = cost1Norm * cost2Norm * cost3Norm;
-                    
-                } else {
-                    extractMore = false;
-                }
-            } else {
-                extractMore = false;
-            }
-        }
-        
-        if (false && extractMore && bestParams != null) {
-
-            extractMore = false;
-            
-            int img1Width = img1.getWidth();
-            int img1Height = img1.getWidth();
-            int img2Width = img2.getWidth();
-            int img2Height = img2.getHeight();
-
-            int[] qCounts =
-                ImageStatisticsHelper.getQuadrantCountsForIntersection(
-                bestParams, bestStats,
-                img1Width, img1Height, img2Width, img2Height);
-
-            for (int count : qCounts) {
-                if (count < 5) {
-                    extractMore = true;
-                    break;
-                }
-            }
-
-            if (extractMore) {
-                
-                //TODO: consider canny edges instead of this...
-
-                ImageExt imgExt1 = img1Helper.getImage().copyToImageExt();
-                ImageExt imgExt2 = img2Helper.getImage().copyToImageExt();
-                ImageProcessor imageProcessor = new ImageProcessor();
-                int smallestGroupLimit, largestGroupLimit;
-                if (binFactor1 == 1) {
-                    smallestGroupLimit = img1Helper.getSmallestGroupLimit();
-                    largestGroupLimit = img1Helper.getLargestGroupLimit();
-                } else {
-                    imgExt1 = imageProcessor.binImage(imgExt1, binFactor1);
-                    smallestGroupLimit = img1Helper.getSmallestGroupLimitBinned();
-                    largestGroupLimit = img1Helper.getLargestGroupLimitBinned();
-                }
-                if (binFactor2 != 1) {
-                    imgExt2 = imageProcessor.binImage(imgExt2, binFactor2);
-                }
-                ImageSegmentation imageSegmentation = new ImageSegmentation();
-                GreyscaleImage imgSeg1Tmp = imageSegmentation.createGreyscale7(imgExt1);
-                GreyscaleImage imgSeg2Tmp = imageSegmentation.createGreyscale7(imgExt2);
-
-                BlobCornerFinderForParameters finder = new BlobCornerFinderForParameters();
-
-                //TODO: possible problem here using same group limit size on both images
-                List<FeatureComparisonStat> stats2 = finder.extractFeatures(
-                    bestParams, img1, img2,
-                    imgSeg1Tmp, imgSeg2Tmp,
-                    binFactor1, binFactor2,
-                    smallestGroupLimit, largestGroupLimit,
-                    features1.getRotatedOffsets(), filterOutImageBoundaryBlobs,
-                    img1Helper.isInDebugMode(),
-                    img1Helper.getDebugTag());
-                
-                /*
-                if there are degenerate matches for either pt1 or pt2, keep
-                the one with smallest SSD 
-                */
-                
-                List<Integer> removedIndexes = MiscStats.filterForDegeneracy(bestStats);
-                List<Integer> removedIndexes2 = MiscStats.filterForDegeneracy(stats2);
-                
-                log.info("filtered points for degeneracies");
-                
-                if (removedIndexes.size() > 1 || removedIndexes2.size() > 1) {
-
-                    double[] sumDistSSD = null;
-                    float sigmaFactor = 1.5f;
-                    int nIter = 0;
-                    int nMaxIter = 5;
-                    while ((nIter == 0) || (nIter < nMaxIter)) {
-                        sumDistSSD = MiscStats.filterStatsForTranslation(bestParams,
-                            bestStats, sigmaFactor);
-                        if (sumDistSSD != null && !bestStats.isEmpty()) {
-                            break;
-                        }
-                        sigmaFactor += 1;
-                        nIter++;
-                    }
-
-                    log.info("filtered points for translation outliers");
-                    
-                    log.info("calculateTransformation for " + bestStats.size() 
-                        + " stats");
-                    
-                    bestParams = MiscStats.calculateTransformation(binFactor1,
-                        binFactor2, bestStats, new float[4], false);
-        
                 }
             }
         }

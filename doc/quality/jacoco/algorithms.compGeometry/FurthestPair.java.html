@@ -45,12 +45,12 @@ import java.util.logging.Logger;
             
 <span class="fc" id="L46">            scan.computeHull(x, y);</span>
             
-<span class="fc" id="L48">        } catch (GrahamScanTooFewPointsException ex) {</span>
+<span class="nc" id="L48">        } catch (GrahamScanTooFewPointsException ex) {</span>
             
             // this can happen for colinear points reducting sorted size &lt; 3
             //Logger.getLogger(FurthestPair.class.getName()).log(Level.SEVERE, null, ex);
             
-<span class="fc" id="L53">            return null;</span>
+<span class="nc" id="L53">            return null;</span>
 <span class="fc" id="L54">        }</span>
         
 <span class="fc" id="L56">        float[] xHull = scan.getXHull();</span>

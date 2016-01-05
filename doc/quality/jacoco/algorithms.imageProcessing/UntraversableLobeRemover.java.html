@@ -65,7 +65,7 @@ import java.util.Set;
 
 <span class="fc" id="L66">        boolean wasChanged = false;</span>
 
-<span class="pc bpc" id="L68" title="1 of 6 branches missed.">        while ((nIter == 0) || ((nChanges &gt; 0) &amp;&amp; (nIter &lt; nIterMax))) {</span>
+<span class="fc bfc" id="L68" title="All 6 branches covered.">        while ((nIter == 0) || ((nChanges &gt; 0) &amp;&amp; (nIter &lt; nIterMax))) {</span>
 
 <span class="fc" id="L70">            nChanges = 0;</span>
 
@@ -506,8 +506,8 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="fc" id="L506">                    Set&lt;PairInt&gt; spokeJ = spokes.get(j);</span>
 <span class="pc bpc" id="L507" title="3 of 4 branches missed.">                    assert(!spokeJ.isEmpty());</span>
 <span class="fc bfc" id="L508" title="All 2 branches covered.">                    for (PairInt pJ : spokeJ) {</span>
-<span class="pc bpc" id="L509" title="1 of 2 branches missed.">                        if (areAdjacent(pI, pJ)) {</span>
-<span class="nc" id="L510">                            return null;</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">                        if (areAdjacent(pI, pJ)) {</span>
+<span class="fc" id="L510">                            return null;</span>
                         }
 <span class="fc" id="L512">                    }</span>
                 }
@@ -830,9 +830,9 @@ MiscDebug.writeImage(img3, &quot;removed_untr_lobe_&quot;
 <span class="pc bpc" id="L830" title="2 of 6 branches missed.">        } else if ((path01 != null) &amp;&amp; (path02 != null)</span>
             &amp;&amp; (path01.length == path02.length)) {
 <span class="fc" id="L832">            allSameLength = true;</span>
-<span class="pc bpc" id="L833" title="3 of 6 branches missed.">        } else if ((path01 != null) &amp;&amp; (path12 != null)</span>
+<span class="pc bpc" id="L833" title="2 of 6 branches missed.">        } else if ((path01 != null) &amp;&amp; (path12 != null)</span>
             &amp;&amp; (path01.length == path12.length)) {
-<span class="nc" id="L835">            allSameLength = true;</span>
+<span class="fc" id="L835">            allSameLength = true;</span>
 <span class="pc bpc" id="L836" title="2 of 6 branches missed.">        } else if ((path02 != null) &amp;&amp; (path12 != null)</span>
             &amp;&amp; (path02.length == path12.length)) {
 <span class="fc" id="L838">            allSameLength = true;</span>

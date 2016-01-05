@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L26">    protected static String debugTag = &quot;&quot;;</span>
 
     public static List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; populateContours(
-        final BlobPerimeterHelper blobPerimeterHelper,
+        final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage) {
 
 <span class="fc" id="L32">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours</span>
@@ -380,7 +380,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L380">        return remove;</span>
     }
 
-    public static List&lt;List&lt;BlobPerimeterRegion&gt;&gt; populateRegions(BlobPerimeterHelper 
+    public static List&lt;List&lt;BlobPerimeterRegion&gt;&gt; populateRegions(BlobPerimeterCornerHelper 
         imgHelper, List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours, 
         SegmentationType type, boolean useBinned) {
         

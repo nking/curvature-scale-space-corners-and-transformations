@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BlobPerimeterCornerHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">BlobPerimeterCornerHelper.java</span></div><h1>BlobPerimeterCornerHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">public class BlobPerimeterCornerHelper {</span>
+    
+    private final SegmentedImageHelper imgHelper;
+    
+<span class="pc" id="L23">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBlobsMap =      </span>
+        new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
+   
+<span class="pc" id="L26">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+        segBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
+    
+<span class="pc" id="L29">    private final Map&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt; segBinnedBlobsMap =      </span>
+        new HashMap&lt;SegmentationType, List&lt;Set&lt;PairInt&gt;&gt;&gt;();
+   
+<span class="pc" id="L32">    private final Map&lt;SegmentationType, List&lt;PairIntArray&gt;&gt; </span>
+        segBinnedBlobPerimetersMap = new HashMap&lt;SegmentationType, List&lt;PairIntArray&gt;&gt;();
+    
+<span class="pc" id="L35">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
+        segCornersMap = new HashMap&lt;SegmentationType, 
+        List&lt;List&lt;CornerRegion&gt;&gt;&gt;();
+    
+<span class="pc" id="L39">    protected Map&lt;SegmentationType, List&lt;List&lt;CornerRegion&gt;&gt;&gt;</span>
+        segBinnedCornersMap = new HashMap&lt;SegmentationType, 
+        List&lt;List&lt;CornerRegion&gt;&gt;&gt;();
+    
+<span class="nc" id="L43">    public BlobPerimeterCornerHelper(final ImageExt img) {</span>
+<span class="nc" id="L44">        imgHelper = new SegmentedImageHelper(img);</span>
+<span class="nc" id="L45">    }</span>
+    
+<span class="fc" id="L47">    public BlobPerimeterCornerHelper(final ImageExt img, final String debugTag) {</span>
+<span class="fc" id="L48">        imgHelper = new SegmentedImageHelper(img, debugTag);</span>
+<span class="fc" id="L49">    }</span>
+    
+    public void createBinnedGreyscaleImage(int maxDimension) {
+<span class="fc" id="L52">        imgHelper.createBinnedGreyscaleImage(maxDimension);</span>
+<span class="fc" id="L53">    }</span>
+    
+    /**
+     * change the larger limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseLargestGroupLimit(int limit) {
+<span class="fc" id="L63">        imgHelper.increaseLargestGroupLimit(limit);</span>
+<span class="fc" id="L64">    }</span>
+    
+    /**
+     * change the smallest limit for blob sizes.  caveat is that this should be
+     * invoked before createBinnedGreyscaleImage for it to be adapted correctly
+     * for the binned image sizes.
+     * 
+     * @param limit 
+     */
+    public void increaseSmallestGroupLimit(int limit) {
+<span class="nc" id="L74">        imgHelper.increaseSmallestGroupLimit(limit);</span>
+<span class="nc" id="L75">    }</span>
+
+    public boolean applyEqualizationIfNeededByComparison(SegmentedImageHelper 
+        otherImgHelper) {
+        
+<span class="nc" id="L80">        return imgHelper.applyEqualizationIfNeededByComparison(otherImgHelper);</span>
+    }
+
+    public void applyEqualization() {
+<span class="nc" id="L84">        imgHelper.applyEqualization();</span>
+<span class="nc" id="L85">    }</span>
+    
+    public boolean didApplyHistEq() {
+<span class="fc" id="L88">        return imgHelper.didApplyHistEq();</span>
+    }
+
+    /**
+     * apply segmentation type type to the greyscale or color binned image
+     * depending upon the segmentation type.
+     *
+     * @param type
+     * @param applyToBinnedImage
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    public void applySegmentation(SegmentationType type, 
+        boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
+        
+<span class="fc" id="L103">        imgHelper.applySegmentation(type, applyToBinnedImage);</span>
+<span class="fc" id="L104">    }</span>
+    
+    public GreyscaleImage getSegmentationImage(SegmentationType type) {
+<span class="fc" id="L107">        return imgHelper.getSegmentationImage(type);</span>
+    }
+
+    public GreyscaleImage getBinnedSegmentationImage(SegmentationType type) {
+<span class="fc" id="L111">        return imgHelper.getBinnedSegmentationImage(type);</span>
+    }
+
+    public GreyscaleImage getGreyscaleImage(boolean getTheBinned) {
+<span class="fc" id="L115">        return imgHelper.getGreyscaleImage(getTheBinned);</span>
+    }
+
+    public GreyscaleImage getGreyscaleImage() {
+<span class="fc" id="L119">        return imgHelper.getGreyscaleImage();</span>
+    }
+    
+    public ImageExt getImage() {
+<span class="fc" id="L123">        return imgHelper.getImage();</span>
+    }
+
+    public GreyscaleImage getGreyscaleImageBinned() {
+<span class="fc" id="L127">        return imgHelper.getGreyscaleImageBinned();</span>
+    }
+
+    public int getSmallestGroupLimit() {
+<span class="fc" id="L131">        return imgHelper.getSmallestGroupLimit();</span>
+    }
+
+    public int getLargestGroupLimit() {
+<span class="fc" id="L135">        return imgHelper.getLargestGroupLimit();</span>
+    }
+
+    public int getSmallestGroupLimitBinned() {
+<span class="fc" id="L139">        return imgHelper.getSmallestGroupLimitBinned();</span>
+    }
+
+    public int getLargestGroupLimitBinned() {
+<span class="fc" id="L143">        return imgHelper.getLargestGroupLimitBinned();</span>
+    }
+
+    public int getBinFactor() {
+<span class="fc" id="L147">        return imgHelper.getBinFactor();</span>
+    }
+
+    /**
+     * convenience method that returns '1' if getForBinned is false else returns
+     * binFactor
+     *
+     * @param getForBinned
+     * @return
+     */
+    public int getBinFactor(boolean getForBinned) {
+<span class="fc" id="L158">        return imgHelper.getBinFactor(getForBinned);</span>
+    }
+
+    public List&lt;PairIntArray&gt; getBlobPerimeters(SegmentationType type, boolean 
+        useBinnedImage) {
+        
+<span class="fc" id="L164">        boolean filterOutImageBoundaryBlobs = false;</span>
+        
+<span class="fc" id="L166">        boolean filterOutZeroPixels = true;</span>
+                
+<span class="fc" id="L168">        return getBlobPerimeters(type, useBinnedImage, </span>
+            filterOutImageBoundaryBlobs, filterOutZeroPixels);
+    }
+    
+    public List&lt;PairIntArray&gt; getBlobPerimeters(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs, 
+        boolean filterOutZeroPixels) {
+                
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (useBinnedImage) {</span>
+<span class="fc" id="L177">            return getBinnedBlobPerimeters(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        } else {
+<span class="fc" id="L180">            return getUnbinnedBlobPerimeters(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        }
+       
+    }
+    
+    private List&lt;PairIntArray&gt; getUnbinnedBlobPerimeters(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
+                
+<span class="fc" id="L189">        List&lt;PairIntArray&gt; blobPerimeters = blobPerimeters = segBlobPerimetersMap.get(type);</span>
+        
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
+<span class="fc" id="L192">            return blobPerimeters;</span>
+        }
+        
+<span class="fc" id="L195">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBlobsMap.get(type);</span>
+        
+<span class="fc" id="L197">        boolean useBinned = false;</span>
+        
+<span class="fc" id="L199">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+        
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        if (blobs == null) {</span>
+            
+<span class="fc" id="L203">            long t0 = System.currentTimeMillis();</span>
+            
+<span class="fc" id="L205">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+            
+<span class="fc" id="L209">            long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L210">            long t1Sec = (t1 - t0)/1000;</span>
+<span class="fc" id="L211">            Logger.getLogger(this.getClass().getName()).info(&quot;blobs(sec)=&quot; </span>
+                + t1Sec);
+            
+<span class="fc" id="L214">            segBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="fc" id="L217">        long t0 = System.currentTimeMillis();</span>
+        
+<span class="fc" id="L219">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+            imgHelper, type, blobs, useBinned,
+            discardWhenCavityIsSmallerThanBorder);
+        
+<span class="fc" id="L223">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L224">        long t1Sec = (t1 - t0)/1000;</span>
+<span class="fc" id="L225">        Logger.getLogger(this.getClass().getName()).info(&quot;perimeters(sec)=&quot; </span>
+            + t1Sec);
+        
+<span class="fc" id="L228">        segBlobPerimetersMap.put(type, blobPerimeters);</span>
+        
+        // blobs may have been removed, so re-put them
+<span class="fc" id="L231">        segBlobsMap.put(type, blobs);</span>
+        
+<span class="fc" id="L233">        return blobPerimeters;</span>
+    }
+    
+    private List&lt;PairIntArray&gt; getBinnedBlobPerimeters(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
+        
+<span class="fc" id="L239">        List&lt;PairIntArray&gt; blobPerimeters = segBinnedBlobPerimetersMap.get(type);</span>
+        
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
+<span class="fc" id="L242">            return blobPerimeters;</span>
+        }
+        
+<span class="fc" id="L245">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+        
+<span class="fc" id="L247">        boolean useBinned = true;</span>
+        
+<span class="fc" id="L249">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+        
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">        if (blobs == null) {</span>
+            
+<span class="fc" id="L253">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+            
+<span class="fc" id="L257">            segBinnedBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="fc" id="L260">        blobPerimeters = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+            imgHelper, type, blobs, useBinned,
+            discardWhenCavityIsSmallerThanBorder);
+        
+<span class="fc" id="L264">        segBinnedBlobPerimetersMap.put(type, blobPerimeters);</span>
+        
+        // blobs may have been removed, so re-put them
+<span class="fc" id="L267">        segBinnedBlobsMap.put(type, blobs);</span>
+            
+<span class="fc" id="L269">        return blobPerimeters;        </span>
+    }
+    
+    public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
+        useBinnedImage) {
+        
+<span class="fc" id="L275">        boolean filterOutImageBoundaryBlobs = false;</span>
+        
+<span class="fc" id="L277">        return getBlobs(type, useBinnedImage, filterOutImageBoundaryBlobs);</span>
+    }
+    
+    public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs) {
+                
+<span class="fc" id="L283">        boolean filterOutZeroPixels = true;</span>
+        
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (useBinnedImage) {</span>
+<span class="fc" id="L286">            return getBinnedBlobs(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        } else {
+<span class="fc" id="L289">            return getUnbinnedBlobs(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        }
+    }
+    
+    public List&lt;Set&lt;PairInt&gt;&gt; getBlobs(SegmentationType type, boolean 
+        useBinnedImage, boolean filterOutImageBoundaryBlobs,
+        boolean filterOutZeroPixels) {
+                        
+<span class="nc bnc" id="L298" title="All 2 branches missed.">        if (useBinnedImage) {</span>
+<span class="nc" id="L299">            return getBinnedBlobs(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        } else {
+<span class="nc" id="L302">            return getUnbinnedBlobs(type, filterOutImageBoundaryBlobs,</span>
+                filterOutZeroPixels);
+        }
+    }
+
+    private List&lt;Set&lt;PairInt&gt;&gt; getBinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs) {
+        
+<span class="nc" id="L310">        boolean filterOutZeroPixels = true;</span>
+        
+<span class="nc" id="L312">        return getBinnedBlobs(type, filterOutImageBoundaryBlobs, </span>
+            filterOutZeroPixels);
+    }
+    
+    private List&lt;Set&lt;PairInt&gt;&gt; getBinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
+        
+<span class="fc" id="L319">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBinnedBlobsMap.get(type);</span>
+        
+<span class="fc" id="L321">        boolean useBinned = true;</span>
+                
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        if (blobs == null) {</span>
+            
+<span class="fc" id="L325">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+            
+<span class="fc" id="L329">            segBinnedBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="fc" id="L332">        return blobs;            </span>
+    }
+
+    private List&lt;Set&lt;PairInt&gt;&gt; getUnbinnedBlobs(SegmentationType type,
+        boolean filterOutImageBoundaryBlobs, boolean filterOutZeroPixels) {
+        
+<span class="fc" id="L338">        List&lt;Set&lt;PairInt&gt;&gt; blobs = null;</span>
+        
+<span class="fc" id="L340">        blobs = segBlobsMap.get(type);</span>
+        
+<span class="fc" id="L342">        boolean useBinned = false;</span>
+                
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        if (blobs == null) {</span>
+            
+<span class="fc" id="L346">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
+                imgHelper, type, useBinned, filterOutImageBoundaryBlobs,
+                filterOutZeroPixels);
+            
+<span class="fc" id="L350">            segBlobsMap.put(type, blobs);</span>
+        }
+        
+<span class="fc" id="L353">        return blobs;</span>
+    }
+    
+    /**
+     * generate contours (or retrieve cached contours) for blob perimeters from 
+     * segmented images of type type and binned or not binned.
+     * @param type
+     * @param applyToBinnedImage 
+     * @return  
+     */
+    public List&lt;List&lt;CornerRegion&gt;&gt; generatePerimeterCorners(
+        SegmentationType type, boolean applyToBinnedImage) {
+         
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        if (applyToBinnedImage) {</span>
+<span class="fc" id="L367">            return generatePerimeterCornersForBinned(type);</span>
+        } else {
+<span class="fc" id="L369">            return generatePerimeterCornersUnbinned(type);</span>
+        }
+    }
+    
+    public List&lt;List&lt;CornerRegion&gt;&gt; getPerimeterCorners(
+        SegmentationType type, boolean applyToBinnedImage) {
+         
+<span class="fc" id="L376">        return generatePerimeterCorners(type, applyToBinnedImage);</span>
+    }
+    
+    protected List&lt;List&lt;CornerRegion&gt;&gt; 
+        generatePerimeterCornersUnbinned(SegmentationType type) {
+        
+<span class="fc" id="L382">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segCornersMap.get(type);</span>
+
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        if (corners != null) {</span>
+<span class="fc" id="L385">            return corners;</span>
+        }
+        
+<span class="fc" id="L388">        GreyscaleImage segImg = imgHelper.getSegmentationImage(type);</span>
+        
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+            //TODO: consider changing logic to perform this if needed
+<span class="nc" id="L392">            throw new IllegalArgumentException(</span>
+            &quot;segmented image hasn't been created yet.  error?&quot;);
+        }
+        
+<span class="fc" id="L396">        boolean useBinned = false;</span>
+        
+<span class="fc" id="L398">        final boolean outdoorMode = false;</span>
+        
+<span class="fc" id="L400">        final boolean enableJaggedLineCorrections = false;</span>
+        
+<span class="fc" id="L402">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
+   
+<span class="fc" id="L404">        corners = BlobsAndCorners.populateCorners(this, type, useBinned,</span>
+            outdoorMode, enableJaggedLineCorrections, 
+            factorIncreaseForCurvatureMinimum);
+       
+<span class="fc" id="L408">        segCornersMap.put(type, corners);</span>
+        
+<span class="fc" id="L410">        return corners;</span>
+    }
+    
+    protected List&lt;List&lt;CornerRegion&gt;&gt; 
+        generatePerimeterCornersForBinned(SegmentationType type) {
+         
+<span class="fc" id="L416">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segBinnedCornersMap.get(type);</span>
+
+<span class="fc bfc" id="L418" title="All 2 branches covered.">        if (corners != null) {</span>
+<span class="fc" id="L419">            return corners;</span>
+        }
+        
+<span class="fc" id="L422">        GreyscaleImage segImg = imgHelper.getBinnedSegmentationImage(type);</span>
+        
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">        if (segImg == null) {</span>
+            //TODO: consider changing logic to perform this if needed
+<span class="nc" id="L426">            throw new IllegalArgumentException(</span>
+            &quot;segmented image hasn't been created yet.  error?&quot;);
+        }
+       
+<span class="fc" id="L430">        boolean useBinned = true;</span>
+        
+<span class="fc" id="L432">        final boolean outdoorMode = false;</span>
+        
+<span class="fc" id="L434">        final boolean enableJaggedLineCorrections = false;</span>
+        
+<span class="fc" id="L436">        final float factorIncreaseForCurvatureMinimum = 1.f;</span>
+
+<span class="fc" id="L438">        corners = BlobsAndCorners.populateCorners(this, type, useBinned,</span>
+            outdoorMode, enableJaggedLineCorrections, 
+            factorIncreaseForCurvatureMinimum);
+        
+<span class="fc" id="L442">        segBinnedCornersMap.put(type, corners);</span>
+        
+<span class="fc" id="L444">        return corners;        </span>
+    }
+        
+    /**
+     * pre-prepare the corners as every point in the perimeter of the blobs.
+     * Note that if perimeters were not already extracted, empty lists for 
+     * perimeters are cached.  Also note that the corner regions are not 
+     * ordered.
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractBlobPerimeterAsCornerRegions(SegmentationType type, 
+        boolean applyToBinnedImage) {
+        
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (applyToBinnedImage) {</span>
+<span class="fc" id="L460">            extractBlobPerimeterAsCornerRegionsForBinned(type);</span>
+        } else {
+<span class="nc" id="L462">            extractBlobPerimeterAsCornerRegionsForUnbinned(type);</span>
+        }
+<span class="fc" id="L464">    }</span>
+
+    /**
+     * pre-prepare the corners as every point in the perimeter of the blobs.
+     * 
+     * @param type 
+     */
+    private void extractBlobPerimeterAsCornerRegionsForBinned(SegmentationType type) {
+        
+<span class="fc" id="L473">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segBinnedCornersMap.get(type);</span>
+
+<span class="pc bpc" id="L475" title="1 of 2 branches missed.">        if (corners != null) {</span>
+<span class="nc" id="L476">            return;</span>
+        }
+        
+<span class="fc" id="L479">        List&lt;Set&lt;PairInt&gt;&gt; blobs = getBlobs(type, true);</span>
+        
+<span class="fc" id="L481">        GreyscaleImage gsImg = this.getGreyscaleImageBinned();</span>
+<span class="fc" id="L482">        int imageWidth = gsImg.getWidth(); </span>
+<span class="fc" id="L483">        int imageHeight = gsImg.getHeight();</span>
+        
+<span class="fc" id="L485">        boolean useBinned = true;</span>
+<span class="fc" id="L486">        boolean discardWhenCavityIsSmallerThanBorder = false;</span>
+        
+<span class="fc" id="L488">        List&lt;PairIntArray&gt; perimeterLists = segBinnedBlobPerimetersMap.get(type);</span>
+        
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (perimeterLists == null) {</span>
+            
+<span class="fc" id="L492">            perimeterLists = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+                imgHelper, type, blobs, useBinned,
+                discardWhenCavityIsSmallerThanBorder);
+            
+<span class="fc" id="L496">            segBinnedBlobPerimetersMap.put(type, perimeterLists);</span>
+        }
+        
+<span class="fc" id="L499">        corners = extractCorners2(perimeterLists, type, useBinned);     </span>
+            
+<span class="fc" id="L501">        segBinnedCornersMap.put(type, corners);</span>
+        
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">        if (imgHelper.isInDebugMode()) {</span>
+<span class="fc" id="L504">            MiscDebug.writeEdgesAndCorners(perimeterLists, corners,</span>
+<span class="fc" id="L505">                1, gsImg, &quot;blob_corners_&quot; + imgHelper.getDebugTag() + &quot;_&quot; </span>
+<span class="fc" id="L506">                + MiscDebug.getCurrentTimeFormatted());</span>
+        }
+        
+<span class="fc" id="L509">        Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L510">        log.info(&quot;perimeterLists.size()=&quot; + perimeterLists.size() +</span>
+<span class="fc" id="L511">            &quot; corners.size()=&quot; + corners.size());</span>
+        
+<span class="pc bpc" id="L513" title="3 of 4 branches missed.">        assert(perimeterLists.size() == corners.size());</span>
+<span class="fc" id="L514">    }</span>
+
+    /**
+     * pre-prepare the corners as every point in the perimeter of the blobs.
+     * 
+     * @param type 
+     */
+    private void extractBlobPerimeterAsCornerRegionsForUnbinned(SegmentationType type) {
+        
+<span class="nc" id="L523">        List&lt;List&lt;CornerRegion&gt;&gt; corners = segCornersMap.get(type);</span>
+
+<span class="nc bnc" id="L525" title="All 2 branches missed.">        if (corners != null) {</span>
+<span class="nc" id="L526">            return;</span>
+        }
+        
+<span class="nc" id="L529">        List&lt;Set&lt;PairInt&gt;&gt; blobs = getBlobs(type, false);</span>
+        
+<span class="nc" id="L531">        GreyscaleImage gsImg = this.getGreyscaleImage();</span>
+<span class="nc" id="L532">        int imageWidth = gsImg.getWidth(); </span>
+<span class="nc" id="L533">        int imageHeight = gsImg.getHeight();</span>
+        
+<span class="nc" id="L535">        boolean useBinned = false;</span>
+<span class="nc" id="L536">        boolean discardWhenCavityIsSmallerThanBorder = true;</span>
+        
+<span class="nc" id="L538">        List&lt;PairIntArray&gt; perimeterLists = segBlobPerimetersMap.get(type);</span>
+        
+<span class="nc bnc" id="L540" title="All 2 branches missed.">        if (perimeterLists == null) {</span>
+            
+<span class="nc" id="L542">            perimeterLists = BlobsAndPerimeters.extractBoundsOfBlobs(</span>
+                imgHelper, type, blobs, useBinned,
+                discardWhenCavityIsSmallerThanBorder);
+            
+<span class="nc" id="L546">            segBlobPerimetersMap.put(type, perimeterLists);</span>
+        }
+        
+<span class="nc" id="L549">        corners = extractCorners2(perimeterLists, type, useBinned);</span>
+        
+<span class="nc" id="L551">        segCornersMap.put(type, corners);</span>
+        
+<span class="nc bnc" id="L553" title="All 2 branches missed.">        if (imgHelper.isInDebugMode()) {</span>
+<span class="nc" id="L554">            MiscDebug.writeEdgesAndCorners(perimeterLists, corners,</span>
+<span class="nc" id="L555">                1, gsImg, &quot;blob_corners_&quot; + imgHelper.getDebugTag() + &quot;_&quot; </span>
+<span class="nc" id="L556">                + MiscDebug.getCurrentTimeFormatted());</span>
+        }
+<span class="nc" id="L558">    }</span>
+
+    public int sumPointsOfInterest(SegmentationType segmentationType, 
+        boolean useBinned) {
+        
+<span class="fc" id="L563">        List&lt;List&lt;CornerRegion&gt;&gt; corners = getPerimeterCorners(segmentationType, </span>
+            useBinned);
+        
+<span class="fc" id="L566">        int n = 0;</span>
+        
+<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (List&lt;CornerRegion&gt; list : corners) {</span>
+<span class="fc" id="L569">            n += list.size();</span>
+<span class="fc" id="L570">        }</span>
+        
+<span class="fc" id="L572">        return n;</span>
+    }
+    
+    public boolean isInDebugMode() {
+<span class="fc" id="L576">        return imgHelper.isInDebugMode();</span>
+    }
+
+    public String getDebugTag() {
+<span class="fc" id="L580">        return imgHelper.getDebugTag();</span>
+    }
+
+    private List&lt;List&lt;CornerRegion&gt;&gt; extractCorners2(List&lt;PairIntArray&gt; 
+        perimeterLists, SegmentationType type, boolean useBinned) {
+        
+<span class="fc" id="L586">        boolean useMorePoints = false;</span>
+        
+<span class="fc" id="L588">        List&lt;List&lt;CornerRegion&gt;&gt; corners = new ArrayList&lt;List&lt;CornerRegion&gt;&gt;();</span>
+        
+<span class="pc bpc" id="L590" title="1 of 2 branches missed.">        if (useMorePoints) {</span>
+<span class="nc" id="L591">            int skip = DitherDefault.dither + 1;</span>
+<span class="nc" id="L592">            corners = new ArrayList&lt;List&lt;CornerRegion&gt;&gt;();</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">            for (int i = 0; i &lt; perimeterLists.size(); ++i) {</span>
+<span class="nc" id="L594">                PairIntArray edge = perimeterLists.get(i);</span>
+<span class="nc" id="L595">                List&lt;CornerRegion&gt; bprList = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="nc bnc" id="L596" title="All 2 branches missed.">                for (int j = 0; j &lt; edge.getN(); j += skip) {</span>
+<span class="nc" id="L597">                    CornerRegion cr = new CornerRegion(i, 1, 0);</span>
+<span class="nc" id="L598">                    cr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="nc" id="L599">                    cr.set(0, Float.MIN_VALUE, edge.getX(j), edge.getY(j));</span>
+<span class="nc" id="L600">                    cr.setIndexWithinCurve(j);</span>
+<span class="nc" id="L601">                    bprList.add(cr);</span>
+                }
+<span class="nc" id="L603">                corners.add(bprList);</span>
+            }
+<span class="nc" id="L605">        } else {        </span>
+<span class="fc" id="L606">            final boolean outdoorMode = false;</span>
+<span class="fc" id="L607">            final boolean enableJaggedLineCorrections = false;</span>
+<span class="fc" id="L608">            final float factorIncreaseForCurvatureMinimum = 1.f;</span>
+                        
+<span class="fc" id="L610">            corners = BlobsAndCorners.populateCorners(this, type, useBinned,</span>
+                outdoorMode, enableJaggedLineCorrections, 
+                factorIncreaseForCurvatureMinimum);
+<span class="pc bpc" id="L613" title="3 of 4 branches missed.">            assert(corners.size() == perimeterLists.size());</span>
+<span class="fc" id="L614">            int k = 5;</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">            for (int i = 0; i &lt; corners.size(); ++i) {</span>
+<span class="fc" id="L616">                PairIntArray edge = perimeterLists.get(i);</span>
+<span class="fc" id="L617">                int n = edge.getN();</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">                if (n &lt; k) {</span>
+<span class="fc" id="L619">                    continue;</span>
+                }
+<span class="fc" id="L621">                List&lt;CornerRegion&gt; list = corners.get(i);</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">                if (list.isEmpty()) {</span>
+                    // add a starter point
+<span class="fc" id="L624">                    int idx = (n - 1)/2;</span>
+<span class="fc" id="L625">                    CornerRegion cr = new CornerRegion(i, 1, 0);</span>
+<span class="fc" id="L626">                    cr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="fc" id="L627">                    cr.set(0, Float.MIN_VALUE, edge.getX(idx), edge.getY(idx));</span>
+<span class="fc" id="L628">                    cr.setIndexWithinCurve(idx);</span>
+<span class="fc" id="L629">                    list.add(cr);</span>
+                }                    
+                // bisect largest gap until have k points or largest gap is '1'
+<span class="fc bfc" id="L632" title="All 2 branches covered.">                while (list.size() &lt; k) {</span>
+<span class="fc" id="L633">                    int maxGap = list.get(0).getIndexWithinCurve();</span>
+                    // maxGapIdx + 1 is the point where to insert into list
+<span class="fc" id="L635">                    int maxGapIdx = -1;</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">                    for (int j = 0; j &lt; list.size(); ++j) {</span>
+                        int gap;
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                        if (j == (list.size() - 1)) {</span>
+<span class="fc" id="L639">                            gap = (n - 1) - list.get(j).getIndexWithinCurve();</span>
+                        } else {
+<span class="fc" id="L641">                            gap = list.get(j + 1).getIndexWithinCurve() - list.get(j).getIndexWithinCurve();</span>
+                        }
+<span class="fc bfc" id="L643" title="All 2 branches covered.">                        if (gap &gt; maxGap) {</span>
+<span class="fc" id="L644">                            maxGap = gap;</span>
+<span class="fc" id="L645">                            maxGapIdx = j;</span>
+                        }
+                    }
+<span class="fc bfc" id="L648" title="All 2 branches covered.">                    if (list.size() == 1) {</span>
+<span class="fc" id="L649">                        int idx = ((n - 1) + list.get(0).getIndexWithinCurve())/2;</span>
+<span class="fc" id="L650">                        CornerRegion cr = new CornerRegion(i, 1, 0);</span>
+<span class="fc" id="L651">                        cr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="fc" id="L652">                        cr.set(0, Float.MIN_VALUE, edge.getX(idx), edge.getY(idx));</span>
+<span class="fc" id="L653">                        cr.setIndexWithinCurve(idx);</span>
+<span class="fc" id="L654">                        list.add(1, cr);</span>
+<span class="fc" id="L655">                        continue;</span>
+                    }
+<span class="fc bfc" id="L657" title="All 2 branches covered.">                    if (maxGap == 1) {</span>
+<span class="fc" id="L658">                        break;</span>
+                    }
+                    int idx;
+<span class="fc bfc" id="L661" title="All 2 branches covered.">                    if (maxGapIdx == -1) {</span>
+<span class="fc" id="L662">                        idx = list.get(0).getIndexWithinCurve()/2;</span>
+<span class="fc bfc" id="L663" title="All 2 branches covered.">                    } else if (maxGapIdx &gt;= (list.size() - 1)) {</span>
+<span class="fc" id="L664">                        idx = ((n - 1) + list.get(maxGapIdx).getIndexWithinCurve())/2;</span>
+                    } else {
+<span class="fc" id="L666">                        idx = (list.get(maxGapIdx + 1).getIndexWithinCurve() </span>
+<span class="fc" id="L667">                            + list.get(maxGapIdx).getIndexWithinCurve())/2;</span>
+                    }
+<span class="fc" id="L669">                    CornerRegion cr = new CornerRegion(i, 1, 0);</span>
+<span class="fc" id="L670">                    cr.setFlagThatNeighborsHoldDummyValues();</span>
+<span class="fc" id="L671">                    cr.set(0, Float.MIN_VALUE, edge.getX(idx), edge.getY(idx));</span>
+<span class="fc" id="L672">                    cr.setIndexWithinCurve(idx);</span>
+<span class="fc" id="L673">                    list.add(maxGapIdx + 1, cr);</span>
+<span class="fc" id="L674">                }</span>
+            }
+        }
+<span class="fc" id="L677">        return corners;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
