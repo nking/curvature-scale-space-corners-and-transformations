@@ -1,5 +1,5 @@
 -- Feature matching still needs improvements:
-   the creation of corner regions to match is now very good,
+   The creation of corner regions to match is now very good,
    but the analysis of the comparisons needs to be improved.
 
    -- all but books have better matching now
@@ -11,27 +11,6 @@
          for evaluation
 
 start of rough outline of requirements of a non-euclidean matcher:
-
-CornerMatcher
-    -- given dither, and two lists of corner regions,
-       finds the best and second best match for each point
-       and discards the matches that have SSD_best/SSD_second_best < 0.8-ish.
-       (Mikolajczyk and Schmid 2005))
-       -- currently, the algorithm compares each corner in list 2 to 
-          each corner in list 2, and performs 
-          a set of alternate tries around the point in list 1,
-          so the matching is ~O(N^2) ignoring the dithering pattern.
-    -- follows that with greedy or optimal bipartite matching
-       to ensure unique matches.
-    methods:
-      + CornerMatcher(int dither)
-      + matchCorners(
-          final IntensityFeatures features1, final IntensityFeatures features2,
-          final List<T> corners1,final List<T> corners2,
-          GreyscaleImage img1, GreyscaleImage img2, int binFactor1, int binFactor2) : boolean
-      + getSolutionStats() : List<FeatureComparisonStat>
-      + getSolutionCost() : double
-      - bipartiteFilter(List<FeatureComparisonStat>)
 
 NonEuclideanSegmentFeatureMatcher:
     -- uses atrous or canny based segmentation

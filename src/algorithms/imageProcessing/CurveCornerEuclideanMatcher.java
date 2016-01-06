@@ -61,6 +61,7 @@ public class CurveCornerEuclideanMatcher<T extends CornerRegion> {
         state = null;
         solution = null;
         nEval = -1;
+        solutionStats = null;
     }
 
     /**
