@@ -23,6 +23,15 @@ CornerMatcher
           so the matching is ~O(N^2) ignoring the dithering pattern.
     -- follows that with greedy or optimal bipartite matching
        to ensure unique matches.
+    methods:
+      + CornerMatcher(int dither)
+      + matchCorners(
+          final IntensityFeatures features1, final IntensityFeatures features2,
+          final List<T> corners1,final List<T> corners2,
+          GreyscaleImage img1, GreyscaleImage img2, int binFactor1, int binFactor2) : boolean
+      + getSolutionStats() : List<FeatureComparisonStat>
+      + getSolutionCost() : double
+      - bipartiteFilter(List<FeatureComparisonStat>)
 
 NonEuclideanSegmentFeatureMatcher:
     -- uses atrous based segmentation
@@ -43,6 +52,13 @@ NonEuclideanSegmentFeatureMatcher:
             the delanauy space in other image that is bounded by the cells
             of the control points.
     -- are the results fewer false positives than NonEuclideanInvHessianFeatureMatcher?
+    methods:
+      + NonEuclideanSegmentFeatureMatcher()
+      - initialize()
+      + match();
+      + List<PairInt> getMatched1();
+      + List<PairInt> getMatched2();
+      + getSolutionStats() : List<FeatureComparisonStat>
 
 NonEuclideanInvHessianFeatureMatcher:
     -- begins with finding the inverse hessian points
@@ -51,6 +67,13 @@ NonEuclideanInvHessianFeatureMatcher:
        for the epipolar solver?  
        No need to bootstrap more points from these?
        -- are there too many false positives?
+    methods:
+      + NonEuclideanInvHessianFeatureMatcher()
+      - initialize()
+      + match();
+      + List<PairInt> getMatched1();
+      + List<PairInt> getMatched2();
+      + getSolutionStats() : List<FeatureComparisonStat>
 
 -- for calculation of orientation angle in IntensityFeatures,
    for the method that uses first derivative, might need to alter the
