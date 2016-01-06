@@ -392,7 +392,7 @@ public class FeatureMatcher {
                 MiscDebug.writeImage(filteredC2, gsImg2.copyToColorGreyscale(), 
                     "filtered_2_corners_");
             } catch (IOException ex) {
-                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(
+                Logger.getLogger(EuclideanSegmentFeatureMatcher.class.getName()).log(
                     Level.SEVERE, null, ex);
             }
         }

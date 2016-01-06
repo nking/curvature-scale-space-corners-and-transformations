@@ -317,7 +317,7 @@ public class CurvatureScaleSpaceCornerDetector extends
                 }
                 MiscDebug.writeImage(imgCp, "_dbg_corners_");
             } catch (IOException ex) {
-                Logger.getLogger(FeatureMatcherWrapper.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(this.class.getName()).log(Level.SEVERE, null, ex);
             }
         }*/
         

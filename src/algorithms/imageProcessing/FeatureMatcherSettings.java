@@ -6,7 +6,15 @@ public class FeatureMatcherSettings {
     private String debugTag = "";
     private boolean debug = false;
     private boolean startWithBinnedImages = true;
+    private boolean overrideWithCannySegmentation = false;
 
+    public void setToOverrideWithCannySegmentation() {
+        overrideWithCannySegmentation = true;
+    }
+    public boolean doOverrideWithCannySegmentation() {
+        return overrideWithCannySegmentation;
+    }
+    
     public boolean useNormalizedFeatures() {
         return useNormalizedFeatures;
     }
@@ -46,6 +54,7 @@ public class FeatureMatcherSettings {
         s.setDebugTag(debugTag);
         s.setStartWithBinnedImages(startWithBinnedImages);
         s.setUseNormalizedFeatures(useNormalizedFeatures);
+        s.overrideWithCannySegmentation = overrideWithCannySegmentation;
 
         return s;
     }

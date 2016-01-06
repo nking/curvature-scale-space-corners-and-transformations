@@ -92,12 +92,12 @@ public class EpipolarSolver {
             throw new IllegalStateException("solve() has already been invoked");
         }
         
-        FeatureMatcherWrapper wrapper = null;
+        EuclideanSegmentFeatureMatcher wrapper = null;
         
         if (params != null) {
-            wrapper = new FeatureMatcherWrapper(img1, img2, params, featureSettings);
+            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, params, featureSettings);
         } else {
-            wrapper = new FeatureMatcherWrapper(img1, img2, featureSettings);
+            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
         }
         
         CorrespondenceList cl = wrapper.matchFeatures();

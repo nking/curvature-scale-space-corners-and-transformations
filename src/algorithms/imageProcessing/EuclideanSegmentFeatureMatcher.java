@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  *
  * @author nichole
  */
-public class FeatureMatcherWrapper {
+public class EuclideanSegmentFeatureMatcher {
 
     private final FeatureMatcherSettings settings;
 
@@ -62,7 +62,7 @@ public class FeatureMatcherWrapper {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2,
+    public EuclideanSegmentFeatureMatcher(ImageExt image1, ImageExt image2,
         FeatureMatcherSettings settings) {
 
         img1 = image1;
@@ -82,7 +82,7 @@ public class FeatureMatcherWrapper {
      * @param parameters
      * @param settings
      */
-    public FeatureMatcherWrapper(ImageExt image1, ImageExt image2,
+    public EuclideanSegmentFeatureMatcher(ImageExt image1, ImageExt image2,
         TransformationParameters parameters, FeatureMatcherSettings settings) {
 
         img1 = image1;

@@ -1181,11 +1181,78 @@ public class MiscDebug {
         writeImages(img1Cp, img2Cp, stats, imgSuffix);
     }
     
+    public static void writeImages(GreyscaleImage img1, GreyscaleImage img2, 
+        List<FeatureComparisonStat> stats, String imgSuffix,
+        int nExtraForDot) {
+                
+        Image img1Cp = img1.copyToColorGreyscaleExt();
+        
+        Image img2Cp = img2.copyToColorGreyscaleExt();
+        
+        writeImages(img1Cp, img2Cp, stats, imgSuffix, nExtraForDot);
+    }
+    
     public static void writeImages(Image img1, Image img2, 
         List<FeatureComparisonStat> stats, String imgSuffix) {
         
         int nExtraForDot = 1;
         
+        writeImages(img1, img2, stats, imgSuffix, nExtraForDot);
+    }
+    
+    public static void writeImagesInAlternatingColor(ImageExt img1, 
+        ImageExt img2, List<FeatureComparisonStat> stats, String imgSuffix,
+        int nExtraForDot) {
+                
+        Image img1Cp = img1.copyImage();
+        
+        Image img2Cp = img2.copyImage();
+        
+        int w1 = img1Cp.getWidth();
+        int h1 = img1Cp.getHeight();
+        
+        int w2 = img2Cp.getWidth();
+        int h2 = img2Cp.getHeight();
+        
+        int count = 0;
+        
+        for (FeatureComparisonStat stat : stats) {
+            
+            PairInt p1 = stat.getImg1Point();
+            
+            PairInt p2 = stat.getImg2Point();
+            
+            int clr = getNextColorRGB(count);
+            count++;
+            
+            for (int dx = -1*nExtraForDot; dx <= nExtraForDot; ++dx) {
+                for (int dy = -1*nExtraForDot; dy <= nExtraForDot; ++dy) {
+            
+                    int x1 = p1.getX() + dx;
+                    int y1 = p1.getY() + dy;
+                    
+                    if ((x1 > -1) && (x1 < w1) && (y1 > -1) && (y1 < h1)) {
+                        img1Cp.setRGB(x1, y1, clr);
+                    }
+            
+                    int x2 = p2.getX() + dx;
+                    int y2 = p2.getY() + dy;
+                    
+                    if ((x2 > -1) && (x2 < w2) && (y2 > -1) && (y2 < h2)) {
+                        img2Cp.setRGB(x2, y2, clr);
+                    }
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(img1Cp, imgSuffix + "_1");
+        MiscDebug.writeImage(img2Cp, imgSuffix + "_2");
+    }
+    
+    public static void writeImages(Image img1, Image img2, 
+        List<FeatureComparisonStat> stats, String imgSuffix, 
+        int nExtraForDot) {
+                
         Image img1Cp = img1.copyImage();
         
         Image img2Cp = img2.copyImage();

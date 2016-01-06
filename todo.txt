@@ -31,14 +31,6 @@ NonEuclideanSegmentFeatureMatcher:
             the delanauy space in other image that is bounded by the cells
             of the control points.
     -- are the results fewer false positives than NonEuclideanInvHessianFeatureMatcher?
-    methods:
-      + NonEuclideanSegmentFeatureMatcher()
-      + NonEuclideanSegmentFeatureMatcher(boolean useCannySegmentation)
-      - initialize()
-      + match();
-      + List<PairInt> getMatched1();
-      + List<PairInt> getMatched2();
-      + getSolutionStats() : List<FeatureComparisonStat>
 
 NonEuclideanInvHessianFeatureMatcher:
     -- begins with finding the inverse hessian points

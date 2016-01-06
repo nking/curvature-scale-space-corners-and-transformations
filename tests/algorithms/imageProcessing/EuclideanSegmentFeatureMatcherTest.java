@@ -10,11 +10,11 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class FeatureMatcherWrapperTest extends TestCase {
+public class EuclideanSegmentFeatureMatcherTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    public FeatureMatcherWrapperTest() {
+    public EuclideanSegmentFeatureMatcherTest() {
     }
     
     public void test0() throws Exception {
@@ -184,7 +184,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
             int z = 1;
         }
         
-        FeatureMatcherWrapper wrapper = new FeatureMatcherWrapper(img1, img2, 
+        EuclideanSegmentFeatureMatcher wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, 
             settings);
         
         log.info("fileName1Root=" + fileName1Root);
@@ -207,7 +207,7 @@ public class FeatureMatcherWrapperTest extends TestCase {
      public static void main(String[] args) {
 
         try {
-            FeatureMatcherWrapperTest test = new FeatureMatcherWrapperTest();
+            EuclideanSegmentFeatureMatcherTest test = new EuclideanSegmentFeatureMatcherTest();
             //test.test0();
             //test.testRot90();
 
