@@ -34,7 +34,7 @@ CornerMatcher
       - bipartiteFilter(List<FeatureComparisonStat>)
 
 NonEuclideanSegmentFeatureMatcher:
-    -- uses atrous based segmentation
+    -- uses atrous or canny based segmentation
     -- extract blobs and blob corners
     -- the matching of blob to blob corners or all corners to all corners
        will be performed using the checkerboard test data to derive
@@ -54,6 +54,7 @@ NonEuclideanSegmentFeatureMatcher:
     -- are the results fewer false positives than NonEuclideanInvHessianFeatureMatcher?
     methods:
       + NonEuclideanSegmentFeatureMatcher()
+      + NonEuclideanSegmentFeatureMatcher(boolean useCannySegmentation)
       - initialize()
       + match();
       + List<PairInt> getMatched1();
