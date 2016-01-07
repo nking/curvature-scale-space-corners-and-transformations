@@ -358,15 +358,15 @@ public class BlobScaleFinderWrapper {
                     findLinesUsingHoughTransform(img1Helper,
                     segmentationType1, useBinned);
                 
-                boolean hasManyIntersectingLines1 = 
-                    hasManyIntersectingLines(houghTransformLines1);
+                //boolean hasManyIntersectingLines1 = 
+                //    hasManyIntersectingLines(houghTransformLines1);
                 
                  List<HoughTransformLines> houghTransformLines2 = 
                     findLinesUsingHoughTransform(img2Helper,
                     segmentationType2, useBinned);
                 
-                boolean hasManyIntersectingLines2 = 
-                    hasManyIntersectingLines(houghTransformLines2);
+                //boolean hasManyIntersectingLines2 = 
+                //    hasManyIntersectingLines(houghTransformLines2);
                 
                 boolean useCanny = false;//hasManyIntersectingLines1 || hasManyIntersectingLines2;
                 
