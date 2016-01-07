@@ -1303,4 +1303,22 @@ public class MiscStats {
         
         return removed;
     }
+    
+    public static double calculateCombinedIntensityStat(List<FeatureComparisonStat> 
+        compStats) {
+        
+        if (compStats.isEmpty()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        
+        double sum = 0;
+        
+        for (FeatureComparisonStat compStat : compStats) {
+            sum += compStat.getSumIntensitySqDiff();
+        }
+        
+        sum /= (double) compStats.size();
+        
+        return sum;
+    }
 }

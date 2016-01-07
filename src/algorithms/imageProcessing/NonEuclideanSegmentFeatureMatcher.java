@@ -269,12 +269,7 @@ public class NonEuclideanSegmentFeatureMatcher {
         
         boolean matchCurveToCurve = true;
         
-        if (matchCurveToCurve) {
-            return matchCurveByCurve(type, useBinned, rotatedOffsets);
-        } else {
-            return matchAllPoints(type, useBinned, rotatedOffsets);
-        }
-        
+        return match(type, useBinned, rotatedOffsets, matchCurveToCurve);
     }
     
     private List<HoughTransformLines> findLinesUsingHoughTransform(
@@ -359,8 +354,8 @@ public class NonEuclideanSegmentFeatureMatcher {
             imageHeight);
     }
 
-    private boolean matchAllPoints(SegmentationType type, boolean useBinned,
-        RotatedOffsets rotatedOffsets) {
+    private boolean match(SegmentationType type, boolean useBinned,
+        RotatedOffsets rotatedOffsets, boolean matchCurveToCurve) {
         
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type, useBinned);
@@ -402,15 +397,43 @@ public class NonEuclideanSegmentFeatureMatcher {
             corners2.addAll(corners2List.get(i));
         }
         
-        List<FeatureComparisonStat> stats = match(img1, img2, features1,
-            features2, corners1, corners2, binFactor1, binFactor2);
+        int dither = 1;
+        
+        List<FeatureComparisonStat> stats;
+        
+        if (matchCurveToCurve) {
+        
+            CurveToCurveCornerMatcher<CornerRegion> matcher = 
+                new CurveToCurveCornerMatcher<CornerRegion>(dither);
+        
+            boolean matched = matcher.matchCorners(features1, features2, 
+                corners1List, corners2List, img1, img2, binFactor1, binFactor2);
+
+            if (!matched) {
+                return false;
+            }
+            
+            stats = matcher.getSolutionStats();
+
+        } else {
+        
+            CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
+        
+            boolean matched = matcher.matchCorners(features1, features2, 
+                corners1, corners2, img1, img2,
+                binFactor1, binFactor2);
+            
+            if (!matched) {
+                return false;
+            }
+                
+            stats = matcher.getSolutionStats();
+        }
         
         if (stats.isEmpty()) {
             return false;
         }
-        
-//TODO: here, need to remove points inconsistent with homology
-        
+                
         if (useBinned) {
             stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
                 img2Helper.getGreyscaleImage(), stats, 
@@ -429,24 +452,6 @@ public class NonEuclideanSegmentFeatureMatcher {
         return true;
     }
     
-    private  List<FeatureComparisonStat> match(GreyscaleImage img1, GreyscaleImage img2,
-        IntensityFeatures features1, IntensityFeatures features2,
-        List<CornerRegion> corners1, List<CornerRegion> corners2,
-        int binFactor1, int binFactor2) {
-        
-        int dither = 1;
-        
-        CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
-        
-        boolean matched = matcher.matchCorners(features1, features2, 
-            corners1, corners2, img1, img2,
-            binFactor1, binFactor2);
-                
-        List<FeatureComparisonStat> stats = matcher.getSolutionStats();
-        
-        return stats;
-    }
-
     private List<FeatureComparisonStat> reviseStatsForFullImages(
         GreyscaleImage gsImg1, GreyscaleImage gsImg2,
         List<FeatureComparisonStat> stats, int prevBinFactor1, 
@@ -497,14 +502,6 @@ public class NonEuclideanSegmentFeatureMatcher {
 
     public List<FeatureComparisonStat> getSolutionStats() {
         return solutionStats;
-    }
-
-    private boolean matchCurveByCurve(SegmentationType type, boolean useBinned,
-        RotatedOffsets rotatedOffsets) {
-        
-        //similar to blob corner scale finder w/o transformation parameters
-            
-        throw new UnsupportedOperationException("Not supported yet."); 
     }
 
     /**

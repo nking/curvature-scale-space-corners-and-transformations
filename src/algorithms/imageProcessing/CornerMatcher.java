@@ -121,6 +121,10 @@ public class CornerMatcher<T extends CornerRegion> {
                     }
                 }
             }
+            
+            if (best == null) {
+                continue;
+            }
 
             if (best2nd == null) {
                 stats.add(best);

@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -17,7 +16,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
     public EuclideanSegmentFeatureMatcherTest() {
     }
     
-    public void test0() throws Exception {
+    public void est0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -25,7 +24,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 5; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -62,6 +61,8 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
+                    settings.setToUse2ndDerivCorners();
+                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }
@@ -77,7 +78,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
                 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 5; i < 6; ++i) {
             fileName1 = null;
             fileName2 = null;
             switch(i) {
@@ -112,11 +113,11 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     break;
                 }
                 default: {
-                    // rotated checkerboard needs a different analysis of
-                    // matched features.  such a wrapper is in the planning stages
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
+                    settings.setToUse2ndDerivCorners();
+                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }

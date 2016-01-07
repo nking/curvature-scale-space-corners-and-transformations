@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.MiscStats;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -80,9 +81,9 @@ public class IntensityFeatureComparisonStats implements
         
         boolean compareByCost = decideByCost(other);
 
-        double avgSSD = calculateCombinedIntensityStat(comparisonStats);
+        double avgSSD = MiscStats.calculateCombinedIntensityStat(comparisonStats);
         
-        double avgSSDOther = other.calculateCombinedIntensityStat(
+        double avgSSDOther = MiscStats.calculateCombinedIntensityStat(
             other.comparisonStats);
         
         if ((n > nOther) && (avgSSD < avgSSDOther)) {
@@ -106,9 +107,10 @@ public class IntensityFeatureComparisonStats implements
     
     public int compareByCombinedIntStat(IntensityFeatureComparisonStats other) {
         
-        double otherCS = calculateCombinedIntensityStat(other.getComparisonStats());
+        double otherCS = MiscStats.calculateCombinedIntensityStat(
+            other.getComparisonStats());
         
-        double cs = calculateCombinedIntensityStat(comparisonStats);
+        double cs = MiscStats.calculateCombinedIntensityStat(comparisonStats);
         
         if (otherCS == cs) {
             return 0;
@@ -139,23 +141,6 @@ public class IntensityFeatureComparisonStats implements
         return 1;
     }
     
-    private double calculateCombinedIntensityStat(List<FeatureComparisonStat> compStats) {
-
-        if (compStats.isEmpty()) {
-            return Double.POSITIVE_INFINITY;
-        }
-        
-        double sum = 0;
-
-        for (FeatureComparisonStat compStat : compStats) {
-            sum += compStat.getSumIntensitySqDiff();
-        }
-
-        sum /= (double)compStats.size();
-
-        return sum;
-    }
-
     /**
      * @return the cost
      */

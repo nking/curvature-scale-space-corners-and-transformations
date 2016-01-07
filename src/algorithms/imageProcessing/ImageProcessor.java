@@ -8,6 +8,7 @@ import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
+import algorithms.misc.Misc;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -3235,16 +3236,25 @@ public class ImageProcessor {
             }
         }
 
-        Set<PairInt> maxValuePixels = new HashSet<PairInt>();
+        Set<PairInt> pixels = new HashSet<PairInt>();
         for (int i = 0; i < gsImg.getNPixels(); ++i) {
             int v = gsImg.getValue(i);
             int x = gsImg.getCol(i);
             int y = gsImg.getRow(i);
             if (v >= v1) {
-                maxValuePixels.add(new PairInt(x, y));
+                pixels.add(new PairInt(x, y));
             }
         }
-        return maxValuePixels;
+        
+        log.info("before nPoints=" + pixels.size());
+        
+        // this might need to be moved to code that assigns pixels to a blob,
+        // then perform reduction using 8 neighborhood region
+        reduceTo4NeighborCentroids(pixels);
+        
+        log.info("after nPoints=" + pixels.size());
+        
+        return pixels;
     }
     
     /**
@@ -3290,12 +3300,60 @@ public class ImageProcessor {
             }
         }
         
-        log.info("nPoints=" + pixels.size());
+        log.info("before nPoints=" + pixels.size());
+        
+        // this might need to be moved to code that assigns pixels to a blob,
+        // then perform reduction using 8 neighborhood region
+        reduceTo4NeighborCentroids(pixels);
+        
+        log.info("after nPoints=" + pixels.size());
         
         if (reduceForNoise) {
             // look for patterns of noise and reduce v1 until not present
         }
         
         return pixels;
+    }
+
+    private void reduceTo4NeighborCentroids(Set<PairInt> pixels) {
+        
+        Set<PairInt> processed = new HashSet<PairInt>();
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy4;
+        
+        Set<PairInt> neighbors = new HashSet<PairInt>();
+        
+        for (PairInt p : pixels) {
+            
+            if (processed.contains(p)) {
+                continue;
+            }
+            
+            curveHelper.findNeighbors(p.getX(), p.getY(), pixels, processed, 
+                dxs, dys, neighbors);
+            
+            processed.add(p);
+            processed.addAll(neighbors);
+            
+            if (neighbors.size() == 0) {
+                output.add(p);
+            } else {
+                double[] xyCen = curveHelper.calculateXYCentroids(neighbors);
+                int x = (int)Math.round(xyCen[0]);
+                int y = (int)Math.round(xyCen[1]);
+                assert(Math.abs(x - p.getX()) <= 2);
+                assert(Math.abs(y - p.getY()) <= 2);
+                output.add(new PairInt(x, y));
+            }
+        }
+        
+        pixels.clear();
+        pixels.addAll(output);
+        
     }
 }

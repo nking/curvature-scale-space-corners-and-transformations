@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -120,7 +121,7 @@ public class BlobCornerFinderForParameters {
                 continue;
             }
             
-            double solutionCost = calculateCombinedIntensityStat(stats);
+            double solutionCost = MiscStats.calculateCombinedIntensityStat(stats);
             
             IntensityFeatureComparisonStats ifcs = 
                 new IntensityFeatureComparisonStats(index1.intValue(), 
@@ -338,17 +339,4 @@ public class BlobCornerFinderForParameters {
         return tr;
     }
     
-    protected double calculateCombinedIntensityStat(List<FeatureComparisonStat> 
-        compStats) {
-        
-        double sum = 0;
-        
-        for (FeatureComparisonStat compStat : compStats) {
-            sum += compStat.getSumIntensitySqDiff();
-        }
-        
-        sum /= (double) compStats.size();
-        
-        return sum;
-    }
 }

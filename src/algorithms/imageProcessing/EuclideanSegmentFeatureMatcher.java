@@ -126,9 +126,16 @@ public class EuclideanSegmentFeatureMatcher {
 
     private CorrespondenceList solveForScale() throws IOException,
         NoSuchAlgorithmException {
+        
+        int dither2;
+        if (settings.doUse2ndDerivCorners()) {
+            dither2 = 1;
+        } else {
+            dither2 = dither;
+        }
 
         BlobScaleFinderWrapper scaleFinder = new BlobScaleFinderWrapper(img1,
-            img2, settings, rotatedOffsets, dither);
+            img2, settings, rotatedOffsets, dither2);
 
         log.info("start calculatScale");
 
@@ -282,8 +289,17 @@ public class EuclideanSegmentFeatureMatcher {
         }
 
     }
-
+    
     private void extractCornerRegions() {
+        
+        if (settings.doUse2ndDerivCorners()) {
+            extract2ndDerivCornerRegions();
+        } else {
+            extractCannyCornerRegions();
+        }
+    }
+
+    private void extractCannyCornerRegions() {
 
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(gsImg1, SIGMA.ONE);
@@ -365,6 +381,52 @@ public class EuclideanSegmentFeatureMatcher {
                     ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
                 }
                 MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_corners_");
+        }
+    }
+    
+    private void extract2ndDerivCornerRegions() {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> points1 = imageProcessor.extract2ndDerivPoints(
+            img1.copyImage().copyToGreyscale(), 200, true);
+        
+        Set<PairInt> points2 = imageProcessor.extract2ndDerivPoints(
+            img2.copyImage().copyToGreyscale(), 200, true);
+
+        cornerRegions1 = new HashSet<CornerRegion>();
+        for (PairInt p : points1) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+            cr.setIndexWithinCurve(-1);
+            cornerRegions1.add(cr);
+        }
+        
+        cornerRegions2 = new HashSet<CornerRegion>();
+        for (PairInt p : points2) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+            cr.setIndexWithinCurve(-1);
+            cornerRegions2.add(cr);
+        }
+        
+        if (settings.debug()) {
+            Image imgCp = img1.copyImage();
+            for (CornerRegion cr : cornerRegions1) {
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_1_cornerregions_");
+            imgCp = img2.copyImage();
+            for (CornerRegion cr : cornerRegions2) {
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+            }
+            MiscDebug.writeImage(imgCp, settings.getDebugTag() + "_2_cornerregions_");
         }
     }
 

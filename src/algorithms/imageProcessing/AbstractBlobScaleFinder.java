@@ -44,20 +44,6 @@ public abstract class AbstractBlobScaleFinder {
         return sb.toString();
     }
 
-    protected double calculateCombinedIntensityStat(List<FeatureComparisonStat> 
-        compStats) {
-        
-        double sum = 0;
-        
-        for (FeatureComparisonStat compStat : compStats) {
-            sum += compStat.getSumIntensitySqDiff();
-        }
-        
-        sum /= (double) compStats.size();
-        
-        return sum;
-    }
-
     protected void removeOutliers(List<FeatureComparisonStat> compStats) {
         
         if (compStats.size() < 2) {

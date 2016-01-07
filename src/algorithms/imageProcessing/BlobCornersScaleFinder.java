@@ -100,25 +100,25 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 }
             }
         }
-/*
+
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-float[] xPoints1 = new float[perimeters1.size()];
-float[] yPoints1 = new float[perimeters1.size()];
-double[][] xy1 = new double[perimeters1.size()][2];
-for (int i = 0; i < perimeters1.size(); ++i) {
-xy1[i] = curveHelper.calculateXYCentroids(perimeters1.get(i));
+float[] xPoints1 = new float[blobs1.size()];
+float[] yPoints1 = new float[blobs1.size()];
+double[][] xy1 = new double[blobs1.size()][2];
+for (int i = 0; i < blobs1.size(); ++i) {
+xy1[i] = curveHelper.calculateXYCentroids(blobs1.get(i));
 xPoints1[i] = (float)xy1[i][0];
 yPoints1[i] = (float)xy1[i][1];
 }
-float[] xPoints2 = new float[perimeters2.size()];
-float[] yPoints2 = new float[perimeters2.size()];
-double[][] xy2 = new double[perimeters2.size()][2];
-for (int i = 0; i < perimeters2.size(); ++i) {
-xy2[i] = curveHelper.calculateXYCentroids(perimeters2.get(i));
+float[] xPoints2 = new float[blobs2.size()];
+float[] yPoints2 = new float[blobs2.size()];
+double[][] xy2 = new double[blobs2.size()][2];
+for (int i = 0; i < blobs2.size(); ++i) {
+xy2[i] = curveHelper.calculateXYCentroids(blobs2.get(i));
 xPoints2[i] = (float)xy2[i][0];
 yPoints2[i] = (float)xy2[i][1];
 }
-*/
+
 /*ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
 plotter.plotLabeledPoints(0, img1.getWidth(), 0, img1.getHeight(), xPoints1, yPoints1,
 "img1", "X", "Y");
@@ -132,7 +132,7 @@ try {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
 */
-/*
+
 StringBuilder sb = new StringBuilder("xy1:\n");
 for (int i = 0; i < xy1.length; ++i) {
     sb.append(String.format("[%2d] (%3d, %3d)\n", i,
@@ -144,7 +144,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+/*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(107, 267), new PairInt(100, 290), new PairInt(48, 89)
 };

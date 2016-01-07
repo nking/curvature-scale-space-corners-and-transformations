@@ -2318,6 +2318,28 @@ public class MiscellaneousCurveHelper {
 
         return neighbors;
     }
+        
+    public void findNeighbors(int x, int y, Set<PairInt> points, 
+        Set<PairInt> excludePoints, int[] dxs, int[] dys, 
+        Set<PairInt> outputNeighbors) {
+        
+        outputNeighbors.clear();
+        
+        for (int i = 0; i < dxs.length; i++) {
+            
+            int x2 = x + dxs[i];
+            int y2 = y + dys[i];
+            
+            PairInt p2 = new PairInt(x2, y2);
+            
+            if (excludePoints.contains(p2)) {
+                continue;
+            }
+            if (points.contains(p2)) {
+                outputNeighbors.add(p2);
+            }
+        }
+    }
 
     public void findNeighbors(int x, int y, Set<PairInt> outputNeighbors,
         Set<PairInt> points, Set<PairInt> excludePoints, int imageWidth, int imageHeight) {

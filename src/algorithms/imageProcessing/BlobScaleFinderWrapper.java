@@ -347,12 +347,22 @@ public class BlobScaleFinderWrapper {
             
             if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
 
-                // extracts the corners and points in between them to have 10 corners
-                // per curve if possible:
-                img1Helper.extractBlobPerimeterAsCornerRegions(segmentationType1, 
-                    useBinned);
-                img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
-                    useBinned);
+                if (settings.doUse2ndDerivCorners()) {
+
+                    img1Helper.extractSecondDerivativeCorners(segmentationType1, 
+                        useBinned);
+
+                    img2Helper.extractSecondDerivativeCorners(segmentationType2, 
+                        useBinned);
+
+                } else {
+
+                    img1Helper.extractBlobPerimeterAsCornerRegions(segmentationType1, 
+                        useBinned);
+
+                    img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
+                        useBinned);
+                }
                 
                 List<HoughTransformLines> houghTransformLines1 = 
                     findLinesUsingHoughTransform(img1Helper,
@@ -361,7 +371,7 @@ public class BlobScaleFinderWrapper {
                 //boolean hasManyIntersectingLines1 = 
                 //    hasManyIntersectingLines(houghTransformLines1);
                 
-                 List<HoughTransformLines> houghTransformLines2 = 
+                List<HoughTransformLines> houghTransformLines2 = 
                     findLinesUsingHoughTransform(img2Helper,
                     segmentationType2, useBinned);
                 
@@ -381,44 +391,43 @@ public class BlobScaleFinderWrapper {
                     
                     img1Helper.applySegmentation(segmentationType1, useBinned);
                     
-                    boolean filterOutImageBoundaryBlobs = true;
-                    boolean filterOutZeroPixels = false;
-                               
-                    // pre-make the blobs using non-default variables:
-                    img1Helper.getBlobs(segmentationType1, useBinned,
-                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
-                    img1Helper.extractBlobPerimeterAsCornerRegions(
-                        segmentationType1, useBinned);
-       
-                    houghTransformLines1 = 
-                        findLinesUsingHoughTransform(img1Helper,
-                        segmentationType1, useBinned);
-                
-                    log.info("replacing segmentation with canny edges for img2");
-                    
                     segmentationType2 = SegmentationType.GREYSCALE_CANNY;
                     
                     img2Helper.applySegmentation(segmentationType2, useBinned);
                     
+                    boolean filterOutImageBoundaryBlobs = true;
+                    boolean filterOutZeroPixels = false;
+                    boolean doNotAddPoints = true;
+                               
+                    // pre-make the blobs using non-default variables:
+                    img1Helper.getBlobs(segmentationType1, useBinned,
+                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
+
+                    if (settings.doUse2ndDerivCorners()) {
+                        img1Helper.extractSecondDerivativeCorners(segmentationType1, useBinned);
+                    } else {
+                        img1Helper.extractBlobPerimeterAsCornerRegions(
+                            segmentationType1, useBinned, doNotAddPoints);
+                    }
+
                     // pre-make the blobs using non-default variables:
                     img2Helper.getBlobs(segmentationType2, useBinned,
                         filterOutImageBoundaryBlobs, filterOutZeroPixels);
-                    img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
-                        useBinned);
-                
+
+                    if (settings.doUse2ndDerivCorners()) {
+                        img2Helper.extractSecondDerivativeCorners(segmentationType2, useBinned);
+                    } else {
+                        img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2,
+                            useBinned, doNotAddPoints);
+                    }
+       
+                    houghTransformLines1 = 
+                        findLinesUsingHoughTransform(img1Helper,
+                        segmentationType1, useBinned);
+                                    
                     houghTransformLines2 = findLinesUsingHoughTransform(
                         img2Helper, segmentationType2, useBinned);
                 }
-                
-                t0 = System.currentTimeMillis();
-                
-                img1Helper.generatePerimeterCorners(segmentationType1, 
-                    useBinned);
-
-                t1 = System.currentTimeMillis();
-                
-                img2Helper.generatePerimeterCorners(segmentationType2, 
-                    useBinned);
                 
                 //if (hasManyIntersectingLines1) {
                     removeLineArtifactCorners(houghTransformLines1, img1Helper,
@@ -429,12 +438,6 @@ public class BlobScaleFinderWrapper {
                         segmentationType2, useBinned);
                 //}
         
-                t2 = System.currentTimeMillis();
-                t1Sec = (t1 - t0)/1000;
-                t2Sec = (t2 - t1)/1000;
-                Logger.getLogger(this.getClass().getName()).info("corners1(sec)=" 
-                    + t1Sec + " sec corners1(sec)=" + t2Sec + " sec");
-            
                 BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
 
                 if (settings.debug()) {
