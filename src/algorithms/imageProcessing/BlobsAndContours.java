@@ -579,6 +579,9 @@ public class BlobsAndContours  {
             x[i] = bpr.getX()[1];
             y[i] = bpr.getY()[1];
             curveIndexes[i] = bpr.getIndexWithinCurve();
+            if (curveIndexes[i] == -1) {
+                throw new IllegalStateException("bpr is missing curve index");
+            }
             idxs[i] = i;
         }
         

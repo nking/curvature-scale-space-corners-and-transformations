@@ -112,9 +112,13 @@ public class BlobsAndCorners  {
                 
                 PairIntArray curve = perimeterLists.get(i);
                 
-                orderCornersCCW(curve, list);
+                // cannot order if no edge points were present for the curveIndexes
+                if (curve.getN() > 0) {
+                    
+                    orderCornersCCW(curve, list);
                 
-                nTotCR += list.size();
+                    nTotCR += list.size();
+                }
                 
                 cornerRegionLists.add(list);
             }
@@ -127,6 +131,11 @@ public class BlobsAndCorners  {
     
     public static void orderCornersCCW(PairIntArray curve, List<CornerRegion>
         list) {
+        
+        // cannot order corners if curveIndexes are missing from CornerRegions
+        if (curve.getN() == 0) {
+            return;
+        }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                 
