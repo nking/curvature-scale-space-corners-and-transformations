@@ -1,10 +1,16 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Histogram;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -86,7 +92,7 @@ public class ImageSegmentationTest extends TestCase {
         }
     }
     
-    public void testBlobExtraction() throws Exception {
+    public void estBlobExtraction() throws Exception {
         
         String fileName1, fileName2;
 
@@ -158,17 +164,12 @@ public class ImageSegmentationTest extends TestCase {
         }
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
         
         String[] fileNames = new String[2];
         
-        /*
-        tentatively, looks like ne segmentation algor + canny edge corners is 
-        the right combination.
-        */
-                
-        //fileNames[0] = "merton_college_I_002.jpg";
-        //fileNames[1] = "merton_college_I_001.jpg";
+        fileNames[0] = "merton_college_I_002.jpg";
+        fileNames[1] = "merton_college_I_001.jpg";
         //fileNames[0] = "brown_lowe_2003_image1.jpg";
         //fileNames[1] = "brown_lowe_2003_image2.jpg";
         //fileNames[0] = "venturi_mountain_j6_0001.png";
@@ -177,8 +178,8 @@ public class ImageSegmentationTest extends TestCase {
         //fileNames[1] = "books_illum3_v6_695x555.png";
         //fileNames[0] = "campus_010.jpg";
         //fileNames[1] = "campus_011.jpg";
-        fileNames[0] = "checkerboard_02.jpg";
-        fileNames[1] = "checkerboard_01.jpg";
+        //fileNames[0] = "checkerboard_01.jpg";
+        //fileNames[1] = "checkerboard_02.jpg";
         
         //fileNames[0] = "seattle.jpg";
         //fileNames[1] = "arches.jpg";
@@ -213,32 +214,22 @@ public class ImageSegmentationTest extends TestCase {
             ImageProcessor imageProcessor = new ImageProcessor();
             img = imageProcessor.binImage(img, binFactor);
         
-            ImageSegmentation imageSegmentation = new ImageSegmentation();
-            
-            GreyscaleImage gsImg = imageSegmentation.createGreyscale3(img);
+            //ImageSegmentation imageSegmentation = new ImageSegmentation();
+            //GreyscaleImage gsImg = imageSegmentation.createGreyscale5(img.copyToGreyscale());
+            GreyscaleImage gsImg = img.copyToGreyscale();
+                        
+            Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+                1000, true);
             
             String bin = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot  + "_segmentation.png", gsImg);
             
-            
+            gsImg.fill(0);
+            for (PairInt p : pixels) {
+                gsImg.setValue(p.getX(), p.getY(), 250);
+            }
+            ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot  + "_seg_max.png", gsImg);
+                                          
             /*
-            // canny edges are built into this detector:
-            CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(
-                imageProcessor.binImage(ImageIOHelper.readImageExt(filePath), binFactor));
-            detector.findCorners();
-            PairIntArray corners = detector.getCorners();
-            List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();            
-            Set<CornerRegion> cornerRegions = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
-            
-            //ImageExt img3 = gsImg.copyToColorGreyscaleExt();
-            
-            //ImageIOHelper.addAlternatingColorCurvesToImage(edges, img2);
-            //ImageIOHelper.addCornerRegionsToImage(cornerRegions, img2, 0, 0, 1, 255, 0, 0);        
-            //ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_cornerRegions.png", img2);
-            //ImageIOHelper.addCurveToImage(corners, img3, 1, 255, 0, 0);            
-            //ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_corners.png", img3);
-            */
-            
             img = ImageIOHelper.readImageExt(filePath);
             BlobPerimeterCornerHelper imgHelper = new BlobPerimeterCornerHelper(img, fileNameRoot);
             imgHelper.createBinnedGreyscaleImage(binnedImageMaxDimension);
@@ -269,7 +260,7 @@ public class ImageSegmentationTest extends TestCase {
                             Math.round(cr.getY()[cr.getKMaxIdx()]), 255));
                     }
                 }
-                log.info(sb.toString());*/
+                log.info(sb.toString());
                 GreyscaleImage crImg = new GreyscaleImage(img4.getWidth(), img4.getHeight(),
                     GreyscaleImage.Type.Bits32FullRangeInt);
                 if (fileNameRoot.equals("checkerboard_01")) {
@@ -298,7 +289,7 @@ public class ImageSegmentationTest extends TestCase {
             ImageIOHelper.writeOutputImage(bin + "/" + fileNameRoot + "_blob_cr_fft.png", crImg);
             
             plotFFT(crImg, fileNameRoot);
-            
+            */
             int z = 1;
         }
     }

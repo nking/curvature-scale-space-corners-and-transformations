@@ -201,41 +201,60 @@ public class NonEuclideanSegmentFeatureMatcher {
             
             boolean filterOutImageBoundaryBlobs = true;
             boolean filterOutZeroPixels = false;
+            boolean doNotAddPoints = true;
 
             // pre-make the blobs using non-default variables:
             img1Helper.getBlobs(type, useBinned,
                 filterOutImageBoundaryBlobs, filterOutZeroPixels);
-            img1Helper.extractBlobPerimeterAsCornerRegions(
-                type, useBinned);
+            
+            if (settings.doUse2ndDerivCorners()) {
+                img1Helper.extractSecondDerivativeCorners(type, useBinned);
+            } else {
+                img1Helper.extractBlobPerimeterAsCornerRegions(
+                    type, useBinned, doNotAddPoints);
+            }
 
             // pre-make the blobs using non-default variables:
             img2Helper.getBlobs(type, useBinned,
                 filterOutImageBoundaryBlobs, filterOutZeroPixels);
-            img2Helper.extractBlobPerimeterAsCornerRegions(type,
-                useBinned);
-
-        } else {
-            img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
-            img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
             
-            img1Helper.generatePerimeterCorners(type, useBinned);
+            if (settings.doUse2ndDerivCorners()) {
+                img2Helper.extractSecondDerivativeCorners(type, useBinned);
+            } else {
+                img2Helper.extractBlobPerimeterAsCornerRegions(type,
+                    useBinned, doNotAddPoints);
+            }
+
+        } else {            
+            
+            if (settings.doUse2ndDerivCorners()) {
                 
-            img2Helper.generatePerimeterCorners(type, useBinned);
+                img1Helper.extractSecondDerivativeCorners(type, useBinned);
+                
+                img2Helper.extractSecondDerivativeCorners(type, useBinned);
+                
+            } else {
+            
+                img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
+            
+                img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
+            }
         }
         
-        houghTransformLines1 = findLinesUsingHoughTransform(img1Helper, type, 
-            useBinned);
+        if (!settings.doUse2ndDerivCorners()) {
+            
+            houghTransformLines1 = findLinesUsingHoughTransform(img1Helper, type, 
+                useBinned);
 
-        houghTransformLines2 = findLinesUsingHoughTransform(img2Helper, type, 
-            useBinned);
-        
-        removeLineArtifactCorners(houghTransformLines1, img1Helper, type, 
-            useBinned);
-        
-        removeLineArtifactCorners(houghTransformLines2, img2Helper, type,
-            useBinned);
-        
-        
+            houghTransformLines2 = findLinesUsingHoughTransform(img2Helper, type, 
+                useBinned);
+
+            removeLineArtifactCorners(houghTransformLines1, img1Helper, type, 
+                useBinned);
+
+            removeLineArtifactCorners(houghTransformLines2, img2Helper, type,
+                useBinned);    
+        }
     }
     
     private boolean generateAndMatchCornerRegions(SegmentationType type,
@@ -248,7 +267,7 @@ public class NonEuclideanSegmentFeatureMatcher {
         
         RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
         
-        boolean matchCurveToCurve = false;
+        boolean matchCurveToCurve = true;
         
         if (matchCurveToCurve) {
             return matchCurveByCurve(type, useBinned, rotatedOffsets);
@@ -482,6 +501,9 @@ public class NonEuclideanSegmentFeatureMatcher {
 
     private boolean matchCurveByCurve(SegmentationType type, boolean useBinned,
         RotatedOffsets rotatedOffsets) {
+        
+        //similar to blob corner scale finder w/o transformation parameters
+            
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 

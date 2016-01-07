@@ -28,7 +28,7 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 5; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -65,7 +65,8 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
-                    settings.setToOverrideWithCannySegmentation();
+                    settings.setToUse2ndDerivCorners();
+                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }
@@ -121,7 +122,8 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
-                    settings.setToOverrideWithCannySegmentation();
+                    settings.setToUse2ndDerivCorners();
+                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }

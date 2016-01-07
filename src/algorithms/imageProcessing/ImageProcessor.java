@@ -7,9 +7,12 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
+import algorithms.misc.Histogram;
+import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -937,6 +940,58 @@ public class ImageProcessor {
         int minValueRange, int maxValueRange) {
 
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(sigma);
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        GreyscaleImage output = input.copyImage();
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);
+                
+                int v = (int)Math.round(conv);
+                
+                if (v < minValueRange) {
+                    v = minValueRange;
+                } else if (v > maxValueRange) {
+                    v = maxValueRange;
+                }
+                
+                output.setValue(i, j, v);
+            }
+        }
+
+        input.resetTo(output);
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);
+                
+                int v = (int)Math.round(conv);
+                
+                if (v < minValueRange) {
+                    v = minValueRange;
+                } else if (v > maxValueRange) {
+                    v = maxValueRange;
+                }
+                
+                output.setValue(i, j, v);
+            }
+        }
+
+        input.resetTo(output);
+    }
+    
+    public void applySecondDerivGaussian(GreyscaleImage input, SIGMA sigma,
+        int minValueRange, int maxValueRange) {
+
+        float[] kernel = Gaussian1DSecondDeriv.getBinomialKernel(sigma);
 
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
 
@@ -3151,5 +3206,96 @@ public class ImageProcessor {
         }
         
         return img;
+    }
+    
+    public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img) {
+        
+        GreyscaleImage gsImg = img.copyImage();
+        
+        applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
+
+        PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(gsImg);
+        int v0 = 0;
+        int c0 = 0;
+        int v1 = 0;
+        int c1 = 0;
+        for (int i = (valueCounts.getN() - 1); i > -1; --i) {
+            int v = valueCounts.getX(i);
+            int c = valueCounts.getY(i);
+            if (v0 == 0) {
+                if (c > 12) {
+                    v0 = v;
+                    c0 = c;
+                }
+            } else if (c < (2.5 * c0)) {
+                v1 = v;
+                c1 = c;
+            } else {
+                break;
+            }
+        }
+
+        Set<PairInt> maxValuePixels = new HashSet<PairInt>();
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            int v = gsImg.getValue(i);
+            int x = gsImg.getCol(i);
+            int y = gsImg.getRow(i);
+            if (v >= v1) {
+                maxValuePixels.add(new PairInt(x, y));
+            }
+        }
+        return maxValuePixels;
+    }
+    
+    /**
+     * NOT READY FOR USE YET
+     * extract the high value points in the second derivative gaussian of
+     * img to a number of points less than or equal to maxNPoints and
+     * if the variable reduceForNoise is true, then look for patterns
+     * of noise and reduce the maximum value extracted from the 2nd deriv 
+     * points until no noise patterns are seen.
+     * @param img
+     * @param maxNPoints
+     * @param reduceForNoise
+     * @return 
+     */
+    public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img, int maxNPoints,
+        boolean reduceForNoise) {
+        
+        GreyscaleImage gsImg = img.copyImage();
+        
+        applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
+        
+        PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(gsImg);
+        int nTot = 0;
+        int v1 = 0;
+        for (int i = (valueCounts.getN() - 1); i > -1; --i) {
+            int c = valueCounts.getY(i);
+            int nTmp = nTot + c;
+            if (nTmp < maxNPoints) {
+                nTot += c;
+                v1 = valueCounts.getX(i);
+            } else {
+                break;
+            }
+        }
+
+        Set<PairInt> pixels = new HashSet<PairInt>();
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            int v = gsImg.getValue(i);
+            if (v >= v1) {
+                int x = gsImg.getCol(i);
+                int y = gsImg.getRow(i);
+                pixels.add(new PairInt(x, y));
+            }
+        }
+        
+        log.info("nPoints=" + pixels.size());
+        
+        if (reduceForNoise) {
+            // look for patterns of noise and reduce v1 until not present
+        }
+        
+        return pixels;
     }
 }

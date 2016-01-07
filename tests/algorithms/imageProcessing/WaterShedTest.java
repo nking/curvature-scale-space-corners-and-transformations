@@ -591,7 +591,8 @@ public class WaterShedTest extends TestCase {
             //"books_illum3_v0_695x555.png");
             //"books_illum3_v6_695x555.png");
             //"house.gif");
-            "brown_lowe_2003_image1.jpg");
+            //"brown_lowe_2003_image1.jpg");
+            "checkerboard_02.jpg");
             //"brown_lowe_2003_image2.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
