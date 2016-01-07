@@ -462,13 +462,63 @@ public class BlobPerimeterCornerHelper {
             extractBlobPerimeterAsCornerRegionsForUnbinned(type);
         }
     }
+    
+    /**
+     * pre-prepare the corners as points in the perimeter of the blobs.
+     * Note that if perimeters were not already extracted, empty lists for 
+     * perimeters are cached.  Also note that the corner regions are not 
+     * ordered.
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractBlobPerimeterAsCornerRegions(SegmentationType type, 
+        boolean applyToBinnedImage, boolean doNotAddPoints) {
+        
+        if (applyToBinnedImage) {
+            extractBlobPerimeterAsCornerRegionsForBinned(type, doNotAddPoints);
+        } else {
+            extractBlobPerimeterAsCornerRegionsForUnbinned(type, doNotAddPoints);
+        }
+    }
+
+    /**
+     * extract the corners as second derivative gaussian high value points
+     * and keep those associated with blobs created for type and binning.
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractSecondDerivativeCorners(SegmentationType type, 
+        boolean applyToBinnedImage) {
+                
+        if (applyToBinnedImage) {
+            extractSecondDerivativeCornersForBinned(type);
+        } else {
+            extractSecondDerivativeCornersForUnbinned(type);
+        }
+    }
 
     /**
      * pre-prepare the corners as every point in the perimeter of the blobs.
      * 
      * @param type 
      */
-    private void extractBlobPerimeterAsCornerRegionsForBinned(SegmentationType type) {
+    private void extractBlobPerimeterAsCornerRegionsForBinned(SegmentationType 
+        type) {
+        
+        boolean doNotAddPoints = false;
+        
+        extractBlobPerimeterAsCornerRegionsForBinned(type, doNotAddPoints);
+    }
+    
+    /**
+     * pre-prepare the corners as every point in the perimeter of the blobs.
+     * 
+     * @param type 
+     */
+    private void extractBlobPerimeterAsCornerRegionsForBinned(
+        SegmentationType type, boolean doNotAddPoints) {
         
         List<List<CornerRegion>> corners = segBinnedCornersMap.get(type);
 
@@ -496,7 +546,11 @@ public class BlobPerimeterCornerHelper {
             segBinnedBlobPerimetersMap.put(type, perimeterLists);
         }
         
-        corners = extractCorners2(perimeterLists, type, useBinned);     
+        if (doNotAddPoints) {
+            corners = extractCorners1(perimeterLists, type, useBinned);
+        } else {
+            corners = extractCorners2(perimeterLists, type, useBinned);
+        }
             
         segBinnedCornersMap.put(type, corners);
         
@@ -513,12 +567,20 @@ public class BlobPerimeterCornerHelper {
         assert(perimeterLists.size() == corners.size());
     }
 
+    private void extractBlobPerimeterAsCornerRegionsForUnbinned(SegmentationType type) {
+        
+        boolean doNotAddPoints = false;
+        
+        extractBlobPerimeterAsCornerRegionsForUnbinned(type, doNotAddPoints);
+    }
+    
     /**
      * pre-prepare the corners as every point in the perimeter of the blobs.
      * 
      * @param type 
      */
-    private void extractBlobPerimeterAsCornerRegionsForUnbinned(SegmentationType type) {
+    private void extractBlobPerimeterAsCornerRegionsForUnbinned(
+        SegmentationType type, boolean doNotAddPoints) {
         
         List<List<CornerRegion>> corners = segCornersMap.get(type);
 
@@ -546,7 +608,11 @@ public class BlobPerimeterCornerHelper {
             segBlobPerimetersMap.put(type, perimeterLists);
         }
         
-        corners = extractCorners2(perimeterLists, type, useBinned);
+        if (doNotAddPoints) {
+            corners = extractCorners1(perimeterLists, type, useBinned);
+        } else {
+            corners = extractCorners2(perimeterLists, type, useBinned);
+        }
         
         segCornersMap.put(type, corners);
         
@@ -631,6 +697,10 @@ public class BlobPerimeterCornerHelper {
                 // bisect largest gap until have k points or largest gap is '1'
                 while (list.size() < k) {
                     int maxGap = list.get(0).getIndexWithinCurve();
+                    if (maxGap == -1) {
+                        // corners cannot be evaluated this way due to missing info
+                        break;
+                    }
                     // maxGapIdx + 1 is the point where to insert into list
                     int maxGapIdx = -1;
                     for (int j = 0; j < list.size(); ++j) {
@@ -675,6 +745,173 @@ public class BlobPerimeterCornerHelper {
             }
         }
         return corners;
+    }
+
+    private List<List<CornerRegion>> extractCorners1(List<PairIntArray> 
+        perimeterLists, SegmentationType type, boolean useBinned) {
+                         
+        final boolean outdoorMode = false;
+        final boolean enableJaggedLineCorrections = false;
+        final float factorIncreaseForCurvatureMinimum = 1.f;
+
+        List<List<CornerRegion>> corners = BlobsAndCorners.populateCorners(this, 
+            type, useBinned, outdoorMode, enableJaggedLineCorrections, 
+            factorIncreaseForCurvatureMinimum);
+        
+        assert(corners.size() == perimeterLists.size());
+            
+        return corners;
+    }
+
+    private void extractSecondDerivativeCornersForBinned(SegmentationType type) {
+        
+        List<List<CornerRegion>> corners = segBinnedCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        // we keep only the points associated with blobs
+        List<Set<PairInt>> blobs = getBlobs(type, true);
+        
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned();
+        
+        List<PairIntArray> perimeterLists = segBinnedBlobPerimetersMap.get(type);
+        
+        if (perimeterLists == null) {
+            
+            perimeterLists = new ArrayList<PairIntArray>();
+            
+            // keep the number of items in list consistent even though empty
+            for (int i = 0; i < blobs.size(); ++i) {
+                perimeterLists.add(new PairIntArray());
+            }
+            
+            segBinnedBlobPerimetersMap.put(type, perimeterLists);
+        }
+        
+        Logger log = Logger.getLogger(this.getClass().getName());
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            200, true);
+        
+        corners = new ArrayList<List<CornerRegion>>();
+        
+        for (int i = 0; i < blobs.size(); ++i) {
+            List<CornerRegion> crList = new ArrayList<CornerRegion>();
+            corners.add(crList);
+        }
+        for (PairInt p : pixels) {
+            boolean found = false;
+            for (int i = 0; i < blobs.size(); ++i) {
+                Set<PairInt> blob = blobs.get(i);
+                if (blob.contains(p)) {
+                    CornerRegion cr = new CornerRegion(i, 1, 0);
+                    cr.setFlagThatNeighborsHoldDummyValues();
+                    cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                    cr.setIndexWithinCurve(-1);
+
+                    corners.get(i).add(cr);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                log.info("discarding because not in blob: " + p.toString());
+            }
+        }
+        segBinnedCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            MiscDebug.writeEdgesAndCorners(perimeterLists, corners,
+                1, gsImg, "blob_corners_" + imgHelper.getDebugTag() + "_" 
+                + MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        log.info("perimeterLists.size()=" + perimeterLists.size() +
+            " corners.size()=" + corners.size());
+        
+        assert(perimeterLists.size() == corners.size());
+        
+    }
+    
+    private void extractSecondDerivativeCornersForUnbinned(SegmentationType type) {
+        
+        List<List<CornerRegion>> corners = segCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        // we keep only the points associated with blobs
+        List<Set<PairInt>> blobs = getBlobs(type, false);
+        
+        GreyscaleImage gsImg = this.getGreyscaleImage();
+        
+        List<PairIntArray> perimeterLists = segBlobPerimetersMap.get(type);
+        
+        if (perimeterLists == null) {
+            
+            perimeterLists = new ArrayList<PairIntArray>();
+            
+            // keep the number of items in list consistent even though empty
+            for (int i = 0; i < blobs.size(); ++i) {
+                perimeterLists.add(new PairIntArray());
+            }
+            
+            segBlobPerimetersMap.put(type, perimeterLists);
+        }
+        
+        Logger log = Logger.getLogger(this.getClass().getName());
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            200, true);
+        
+        corners = new ArrayList<List<CornerRegion>>();
+        
+        for (int i = 0; i < blobs.size(); ++i) {
+            List<CornerRegion> crList = new ArrayList<CornerRegion>();
+            corners.add(crList);
+        }
+        for (PairInt p : pixels) {
+            boolean found = false;
+            for (int i = 0; i < blobs.size(); ++i) {
+                
+                Set<PairInt> blob = blobs.get(i);
+                
+                if (blob.contains(p)) {
+                    
+                    CornerRegion cr = new CornerRegion(i, 1, 0);
+                    cr.setFlagThatNeighborsHoldDummyValues();
+                    cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                    cr.setIndexWithinCurve(-1);
+
+                    corners.get(i).add(cr);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                log.info("discarding because not in blob: " + p.toString());
+            }
+        }
+        segCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            MiscDebug.writeEdgesAndCorners(perimeterLists, corners,
+                1, gsImg, "blob_corners_" + imgHelper.getDebugTag() + "_"
+                + MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        log.info("perimeterLists.size()=" + perimeterLists.size() +
+            " corners.size()=" + corners.size());
+        
+        assert(perimeterLists.size() == corners.size());
+        
     }
 
 }
