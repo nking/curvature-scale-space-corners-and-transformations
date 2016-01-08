@@ -1,9 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.QuickSort;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,7 +44,9 @@ public class IntensityFeatures {
      * created by method calculateGradientWithGreyscale and kept for use
      * with calculate45DegreeOrientation internally.
      */
+    //TODO: since these are used sparsely, consider calculating only for a point and on demand.
     protected GreyscaleImage gXY = null;
+    protected GreyscaleImage theta = null;
     
     /**
     key = pixel coordinates of center of frame;
@@ -59,6 +66,12 @@ public class IntensityFeatures {
      */
     protected Map<PairInt, Integer> mapOf45DegOr = new
         HashMap<PairInt, Integer>();
+    
+    /**
+     * key = pixel coordinates;
+     * value = dominant orientation
+     */
+    protected Map<PairInt, Integer> mapOfOrientation = new HashMap<PairInt, Integer>();
     
     protected final RotatedOffsets rotatedOffsets;
     
@@ -144,11 +157,26 @@ public class IntensityFeatures {
             throw new IllegalArgumentException("the gradient image has already"
             + " been created");
         }
-                
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage gX = gsImg.copyToFullRangeIntImage();
+        float[] kX = new float[]{-1, 0, 1};
+        imageProcessor.applyKernel1D(gX, kX, true);
+        
+        GreyscaleImage gY = gsImg.copyToFullRangeIntImage();
+        float[] kY = new float[]{1, 0, -1};
+        imageProcessor.applyKernel1D(gY, kY, false);
+        
+        gXY = imageProcessor.combineConvolvedImages(gX, gY);
+        
+        theta = imageProcessor.computeTheta360_0(gX, gY);
+        
+        /*
         CannyEdgeFilter filter = new CannyEdgeFilter();
         filter.applyFilter(gsImg.copyImage());        
         gXY = filter.getEdgeFilterProducts().getGradientXY();
-        
+        */
     }
     
     /**
@@ -894,23 +922,61 @@ public class IntensityFeatures {
     /**
      * calculate the orientation of the pixel at (x, y) using the gradient image
      * created with calculateGradientWithGreyscale.  The method finds the 
-     * direction of the largest difference from (x, y) and if negative that 
-     * direction is returned else the direction opposite of it.
+     * orientation of the local intensities with respect to the
+     * given point in resolution of 45 degrees. The method finds the direction
+     * of the largest difference from (x, y) and if negative that direction
+     * is returned else the direction opposite of it.
+       <pre>
+                  90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+           225    |    315
+                 270
+       </pre>
+       Note that this method uses
+     * a cache to reuse calculations so it is up to the invoker to make
+     * sure that the same image is given to this instance.  
+     * (the image instance isn't retained to reduce references to potentially
+     * large data structures which would otherwise be garbage collected).
      * @param x
      * @param y
      * @return
      * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
      */
-    public int calculate45DegreeOrientation(int x, int y) throws 
+    public Integer calculateOrientation(int x, int y) throws 
         CornerRegion.CornerRegionDegneracyException {
         
-        if (gXY == null) {
+        if (gXY == null || theta == null) {
             throw new IllegalArgumentException("gradient image is null, so use"
                 + " calculateGradientWithGreyscale to create it before using"
                 + " this method");
         }
         
-        return calculate45DegreeOrientation(gXY, x, y); 
+        checkBounds(gXY, x, y);
+        
+        PairInt p = new PairInt(x, y);
+        
+        Integer orientation = mapOfOrientation.get(p);
+        
+        if (orientation == null) {
+            
+            orientation = Integer.valueOf(findDominantOrientation(x, y));
+            
+            mapOfOrientation.put(p, orientation);
+        }
+                
+        return orientation;
+    }
+    
+// temporary method to be replaced very soon
+    @Deprecated
+    public int calculate45DegreeOrientation( 
+        final int xCenter, final int yCenter) throws 
+        CornerRegion.CornerRegionDegneracyException {
+        
+        return calculate45DegreeOrientation(gXY, xCenter, yCenter);
     }
     
     /**
@@ -1219,7 +1285,25 @@ public class IntensityFeatures {
                |4|4| |0|0|
                |5|5|6|7|7|
                |5|5|6|7|7|
-        */ 
+        
+                  90
+           135    |    45
+                  |
+        180 ---------------  0
+                  |
+           225    |    315
+                 270
+        */  
+        
+        /*
+        Logger log = Logger.getLogger(this.getClass().getName());
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%6.1f %6.1f %6.1f\n", diffs[3], diffs[2], diffs[1]));
+        sb.append(String.format("%6.1f %6.1f %6.1f\n", diffs[4], 0.f,        diffs[0]));
+        sb.append(String.format("%6.1f %6.1f %6.1f", diffs[5], diffs[6], diffs[7]));
+        log.info(sb.toString());
+        */
         
         // direction is "downhill", so if max diff is +, use the opposite angle
         boolean isNegative = diffs[maxAbsDiffIdx] < 0;
@@ -1287,5 +1371,109 @@ public class IntensityFeatures {
     
     public RotatedOffsets getRotatedOffsets() {
         return rotatedOffsets;
+    }
+
+    private int findDominantOrientation(int xCenter, int yCenter) {
+        
+        // cell Dim affects angle resolution so cannot make this too small
+        int cellDim = 4;//6;        
+        int nCellsAcross = 2;
+        int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+        
+        List<Integer> angles = new ArrayList<Integer>();
+        List<Integer> magnitudes = new ArrayList<Integer>();
+        
+        //Logger log = Logger.getLogger(this.getClass().getName());
+        
+        int idx = 0;
+        for (int dy = -range0; dy < range0; dy += cellDim) {
+            for (int dx = -range0; dx < range0; dx += cellDim) {
+                
+                //0 to 360 in bins of 20 degrees
+                int[] hist = new int[18];
+                Arrays.fill(hist, -1);
+                
+                int col = xCenter + dx;
+                int row = yCenter + dy;
+                
+                populateOrientationHistogram(col, row, cellDim, hist);
+                
+                //log.info(String.format("(col, row)=(%5d,%5d)  %s", col, row,
+                //    Arrays.toString(hist)));
+                
+                int[] indexes = new int[hist.length];
+                for (int i = 0; i < hist.length; ++i) {
+                    indexes[i] = i;
+                }
+                QuickSort.descendingSort(hist, indexes);
+                float limit = (float)hist[0] * 0.8f;
+                for (int i = 0; i < hist.length; ++i) {
+                    int magnitude = hist[i];
+                    if (magnitude >= limit) {
+                        angles.add(Integer.valueOf(indexes[i] * 20));
+                        magnitudes.add(Integer.valueOf(magnitude));
+                    } else {
+                        break;
+                    }
+                }
+                
+                idx++;
+            }
+        }
+        assert(idx == (nCellsAcross * nCellsAcross));
+        
+        int[] a = new int[angles.size()];
+        int[] w = new int[a.length];
+        for (int i = 0; i < angles.size(); ++i) {
+            a[i] = angles.get(i).intValue();
+            w[i] = magnitudes.get(i).intValue();
+            //log.info("angle=" + a[i]);
+        }
+        
+        float avg = AngleUtil.calculateWeightedAverageWithQuadrantCorrections(
+            a, w, a.length - 1);
+        
+        int avgInt = Math.round(avg);
+        if (avgInt < 0) {
+            avgInt += 360;
+        } else if (avgInt > 359) {
+            avgInt -= 360;
+        }
+
+        return avgInt;
+    }
+    
+    /**
+     * @param xStart
+     * @param yStart
+     * @param cellDimension
+     * @param outputHistogram 
+     */
+    private void populateOrientationHistogram(int xStart, int yStart,
+        int cellDimension, int[] outputHistogram) {
+        
+        int w = gXY.getWidth();
+        int h = gXY.getHeight();
+        
+        int nBins = outputHistogram.length;
+        int binSz = 360/nBins;
+        
+        for (int dxc = 0; dxc < cellDimension; ++dxc) {
+            for (int dyc = 0; dyc < cellDimension; ++dyc) {
+                int x = xStart + dxc;
+                int y = yStart + dyc;
+                if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                    continue;
+                }
+                int t = theta.getValue(x, y);
+                int g = gXY.getValue(x, y);
+                int hIdx = t / binSz;
+                if (hIdx >= nBins) {
+                    hIdx = nBins - 1;
+                }
+                outputHistogram[hIdx] += g;
+            }
+        }
     }
 }
