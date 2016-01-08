@@ -220,4 +220,21 @@ public class QuickSortTest extends TestCase {
         }
         
     }
+    
+     public void testDescendingSort() {
+                
+                        //  0  1  2  3  4  5  6  7  8  9
+                        //              |  |
+        int[] a = new int[]{4, 5, 9, 0, 3, 1, 6, 2, 7, 8};
+        int[] b = new int[]{5, 4, 0, 9, 6, 8, 3, 7, 2, 1};
+
+        QuickSort.descendingSort(a, b);
+
+        int prev = a[0];
+        for (int i = 0; i < a.length; i++) {
+            assertEquals(i, b[i]);
+            assertTrue(a[i] <= prev);
+            prev = a[i];
+        }
+    }
 }
