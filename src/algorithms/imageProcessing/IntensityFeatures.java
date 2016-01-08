@@ -172,11 +172,6 @@ public class IntensityFeatures {
         
         theta = imageProcessor.computeTheta360_0(gX, gY);
         
-        /*
-        CannyEdgeFilter filter = new CannyEdgeFilter();
-        filter.applyFilter(gsImg.copyImage());        
-        gXY = filter.getEdgeFilterProducts().getGradientXY();
-        */
     }
     
     /**
@@ -968,15 +963,6 @@ public class IntensityFeatures {
         }
                 
         return orientation;
-    }
-    
-// temporary method to be replaced very soon
-    @Deprecated
-    public int calculate45DegreeOrientation( 
-        final int xCenter, final int yCenter) throws 
-        CornerRegion.CornerRegionDegneracyException {
-        
-        return calculate45DegreeOrientation(gXY, xCenter, yCenter);
     }
     
     /**

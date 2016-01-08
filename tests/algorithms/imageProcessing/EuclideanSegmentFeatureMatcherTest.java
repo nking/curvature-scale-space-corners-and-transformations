@@ -16,7 +16,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
     public EuclideanSegmentFeatureMatcherTest() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -24,7 +24,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 5; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -70,7 +70,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         

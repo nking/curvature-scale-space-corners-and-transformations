@@ -4,8 +4,6 @@ import algorithms.compGeometry.RotatedOffsets;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -53,7 +51,7 @@ public class IntensityFeaturesTest extends TestCase {
                         yT[i] - yCenter));
                 }
                                 
-                //log.info(String.format("prev %d %d (%d, %d): %s", count, tc, 
+                //log.fine(String.format("prev %d %d (%d, %d): %s", count, tc, 
                 //    dx, dy, sb.toString()));
                 
                 tc += xT.length;
@@ -318,49 +316,49 @@ public class IntensityFeaturesTest extends TestCase {
         
         x = 52; y = 53; expected=0;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 47; y = 11; expected=270;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 40; y = 43; expected=135;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 104; y = 46; expected=200;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 98; y = 72; expected=150;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 83; y = 84; expected=220;
         orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.info(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
+        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
-        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+        log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
@@ -377,7 +375,7 @@ public class IntensityFeaturesTest extends TestCase {
             sb.append("\n");
         }
         
-        log.info(sb.toString());
+        log.fine(sb.toString());
     }
 
     private void makeCannyCorners(String filePath) throws Exception {

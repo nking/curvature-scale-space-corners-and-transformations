@@ -87,7 +87,7 @@ public class CurveToCurveCornerMatcher <T extends CornerRegion> {
         if (state != null) {
             resetDefaults();
         }
-        
+/*        
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[cornerLists1.size()];
 float[] yPoints1 = new float[cornerLists1.size()];
@@ -116,7 +116,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
-
+*/
         Map<PairInt, List<FeatureComparisonStat>> statsMap = 
             new HashMap<PairInt, List<FeatureComparisonStat>>();
                 

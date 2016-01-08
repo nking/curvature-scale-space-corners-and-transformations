@@ -56,7 +56,7 @@ public class FeatureMatcher {
         
         int rot2;
         try {
-            rot2 = features2.calculate45DegreeOrientation(x2, y2);
+            rot2 = features2.calculateOrientation(x2, y2);
         } catch (CornerRegionDegneracyException e) {
             return null;
         }
@@ -67,7 +67,7 @@ public class FeatureMatcher {
             return null;
         }
         
-        int[] rotations = new int[5];
+        int[] rotations = new int[3];
         
         for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
             if (!features1.isWithinXBounds(img1, x1d)) {
@@ -80,7 +80,7 @@ public class FeatureMatcher {
                 
                 int rot1;
                 try {
-                    rot1 = features1.calculate45DegreeOrientation(x1d, y1d);
+                    rot1 = features1.calculateOrientation(x1d, y1d);
                 } catch (CornerRegionDegneracyException e) {
                     continue;
                 }
@@ -89,8 +89,8 @@ public class FeatureMatcher {
                 rotations[0] = rot1;
                 rotations[1] = rot1 - 10;
                 rotations[2] = rot1 + 10;
-                rotations[3] = rot1 - 20;
-                rotations[4] = rot1 + 20;
+                //rotations[3] = rot1 - 20;
+                //rotations[4] = rot1 + 20;
         
                 for (int rotD1 : rotations) {
                     
@@ -159,7 +159,7 @@ public class FeatureMatcher {
         
         int rot2;
         try {
-            rot2 = features2.calculate45DegreeOrientation(x2, y2);
+            rot2 = features2.calculateOrientation(x2, y2);
         } catch (CornerRegionDegneracyException e) {
             return null;
         }
@@ -175,7 +175,7 @@ public class FeatureMatcher {
             expectedRotationInDegrees = 360 - expectedRotationInDegrees;
         }
         
-        int[] rotations = new int[5];
+        int[] rotations = new int[3];
         
         for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
             if (!features1.isWithinXBounds(img1, x1d)) {
@@ -186,15 +186,9 @@ public class FeatureMatcher {
                     continue;
                 }
                 
-                // either calculate and try 2 angles, 
-                //    rot2 + expectedRotationInDegrees
-                //    and rot2 - expectedRotationInDegrees
-                // or use the 45 degree calculation for angles within
-                //     expectedRotationInDegrees
-                
                 int rot1;
                 try {
-                    rot1 = features1.calculate45DegreeOrientation(x1d, y1d);
+                    rot1 = features1.calculateOrientation(x1d, y1d);
                 } catch (CornerRegionDegneracyException e) {
                     continue;
                 }
@@ -203,8 +197,8 @@ public class FeatureMatcher {
                 rotations[0] = rot1;
                 rotations[1] = rot1 - 10;
                 rotations[2] = rot1 + 10;
-                rotations[3] = rot1 - 20;
-                rotations[4] = rot1 + 20;
+                //rotations[3] = rot1 - 20;
+                //rotations[4] = rot1 + 20;
                         
                 for (int rotD1 : rotations) {
                     if (rotD1 > 359) {

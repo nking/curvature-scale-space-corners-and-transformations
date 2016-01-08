@@ -132,7 +132,7 @@ try {
     Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
 }
 */
-
+/*
 StringBuilder sb = new StringBuilder("xy1:\n");
 for (int i = 0; i < xy1.length; ++i) {
     sb.append(String.format("[%2d] (%3d, %3d)\n", i,
@@ -144,6 +144,7 @@ for (int i = 0; i < xy2.length; ++i) {
         (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
 }
 System.out.println(sb.toString());
+*/
 /*
 PairInt[] im1Chk = new PairInt[]{
     new PairInt(107, 267), new PairInt(100, 290), new PairInt(48, 89)
