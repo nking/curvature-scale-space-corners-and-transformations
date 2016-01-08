@@ -22,6 +22,16 @@ public class PointInPolygon {
 
     float eps = 0.00001f;
 
+    /**
+     * given a polygon (xPolygon, yPolygon) that has the same start and end
+     * points, determine whether the point (xpt, ypt) is in the polygon.
+     * @param xPt
+     * @param yPt
+     * @param xPolygon
+     * @param yPolygon
+     * @param nPolygonPoints
+     * @return 
+     */
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int nPolygonPoints) {
         

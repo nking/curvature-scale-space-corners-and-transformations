@@ -100,7 +100,7 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
                 }
             }
         }
-
+/*
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 float[] xPoints1 = new float[blobs1.size()];
 float[] yPoints1 = new float[blobs1.size()];
@@ -118,7 +118,7 @@ xy2[i] = curveHelper.calculateXYCentroids(blobs2.get(i));
 xPoints2[i] = (float)xy2[i][0];
 yPoints2[i] = (float)xy2[i][1];
 }
-
+*/
 /*ScatterPointPlotterPNG plotter = new ScatterPointPlotterPNG();
 plotter.plotLabeledPoints(0, img1.getWidth(), 0, img1.getHeight(), xPoints1, yPoints1,
 "img1", "X", "Y");

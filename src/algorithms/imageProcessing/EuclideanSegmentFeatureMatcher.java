@@ -17,9 +17,24 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * class encapsulating the steps from scale calculation to matching corners
- * to make correspondence lists.
- *
+ class whose goal is to find best single euclidean transformation for 
+ image1 to image2.  It uses segmentation to create blobs.
+ It solves for transformation of each blob in one image against the other.
+ It keeps the best transformation solution of each blob in image1.
+ Then evaluates all blob1 best transformations to find the best overall
+ for the image corners.
+ -- pros: for panorama and stereo images it does lead to a solution and it
+          solves for rotation too.
+ -- cons: has long runtime due to curve to curve transformation comparisons.
+          also, it sometimes discards very good matching points
+          because the curve needs at least 3 in order to
+          estimate a euclidean transformation so any curves w/ fewer than 
+          2 points are skipped.
+ 
+ The same goals should be met by EuclideanSegmentFeatureMatcher2 in a faster
+ runtime using a different pattern for matching, but still based upon 
+ segmentation and blob corners.
+
  * @author nichole
  */
 public class EuclideanSegmentFeatureMatcher {
@@ -500,7 +515,7 @@ public class EuclideanSegmentFeatureMatcher {
         features2.calculateGradientWithGreyscale(gsImg2);
 
         int dither2 = 1 * (Math.max(prevBinFactor1, prevBinFactor2));
-        if (params.getTranslationX() > 5 || params.getTranslationY() > 5) {
+        if (params.getStandardDeviations()[2] > 25 || params.getStandardDeviations()[3] > 25) {
             if (dither2 < 3) {
                 dither2 = 3;
             }
@@ -600,7 +615,7 @@ public class EuclideanSegmentFeatureMatcher {
           0 -->
         */
         
-        double[][] img2Intersection = getBoundsOfIntersectionInFrame2(
+        double[][] img2Intersection = MiscStats.getBoundsOfIntersectionInFrame2(
             params, img1.getWidth(), img1.getHeight(), 
             img2.getWidth(), img2.getHeight());
         
@@ -746,92 +761,6 @@ public class EuclideanSegmentFeatureMatcher {
         }
         
         return (nq == 4);
-    }
-    
-    private double[][] getBoundsOfIntersectionInFrame2(TransformationParameters 
-        parameters, int img1Width, int img1Height, int img2Width, int img2Height) {
-        
-        //calculate the intersection of the 2 images
-        
-        MatchedPointsTransformationCalculator tc = 
-            new MatchedPointsTransformationCalculator();
-        
-        Transformer transformer = new Transformer();
-        
-        TransformationParameters revParams = tc.swapReferenceFrames(parameters);
-        
-        /*
-        
-       / \   ( tr )    ( tr )            (x2q3, y2q3)      (x2q4, y2q4)
-        |
-        |
-        0    ( tr )    ( tr )            (x2q2, y2q2)      (x2q1, y2q1)
-          0 -->
-        
-        */
-        
-        // determine intersection of img2 with img1 in img1 reference frame
-        double[] q1Tr = transformer.applyTransformation(revParams, 
-            img2Width - 1, 0);
-        
-        double[] q2Tr = transformer.applyTransformation(revParams, 
-            0, 0);
-        
-        double[] q3Tr = transformer.applyTransformation(revParams, 
-            0, img2Height - 1);
-        
-        double[] q4Tr = transformer.applyTransformation(revParams, 
-            img2Width - 1, img2Height - 1);
-        
-        // if the transformed bounds are off image, reset the bounds to img1 bounds
-        double[][] img1Intersection = new double[4][2];
-        img1Intersection[0] = q1Tr;
-        img1Intersection[1] = q2Tr;
-        img1Intersection[2] = q3Tr;
-        img1Intersection[3] = q4Tr;
-        
-        for (double[] xyTr : img1Intersection) {
-            if (xyTr[0] < 0) {
-                xyTr[0] = 0;
-            } else if (xyTr[0] > (img1Width - 1)) {
-                xyTr[0] = (img1Width - 1);
-            }
-            if (xyTr[1] < 0) {
-                xyTr[1] = 0;
-            } else if (xyTr[1] > (img1Height - 1)) {
-                xyTr[1] = (img1Height - 1);
-            }
-        }
-        
-        // transform the img1 intersection into reference frame of img2
-        double[] q1TrTr = transformer.applyTransformation(parameters, q1Tr[0], q1Tr[1]);
-        
-        double[] q2TrTr = transformer.applyTransformation(parameters, q2Tr[0], q2Tr[1]);
-        
-        double[] q3TrTr = transformer.applyTransformation(parameters, q3Tr[0], q3Tr[1]);
-        
-        double[] q4TrTr = transformer.applyTransformation(parameters, q4Tr[0], q4Tr[1]);
-        
-        double[][] img2Intersection = new double[4][2];
-        img2Intersection[0] = q1TrTr;
-        img2Intersection[1] = q2TrTr;
-        img2Intersection[2] = q3TrTr;
-        img2Intersection[3] = q4TrTr;
-        
-        for (double[] xyTr : img2Intersection) {
-            if (xyTr[0] < 0) {
-                xyTr[0] = 0;
-            } else if (xyTr[0] > (img2Width - 1)) {
-                xyTr[0] = (img2Width - 1);
-            }
-            if (xyTr[1] < 0) {
-                xyTr[1] = 0;
-            } else if (xyTr[1] > (img2Height - 1)) {
-                xyTr[1] = (img2Height - 1);
-            }
-        }
-        
-        return img2Intersection;
     }
     
     private void addStatsToSolution(CorrespondenceList cl, 

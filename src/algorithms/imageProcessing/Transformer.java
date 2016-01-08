@@ -341,15 +341,6 @@ public class Transformer {
         return te;
     }
     
-    /**
-     * apply the parameters of transformation to point (xPt, yPt). Note, the rotation is applied in a clockwise
-      * direction (which is in the -z direction using right hand rule).
-     * 
-     * @param params
-     * @param xPt
-     * @param yPt
-     * @return 
-     */
     public double[] applyTransformation(TransformationParameters params,
         double xPt, double yPt) {
         
@@ -357,13 +348,30 @@ public class Transformer {
             throw new IllegalArgumentException("params cannot be null");
         }
         
-        double scale = params.getScale();
-        double scaleTimesCosine = scale * Math.cos(params.getRotationInRadians());
-        double scaleTimesSine = scale * Math.sin(params.getRotationInRadians());
-                
+        double scale = params.getScale();                
         double originX = params.getOriginX();
         double originY = params.getOriginY();
         
+        return applyTransformation(scale, params.getRotationInRadians(),
+            originX, originY, params.getTranslationX(), params.getTranslationY(),
+            xPt, yPt);
+    }
+    
+    /**
+     * apply the parameters of transformation to point (xPt, yPt). Note, the rotation is applied in a clockwise
+      * direction (which is in the -z direction using right hand rule).
+     * 
+     * @param xPt
+     * @param yPt
+     * @return 
+     */
+    public double[] applyTransformation(double scale, double rotationInRadians,
+        double originX, double originY, double translationX, double translationY,
+        double xPt, double yPt) {
+                
+        double scaleTimesCosine = scale * Math.cos(rotationInRadians);
+        double scaleTimesSine = scale * Math.sin(rotationInRadians);
+                
         /*
         xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
 
@@ -379,8 +387,8 @@ public class Transformer {
         double yr = originY * scale + (-(xPt - originX) * scaleTimesSine) 
             + ((yPt - originY) * scaleTimesCosine);
 
-        double xt = xr + params.getTranslationX();
-        double yt = yr + params.getTranslationY();
+        double xt = xr + translationX;
+        double yt = yr + translationY;
 
         return new double[]{xt, yt};
     }

@@ -759,7 +759,7 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
      * @return transformation parameters that can transform points in reference
      * frame 2 into reference frame 1
      */
-    TransformationParameters swapReferenceFrames(TransformationParameters
+    public TransformationParameters swapReferenceFrames(TransformationParameters
         params) {
 
         if (params == null) {

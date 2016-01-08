@@ -11,7 +11,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- *
+ * given any curve1 and curve2, finds the best euclidean transformation
+ * if any from curve1 to curve2.
  *
  * @author nichole
  */

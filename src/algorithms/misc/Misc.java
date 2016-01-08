@@ -1,5 +1,6 @@
 package algorithms.misc;
 
+import algorithms.imageProcessing.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
@@ -18,6 +19,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -351,5 +353,35 @@ public class Misc {
         }
 
         return map;
+    }
+
+    public static PairInt[] convert(CornerRegion[] c) {
+        
+        PairInt[] output = new PairInt[c.length];
+        
+        for (int i = 0; i < c.length; ++i) {
+            
+            CornerRegion cr = c[i];
+            int x = cr.getX()[cr.getKMaxIdx()];
+            int y = cr.getY()[cr.getKMaxIdx()];
+            output[i] = new PairInt(x, y);
+        }
+        
+        return output;
+    }
+    
+    public static PairInt[] convert(List<CornerRegion> c) {
+        
+        PairInt[] output = new PairInt[c.size()];
+        
+        for (int i = 0; i < c.size(); ++i) {
+            
+            CornerRegion cr = c.get(i);
+            int x = cr.getX()[cr.getKMaxIdx()];
+            int y = cr.getY()[cr.getKMaxIdx()];
+            output[i] = new PairInt(x, y);
+        }
+        
+        return output;
     }
 }

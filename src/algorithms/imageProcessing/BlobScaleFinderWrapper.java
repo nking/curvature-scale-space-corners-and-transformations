@@ -22,6 +22,27 @@ import java.util.logging.Logger;
 /**
  * determine scale between 2 images using blob contours or corners.
  * NOT READY FOR USE YET.
+ * 
+ * This is the first version of a wrapper class to try various combinations
+ * of segmentation and corners or contour combinations to find euclidean
+ * transformation between images.
+ * 
+ * It has been reduced in function to use blob corners only now and 
+ * atrous segmentation or canny as segmentation choices.
+ * The matching pattern uses each curve1 and each curve2 to find best
+ * transformation for those then keeps the best of each curve1 then
+ * evaluates all transformations of best curve1's over all corners.
+ * The solution has a long runtime, but does successfully solve many rotated
+ * image sets.
+ * 
+ * Note that a test image like the checkerboard test image needs
+ * corners such as produced by the 2nd derivative rather that blob perimeter
+ * corners, and should not use normalized features.  The rotation of the
+ * checkerboard test image is however not well solved.  
+ *  (This class has to find at least one correct blob to blob match
+ * in order to calculate the true transformation solution,  It does that with
+ * the test images that are not rotated, but not for the rotated image1
+ * for some reason... still looking into that...)
  *
  * @author nichole
  */

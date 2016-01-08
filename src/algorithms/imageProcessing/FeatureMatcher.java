@@ -1,11 +1,15 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.compGeometry.convexHull.GrahamScanPairInt;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
@@ -208,12 +212,13 @@ public class FeatureMatcher {
                     }
             
                     // only try rotations within expected rotation limits
-                    float rotDescriptors = AngleUtil.getAngleDifference(rotD1, rot2);
-                    if (rotDescriptors < 0) {
-                        rotDescriptors += 360;
+                    float rotDiffs = AngleUtil.getAngleDifference(rotD1, rot2);
+                    if (rotDiffs < 0) {
+                        rotDiffs *= -1;
                     }
+ //NOTE: change to rotDiffs to use -1* instead of 360+=             
                     float rotDiff = AngleUtil.getAngleDifference(
-                        expectedRotationInDegrees, rotDescriptors);
+                        expectedRotationInDegrees, rotDiffs);
                     if (Math.abs(rotDiff) > rotationTol) {
                         continue;
                     }
@@ -228,18 +233,13 @@ public class FeatureMatcher {
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
                         desc1, x1d, y1d, desc2, x2, y2);
                    
-                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
-                        if (best == null) {
-                            best = stat;
-                            best.setImg1PointRotInDegrees(rotD1);
-                            best.setImg2PointRotInDegrees(rot2);
-                        } else {
-                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
-                                best = stat;
-                                best.setImg1PointRotInDegrees(rotD1);
-                                best.setImg2PointRotInDegrees(rot2);
-                            }
-                        }
+                    if (stat.getSumIntensitySqDiff() > stat.getImg2PointIntensityErr()) {
+                        continue;
+                    }
+                    if ((best == null) || (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff())) {
+                        best = stat;
+                        best.setImg1PointRotInDegrees(rotD1);
+                        best.setImg2PointRotInDegrees(rot2);
                     }
                 }
             }
@@ -376,8 +376,9 @@ public class FeatureMatcher {
         List<CornerRegion> filteredC1 = new ArrayList<CornerRegion>();
         List<CornerRegion> filteredC2 = new ArrayList<CornerRegion>();
         
-        filterForIntersection3(params, transXYTol, 
-            cr1, cr2, filteredTransformedC1, filteredC1, filteredC2);
+        filterForIntersection4(params, transXYTol, 
+            cr1, cr2, filteredTransformedC1, filteredC1, filteredC2,
+            gsImg1.getWidth(), gsImg1.getHeight(), gsImg2.getWidth(), gsImg2.getHeight());
 
         if (true) {
             try {
@@ -385,11 +386,16 @@ public class FeatureMatcher {
                     "filtered_1_corners_");
                 MiscDebug.writeImage(filteredC2, gsImg2.copyToColorGreyscale(), 
                     "filtered_2_corners_");
+                MiscDebug.writeImage(filteredTransformedC1, gsImg2.copyToColorGreyscale(), 
+                    "filtered_1_trans_corners_");
             } catch (IOException ex) {
                 Logger.getLogger(EuclideanSegmentFeatureMatcher.class.getName()).log(
                     Level.SEVERE, null, ex);
             }
         }
+        
+        int n1 = filteredC1.size();
+        int n2 = filteredC2.size();
         
         /*
         when transformation params are known ahead of time:
@@ -400,11 +406,7 @@ public class FeatureMatcher {
         
         bipartite is n^3 but the n is < n1.
         */
-       
-        int n1 = filteredC1.size();
-        int n2 = filteredC2.size();
-        int nMaxMatchable = Math.min(n1, n2);
-        
+               
         Map<PairInt, FeatureComparisonStat> statMap = null;
         float[][] cost = null;
                 
@@ -426,6 +428,8 @@ public class FeatureMatcher {
         int rotationInDegrees = Math.round(params.getRotationInDegrees());
         int rotationToleranceInDegrees = (int)Math.round(rotationInRadiansTol * 180/Math.PI);
                 
+        Transformer transformer = new Transformer();
+        
         int count = 0;
         
         for (int i1 = 0; i1 < n1; ++i1) {
@@ -444,9 +448,20 @@ public class FeatureMatcher {
             int x1 = c1.getX()[c1.getKMaxIdx()];
             int y1 = c1.getY()[c1.getKMaxIdx()];
             
+            // additional tolerance due to rotation error of 10 degrees
+            double[] errTr = transformer.applyTransformation(params.getScale(),
+                params.getRotationInRadians() + 0.1745,
+                params.getOriginX(), params.getOriginY(),
+                params.getTranslationX(), params.getTranslationY(), x1, y1);
+            
+            double xTolAdd = Math.abs(errTr[0] - x1Tr);
+            double yTolAdd = Math.abs(errTr[1] - y1Tr);
+            
             double bestCost = Double.MAX_VALUE;
             int bestIdx2 = -1;
             FeatureComparisonStat bestStat = null;
+            
+//TODO: replace w/ a nearest neighbors structure ***** <=====
             
             for (int i2 = 0; i2 < n2; ++i2) {
                 
@@ -457,7 +472,7 @@ public class FeatureMatcher {
                                 
                 int diffX = Math.abs(x1Tr - x2);
                 int diffY = Math.abs(y1Tr - y2);
-                if (diffX > transXYTol || diffY > transXYTol) {
+                if (diffX > (transXYTol + xTolAdd) || diffY > (transXYTol + yTolAdd)) {
                     continue;
                 }
                 // use the untransformed cr1 to be able to filter by rotation
@@ -598,59 +613,57 @@ public class FeatureMatcher {
         int transXYTol, CornerRegion[] c1, CornerRegion[] c2, 
         List<CornerRegion> outFilteredTransformedC1, 
         List<CornerRegion> outFilteredC1, 
-        List<CornerRegion> outFilteredC2) {
+        List<CornerRegion> outFilteredC2,
+        int img1Width, int img1Height, int img2Width, int img2Height) {
         
-        int[] minXY2 = MiscMath.findMinXY2(c2);
-        int[] maxXY2 = MiscMath.findMaxXY2(c2);
+        /*
+        transform corners1 to image2 reference frame and trim any points
+           in it that are out of the image2 frame.
+        then make a
+        */
+        
+        MatchedPointsTransformationCalculator tc = 
+            new MatchedPointsTransformationCalculator();
         
         Transformer transformer = new Transformer();
         
-        float[] minXY1 = new float[]{Float.MAX_VALUE, Float.MAX_VALUE};
-        float[] maxXY1 = new float[]{Float.MIN_VALUE, Float.MIN_VALUE};
+        TransformationParameters revParams = tc.swapReferenceFrames(params);
         
         for (int i = 0; i < c1.length; ++i) {
-                
+                        
             CornerRegion ctr = transformer.applyTransformation(params, c1[i]);
                 
-            int x = ctr.getX()[ctr.getKMaxIdx()];
-            int y = ctr.getY()[ctr.getKMaxIdx()];
+            int xTr = ctr.getX()[ctr.getKMaxIdx()];
+            int yTr = ctr.getY()[ctr.getKMaxIdx()];
 
-            if ((x < (minXY2[0] - transXYTol)) || (x > (maxXY2[0] + transXYTol))) {
+            if ((xTr < 0) || (xTr > (img2Width - 1))) {
                 continue;
             }
-            if ((y < (minXY2[1] - transXYTol)) || (y > (maxXY2[1] + transXYTol))) {
+            if ((yTr < 0) || (yTr > (img2Height - 1))) {
                 continue;
             }
+
             outFilteredTransformedC1.add(ctr);
             outFilteredC1.add(c1[i]);
-                
-            if (x < minXY1[0]) {
-                minXY1[0] = x;
-            }
-            if (y < minXY1[1]) {
-                minXY1[1] = y;
-            }
-            if (x > maxXY1[0]) {
-                maxXY1[0] = x;
-            }
-            if (y > maxXY1[1]) {
-                maxXY1[1] = y;
-            }
+            
         }
 
         for (int i = 0; i < c2.length; ++i) {
-            CornerRegion c = c2[i];
-            int x = c.getX()[c.getKMaxIdx()];
-            int y = c.getY()[c.getKMaxIdx()];
-                
-            if ((x < (minXY1[0] - transXYTol)) || (x > (maxXY1[0] + transXYTol))) {
+                        
+            int x = c2[i].getX()[c2[i].getKMaxIdx()];
+            int y = c2[i].getY()[c2[i].getKMaxIdx()];
+            
+            double[] xyTr = transformer.applyTransformation(revParams, x, y);
+                            
+            if ((xyTr[0] < 0) || (xyTr[0] > (img1Width - 1))) {
                 continue;
             }
-            if ((y < (minXY1[1] - transXYTol)) || (y > (maxXY1[1] + transXYTol))) {
+            if ((xyTr[1] < 0) || (xyTr[1] > (img1Height - 1))) {
                 continue;
             }
-            outFilteredC2.add(c);
-        }        
+
+            outFilteredC2.add(c2[i]);
+        }
     }
 
     public static List<Integer> removeDiscrepantThetaDiff(
@@ -870,4 +883,104 @@ public class FeatureMatcher {
         
         return stats;
     }
+    
+    public static void filterForIntersection4(TransformationParameters params, 
+        int transXYTol, CornerRegion[] c1, CornerRegion[] c2, 
+        List<CornerRegion> outFilteredTransformedC1, 
+        List<CornerRegion> outFilteredC1, 
+        List<CornerRegion> outFilteredC2,
+        int img1Width, int img1Height, int img2Width, int img2Height) {
+        
+        /*
+        make convex hull of corners1 and transform the hull to corners2
+           where will only keep the corners2 that are within the transformed
+           hull.
+        then will do the same with corners2 to corners1
+        */
+        
+        Transformer transformer = new Transformer();
+        PointInPolygon pip = new PointInPolygon();
+        
+        try {
+            
+            PairInt[] corners1 = Misc.convert(c1);
+            GrahamScanPairInt<PairInt> scan = new GrahamScanPairInt<PairInt>();
+            scan.computeHull(corners1);
+            List<PairInt> hull = scan.getHull();
+            
+            float[] xTr1 = new float[hull.size()];
+            float[] yTr1 = new float[hull.size()];
+            for (int i = 0; i < hull.size(); ++i) {
+                PairInt xy = hull.get(i);
+                double[] xyTr = transformer.applyTransformation(params, xy.getX(), xy.getY());
+                xTr1[i] = (float)xyTr[0];
+                yTr1[i] = (float)xyTr[1];
+                if (xTr1[i] < 0) {
+                    xTr1[i] = 0;
+                } else if (xTr1[i] > (img2Width - 1)) {
+                    xTr1[i] = img2Width - 1;
+                }
+                if (yTr1[i] < 0) {
+                    yTr1[i] = 0;
+                } else if (yTr1[i] > (img2Height - 1)) {
+                    yTr1[i] = img2Height - 1;
+                }
+            }
+            
+            for (int i = 0; i < c2.length; ++i) {
+                CornerRegion cr = c2[i];
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                
+                if (pip.isInSimpleCurve(x, y, xTr1, yTr1, yTr1.length)) {
+                    outFilteredC2.add(cr);
+                }
+            }
+            
+            MatchedPointsTransformationCalculator tc
+                = new MatchedPointsTransformationCalculator();
+
+            TransformationParameters revParams = tc.swapReferenceFrames(params);
+        
+            PairInt[] corners2 = Misc.convert(outFilteredC2);
+            scan = new GrahamScanPairInt<PairInt>();
+            scan.computeHull(corners2);
+            hull = scan.getHull();
+            
+            float[] xTr2 = new float[hull.size()];
+            float[] yTr2 = new float[hull.size()];
+            for (int i = 0; i < hull.size(); ++i) {
+                PairInt xy = hull.get(i);
+                double[] xyTr = transformer.applyTransformation(revParams, 
+                    xy.getX(), xy.getY());
+                xTr2[i] = (float)xyTr[0];
+                yTr2[i] = (float)xyTr[1];
+                if (xTr2[i] < 0) {
+                    xTr2[i] = 0;
+                } else if (xTr2[i] > (img1Width - 1)) {
+                    xTr2[i] = img1Width - 1;
+                }
+                if (yTr2[i] < 0) {
+                    yTr2[i] = 0;
+                } else if (yTr2[i] > (img1Height - 1)) {
+                    yTr2[i] = img1Height - 1;
+                }
+            }
+            
+            for (int i = 0; i < c1.length; ++i) {
+                CornerRegion cr = c1[i];
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                
+                if (pip.isInSimpleCurve(x, y, xTr2, yTr2, yTr2.length)) {
+                    CornerRegion ctr = transformer.applyTransformation(params, c1[i]);
+                    outFilteredTransformedC1.add(ctr);
+                    outFilteredC1.add(c1[i]);
+                }
+            }
+            
+        } catch (GrahamScanTooFewPointsException e) {
+        }
+    }
+
 }
