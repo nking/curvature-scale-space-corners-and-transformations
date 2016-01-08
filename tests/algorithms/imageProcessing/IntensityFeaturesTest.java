@@ -61,221 +61,7 @@ public class IntensityFeaturesTest extends TestCase {
         }
     }
     
-    public void estCalculate45DegreeOrientation_greyscale() throws Exception {
-        
-        /*
-               |3|3|2|1|1|
-               |3|3|2|1|1|
-               |4|4| |0|0|
-               |5|5|6|7|7|
-               |5|5|6|7|7|
-        */
-        
-        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
-        
-        int blockHalfWidths = 5;
-        
-        boolean useNormalizedIntensities = true;
-        
-        GreyscaleImage img = new GreyscaleImage(25, 25, 
-            GreyscaleImage.Type.Bits32FullRangeInt);
-                
-        boolean[] sign = new boolean[]{true, false};
-        /*
-               |3|3|2|1|1|
-               |3|3|2|1|1|
-               |4|4| |0|0|
-               |5|5|6|7|7|
-               |5|5|6|7|7|
-        */
-        int xc = 2;
-        int yc = 2;
-        for (boolean pos : sign) {
-            
-            for (int i = 1; i < 2; ++i) {
-            
-                // values are cached so create a new instance for each "img"
-                IntensityFeatures features = new IntensityFeatures(blockHalfWidths,
-                    useNormalizedIntensities, rOffsets);
-        
-                int v = i;
-                if (!pos) {
-                    v *= -1;
-                }
-                
-                img.setValue(xc + 1, yc, v);
-                img.setValue(xc + 2, yc, v);
-                
-                v = i + 1;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc + 1, yc + 1, v);
-                img.setValue(xc + 2, yc + 1, v);
-                img.setValue(xc + 1, yc + 2, v);
-                img.setValue(xc + 2, yc + 2, v);
-                
-                v = i + 2;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc, yc + 1, v);
-                img.setValue(xc, yc + 2, v);
-                /*
-                   |3|3|2|1|1|
-                   |3|3|2|1|1|
-                   |4|4| |0|0|
-                   |5|5|6|7|7|
-                   |5|5|6|7|7|
-                */
-                
-                v = i + 3;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc - 1, yc + 1, v);
-                img.setValue(xc - 2, yc + 1, v);
-                img.setValue(xc - 1, yc + 2, v);
-                img.setValue(xc - 2, yc + 2, v);
-                
-                v = i + 4;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc - 1, yc, v);
-                img.setValue(xc - 2, yc, v);
-                
-                v = i + 5;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc - 1, yc - 1, v);
-                img.setValue(xc - 2, yc - 1, v);
-                img.setValue(xc - 1, yc - 2, v);
-                img.setValue(xc - 2, yc - 2, v);
-                /*
-                   |3|3|2|1|1|
-                   |3|3|2|1|1|
-                   |4|4| |0|0|
-                   |5|5|6|7|7|
-                   |5|5|6|7|7|
-                */
-                
-                v = i + 6;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc, yc - 1, v);
-                img.setValue(xc, yc - 2, v);
-                
-                v = i + 7;
-                if (v > 7) {
-                    v = v - 8;
-                }
-                if (!pos) {
-                    v *= -1;
-                }
-                img.setValue(xc + 1, yc - 1, v);
-                img.setValue(xc + 2, yc - 1, v);
-                img.setValue(xc + 1, yc - 2, v);
-                img.setValue(xc + 2, yc - 2, v);
-                
-                int orientation = features.calculate45DegreeOrientation(img, 2, 2);
-                                             
-                //System.out.println("i=" + i + " orientation=" + orientation + " pos=" + pos);
-                
-                //printDebug(img); 
-                
-                switch(i) {
-                    case 0: {
-                        if (pos) {
-                            assertEquals(135, orientation);
-                        } else {
-                            assertEquals(315, orientation);
-                        }
-                        break;
-                    }
-                    case 1: {
-                        if (pos) {
-                            assertEquals(90, orientation);
-                        } else {
-                            assertEquals(270, orientation);
-                        }
-                        break;
-                    }
-                    case 2: {
-                        if (pos) {
-                            assertEquals(45, orientation);
-                        } else {
-                            assertEquals(225, orientation);
-                        }
-                        break;
-                    }
-                    case 3: {
-                        if (pos) {
-                            assertEquals(0, orientation);
-                        } else {
-                            assertEquals(180, orientation);
-                        }
-                        break;
-                    }
-                    case 4: {
-                        if (pos) {
-                            assertEquals(315, orientation);
-                        } else {
-                            assertEquals(135, orientation);
-                        }
-                        break;
-                    }
-                    case 5: {
-                        if (pos) {
-                            assertEquals(270, orientation);
-                        } else {
-                            assertEquals(90, orientation);
-                        }
-                        break;
-                    }
-                    case 6: {
-                        if (pos) {
-                            assertEquals(225, orientation);
-                        } else {
-                            assertEquals(45, orientation);
-                        }
-                        break;
-                    } 
-                    default: {
-                        if (pos) {
-                            assertEquals(180, orientation);
-                        } else {
-                            assertEquals(0, orientation);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        
-    }
-    
-    public void testCalculate45DegreeOrientation_gradient() throws Exception {
+    public void testCalculateOrientation_gradient_0() throws Exception {
         
         RotatedOffsets rOffsets = RotatedOffsets.getInstance();
         
@@ -283,7 +69,6 @@ public class IntensityFeaturesTest extends TestCase {
         boolean useNormalizedIntensities = true;
         
         String fileName = "valve_gaussian_subimage.png";
-        //String fileName = "checkerboard_subimage.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
@@ -293,10 +78,9 @@ public class IntensityFeaturesTest extends TestCase {
         IntensityFeatures featuresGradient = new IntensityFeatures(blockHalfWidths,
             useNormalizedIntensities, rOffsets);
         featuresGradient.calculateGradientWithGreyscale(img);
-        MiscDebug.writeImage(featuresGradient.theta, "_theta");
+        //MiscDebug.writeImage(featuresGradient.theta, "_theta");
         
-        int orientationGS, x, y, expected, orientationGradient;
-        img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        int x, y, expected, orientationGradient;
         
         /*
         x=52  y=53
@@ -315,53 +99,119 @@ public class IntensityFeaturesTest extends TestCase {
         Logger log = Logger.getLogger(this.getClass().getName());
         
         x = 52; y = 53; expected=0;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 47; y = 11; expected=270;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 40; y = 43; expected=135;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 104; y = 46; expected=200;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 98; y = 72; expected=150;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
         x = 83; y = 84; expected=220;
-        orientationGS = featuresGS.calculate45DegreeOrientation(img, x, y);
-        log.fine(String.format("(%d,%d) gs exp=%d angle=%d", x, y, expected, orientationGS));
         orientationGradient = featuresGradient.calculateOrientation(x, y);
         log.fine(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
             expected, orientationGradient));
         assertTrue(Math.abs(orientationGradient - expected) <= 20);
         
+    }
+    
+    public void testCalculateOrientation_gradient_1() throws Exception {
+        
+        RotatedOffsets rOffsets = RotatedOffsets.getInstance();
+        
+        int blockHalfWidths = 5;
+        boolean useNormalizedIntensities = true;
+        
+        String fileName = "checkerboard_subimage.jpg";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        
+        // values are cached so create a new instance for each "img"
+        IntensityFeatures featuresGS = new IntensityFeatures(blockHalfWidths,
+            useNormalizedIntensities, rOffsets);
+        IntensityFeatures featuresGradient = new IntensityFeatures(blockHalfWidths,
+            useNormalizedIntensities, rOffsets);
+        featuresGradient.calculateGradientWithGreyscale(img);
+        //MiscDebug.writeImage(featuresGradient.gXY, "_gradient");
+        
+        int x, y, expected, orientationGradient;
+        img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        
+        /*
+        x=26 y=30
+        
+        (25,29)
+        (28,27)
+        (24,29)
+        (28,28)
+        */
+        //makeCannyCorners(filePath);
+        make2ndDerivPoints(filePath);
+        
+        Logger log = Logger.getLogger(this.getClass().getName());
+        
+        // this corner is near intersection of 2 white and 2 black squares,
+        // so might expect closer to 270 if centered, but since it is 
+        // below the intersection, the dominating angle is the adjacent
+        // square edge, so orientation is 180
+        x = 26; y = 30; expected=180;
+        orientationGradient = featuresGradient.calculateOrientation(x, y);
+        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+            expected, orientationGradient));
+        assertTrue(Math.abs(orientationGradient - expected) <= 20);
+        
+        x = 25; y = 29; expected=270;
+        orientationGradient = featuresGradient.calculateOrientation(x, y);
+        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+            expected, orientationGradient));
+        assertTrue(Math.abs(orientationGradient - expected) <= 20);
+        
+        x = 28; y = 27; expected=90;
+        orientationGradient = featuresGradient.calculateOrientation(x, y);
+        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+            expected, orientationGradient));
+        assertTrue(Math.abs(orientationGradient - expected) <= 20);
+        
+        x = 28; y = 28; expected=90;
+        orientationGradient = featuresGradient.calculateOrientation(x, y);
+        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+            expected, orientationGradient));
+        assertTrue(Math.abs(orientationGradient - expected) <= 20);
+        
+        x = 24; y = 29; expected=270;
+        orientationGradient = featuresGradient.calculateOrientation(x, y);
+        log.info(String.format("(%d,%d) gr exp=%d angle=%d\n", x, y, 
+            expected, orientationGradient));
+        assertTrue(Math.abs(orientationGradient - expected) <= 20);
+       /*
+                                       90
+                             *        (28,27)
+                             *        (28,28) 90
+         (24,29) (25,29)          *    *
+          270      270   (26,30)       *  
+                           180
+        */
     }
 
     private void printDebug(GreyscaleImage img) {
@@ -431,8 +281,11 @@ public class IntensityFeaturesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(img.copyToGreyscale(),
-            2000, true);
+            10, true);
         
+        for (PairInt p : pixels) {
+            System.out.println(p.toString());
+        }
         ImageIOHelper.addCurveToImage(pixels, imgCp, 1, 255, 0, 0);
         
         MiscDebug.writeImage(imgCp, "_pts_2nd_deriv");
