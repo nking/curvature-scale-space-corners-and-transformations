@@ -2,62 +2,99 @@
    The creation of corner regions to match is now very good,
    but the analysis of the comparisons needs to be improved.
 
-   -- all but books have better matching now
-      -- might need to consider keeping top 10 or so for each index1
-         best in BlobCornersScaleFinder, then looking at most frequent
-         parameters solution before evaluation.
-      -- the books test images should be better matched by the next
-         class for a matcher which will not use euclidean transformations
-         for evaluation
+   specifically, can see that there is a problem solving rotated
+   images w/ EuclideanSegmentFeatureMatcher.
+     -- checkerboard test image for rotated image1 has different results
+        than for image1 not rotated so there is a problem still
+        (with difference in corners or in orientation calculation presumably).
 
-start of rough outline of requirements of a non-euclidean matcher:
+   Meanwhile, looking at the big picture of "feature matchers" to review what
+   have implemented and what needs to be implemented.
 
-NonEuclideanSegmentFeatureMatcher:
-    -- uses atrous or canny based segmentation
-    -- extract blobs and blob corners
-    -- the matching of blob to blob corners or all corners to all corners
-       will be performed using the checkerboard test data to derive
-       best practices. 
-    -- regardless of curve membership uses CornerMatcher w/ a 
-       dither of 2 or 3.
-    -- two different kinds of analysis of the matched and remaining
-       unmatched points.
-         -- if can assume that the geometry is such that objects have
-            not moved and the perspective has not changed much,
-            can use an adaptation of the method suggested by Geiger et al. 2010.
-            the well determined points just found become the control points.
-            then delanauy triangulation for all points, then find unmatched by
-            interpolating between control points, that is searching within
-            the delanauy space in other image that is bounded by the cells
-            of the control points.
-    -- are the results fewer false positives than NonEuclideanInvHessianFeatureMatcher?
+   (1) CurveCornerEuclideanMatcher - done
+       given curve1 and curve2, finds the best euclidean transformation
+       between them if any.  uses features and greyscale image and gradient image.
+       this method is meant to be useful by many different larger matching patterns.
+   (2) the contour matcher - components exist
+       given curve1 and curve2 w/o greyscale image,
+       uses properties of curvature scale space to match and return
+       best euclidean transformation.
+       -- note that the current works on closed curves,
+          but a version could be made to work on partial contours
+          such as the available profiles of half dome - it has
+          very distinctive curves, but a different amount of them
+          in images.  stonehenge is a good test image too...
+    (3) CornerMatcher - done, ** but needs improvements
+        given 2 sets of corners, finds the best SSD match for each 
+        corner1, discarding those that have a similar SSD 2nd best.
+    (4) EuclideanSegmentFeatureMatcher
+        goal is to find best single euclidean transformation for image1 to image2.
+        uses segmentation to create blobs.
+        solves for transformation of each blob in one image against the other.
+        keeps the best blob1 solution for each blob1.
+        evaluates all blob1 transformations to find the best for the image.
+        -- pros: for panorama and stereo does lead to a solution.
+                 solves for rotation too.
+        -- cons: long runtime due to curve to curve transformation comparisons.
+                 also, have to sometimes discard very good matching points 
+                 because the curve only has 2 and needs at least 3 in order to
+                 estimate a euclidean transformation.
+        Summary:
+            The class can make a very good correspondence list w/ few errors.
+            With the same assumption of panoramic or stereo images, essentially,
+            one might be able to make a faster solution by:
+            make class called EuclideanSegmentFeatureMatcher2
+                -- finds best SSD matches for each point image wide, discarding if
+                   has close second best.
+                -- then use the association of best matches w/ blobs and combinations
+                   of pairs of those blobs to calculate euclidean transformations.
+                   -- order blobs1 matched by descending numbers of matched and same
+                      for blobs2.
+                      -- create transformations from the pairings.
+                         -- evaluate each transformation with all corners.
+                         -- is there a point where can see that evaluation is very 
+                            high so can stop and consider it solved?
+                difficult test cases:
+                    merton college had windows which had best false matches,
+                    but the method above led to at least one true solution 
+                    making it to the evaluation stage and so the true overall solution
+                    was found.  (one blob's best matches were true and so the
+                    evaluation found largest number of transformed matched w/ low SSD sums). 
+                    in this suggested EuclideanSegmentFeatureMatcher2 here, the matches are fixed for
+                    calculating a transformation, but should not be considered
+                    fixed for evaluation.
+                    --> the difference in runtime complexity for this approach compared to the existing:
 
-NonEuclideanInvHessianFeatureMatcher:
-    -- begins with finding the inverse hessian points
-    -- uses CornerMatcher for all corners and a dither of 0 or 1
-    -- are these results enough to provide good correspondence
-       for the epipolar solver?  
-       No need to bootstrap more points from these?
-       -- are there too many false positives?
-    methods:
-      + NonEuclideanInvHessianFeatureMatcher()
-      - initialize()
-      + match();
-      + List<PairInt> getMatched1();
-      + List<PairInt> getMatched2();
-      + getSolutionStats() : List<FeatureComparisonStat>
+                        example1: 50 curves for img1 and img2, each w/ 10 points (npoints = 500 total for each image)
+                        example2: 50 curves for img1 and img2, each w/ 5 points (npoints = 250 total for each image)
 
--- for calculation of orientation angle in IntensityFeatures,
-   for the method that uses first derivative, might need to alter the
-   method to find the minimum of the absolute values of thte differences
-   (an approx of zero crossings).
-   the current method is consistently determined, but might be improvable.
-  
--- for the checkerboard test images:
-   if not well solved by the non-euclidean trans solver,
-   consider adding a flag at a higher setting in the finder settings
-   to allow immediate change of segmentation to canny segmentation
-   (see the middle of the blob corners scale finder for data w/ grids).
+                        example1, current class logic:
+                            50*50:
+                                10*10 to find best SSD
+                                + up to (10*9/2) calculations of transformation * evalution over 10
+                                keeps best 1 out of 50
+                            evaluates up to 50 transformations on 50 points to find best
+                         total==> (50*50*(100 + 45*10)) + 50*50 = 1.38 million at most
+                      
+                        example1, proposed class logic:
+                            500*500 to find each best matches.
+                            500*50 at most to find which blob a point belongs to
+                            + at most 50*49/2 combinations of evaluation (each is 500 comparisons) to find best transformation.
+                              that is if assume want to use only 2 blobs for a solution and they have at least 3 points total.
+                          total==> 500*500 + 500*50 + (50*49/2)*500 = 0.89 million at most
+                             note that if the filter by 2nd best results in fewer than 2 points per blob,
+                             would need to use combinations of 3 blobs.
+                             n!/3!*(n-3)! = 50*49*48/6 = 16 times more points 
+    (5) NonEuclideanSegmentFeatureMatcher
+        creates "corners" using 2nd derivatives of gaussian and finds the
+        best match for each in image1 to each in image2.
+        the matches look very good, but points which are not in the true
+        union of the true solution are matched too, so
+        presumably some assumptions about homology are needed as a 
+        filter before using EpipolarSolver, but maybe not.
+        I think RANSAC can handle as high as 50% false matches, but need to find reference for that.
+
+-- remove calculate45DegreeOrientation
 
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
