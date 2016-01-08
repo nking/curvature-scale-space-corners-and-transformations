@@ -400,6 +400,35 @@ public class ImageProcessor {
 
         return output;
     }
+    
+    public GreyscaleImage computeTheta360_0(final GreyscaleImage gradientX,
+        final GreyscaleImage gradientY) {
+
+        GreyscaleImage output = gradientX.createSignedWithDimensions();
+
+        for (int i = 0; i < gradientX.getWidth(); i++) {
+            for (int j = 0; j < gradientX.getHeight(); j++) {
+
+                double gX = gradientX.getValue(i, j);
+
+                double gY = gradientY.getValue(i, j);
+
+                // -pi to pi radians
+                double theta = Math.atan2(gY, gX);
+                
+                // transform to 0 to 2*pi radians
+                if (theta < 0) {
+                    theta += 2. * Math.PI;
+                }
+
+                int d = (int)Math.round(theta * 180./Math.PI);
+                
+                output.setValue(i, j, d);
+            }
+        }
+
+        return output;
+    }
 
     /**
      * compute theta as a polar angle that increases in a clockwise manner
@@ -3248,8 +3277,6 @@ public class ImageProcessor {
         
         log.info("before nPoints=" + pixels.size());
         
-        // this might need to be moved to code that assigns pixels to a blob,
-        // then perform reduction using 8 neighborhood region
         reduceTo4NeighborCentroids(pixels);
         
         log.info("after nPoints=" + pixels.size());
@@ -3302,8 +3329,6 @@ public class ImageProcessor {
         
         log.info("before nPoints=" + pixels.size());
         
-        // this might need to be moved to code that assigns pixels to a blob,
-        // then perform reduction using 8 neighborhood region
         reduceTo4NeighborCentroids(pixels);
         
         log.info("after nPoints=" + pixels.size());

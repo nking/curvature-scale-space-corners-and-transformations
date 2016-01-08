@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -799,21 +801,20 @@ public class BlobPerimeterCornerHelper {
         
         corners = new ArrayList<List<CornerRegion>>();
         
+        List<Set<PairInt>> pixels2 = new ArrayList<Set<PairInt>>();
+        
         for (int i = 0; i < blobs.size(); ++i) {
             List<CornerRegion> crList = new ArrayList<CornerRegion>();
             corners.add(crList);
+            pixels2.add(new HashSet<PairInt>());
         }
+        
         for (PairInt p : pixels) {
             boolean found = false;
             for (int i = 0; i < blobs.size(); ++i) {
                 Set<PairInt> blob = blobs.get(i);
                 if (blob.contains(p)) {
-                    CornerRegion cr = new CornerRegion(i, 1, 0);
-                    cr.setFlagThatNeighborsHoldDummyValues();
-                    cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
-                    cr.setIndexWithinCurve(-1);
-
-                    corners.get(i).add(cr);
+                    pixels2.get(i).add(p);
                     found = true;
                     break;
                 }
@@ -822,6 +823,21 @@ public class BlobPerimeterCornerHelper {
                 log.info("discarding because not in blob: " + p.toString());
             }
         }
+        
+        // if uncomment this, have to increase dither to larger than 1
+        //8NeighborCentroids(pixels2);
+        
+        for (int i = 0; i < pixels2.size(); ++i) {
+            Set<PairInt> p2 = pixels2.get(i);
+            for (PairInt p : p2) {
+                CornerRegion cr = new CornerRegion(i, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.get(i).add(cr);
+            }
+        }
+        
         segBinnedCornersMap.put(type, corners);
 
         if (imgHelper.isInDebugMode()) {
@@ -873,24 +889,20 @@ public class BlobPerimeterCornerHelper {
         
         corners = new ArrayList<List<CornerRegion>>();
         
+        List<Set<PairInt>> pixels2 = new ArrayList<Set<PairInt>>();
+        
         for (int i = 0; i < blobs.size(); ++i) {
             List<CornerRegion> crList = new ArrayList<CornerRegion>();
             corners.add(crList);
+            pixels2.add(new HashSet<PairInt>());
         }
+        
         for (PairInt p : pixels) {
             boolean found = false;
             for (int i = 0; i < blobs.size(); ++i) {
-                
                 Set<PairInt> blob = blobs.get(i);
-                
                 if (blob.contains(p)) {
-                    
-                    CornerRegion cr = new CornerRegion(i, 1, 0);
-                    cr.setFlagThatNeighborsHoldDummyValues();
-                    cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
-                    cr.setIndexWithinCurve(-1);
-
-                    corners.get(i).add(cr);
+                    pixels2.get(i).add(p);
                     found = true;
                     break;
                 }
@@ -899,6 +911,21 @@ public class BlobPerimeterCornerHelper {
                 log.info("discarding because not in blob: " + p.toString());
             }
         }
+        
+        // if uncomment this, have to increase dither to larger than 1
+        //reduceTo8NeighborCentroids(pixels2);
+        
+        for (int i = 0; i < pixels2.size(); ++i) {
+            Set<PairInt> p2 = pixels2.get(i);
+            for (PairInt p : p2) {
+                CornerRegion cr = new CornerRegion(i, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.get(i).add(cr);
+            }
+        }
+        
         segCornersMap.put(type, corners);
 
         if (imgHelper.isInDebugMode()) {
@@ -912,6 +939,62 @@ public class BlobPerimeterCornerHelper {
         
         assert(perimeterLists.size() == corners.size());
         
+    }
+
+    private void reduceTo8NeighborCentroids(List<Set<PairInt>> pixelLists) {
+        
+        Set<PairInt> processed = new HashSet<PairInt>();
+                
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int nBefore = 0;
+        int nAfter = 0;
+        
+        Set<PairInt> neighbors = new HashSet<PairInt>();
+        
+        for (int i = 0; i < pixelLists.size(); ++i) {
+            
+            Set<PairInt> pixels = pixelLists.get(i);
+            
+            Set<PairInt> output = new HashSet<PairInt>();
+            
+            nBefore += pixels.size();
+
+            for (PairInt p : pixels) {
+
+                if (processed.contains(p)) {
+                    continue;
+                }
+
+                curveHelper.findNeighbors(p.getX(), p.getY(), pixels, processed, 
+                    dxs, dys, neighbors);
+
+                processed.add(p);
+                processed.addAll(neighbors);
+
+                if (neighbors.size() == 0) {
+                    output.add(p);
+                } else {
+                    double[] xyCen = curveHelper.calculateXYCentroids(neighbors);
+                    int x = (int)Math.round(xyCen[0]);
+                    int y = (int)Math.round(xyCen[1]);
+                    assert(Math.abs(x - p.getX()) <= 3);
+                    assert(Math.abs(y - p.getY()) <= 3);
+                    output.add(new PairInt(x, y));
+                }
+            }
+        
+            pixels.clear();
+            pixels.addAll(output);
+            
+            nAfter += pixels.size();
+        }
+        
+        Logger.getLogger(this.getClass().getName()).info("nBefore=" + nBefore 
+            + " nAfter=" + nAfter);
     }
 
 }

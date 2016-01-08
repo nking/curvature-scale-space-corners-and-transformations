@@ -1771,6 +1771,18 @@ int z1 = 1;
         }
     }
     
+    public static void addCornerRegionsToImage(Collection<CornerRegion> regions,
+        Image img, int xOffset, int yOffset, int nExtraForDot) {
+
+        for (CornerRegion br : regions) {
+
+            int x = br.getX()[br.getKMaxIdx()];
+            int y = br.getY()[br.getKMaxIdx()];
+
+            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 255, 0, 0);
+        }
+    }
+    
     public static <T extends CornerRegion> void addCornerRegionsToImage(
         Collection<T> regions, Image img, int xOffset, int yOffset, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
