@@ -18,10 +18,6 @@ import java.util.logging.Logger;
  */
 public class CurveCornerEuclideanMatcher<T extends CornerRegion> {
 
-    // a minimum number to use when calculating the sums of SSDs for
-    // normalized intensities
-    private float lowerLimitSSD = 200.f;
-    
     /**
      * the costs calculated here are small fractions, so they need to be
      * multiplied by a large constant for use with the Fibonacci heap
@@ -79,7 +75,7 @@ public class CurveCornerEuclideanMatcher<T extends CornerRegion> {
     public boolean matchCorners(
         final IntensityFeatures features1, final IntensityFeatures features2,
         final List<T> corners1,final List<T> corners2,
-        GreyscaleImage img1, GreyscaleImage img2, int binFactor1,
+        GreyscaleImage img1, GreyscaleImage img2, int binFactor1, 
         int binFactor2) {
 
         if (state != null) {
@@ -169,6 +165,16 @@ for (int i = 0; i < c2.size(); ++i) {
 CornerRegion cr = c2.get(i);
 xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
 }
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+double[] xyCen1 = curveHelper.calculateXYCentroids0(c1);
+double[] xyCen2 = curveHelper.calculateXYCentroids0(c2);
+if ((Math.abs(xyCen1[0] - 100) < 20) && (Math.abs(xyCen1[1] - 123) < 20)) {
+    int z = 1;
+    if ((Math.abs(xyCen2[0] - 60) < 20) && (Math.abs(xyCen2[1] - 122) < 20)) {
+        int z2 = 1;
+        debug = true;
+    }
+}
 */
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
@@ -191,8 +197,6 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
                 
                 if ((compStat == null) ||
                     (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
-//NOTE: temporary change for lower limit filter to remove featureless patches
- || (compStat.getImg2PointIntensityErr() < lowerLimitSSD)
                     ) {
                     continue;
                 }
@@ -634,7 +638,7 @@ xy2[i] = new double[]{cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]};
             float cost3 = (sumDist < tolXY) ? 0.01f : ((float)sumDist + 0.01f)/(float)tolXY;
             //float normCost = cost1 * cost2 * cost3;
             float normCost = cost1 * cost2 * cost3;
-            
+        
             if (normCost < minCost) {
                 maxNEval = nEval2;
                 bestParams = params;

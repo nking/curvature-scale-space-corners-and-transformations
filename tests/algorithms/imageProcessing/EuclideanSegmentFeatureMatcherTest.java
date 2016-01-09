@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -24,7 +26,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 5; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -62,7 +64,6 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
                     settings.setToUse2ndDerivCorners();
-                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }
@@ -70,7 +71,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         }
     }
     
-    public void estRot90() throws Exception {
+    public void testRot90() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -78,7 +79,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
                 
-        for (int i = 5; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) {
             fileName1 = null;
             fileName2 = null;
             switch(i) {
@@ -117,7 +118,6 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
                     settings.setToUse2ndDerivCorners();
-                    //settings.setToOverrideWithCannySegmentation();
                     break;
                 }
             }
@@ -172,8 +172,8 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
             
             TransformationParameters revParams = tc.swapReferenceFrames(params90);
             transformer.transformToOrigin(0, 0, revParams);
-            revParams.setTranslationX(revParams.getTranslationX() + -74);            
-            revParams.setTranslationY(revParams.getTranslationY() + -0);
+            revParams.setTranslationX(revParams.getTranslationX() + -85);            
+            revParams.setTranslationY(revParams.getTranslationY() + -11);
             revParams.setRotationInDegrees(revParams.getRotationInDegrees() - 0);
             log.info("revParams: " + revParams.toString());
 
@@ -181,8 +181,9 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
             img1RevTr = (ImageExt) transformer.applyTransformation(img1RevTr,
                 revParams, img1RevTr.getHeight(), img1RevTr.getWidth());
             MiscDebug.writeImage(img1RevTr, "rot90_rev_trans");
-            */
+            
             int z = 1;
+            */
         }
         
         EuclideanSegmentFeatureMatcher wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, 
@@ -202,6 +203,20 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
             rotationInDegrees);
 
         assertTrue(Math.abs(scale - 1) < 0.20);
+        
+        if (fileName1.contains("checkerboard")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(cl.getTranslationX() - 464) < 10);
+                assertTrue(Math.abs(cl.getTranslationY() - -11) < 10);
+                float diffRot = AngleUtil.getAngleDifference(270, cl.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(cl.getTranslationX() - -85) < 10);
+                assertTrue(Math.abs(cl.getTranslationY() - -11) < 10);
+                float diffRot = AngleUtil.getAngleDifference(360, cl.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            }
+        }
 
     }
     

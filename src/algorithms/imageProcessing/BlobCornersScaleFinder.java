@@ -132,13 +132,15 @@ try {
 /*
 StringBuilder sb = new StringBuilder("xy1:\n");
 for (int i = 0; i < xy1.length; ++i) {
-    sb.append(String.format("[%2d] (%3d, %3d)\n", i,
-        (int)Math.round(xy1[i][0]), (int)Math.round(xy1[i][1])));
+    sb.append(String.format("[%2d] (%3d, %3d)  nPts=%d\n", i,
+        (int)Math.round(xy1[i][0]), (int)Math.round(xy1[i][1]),
+        corners1List.get(i).size()));
 }
 sb.append("xy2:\n");
 for (int i = 0; i < xy2.length; ++i) {
-    sb.append(String.format("[%2d] (%3d, %3d)\n", i,
-        (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1])));
+    sb.append(String.format("[%2d] (%3d, %3d) nPts=%d\n", i,
+        (int)Math.round(xy2[i][0]), (int)Math.round(xy2[i][1]),
+        corners2List.get(i).size()));
 }
 System.out.println(sb.toString());
 */
@@ -173,7 +175,7 @@ for (int i = 0; i < im2Chk.length; ++i) {
         }
     }
 }
-sb = new StringBuilder("expeected matches:\n");
+sb = new StringBuilder("expected matches:\n");
 for (int i = 0; i < im1ChkIdxs.length; ++i) {
     sb.append(String.format("[%d] to [%d]", im1ChkIdxs[i], im2ChkIdxs[i]));
     sb.append("\n");
@@ -213,17 +215,14 @@ System.out.println(sb.toString());
             return null;
         }
         
-        /*
-        -- get best TransformationParameters for each idx1
-           (this is at most 40 of them)
-        -- consider combining similar parameters to reduce the eval step
-        -- evaluate each param against all points.
-            -- make 2 eval methods, hopefully the fastest is enough
-               -- (1) eval by finding an existing point within tolerance of predicted position
-               -- (2) eval by finding best SSD of points within tolerance of predicted and
-                      use nEval, SSD and dist to return a normalized cost
-        */
-
+        // this increases the runtime, but is necessary for tests like
+        // rotated checkerboard where blobs with additional points bias
+        // the curve to curve best matches (idx1 best match is never the
+        // true match for that test).  keeping the top n1 solutions here allows  
+        // the 2nd or 3rd best for an idx1 to make it to the evaluation stage.
+        FixedSizeSortedVector<TmpSoln> topSolns = 
+            new FixedSizeSortedVector<TmpSoln>(n1, TmpSoln.class);
+        
         for (int idx1 = 0; idx1 < n1; ++idx1) {
 
             List<T> corners1 = filteredCorners1List.get(idx1);
@@ -232,17 +231,11 @@ System.out.println(sb.toString());
                 continue;
             }
 
-            /*
-            first, see if nEval alone finds the true matches for curve to curve
-            */
             int maxNEval = Integer.MIN_VALUE;
             TransformationParameters maxNEvalParams = null;
             Integer maxNEvalIndex2 = null;
             double minCost = Double.MAX_VALUE;
             List<FeatureComparisonStat> minCostStats = null;
-
-List<Double> costs = new ArrayList<Double>();
-double costForTrueSoln = -1;
 
             for (int idx2 = 0; idx2 < n2; ++idx2) {
 
@@ -272,7 +265,16 @@ double costForTrueSoln = -1;
                 if (nEval < 2) {
                     continue;
                 }
-
+                
+                TmpSoln ts = new TmpSoln();
+                ts.cost = cost;
+                ts.nEval = nEval;
+                ts.index1 = idx1;
+                ts.index2 = idx2;
+                ts.params = params;
+                ts.stats = mapper.getSolutionStats();
+                topSolns.add(ts);
+  
                 if (cost < minCost) {
                     if ((nEval < 3) && (maxNEval > 4)) {
                         // do not accept if nEval is much lower than maxNEval
@@ -297,10 +299,52 @@ double costForTrueSoln = -1;
             }
 
             if (maxNEvalParams != null) {
+                //log.info(idx1 + " best has nEval=" + maxNEval + " for idx2=" + maxNEvalIndex2);
                 trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()),
                     maxNEvalParams);
             }
         }
+        log.info("trMap.size=" + trMap.size());
+        for (int i = 0; i < topSolns.n; ++i) {
+            TransformationParameters params = topSolns.getArray()[i].params;
+            trMap.put(new PairInt(topSolns.getArray()[i].index1, 
+                topSolns.getArray()[i].index2), params);
+        }
+        log.info("trMap.size=" + trMap.size());
+        /*
+        if (true) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("topSolns:\n");
+            for (int i = 0; i < topSolns.n; ++i) {
+                TransformationParameters params = topSolns.getArray()[i].params;
+                float diffRot = AngleUtil.getAngleDifference(270, 
+                    params.getRotationInDegrees());
+                if ((Math.abs(params.getTranslationX() - 232) < 10) &&
+                    (Math.abs(params.getTranslationY() - -5) < 10) &&
+                    (Math.abs(params.getScale() - 1.0) < 0.2) &&
+                    (Math.abs(diffRot) < 15)) {
+                    sb.append("***");
+                }
+                sb.append("ts: ").append(params.toString()).append("\n");
+            }
+            log.info(sb.toString());
+            sb = new StringBuilder("trMap:\n");
+            for (Entry<PairInt, TransformationParameters> entry : trMap.entrySet()) {
+                TransformationParameters params = entry.getValue();
+                
+                float diffRot = AngleUtil.getAngleDifference(270, 
+                    params.getRotationInDegrees());
+                if ((Math.abs(params.getTranslationX() - 232) < 10) &&
+                    (Math.abs(params.getTranslationY() - -5) < 10) &&
+                    (Math.abs(params.getScale() - 1.0) < 0.2) &&
+                    (Math.abs(diffRot) < 15)) {
+                    sb.append("***");
+                }
+                sb.append("trm: ").append(entry.getKey()).append(" ")
+                    .append(params.toString()).append("\n");
+            }
+        }
+        */
 
         int n2c = 0;
         for (List<T> corners2 : corners2List) {
@@ -587,7 +631,7 @@ double costForTrueSoln = -1;
         }
 
         if (bestParams != null) {
-
+            
             if (binFactor1 != 1 || binFactor2 != 1) {
                 for (int i = 0; i < bestStats.size(); ++i) {
                     FeatureComparisonStat stat = bestStats.get(i);
@@ -716,4 +760,25 @@ double costForTrueSoln = -1;
         return true;
     }
     
+    protected static class TmpSoln implements Comparable<TmpSoln>{
+        
+        TransformationParameters params;
+        List<FeatureComparisonStat> stats;
+        int nEval;
+        double cost;
+        int index1;
+        int index2;
+
+        @Override
+        public int compareTo(TmpSoln other) {
+            
+            if (this.cost < other.cost) {
+                return -1;
+            } else if (this.cost > other.cost) {
+                return 1;
+            }
+            return 0;
+        }
+        
+    }
 }

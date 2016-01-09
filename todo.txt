@@ -1,14 +1,5 @@
--- Feature matching still needs improvements:
-   The creation of corner regions to match is now very good,
-   but the analysis of the comparisons needs to be improved.
-
-   specifically, can see that there is a problem solving rotated
-   images w/ EuclideanSegmentFeatureMatcher.
-     -- checkerboard test image for rotated image1 has different results
-        than for image1 not rotated so there is a problem still
-        (with difference in corners or in orientation calculation presumably).
-
-   Meanwhile, looking at the big picture of "feature matchers" to review what
+-- feature matching
+   looking at the big picture of "feature matchers" to review what
    have implemented and what needs to be implemented.
 
    (1) CurveCornerEuclideanMatcher - done
@@ -93,8 +84,6 @@
         presumably some assumptions about homology are needed as a 
         filter before using EpipolarSolver, but maybe not.
         I think RANSAC can handle as high as 50% false matches, but need to find reference for that.
-
--- remove calculate45DegreeOrientation
 
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
