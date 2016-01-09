@@ -3038,12 +3038,12 @@ MiscDebug.writeImage(input, &quot;_after2_illumc0_&quot; + MiscDebug.getCurrentT
 <span class="fc" id="L3038">        Map&lt;PairInt, Float&gt; colorPixelMap3 = createPolarCIEXYMap(input, unassignedPixels);</span>
 <span class="fc" id="L3039">        toleranceInValue = determineToleranceForIllumCorr(colorPixelMap3, nTotC);</span>
 <span class="pc bpc" id="L3040" title="2 of 4 branches missed.">        if (toleranceInValue &gt; -1 &amp;&amp; !colorPixelMap3.isEmpty()) {</span>
-<span class="fc bfc" id="L3041" title="All 2 branches covered.">            if ((toleranceInValue == 1) &amp;&amp;</span>
+<span class="pc bpc" id="L3041" title="1 of 2 branches missed.">            if ((toleranceInValue == 1) &amp;&amp;</span>
 <span class="fc bfc" id="L3042" title="All 2 branches covered.">                ((blackPixels.size()/colorPixelMap2.size()) &gt; 10)) {</span>
-<span class="fc bfc" id="L3043" title="All 2 branches covered.">                if ((blackPixels.size()/colorPixelMap.size()) &gt; 10) {</span>
+<span class="pc bpc" id="L3043" title="1 of 2 branches missed.">                if ((blackPixels.size()/colorPixelMap.size()) &gt; 10) {</span>
 <span class="fc" id="L3044">                    toleranceInValue = 10;</span>
                 } else {
-<span class="fc" id="L3046">                    toleranceInValue = 2;</span>
+<span class="nc" id="L3046">                    toleranceInValue = 2;</span>
                 }
             }
 <span class="fc" id="L3049">            correctForIllumination(input, toleranceInValue, colorPixelMap3);</span>
@@ -3376,8 +3376,8 @@ MiscDebug.writeImage(input, &quot;_after3_illumc0_&quot; + MiscDebug.getCurrentT
 <span class="fc" id="L3376">                    n++;</span>
                 }
 
-<span class="fc bfc" id="L3379" title="All 2 branches covered.">                if (((float)nBelow/(float)n) &lt; 0.5) {</span>
-<span class="fc" id="L3380">                    tolerance = 3;</span>
+<span class="pc bpc" id="L3379" title="1 of 2 branches missed.">                if (((float)nBelow/(float)n) &lt; 0.5) {</span>
+<span class="nc" id="L3380">                    tolerance = 3;</span>
                 }
             }
         }

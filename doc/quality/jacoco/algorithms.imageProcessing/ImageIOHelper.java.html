@@ -1771,18 +1771,30 @@ import javax.imageio.ImageIO;
         }
 <span class="nc" id="L1772">    }</span>
     
+    public static void addCornerRegionsToImage(Collection&lt;CornerRegion&gt; regions,
+        Image img, int xOffset, int yOffset, int nExtraForDot) {
+
+<span class="nc bnc" id="L1777" title="All 2 branches missed.">        for (CornerRegion br : regions) {</span>
+
+<span class="nc" id="L1779">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L1780">            int y = br.getY()[br.getKMaxIdx()];</span>
+
+<span class="nc" id="L1782">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, 255, 0, 0);</span>
+<span class="nc" id="L1783">        }</span>
+<span class="nc" id="L1784">    }</span>
+    
     public static &lt;T extends CornerRegion&gt; void addCornerRegionsToImage(
         Collection&lt;T&gt; regions, Image img, int xOffset, int yOffset, 
         int nExtraForDot, int rClr, int gClr, int bClr) {
         
-<span class="nc bnc" id="L1778" title="All 2 branches missed.">        for (T br : regions ) {</span>
+<span class="nc bnc" id="L1790" title="All 2 branches missed.">        for (T br : regions ) {</span>
             
-<span class="nc" id="L1780">            int x = br.getX()[br.getKMaxIdx()];</span>
-<span class="nc" id="L1781">            int y = br.getY()[br.getKMaxIdx()];</span>
+<span class="nc" id="L1792">            int x = br.getX()[br.getKMaxIdx()];</span>
+<span class="nc" id="L1793">            int y = br.getY()[br.getKMaxIdx()];</span>
             
-<span class="nc" id="L1783">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
+<span class="nc" id="L1795">            addPointToImage(x, y, img, xOffset, yOffset, nExtraForDot, </span>
                 rClr, gClr, bClr);
-<span class="nc" id="L1785">        }</span>
-<span class="nc" id="L1786">    }</span>
+<span class="nc" id="L1797">        }</span>
+<span class="nc" id="L1798">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

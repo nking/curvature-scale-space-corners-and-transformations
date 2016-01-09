@@ -389,7 +389,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L389" title="All 2 branches covered.">                    for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 <span class="fc" id="L390">                        int xx = col + dx;</span>
 <span class="pc bpc" id="L391" title="1 of 4 branches missed.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
-<span class="fc" id="L392">                            continue;</span>
+<span class="nc" id="L392">                            continue;</span>
                         }
 <span class="fc bfc" id="L394" title="All 2 branches covered.">                        for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>
 <span class="fc" id="L395">                            int yy = row + dy;</span>
@@ -1017,7 +1017,7 @@ import java.util.logging.Logger;
             
 <span class="fc bfc" id="L1018" title="All 2 branches covered.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
 <span class="fc" id="L1019">                float xx = x + dx;</span>
-<span class="pc bpc" id="L1020" title="1 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="pc bpc" id="L1020" title="2 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
 <span class="fc bfc" id="L1021" title="All 2 branches covered.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
 <span class="fc" id="L1022">                        float yy = y + dy;</span>
 <span class="pc bpc" id="L1023" title="2 of 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
@@ -1181,49 +1181,116 @@ import java.util.logging.Logger;
 <span class="nc" id="L1181">        writeImages(img1Cp, img2Cp, stats, imgSuffix);</span>
 <span class="nc" id="L1182">    }</span>
     
+    public static void writeImages(GreyscaleImage img1, GreyscaleImage img2, 
+        List&lt;FeatureComparisonStat&gt; stats, String imgSuffix,
+        int nExtraForDot) {
+                
+<span class="fc" id="L1188">        Image img1Cp = img1.copyToColorGreyscaleExt();</span>
+        
+<span class="fc" id="L1190">        Image img2Cp = img2.copyToColorGreyscaleExt();</span>
+        
+<span class="fc" id="L1192">        writeImages(img1Cp, img2Cp, stats, imgSuffix, nExtraForDot);</span>
+<span class="fc" id="L1193">    }</span>
+    
     public static void writeImages(Image img1, Image img2, 
         List&lt;FeatureComparisonStat&gt; stats, String imgSuffix) {
         
-<span class="nc" id="L1187">        int nExtraForDot = 1;</span>
+<span class="nc" id="L1198">        int nExtraForDot = 1;</span>
         
-<span class="nc" id="L1189">        Image img1Cp = img1.copyImage();</span>
+<span class="nc" id="L1200">        writeImages(img1, img2, stats, imgSuffix, nExtraForDot);</span>
+<span class="nc" id="L1201">    }</span>
+    
+    public static void writeImagesInAlternatingColor(ImageExt img1, 
+        ImageExt img2, List&lt;FeatureComparisonStat&gt; stats, String imgSuffix,
+        int nExtraForDot) {
+                
+<span class="fc" id="L1207">        Image img1Cp = img1.copyImage();</span>
         
-<span class="nc" id="L1191">        Image img2Cp = img2.copyImage();</span>
+<span class="fc" id="L1209">        Image img2Cp = img2.copyImage();</span>
         
-<span class="nc" id="L1193">        int w1 = img1Cp.getWidth();</span>
-<span class="nc" id="L1194">        int h1 = img1Cp.getHeight();</span>
+<span class="fc" id="L1211">        int w1 = img1Cp.getWidth();</span>
+<span class="fc" id="L1212">        int h1 = img1Cp.getHeight();</span>
         
-<span class="nc" id="L1196">        int w2 = img2Cp.getWidth();</span>
-<span class="nc" id="L1197">        int h2 = img2Cp.getHeight();</span>
+<span class="fc" id="L1214">        int w2 = img2Cp.getWidth();</span>
+<span class="fc" id="L1215">        int h2 = img2Cp.getHeight();</span>
         
-<span class="nc bnc" id="L1199" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="fc" id="L1217">        int count = 0;</span>
+        
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
             
-<span class="nc" id="L1201">            PairInt p1 = stat.getImg1Point();</span>
+<span class="fc" id="L1221">            PairInt p1 = stat.getImg1Point();</span>
             
-<span class="nc" id="L1203">            PairInt p2 = stat.getImg2Point();</span>
+<span class="fc" id="L1223">            PairInt p2 = stat.getImg2Point();</span>
             
-<span class="nc bnc" id="L1205" title="All 2 branches missed.">            for (int dx = -1*nExtraForDot; dx &lt;= nExtraForDot; ++dx) {</span>
-<span class="nc bnc" id="L1206" title="All 2 branches missed.">                for (int dy = -1*nExtraForDot; dy &lt;= nExtraForDot; ++dy) {</span>
+<span class="fc" id="L1225">            int clr = getNextColorRGB(count);</span>
+<span class="fc" id="L1226">            count++;</span>
             
-<span class="nc" id="L1208">                    int x1 = p1.getX() + dx;</span>
-<span class="nc" id="L1209">                    int y1 = p1.getY() + dy;</span>
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">            for (int dx = -1*nExtraForDot; dx &lt;= nExtraForDot; ++dx) {</span>
+<span class="fc bfc" id="L1229" title="All 2 branches covered.">                for (int dy = -1*nExtraForDot; dy &lt;= nExtraForDot; ++dy) {</span>
+            
+<span class="fc" id="L1231">                    int x1 = p1.getX() + dx;</span>
+<span class="fc" id="L1232">                    int y1 = p1.getY() + dy;</span>
                     
-<span class="nc bnc" id="L1211" title="All 8 branches missed.">                    if ((x1 &gt; -1) &amp;&amp; (x1 &lt; w1) &amp;&amp; (y1 &gt; -1) &amp;&amp; (y1 &lt; h1)) {</span>
-<span class="nc" id="L1212">                        img1Cp.setRGB(x1, y1, 255, 0, 0);</span>
+<span class="pc bpc" id="L1234" title="4 of 8 branches missed.">                    if ((x1 &gt; -1) &amp;&amp; (x1 &lt; w1) &amp;&amp; (y1 &gt; -1) &amp;&amp; (y1 &lt; h1)) {</span>
+<span class="fc" id="L1235">                        img1Cp.setRGB(x1, y1, clr);</span>
                     }
             
-<span class="nc" id="L1215">                    int x2 = p2.getX() + dx;</span>
-<span class="nc" id="L1216">                    int y2 = p2.getY() + dy;</span>
+<span class="fc" id="L1238">                    int x2 = p2.getX() + dx;</span>
+<span class="fc" id="L1239">                    int y2 = p2.getY() + dy;</span>
                     
-<span class="nc bnc" id="L1218" title="All 8 branches missed.">                    if ((x2 &gt; -1) &amp;&amp; (x2 &lt; w2) &amp;&amp; (y2 &gt; -1) &amp;&amp; (y2 &lt; h2)) {</span>
-<span class="nc" id="L1219">                        img2Cp.setRGB(x2, y2, 255, 0, 0);</span>
+<span class="pc bpc" id="L1241" title="4 of 8 branches missed.">                    if ((x2 &gt; -1) &amp;&amp; (x2 &lt; w2) &amp;&amp; (y2 &gt; -1) &amp;&amp; (y2 &lt; h2)) {</span>
+<span class="fc" id="L1242">                        img2Cp.setRGB(x2, y2, clr);</span>
                     }
                 }
             }
-<span class="nc" id="L1223">        }</span>
+<span class="fc" id="L1246">        }</span>
         
-<span class="nc" id="L1225">        MiscDebug.writeImage(img1Cp, imgSuffix + &quot;_1&quot;);</span>
-<span class="nc" id="L1226">        MiscDebug.writeImage(img2Cp, imgSuffix + &quot;_2&quot;);</span>
-<span class="nc" id="L1227">    }</span>
+<span class="fc" id="L1248">        MiscDebug.writeImage(img1Cp, imgSuffix + &quot;_1&quot;);</span>
+<span class="fc" id="L1249">        MiscDebug.writeImage(img2Cp, imgSuffix + &quot;_2&quot;);</span>
+<span class="fc" id="L1250">    }</span>
+    
+    public static void writeImages(Image img1, Image img2, 
+        List&lt;FeatureComparisonStat&gt; stats, String imgSuffix, 
+        int nExtraForDot) {
+                
+<span class="fc" id="L1256">        Image img1Cp = img1.copyImage();</span>
+        
+<span class="fc" id="L1258">        Image img2Cp = img2.copyImage();</span>
+        
+<span class="fc" id="L1260">        int w1 = img1Cp.getWidth();</span>
+<span class="fc" id="L1261">        int h1 = img1Cp.getHeight();</span>
+        
+<span class="fc" id="L1263">        int w2 = img2Cp.getWidth();</span>
+<span class="fc" id="L1264">        int h2 = img2Cp.getHeight();</span>
+        
+<span class="fc bfc" id="L1266" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
+            
+<span class="fc" id="L1268">            PairInt p1 = stat.getImg1Point();</span>
+            
+<span class="fc" id="L1270">            PairInt p2 = stat.getImg2Point();</span>
+            
+<span class="fc bfc" id="L1272" title="All 2 branches covered.">            for (int dx = -1*nExtraForDot; dx &lt;= nExtraForDot; ++dx) {</span>
+<span class="fc bfc" id="L1273" title="All 2 branches covered.">                for (int dy = -1*nExtraForDot; dy &lt;= nExtraForDot; ++dy) {</span>
+            
+<span class="fc" id="L1275">                    int x1 = p1.getX() + dx;</span>
+<span class="fc" id="L1276">                    int y1 = p1.getY() + dy;</span>
+                    
+<span class="pc bpc" id="L1278" title="3 of 8 branches missed.">                    if ((x1 &gt; -1) &amp;&amp; (x1 &lt; w1) &amp;&amp; (y1 &gt; -1) &amp;&amp; (y1 &lt; h1)) {</span>
+<span class="fc" id="L1279">                        img1Cp.setRGB(x1, y1, 255, 0, 0);</span>
+                    }
+            
+<span class="fc" id="L1282">                    int x2 = p2.getX() + dx;</span>
+<span class="fc" id="L1283">                    int y2 = p2.getY() + dy;</span>
+                    
+<span class="pc bpc" id="L1285" title="3 of 8 branches missed.">                    if ((x2 &gt; -1) &amp;&amp; (x2 &lt; w2) &amp;&amp; (y2 &gt; -1) &amp;&amp; (y2 &lt; h2)) {</span>
+<span class="fc" id="L1286">                        img2Cp.setRGB(x2, y2, 255, 0, 0);</span>
+                    }
+                }
+            }
+<span class="fc" id="L1290">        }</span>
+        
+<span class="fc" id="L1292">        MiscDebug.writeImage(img1Cp, imgSuffix + &quot;_1&quot;);</span>
+<span class="fc" id="L1293">        MiscDebug.writeImage(img2Cp, imgSuffix + &quot;_2&quot;);</span>
+<span class="fc" id="L1294">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

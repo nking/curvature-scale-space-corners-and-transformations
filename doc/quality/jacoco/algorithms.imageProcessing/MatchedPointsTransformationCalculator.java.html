@@ -650,15 +650,15 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc bfc" id="L650" title="All 2 branches covered.">        for (int i = 0; i &lt; thetaCorr.size(); ++i) {</span>
 <span class="fc" id="L651">            double diffT = Math.abs(thetaCorr.get(i) - thetaAvg);</span>
 <span class="fc" id="L652">            double diffS = Math.abs(scales.get(i) - unwScaleAvg);</span>
-<span class="pc bpc" id="L653" title="1 of 2 branches missed.">            if (diffT &gt; tolTheta) {</span>
-<span class="nc" id="L654">                remove.add(Integer.valueOf(i));</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">            if (diffT &gt; tolTheta) {</span>
+<span class="fc" id="L654">                remove.add(Integer.valueOf(i));</span>
 <span class="fc bfc" id="L655" title="All 2 branches covered.">            } else if (diffS &gt; (1.5*unwScaleStDev)) {</span>
 <span class="fc" id="L656">                remove.add(Integer.valueOf(i));</span>
             }
         }
         
-<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        if (remove.size() == scales.size()) {</span>
-<span class="nc" id="L661">            return null;</span>
+<span class="fc bfc" id="L660" title="All 2 branches covered.">        if (remove.size() == scales.size()) {</span>
+<span class="fc" id="L661">            return null;</span>
         }
         
 <span class="fc bfc" id="L664" title="All 2 branches covered.">        if (!remove.isEmpty()) {</span>
@@ -725,8 +725,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L725">            outputScaleRotTransXYStDev[3] = (float)transYStDv;</span>
         }
         
-<span class="fc bfc" id="L728" title="All 2 branches covered.">        if (thetaAvg &gt;= (2. * Math.PI)) {</span>
-<span class="fc" id="L729">            thetaAvg -= (2. * Math.PI);</span>
+<span class="pc bpc" id="L728" title="1 of 2 branches missed.">        if (thetaAvg &gt;= (2. * Math.PI)) {</span>
+<span class="nc" id="L729">            thetaAvg -= (2. * Math.PI);</span>
         }          
                 
 <span class="fc" id="L732">        TransformationParameters params = new TransformationParameters();</span>
@@ -759,7 +759,7 @@ import thirdparty.HungarianAlgorithm;
      * @return transformation parameters that can transform points in reference
      * frame 2 into reference frame 1
      */
-    TransformationParameters swapReferenceFrames(TransformationParameters
+    public TransformationParameters swapReferenceFrames(TransformationParameters
         params) {
 
 <span class="pc bpc" id="L765" title="1 of 2 branches missed.">        if (params == null) {</span>

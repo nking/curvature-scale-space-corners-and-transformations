@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CornerMatcher.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CornerMatcher.java</span></div><h1>CornerMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.util.MiscStats;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+public class CornerMatcher&lt;T extends CornerRegion&gt; {
+    
+<span class="fc" id="L15">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+<span class="fc" id="L17">    private List&lt;FeatureComparisonStat&gt; solutionStats = null;</span>
+    
+<span class="fc" id="L19">    private List&lt;PairInt&gt; matched1 = null;</span>
+    
+<span class="fc" id="L21">    private List&lt;PairInt&gt; matched2 = null;</span>
+
+    private enum State {
+        INITIALIZED, FAILED, SOLVED
+    }
+
+<span class="fc" id="L27">    private State state = null;</span>
+    
+    private final int dither;
+
+<span class="fc" id="L31">    public CornerMatcher(int dither) {</span>
+<span class="fc" id="L32">        this.dither = dither;</span>
+<span class="fc" id="L33">    }</span>
+    
+    private void resetDefaults() {
+<span class="nc" id="L36">        state = null;</span>
+<span class="nc" id="L37">        solutionStats = null;</span>
+<span class="nc" id="L38">        matched1 = null;</span>
+<span class="nc" id="L39">        matched2 = null;</span>
+<span class="nc" id="L40">    }</span>
+    
+    /**
+     *
+     * @param features1
+     * @param features2
+     * @param corners1
+     * @param corners2
+     * @param img1 image from which to extract descriptors for features1
+     * @param img2 image from which to extract descriptors for features2
+     * @return
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public boolean matchCorners(
+        final IntensityFeatures features1, final IntensityFeatures features2,
+        final List&lt;T&gt; corners1,final List&lt;T&gt; corners2, GreyscaleImage img1, 
+        GreyscaleImage img2, int binFactor1, int binFactor2) {
+
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (state != null) {</span>
+<span class="nc" id="L59">            resetDefaults();</span>
+        }
+        
+<span class="fc" id="L62">        List&lt;FeatureComparisonStat&gt; stats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+        
+<span class="fc" id="L64">        FeatureMatcher featureMatcher = new FeatureMatcher();</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; corners1.size(); ++i) {</span>
+
+<span class="fc" id="L68">            T region1 = corners1.get(i);</span>
+
+<span class="fc" id="L70">            FeatureComparisonStat best = null;</span>
+<span class="fc" id="L71">            int bestIdx2 = -1;</span>
+<span class="fc" id="L72">            FeatureComparisonStat best2nd = null;</span>
+<span class="fc" id="L73">            int bestIdx2_2nd = -1;</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int j = 0; j &lt; corners2.size(); ++j) {</span>
+
+<span class="fc" id="L77">                T region2 = corners2.get(j);</span>
+
+<span class="fc" id="L79">                FeatureComparisonStat compStat = </span>
+<span class="fc" id="L80">                    featureMatcher.ditherAndRotateForBestLocation2(</span>
+                    features1, features2, region1, region2, dither,
+                    img1, img2);
+                
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                if ((compStat == null) ||</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">                    (compStat.getSumIntensitySqDiff() &gt; compStat.getImg2PointIntensityErr())</span>
+                    ) {
+<span class="nc" id="L87">                    continue;</span>
+                }
+                
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                if ((best2nd != null) &amp;&amp; (compStat.getSumIntensitySqDiff() </span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                    &gt;= best2nd.getSumIntensitySqDiff())) {</span>
+<span class="fc" id="L92">                    continue;</span>
+                }
+                
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                if (best == null) {</span>
+<span class="fc" id="L96">                    best = compStat;</span>
+<span class="fc" id="L97">                    bestIdx2 = j;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                } else if (best2nd == null) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                    if (compStat.getSumIntensitySqDiff() &lt; best.getSumIntensitySqDiff()) {</span>
+                        // first becomes second and this becomes first
+<span class="fc" id="L101">                        best2nd = best;</span>
+<span class="fc" id="L102">                        bestIdx2_2nd = bestIdx2;</span>
+<span class="fc" id="L103">                        best = compStat;</span>
+<span class="fc" id="L104">                        bestIdx2 = j;</span>
+                    } else {
+<span class="fc" id="L106">                        best2nd = compStat;</span>
+<span class="fc" id="L107">                        bestIdx2_2nd = j;</span>
+                    }
+                } else {
+                    // we know it's better than 2nd best
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                    if (compStat.getSumIntensitySqDiff() &lt; best.getSumIntensitySqDiff()) {</span>
+                        // first becomes second and this becomes first
+<span class="fc" id="L113">                        best2nd = best;</span>
+<span class="fc" id="L114">                        bestIdx2_2nd = bestIdx2;</span>
+<span class="fc" id="L115">                        best = compStat;</span>
+<span class="fc" id="L116">                        bestIdx2 = j;</span>
+                    } else {
+                        // replaces 2nd best
+<span class="fc" id="L119">                        best2nd = compStat;</span>
+<span class="fc" id="L120">                        bestIdx2_2nd = j;</span>
+                    }
+                }
+            }
+            
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (best == null) {</span>
+<span class="fc" id="L126">                continue;</span>
+            }
+
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            if (best2nd == null) {</span>
+<span class="fc" id="L130">                stats.add(best);</span>
+            } else {
+                
+                //TODO: the ratio threshold may need to be revised.
+                // see Mikolajczyk and Schmid 2005 and the Brown &amp; Lowe paper
+                
+<span class="fc" id="L136">                float ratio = best.getSumIntensitySqDiff()/best2nd.getSumIntensitySqDiff();</span>
+                
+<span class="fc bfc" id="L138" title="All 2 branches covered.">                if (ratio &lt; 0.8) {</span>
+<span class="fc" id="L139">                    stats.add(best);</span>
+                }
+            }
+        }
+        
+<span class="fc" id="L144">        MiscStats.filterForDegeneracy(stats);</span>
+        
+<span class="fc" id="L146">        assignInstanceResults(stats);</span>
+        
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        return !stats.isEmpty();</span>
+    }
+    
+    private void assignInstanceResults(List&lt;FeatureComparisonStat&gt; stats) {
+        
+<span class="fc" id="L153">        this.solutionStats = stats;</span>
+        
+<span class="fc" id="L155">        matched1 = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="fc" id="L157">        matched2 = new ArrayList&lt;PairInt&gt;();</span>
+        
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
+            
+<span class="fc" id="L161">            matched1.add(stat.getImg1Point().copy());</span>
+            
+<span class="fc" id="L163">            matched2.add(stat.getImg2Point().copy());</span>
+<span class="fc" id="L164">        }</span>
+<span class="fc" id="L165">    }</span>
+    
+    /**
+     * @return the solutionStats
+     */
+    public List&lt;FeatureComparisonStat&gt; getSolutionStats() {
+<span class="fc" id="L171">        return solutionStats;</span>
+    }
+
+    /**
+     * @return the matched1
+     */
+    public List&lt;PairInt&gt; getMatched1() {
+<span class="fc" id="L178">        return matched1;</span>
+    }
+
+    /**
+     * @return the matched2
+     */
+    public List&lt;PairInt&gt; getMatched2() {
+<span class="fc" id="L185">        return matched2;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

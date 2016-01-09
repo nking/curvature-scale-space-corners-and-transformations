@@ -3355,7 +3355,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L3355" title="All 2 branches covered.">                for (int n2Idx = 0; n2Idx &lt; eightNeighborsX.length; ++n2Idx) {</span>
 <span class="fc" id="L3356">                    int x2 = x1 + eightNeighborsX[n2Idx];</span>
 <span class="fc" id="L3357">                    int y2 = y1 + eightNeighborsY[n2Idx];                </span>
-<span class="pc bpc" id="L3358" title="2 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="pc bpc" id="L3358" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
 <span class="nc" id="L3359">                        continue;</span>
                     }
 <span class="fc" id="L3361">                    PairInt p4 = new PairInt(x2, y2);</span>
@@ -4312,7 +4312,7 @@ import java.util.logging.Logger;
 <span class="fc" id="L4312">                    int diffXab = Math.abs(xa - xb);</span>
 <span class="fc" id="L4313">                    int diffXbc = Math.abs(xb - xc);</span>
 
-<span class="pc bpc" id="L4315" title="1 of 10 branches missed.">                    if ((diffXac == 1) &amp;&amp; (((diffXab == 0) &amp;&amp; (diffXbc == 1))</span>
+<span class="pc bpc" id="L4315" title="2 of 10 branches missed.">                    if ((diffXac == 1) &amp;&amp; (((diffXab == 0) &amp;&amp; (diffXbc == 1))</span>
                         || ((diffXab == 1) &amp;&amp; (diffXbc == 0)))) {
                         
 <span class="pc bpc" id="L4318" title="1 of 8 branches missed.">                        if (((ya &lt; yb) &amp;&amp; (yb &lt; yc)) || ((ya &gt; yb) &amp;&amp; (yb &gt; yc))) {</span>

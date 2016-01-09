@@ -6,48 +6,70 @@
 <span class="fc" id="L6">    private String debugTag = &quot;&quot;;</span>
 <span class="fc" id="L7">    private boolean debug = false;</span>
 <span class="fc" id="L8">    private boolean startWithBinnedImages = true;</span>
+<span class="fc" id="L9">    private boolean overrideWithCannySegmentation = false;</span>
+    
+    //NOTE: not sure this belongs here.  temporarily placed until experimenting
+    // w/ methods has found best practices
+<span class="fc" id="L13">    private boolean use2ndDerivCorners = false;</span>
 
+    public void setToOverrideWithCannySegmentation() {
+<span class="nc" id="L16">        overrideWithCannySegmentation = true;</span>
+<span class="nc" id="L17">    }</span>
+    public boolean doOverrideWithCannySegmentation() {
+<span class="fc" id="L19">        return overrideWithCannySegmentation;</span>
+    }
+    
+    public void setToUse2ndDerivCorners() {
+<span class="fc" id="L23">        use2ndDerivCorners = true;</span>
+<span class="fc" id="L24">    }</span>
+    
+    public boolean doUse2ndDerivCorners() {
+<span class="fc" id="L27">        return use2ndDerivCorners;</span>
+    }
+    
     public boolean useNormalizedFeatures() {
-<span class="fc" id="L11">        return useNormalizedFeatures;</span>
+<span class="fc" id="L31">        return useNormalizedFeatures;</span>
     }
 
     public void setUseNormalizedFeatures(boolean useNormalizedFeatures) {
-<span class="fc" id="L15">        this.useNormalizedFeatures = useNormalizedFeatures;</span>
-<span class="fc" id="L16">    }</span>
+<span class="fc" id="L35">        this.useNormalizedFeatures = useNormalizedFeatures;</span>
+<span class="fc" id="L36">    }</span>
 
     public String getDebugTag() {
-<span class="fc" id="L19">        return debugTag;</span>
+<span class="fc" id="L39">        return debugTag;</span>
     }
 
     public void setDebugTag(String debugTag) {
-<span class="fc" id="L23">        this.debugTag = debugTag;</span>
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L43">        this.debugTag = debugTag;</span>
+<span class="fc" id="L44">    }</span>
 
     public boolean debug() {
-<span class="fc" id="L27">        return debug;</span>
+<span class="fc" id="L47">        return debug;</span>
     }
 
     public void setDebug(boolean debug) {
-<span class="fc" id="L31">        this.debug = debug;</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L51">        this.debug = debug;</span>
+<span class="fc" id="L52">    }</span>
 
     public boolean startWithBinnedImages() {
-<span class="fc" id="L35">        return startWithBinnedImages;</span>
+<span class="fc" id="L55">        return startWithBinnedImages;</span>
     }
 
     public void setStartWithBinnedImages(boolean useBinnedImaged) {
-<span class="fc" id="L39">        this.startWithBinnedImages = useBinnedImaged;</span>
-<span class="fc" id="L40">    }</span>
+<span class="fc" id="L59">        this.startWithBinnedImages = useBinnedImaged;</span>
+<span class="fc" id="L60">    }</span>
 
     public FeatureMatcherSettings copy() {
         
-<span class="fc" id="L44">        FeatureMatcherSettings s = new FeatureMatcherSettings();</span>
-<span class="fc" id="L45">        s.setDebug(debug);</span>
-<span class="fc" id="L46">        s.setDebugTag(debugTag);</span>
-<span class="fc" id="L47">        s.setStartWithBinnedImages(startWithBinnedImages);</span>
-<span class="fc" id="L48">        s.setUseNormalizedFeatures(useNormalizedFeatures);</span>
+<span class="fc" id="L64">        FeatureMatcherSettings s = new FeatureMatcherSettings();</span>
+<span class="fc" id="L65">        s.setDebug(debug);</span>
+<span class="fc" id="L66">        s.setDebugTag(debugTag);</span>
+<span class="fc" id="L67">        s.setStartWithBinnedImages(startWithBinnedImages);</span>
+<span class="fc" id="L68">        s.setUseNormalizedFeatures(useNormalizedFeatures);</span>
+<span class="fc" id="L69">        s.overrideWithCannySegmentation = overrideWithCannySegmentation;</span>
+<span class="fc" id="L70">        s.use2ndDerivCorners = use2ndDerivCorners;</span>
 
-<span class="fc" id="L50">        return s;</span>
+<span class="fc" id="L72">        return s;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

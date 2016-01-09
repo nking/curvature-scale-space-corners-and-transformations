@@ -579,49 +579,52 @@ import java.util.logging.Logger;
 <span class="nc" id="L579">            x[i] = bpr.getX()[1];</span>
 <span class="nc" id="L580">            y[i] = bpr.getY()[1];</span>
 <span class="nc" id="L581">            curveIndexes[i] = bpr.getIndexWithinCurve();</span>
-<span class="nc" id="L582">            idxs[i] = i;</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            if (curveIndexes[i] == -1) {</span>
+<span class="nc" id="L583">                throw new IllegalStateException(&quot;bpr is missing curve index&quot;);</span>
+            }
+<span class="nc" id="L585">            idxs[i] = i;</span>
         }
         
-<span class="nc" id="L585">        QuickSort.sortBy1stArg(curveIndexes, idxs);</span>
+<span class="nc" id="L588">        QuickSort.sortBy1stArg(curveIndexes, idxs);</span>
                     
-<span class="nc" id="L587">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(curveIndexes, </span>
+<span class="nc" id="L590">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(curveIndexes, </span>
             tolIndexes, idxs, x, y, tolD, isClosedCurve);
 
-<span class="nc bnc" id="L590" title="All 2 branches missed.">        if (combineIndexes.isEmpty()) {</span>
-<span class="nc" id="L591">            return null;</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">        if (combineIndexes.isEmpty()) {</span>
+<span class="nc" id="L594">            return null;</span>
         }
 
-<span class="nc" id="L594">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L597">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
             
-<span class="nc bnc" id="L596" title="All 2 branches missed.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
             //keep the one with largest sigma
-<span class="nc" id="L598">            float sigmaMax = Float.MIN_VALUE;</span>
-<span class="nc" id="L599">            int sigmaMaxIdx = -1;</span>
+<span class="nc" id="L601">            float sigmaMax = Float.MIN_VALUE;</span>
+<span class="nc" id="L602">            int sigmaMaxIdx = -1;</span>
             
-<span class="nc bnc" id="L601" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
-<span class="nc" id="L602">                int idx0 = idxs[index.intValue()];                                </span>
-<span class="nc" id="L603">                float sigma = bprs.get(idx0).getSigma();</span>
-<span class="nc bnc" id="L604" title="All 2 branches missed.">                if (sigma &gt; sigmaMax) {</span>
-<span class="nc" id="L605">                    sigmaMax = sigma;</span>
-<span class="nc" id="L606">                    sigmaMaxIdx = idx0;</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L605">                int idx0 = idxs[index.intValue()];                                </span>
+<span class="nc" id="L606">                float sigma = bprs.get(idx0).getSigma();</span>
+<span class="nc bnc" id="L607" title="All 2 branches missed.">                if (sigma &gt; sigmaMax) {</span>
+<span class="nc" id="L608">                    sigmaMax = sigma;</span>
+<span class="nc" id="L609">                    sigmaMaxIdx = idx0;</span>
                 }
                 
-<span class="nc" id="L609">            }</span>
-<span class="nc bnc" id="L610" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
-<span class="nc" id="L611">                int idx0 = idxs[index.intValue()];</span>
-<span class="nc bnc" id="L612" title="All 2 branches missed.">                if (idx0 != sigmaMaxIdx) {</span>
-<span class="nc" id="L613">                    remove.add(Integer.valueOf(idx0));</span>
+<span class="nc" id="L612">            }</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L614">                int idx0 = idxs[index.intValue()];</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">                if (idx0 != sigmaMaxIdx) {</span>
+<span class="nc" id="L616">                    remove.add(Integer.valueOf(idx0));</span>
                 }
-<span class="nc" id="L615">            }</span>
-<span class="nc" id="L616">        }</span>
+<span class="nc" id="L618">            }</span>
+<span class="nc" id="L619">        }</span>
 
-<span class="nc" id="L618">        Collections.sort(remove);</span>
-<span class="nc bnc" id="L619" title="All 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L620">            int idx = remove.get(i).intValue();</span>
-<span class="nc" id="L621">            bprs.remove(idx);</span>
+<span class="nc" id="L621">        Collections.sort(remove);</span>
+<span class="nc bnc" id="L622" title="All 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L623">            int idx = remove.get(i).intValue();</span>
+<span class="nc" id="L624">            bprs.remove(idx);</span>
         }
         
-<span class="nc" id="L624">        return remove;</span>
+<span class="nc" id="L627">        return remove;</span>
     }
 
 }

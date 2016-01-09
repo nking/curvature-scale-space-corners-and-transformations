@@ -12,27 +12,46 @@ public class MatchingSolution {
 
     private final List&lt;FeatureComparisonStat&gt; comparisonStats;
     
+    private final int binFactor1, binFactor2;
+    
     public MatchingSolution(TransformationParameters parameters,
-<span class="fc" id="L16">        List&lt;FeatureComparisonStat&gt; stats) {</span>
+<span class="fc" id="L18">        List&lt;FeatureComparisonStat&gt; stats, int binFactor1, int binFactor2) {</span>
         
-<span class="fc" id="L18">        this.params = parameters;</span>
+<span class="fc" id="L20">        this.params = parameters;</span>
         
-<span class="fc" id="L20">        this.comparisonStats = stats;</span>
+<span class="fc" id="L22">        this.comparisonStats = stats;</span>
         
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L24">        this.binFactor1 = binFactor1;</span>
+        
+<span class="fc" id="L26">        this.binFactor2 = binFactor2;</span>
+<span class="fc" id="L27">    }</span>
     
     /**
      * @return the params
      */
     public TransformationParameters getParams() {
-<span class="fc" id="L28">        return params;</span>
+<span class="fc" id="L33">        return params;</span>
     }
 
     /**
      * @return the comparisonStats
      */
     public List&lt;FeatureComparisonStat&gt; getComparisonStats() {
-<span class="fc" id="L35">        return comparisonStats;</span>
+<span class="fc" id="L40">        return comparisonStats;</span>
+    }
+
+    /**
+     * @return the binFactor1
+     */
+    public int getBinFactor1() {
+<span class="nc" id="L47">        return binFactor1;</span>
+    }
+
+    /**
+     * @return the binFactor2
+     */
+    public int getBinFactor2() {
+<span class="nc" id="L54">        return binFactor2;</span>
     }
 
 }

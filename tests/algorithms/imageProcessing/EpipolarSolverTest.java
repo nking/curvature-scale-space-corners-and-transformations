@@ -64,6 +64,7 @@ public class EpipolarSolverTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
+                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }
@@ -115,6 +116,7 @@ public class EpipolarSolverTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
+                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }

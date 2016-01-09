@@ -92,19 +92,19 @@ public class EpipolarSolver {
 <span class="nc" id="L92">            throw new IllegalStateException(&quot;solve() has already been invoked&quot;);</span>
         }
         
-<span class="fc" id="L95">        FeatureMatcherWrapper wrapper = null;</span>
+<span class="fc" id="L95">        EuclideanSegmentFeatureMatcher wrapper = null;</span>
         
 <span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (params != null) {</span>
-<span class="nc" id="L98">            wrapper = new FeatureMatcherWrapper(img1, img2, params, featureSettings);</span>
+<span class="nc" id="L98">            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, params, featureSettings);</span>
         } else {
-<span class="fc" id="L100">            wrapper = new FeatureMatcherWrapper(img1, img2, featureSettings);</span>
+<span class="fc" id="L100">            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);</span>
         }
         
 <span class="fc" id="L103">        CorrespondenceList cl = wrapper.matchFeatures();</span>
         
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (cl == null) {</span>
-<span class="nc" id="L106">            state = State.NO_SOLUTION;</span>
-<span class="nc" id="L107">            return null;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (cl == null) {</span>
+<span class="fc" id="L106">            state = State.NO_SOLUTION;</span>
+<span class="fc" id="L107">            return null;</span>
         }
         
 <span class="fc" id="L110">        log.info(&quot;params from scale calc: scale=&quot; + cl.getScale() </span>

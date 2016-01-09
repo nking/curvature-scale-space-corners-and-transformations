@@ -20,7 +20,7 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
     public NonEuclideanSegmentFeatureMatcherTest() {
     }
     
-    public void test0() throws Exception {
+    public void est0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -74,7 +74,7 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
         }
     }
     
-    public void estRot90() throws Exception {
+    public void testRot90() throws Exception {
                 
         String fileName1, fileName2;
         

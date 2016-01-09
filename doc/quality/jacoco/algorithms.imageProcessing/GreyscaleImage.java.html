@@ -831,13 +831,13 @@ import java.util.Arrays;
     
     public ImageExt copyToColorGreyscaleExt() {
         
-<span class="nc bnc" id="L834" title="All 2 branches missed.">        ImageExt img2 = new ImageExt(width, height, !is64Bit);</span>
+<span class="pc bpc" id="L834" title="1 of 2 branches missed.">        ImageExt img2 = new ImageExt(width, height, !is64Bit);</span>
         
-<span class="nc bnc" id="L836" title="All 2 branches missed.">        if (is64Bit) {</span>
-<span class="nc bnc" id="L837" title="All 2 branches missed.">            if (len == img2.len) {</span>
-<span class="nc" id="L838">                System.arraycopy(aL, 0, img2.rL, 0, len);</span>
-<span class="nc" id="L839">                System.arraycopy(aL, 0, img2.gL, 0, len);</span>
-<span class="nc" id="L840">                System.arraycopy(aL, 0, img2.bL, 0, len);</span>
+<span class="pc bpc" id="L836" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+<span class="pc bpc" id="L837" title="1 of 2 branches missed.">            if (len == img2.len) {</span>
+<span class="fc" id="L838">                System.arraycopy(aL, 0, img2.rL, 0, len);</span>
+<span class="fc" id="L839">                System.arraycopy(aL, 0, img2.gL, 0, len);</span>
+<span class="fc" id="L840">                System.arraycopy(aL, 0, img2.bL, 0, len);</span>
             } else {
 <span class="nc bnc" id="L842" title="All 2 branches missed.">                for (int i = 0; i &lt; nPixels; ++i) {</span>
 <span class="nc" id="L843">                    int v = getValue(i);</span>
@@ -857,7 +857,7 @@ import java.util.Arrays;
             }
         }
         
-<span class="nc" id="L860">        return img2;</span>
+<span class="fc" id="L860">        return img2;</span>
     }
     
     public Image copyToColorGreyscale() {
