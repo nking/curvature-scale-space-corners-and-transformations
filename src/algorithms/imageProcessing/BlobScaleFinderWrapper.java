@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -71,9 +73,6 @@ public class BlobScaleFinderWrapper {
 
     protected final BlobPerimeterCornerHelper img1Helper;
     protected final BlobPerimeterCornerHelper img2Helper;
-
-    protected BlobContourHelper blobContourHelper1 = null;
-    protected BlobContourHelper blobContourHelper2 = null;
 
     // use with img1Helper.getImage() or getGreyscaleImage(), but not both
     protected final IntensityFeatures features1;
@@ -167,6 +166,8 @@ public class BlobScaleFinderWrapper {
      * NOT READY FOR USE YET.
      * From the given images, determine the scale between them and roughly
      * estimate the rotation and translation too.
+     * Returns transformation for full size image frames even if binned
+     * images were used.
      *
      * This method does not require pre-processing such as sky subtraction
      * because it uses adaptive mean thresholding, but if sky subtraction is
@@ -268,11 +269,6 @@ public class BlobScaleFinderWrapper {
                 params = calculateScaleImpl(ub);
             }
             
-            /*
-            if (params == null) {
-                algType = AlgType.CONTOURS_COMBINATIONS;
-                params = calculateScaleImpl();
-            }*/
         }
         
         return params;
@@ -366,155 +362,127 @@ public class BlobScaleFinderWrapper {
 
             t0 = System.currentTimeMillis();
             
-            if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
+            assert(algType.equals(AlgType.CORNERS_COMBINATIONS));
+
+            if (settings.doUse2ndDerivCorners()) {
+
+                img1Helper.extractSecondDerivativeCorners(segmentationType1, 
+                    useBinned);
+
+                img2Helper.extractSecondDerivativeCorners(segmentationType2, 
+                    useBinned);
+
+            } else {
+
+                img1Helper.extractBlobPerimeterAsCornerRegions(segmentationType1, 
+                    useBinned);
+
+                img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
+                    useBinned);
+            }
+
+            List<HoughTransformLines> houghTransformLines1 = 
+                findLinesUsingHoughTransform(img1Helper,
+                segmentationType1, useBinned);
+
+            //boolean hasManyIntersectingLines1 = 
+            //    hasManyIntersectingLines(houghTransformLines1);
+
+            List<HoughTransformLines> houghTransformLines2 = 
+                findLinesUsingHoughTransform(img2Helper,
+                segmentationType2, useBinned);
+
+            //boolean hasManyIntersectingLines2 = 
+            //    hasManyIntersectingLines(houghTransformLines2);
+
+            boolean useCanny = false;//hasManyIntersectingLines1 || hasManyIntersectingLines2;
+
+            //TODO: decide whether if one image requires canny segmentation,
+            // they should both switch to canny segmentation
+
+            if (useCanny) {
+
+                log.info("replacing segmentation with canny edges for img1");
+
+                segmentationType1 = SegmentationType.GREYSCALE_CANNY;
+
+                img1Helper.applySegmentation(segmentationType1, useBinned);
+
+                segmentationType2 = SegmentationType.GREYSCALE_CANNY;
+
+                img2Helper.applySegmentation(segmentationType2, useBinned);
+
+                boolean filterOutImageBoundaryBlobs = true;
+                boolean filterOutZeroPixels = false;
+                boolean doNotAddPoints = true;
+
+                // pre-make the blobs using non-default variables:
+                img1Helper.getBlobs(segmentationType1, useBinned,
+                    filterOutImageBoundaryBlobs, filterOutZeroPixels);
 
                 if (settings.doUse2ndDerivCorners()) {
-
-                    img1Helper.extractSecondDerivativeCorners(segmentationType1, 
-                        useBinned);
-
-                    img2Helper.extractSecondDerivativeCorners(segmentationType2, 
-                        useBinned);
-
+                    img1Helper.extractSecondDerivativeCorners(segmentationType1, useBinned);
                 } else {
-
-                    img1Helper.extractBlobPerimeterAsCornerRegions(segmentationType1, 
-                        useBinned);
-
-                    img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2, 
-                        useBinned);
+                    img1Helper.extractBlobPerimeterAsCornerRegions(
+                        segmentationType1, useBinned, doNotAddPoints);
                 }
-                
-                List<HoughTransformLines> houghTransformLines1 = 
+
+                // pre-make the blobs using non-default variables:
+                img2Helper.getBlobs(segmentationType2, useBinned,
+                    filterOutImageBoundaryBlobs, filterOutZeroPixels);
+
+                if (settings.doUse2ndDerivCorners()) {
+                    img2Helper.extractSecondDerivativeCorners(segmentationType2, useBinned);
+                } else {
+                    img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2,
+                        useBinned, doNotAddPoints);
+                }
+
+                houghTransformLines1 = 
                     findLinesUsingHoughTransform(img1Helper,
                     segmentationType1, useBinned);
-                
-                //boolean hasManyIntersectingLines1 = 
-                //    hasManyIntersectingLines(houghTransformLines1);
-                
-                List<HoughTransformLines> houghTransformLines2 = 
-                    findLinesUsingHoughTransform(img2Helper,
-                    segmentationType2, useBinned);
-                
-                //boolean hasManyIntersectingLines2 = 
-                //    hasManyIntersectingLines(houghTransformLines2);
-                
-                boolean useCanny = false;//hasManyIntersectingLines1 || hasManyIntersectingLines2;
-                
-                //TODO: decide whether if one image requires canny segmentation,
-                // they should both switch to canny segmentation
-                
-                if (useCanny) {
-                    
-                    log.info("replacing segmentation with canny edges for img1");
-                    
-                    segmentationType1 = SegmentationType.GREYSCALE_CANNY;
-                    
-                    img1Helper.applySegmentation(segmentationType1, useBinned);
-                    
-                    segmentationType2 = SegmentationType.GREYSCALE_CANNY;
-                    
-                    img2Helper.applySegmentation(segmentationType2, useBinned);
-                    
-                    boolean filterOutImageBoundaryBlobs = true;
-                    boolean filterOutZeroPixels = false;
-                    boolean doNotAddPoints = true;
-                               
-                    // pre-make the blobs using non-default variables:
-                    img1Helper.getBlobs(segmentationType1, useBinned,
-                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
 
-                    if (settings.doUse2ndDerivCorners()) {
-                        img1Helper.extractSecondDerivativeCorners(segmentationType1, useBinned);
-                    } else {
-                        img1Helper.extractBlobPerimeterAsCornerRegions(
-                            segmentationType1, useBinned, doNotAddPoints);
-                    }
-
-                    // pre-make the blobs using non-default variables:
-                    img2Helper.getBlobs(segmentationType2, useBinned,
-                        filterOutImageBoundaryBlobs, filterOutZeroPixels);
-
-                    if (settings.doUse2ndDerivCorners()) {
-                        img2Helper.extractSecondDerivativeCorners(segmentationType2, useBinned);
-                    } else {
-                        img2Helper.extractBlobPerimeterAsCornerRegions(segmentationType2,
-                            useBinned, doNotAddPoints);
-                    }
-       
-                    houghTransformLines1 = 
-                        findLinesUsingHoughTransform(img1Helper,
-                        segmentationType1, useBinned);
-                                    
-                    houghTransformLines2 = findLinesUsingHoughTransform(
-                        img2Helper, segmentationType2, useBinned);
-                }
-                
-                //if (hasManyIntersectingLines1) {
-                    removeLineArtifactCorners(houghTransformLines1, img1Helper,
-                        segmentationType1, useBinned);
-                //}
-                //if (hasManyIntersectingLines2) {
-                    removeLineArtifactCorners(houghTransformLines2, img2Helper,
-                        segmentationType2, useBinned);
-                //}
-        
-                BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-
-                if (settings.debug()) {
-                    bsFinder.setToDebug();
-                }
-                        
-                soln = bsFinder.solveForScale(img1Helper, f1,
-                    segmentationType1, useBinned, img2Helper, f2,
-                    segmentationType2, useBinned, dither);
-
-                n1 = img1Helper.sumPointsOfInterest(segmentationType1, 
-                    useBinned);
-                n2 = img2Helper.sumPointsOfInterest(segmentationType2, 
-                    useBinned);
-
-            } else if (algType.equals(AlgType.CONTOURS_COMBINATIONS)) {
-
-                if (blobContourHelper1 == null) {
-                    if (settings.debug()) {
-                        blobContourHelper1 = new BlobContourHelper(img1Helper, 
-                            settings.getDebugTag() + "_1");
-                        blobContourHelper2 = new BlobContourHelper(img2Helper,
-                            settings.getDebugTag() + "_2");
-                    } else {
-                        blobContourHelper1 = new BlobContourHelper(img1Helper);
-                        blobContourHelper2 = new BlobContourHelper(img2Helper);
-                    }
-                }
-
-                blobContourHelper1.generatePerimeterContours(
-                    segmentationType1, useBinned);
-                blobContourHelper2.generatePerimeterContours(
-                    segmentationType2, useBinned);
-                
-                BlobContoursScaleFinder bsFinder = new BlobContoursScaleFinder();
-
-                if (settings.debug()) {
-                    bsFinder.setToDebug();
-                }
-                
-                soln = bsFinder.solveForScale(blobContourHelper1, f1,
-                    segmentationType1, useBinned, blobContourHelper2, f2,
-                    segmentationType2, useBinned);
-
-                n1 = blobContourHelper1.sumPointsOfInterest(segmentationType1, 
-                    useBinned);
-                n2 = blobContourHelper2.sumPointsOfInterest(segmentationType2, 
-                    useBinned);
-                
+                houghTransformLines2 = findLinesUsingHoughTransform(
+                    img2Helper, segmentationType2, useBinned);
             }
+
+            //if (hasManyIntersectingLines1) {
+                removeLineArtifactCorners(houghTransformLines1, img1Helper,
+                    segmentationType1, useBinned);
+            //}
+            //if (hasManyIntersectingLines2) {
+                removeLineArtifactCorners(houghTransformLines2, img2Helper,
+                    segmentationType2, useBinned);
+            //}
+
+            BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
+
+            if (settings.debug()) {
+                bsFinder.setToDebug();
+            }
+
+            // the solution for the binFactor modified images:
+            soln = bsFinder.solveForScale(img1Helper, f1,
+                segmentationType1, useBinned, img2Helper, f2,
+                segmentationType2, useBinned, dither);
+
+            n1 = img1Helper.sumPointsOfInterest(segmentationType1, 
+                useBinned);
+            n2 = img2Helper.sumPointsOfInterest(segmentationType2, 
+                useBinned);
        
             t1 = System.currentTimeMillis();
             t1Sec = (t1 - t0)/1000;
             Logger.getLogger(this.getClass().getName()).info("matching(sec)=" 
                 + t1Sec);
                 
+            if (soln != null) {
+                
+                // transform images to full size
+                soln = transformSolutionToFullFrames(soln, 
+                    img1Helper, img2Helper, binFactor1, binFactor2);
+            }
+            
             if (soln != null) {
                 
                 TransformationParameters params = soln.getParams();
@@ -847,6 +815,73 @@ public class BlobScaleFinderWrapper {
             perimeterLists, cornerRegionLists, thetaTol, radiusTol, imageWidth, 
             imageHeight);
     }
+    
+    private MatchingSolution transformSolutionToFullFrames(MatchingSolution 
+        soln, BlobPerimeterCornerHelper img1Helper, 
+        BlobPerimeterCornerHelper img2Helper, int binFactor1, int binFactor2) {
+        
+        if (binFactor1 == 1 && binFactor2 == 1) {
+            return soln;
+        }
+       
+        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+        
+        assert(rotatedOffsets.containsData());
+        
+        List<FeatureComparisonStat> stats = soln.getComparisonStats();
+        
+        for (int i = 0; i < stats.size(); ++i) {
+            FeatureComparisonStat stat = stats.get(i);
+            stat.setBinFactor1(binFactor1);
+            stat.setBinFactor2(binFactor2);
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = (binFactor1 != 1) ? 
+                img1Helper.getGreyscaleImageBinned() :
+                img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = (binFactor2 != 1) ? 
+                img2Helper.getGreyscaleImageBinned() :
+                img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, stats, 
+                "_matched_binned_" + settings.getDebugTag() 
+                + MiscDebug.getCurrentTimeFormatted(), 1);
+        }
+        
+        FeatureMatcher matcher = new FeatureMatcher();
+        
+        List<FeatureComparisonStat> fullStats = matcher.reviseStatsForFullImages(
+            img1Helper.getGreyscaleImage(),
+            img2Helper.getGreyscaleImage(),
+            settings,
+            soln.getParams(), soln.getComparisonStats(),
+            binFactor1, binFactor2, rotatedOffsets);
+            
+        if ((fullStats == null) || fullStats.isEmpty()) {
+            return null;
+        }
+        
+        TransformationParameters revisedParams = 
+            MiscStats.calculateTransformation(1, 1, fullStats,
+                new float[4], false);
+        
+        if (revisedParams == null) {
+            return null;
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, fullStats, 
+                "_matched_" + settings.getDebugTag() +
+                MiscDebug.getCurrentTimeFormatted(), 2);
+        }
+        
+        MatchingSolution fullSoln = new MatchingSolution(revisedParams, 
+            fullStats, 1, 1);
+        
+        return fullSoln;
+    }
 
     public MatchingSolution getSolution() {
         return solution;
@@ -892,46 +927,6 @@ public class BlobScaleFinderWrapper {
         }
         
         return img2Helper.generatePerimeterCorners(
-            solutionSegmentationType2, solutionUsedBinned2);
-    }
-    
-    public List<List<BlobPerimeterRegion>> getAllBlobRegions1OfSolution() {
-        
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
-            return null;
-        }
-        
-        return blobContourHelper1.generatePerimeterRegions(
-            solutionSegmentationType1, solutionUsedBinned1);
-    }
-    
-    public List<List<BlobPerimeterRegion>> getAllBlobRegions2OfSolution() {
-        
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
-            return null;
-        }
-        
-        return blobContourHelper2.generatePerimeterRegions(
-            solutionSegmentationType2, solutionUsedBinned2);
-    }
-    
-    public List<List<CurvatureScaleSpaceContour>> getAllContours1OfSolution() {
-        
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
-            return null;
-        }
-        
-        return blobContourHelper1.generatePerimeterContours(
-            solutionSegmentationType1, solutionUsedBinned1);
-    }
-    
-    public List<List<CurvatureScaleSpaceContour>> getAllContours2OfSolution() {
-        
-        if (algType.equals(AlgType.CORNERS_COMBINATIONS)) {
-            return null;
-        }
-        
-        return blobContourHelper2.generatePerimeterContours(
             solutionSegmentationType2, solutionUsedBinned2);
     }
     

@@ -91,7 +91,7 @@ public class FeatureMatcher {
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
                 rotations[0] = rot1;
-                rotations[1] = rot1 - 10;
+                rotations[1] = rot1 - 10;//5?
                 rotations[2] = rot1 + 10;
                 //rotations[3] = rot1 - 20;
                 //rotations[4] = rot1 + 20;
@@ -981,6 +981,66 @@ public class FeatureMatcher {
             
         } catch (GrahamScanTooFewPointsException e) {
         }
+    }
+
+    public List<FeatureComparisonStat> reviseStatsForFullImages(
+        GreyscaleImage img1, GreyscaleImage img2,
+        FeatureMatcherSettings settings,
+        TransformationParameters params,
+        List<FeatureComparisonStat> stats, 
+        int prevBinFactor1, int prevBinFactor2,
+        RotatedOffsets rotatedOffsets) {
+
+        log.info("refine stats for full image reference frames");
+
+        List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
+
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        IntensityFeatures features1 = new IntensityFeatures(5,
+            settings.useNormalizedFeatures(), rotatedOffsets);
+        features1.calculateGradientWithGreyscale(img1);
+
+        IntensityFeatures features2 = new IntensityFeatures(5,
+            settings.useNormalizedFeatures(), rotatedOffsets);
+        features2.calculateGradientWithGreyscale(img2);
+
+        int dither2 = 1 * (Math.max(prevBinFactor1, prevBinFactor2));
+        if (params.getStandardDeviations()[2] > 25 || params.getStandardDeviations()[3] > 25) {
+            if (dither2 < 3) {
+                dither2 = 3;
+            }
+        }
+
+        int rotD = Math.round(params.getRotationInDegrees());
+
+        final int rotationTolerance = 20;
+
+        for (int i = 0; i < stats.size(); ++i) {
+
+            FeatureComparisonStat stat = stats.get(i);
+
+            int x1 = stat.getImg1Point().getX() * stat.getBinFactor1();
+            int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();
+            int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();
+            int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();
+
+            // have to discard the best angles found in stat and derive new
+            // for these higher resolution images
+            FeatureComparisonStat compStat =
+                featureMatcher.ditherAndRotateForBestLocation2(
+                    features1, features2, x1, y1, x2, y2, dither2, rotD,
+                    rotationTolerance, img1, img2);
+
+            if (compStat == null ||
+                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
+                continue;
+            }
+
+            revised.add(compStat);
+        }
+        
+        return revised;
     }
 
 }

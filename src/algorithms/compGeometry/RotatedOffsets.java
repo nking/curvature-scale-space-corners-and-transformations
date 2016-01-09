@@ -26,6 +26,9 @@ public class RotatedOffsets {
     private static final int range0 = 6;
 
     private final boolean is64Bit;
+    
+    // field useful to assert re-using a live singleton
+    private boolean containsData = false;
 
     /**
      * <pre>
@@ -105,6 +108,8 @@ public class RotatedOffsets {
             populateOffsets(compresedOffsets, xOffsets);
         }
 
+        containsData = true;
+        
         return xOffsets;
     }
 
@@ -448,6 +453,8 @@ public class RotatedOffsets {
             populateOffsets(compresedOffsets, yOffsets);
         }
 
+        containsData = true;
+        
         return yOffsets;
     }
 
@@ -459,4 +466,7 @@ public class RotatedOffsets {
         }
     }
 
+    public boolean containsData() {
+        return containsData;
+    }
 }

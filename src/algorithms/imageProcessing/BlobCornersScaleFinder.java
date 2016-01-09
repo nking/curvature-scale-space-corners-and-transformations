@@ -2,25 +2,22 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
-import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * class to invoke methods needed to solve for euclidean scale between
- * image1 and image2 using methods specific to corners on closed curves.
+ * image1 and image2 for given binFactors and segmentation types,
+ * using methods specific to corners on closed curves.
  *
  * @author nichole
  */
@@ -202,14 +199,9 @@ System.out.println(sb.toString());
         int binFactor1 = img1Helper.getBinFactor(useBinned1);
         int binFactor2 = img2Helper.getBinFactor(useBinned2);
 
-        // filter these corners to remove featureless patches when possible
         List<List<T>> filteredCorners1List = corners1List;
-            //filterByLowLimitError(corners1List,
-            //img1, features1, binFactor1, useBinned1, img1Helper.debugTag);
 
         List<List<T>> filteredCorners2List = corners2List;
-            //filterByLowLimitError(corners2List,
-            //img2, features2, binFactor2, useBinned2, img2Helper.debugTag);
 
         Map<PairInt, TransformationParameters> trMap
             = new HashMap<PairInt, TransformationParameters>();
@@ -604,7 +596,8 @@ double costForTrueSoln = -1;
                 }
             }
 
-            MatchingSolution soln = new MatchingSolution(bestParams, bestStats);
+            MatchingSolution soln = new MatchingSolution(bestParams, bestStats,
+                binFactor1, binFactor2);
             return soln;
         }
 

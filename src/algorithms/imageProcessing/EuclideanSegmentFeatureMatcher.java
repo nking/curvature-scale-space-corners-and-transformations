@@ -190,38 +190,7 @@ public class EuclideanSegmentFeatureMatcher {
             tolXY = 10;
         }
 
-        int binFactor1 = scaleFinder.getBinFactor1();
-        int binFactor2 = scaleFinder.getBinFactor2();
-
         int nLimit = 16;
-
-        if (binFactor1 != 1 || binFactor2 != 1) {
-
-            //stats need to be revised for the location in the full size
-            //image in order to be usable for correspondence
-            List<FeatureComparisonStat> revisedStats = reviseStatsForFullImages(
-                stats, binFactor1, binFactor2);
-
-            stats = revisedStats;
-
-            TransformationParameters revisedParams = null;
-
-            if (stats.size() > 0) {
-
-                revisedParams = MiscStats.calculateTransformation(1, 1, stats,
-                    new float[4], false);
-            }
-
-            if (revisedParams != null) {
-                params = revisedParams;
-            } else {
-                log.warning("possible ERROR in revision of stats");
-            }
-        }
-
-        if (settings.debug()) {
-            printMatches(stats);
-        }
         
         boolean covers = statsCoverIntersection(stats);
         
@@ -495,72 +464,6 @@ public class EuclideanSegmentFeatureMatcher {
         CorrespondenceList cl = findCorrespondence(parameters);
 
         return cl;
-    }
-
-    private List<FeatureComparisonStat> reviseStatsForFullImages(
-        List<FeatureComparisonStat> stats, int prevBinFactor1, int prevBinFactor2) {
-
-        log.info("refine stats for full image reference frames");
-
-        List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
-
-        FeatureMatcher featureMatcher = new FeatureMatcher();
-
-        IntensityFeatures features1 = new IntensityFeatures(5,
-            settings.useNormalizedFeatures(), rotatedOffsets);
-        features1.calculateGradientWithGreyscale(gsImg1);
-
-        IntensityFeatures features2 = new IntensityFeatures(5,
-            settings.useNormalizedFeatures(), rotatedOffsets);
-        features2.calculateGradientWithGreyscale(gsImg2);
-
-        int dither2 = 1 * (Math.max(prevBinFactor1, prevBinFactor2));
-        if (params.getStandardDeviations()[2] > 25 || params.getStandardDeviations()[3] > 25) {
-            if (dither2 < 3) {
-                dither2 = 3;
-            }
-        }
-
-        int rotD = Math.round(params.getRotationInDegrees());
-
-        final int rotationTolerance = 20;
-
-        for (int i = 0; i < stats.size(); ++i) {
-
-            FeatureComparisonStat stat = stats.get(i);
-
-            int x1 = stat.getImg1Point().getX() * stat.getBinFactor1();
-            int y1 = stat.getImg1Point().getY() * stat.getBinFactor1();
-            int x2 = stat.getImg2Point().getX() * stat.getBinFactor2();
-            int y2 = stat.getImg2Point().getY() * stat.getBinFactor2();
-
-            // have to discard the best angles found in stat and derive new
-            // for these higher resolution images
-            FeatureComparisonStat compStat =
-                featureMatcher.ditherAndRotateForBestLocation2(
-                    features1, features2, x1, y1, x2, y2, dither2, rotD,
-                    rotationTolerance, gsImg1, gsImg2);
-
-            if (compStat == null ||
-                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
-                continue;
-            }
-
-            revised.add(compStat);
-        }
-        
-        return revised;
-    }
-
-    private void printMatches(List<FeatureComparisonStat> stats) {
-        if (stats == null) {
-            return;
-        }
-        List<PairInt> matched1 = new ArrayList<PairInt>();
-        List<PairInt> matched2 = new ArrayList<PairInt>();
-        populateLists(stats, matched1, matched2);
-
-        printMatches(matched1, matched2);
     }
 
     private void printMatches(CorrespondenceList cl) {
