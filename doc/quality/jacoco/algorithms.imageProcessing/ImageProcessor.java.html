@@ -925,10 +925,10 @@ import java.util.logging.Logger;
 
     public void blur(GreyscaleImage input, SIGMA sigma) {
 
-<span class="fc" id="L928">        float[] kernel = Gaussian1D.getKernel(sigma);</span>
+<span class="nc" id="L928">        float[] kernel = Gaussian1D.getKernel(sigma);</span>
 
-<span class="fc" id="L930">        blur(input, kernel);</span>
-<span class="fc" id="L931">    }</span>
+<span class="nc" id="L930">        blur(input, kernel);</span>
+<span class="nc" id="L931">    }</span>
 
     /**
      * blur the r, g, b vectors of image input by sigma.

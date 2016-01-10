@@ -51,12 +51,12 @@ import algorithms.util.PairInt;
     }
 
     public void setIndex1(int theIndex) {
-<span class="fc" id="L54">        index1 = theIndex;</span>
-<span class="fc" id="L55">    }</span>
+<span class="nc" id="L54">        index1 = theIndex;</span>
+<span class="nc" id="L55">    }</span>
     
     public void setIndex2(int theIndex) {
-<span class="fc" id="L58">        index2 = theIndex;</span>
-<span class="fc" id="L59">    }</span>
+<span class="nc" id="L58">        index2 = theIndex;</span>
+<span class="nc" id="L59">    }</span>
     
     public int getIndex1() {
 <span class="nc" id="L62">        return index1;</span>
@@ -239,45 +239,64 @@ import algorithms.util.PairInt;
     public void setImg2PointThetaErr(float img2PointThetaErr) {
 <span class="nc" id="L240">        this.img2PointThetaErr = img2PointThetaErr;</span>
 <span class="nc" id="L241">    }</span>
+    
+    public FeatureComparisonStat copy() {
+    
+<span class="fc" id="L245">        FeatureComparisonStat cp = new FeatureComparisonStat();</span>
+<span class="fc" id="L246">        cp.index1 = index1;</span>
+<span class="fc" id="L247">        cp.index2 = index2;</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        cp.img1Point = (img1Point != null) ? img1Point.copy() : null;</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        cp.img2Point = (img2Point != null) ? img2Point.copy() : null;</span>
+<span class="fc" id="L250">        cp.sumIntensitySqDiff = sumIntensitySqDiff;</span>
+<span class="fc" id="L251">        cp.sumGradientSqDiff = sumGradientSqDiff;</span>
+<span class="fc" id="L252">        cp.sumThetaSqDiff = sumThetaSqDiff;</span>
+<span class="fc" id="L253">        cp.img2PointIntensityErr = img2PointIntensityErr;</span>
+<span class="fc" id="L254">        cp.img2PointGradientErr = img2PointGradientErr;</span>
+<span class="fc" id="L255">        cp.img2PointThetaErr = img2PointThetaErr;</span>
+<span class="fc" id="L256">        cp.img1PointRotInDegrees = img1PointRotInDegrees;</span>
+<span class="fc" id="L257">        cp.img2PointRotInDegrees = img2PointRotInDegrees;</span>
+        
+<span class="fc" id="L259">        return cp;</span>
+    }
 
     @Override
     public String toString() {
         
-<span class="nc" id="L246">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L247">        sb.append(&quot;p1=&quot;);</span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (img1Point != null) {</span>
-<span class="nc" id="L249">            sb.append(img1Point.toString()).append(&quot; &quot;);</span>
+<span class="nc" id="L265">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L266">        sb.append(&quot;p1=&quot;);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (img1Point != null) {</span>
+<span class="nc" id="L268">            sb.append(img1Point.toString()).append(&quot; &quot;);</span>
         }
-<span class="nc" id="L251">        sb.append(&quot;p2=&quot;);</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (img2Point != null) {</span>
-<span class="nc" id="L253">            sb.append(img2Point.toString()).append(&quot; &quot;);</span>
+<span class="nc" id="L270">        sb.append(&quot;p2=&quot;);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (img2Point != null) {</span>
+<span class="nc" id="L272">            sb.append(img2Point.toString()).append(&quot; &quot;);</span>
         }
-<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (Float.isFinite(sumIntensitySqDiff)) {</span>
-<span class="nc" id="L256">            sb.append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff));</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (Float.isFinite(sumIntensitySqDiff)) {</span>
+<span class="nc" id="L275">            sb.append(String.format(&quot; ssdInt=%.4f&quot;, sumIntensitySqDiff));</span>
         }
-<span class="nc bnc" id="L258" title="All 2 branches missed.">        if (Float.isFinite(img2PointIntensityErr)) {</span>
-<span class="nc" id="L259">            sb.append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr));</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (Float.isFinite(img2PointIntensityErr)) {</span>
+<span class="nc" id="L278">            sb.append(String.format(&quot; err2Int=%.4f&quot;, img2PointIntensityErr));</span>
         }
-<span class="nc bnc" id="L261" title="All 2 branches missed.">        if (Float.isFinite(sumGradientSqDiff)) {</span>
-<span class="nc" id="L262">            sb.append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff));</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        if (Float.isFinite(sumGradientSqDiff)) {</span>
+<span class="nc" id="L281">            sb.append(String.format(&quot; ssdGrd=%.4f&quot;, sumGradientSqDiff));</span>
         }
-<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (Float.isFinite(img2PointGradientErr)) {</span>
-<span class="nc" id="L265">            sb.append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr));</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (Float.isFinite(img2PointGradientErr)) {</span>
+<span class="nc" id="L284">            sb.append(String.format(&quot; err2Grd=%.4f&quot;, img2PointGradientErr));</span>
         }
-<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (Float.isFinite(sumThetaSqDiff)) {</span>
-<span class="nc" id="L268">            sb.append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff));</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (Float.isFinite(sumThetaSqDiff)) {</span>
+<span class="nc" id="L287">            sb.append(String.format(&quot; thtDf=%.4f&quot;, sumThetaSqDiff));</span>
         }
-<span class="nc bnc" id="L270" title="All 2 branches missed.">        if (Float.isFinite(img2PointThetaErr)) {</span>
-<span class="nc" id="L271">            sb.append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr));</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (Float.isFinite(img2PointThetaErr)) {</span>
+<span class="nc" id="L290">            sb.append(String.format(&quot; thtErr=%.4f&quot;, img2PointThetaErr));</span>
         }
-<span class="nc bnc" id="L273" title="All 2 branches missed.">        if (Float.isFinite(img1PointRotInDegrees)) {</span>
-<span class="nc" id="L274">            sb.append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees));</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (Float.isFinite(img1PointRotInDegrees)) {</span>
+<span class="nc" id="L293">            sb.append(String.format(&quot; rot1D=%.4f&quot;, img1PointRotInDegrees));</span>
         } 
-<span class="nc bnc" id="L276" title="All 2 branches missed.">        if (Float.isFinite(img2PointRotInDegrees)) {</span>
-<span class="nc" id="L277">            sb.append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees));</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">        if (Float.isFinite(img2PointRotInDegrees)) {</span>
+<span class="nc" id="L296">            sb.append(String.format(&quot; rot2D=%.4f&quot;, img2PointRotInDegrees));</span>
         }
         
-<span class="nc" id="L280">        return sb.toString();</span>
+<span class="nc" id="L299">        return sb.toString();</span>
     }
 
 }

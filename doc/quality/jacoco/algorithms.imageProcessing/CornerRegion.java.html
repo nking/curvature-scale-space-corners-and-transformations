@@ -306,9 +306,9 @@ public class CornerRegion {
     @Override
     public int hashCode() {
 
-<span class="fc" id="L309">        int hash = fnvHashCode();</span>
+<span class="nc" id="L309">        int hash = fnvHashCode();</span>
 
-<span class="fc" id="L311">        return hash;</span>
+<span class="nc" id="L311">        return hash;</span>
     }
 
 <span class="fc" id="L314">    int fnv321aInit = 0x811c9dc5;</span>
@@ -325,38 +325,38 @@ public class CornerRegion {
      */
     protected int fnvHashCode() {
 
-<span class="fc" id="L328">        int sum = fnv321aInit;</span>
+<span class="nc" id="L328">        int sum = fnv321aInit;</span>
 
-<span class="fc" id="L330">        sum = includeInHashSum(sum, edgeListIdx);</span>
+<span class="nc" id="L330">        sum = includeInHashSum(sum, edgeListIdx);</span>
         
-<span class="fc" id="L332">        sum = includeInHashSum(sum, kMaxIdx);</span>
+<span class="nc" id="L332">        sum = includeInHashSum(sum, kMaxIdx);</span>
 
-<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (int xCoord : x) {</span>
-<span class="fc" id="L335">            sum = includeInHashSum(sum, xCoord);</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        for (int xCoord : x) {</span>
+<span class="nc" id="L335">            sum = includeInHashSum(sum, xCoord);</span>
         }
-<span class="fc bfc" id="L337" title="All 2 branches covered.">        for (int yCoord : y) {</span>
-<span class="fc" id="L338">            sum = includeInHashSum(sum, yCoord);</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        for (int yCoord : y) {</span>
+<span class="nc" id="L338">            sum = includeInHashSum(sum, yCoord);</span>
         }
-<span class="fc bfc" id="L340" title="All 2 branches covered.">        for (float kValue : k) {</span>
-<span class="fc" id="L341">            int kBits = Float.floatToIntBits(kValue);</span>
-<span class="fc" id="L342">            sum = includeInHashSum(sum, kBits);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">        for (float kValue : k) {</span>
+<span class="nc" id="L341">            int kBits = Float.floatToIntBits(kValue);</span>
+<span class="nc" id="L342">            sum = includeInHashSum(sum, kBits);</span>
         }
         
         // not including orientation which may or may not be set because it's
         // calculated only upon need
         
-<span class="fc" id="L348">        return sum;</span>
+<span class="nc" id="L348">        return sum;</span>
     }
 
     private int includeInHashSum(int sum, int variable) {
         
         // xor the bottom with the current octet.
-<span class="fc" id="L354">        sum ^= variable;</span>
+<span class="nc" id="L354">        sum ^= variable;</span>
 
         // multiply by the 32 bit FNV magic prime mod 2^32
-<span class="fc" id="L357">        sum *= fnv32Prime;</span>
+<span class="nc" id="L357">        sum *= fnv32Prime;</span>
         
-<span class="fc" id="L359">        return sum;</span>
+<span class="nc" id="L359">        return sum;</span>
     }
 
     public static class CornerRegionDegneracyException extends Exception {

@@ -474,8 +474,8 @@ import java.util.Map;
 <span class="nc" id="L474">    }</span>
     
     protected void checkBounds(GreyscaleImage img, int x, int y) {
-<span class="fc bfc" id="L477" title="All 2 branches covered.">        if (!isWithinXBounds(img, x)) {</span>
-<span class="fc" id="L478">            throw new IllegalArgumentException(&quot;x is out of bounds of image&quot;);</span>
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">        if (!isWithinXBounds(img, x)) {</span>
+<span class="nc" id="L478">            throw new IllegalArgumentException(&quot;x is out of bounds of image&quot;);</span>
         }
 <span class="pc bpc" id="L480" title="1 of 2 branches missed.">        if (!isWithinYBounds(img, y)) {</span>
 <span class="nc" id="L481">            throw new IllegalArgumentException(&quot;y is out of bounds of image&quot;);</span>
@@ -523,8 +523,8 @@ import java.util.Map;
 <span class="fc bfc" id="L523" title="All 2 branches covered.">        if (x &lt; 0) {</span>
 <span class="fc" id="L524">            return false;</span>
         }
-<span class="fc bfc" id="L526" title="All 2 branches covered.">        if (x &gt; (img.getWidth() - 1)) {</span>
-<span class="fc" id="L527">            return false;</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if (x &gt; (img.getWidth() - 1)) {</span>
+<span class="nc" id="L527">            return false;</span>
         }
 <span class="fc" id="L529">        return true;</span>
     }
@@ -966,7 +966,7 @@ import java.util.Map;
     }
 
     public RotatedOffsets getRotatedOffsets() {
-<span class="nc" id="L969">        return rotatedOffsets;</span>
+<span class="fc" id="L969">        return rotatedOffsets;</span>
     }
 
     private int findDominantOrientation(int xCenter, int yCenter) {

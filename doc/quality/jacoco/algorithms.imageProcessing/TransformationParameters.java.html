@@ -154,8 +154,8 @@ import java.util.Arrays;
 <span class="fc" id="L154">        cp.setOriginX(originX);</span>
 <span class="fc" id="L155">        cp.setOriginY(originY);</span>
 <span class="fc" id="L156">        cp.setNumberOfPointsUsed(n);</span>
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (standardDeviationsScaleRotTransXY != null) {</span>
-<span class="nc" id="L158">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        if (standardDeviationsScaleRotTransXY != null) {</span>
+<span class="fc" id="L158">            cp.setStandardDeviations(standardDeviationsScaleRotTransXY);</span>
         }
         
 <span class="fc" id="L161">        return cp;</span>
@@ -181,18 +181,18 @@ import java.util.Arrays;
 <span class="fc" id="L181">            return false;</span>
         }
                 
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">            (other.getStandardDeviations() == null)) {</span>
 <span class="nc" id="L186">            return false;</span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        } else if ((standardDeviationsScaleRotTransXY == null) &amp;&amp; </span>
 <span class="pc bpc" id="L188" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
 <span class="nc" id="L189">            return false;</span>
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
-<span class="nc bnc" id="L191" title="All 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
-<span class="nc" id="L192">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
-<span class="nc" id="L193">                other.getStandardDeviations());</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (!sEquals) {</span>
-<span class="nc" id="L195">                return false;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        } else if ((standardDeviationsScaleRotTransXY != null) &amp;&amp; </span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">            (other.getStandardDeviations() != null)) {</span>
+<span class="fc" id="L192">            boolean sEquals = Arrays.equals(standardDeviationsScaleRotTransXY, </span>
+<span class="fc" id="L193">                other.getStandardDeviations());</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (!sEquals) {</span>
+<span class="fc" id="L195">                return false;</span>
             }
         }
 

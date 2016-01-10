@@ -13,159 +13,159 @@ import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
- * class encapsulating the steps from scale calculation to matching corners
- * to making correspondence lists to solving for epipolar projection.
- * 
+ * class encapsulating the steps from scale calculation to matching corners to
+ * making correspondence lists to solving for epipolar projection.
+ *
  * @author nichole
  */
 public class EpipolarSolver {
-    
+
     private final ImageExt img1;
     private final ImageExt img2;
-    
-<span class="pc" id="L26">    private GreyscaleImage gsImg1 = null;</span>
-<span class="pc" id="L27">    private GreyscaleImage gsImg2 = null;</span>
-        
-<span class="pc" id="L29">    private Set&lt;CornerRegion&gt; cornerRegions1 = null;</span>
-<span class="pc" id="L30">    private Set&lt;CornerRegion&gt; cornerRegions2 = null;</span>
+
+<span class="fc" id="L26">    private GreyscaleImage gsImg1 = null;</span>
+<span class="fc" id="L27">    private GreyscaleImage gsImg2 = null;</span>
+
+<span class="fc" id="L29">    private Set&lt;CornerRegion&gt; cornerRegions1 = null;</span>
+<span class="fc" id="L30">    private Set&lt;CornerRegion&gt; cornerRegions2 = null;</span>
 
     private enum State {
+
         INITIALIZED, SOLVED, NO_SOLUTION
     }
-<span class="pc" id="L35">    private State state = null;</span>
-    
-    private final boolean doDetermineScale;
-    
-<span class="pc" id="L39">    private TransformationParameters params = null;</span>
-            
-<span class="pc" id="L41">    private float scaleTol = 0.2f;</span>
-    
-<span class="pc" id="L43">    private float rotationInRadiansTol = (float)(20. * Math.PI/180.);</span>
-    
-    //TODO: revise this...
-<span class="pc" id="L46">    private int transXYTol = 20;</span>
-        
-<span class="pc" id="L48">    private PairFloatArray solutionLeftXY = null;</span>
-<span class="pc" id="L49">    private PairFloatArray solutionRightXY = null;</span>
-    
+<span class="fc" id="L36">    private State state = null;</span>
+
+<span class="fc" id="L38">    private PairFloatArray solutionLeftXY = null;</span>
+<span class="fc" id="L39">    private PairFloatArray solutionRightXY = null;</span>
+
     private final FeatureMatcherSettings featureSettings;
-    
-<span class="pc" id="L53">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
-    
-    public EpipolarSolver(ImageExt image1, ImageExt image2, 
-<span class="fc" id="L56">        FeatureMatcherSettings settings) {</span>
+
+<span class="fc" id="L43">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    public EpipolarSolver(ImageExt image1, ImageExt image2,
+<span class="fc" id="L46">        FeatureMatcherSettings settings) {</span>
+
+<span class="fc" id="L48">        img1 = image1;</span>
+<span class="fc" id="L49">        img2 = image2;</span>
+
+<span class="fc" id="L51">        featureSettings = settings.copy();</span>
+
+<span class="fc" id="L53">        state = State.INITIALIZED;</span>
+<span class="fc" id="L54">    }</span>
+
+    /*
+     public EpipolarSolver(ImageExt image1, ImageExt image2, 
+     TransformationParameters parameters, FeatureMatcherSettings settings) {
         
-<span class="fc" id="L58">        img1 = image1;</span>
-<span class="fc" id="L59">        img2 = image2;</span>
-<span class="fc" id="L60">        doDetermineScale = true;</span>
+     img1 = image1;
+     img2 = image2;
+     doDetermineScale = false;
+     params = parameters;
         
-<span class="fc" id="L62">        featureSettings = settings.copy();</span>
+     featureSettings = settings.copy();
         
-<span class="fc" id="L64">        state = State.INITIALIZED;</span>
-<span class="fc" id="L65">    }</span>
-    
-    /**
-     * constructor accepting transformation parameters.  Note, for best results,
-     * the standard deviations within parameters should be populated because they
-     * are used as tolerances in matching.
-     * @param image1
-     * @param image2
-     * @param parameters 
-     */
-    public EpipolarSolver(ImageExt image1, ImageExt image2, 
-<span class="nc" id="L76">        TransformationParameters parameters, FeatureMatcherSettings settings) {</span>
-        
-<span class="nc" id="L78">        img1 = image1;</span>
-<span class="nc" id="L79">        img2 = image2;</span>
-<span class="nc" id="L80">        doDetermineScale = false;</span>
-<span class="nc" id="L81">        params = parameters;</span>
-        
-<span class="nc" id="L83">        featureSettings = settings.copy();</span>
-        
-<span class="nc" id="L85">        state = State.INITIALIZED;</span>
-<span class="nc" id="L86">    }</span>
-    
-    public StereoProjectionTransformerFit solve() throws IOException, 
+     state = State.INITIALIZED;
+     }*/
+    public StereoProjectionTransformerFit solve() throws IOException,
         NoSuchAlgorithmException {
-        
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (!state.equals(State.INITIALIZED)) {</span>
-<span class="nc" id="L92">            throw new IllegalStateException(&quot;solve() has already been invoked&quot;);</span>
+
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (!state.equals(State.INITIALIZED)) {</span>
+<span class="nc" id="L73">            throw new IllegalStateException(&quot;solve() has already been invoked&quot;);</span>
         }
-        
-<span class="fc" id="L95">        EuclideanSegmentFeatureMatcher wrapper = null;</span>
-        
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (params != null) {</span>
-<span class="nc" id="L98">            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, params, featureSettings);</span>
-        } else {
-<span class="fc" id="L100">            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);</span>
+
+        //NOTE: will change this to the non euclidean solver soon
+<span class="fc" id="L77">        EuclideanSegmentFeatureMatcher2 wrapper</span>
+            = new EuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
+
+<span class="fc" id="L80">        boolean solved = wrapper.match();</span>
+
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (!solved) {</span>
+<span class="nc" id="L83">            state = State.NO_SOLUTION;</span>
+<span class="nc" id="L84">            return null;</span>
         }
-        
-<span class="fc" id="L103">        CorrespondenceList cl = wrapper.matchFeatures();</span>
-        
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (cl == null) {</span>
-<span class="fc" id="L106">            state = State.NO_SOLUTION;</span>
-<span class="fc" id="L107">            return null;</span>
+
+        List&lt;PairInt&gt; points1, points2;
+
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (wrapper.getSolutionMatched1().size() &lt; 7) {</span>
+
+<span class="nc" id="L91">            EuclideanSegmentFeatureMatcher wrapper2</span>
+                = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
+
+<span class="nc" id="L94">            CorrespondenceList cl = wrapper2.matchFeatures();</span>
+
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (cl == null) {</span>
+<span class="nc" id="L97">                state = State.NO_SOLUTION;</span>
+<span class="nc" id="L98">                return null;</span>
+            }
+
+<span class="nc" id="L101">            log.info(&quot;params from scale calc: scale=&quot; + cl.getScale()</span>
+<span class="nc" id="L102">                + &quot; rot(deg)=&quot; + cl.getRotationInDegrees()</span>
+<span class="nc" id="L103">                + &quot; tx=&quot; + cl.getTranslationX() + &quot; ty=&quot; + cl.getTranslationY());</span>
+
+<span class="nc" id="L105">            points1 = cl.getPoints1();</span>
+<span class="nc" id="L106">            points2 = cl.getPoints2();</span>
+
+<span class="nc" id="L108">        } else {</span>
+
+<span class="fc" id="L110">            points1 = wrapper.getSolutionMatched1();</span>
+<span class="fc" id="L111">            points2 = wrapper.getSolutionMatched2();</span>
+<span class="fc" id="L112">            TransformationParameters params = wrapper.getSolutionTransformationParameters();</span>
+
+<span class="fc" id="L114">            log.info(&quot;params from scale calc: scale=&quot; + params.getScale()</span>
+<span class="fc" id="L115">                + &quot; rot(deg)=&quot; + params.getRotationInDegrees()</span>
+<span class="fc" id="L116">                + &quot; tx=&quot; + params.getTranslationX() + &quot; ty=&quot; + params.getTranslationY());</span>
         }
-        
-<span class="fc" id="L110">        log.info(&quot;params from scale calc: scale=&quot; + cl.getScale() </span>
-<span class="fc" id="L111">            + &quot; rot(deg)=&quot; + cl.getRotationInDegrees() </span>
-<span class="fc" id="L112">            + &quot; tx=&quot; + cl.getTranslationX() + &quot; ty=&quot; + cl.getTranslationY());</span>
-        
-<span class="fc" id="L114">        List&lt;PairInt&gt; points1 = cl.getPoints1();</span>
-<span class="fc" id="L115">        List&lt;PairInt&gt; points2 = cl.getPoints2();</span>
-        
-<span class="fc" id="L117">        int n = points1.size();</span>
-        
-<span class="fc" id="L119">        PairFloatArray matchedLeftXY = new PairFloatArray(n);</span>
-<span class="fc" id="L120">        PairFloatArray matchedRightXY = new PairFloatArray(n);</span>
-<span class="fc" id="L121">        PairFloatArray outputLeftXY = new PairFloatArray(n);</span>
-<span class="fc" id="L122">        PairFloatArray outputRightXY = new PairFloatArray(n);</span>
-        
-<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L125">            matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());</span>
-<span class="fc" id="L126">            matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());</span>
+
+<span class="fc" id="L119">        int n = points1.size();</span>
+
+<span class="fc" id="L121">        PairFloatArray matchedLeftXY = new PairFloatArray(n);</span>
+<span class="fc" id="L122">        PairFloatArray matchedRightXY = new PairFloatArray(n);</span>
+<span class="fc" id="L123">        PairFloatArray outputLeftXY = new PairFloatArray(n);</span>
+<span class="fc" id="L124">        PairFloatArray outputRightXY = new PairFloatArray(n);</span>
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L127">            matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());</span>
+<span class="fc" id="L128">            matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());</span>
         }
-        
-<span class="fc" id="L129">        RANSACSolver solver = new RANSACSolver();</span>
-        
-<span class="fc" id="L131">        StereoProjectionTransformerFit fit = solver.calculateEpipolarProjection(</span>
-            matchedLeftXY, matchedRightXY,
-            outputLeftXY, outputRightXY);
-        
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (fit != null) {</span>
-            
+
+<span class="fc" id="L131">        RANSACSolver solver = new RANSACSolver();</span>
+
+<span class="fc" id="L133">        StereoProjectionTransformerFit fit = solver.calculateEpipolarProjection(</span>
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (fit != null) {</span>
+
             //TODO: check that stdev is reasonable
-            
 <span class="fc" id="L139">            state = State.SOLVED;</span>
-            
+
 <span class="fc" id="L141">            this.solutionLeftXY = outputLeftXY;</span>
-            
+
 <span class="fc" id="L143">            this.solutionRightXY = outputRightXY;</span>
-            
+
 <span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (featureSettings.debug()) {</span>
 <span class="fc" id="L146">                plotFit(fit);</span>
             }
-            
+
 <span class="fc" id="L149">            return fit;</span>
-            
+
         } else {
-                        
+
 <span class="nc" id="L153">            state = State.NO_SOLUTION;</span>
-            
+
 <span class="nc" id="L155">            return null;</span>
         }
     }
-    
+
     private void plotFit(StereoProjectionTransformerFit fit) {
-       
+
 <span class="fc" id="L161">        Image img1Cp = img1.copyImage();</span>
 <span class="fc" id="L162">        Image img2Cp = img2.copyImage();</span>
-        
-<span class="fc" id="L164">        SimpleMatrix input1 =</span>
-<span class="fc" id="L165">            StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);</span>
 
-<span class="fc" id="L167">        SimpleMatrix input2 =</span>
-<span class="fc" id="L168">            StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);</span>
+<span class="fc" id="L164">        SimpleMatrix input1</span>
+<span class="fc" id="L165">            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);</span>
+
+<span class="fc" id="L167">        SimpleMatrix input2</span>
+<span class="fc" id="L168">            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);</span>
 
 <span class="fc bfc" id="L170" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
 <span class="fc" id="L171">            double x = input1.get(0, ii);</span>
@@ -180,63 +180,62 @@ public class EpipolarSolver {
                 255, 0, 0);
         }
 
-<span class="fc" id="L183">        StereoProjectionTransformer spTransformer = new</span>
-            StereoProjectionTransformer();
+<span class="fc" id="L183">        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();</span>
 
-<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
-            
-<span class="fc" id="L188">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
-                        
-<span class="fc" id="L190">            SimpleMatrix epipolarLinesInLeft = fit.getFundamentalMatrix().transpose().mult(input2);</span>
-            
-<span class="fc" id="L192">            PairIntArray leftLine = spTransformer.getEpipolarLine(</span>
-<span class="fc" id="L193">                epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);</span>
-            
-<span class="fc" id="L195">            ImageIOHelper.addCurveToImage(leftLine, img1, 0, rgb[0], rgb[1], rgb[2]);</span>
-            
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
+
+<span class="fc" id="L187">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
+
+<span class="fc" id="L189">            SimpleMatrix epipolarLinesInLeft = fit.getFundamentalMatrix().transpose().mult(input2);</span>
+
+<span class="fc" id="L191">            PairIntArray leftLine = spTransformer.getEpipolarLine(</span>
+<span class="fc" id="L192">                epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);</span>
+
+<span class="fc" id="L194">            ImageIOHelper.addCurveToImage(leftLine, img1, 0, rgb[0], rgb[1], rgb[2]);</span>
+
         }
 
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
-            
-<span class="fc" id="L201">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
-            
-<span class="fc" id="L203">            SimpleMatrix epipolarLinesInRight = fit.getFundamentalMatrix().mult(input1);</span>
-            
-<span class="fc" id="L205">            PairIntArray rightLine = spTransformer.getEpipolarLine(</span>
-<span class="fc" id="L206">                epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);</span>
-            
-<span class="fc" id="L208">            ImageIOHelper.addCurveToImage(rightLine, img2, 0, </span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
+
+<span class="fc" id="L200">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
+
+<span class="fc" id="L202">            SimpleMatrix epipolarLinesInRight = fit.getFundamentalMatrix().mult(input1);</span>
+
+<span class="fc" id="L204">            PairIntArray rightLine = spTransformer.getEpipolarLine(</span>
+<span class="fc" id="L205">                epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);</span>
+
+<span class="fc" id="L207">            ImageIOHelper.addCurveToImage(rightLine, img2, 0,</span>
                 rgb[0], rgb[1], rgb[2]);
-            
+
         }
 
-<span class="fc bfc" id="L213" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
-<span class="fc" id="L214">            double x = input1.get(0, ii);</span>
-<span class="fc" id="L215">            double y = input1.get(1, ii);</span>
-<span class="fc" id="L216">            ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
+<span class="fc" id="L213">            double x = input1.get(0, ii);</span>
+<span class="fc" id="L214">            double y = input1.get(1, ii);</span>
+<span class="fc" id="L215">            ImageIOHelper.addPointToImage((float) x, (float) y, img1, 3,</span>
                 255, 0, 0);
         }
-<span class="fc bfc" id="L219" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
-<span class="fc" id="L220">            double x2 = input2.get(0, ii);</span>
-<span class="fc" id="L221">            double y2 = input2.get(1, ii);</span>
-<span class="fc" id="L222">            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
+<span class="fc" id="L219">            double x2 = input2.get(0, ii);</span>
+<span class="fc" id="L220">            double y2 = input2.get(1, ii);</span>
+<span class="fc" id="L221">            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,</span>
                 255, 0, 0);
         }
-        
+
         String dirPath;
         try {
-<span class="fc" id="L228">            dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-            
-<span class="fc" id="L230">            ImageIOHelper.writeOutputImage(</span>
-<span class="fc" id="L231">                dirPath + &quot;/tmp_m_1_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img1);</span>
-        
-<span class="fc" id="L233">            ImageIOHelper.writeOutputImage(</span>
-<span class="fc" id="L234">                dirPath + &quot;/tmp_m_2_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img2);</span>
-        
-<span class="nc" id="L236">        } catch (IOException ex) {</span>
-<span class="nc" id="L237">            Logger.getLogger(EpipolarSolver.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L238">        }        </span>
-<span class="fc" id="L239">    }</span>
-        
+<span class="fc" id="L227">            dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+
+<span class="fc" id="L229">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L230">                dirPath + &quot;/tmp_m_1_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img1);</span>
+
+<span class="fc" id="L232">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L233">                dirPath + &quot;/tmp_m_2_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img2);</span>
+
+<span class="nc" id="L235">        } catch (IOException ex) {</span>
+<span class="nc" id="L236">            Logger.getLogger(EpipolarSolver.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L237">        }</span>
+<span class="fc" id="L238">    }</span>
+
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -487,10 +487,10 @@ import thirdparty.HungarianAlgorithm;
         
 <span class="fc" id="L488">        Set&lt;PairInt&gt; pairIndexes = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (matchedXY1.getN() &lt; 100) {</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (matchedXY1.getN() &lt; 100) {</span>
 <span class="fc" id="L491">            useBipartiteMatching(matchedXY1, pairIndexes);</span>
         } else {
-<span class="nc" id="L493">            useGreedyMatching(matchedXY1, pairIndexes);</span>
+<span class="fc" id="L493">            useGreedyMatching(matchedXY1, pairIndexes);</span>
         }
         
 <span class="fc" id="L496">        AngleUtil angleUtil = new AngleUtil();</span>
@@ -616,30 +616,30 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L616">        }</span>
 <span class="fc" id="L617">        unwScaleStDev = Math.sqrt(unwScaleStDev/((double)scales.size() - 1.));</span>
         
-<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        if (unwScaleStDev &gt; (0.2*unwScaleAvg)) {</span>
+<span class="fc bfc" id="L619" title="All 2 branches covered.">        if (unwScaleStDev &gt; (0.2*unwScaleAvg)) {</span>
             // filter using the median of all possible differences of scale
             // this requires O(N^2/2) in space
-<span class="nc" id="L622">            List&lt;Integer&gt; remove = findOutliersUsingMedianOfDifferences(scales);</span>
+<span class="fc" id="L622">            List&lt;Integer&gt; remove = findOutliersUsingMedianOfDifferences(scales);</span>
           
-<span class="nc bnc" id="L624" title="All 2 branches missed.">            if (!remove.isEmpty()) {</span>
-<span class="nc bnc" id="L625" title="All 2 branches missed.">                for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L626">                    int idx = remove.get(i).intValue();</span>
-<span class="nc" id="L627">                    scales.remove(idx);</span>
-<span class="nc" id="L628">                    thetaCorr.remove(idx);</span>
-<span class="nc" id="L629">                    transXs.remove(idx);</span>
-<span class="nc" id="L630">                    transYs.remove(idx);</span>
-<span class="nc" id="L631">                    pairWeights2.remove(idx);</span>
+<span class="fc bfc" id="L624" title="All 2 branches covered.">            if (!remove.isEmpty()) {</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">                for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L626">                    int idx = remove.get(i).intValue();</span>
+<span class="fc" id="L627">                    scales.remove(idx);</span>
+<span class="fc" id="L628">                    thetaCorr.remove(idx);</span>
+<span class="fc" id="L629">                    transXs.remove(idx);</span>
+<span class="fc" id="L630">                    transYs.remove(idx);</span>
+<span class="fc" id="L631">                    pairWeights2.remove(idx);</span>
                 }
                 // rebalance the remaining weights
-<span class="nc" id="L634">                float ws = 0;</span>
-<span class="nc bnc" id="L635" title="All 2 branches missed.">                for (Float pw : pairWeights2) {</span>
-<span class="nc" id="L636">                    ws += pw.floatValue();</span>
-<span class="nc" id="L637">                }</span>
-<span class="nc bnc" id="L638" title="All 2 branches missed.">                for (int i = 0; i &lt; pairWeights2.size(); ++i) {</span>
-<span class="nc" id="L639">                    float v = pairWeights2.get(i)/ws;</span>
-<span class="nc" id="L640">                    pairWeights2.set(i, v);</span>
+<span class="fc" id="L634">                float ws = 0;</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">                for (Float pw : pairWeights2) {</span>
+<span class="fc" id="L636">                    ws += pw.floatValue();</span>
+<span class="fc" id="L637">                }</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                for (int i = 0; i &lt; pairWeights2.size(); ++i) {</span>
+<span class="fc" id="L639">                    float v = pairWeights2.get(i)/ws;</span>
+<span class="fc" id="L640">                    pairWeights2.set(i, v);</span>
                 }
-<span class="nc" id="L642">                AngleUtil.correctForQuadrants(thetaCorr, useRadians);</span>
+<span class="fc" id="L642">                AngleUtil.correctForQuadrants(thetaCorr, useRadians);</span>
             }
         }
         
@@ -725,8 +725,8 @@ import thirdparty.HungarianAlgorithm;
 <span class="fc" id="L725">            outputScaleRotTransXYStDev[3] = (float)transYStDv;</span>
         }
         
-<span class="pc bpc" id="L728" title="1 of 2 branches missed.">        if (thetaAvg &gt;= (2. * Math.PI)) {</span>
-<span class="nc" id="L729">            thetaAvg -= (2. * Math.PI);</span>
+<span class="fc bfc" id="L728" title="All 2 branches covered.">        if (thetaAvg &gt;= (2. * Math.PI)) {</span>
+<span class="fc" id="L729">            thetaAvg -= (2. * Math.PI);</span>
         }          
                 
 <span class="fc" id="L732">        TransformationParameters params = new TransformationParameters();</span>
@@ -989,67 +989,67 @@ import thirdparty.HungarianAlgorithm;
     private List&lt;Integer&gt; findOutliersUsingMedianOfDifferences(
         List&lt;? extends Number&gt; values) {
         
-<span class="nc bnc" id="L992" title="All 2 branches missed.">        if (values.size() &lt; 3) {</span>
-<span class="nc" id="L993">            return new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L992" title="All 2 branches covered.">        if (values.size() &lt; 3) {</span>
+<span class="fc" id="L993">            return new ArrayList&lt;Integer&gt;();</span>
         }
         
         // number of permutations = n!/(2!*(n-2)! = n*(n-1)/2
-<span class="nc" id="L997">        int n = (values.size() * (values.size() - 1))/2;</span>
+<span class="fc" id="L997">        int n = (values.size() * (values.size() - 1))/2;</span>
         
-<span class="nc" id="L999">        double[] diffs = new double[n];</span>
+<span class="fc" id="L999">        double[] diffs = new double[n];</span>
         
-<span class="nc" id="L1001">        int count = 0;</span>
-<span class="nc bnc" id="L1002" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
-<span class="nc" id="L1003">            double v1 = values.get(i).doubleValue();</span>
-<span class="nc bnc" id="L1004" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; values.size(); ++j) {</span>
-<span class="nc" id="L1005">                double v2 = values.get(j).doubleValue();</span>
-<span class="nc" id="L1006">                diffs[count] = v1 - v2;</span>
-<span class="nc" id="L1007">                count++;</span>
+<span class="fc" id="L1001">        int count = 0;</span>
+<span class="fc bfc" id="L1002" title="All 2 branches covered.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
+<span class="fc" id="L1003">            double v1 = values.get(i).doubleValue();</span>
+<span class="fc bfc" id="L1004" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; values.size(); ++j) {</span>
+<span class="fc" id="L1005">                double v2 = values.get(j).doubleValue();</span>
+<span class="fc" id="L1006">                diffs[count] = v1 - v2;</span>
+<span class="fc" id="L1007">                count++;</span>
             }
         }
         
-<span class="nc" id="L1011">        Arrays.sort(diffs);</span>
+<span class="fc" id="L1011">        Arrays.sort(diffs);</span>
         
-<span class="nc" id="L1013">        int idx = diffs.length/2;</span>
+<span class="fc" id="L1013">        int idx = diffs.length/2;</span>
         double median;
-<span class="nc bnc" id="L1015" title="All 2 branches missed.">        if ((idx &amp; 1) == 0) {</span>
-<span class="nc" id="L1016">            median = (diffs[idx] + diffs[idx - 1])/2.f;</span>
+<span class="fc bfc" id="L1015" title="All 2 branches covered.">        if ((idx &amp; 1) == 0) {</span>
+<span class="fc" id="L1016">            median = (diffs[idx] + diffs[idx - 1])/2.f;</span>
         } else {
-<span class="nc" id="L1018">            median = diffs[idx];</span>
+<span class="fc" id="L1018">            median = diffs[idx];</span>
         }
-<span class="nc" id="L1020">        median = Math.abs(median);</span>
-<span class="nc bnc" id="L1021" title="All 2 branches missed.">        if (median == 0) {</span>
+<span class="fc" id="L1020">        median = Math.abs(median);</span>
+<span class="fc bfc" id="L1021" title="All 2 branches covered.">        if (median == 0) {</span>
             // widen to central 2 or 3 values
-<span class="nc bnc" id="L1023" title="All 2 branches missed.">            if ((idx &amp; 1) == 0) {</span>
+<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">            if ((idx &amp; 1) == 0) {</span>
 <span class="nc" id="L1024">                median = (Math.abs(diffs[idx]) + Math.abs(diffs[idx - 1]))/2.f;</span>
             } else {
-<span class="nc" id="L1026">                median = (Math.abs(diffs[idx]) + Math.abs(diffs[idx - 1]) +</span>
-<span class="nc" id="L1027">                    Math.abs(diffs[idx + 1]))/3.;</span>
+<span class="fc" id="L1026">                median = (Math.abs(diffs[idx]) + Math.abs(diffs[idx - 1]) +</span>
+<span class="fc" id="L1027">                    Math.abs(diffs[idx + 1]))/3.;</span>
             }
         }
         
-<span class="nc" id="L1031">        Set&lt;Integer&gt; keepIndexes = new HashSet&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L1032" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
-<span class="nc" id="L1033">            double v1 = values.get(i).doubleValue();</span>
-<span class="nc bnc" id="L1034" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; values.size(); ++j) {</span>
-<span class="nc" id="L1035">                double v2 = values.get(j).doubleValue();</span>
-<span class="nc" id="L1036">                double diff = Math.abs(v1 - v2);</span>
-<span class="nc bnc" id="L1037" title="All 2 branches missed.">                if (diff &lt;= median) {</span>
-<span class="nc" id="L1038">                    keepIndexes.add(Integer.valueOf(i));</span>
-<span class="nc" id="L1039">                    keepIndexes.add(Integer.valueOf(j));</span>
+<span class="fc" id="L1031">        Set&lt;Integer&gt; keepIndexes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L1032" title="All 2 branches covered.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
+<span class="fc" id="L1033">            double v1 = values.get(i).doubleValue();</span>
+<span class="fc bfc" id="L1034" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; values.size(); ++j) {</span>
+<span class="fc" id="L1035">                double v2 = values.get(j).doubleValue();</span>
+<span class="fc" id="L1036">                double diff = Math.abs(v1 - v2);</span>
+<span class="fc bfc" id="L1037" title="All 2 branches covered.">                if (diff &lt;= median) {</span>
+<span class="fc" id="L1038">                    keepIndexes.add(Integer.valueOf(i));</span>
+<span class="fc" id="L1039">                    keepIndexes.add(Integer.valueOf(j));</span>
                 }
             }
         }
        
-<span class="nc" id="L1044">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L1045" title="All 2 branches missed.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
-<span class="nc" id="L1046">            Integer key = Integer.valueOf(i);</span>
-<span class="nc bnc" id="L1047" title="All 2 branches missed.">            if (!keepIndexes.contains(key)) {</span>
-<span class="nc" id="L1048">                remove.add(key);</span>
+<span class="fc" id="L1044">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L1045" title="All 2 branches covered.">        for (int i = 0; i &lt; values.size(); ++i) {</span>
+<span class="fc" id="L1046">            Integer key = Integer.valueOf(i);</span>
+<span class="fc bfc" id="L1047" title="All 2 branches covered.">            if (!keepIndexes.contains(key)) {</span>
+<span class="fc" id="L1048">                remove.add(key);</span>
             }
         }
         
-<span class="nc" id="L1052">        return remove;</span>
+<span class="fc" id="L1052">        return remove;</span>
     }
 
     private void useBipartiteMatching(PairIntArray matchedXY1, 
@@ -1101,34 +1101,34 @@ import thirdparty.HungarianAlgorithm;
     private void useGreedyMatching(PairIntArray matchedXY1, 
         Set&lt;PairInt&gt; pairIndexes) {
 
-<span class="nc bnc" id="L1104" title="All 2 branches missed.">        for (int i1 = 0; i1 &lt; matchedXY1.getN(); ++i1) {</span>
+<span class="fc bfc" id="L1104" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; matchedXY1.getN(); ++i1) {</span>
             
-<span class="nc" id="L1106">            int x1 = matchedXY1.getX(i1);</span>
-<span class="nc" id="L1107">            int y1 = matchedXY1.getY(i1);</span>
+<span class="fc" id="L1106">            int x1 = matchedXY1.getX(i1);</span>
+<span class="fc" id="L1107">            int y1 = matchedXY1.getY(i1);</span>
             
-<span class="nc" id="L1109">            double maxDist = Double.MIN_VALUE;</span>
-<span class="nc" id="L1110">            int maxDistIdx = -1;</span>
+<span class="fc" id="L1109">            double maxDist = Double.MIN_VALUE;</span>
+<span class="fc" id="L1110">            int maxDistIdx = -1;</span>
             
-<span class="nc bnc" id="L1112" title="All 2 branches missed.">            for (int i2 = 0; i2 &lt; matchedXY1.getN(); ++i2) {</span>
+<span class="fc bfc" id="L1112" title="All 2 branches covered.">            for (int i2 = 0; i2 &lt; matchedXY1.getN(); ++i2) {</span>
                 
-<span class="nc bnc" id="L1114" title="All 2 branches missed.">                if (i1 == i2) {</span>
-<span class="nc" id="L1115">                    continue;</span>
+<span class="fc bfc" id="L1114" title="All 2 branches covered.">                if (i1 == i2) {</span>
+<span class="fc" id="L1115">                    continue;</span>
                 }
-<span class="nc" id="L1117">                int x2 = matchedXY1.getX(i2);</span>
-<span class="nc" id="L1118">                int y2 = matchedXY1.getY(i2);</span>
-<span class="nc" id="L1119">                int diffX = x1 - x2;</span>
-<span class="nc" id="L1120">                int diffY = y1 - y2;</span>
-<span class="nc" id="L1121">                double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
-<span class="nc bnc" id="L1122" title="All 2 branches missed.">                if (dist &gt; maxDist) {</span>
-<span class="nc" id="L1123">                    maxDist = dist;</span>
-<span class="nc" id="L1124">                    maxDistIdx = i2;</span>
+<span class="fc" id="L1117">                int x2 = matchedXY1.getX(i2);</span>
+<span class="fc" id="L1118">                int y2 = matchedXY1.getY(i2);</span>
+<span class="fc" id="L1119">                int diffX = x1 - x2;</span>
+<span class="fc" id="L1120">                int diffY = y1 - y2;</span>
+<span class="fc" id="L1121">                double dist = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="fc bfc" id="L1122" title="All 2 branches covered.">                if (dist &gt; maxDist) {</span>
+<span class="fc" id="L1123">                    maxDist = dist;</span>
+<span class="fc" id="L1124">                    maxDistIdx = i2;</span>
                 }
             }
             
-<span class="nc bnc" id="L1128" title="All 2 branches missed.">            if (maxDistIdx &gt; -1) {</span>
-<span class="nc" id="L1129">                pairIndexes.add(new PairInt(i1, maxDistIdx));</span>
+<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">            if (maxDistIdx &gt; -1) {</span>
+<span class="fc" id="L1129">                pairIndexes.add(new PairInt(i1, maxDistIdx));</span>
             }
         }
-<span class="nc" id="L1132">    }</span>
+<span class="fc" id="L1132">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -72,7 +72,7 @@ public class EpipolarSolverTest extends TestCase {
         }
     }
     
-    public void estRot90() throws Exception {
+    public void testRot90() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -80,7 +80,7 @@ public class EpipolarSolverTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
         
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";

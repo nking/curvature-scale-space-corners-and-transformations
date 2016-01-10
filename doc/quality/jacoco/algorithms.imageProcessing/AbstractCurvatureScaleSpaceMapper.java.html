@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  */
 public abstract class AbstractCurvatureScaleSpaceMapper {
 
-<span class="fc" id="L23">    protected CurvatureScaleSpaceMapperState state = </span>
+<span class="pc" id="L23">    protected CurvatureScaleSpaceMapperState state = </span>
         CurvatureScaleSpaceMapperState.UNINITIALIZED;
     
     protected GreyscaleImage img;
@@ -32,40 +32,40 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * is present, that holds a color field in which a value of '1' means
      * the curve is closed.
      */
-<span class="fc" id="L35">    protected List&lt;PairIntArray&gt; edges = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="pc" id="L35">    protected List&lt;PairIntArray&gt; edges = new ArrayList&lt;PairIntArray&gt;();</span>
     
     /**
      * if extractSkline is true, this is populated with the sky line
      * edge(s).
      */
-<span class="fc" id="L41">    protected final List&lt;PairIntArray&gt; skylineEdges = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="pc" id="L41">    protected final List&lt;PairIntArray&gt; skylineEdges = new ArrayList&lt;PairIntArray&gt;();</span>
         
-<span class="fc" id="L43">    protected boolean doNotNormalizeByHistogram = false;</span>
+<span class="pc" id="L43">    protected boolean doNotNormalizeByHistogram = false;</span>
     
-<span class="fc" id="L45">    protected boolean useLineDrawingMode = false;</span>
+<span class="pc" id="L45">    protected boolean useLineDrawingMode = false;</span>
         
-<span class="fc" id="L47">    protected boolean useLowestHighIntensityCutoff = false;</span>
+<span class="pc" id="L47">    protected boolean useLowestHighIntensityCutoff = false;</span>
     
-<span class="fc" id="L49">    protected boolean useLowHighIntensityCutoff = false;</span>
+<span class="pc" id="L49">    protected boolean useLowHighIntensityCutoff = false;</span>
     
-<span class="fc" id="L51">    protected boolean extractSkyline = false;</span>
+<span class="pc" id="L51">    protected boolean extractSkyline = false;</span>
     
     protected final int trimmedXOffset;
     
     protected final int trimmedYOffset;
     
-<span class="fc" id="L57">    protected boolean useOutdoorMode = false;</span>
+<span class="pc" id="L57">    protected boolean useOutdoorMode = false;</span>
     
-<span class="fc" id="L59">    protected HistogramHolder imgHistogram = null;</span>
+<span class="pc" id="L59">    protected HistogramHolder imgHistogram = null;</span>
     
-<span class="fc" id="L61">    protected EdgeFilterProducts filterProducts = null;</span>
+<span class="pc" id="L61">    protected EdgeFilterProducts filterProducts = null;</span>
     
     /**
      * map with key = center of junction pixel coordinates; 
      * value = set of adjacent pixels when there are more than the preceding 
      * and next.
      */
-<span class="fc" id="L68">    protected Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+<span class="pc" id="L68">    protected Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
 
     /**
      * map with key = pixel coordinates of all pixels involved in junctions;
@@ -74,9 +74,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * for example, a pixel located in edges(0) at offset=100
      * would have PairInt(0, 100) as a value.
      */
-<span class="fc" id="L77">    protected Map&lt;Integer, PairInt&gt; junctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();</span>
+<span class="pc" id="L77">    protected Map&lt;Integer, PairInt&gt; junctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();</span>
      
-<span class="fc" id="L79">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="pc" id="L79">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     /**
      * constructor w/ input image which is operated on.  the same instance
@@ -99,20 +99,20 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="fc" id="L99">        trimmedYOffset = offsetXY[1];</span>
 <span class="fc" id="L100">    }</span>
     
-<span class="fc" id="L102">    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {</span>
+<span class="nc" id="L102">    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {</span>
         
-<span class="fc" id="L104">        img = input.copyImage();</span>
+<span class="nc" id="L104">        img = input.copyImage();</span>
         
-<span class="fc" id="L106">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="nc" id="L106">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L108">        originalImg = ImageIOHelper.convertImage(input);</span>
+<span class="nc" id="L108">        originalImg = ImageIOHelper.convertImage(input);</span>
             
-<span class="fc" id="L110">        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);</span>
+<span class="nc" id="L110">        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);</span>
         
-<span class="fc" id="L112">        trimmedXOffset = offsetXY[0];</span>
+<span class="nc" id="L112">        trimmedXOffset = offsetXY[0];</span>
         
-<span class="fc" id="L114">        trimmedYOffset = offsetXY[1];</span>
-<span class="fc" id="L115">    }</span>
+<span class="nc" id="L114">        trimmedYOffset = offsetXY[1];</span>
+<span class="nc" id="L115">    }</span>
     
     /**
      * constructor with input image and the already extracted edges.
@@ -146,8 +146,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * will increase the contrast of fainter features.
      */
     public void doNotPerformHistogramEqualization() {
-<span class="fc" id="L149">        this.doNotNormalizeByHistogram = true;</span>
-<span class="fc" id="L150">    }</span>
+<span class="nc" id="L149">        this.doNotNormalizeByHistogram = true;</span>
+<span class="nc" id="L150">    }</span>
     
     public void useLowestHighIntensityCutoff() {
 <span class="nc" id="L153">        useLowestHighIntensityCutoff = true;</span>
@@ -366,8 +366,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
 <span class="nc" id="L366">            settings.setUseOutdoorMode();</span>
         }
         
-<span class="fc bfc" id="L369" title="All 2 branches covered.">        if (doNotNormalizeByHistogram) {</span>
-<span class="fc" id="L370">            settings.setDoNotNormalizeByHistogram();</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">        if (doNotNormalizeByHistogram) {</span>
+<span class="nc" id="L370">            settings.setDoNotNormalizeByHistogram();</span>
         }
 <span class="fc bfc" id="L372" title="All 2 branches covered.">        if (useLineDrawingMode) {</span>
 <span class="fc" id="L373">            settings.setUseLineDrawingMode();</span>
@@ -487,7 +487,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     }
     
     public Map&lt;Integer, Set&lt;Integer&gt;&gt; getJunctionMap() {        
-<span class="fc" id="L490">        return junctionMap;</span>
+<span class="nc" id="L490">        return junctionMap;</span>
     }
     
     /*

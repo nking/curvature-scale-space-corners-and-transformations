@@ -1668,7 +1668,7 @@ import java.util.logging.Level;
 <span class="pc bpc" id="L1668" title="1 of 4 branches missed.">                        if (closestCanBeReordered0 == 0 &amp;&amp; closestCanBeReordered1 == 0) {</span>
 <span class="fc" id="L1669">                            continue;</span>
                         }
-<span class="pc bpc" id="L1671" title="7 of 12 branches missed.">                        if (((cr0 == 0) &amp;&amp; (cr1 == 0)) ||</span>
+<span class="pc bpc" id="L1671" title="10 of 12 branches missed.">                        if (((cr0 == 0) &amp;&amp; (cr1 == 0)) ||</span>
                             (closestCanBeReordered0 != 0 &amp;&amp; closestCanBeReordered1 != 0
                                 &amp;&amp; ((cr0 == 0) || cr1 == 0))
                             ) {
@@ -1745,12 +1745,12 @@ import java.util.logging.Level;
 <span class="fc" id="L1745">                    boolean isFirstEndPoint1 = false;</span>
 <span class="fc bfc" id="L1746" title="All 2 branches covered.">                    if (loc1.getY() == 0) {</span>
 <span class="fc" id="L1747">                        isFirstEndPoint1 = true;</span>
-<span class="pc bpc" id="L1748" title="1 of 4 branches missed.">                    } else if ((loc1.getY() != (n1 - 1)) &amp;&amp; (loc1.getY() &lt; 2)) {</span>
+<span class="pc bpc" id="L1748" title="3 of 4 branches missed.">                    } else if ((loc1.getY() != (n1 - 1)) &amp;&amp; (loc1.getY() &lt; 2)) {</span>
 <span class="nc" id="L1749">                        isFirstEndPoint1 = true;</span>
                     }
 
-<span class="fc bfc" id="L1752" title="All 4 branches covered.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
-<span class="fc" id="L1753">                        continue;</span>
+<span class="pc bpc" id="L1752" title="1 of 4 branches missed.">                    if (isFirstEndPoint0 &amp;&amp; removedFirstSet0.contains(joinPoint)) {</span>
+<span class="nc" id="L1753">                        continue;</span>
 <span class="pc bpc" id="L1754" title="1 of 4 branches missed.">                    } else if (!isFirstEndPoint0 &amp;&amp; removedLastSet0.contains(joinPoint)) {</span>
 <span class="nc" id="L1755">                        continue;</span>
                     }

@@ -77,8 +77,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     
     public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input) {
 
-<span class="fc" id="L80">        super(input);</span>
-<span class="fc" id="L81">    }</span>
+<span class="nc" id="L80">        super(input);</span>
+<span class="nc" id="L81">    }</span>
 
     public CurvatureScaleSpaceCornerDetector(final ImageExt input,
         List&lt;PairIntArray&gt; theEdges) {
@@ -558,7 +558,7 @@ public class CurvatureScaleSpaceCornerDetector extends
     
     public Set&lt;CornerRegion&gt; getEdgeCornerRegions(boolean removeAmbiguousPeaks) {
         
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
 <span class="nc" id="L562">            return getEdgeCornerRegions();</span>
         }
 /*        
@@ -572,13 +572,13 @@ public class CurvatureScaleSpaceCornerDetector extends
         this.junctionLocationMap = theJunctionLocationMap;
         this.junctionMap = theJunctionMap;
   */      
-<span class="fc" id="L575">        Set&lt;CornerRegion&gt; set = new HashSet&lt;CornerRegion&gt;();</span>
+<span class="nc" id="L575">        Set&lt;CornerRegion&gt; set = new HashSet&lt;CornerRegion&gt;();</span>
        
-<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {</span>
-<span class="fc" id="L578">            set.addAll(entry.getValue());</span>
-<span class="fc" id="L579">        }</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {</span>
+<span class="nc" id="L578">            set.addAll(entry.getValue());</span>
+<span class="nc" id="L579">        }</span>
         
-<span class="fc" id="L581">        return set;</span>
+<span class="nc" id="L581">        return set;</span>
     }
 
     /**
