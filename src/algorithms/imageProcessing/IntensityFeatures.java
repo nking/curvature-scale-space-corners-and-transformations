@@ -943,6 +943,10 @@ public class IntensityFeatures {
         GsIntensityDescriptor descriptor = (GsIntensityDescriptor) 
             extractIntensity(img, xCenter, yCenter, rotation);
         
+        if (descriptor == null) {
+            return true;
+        }
+        
         int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
         
         float vc = descriptor.grey[descriptor.getCentralIndex()];
