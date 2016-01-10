@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.QuickSort;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -10,6 +11,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+import org.ejml.simple.SimpleEVD;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -403,7 +407,7 @@ public class IntensityFeatures {
         
         IntensityDescriptor descriptor = 
             extractGsIntensityForCells2(img, xCenter, yCenter, rotation);
-        
+                
         if (useNormalizedIntensities && (descriptor != null)) {
             descriptor.applyNormalization();
         }
@@ -912,6 +916,59 @@ public class IntensityFeatures {
 
         IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
         return desc;
+    }
+    
+    /**
+     * Getermine whether to remove a feature that is difficult to localize.
+     * The method follows Szeliski "Computer Vision: Algorithms and Applications" 
+     * equation 4.11, (det(A)/trace(A)) > 10 and references 
+     * Brown, Szeliski, and Winder, 2005.
+     * 
+     * The method extracts the same descriptor as used for auto-correlation 
+     * to perform the trace and determinant on.
+     * @param img
+     * @param xCenter
+     * @param yCenter
+     * @param rotation
+     */
+    public boolean removeDueToLocalization(GreyscaleImage img,
+        int xCenter, int yCenter, int rotation) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+     
+        float sentinel = GsIntensityDescriptor.sentinel;
+        
+        GsIntensityDescriptor descriptor = (GsIntensityDescriptor) 
+            extractIntensity(img, xCenter, yCenter, rotation);
+        
+        int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
+        
+        float vc = descriptor.grey[descriptor.getCentralIndex()];
+        
+        SimpleMatrix m = new SimpleMatrix(nCellsAcross, nCellsAcross);
+        
+        int idx = 0;
+        for (int col = 0; col < nCellsAcross; ++col) {
+            for (int row = 0; row < nCellsAcross; ++row) {
+                float v = descriptor.grey[idx];
+                if (v == sentinel) {
+                    m.set(row, col, 0);
+                } else {
+                    m.set(row, col, v - vc);
+                }
+                idx++;
+            }
+        }
+        
+        double det = m.determinant();
+        double trace = m.trace();
+        
+        if (Math.abs(det/trace) < 10) {
+            return true;
+        }
+        return false;
     }
     
     /**

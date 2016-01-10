@@ -17,7 +17,7 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
     public EuclideanSegmentFeatureMatcher2Test() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -79,7 +79,7 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
                 
-        for (int i = 4; i < 5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             fileName1 = null;
             fileName2 = null;
             switch(i) {
@@ -233,9 +233,9 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
             }
         } else if (fileName1.contains("books")) {
             if (rotateBy90) {
-                assertTrue(Math.abs(params.getTranslationX() - 574) < 10);
-                assertTrue(Math.abs(params.getTranslationY() - 5) < 10);
-                float diffRot = AngleUtil.getAngleDifference(269, params.getRotationInDegrees());
+                assertTrue(Math.abs(params.getTranslationX() - 574) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - 5) < 40);
+                float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             } else {
                 assertTrue(Math.abs(params.getTranslationX() - -52) < 40);

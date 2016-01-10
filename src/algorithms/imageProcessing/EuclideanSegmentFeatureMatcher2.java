@@ -6,9 +6,13 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  class whose goal is to find best single euclidean transformation for 
@@ -98,9 +102,10 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             return false;
         }
         
-        //MiscDebug.writeImagesInAlternatingColor(img1.copyToColorGreyscaleExt(), 
-        //    img2.copyToColorGreyscaleExt(), matcher.getSolutionStats(), 
-        //    "_matched_non_euclid_" + MiscDebug.getCurrentTimeFormatted(), 2);
+        /*MiscDebug.writeImagesInAlternatingColor(img1.copyToColorGreyscaleExt(), 
+            img2.copyToColorGreyscaleExt(), matcher.getSolutionStats(), 
+            "_matched_non_euclid_" + MiscDebug.getCurrentTimeFormatted(), 2);
+        */
         
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>(); 
         //List<PairInt> matched1 = new ArrayList<PairInt>();
@@ -131,9 +136,15 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             img1Helper.getBlobs(type, useBinned),
             img2Helper.getBlobs(type, useBinned));
         
-        /*if (true) {
+        filterForLocalization(img1Helper.getGreyscaleImage(useBinned),
+            img2Helper.getGreyscaleImage(useBinned), f1, f2,
+            index1Index2Matches);
+        /*
+        if (true) {
+            GreyscaleImage im1 = img1Helper.getGreyscaleImage(useBinned);
+            GreyscaleImage im2 = img2Helper.getGreyscaleImage(useBinned);
             List<FeatureComparisonStat> blobAssoc = new ArrayList<FeatureComparisonStat>();
-            for (Entry<PairInt, List<FeatureComparisonStat>> entry : index1Index2Matches.entrySet()) {
+            for (java.util.Map.Entry<PairInt, List<FeatureComparisonStat>> entry : index1Index2Matches.entrySet()) {
                 blobAssoc.addAll(entry.getValue());
             }
             MiscDebug.writeImagesInAlternatingColor(img1.copyToColorGreyscaleExt(), 
@@ -317,6 +328,43 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         }
         
         return matchedBlobs;
+    }
+
+    private void filterForLocalization(GreyscaleImage img1, 
+        GreyscaleImage img2, IntensityFeatures features1, 
+        IntensityFeatures features2, Map<PairInt, 
+            List<FeatureComparisonStat>> index1Index2Matches) {
+        
+        Set<PairInt> remove = new HashSet<PairInt>();
+        
+        for (Entry<PairInt, List<FeatureComparisonStat>> entry : index1Index2Matches.entrySet()) {
+            List<FeatureComparisonStat> stats = entry.getValue();
+            for (int i = (stats.size() - 1); i > -1; --i) {
+                FeatureComparisonStat stat = stats.get(i);
+                PairInt p1 = stat.getImg1Point();
+                try {
+                    if (features1.removeDueToLocalization(img1, p1.getX(), p1.getY(),
+                        features1.calculateOrientation(p1.getX(), p1.getY()))) {
+                        stats.remove(i);
+                        continue;
+                    }
+                    PairInt p2 = stat.getImg2Point();
+                    if (features2.removeDueToLocalization(img2, p2.getX(), p2.getY(),
+                        features2.calculateOrientation(p2.getX(), p2.getY()))) {
+                        stats.remove(i);
+                        continue;
+                    }
+                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                }
+            }
+            if (stats.isEmpty()) {
+                remove.add(entry.getKey());
+            }
+        }
+        
+        for (PairInt key : remove) {
+            index1Index2Matches.remove(key);
+        }
     }
     
 }

@@ -17,7 +17,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
     public EuclideanSegmentFeatureMatcherTest() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         
