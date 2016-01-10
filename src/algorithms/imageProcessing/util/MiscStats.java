@@ -962,9 +962,7 @@ public class MiscStats {
             float a = 1.f/weights.length;
             Arrays.fill(weights, a);
         }
-        
-        log.info("calc euclidean transform");
-        
+                
         TransformationParameters params = tc.calulateEuclidean(matchedXY1, 
             matchedXY2, weights, centroidX1, centroidY1, 
             outputScaleRotTransXYStDev);
@@ -1406,6 +1404,112 @@ public class MiscStats {
         }
         
         return img2Intersection;
+    }
+
+    public static List<TransformationParameters> filterToSimilarParamSets2(
+        List<TransformationParameters> paramsList, int binFactor1, int binFactor2) {
+        
+        int transTol = 30;
+        if (binFactor1 != 1 || binFactor2 != 1) {
+            transTol /= ((binFactor1 + binFactor2)/2.f);
+        }
+        
+        List<TransformationParameters> combinedParams = 
+            new ArrayList<TransformationParameters>();
+        
+        List<Set<TransformationParameters>> similarSets = 
+            new ArrayList<Set<TransformationParameters>>();
+        
+        Set<Integer> alreadyCombined = new HashSet<Integer>();
+        
+        for (int i = 0; i < paramsList.size(); ++i) {
+            
+            Integer key = Integer.valueOf(i);
+                        
+            if (alreadyCombined.contains(key)) {
+                continue;
+            }
+            
+            TransformationParameters params0 = paramsList.get(i);
+            
+            Set<TransformationParameters> set = new HashSet<TransformationParameters>();
+                        
+            for (int j = (i + 1); j < paramsList.size(); ++j) {
+                
+                Integer key2 = Integer.valueOf(j);
+                
+                if (alreadyCombined.contains(key2)) {
+                    continue;
+                }
+                
+                TransformationParameters compare = paramsList.get(j);
+                
+                float diff = AngleUtil.getAngleDifference(
+                    params0.getRotationInDegrees(), compare.getRotationInDegrees());
+                if (Math.abs(diff) > 20) {
+                    continue;
+                }
+                float avg = (params0.getScale() + compare.getScale())/2.f;
+                if (Math.abs(params0.getScale() - compare.getScale()) > 0.2*avg) {
+                    continue;
+                }
+                                
+                //TODO: may need to revise translation tolerance...
+                double diffX = Math.abs(params0.getTranslationX()- compare.getTranslationX());
+                double diffY = Math.abs(params0.getTranslationY()- compare.getTranslationY());
+                if ((diffX > transTol) || (diffY > transTol)){
+                    continue;
+                }
+                if (!alreadyCombined.contains(key)) {
+                    alreadyCombined.add(key);
+                }
+                alreadyCombined.add(key2);
+                
+                set.add(params0);
+                set.add(compare);
+            }
+            if (set.isEmpty()) {
+                combinedParams.add(params0);
+            } else {
+                similarSets.add(set);
+            }
+        }
+        
+        // use histograms to remove translation outliers in similar sets
+
+        for (Set<TransformationParameters> similarSet : similarSets) {
+            
+            List<TransformationParameters> similar = 
+                new ArrayList<TransformationParameters>(similarSet);
+            int[] keep = filterForTranslationXUsingHist(similar);
+            Set<Integer> unique = MiscStats.indexesNotPresent(keep, similar.size());
+            for (Integer ind : unique) {
+                combinedParams.add(similar.get(ind.intValue()));
+            }
+            
+            filter(similar, keep);
+            keep = filterForTranslationYUsingHist(similar);
+            unique = MiscStats.indexesNotPresent(keep, similar.size());
+            for (Integer ind : unique) {
+                combinedParams.add(similar.get(ind.intValue()));
+            }
+            filter(similar, keep);
+            
+            if (similar.isEmpty()) {
+                continue;
+            } else if (similar.size() == 1) {
+                combinedParams.add(similar.get(0));
+                continue;
+            }
+            
+            //average them
+            MatchedPointsTransformationCalculator
+                tc = new MatchedPointsTransformationCalculator();
+            TransformationParameters params =  tc.averageWithoutRemoval(similar);
+            combinedParams.add(params);
+        }
+        
+        return combinedParams;
     }
     
 }

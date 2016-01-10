@@ -97,7 +97,7 @@ public abstract class AbstractFeatureMatcher {
         }
     }
 
-    public void match() throws IOException, NoSuchAlgorithmException {
+    public boolean match() throws IOException, NoSuchAlgorithmException {
         
         ImageStatistics statsR1 = ImageStatisticsHelper.examine(
             img1Helper.getImage().getRValues(), true);
@@ -153,9 +153,11 @@ public abstract class AbstractFeatureMatcher {
             boolean solved = generateAndMatchCornerRegions(type, ub);
             
             if (solved) {
-                break;
+                return true;
             }
         }
+        
+        return false;
     }
 
     protected void prepareCorners(SegmentationType type, boolean useBinned) 

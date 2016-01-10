@@ -1,9 +1,14 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  class whose goal is to find best single euclidean transformation for 
@@ -18,6 +23,11 @@ import java.util.Map;
  (Note if that is successful, will try to evaluate against only the
  matched points which are fewer in number and will change class to use that
  logic if tests pass).
+ 
+ The checkerboard tests do not match well with this one because the points are
+ not unique enough, but EuclideanSegmentFeatureMatcher does solve it.
+ SO, when this method returns very few or no matched points, the invoker
+ should then follow with EuclideanSegmentFeatureMatcher.
  
  * @author nichole
  */
@@ -88,6 +98,10 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             return false;
         }
         
+        //MiscDebug.writeImagesInAlternatingColor(img1.copyToColorGreyscaleExt(), 
+        //    img2.copyToColorGreyscaleExt(), matcher.getSolutionStats(), 
+        //    "_matched_non_euclid_" + MiscDebug.getCurrentTimeFormatted(), 2);
+        
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>(); 
         //List<PairInt> matched1 = new ArrayList<PairInt>();
         //List<PairInt> matched2 = new ArrayList<PairInt>();
@@ -112,12 +126,22 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         Map<PairInt, List<FeatureComparisonStat>> 
         */
         
-        throw new UnsupportedOperationException("not yet implemented");
-        /*
         Map<PairInt, List<FeatureComparisonStat>> index1Index2Matches 
             = associateMatchesWithBlobs(stats, 
             img1Helper.getBlobs(type, useBinned),
             img2Helper.getBlobs(type, useBinned));
+        
+        /*if (true) {
+            List<FeatureComparisonStat> blobAssoc = new ArrayList<FeatureComparisonStat>();
+            for (Entry<PairInt, List<FeatureComparisonStat>> entry : index1Index2Matches.entrySet()) {
+                blobAssoc.addAll(entry.getValue());
+            }
+            MiscDebug.writeImagesInAlternatingColor(img1.copyToColorGreyscaleExt(), 
+                img2.copyToColorGreyscaleExt(), blobAssoc, 
+                "_matched_assoc_blobs_" + MiscDebug.getCurrentTimeFormatted(), 2);
+            log.info(index1Index2Matches.size() + " blob pairs to match from");
+            log.info(blobAssoc.size() + " matched points associated w/ blobs");
+        }*/
                 
         BlobCornersEuclideanCalculator2 calculator = 
             new BlobCornersEuclideanCalculator2();
@@ -126,7 +150,7 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             img1Helper.getGreyscaleImage(useBinned),
             img2Helper.getGreyscaleImage(useBinned),
             f1, f2, dither, index1Index2Matches,
-            corners1, corners2);
+            corners1, corners2, binFactor1, binFactor2);
         
         if (soln == null) {
             return false;
@@ -152,13 +176,147 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         
         copyToInstanceVars(stats);
         
-        solutionTransformation = bestParams.copy();
+        solutionTransformation = soln.getParams().copy();
                 
-        return true;*/
+        return true;
     }
     
+    private MatchingSolution transformSolutionToFullFrames(MatchingSolution 
+        soln, BlobPerimeterCornerHelper img1Helper, 
+        BlobPerimeterCornerHelper img2Helper, int binFactor1, int binFactor2) {
+        
+        if (binFactor1 == 1 && binFactor2 == 1) {
+            return soln;
+        }
+       
+        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+        
+        assert(rotatedOffsets.containsData());
+        
+        List<FeatureComparisonStat> stats = soln.getComparisonStats();
+        
+        for (int i = 0; i < stats.size(); ++i) {
+            FeatureComparisonStat stat = stats.get(i);
+            stat.setBinFactor1(binFactor1);
+            stat.setBinFactor2(binFactor2);
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = (binFactor1 != 1) ? 
+                img1Helper.getGreyscaleImageBinned() :
+                img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = (binFactor2 != 1) ? 
+                img2Helper.getGreyscaleImageBinned() :
+                img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, stats, 
+                "_matched_binned_" + settings.getDebugTag() 
+                + MiscDebug.getCurrentTimeFormatted(), 1);
+        }
+        
+        FeatureMatcher matcher = new FeatureMatcher();
+        
+        List<FeatureComparisonStat> fullStats = matcher.reviseStatsForFullImages(
+            img1Helper.getGreyscaleImage(),
+            img2Helper.getGreyscaleImage(),
+            settings,
+            soln.getParams(), soln.getComparisonStats(),
+            binFactor1, binFactor2, rotatedOffsets);
+            
+        if ((fullStats == null) || fullStats.isEmpty()) {
+            return null;
+        }
+        
+        TransformationParameters revisedParams = 
+            MiscStats.calculateTransformation(1, 1, fullStats,
+                new float[4], false);
+        
+        if (revisedParams == null) {
+            return null;
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, fullStats, 
+                "_matched_" + settings.getDebugTag() +
+                MiscDebug.getCurrentTimeFormatted(), 2);
+        }
+        
+        MatchingSolution fullSoln = new MatchingSolution(revisedParams, 
+            fullStats, 1, 1);
+        
+        return fullSoln;
+    }
+
     public TransformationParameters getSolutionTransformationParameters() {
         return solutionTransformation;
+    }
+
+    private Map<PairInt, List<FeatureComparisonStat>> associateMatchesWithBlobs(
+        List<FeatureComparisonStat> stats, List<Set<PairInt>> blobs1, 
+        List<Set<PairInt>> blobs2) {
+        
+        /*
+        to make the lookups for stats points O(1), could make a large map for each
+        blobs collection w/ key = coord and value= list index.  iterating over
+        all blob points is nBlobs * avgBlobSize * 2 where 2 is once for image1,
+        and then image2.
+        
+        if there are 100 stats and blobs1 size = blobs2 = 50,
+        then finding indexes for all stats is at most 100*50 + 100*50 = 10,000
+        
+        if make large map, and if each blob has n points,
+          50*n*2 + 100*2  is number of lookups, so it's only a better runtime if
+        avg size of blobs is < 100 for this example.
+        */
+        
+        Map<PairInt, List<FeatureComparisonStat>> matchedBlobs = 
+            new HashMap<PairInt, List<FeatureComparisonStat>>();
+
+        for (int i = 0; i < stats.size(); ++i) {
+            
+            FeatureComparisonStat stat = stats.get(i);
+            
+            PairInt p1 = stat.getImg1Point();
+            PairInt p2 = stat.getImg2Point();
+            
+            PairInt indexes = new PairInt(0, 0);
+            
+            boolean found = false;
+            for (int j = 0; j < blobs1.size(); ++j) {
+                Set<PairInt> blob = blobs1.get(j);
+                if (blob.contains(p1)) {
+                    indexes.setX(j);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                continue;
+            }
+            found = false;
+            for (int j = 0; j < blobs2.size(); ++j) {
+                Set<PairInt> blob = blobs2.get(j);
+                if (blob.contains(p2)) {
+                    indexes.setY(j);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                continue;
+            }
+            
+            List<FeatureComparisonStat> list = matchedBlobs.get(indexes);
+            if (list == null) {
+                list = new ArrayList<FeatureComparisonStat>();
+                matchedBlobs.put(indexes, list);
+            }
+            list.add(stat);
+        }
+        
+        return matchedBlobs;
     }
     
 }

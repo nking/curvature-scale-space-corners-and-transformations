@@ -31,10 +31,12 @@ import java.util.logging.Logger;
           estimate a euclidean transformation so any curves w/ fewer than 
           2 points are skipped.
  
- The same goals should be met by EuclideanSegmentFeatureMatcher2 in a faster
- runtime using a different pattern for matching, but still based upon 
- segmentation and blob corners.
-
+ Prefer to use EuclideanSegmentFeatureMatcher2 which is faster, excepting
+ for images like the checkerboard tests.  The checkerboard tests do not
+ have unique features so a solution is better found by 
+ EuclideanSegmentFeatureMatcher which tries many combinations from detailed
+ to larger level groupings.
+ 
  * @author nichole
  */
 public class EuclideanSegmentFeatureMatcher {

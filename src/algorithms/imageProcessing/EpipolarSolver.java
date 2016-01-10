@@ -13,159 +13,159 @@ import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
- * class encapsulating the steps from scale calculation to matching corners
- * to making correspondence lists to solving for epipolar projection.
- * 
+ * class encapsulating the steps from scale calculation to matching corners to
+ * making correspondence lists to solving for epipolar projection.
+ *
  * @author nichole
  */
 public class EpipolarSolver {
-    
+
     private final ImageExt img1;
     private final ImageExt img2;
-    
+
     private GreyscaleImage gsImg1 = null;
     private GreyscaleImage gsImg2 = null;
-        
+
     private Set<CornerRegion> cornerRegions1 = null;
     private Set<CornerRegion> cornerRegions2 = null;
 
     private enum State {
+
         INITIALIZED, SOLVED, NO_SOLUTION
     }
     private State state = null;
-    
-    private final boolean doDetermineScale;
-    
-    private TransformationParameters params = null;
-            
-    private float scaleTol = 0.2f;
-    
-    private float rotationInRadiansTol = (float)(20. * Math.PI/180.);
-    
-    //TODO: revise this...
-    private int transXYTol = 20;
-        
+
     private PairFloatArray solutionLeftXY = null;
     private PairFloatArray solutionRightXY = null;
-    
+
     private final FeatureMatcherSettings featureSettings;
-    
+
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
-    public EpipolarSolver(ImageExt image1, ImageExt image2, 
+
+    public EpipolarSolver(ImageExt image1, ImageExt image2,
         FeatureMatcherSettings settings) {
-        
+
         img1 = image1;
         img2 = image2;
-        doDetermineScale = true;
-        
+
         featureSettings = settings.copy();
-        
+
         state = State.INITIALIZED;
     }
-    
-    /**
-     * constructor accepting transformation parameters.  Note, for best results,
-     * the standard deviations within parameters should be populated because they
-     * are used as tolerances in matching.
-     * @param image1
-     * @param image2
-     * @param parameters 
-     */
-    public EpipolarSolver(ImageExt image1, ImageExt image2, 
-        TransformationParameters parameters, FeatureMatcherSettings settings) {
+
+    /*
+     public EpipolarSolver(ImageExt image1, ImageExt image2, 
+     TransformationParameters parameters, FeatureMatcherSettings settings) {
         
-        img1 = image1;
-        img2 = image2;
-        doDetermineScale = false;
-        params = parameters;
+     img1 = image1;
+     img2 = image2;
+     doDetermineScale = false;
+     params = parameters;
         
-        featureSettings = settings.copy();
+     featureSettings = settings.copy();
         
-        state = State.INITIALIZED;
-    }
-    
-    public StereoProjectionTransformerFit solve() throws IOException, 
+     state = State.INITIALIZED;
+     }*/
+    public StereoProjectionTransformerFit solve() throws IOException,
         NoSuchAlgorithmException {
-        
+
         if (!state.equals(State.INITIALIZED)) {
             throw new IllegalStateException("solve() has already been invoked");
         }
-        
-        EuclideanSegmentFeatureMatcher wrapper = null;
-        
-        if (params != null) {
-            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, params, featureSettings);
-        } else {
-            wrapper = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
-        }
-        
-        CorrespondenceList cl = wrapper.matchFeatures();
-        
-        if (cl == null) {
+
+        //NOTE: will change this to the non euclidean solver soon
+        EuclideanSegmentFeatureMatcher2 wrapper
+            = new EuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
+
+        boolean solved = wrapper.match();
+
+        if (!solved) {
             state = State.NO_SOLUTION;
             return null;
         }
-        
-        log.info("params from scale calc: scale=" + cl.getScale() 
-            + " rot(deg)=" + cl.getRotationInDegrees() 
-            + " tx=" + cl.getTranslationX() + " ty=" + cl.getTranslationY());
-        
-        List<PairInt> points1 = cl.getPoints1();
-        List<PairInt> points2 = cl.getPoints2();
-        
+
+        List<PairInt> points1, points2;
+
+        if (wrapper.getSolutionMatched1().size() < 7) {
+
+            EuclideanSegmentFeatureMatcher wrapper2
+                = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
+
+            CorrespondenceList cl = wrapper2.matchFeatures();
+
+            if (cl == null) {
+                state = State.NO_SOLUTION;
+                return null;
+            }
+
+            log.info("params from scale calc: scale=" + cl.getScale()
+                + " rot(deg)=" + cl.getRotationInDegrees()
+                + " tx=" + cl.getTranslationX() + " ty=" + cl.getTranslationY());
+
+            points1 = cl.getPoints1();
+            points2 = cl.getPoints2();
+
+        } else {
+
+            points1 = wrapper.getSolutionMatched1();
+            points2 = wrapper.getSolutionMatched2();
+            TransformationParameters params = wrapper.getSolutionTransformationParameters();
+
+            log.info("params from scale calc: scale=" + params.getScale()
+                + " rot(deg)=" + params.getRotationInDegrees()
+                + " tx=" + params.getTranslationX() + " ty=" + params.getTranslationY());
+        }
+
         int n = points1.size();
-        
+
         PairFloatArray matchedLeftXY = new PairFloatArray(n);
         PairFloatArray matchedRightXY = new PairFloatArray(n);
         PairFloatArray outputLeftXY = new PairFloatArray(n);
         PairFloatArray outputRightXY = new PairFloatArray(n);
-        
+
         for (int i = 0; i < n; ++i) {
             matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());
             matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());
         }
-        
+
         RANSACSolver solver = new RANSACSolver();
-        
+
         StereoProjectionTransformerFit fit = solver.calculateEpipolarProjection(
-            matchedLeftXY, matchedRightXY,
-            outputLeftXY, outputRightXY);
-        
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+
         if (fit != null) {
-            
+
             //TODO: check that stdev is reasonable
-            
             state = State.SOLVED;
-            
+
             this.solutionLeftXY = outputLeftXY;
-            
+
             this.solutionRightXY = outputRightXY;
-            
+
             if (featureSettings.debug()) {
                 plotFit(fit);
             }
-            
+
             return fit;
-            
+
         } else {
-                        
+
             state = State.NO_SOLUTION;
-            
+
             return null;
         }
     }
-    
+
     private void plotFit(StereoProjectionTransformerFit fit) {
-       
+
         Image img1Cp = img1.copyImage();
         Image img2Cp = img2.copyImage();
-        
-        SimpleMatrix input1 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);
 
-        SimpleMatrix input2 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);
+        SimpleMatrix input1
+            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);
+
+        SimpleMatrix input2
+            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
             double x = input1.get(0, ii);
@@ -180,34 +180,33 @@ public class EpipolarSolver {
                 255, 0, 0);
         }
 
-        StereoProjectionTransformer spTransformer = new
-            StereoProjectionTransformer();
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
 
         for (int ii = 0; ii < input2.numCols(); ii++) {
-            
+
             int[] rgb = ImageIOHelper.getNextRGB(ii);
-                        
+
             SimpleMatrix epipolarLinesInLeft = fit.getFundamentalMatrix().transpose().mult(input2);
-            
+
             PairIntArray leftLine = spTransformer.getEpipolarLine(
                 epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);
-            
+
             ImageIOHelper.addCurveToImage(leftLine, img1, 0, rgb[0], rgb[1], rgb[2]);
-            
+
         }
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
-            
+
             int[] rgb = ImageIOHelper.getNextRGB(ii);
-            
+
             SimpleMatrix epipolarLinesInRight = fit.getFundamentalMatrix().mult(input1);
-            
+
             PairIntArray rightLine = spTransformer.getEpipolarLine(
                 epipolarLinesInRight, img2.getWidth(), img2.getHeight(), ii);
-            
-            ImageIOHelper.addCurveToImage(rightLine, img2, 0, 
+
+            ImageIOHelper.addCurveToImage(rightLine, img2, 0,
                 rgb[0], rgb[1], rgb[2]);
-            
+
         }
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
@@ -222,20 +221,20 @@ public class EpipolarSolver {
             ImageIOHelper.addPointToImage((float) x2, (float) y2, img2, 3,
                 255, 0, 0);
         }
-        
+
         String dirPath;
         try {
             dirPath = ResourceFinder.findDirectory("bin");
-            
+
             ImageIOHelper.writeOutputImage(
                 dirPath + "/tmp_m_1_" + featureSettings.getDebugTag() + ".png", img1);
-        
+
             ImageIOHelper.writeOutputImage(
                 dirPath + "/tmp_m_2_" + featureSettings.getDebugTag() + ".png", img2);
-        
+
         } catch (IOException ex) {
             Logger.getLogger(EpipolarSolver.class.getName()).log(Level.SEVERE, null, ex);
-        }        
+        }
     }
-        
+
 }

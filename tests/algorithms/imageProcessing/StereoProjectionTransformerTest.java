@@ -36,7 +36,7 @@ public class StereoProjectionTransformerTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
-        settings.setUseNormalizedFeatures(false);
+        settings.setUseNormalizedFeatures(true);
         settings.setToUse2ndDerivCorners();
         
         EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);

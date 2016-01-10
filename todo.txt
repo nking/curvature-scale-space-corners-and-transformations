@@ -34,7 +34,7 @@
             The class can make a very good correspondence list w/ few errors.
             With the same assumption of panoramic or stereo images, essentially,
             one might be able to make a faster solution by:
-            make class called EuclideanSegmentFeatureMatcher2
+       (4a) made class called EuclideanSegmentFeatureMatcher2
                 -- finds best SSD matches for each point image wide, discarding if
                    has close second best.
                 -- then use the association of best matches w/ blobs and combinations
@@ -76,6 +76,8 @@
                              note that if the filter by 2nd best results in fewer than 2 points per blob,
                              would need to use combinations of 3 blobs.
                              n!/3!*(n-3)! = 50*49*48/6 = 16 times more points 
+
+
     (5) NonEuclideanSegmentFeatureMatcher
         creates "corners" using 2nd derivatives of gaussian and finds the
         best match for each in image1 to each in image2.
