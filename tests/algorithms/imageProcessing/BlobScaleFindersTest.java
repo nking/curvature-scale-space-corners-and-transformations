@@ -42,11 +42,11 @@ public class BlobScaleFindersTest extends TestCase {
         bph2.applySegmentation(type, useBinned);
         bph2.generatePerimeterCorners(type, useBinned);
 
-        BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
+        BlobCornersEuclideanCalculator bsFinder = new BlobCornersEuclideanCalculator();
 
         int dither = 3;
         
-        MatchingSolution soln = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveTransformation(
             bph1, features1, type, useBinned,
             bph2, features2, type, useBinned, dither);
         
@@ -89,11 +89,11 @@ public class BlobScaleFindersTest extends TestCase {
         bph2.applySegmentation(type, useBinned);
         bph2.generatePerimeterCorners(type, useBinned);
 
-        BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
+        BlobCornersEuclideanCalculator bsFinder = new BlobCornersEuclideanCalculator();
 
         int dither = 3;
         
-        MatchingSolution soln = bsFinder.solveForScale(
+        MatchingSolution soln = bsFinder.solveTransformation(
             bph1, features1, type, useBinned,
             bph2, features2, type, useBinned, dither);
 

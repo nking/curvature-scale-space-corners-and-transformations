@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.clustering.FixedDistanceGroupFinder;
-import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -11,8 +10,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * class to invoke methods needed to solve for euclidean scale between
@@ -21,9 +20,11 @@ import java.util.Set;
  *
  * @author nichole
  */
-public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
+public class BlobCornersEuclideanCalculator {
 
-    public MatchingSolution solveForScale(
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public MatchingSolution solveTransformation(
         BlobPerimeterCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobPerimeterCornerHelper img2Helper, IntensityFeatures features2,
@@ -32,12 +33,12 @@ public class BlobCornersScaleFinder extends AbstractBlobScaleFinder {
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = true;
             
-        return solveForScale(img1Helper, features1, type1, useBinned1, 
+        return solveTransformation(img1Helper, features1, type1, useBinned1, 
             img2Helper, features2, type2, useBinned2, dither, 
             filterOutImageBoundaryBlobs, filterOutZeroPixels);
     }
     
-    public MatchingSolution solveForScale(
+    public MatchingSolution solveTransformation(
         BlobPerimeterCornerHelper img1Helper, IntensityFeatures features1,
         SegmentationType type1, boolean useBinned1,
         BlobPerimeterCornerHelper img2Helper, IntensityFeatures features2,
@@ -759,7 +760,7 @@ System.out.println(sb.toString());
         }
         return true;
     }
-    
+
     protected static class TmpSoln implements Comparable<TmpSoln>{
         
         TransformationParameters params;

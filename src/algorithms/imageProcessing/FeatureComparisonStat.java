@@ -239,6 +239,25 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
     public void setImg2PointThetaErr(float img2PointThetaErr) {
         this.img2PointThetaErr = img2PointThetaErr;
     }
+    
+    public FeatureComparisonStat copy() {
+    
+        FeatureComparisonStat cp = new FeatureComparisonStat();
+        cp.index1 = index1;
+        cp.index2 = index2;
+        cp.img1Point = (img1Point != null) ? img1Point.copy() : null;
+        cp.img2Point = (img2Point != null) ? img2Point.copy() : null;
+        cp.sumIntensitySqDiff = sumIntensitySqDiff;
+        cp.sumGradientSqDiff = sumGradientSqDiff;
+        cp.sumThetaSqDiff = sumThetaSqDiff;
+        cp.img2PointIntensityErr = img2PointIntensityErr;
+        cp.img2PointGradientErr = img2PointGradientErr;
+        cp.img2PointThetaErr = img2PointThetaErr;
+        cp.img1PointRotInDegrees = img1PointRotInDegrees;
+        cp.img2PointRotInDegrees = img2PointRotInDegrees;
+        
+        return cp;
+    }
 
     @Override
     public String toString() {

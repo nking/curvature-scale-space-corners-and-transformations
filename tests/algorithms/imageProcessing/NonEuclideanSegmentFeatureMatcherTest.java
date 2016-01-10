@@ -194,8 +194,7 @@ public class NonEuclideanSegmentFeatureMatcherTest extends TestCase {
         RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
         
         NonEuclideanSegmentFeatureMatcher matcher = 
-            new NonEuclideanSegmentFeatureMatcher(img1, img2, settings, 
-            rotatedOffsets);
+            new NonEuclideanSegmentFeatureMatcher(img1, img2, settings);
         
         log.info("fileName1Root=" + fileName1Root);
         

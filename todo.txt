@@ -85,6 +85,11 @@
         filter before using EpipolarSolver, but maybe not.
         I think RANSAC can handle as high as 50% false matches, but need to find reference for that.
 
+     Might also consider implementing a matcher more like some of the dense disparity map makers
+     that rectify images and scan along rows between control points.  Would make a sparse
+     version here.  Need to import my delaunay divide and conquer class from my private code
+     and improve it for this.
+
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
       LMedS implementation too)

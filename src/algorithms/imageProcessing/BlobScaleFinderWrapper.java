@@ -455,14 +455,10 @@ public class BlobScaleFinderWrapper {
                     segmentationType2, useBinned);
             //}
 
-            BlobCornersScaleFinder bsFinder = new BlobCornersScaleFinder();
-
-            if (settings.debug()) {
-                bsFinder.setToDebug();
-            }
+            BlobCornersEuclideanCalculator bsFinder = new BlobCornersEuclideanCalculator();
 
             // the solution for the binFactor modified images:
-            soln = bsFinder.solveForScale(img1Helper, f1,
+            soln = bsFinder.solveTransformation(img1Helper, f1,
                 segmentationType1, useBinned, img2Helper, f2,
                 segmentationType2, useBinned, dither);
 

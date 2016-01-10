@@ -1,49 +1,14 @@
 package algorithms.imageProcessing;
 
-import algorithms.compGeometry.HoughTransform;
-import algorithms.compGeometry.HoughTransform.HoughTransformLines;
-import algorithms.compGeometry.RotatedOffsets;
-import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * create lists of matched points present in 2 images.
  * 
  * @author nichole
  */
-public class NonEuclideanSegmentFeatureMatcher {
-
-    protected Logger log = Logger.getLogger(this.getClass().getName());
-
-    protected final int binnedImageMaxDimension = 512;
-
-    protected final BlobPerimeterCornerHelper img1Helper;
-    protected final BlobPerimeterCornerHelper img2Helper;
-
-    // use with img1Helper.getImage() or getGreyscaleImage(), but not both
-    protected final IntensityFeatures features1;
-    // use img2Helper.getGreyscaleImageBinned(), 
-    protected final IntensityFeatures featuresBinned1;
-    protected final IntensityFeatures features2;
-    protected final IntensityFeatures featuresBinned2;
-
-    private final FeatureMatcherSettings settings;
-    
-    private boolean useSameSegmentation = false;
-    
-    private List<FeatureComparisonStat> solutionStats = null;
-    
-    private List<PairInt> solutionMatched1 = null;
-    
-    private List<PairInt> solutionMatched2 = null;
+public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
     
     /**
      *
@@ -53,309 +18,43 @@ public class NonEuclideanSegmentFeatureMatcher {
      * @param img2 the second image representing the reference frame that
      * image1 is transformed to using the resulting parameters,
      * @param settings
-     * @param rotatedOffsets
      */
     public NonEuclideanSegmentFeatureMatcher(ImageExt img1, ImageExt img2, 
-        FeatureMatcherSettings settings, RotatedOffsets rotatedOffsets) {
+        FeatureMatcherSettings settings) {
 
-        this.settings = settings.copy();
-                
-        if (settings.debug()) {
-            
-            img1Helper = new BlobPerimeterCornerHelper(img1, settings.getDebugTag() + "_1");
-
-            img2Helper = new BlobPerimeterCornerHelper(img2, settings.getDebugTag() + "_2");
-            
-        } else {
-            
-            img1Helper = new BlobPerimeterCornerHelper(img1);
-
-            img2Helper = new BlobPerimeterCornerHelper(img2);
-        }
-              
-        // delaying creation of gradient images for full images until needed:
-        features1 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
-            rotatedOffsets);
-
-        features2 = new IntensityFeatures(5, settings.useNormalizedFeatures(),
-            rotatedOffsets);
-                        
-        if (settings.startWithBinnedImages()) {
-            
-            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-            
-            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
-                        
-            featuresBinned1 = new IntensityFeatures(5, 
-                settings.useNormalizedFeatures(), rotatedOffsets);
-            featuresBinned1.calculateGradientWithGreyscale(img1Helper.getGreyscaleImageBinned());
-            
-            featuresBinned2 = new IntensityFeatures(5, 
-                settings.useNormalizedFeatures(), rotatedOffsets);
-            featuresBinned2.calculateGradientWithGreyscale(img2Helper.getGreyscaleImageBinned());
-            
-        } else {
-            
-            featuresBinned1 = null;
-            
-            featuresBinned2 = null;  
-        }
+        super(img1, img2, settings);
     }
 
-    public void match() throws IOException, NoSuchAlgorithmException {
-
-        ImageStatistics statsR1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().getRValues(), true);
-        ImageStatistics statsB1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().getBValues(), true);
-        ImageStatistics statsG1 = ImageStatisticsHelper.examine(
-            img1Helper.getImage().getGValues(), true);
-
-        ImageStatistics statsR2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().getRValues(), true);
-        ImageStatistics statsB2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().getBValues(), true);
-        ImageStatistics statsG2 = ImageStatisticsHelper.examine(
-            img2Helper.getImage().getGValues(), true);
-
-        log.info("stats R1=" + statsR1.toString());
-        log.info("stats G1=" + statsG1.toString());
-        log.info("stats B1=" + statsB1.toString());
-
-        log.info("stats R2=" + statsR2.toString());
-        log.info("stats G2=" + statsG2.toString());
-        log.info("stats B2=" + statsB2.toString());
-
-        int limit = 20;
-        useSameSegmentation = false;
-        if ((Math.abs(statsR1.getMode() - statsR2.getMode()) < limit) &&
-            (Math.abs(statsG1.getMode() - statsG2.getMode()) < limit) &&
-            (Math.abs(statsB1.getMode() - statsB2.getMode()) < limit) &&
-            (Math.abs(statsR1.getMedian() - statsR2.getMedian()) < limit) &&
-            (Math.abs(statsG1.getMedian() - statsG2.getMedian()) < limit) &&
-            (Math.abs(statsB1.getMedian() - statsB2.getMedian()) < limit)) {
-            useSameSegmentation = true;
-        }
+    @Override
+    protected boolean match(SegmentationType type, boolean useBinned) {
         
-        SegmentationType type = SegmentationType.GREYSCALE_WAVELET;
-        if (settings.doOverrideWithCannySegmentation()) {
-            type = SegmentationType.GREYSCALE_CANNY;
-        }
-                
-        boolean[] useBinned = settings.startWithBinnedImages()? 
-            new boolean[]{true, false} : new boolean[]{false};
+        int binFactor1, binFactor2;
+        GreyscaleImage img1, img2;
+        IntensityFeatures f1, f2;
         
-        for (boolean ub : useBinned) {
-            
-            if (!ub) {
-                if (!features1.gradientWasCreated()) {
-                    features1.calculateGradientWithGreyscale(
-                        img1Helper.getGreyscaleImage());
-                }
-                if (!features2.gradientWasCreated()) {
-                    features2.calculateGradientWithGreyscale(
-                        img2Helper.getGreyscaleImage());
-                }
-            }
-            
-            boolean solved = generateAndMatchCornerRegions(type, ub);
-            
-            if (solved) {
-                break;
-            }
-        }        
-    }
-
-    private void prepareCorners(SegmentationType type,
-        boolean useBinned) throws IOException, NoSuchAlgorithmException {
-        
-        log.info(type.name() + " binned=" + useBinned 
-            + " useSameSegmentation=" + useSameSegmentation);
-
-        IntensityFeatures f1;
-        IntensityFeatures f2;
-
         if (useBinned) {
-            img1Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
+            binFactor1 = img1Helper.getBinFactor(useBinned);
+            binFactor2 = img2Helper.getBinFactor(useBinned);
+            img1 = img1Helper.getGreyscaleImageBinned();
+            img2 = img2Helper.getGreyscaleImageBinned();
             f1 = featuresBinned1;
-        } else {
-            f1 = features1;
-        }
-
-        if (useBinned) {
-            img2Helper.createBinnedGreyscaleImage(binnedImageMaxDimension);
             f2 = featuresBinned2;
         } else {
+            binFactor1 = 1;
+            binFactor2 = 1;
+            img1 = img1Helper.getGreyscaleImage();
+            img2 = img2Helper.getGreyscaleImage();
+            f1 = features1;
             f2 = features2;
-        }
-
-        img1Helper.applySegmentation(type, useBinned);
-
-        img2Helper.applySegmentation(type, useBinned);
-
-        List<HoughTransformLines> houghTransformLines1, houghTransformLines2;
-        
-        boolean useCanny = type.equals(SegmentationType.GREYSCALE_CANNY);
-        
-        if (useCanny) {
-            
-            boolean filterOutImageBoundaryBlobs = true;
-            boolean filterOutZeroPixels = false;
-            boolean doNotAddPoints = true;
-
-            // pre-make the blobs using non-default variables:
-            img1Helper.getBlobs(type, useBinned,
-                filterOutImageBoundaryBlobs, filterOutZeroPixels);
-            
-            if (settings.doUse2ndDerivCorners()) {
-                img1Helper.extractSecondDerivativeCorners(type, useBinned);
-            } else {
-                img1Helper.extractBlobPerimeterAsCornerRegions(
-                    type, useBinned, doNotAddPoints);
+            if (!f1.gradientWasCreated()) {
+                f1.calculateGradientWithGreyscale(
+                    img1Helper.getGreyscaleImage().copyImage());
             }
-
-            // pre-make the blobs using non-default variables:
-            img2Helper.getBlobs(type, useBinned,
-                filterOutImageBoundaryBlobs, filterOutZeroPixels);
-            
-            if (settings.doUse2ndDerivCorners()) {
-                img2Helper.extractSecondDerivativeCorners(type, useBinned);
-            } else {
-                img2Helper.extractBlobPerimeterAsCornerRegions(type,
-                    useBinned, doNotAddPoints);
-            }
-
-        } else {            
-            
-            if (settings.doUse2ndDerivCorners()) {
-                
-                img1Helper.extractSecondDerivativeCorners(type, useBinned);
-                
-                img2Helper.extractSecondDerivativeCorners(type, useBinned);
-                
-            } else {
-            
-                img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
-            
-                img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
+            if (!f2.gradientWasCreated()) {
+                f2.calculateGradientWithGreyscale(
+                    img2Helper.getGreyscaleImage().copyImage());
             }
         }
-        
-        if (!settings.doUse2ndDerivCorners()) {
-            
-            houghTransformLines1 = findLinesUsingHoughTransform(img1Helper, type, 
-                useBinned);
-
-            houghTransformLines2 = findLinesUsingHoughTransform(img2Helper, type, 
-                useBinned);
-
-            removeLineArtifactCorners(houghTransformLines1, img1Helper, type, 
-                useBinned);
-
-            removeLineArtifactCorners(houghTransformLines2, img2Helper, type,
-                useBinned);    
-        }
-    }
-    
-    private boolean generateAndMatchCornerRegions(SegmentationType type,
-        boolean useBinned) throws IOException, NoSuchAlgorithmException {
-        
-        log.info(type.name() + " binned=" + useBinned 
-            + " useSameSegmentation=" + useSameSegmentation);
-        
-        prepareCorners(type, useBinned);
-        
-        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
-        
-        boolean matchCurveToCurve = true;
-        
-        return match(type, useBinned, rotatedOffsets, matchCurveToCurve);
-    }
-    
-    private List<HoughTransformLines> findLinesUsingHoughTransform(
-        BlobPerimeterCornerHelper blobCornerHelper,
-        SegmentationType segmentationType, boolean useBinnedImage) {
-     
-        List<PairIntArray> perimeterLists = blobCornerHelper.
-            getBlobPerimeters(segmentationType, useBinnedImage);
-                
-        int imageWidth = useBinnedImage ? 
-            blobCornerHelper.getGreyscaleImageBinned().getWidth() :
-            blobCornerHelper.getGreyscaleImage().getWidth();
-        
-        int imageHeight = useBinnedImage ? 
-            blobCornerHelper.getGreyscaleImageBinned().getHeight() :
-            blobCornerHelper.getGreyscaleImage().getHeight();
-        
-        int thetaTol = 1;
-        int radiusTol = 7;
-        
-        HoughTransform ht = new HoughTransform();
-        
-        List<HoughTransformLines> lineList = new ArrayList<HoughTransformLines>();
-        
-        for (int ii = 0; ii < perimeterLists.size(); ++ii) {
-
-            // NOTE: in testable method for this, should allow ability to
-            // pass in junctions and not delete corners that are in
-            // junctions.
-            // For these blob perimeters, there are not junctions.
-
-            PairIntArray edge = perimeterLists.get(ii);
-            
-            if (edge.getN() == 0) {
-                HoughTransformLines htl = ht.new HoughTransformLines(
-                    new HashMap<PairInt, PairInt>(), new ArrayList<Set<PairInt>>());
-                lineList.add(htl);
-                continue;
-            }
-
-            Map<PairInt, Set<PairInt>> outputPolarCoordsPixMap =
-               ht.calculateLineGivenEdge(edge, imageWidth, imageHeight);
-
-            List<PairInt> outSortedKeys = ht.sortByVotes(outputPolarCoordsPixMap);
-
-            // === find indiv lines within the edge ====
-
-            HoughTransformLines htl = ht.createPixTRMapsFromSorted(
-                outSortedKeys, outputPolarCoordsPixMap,
-                thetaTol, radiusTol);
-            
-            lineList.add(htl);
-        }
-        
-        return lineList;
-    }
-    
-    private void removeLineArtifactCorners(List<HoughTransformLines> 
-        houghTransformLines, BlobPerimeterCornerHelper blobCornerHelper, 
-        SegmentationType segmentationType, boolean useBinnedImage) {
-        
-        List<PairIntArray> perimeterLists = blobCornerHelper.
-            getBlobPerimeters(segmentationType, useBinnedImage);
-                
-        List<List<CornerRegion>> cornerRegionLists = 
-            blobCornerHelper.getPerimeterCorners(segmentationType, useBinnedImage);
-            
-        int imageWidth = useBinnedImage ? 
-            blobCornerHelper.getGreyscaleImageBinned().getWidth() :
-            blobCornerHelper.getGreyscaleImage().getWidth();
-        
-        int imageHeight = useBinnedImage ? 
-            blobCornerHelper.getGreyscaleImageBinned().getHeight() :
-            blobCornerHelper.getGreyscaleImage().getHeight();
-        
-        int thetaTol = 1;
-        int radiusTol = 7;
-
-        //use hough transform for lines to remove corners from line artifacts
-        CornerCorrector.removeCornersFromLineArtifacts(houghTransformLines,
-            perimeterLists, cornerRegionLists, thetaTol, radiusTol, imageWidth, 
-            imageHeight);
-    }
-
-    private boolean match(SegmentationType type, boolean useBinned,
-        RotatedOffsets rotatedOffsets, boolean matchCurveToCurve) {
         
         List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
             type, useBinned);
@@ -363,40 +62,8 @@ public class NonEuclideanSegmentFeatureMatcher {
         List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
             type, useBinned);
         
-        final int blockHalfWidth = 5;
-        final boolean useNormalizedIntensities = true;
-        
-        int binFactor1, binFactor2;
-        GreyscaleImage img1, img2;
-        if (useBinned) {
-            binFactor1 = img1Helper.getBinFactor(useBinned);
-            binFactor2 = img2Helper.getBinFactor(useBinned);
-            img1 = img1Helper.getGreyscaleImageBinned();
-            img2 = img2Helper.getGreyscaleImageBinned();
-        } else {
-            binFactor1 = 1;
-            binFactor2 = 1;
-            img1 = img1Helper.getGreyscaleImage();
-            img2 = img2Helper.getGreyscaleImage();
-        }
-        
-        IntensityFeatures features1 = new IntensityFeatures(blockHalfWidth, 
-            useNormalizedIntensities, rotatedOffsets);
-        features1.calculateGradientWithGreyscale(img1.copyImage());
-        
-        IntensityFeatures features2 = new IntensityFeatures(blockHalfWidth, 
-            useNormalizedIntensities, rotatedOffsets);
-        features2.calculateGradientWithGreyscale(img2.copyImage());
-        
-        List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
-        List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
-        for (int i = 0; i < corners1List.size(); ++i) {
-            corners1.addAll(corners1List.get(i));
-        }
-        for (int i = 0; i < corners2List.size(); ++i) {
-            corners2.addAll(corners2List.get(i));
-        }
-        
+        boolean matchCurveToCurve = true;
+         
         int dither = 1;
         
         List<FeatureComparisonStat> stats;
@@ -406,7 +73,7 @@ public class NonEuclideanSegmentFeatureMatcher {
             CurveToCurveCornerMatcher<CornerRegion> matcher = 
                 new CurveToCurveCornerMatcher<CornerRegion>(dither);
         
-            boolean matched = matcher.matchCorners(features1, features2, 
+            boolean matched = matcher.matchCorners(f1, f2, 
                 corners1List, corners2List, img1, img2, binFactor1, binFactor2);
 
             if (!matched) {
@@ -416,12 +83,20 @@ public class NonEuclideanSegmentFeatureMatcher {
             stats = matcher.getSolutionStats();
 
         } else {
+            
+            List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
+            List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
+            for (int i = 0; i < corners1List.size(); ++i) {
+                corners1.addAll(corners1List.get(i));
+            }
+            for (int i = 0; i < corners2List.size(); ++i) {
+                corners2.addAll(corners2List.get(i));
+            }
         
             CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
         
-            boolean matched = matcher.matchCorners(features1, features2, 
-                corners1, corners2, img1, img2,
-                binFactor1, binFactor2);
+            boolean matched = matcher.matchCorners(f1, f2, corners1, corners2, 
+                img1, img2, binFactor1, binFactor2);
             
             if (!matched) {
                 return false;
@@ -437,85 +112,12 @@ public class NonEuclideanSegmentFeatureMatcher {
         if (useBinned) {
             stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
                 img2Helper.getGreyscaleImage(), stats, 
-                binFactor1, binFactor2, rotatedOffsets);
+                binFactor1, binFactor2, f1.getRotatedOffsets());
         }
         
-        this.solutionStats = stats;
-        
-        solutionMatched1 = new ArrayList<PairInt>();
-        solutionMatched2 = new ArrayList<PairInt>();
-        for (FeatureComparisonStat stat : stats) {
-            solutionMatched1.add(stat.getImg1Point().copy());
-            solutionMatched2.add(stat.getImg2Point().copy());
-        }
-        
+        copyToInstanceVars(stats);
+                
         return true;
-    }
-    
-    private List<FeatureComparisonStat> reviseStatsForFullImages(
-        GreyscaleImage gsImg1, GreyscaleImage gsImg2,
-        List<FeatureComparisonStat> stats, int prevBinFactor1, 
-        int prevBinFactor2, RotatedOffsets rotatedOffsets) {
-
-        log.info("refine stats for full image reference frames");
-
-        List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
-
-        FeatureMatcher featureMatcher = new FeatureMatcher();
-
-        IntensityFeatures features1 = new IntensityFeatures(5,
-            settings.useNormalizedFeatures(), rotatedOffsets);
-        features1.calculateGradientWithGreyscale(gsImg1);
-
-        IntensityFeatures features2 = new IntensityFeatures(5,
-            settings.useNormalizedFeatures(), rotatedOffsets);
-        features2.calculateGradientWithGreyscale(gsImg2);
-
-        int dither = 2;
-
-        for (int i = 0; i < stats.size(); ++i) {
-
-            FeatureComparisonStat stat = stats.get(i);
-
-            int x1 = stat.getImg1Point().getX() * prevBinFactor1;
-            int y1 = stat.getImg1Point().getY() * prevBinFactor1;
-            int x2 = stat.getImg2Point().getX() * prevBinFactor2;
-            int y2 = stat.getImg2Point().getY() * prevBinFactor2;
-
-            // have to discard the best angles found in stat and derive new
-            // for these higher resolution images
-            FeatureComparisonStat compStat =
-                featureMatcher.ditherAndRotateForBestLocation2(
-                    features1, features2, x1, y1, x2, y2, dither, 
-                    gsImg1, gsImg2);
-
-            if (compStat == null ||
-                (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())) {
-                continue;
-            }
-
-            revised.add(compStat);
-        }
-        
-        return revised;
-    }
-
-    public List<FeatureComparisonStat> getSolutionStats() {
-        return solutionStats;
-    }
-
-    /**
-     * @return the solutionMatched1
-     */
-    public List<PairInt> getSolutionMatched1() {
-        return solutionMatched1;
-    }
-
-    /**
-     * @return the solutionMatched2
-     */
-    public List<PairInt> getSolutionMatched2() {
-        return solutionMatched2;
     }
     
 }

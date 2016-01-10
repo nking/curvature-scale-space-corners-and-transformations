@@ -125,7 +125,7 @@ public class EuclideanSegmentFeatureMatcher {
         CorrespondenceList cl = null;
 
         if (doDetermineScale) {
-            return solveForScale();
+            return solveTransformation();
         }
 
         applyHistEqIfNeeded();
@@ -139,7 +139,7 @@ public class EuclideanSegmentFeatureMatcher {
         return cl;
     }
 
-    private CorrespondenceList solveForScale() throws IOException,
+    private CorrespondenceList solveTransformation() throws IOException,
         NoSuchAlgorithmException {
         
         int dither2;
