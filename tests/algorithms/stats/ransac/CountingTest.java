@@ -1,6 +1,7 @@
 package algorithms.stats.ransac;
 
 import algorithms.SubsetChooser;
+import algorithms.misc.MiscMath;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -101,7 +102,11 @@ public class CountingTest extends TestCase {
         System.out.println("true samples expected/found="
             + " " + expectedDivFound1.toString());
         
-        assertTrue(Math.abs(expectedDivFound1.doubleValue() - .0) < 0.05);
+        assertTrue(Math.abs(expectedDivFound1.doubleValue() - 1.0) < 0.05);
+        
+        long nCombinations = MiscMath.computeNDivNMinusK(nPoints, k)/MiscMath.factorial(k);
+        
+        assertEquals(nCombinations, nComb.longValue());
     }
 
 }
