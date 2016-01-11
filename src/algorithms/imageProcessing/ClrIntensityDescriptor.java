@@ -122,6 +122,34 @@ public class ClrIntensityDescriptor implements IntensityDescriptor {
         return avg;
     }
     
+    @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof ClrIntensityDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ClrIntensityDescriptor");
+        }
+        
+        ClrIntensityDescriptor other = (ClrIntensityDescriptor)otherDesc;
+        
+        if (this.red.length != other.red.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+         
+        float cSimR = MiscMath.calculateCosineSimilarity(red, other.red, sentinel);
+        float cSimG = MiscMath.calculateCosineSimilarity(green, other.green, sentinel);
+        float cSimB = MiscMath.calculateCosineSimilarity(blue, other.blue, sentinel);
+                
+        float avg = (cSimR + cSimG + cSimB)/3.f;
+        
+        return avg;
+    }
+    
     /**
      * Determine the sum squared error within this descriptor using 
      * auto-correlation and the assumption that the value at the middle index 

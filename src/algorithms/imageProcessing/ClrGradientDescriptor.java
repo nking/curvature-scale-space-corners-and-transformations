@@ -111,6 +111,39 @@ public class ClrGradientDescriptor implements GradientDescriptor {
         
         return sumSquaredError;
     }
+    
+    @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof ClrIntensityDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ClrIntensityDescriptor");
+        }
+        
+        if (!(otherDesc instanceof ClrGradientDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ClrGradientDescriptor");
+        }
+        
+        ClrGradientDescriptor other = (ClrGradientDescriptor)otherDesc;
+        
+        if (this.red.length != other.red.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+         
+        float cSimR = MiscMath.calculateCosineSimilarity(red, other.red, sentinel);
+        float cSimG = MiscMath.calculateCosineSimilarity(green, other.green, sentinel);
+        float cSimB = MiscMath.calculateCosineSimilarity(blue, other.blue, sentinel);
+                
+        float avg = (cSimR + cSimG + cSimB)/3.f;
+        
+        return avg;
+    }
 
     @Override
     public int getCentralIndex() {

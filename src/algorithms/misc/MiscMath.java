@@ -1467,6 +1467,100 @@ public class MiscMath {
     }
     
     /**
+     Calculate the cosine similarity between 2 descriptors.
+     Calculates a dot b/(magnitude(a) * magnitude(b).
+     The equation and use are from the paper
+     "Generalized RANSAC framework for relaxed correspondence problems"
+     by Zhang and Kosecka.
+     The authors use the similarity with a threshold of 0.95 to filter out 
+     dissimilar matches.
+     * @param a
+     * @param b
+     * @param sentinel
+     * @return 
+     */
+    public static float calculateCosineSimilarity(float[] a, float[] b, float sentinel) {
+        
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "a and b must have the same lengths");
+        }
+        
+        /*
+                       a[0]*b[0] + a[1]*b[1] + a[2]*b[2] ...
+        ------------------------------------------------------------------------------
+        sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]...) * sqrt(b[0]*b[0] + b[1]*b[1] + ...)
+        */     
+        int count = 0;
+        double aDotB = 0;
+        double aMagn = 0;
+        double bMagn = 0;
+        for (int i = 0; i < a.length; ++i) {
+            float a1 = a[i];
+            float b1 = a[i];
+            if (a1 == sentinel || b1 == sentinel) {
+                continue;
+            }
+            aDotB += (a1 * b1); 
+            aMagn += (a1 * a1);
+            bMagn += (b1 * b1);
+            count++;
+        }
+        aMagn = Math.sqrt(aMagn);
+        bMagn = Math.sqrt(bMagn);
+        double cosSim = aDotB/(aMagn*bMagn);
+        
+        return (float)cosSim;
+    }
+    
+    /**
+     Calculate the cosine similarity between 2 descriptors.
+     Calculates a dot b/(magnitude(a) * magnitude(b).
+     The equation and use are from the paper
+     "Generalized RANSAC framework for relaxed correspondence problems"
+     by Zhang and Kosecka.
+     The authors use the similarity with a threshold of 0.95 to filter out 
+     dissimilar matches.
+     * @param a
+     * @param b
+     * @param sentinel
+     * @return 
+     */
+    public static float calculateCosineSimilarity(int[] a, int[] b, int sentinel) {
+        
+        if (a.length != b.length) {
+            throw new IllegalArgumentException(
+            "a and b must have the same lengths");
+        }
+        
+        /*
+                       a[0]*b[0] + a[1]*b[1] + a[2]*b[2] ...
+        ------------------------------------------------------------------------------
+        sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]...) * sqrt(b[0]*b[0] + b[1]*b[1] + ...)
+        */     
+        int count = 0;
+        double aDotB = 0;
+        double aMagn = 0;
+        double bMagn = 0;
+        for (int i = 0; i < a.length; ++i) {
+            float a1 = a[i];
+            float b1 = a[i];
+            if (a1 == sentinel || b1 == sentinel) {
+                continue;
+            }
+            aDotB += (a1 * b1); 
+            aMagn += (a1 * a1);
+            bMagn += (b1 * b1);
+            count++;
+        }
+        aMagn = Math.sqrt(aMagn);
+        bMagn = Math.sqrt(bMagn);
+        double cosSim = aDotB/(aMagn*bMagn);
+        
+        return (float)cosSim;
+    }
+    
+    /**
      * Determine the sum squared error within this array using 
      * auto-correlation and the assumption that the value at the middle index 
      * is the value from the original central pixel.  Values the same as the

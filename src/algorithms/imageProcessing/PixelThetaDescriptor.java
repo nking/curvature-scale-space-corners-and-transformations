@@ -134,6 +134,30 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     }
 
     @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof PixelThetaDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type ThetaDescriptor");
+        }
+        
+        PixelThetaDescriptor other = (PixelThetaDescriptor)otherDesc;
+        
+        if (this.a.length != other.a.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+         
+        float cSim = MiscMath.calculateCosineSimilarity(a, other.a, sentinel);
+                
+        return cSim;
+    }
+    
+    @Override
     public int getCentralIndex() {
         return centralIndex;
     }

@@ -55,6 +55,30 @@ public class GsGradientDescriptor implements GradientDescriptor {
         return ssd;
     }
     
+    @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+        if (otherDesc == null) {
+            throw new IllegalArgumentException("otherDesc cannot be null");
+        }
+        
+        if (!(otherDesc instanceof GsGradientDescriptor)) {
+            throw new IllegalArgumentException(
+            "otherDesc has to be type GsGradientDescriptor");
+        }
+        
+        GsGradientDescriptor other = (GsGradientDescriptor)otherDesc;
+        
+        if (this.grey.length != other.grey.length) {
+            throw new IllegalArgumentException(
+            "this and other arrays must have the same lengths");
+        }
+         
+        float cSim = MiscMath.calculateCosineSimilarity(grey, other.grey, sentinel);
+                
+        return cSim;
+    }
+    
     /**
      * Determine the sum squared error within this descriptor using 
      * auto-correlation and the assumption that the value at the middle index 

@@ -12,4 +12,5 @@ public interface IDescriptor {
 
     public float sumSquaredError();
     
+    public float calculateCosineSimilarity(IDescriptor otherDesc);
 }
