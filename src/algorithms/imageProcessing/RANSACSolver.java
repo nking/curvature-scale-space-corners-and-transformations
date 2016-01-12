@@ -189,8 +189,7 @@ public class RANSACSolver {
         as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
         which uses 0.6% of the maximum image dimension.
         */
-        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
-            nPoints);
+        int nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);
 
         float convergence = 0.5f * matchedLeftXY.numCols();
         if (convergence < 7) {

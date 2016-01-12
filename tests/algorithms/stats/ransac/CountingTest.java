@@ -1,6 +1,7 @@
 package algorithms.stats.ransac;
 
 import algorithms.SubsetChooser;
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -23,10 +24,10 @@ public class CountingTest extends TestCase {
         
         The number of combinations of samples of size k is 
             nPoints!/(k!*(nPoints-k)!).
-        The first draw of a matching point out of nPoints has possibility of
-        being all 'true' points = (nTruePoints/nPoints).
-        The second draw in the sample has the possibility of being all 'true'
-        points = (nTruePoints - 1)/(nPoints - 1).
+        For a sample, the first draw of a matching point out of nPoints has 
+        possibility of being all 'true' points = (nTruePoints/nPoints).
+        For the same sample, the second draw in the sample has the possibility 
+        of being all 'true' points = (nTruePoints - 1)/(nPoints - 1).
         etc.
         
         The total number of 'true' samples within all possible combinations of
@@ -107,6 +108,23 @@ public class CountingTest extends TestCase {
         long nCombinations = MiscMath.computeNDivNMinusK(nPoints, k)/MiscMath.factorial(k);
         
         assertEquals(nCombinations, nComb.longValue());
+        
+        int nIterNaive = (int)Math.round(1./factor1);
+        
+        /*        
+        from binomial theorem:
+        pConfid = p * (1-p)^(nIter-1))
+        (nIter-1) = math.log(pConfid/p)/math.log(1-p)
+        nIter = (math.log(pConfid/p)/math.log(1-p)) + 1
+        */
+        int nIter99PercentConfidence = -1*((int)Math.round(Math.log(0.99/factor1)/Math.log(1. - factor1)) + 1);
+        
+        RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
+        int nIter99 = nIterC.estimateNIterFor99PercentConfidence(nPoints, k, ratio);
+        
+        System.out.println("nIterNaive=" + nIterNaive 
+            + " nIter99PercentConfidence=" + nIter99PercentConfidence + " " + nIter99);
+       
     }
 
 }

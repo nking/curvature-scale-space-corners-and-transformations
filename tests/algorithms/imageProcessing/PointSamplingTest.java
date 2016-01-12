@@ -249,8 +249,8 @@ public class PointSamplingTest extends TestCase {
         
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
 
-        int nMaxIter = nEstimator.estimateNIterForFiftyPercentOutliersFor7Points(
-            points.size());
+        int nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(
+            points.size(), 7, 0.5);
         
         int numCellsPerDimensions = 6;
         
