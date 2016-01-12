@@ -81,20 +81,18 @@ public class CountingTest extends TestCase {
         //nSamplesTrue ~ (ratio)^(k) * nComb
         // and more specifically, is (nTrue/nPoints)*((nTrue-1)/(nPoints-1))**((nTrue-2)/(nPoints-2))...
         double ratio = (double)knownTruePoints.size()/(double)nPoints;
-        double factor0 = Math.pow(ratio, k);
-        double factor1 = 1;
+        double pSample = 1;
         for (int i = 0; i < k; ++i) {
-            factor1 *= ((double)knownTruePoints.size() - i)/(double)(nPoints - i);
+            pSample *= ((double)knownTruePoints.size() - i)/(double)(nPoints - i);
         }
         
         System.out.println("nPoints=" + nPoints + " k=" + k + " ratio=" + ratio);
-        System.out.println("(ratio)^k=" + factor0 
-            + " (nTrue/nPoints)*((nTrue-1)/(nPoints-1))**((nTrue-2)/(nPoints-2))..." + factor1);
+        System.out.println("(nTrue/nPoints)*((nTrue-1)/(nPoints-1))**((nTrue-2)/(nPoints-2))..." + pSample);
         System.out.println("nComb=" + nComb.toString());
         System.out.println("nSamplesTrue=" + nSamplesTrue.toString());
         
         BigDecimal nExpectedTrueSamples = new BigDecimal(nComb);
-        BigDecimal nExpectedTrueSamples1 = nExpectedTrueSamples.multiply(new BigDecimal(Double.toString(factor1)));
+        BigDecimal nExpectedTrueSamples1 = nExpectedTrueSamples.multiply(new BigDecimal(Double.toString(pSample)));
         
         System.out.println("nExpectedTrueSamples1=" + nExpectedTrueSamples1.toString());
         
@@ -109,22 +107,41 @@ public class CountingTest extends TestCase {
         
         assertEquals(nCombinations, nComb.longValue());
         
-        int nIterNaive = (int)Math.round(1./factor1);
-        
-        /*        
-        from binomial theorem:
-        pConfid = p * (1-p)^(nIter-1))
-        (nIter-1) = math.log(pConfid/p)/math.log(1-p)
-        nIter = (math.log(pConfid/p)/math.log(1-p)) + 1
-        */
-        int nIter99PercentConfidence = -1*((int)Math.round(Math.log(0.99/factor1)/Math.log(1. - factor1)) + 1);
+        int nIterNaive = (int)Math.round(1./pSample);
+       
+        int nIter99PercentConfidence = -1*((int)Math.round(Math.log(0.99/pSample)/Math.log(1. - pSample)) + 1);
         
         RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
         int nIter99 = nIterC.estimateNIterFor99PercentConfidence(nPoints, k, ratio);
+                
+        System.out.println("nIterNaive=" + nIterNaive + " nIter99=" + nIter99
+            + " nIter99PercentConfidence=" + nIter99PercentConfidence);
+    }
+    
+    public void est2() {
         
-        System.out.println("nIterNaive=" + nIterNaive 
-            + " nIter99PercentConfidence=" + nIter99PercentConfidence + " " + nIter99);
-       
+        RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
+        
+        double ratio = 30./50.;
+        int k = 7;
+        int nPoints = 50;
+        
+        double factor1 = nIterC.calculateTrueSampleProbability(nPoints, k, ratio);
+        
+        System.out.println("pSample=" + factor1);
+                
+        int nIter = 50;
+        double prob = Math.pow(1. - factor1, nIter);
+        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        
+        nIter = 100;
+        prob =  Math.pow(1. - factor1, nIter);
+        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        
+        nIter = 700;
+        prob = Math.pow(1. - factor1, nIter);
+        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        
     }
 
 }
