@@ -2,9 +2,9 @@ package algorithms.imageProcessing.util;
 
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
- * should be used to ensure with 95% certainty that a set of points is 
+ * should be used to ensure with 99% certainty that a set of points is 
  * findable as a subset of n matchable points.
-
+<pre>
 nPoints is the number of points that contain true and false matches.
         
 nTruePoints is the number of true matches within nPoints.
