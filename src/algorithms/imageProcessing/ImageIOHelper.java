@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -1176,6 +1178,103 @@ int z1 = 1;
         }
         
         addAlternatingColorCurvesToImage(c, fileName, writeImage, input);
+    }
+    
+    public static void addAlternatingColorPointsToImages(
+        Map<PairInt, List<PairInt>> points, Image imgCp1, 
+        Image imgCp2, int nExtraForDot) {
+        
+        int w1 = imgCp1.getWidth();
+        int h1 = imgCp1.getHeight();
+        int w2 = imgCp2.getWidth();
+        int h2 = imgCp2.getHeight();
+        
+        int count = 0;
+        for (Entry<PairInt, List<PairInt>> entry : points.entrySet()) {
+            int clr = getNextColorRGB(count);
+            PairInt p1 = entry.getKey();
+            int x1 = p1.getX();
+            int y1 = p1.getY();
+            for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                int xx1 = x1 + dx;
+                if ((xx1 < 0) || (xx1 > (w1 - 1))) {
+                    continue;
+                }
+                for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy1 = y1 + dy;
+                    if ((yy1 < 0) || (yy1 > (h1 - 1))) {
+                        continue;
+                    }
+                    imgCp1.setRGB(xx1, yy1, clr);
+                }
+            }                    
+            for (PairInt p2 : entry.getValue()) {
+                int x2 = p2.getX();
+                int y2 = p2.getY();
+                for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                    int xx2 = x2 + dx;
+                    if ((xx2 < 0) || (xx2 > (w2 - 1))) {
+                        continue;
+                    }
+                    for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                        int yy2 = y2 + dy;
+                        if ((yy2 < 0) || (yy2 > (h2 - 1))) {
+                            continue;
+                        }
+                        imgCp2.setRGB(xx2, yy2, clr);
+                    }
+                }
+            }
+            count++;
+        }
+    }
+    
+    public static void addAlternatingColorPointsToImages(
+        List<FeatureComparisonStat> stats, Image imgCp1, 
+        Image imgCp2, int nExtraForDot) {
+        
+        int w1 = imgCp1.getWidth();
+        int h1 = imgCp1.getHeight();
+        int w2 = imgCp2.getWidth();
+        int h2 = imgCp2.getHeight();
+        
+        int count = 0;
+        for (FeatureComparisonStat stat : stats) {
+            int clr = getNextColorRGB(count);
+            PairInt p1 = stat.getImg1Point();
+            PairInt p2 = stat.getImg2Point();
+            int x1 = p1.getX();
+            int y1 = p1.getY();
+            for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                int xx1 = x1 + dx;
+                if ((xx1 < 0) || (xx1 > (w1 - 1))) {
+                    continue;
+                }
+                for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy1 = y1 + dy;
+                    if ((yy1 < 0) || (yy1 > (h1 - 1))) {
+                        continue;
+                    }
+                    imgCp1.setRGB(xx1, yy1, clr);
+                }
+            }                    
+            int x2 = p2.getX();
+            int y2 = p2.getY();
+            for (int dx = (-1 * nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+                int xx2 = x2 + dx;
+                if ((xx2 < 0) || (xx2 > (w2 - 1))) {
+                    continue;
+                }
+                for (int dy = (-1 * nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy2 = y2 + dy;
+                    if ((yy2 < 0) || (yy2 > (h2 - 1))) {
+                        continue;
+                    }
+                    imgCp2.setRGB(xx2, yy2, clr);
+                }
+            }
+            count++;
+        }
     }
     
     public static void addAlternatingColorCurvesToImage(

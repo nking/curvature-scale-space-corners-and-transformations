@@ -112,7 +112,7 @@ public class CountingTest extends TestCase {
         int nIter99PercentConfidence = -1*((int)Math.round(Math.log(0.99/pSample)/Math.log(1. - pSample)) + 1);
         
         RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
-        int nIter99 = nIterC.estimateNIterFor99PercentConfidence(nPoints, k, ratio);
+        long nIter99 = nIterC.estimateNIterFor99PercentConfidence(nPoints, k, ratio);
                 
         System.out.println("nIterNaive=" + nIterNaive + " nIter99=" + nIter99
             + " nIter99PercentConfidence=" + nIter99PercentConfidence);

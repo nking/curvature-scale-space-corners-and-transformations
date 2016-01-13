@@ -163,18 +163,26 @@ public class StereoProjectionTransformer {
      */
     private SimpleMatrix epipolarLinesInLeft = null;
 
-    public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+    /**
+     * calculate the fundamental matrix for the given matched left and
+     * right correspondence of 8 or more matched points.
+     * 
+     * @param pointsLeftXY
+     * @param pointsRightXY
+     * @return 
+     */
+    public SimpleMatrix calculateEpipolarProjection(
         PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
 
         if (pointsLeftXY == null) {
-            throw new IllegalArgumentException("refactorLeftXY cannot be null");
+            throw new IllegalArgumentException("pointsLeftXY cannot be null");
         }
         if (pointsRightXY == null) {
-            throw new IllegalArgumentException("refactorRightXY cannot be null");
+            throw new IllegalArgumentException("pointsRightXY cannot be null");
         }
         if (pointsLeftXY.getN() != pointsRightXY.getN()) {
             throw new IllegalArgumentException(
-                "refactorLeftXY and refactorRightXY must be same size");
+                "pointsLeftXY and pointsRightXY must be same size");
         }
 
         if (pointsLeftXY.getN() == 7) {
@@ -186,10 +194,10 @@ public class StereoProjectionTransformer {
             // cannot use this algorithm.
             throw new IllegalArgumentException(
                 "the algorithms require 7 or more points."
-                + " refactorLeftXY.n=" + pointsLeftXY.getN());
+                + " pointsLeftXY.n=" + pointsLeftXY.getN());
         }
 
-        return calculateEpipolarProjectionForPerfectlyMatched(
+        return calculateEpipolarProjection(
             rewriteInto3ColumnMatrix(pointsLeftXY),
             rewriteInto3ColumnMatrix(pointsRightXY));
     }
@@ -201,7 +209,7 @@ public class StereoProjectionTransformer {
      * @param theRightXY
      * @return
      */
-    public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+    public SimpleMatrix calculateEpipolarProjection(
         SimpleMatrix theLeftXY, SimpleMatrix theRightXY) {
 
         if (theLeftXY == null) {
@@ -1539,11 +1547,10 @@ public class StereoProjectionTransformer {
             double b = t1 + t2 + t3 + t4;
             
             double error = a/b;
-            
-            outputDistances.add(Double.valueOf(error));
-            
+                        
             if (error < tolerance) {
                 outputInliers.add(Integer.valueOf(col));
+                outputDistances.add(Double.valueOf(error));
             }
         }
         

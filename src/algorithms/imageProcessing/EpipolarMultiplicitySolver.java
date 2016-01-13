@@ -6,62 +6,48 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
-   Class accepting a map of points from image1 matched to possibly multiple
-   points in image 2, and determining the best epipolar solution for the
-   true matches using a modified RANSAC algorithm.
-   The algorithm follows "Generalized RANSAC framework for relaxed correspondence problems"
-   by Zhang and Kosecka in choosing uniformly randomly from each point1
-   as a single entity then if chosen, choosing randomly from the point2's
-   it is possibly matched to.
+ * class encapsulating the steps from generating a degenerate correspondenc list
+ * to solving for the best epipolar projection.
  
  * @author nichole
  */
 public class EpipolarMultiplicitySolver {
 
-    private enum State {
+    private final ImageExt img1;
+    private final ImageExt img2;
+
+    private static enum State {
         INITIALIZED, SOLVED, NO_SOLUTION
     }
     private State state = null;
 
     private PairFloatArray solutionLeftXY = null;
     private PairFloatArray solutionRightXY = null;
-    
-    private final List<PairInt> inputMatches1;
-    
-    private final List<List<PairInt>> inputMultipleMatches2;
+
+    private final FeatureMatcherSettings featureSettings;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private GreyscaleImage debugImg1 = null;
-    
-    private GreyscaleImage debugImg2 = null;
-    
-    private String debugTag = "";
-    
-    public EpipolarMultiplicitySolver(List<PairInt> inputMatches1,
-        List<List<PairInt>> inputMultipleMatches2) {
-                
-        this.inputMatches1 = inputMatches1;
-        
-        this.inputMultipleMatches2 = inputMultipleMatches2;
-        
+    public EpipolarMultiplicitySolver(ImageExt image1, ImageExt image2,
+        FeatureMatcherSettings settings) {
+
+        img1 = image1;
+        img2 = image2;
+
+        featureSettings = settings.copy();
+
         state = State.INITIALIZED;
     }
     
-    public void setImagesForDebuggingPlots(GreyscaleImage img1, 
-        GreyscaleImage img2, String debugTag) {
-        
-        this.debugImg1 = img1;
-        this.debugImg2 = img2;
-        this.debugTag = debugTag;
-    }
-
     public EpipolarTransformationFit solve() throws IOException,
         NoSuchAlgorithmException {
 
@@ -69,31 +55,41 @@ public class EpipolarMultiplicitySolver {
             throw new IllegalStateException("solve() has already been invoked");
         }
 
-        List<PairInt> points1, points2;
+        //NOTE: will change this to the non euclidean solver soon
+        NonEuclideanSegmentFeatureMatcher2 wrapper
+            = new NonEuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
 
-        throw new UnsupportedOperationException("not yet implemented");
+        boolean solved = wrapper.match();
 
-        /*
-        int n = points1.size();
-
-        PairFloatArray matchedLeftXY = new PairFloatArray(n);
-        PairFloatArray matchedRightXY = new PairFloatArray(n);
-        PairFloatArray outputLeftXY = new PairFloatArray(n);
-        PairFloatArray outputRightXY = new PairFloatArray(n);
-
-        for (int i = 0; i < n; ++i) {
-            matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());
-            matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());
+        if (!solved) {
+            state = State.NO_SOLUTION;
+            return null;
         }
-
-        RANSACSolver solver = new RANSACSolver();
-solver.debugImg1 = img1;
-solver.debugImg2 = img2;
-solver.debugTag = debugTag;
+         
+        if (wrapper.getSolutionMatched2Multiplicity().size() < 7) {
+            state = State.NO_SOLUTION;
+            return null;
+        }
+        
+        List<PairInt> matchedLeftXY = new ArrayList<PairInt>();       
+        List<List<PairInt>> matchedRightXYs = new ArrayList<List<PairInt>>();
+        for (int i = 0; i < wrapper.getSolutionMatched1().size(); ++i) {
+            List<PairInt> list = wrapper.getSolutionMatched2Multiplicity().get(i);
+            if (list.size() > 0) {
+                matchedRightXYs.add(list);
+                matchedLeftXY.add(wrapper.getSolutionMatched1().get(i));
+            }
+        }
+        assert(matchedLeftXY.size() == matchedRightXYs.size());
+             
+        PairFloatArray outputLeftXY = new PairFloatArray();
+        PairFloatArray outputRightXY = new PairFloatArray();
+     
+        RANSACMultiplicitySolver solver = new RANSACMultiplicitySolver();
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
-
+            matchedLeftXY, matchedRightXYs, outputLeftXY, outputRightXY);
+        
         if (fit != null) {
 
             //TODO: check that stdev is reasonable
@@ -103,7 +99,9 @@ solver.debugTag = debugTag;
 
             this.solutionRightXY = outputRightXY;
 
-            plotFit(fit);
+            if (featureSettings.debug()) {
+                plotFit(fit);
+            }
 
             return fit;
 
@@ -113,36 +111,22 @@ solver.debugTag = debugTag;
 
             return null;
         }
-            */
     }
 
     private void plotFit(EpipolarTransformationFit fit) {
 
-        if (debugImg1 == null || debugImg2 == null) {
+        if (this.img1 == null || this.img2 == null) {
             return;
         }
         
-        Image img1Cp = debugImg1.copyToColorGreyscale();
-        Image img2Cp = debugImg2.copyToColorGreyscale();
+        Image img1Cp = img1.copyImage();
+        Image img2Cp = img2.copyImage();
 
         SimpleMatrix input1
             = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);
 
         SimpleMatrix input2
             = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);
-
-        for (int ii = 0; ii < input1.numCols(); ii++) {
-            double x = input1.get(0, ii);
-            double y = input1.get(1, ii);
-            ImageIOHelper.addPointToImage((float) x, (float) y, img1Cp, 3,
-                255, 0, 0);
-        }
-        for (int ii = 0; ii < input2.numCols(); ii++) {
-            double x2 = input2.get(0, ii);
-            double y2 = input2.get(1, ii);
-            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2Cp, 3,
-                255, 0, 0);
-        }
 
         StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
 
@@ -156,7 +140,6 @@ solver.debugTag = debugTag;
                 epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);
 
             ImageIOHelper.addCurveToImage(leftLine, img1Cp, 0, rgb[0], rgb[1], rgb[2]);
-
         }
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
@@ -170,7 +153,6 @@ solver.debugTag = debugTag;
 
             ImageIOHelper.addCurveToImage(rightLine, img2Cp, 0,
                 rgb[0], rgb[1], rgb[2]);
-
         }
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
@@ -191,10 +173,10 @@ solver.debugTag = debugTag;
             dirPath = ResourceFinder.findDirectory("bin");
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_1_" + debugTag + ".png", img1Cp);
+                dirPath + "/tmp_m_1_" + featureSettings.getDebugTag() + ".png", img1Cp);
 
             ImageIOHelper.writeOutputImage(
-                dirPath + "/tmp_m_2_" + debugTag + ".png", img2Cp);
+                dirPath + "/tmp_m_2_" + featureSettings.getDebugTag() + ".png", img2Cp);
 
         } catch (IOException ex) {
             Logger.getLogger(EpipolarMultiplicitySolver.class.getName()).log(Level.SEVERE, null, ex);

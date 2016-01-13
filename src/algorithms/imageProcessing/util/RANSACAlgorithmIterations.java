@@ -70,13 +70,13 @@ simplified below.
  */
 public class RANSACAlgorithmIterations {
 
-    public int estimateNIterFor99PercentConfidence(
+    public long estimateNIterFor99PercentConfidence(
         int nPoints, int sampleSize, double expectedFractionTruePoints) {
         
         double pSample = calculateTrueSampleProbability(nPoints, sampleSize, 
             expectedFractionTruePoints);
         
-        int nIter = (int)Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
+        long nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
                 
         return nIter;
     }

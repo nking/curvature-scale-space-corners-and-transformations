@@ -2,11 +2,14 @@ package algorithms.imageProcessing;
 
 import algorithms.SubsetChooser;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,10 +24,20 @@ import org.ejml.simple.SimpleMatrix;
  * 7-point epipolar calculation and random draws of 7 points from the
  * matched point lists under the assumption that some of the matched points
  * are not true (correct) matches.
+ * <pre>
+ * useful reading:
+ * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+ * and
+ * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
+ * 
+ * This algorithm differs from RANSACSolver.java in that it accepts more than
+ * one match for point1 to point2 where point1 is a ppint in image1 and point2
+ * is a point in image2.
+ * 
  * It follows "Generalized RANSAC framework for relaxed correspondence problems"
    by Zhang and Kosecka in choosing randomly from a single point in image1 but 
    then choosing randomly from that point's possibly multiple matches.
-
+   </pre>
  * @author nichole
  */
 public class RANSACMultiplicitySolver {
@@ -70,6 +83,10 @@ public class RANSACMultiplicitySolver {
             "the algorithms require 7 or more points.  matchedLeftXY.n=" 
             + matchedLeftXY.size());
         }
+        
+        if (true) {
+            throw new UnsupportedOperationException("not yet implemented");
+        }
        
         /*
         -- randomly sample 7 points from matchedLeftXY then randomly sample
@@ -100,23 +117,30 @@ public class RANSACMultiplicitySolver {
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
         
-        SimpleMatrix evalAllLeft = new SimpleMatrix();
-        SimpleMatrix evalAllRight = new SimpleMatrix();
         int nAllMultiplicity = 0;
+        for (int i = 0; i < matchedLeftXY.size(); ++i) {
+            nAllMultiplicity += matchedRightXYs.get(i).size();
+        }
+        
+        SimpleMatrix evalAllLeft = new SimpleMatrix(3, nAllMultiplicity);
+        SimpleMatrix evalAllRight = new SimpleMatrix(3, nAllMultiplicity);
+        int count = 0;
         for (int i = 0; i < matchedLeftXY.size(); ++i) {
             PairInt lft = matchedLeftXY.get(i);
             for (PairInt rgt : matchedRightXYs.get(i)) {
-                evalAllLeft.set(0, nAllMultiplicity, lft.getX());
-                evalAllLeft.set(1, nAllMultiplicity, lft.getY());
-                evalAllRight.set(0, nAllMultiplicity, rgt.getX());
-                evalAllRight.set(1, nAllMultiplicity, rgt.getY());
-                nAllMultiplicity++;
+                evalAllLeft.set(0, count, lft.getX());
+                evalAllLeft.set(1, count, lft.getY());
+                evalAllLeft.set(2, count, 1);
+                evalAllRight.set(0, count, rgt.getX());
+                evalAllRight.set(1, count, rgt.getY());
+                evalAllRight.set(2, count, 2);
+                count++;
             }
         }
-        
+    
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
 
-        int nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
+        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
             nSet, 0.5);
       
         if (nPoints == nSet) {
@@ -126,21 +150,19 @@ public class RANSACMultiplicitySolver {
         int nIter = 0;
         
         EpipolarTransformationFit bestFit = null;
-        
-        SubsetChooser subsetChooser = new SubsetChooser(nPoints, nSet);
-            
+                    
         int[] selectedIndexes = new int[nSet];
         
         SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
         SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
-
-        int nV = subsetChooser.getNextSubset(selectedIndexes);
-
-        int[] selectedRightIndexes2 = new int[nSet];
         
-        while ((nV != -1) && (nIter < nMaxIter) && (nIter < 2000)) {
+        log.info("nPoints=" + nPoints + " n including multiplicity=" + nAllMultiplicity);
+        
+        while ((nIter < nMaxIter) && (nIter < 10000)) {
+              
+            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
             
-            int count = 0;
+            count = 0;
             
             for (int bitIndex : selectedIndexes) {
 
@@ -152,13 +174,13 @@ public class RANSACMultiplicitySolver {
                 
                 // handle multiplicity
                 PairInt rightP;
-                if (matchedRightXYs.get(idx).size() > 1) {
-                    int idx2 = sr.nextInt(matchedRightXYs.get(idx).size());
+                int nr = matchedRightXYs.get(idx).size();
+                assert(nr != 0);
+                if (nr > 1) {
+                    int idx2 = sr.nextInt(nr);
                     rightP = matchedRightXYs.get(idx).get(idx2);
-                    selectedRightIndexes2[count] = idx2;
                 } else {
                     rightP = matchedRightXYs.get(idx).get(0);
-                    selectedRightIndexes2[count] = 0;
                 }
                 sampleRight.set(0, count, rightP.getX());
                 sampleRight.set(1, count, rightP.getY());
@@ -166,7 +188,7 @@ public class RANSACMultiplicitySolver {
                 
                 count++;
             }
-            
+           
             StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
 
             // determine matrix from 7 points.
@@ -198,17 +220,14 @@ public class RANSACMultiplicitySolver {
             if (fit.isBetter(bestFit)) {
                 bestFit = fit;
             }
-            
-            nV = subsetChooser.getNextSubset(selectedIndexes);
-            
+                        
             nIter++;
             
             // recalculate nMaxIter
-            if ((bestFit != null) && ((nIter % 10) == 0)) {
+            if ((bestFit != null) && ((nIter % 40) == 0)) {
                 double ratio = (double)bestFit.getInlierIndexes().size()/(double)nAllMultiplicity;
                 nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
                     nSet, ratio);
-                int z = 1 ;
             }
         }
         
@@ -227,7 +246,7 @@ public class RANSACMultiplicitySolver {
         // calculate fundamental matrix using filtered consensus
         SimpleMatrix inliersLeftXY = new SimpleMatrix(3, matchedLRM.size());
         SimpleMatrix inliersRightXY = new SimpleMatrix(3, matchedLRM.size());
-        int count = 0;
+        count = 0;
         for (Integer index : matchedLRM) {
             int idx = index.intValue();
             
@@ -267,8 +286,7 @@ public class RANSACMultiplicitySolver {
             
         } else {
             
-            SimpleMatrix fm = 
-                spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+            SimpleMatrix fm = spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 

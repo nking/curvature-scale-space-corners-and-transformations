@@ -1359,4 +1359,31 @@ public class MiscDebug {
         MiscDebug.writeImage(img1Cp, imgSuffix + "_1");
         MiscDebug.writeImage(img2Cp, imgSuffix + "_2");
     }
+
+    public static void plotImages(Map<PairInt, List<PairInt>> matched1Matched2, 
+        GreyscaleImage img1, GreyscaleImage img2, int nExtraForDot, String fileNameSuffix) {
+        
+        Image imgCp1 = img1.copyToColorGreyscale();
+        Image imgCp2 = img2.copyToColorGreyscale();
+        
+        ImageIOHelper.addAlternatingColorPointsToImages(matched1Matched2, imgCp1, 
+            imgCp2, nExtraForDot);
+
+        MiscDebug.writeImage(imgCp1, fileNameSuffix + "_1");
+        MiscDebug.writeImage(imgCp2, fileNameSuffix + "_2");
+    }
+
+    public static void plotImages(List<FeatureComparisonStat> stats, 
+        GreyscaleImage img1, GreyscaleImage img2, int nExtraForDot, 
+        String fileNameSuffix) {
+        
+        Image imgCp1 = img1.copyToColorGreyscale();
+        Image imgCp2 = img2.copyToColorGreyscale();
+        
+        ImageIOHelper.addAlternatingColorPointsToImages(stats, imgCp1, 
+            imgCp2, nExtraForDot);
+
+        MiscDebug.writeImage(imgCp1, fileNameSuffix + "_1");
+        MiscDebug.writeImage(imgCp2, fileNameSuffix + "_2");
+    }
 }

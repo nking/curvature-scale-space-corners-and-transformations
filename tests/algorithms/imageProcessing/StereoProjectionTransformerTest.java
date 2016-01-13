@@ -50,7 +50,7 @@ public class StereoProjectionTransformerTest extends TestCase {
         /*
         StereoProjectionTransformer spTr = new StereoProjectionTransformer();
 
-        public SimpleMatrix calculateEpipolarProjectionForPerfectlyMatched(
+        public SimpleMatrix calculateEpipolarProjection(
         PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
         */
 

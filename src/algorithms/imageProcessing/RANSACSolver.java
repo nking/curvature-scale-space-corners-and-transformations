@@ -2,16 +2,11 @@ package algorithms.imageProcessing;
 
 import algorithms.SubsetChooser;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
-import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
@@ -158,25 +153,23 @@ public class RANSACSolver {
         as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
         which uses 0.6% of the maximum image dimension.
         */
-        int nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);
+        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);
 
         if (nPoints == 7) {
             nMaxIter = 1;
         }
 
         int nIter = 0;
-
-        SubsetChooser subsetChooser = new SubsetChooser(nPoints, nSet);
         
         int[] selectedIndexes = new int[nSet];
         
         SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
         SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
-
-        int nV = subsetChooser.getNextSubset(selectedIndexes);
         
-        while ((nV != -1) && (nIter < nMaxIter) && (nIter < 2000)) {
+        while ((nIter < nMaxIter) && (nIter < 2000)) {
             
+            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
+
             int count = 0;
             
             for (int bitIndex : selectedIndexes) {
@@ -227,8 +220,6 @@ public class RANSACSolver {
             if (fit.isBetter(bestFit)) {
                 bestFit = fit;
             }
-
-            nV = subsetChooser.getNextSubset(selectedIndexes);
             
             nIter++;
             
@@ -291,7 +282,7 @@ public class RANSACSolver {
         } else {
             
             SimpleMatrix fm = 
-                spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+                spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 

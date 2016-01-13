@@ -64,14 +64,16 @@ public class CosineSimilarityCornerMatcher<T extends CornerRegion> {
         solutionStats = new HashMap<PairInt, List<FeatureComparisonStat>>();
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
+        
+        int topK = 5;
 
         for (int i = 0; i < corners1.size(); ++i) {
 
             T region1 = corners1.get(i);
-
-            List<FeatureComparisonStat> index1Stats = new ArrayList<FeatureComparisonStat>();
-            List<PairInt> index1Matches = new ArrayList<PairInt>();
-
+            
+            FixedSizeSortedVector<FeatureComparisonStat> index1TopStats =
+                new FixedSizeSortedVector<FeatureComparisonStat>(topK, FeatureComparisonStat.class);
+            
             for (int j = 0; j < corners2.size(); ++j) {
 
                 T region2 = corners2.get(j);
@@ -86,15 +88,26 @@ public class CosineSimilarityCornerMatcher<T extends CornerRegion> {
                     ) {
                     continue;
                 }
-                
-                index1Stats.add(compStat);
-                index1Matches.add(new PairInt(region2.getX()[region2.getKMaxIdx()],
-                    region2.getY()[region2.getKMaxIdx()]));                
+                                
+                index1TopStats.add(compStat);               
             }
             
-            if (index1Stats.isEmpty()) {
+            if (index1TopStats.getNumberOfItems() == 0) {
                 continue;
             }
+            
+            List<FeatureComparisonStat> index1Stats = new ArrayList<FeatureComparisonStat>();
+            List<PairInt> index1Matches = new ArrayList<PairInt>();
+            FeatureComparisonStat[] s = index1TopStats.getArray();
+            for (int i2 = 0; i2 < index1TopStats.getNumberOfItems(); ++i2) {
+                FeatureComparisonStat stat = s[i2];
+                index1Stats.add(stat);
+                index1Matches.add(stat.getImg2Point());
+            }
+            
+//TODO:  would be better to use stat.getImg1Point() here
+//   but then there would be a problem with adjacent keys
+//   and uniform selection at RANSAC stage
             
             PairInt key = new PairInt(region1.getX()[region1.getKMaxIdx()],
                 region1.getY()[region1.getKMaxIdx()]);   

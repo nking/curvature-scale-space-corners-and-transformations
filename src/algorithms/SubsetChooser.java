@@ -73,10 +73,15 @@ public class SubsetChooser {
             
         } else {
             
+            /*
+            x = BigInteger.ONE;
+            x = x.shiftLeft(k);
+            x = x.subtract(BigInteger.ONE);
+            */
             byte[] val = MiscMath.writeToBigEndianBytes((1L << k) - 1);
             x = new BigInteger(val);
             
-            BigInteger hb = new BigInteger(MiscMath.writeToBigEndianBytes(1));
+            BigInteger hb = BigInteger.ONE;
             highBit = hb.shiftLeft(n);  
             
             highBit64 = Long.MAX_VALUE;

@@ -7,7 +7,6 @@ import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
@@ -23,14 +22,7 @@ public class EpipolarSolver {
     private final ImageExt img1;
     private final ImageExt img2;
 
-    private GreyscaleImage gsImg1 = null;
-    private GreyscaleImage gsImg2 = null;
-
-    private Set<CornerRegion> cornerRegions1 = null;
-    private Set<CornerRegion> cornerRegions2 = null;
-
     private enum State {
-
         INITIALIZED, SOLVED, NO_SOLUTION
     }
     private State state = null;
@@ -53,19 +45,6 @@ public class EpipolarSolver {
         state = State.INITIALIZED;
     }
 
-    /*
-     public EpipolarSolver(ImageExt image1, ImageExt image2, 
-     TransformationParameters parameters, FeatureMatcherSettings settings) {
-        
-     img1 = image1;
-     img2 = image2;
-     doDetermineScale = false;
-     params = parameters;
-        
-     featureSettings = settings.copy();
-        
-     state = State.INITIALIZED;
-     }*/
     public EpipolarTransformationFit solve() throws IOException,
         NoSuchAlgorithmException {
 
