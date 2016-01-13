@@ -132,7 +132,7 @@ public class RANSACMultiplicitySolver {
         long nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(
             nPoints, nAllMultiplicity, nSet, 0.5);
         
-        long nMaxIter0 = 3 * nMaxIter;
+        long nMaxIter0 = 100000;
       
         if (nPoints == nSet) {
             nMaxIter = 1;
@@ -149,9 +149,9 @@ public class RANSACMultiplicitySolver {
         
         log.info("nPoints=" + nPoints + " n including multiplicity=" + nAllMultiplicity);
         
-        int tolerance = 1;
+        int tolerance = 3;
         
-        while ((nIter < nMaxIter) &&(nIter < nMaxIter0)) {
+        while ((nIter < nMaxIter) && (nIter < nMaxIter0)) {
               
             MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
             
@@ -211,7 +211,7 @@ public class RANSACMultiplicitySolver {
                 nIter++;
                 continue;
             }
-               
+            
             if (fit.isBetter(bestFit)) {
                 bestFit = fit;
             }

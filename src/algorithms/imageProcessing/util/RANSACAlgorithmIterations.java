@@ -109,8 +109,8 @@ public class RANSACAlgorithmIterations {
     }
     
     public double calculateTrueSampleProbabilityForMultiplyMatched(
-        int nPoints, int nAllMultiplicity, 
-        int sampleSize, double expectedFractionTruePoints) {
+        int nPoints, int nAllMultiplicity, int sampleSize, 
+        double expectedFractionTruePoints) {
         
         /* 
         making an assumption of avg multiplicity for all and using the same
@@ -153,7 +153,7 @@ public class RANSACAlgorithmIterations {
         The pSample then must be 3./45. = 0.067.
         so the multiply mapped pSample is pSample_singly_matched*nComb_singlyMatched/nComb_multiplyMatched
           
-        So the pSample for the degenerately mapped can be estimated using:
+        in detail:
         
         The number of combinations for the multiply matched is 
             nMultiplyMatched!/(k!(nMultiplyMatched-k)!)
@@ -175,10 +175,10 @@ public class RANSACAlgorithmIterations {
         double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, 
             expectedFractionTruePoints);
         
-        long nCombinationsSingle = MiscMath.computeNDivNMinusK(nPoints, 
+        double nCombinationsSingle = MiscMath.computeNDivNMinusK(nPoints, 
             sampleSize)/MiscMath.factorial(sampleSize);
         
-        long nCombinationsMultiple = MiscMath.computeNDivNMinusK(nAllMultiplicity, 
+        double nCombinationsMultiple = MiscMath.computeNDivNMinusK(nAllMultiplicity, 
             sampleSize)/MiscMath.factorial(sampleSize);
         
         double pSampleMultiple = pSampleSingle * 

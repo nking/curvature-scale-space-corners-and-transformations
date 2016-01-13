@@ -144,4 +144,42 @@ public class CountingTest extends TestCase {
         
     }
 
+    public void test3() throws Exception {
+        
+        /*
+        counting for the multiply matched set of points
+        
+        example:  5 points in set 1.  each has 2 matches in set 2, only one is a true match.
+                  sample size, k, is 2.
+                  there are 3 true point 1's {0, 2, 3}
+        
+        combinations of single matched dataset: 
+        ncomb=10. pSample=(3./5)*(2./4)=0.3 
+        expected number of 'true' samples is then 0.3*ncomb = 3.
+        nTrueSamples=3 is seen below
+        0 1
+        0 2 * 
+        0 3 *
+        0 4
+        1 2
+        1 3
+        1 4
+        2 3 *
+        2 4
+        3 4
+        
+        if multiplicity is '2', then the number of all point pairs is 2 * nPoints.
+        and then the number of possible combinations is 10*9./2 = 45.
+        The number of true samples hasn't changed and that is still 3.
+        The pSample then must be 3./45. = 0.067.
+        so the multiply mapped pSample is pSample_singly_matched*nComb_singlyMatched/nComb_multiplyMatched
+        
+        above case considers even distribution of multiply matched numbers.
+        a better approx could use the mode or median of multiply matched.
+        also make an example for that.
+        */
+        
+        //TODO: add a test for this
+        
+    }
 }
