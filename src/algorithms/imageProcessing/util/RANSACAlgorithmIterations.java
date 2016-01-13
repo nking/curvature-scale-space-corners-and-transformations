@@ -81,6 +81,15 @@ public class RANSACAlgorithmIterations {
         return nIter;
     }
     
+    public long estimateNIterFor99PercentConfidenceDegenerate(
+        int nPoints, int nPointsIncludingDegenerate, int sampleSize, 
+        double expectedFractionTruePoints) {
+        
+        // TODO: calculate.  temporarily using uniform distribution
+        return estimateNIterFor99PercentConfidence(nPoints, sampleSize,
+            expectedFractionTruePoints);
+    }
+    
     public double calculateTrueSampleProbability(int nPoints, int sampleSize,
         double expectedFractionTruePoints) {
         

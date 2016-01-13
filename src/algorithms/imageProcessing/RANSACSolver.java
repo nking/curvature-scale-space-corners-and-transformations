@@ -29,8 +29,6 @@ public class RANSACSolver {
 
     private boolean debug = true;
 
-    private double generalTolerance = 5;
-
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
@@ -141,7 +139,7 @@ public class RANSACSolver {
         PairFloatArray xy1 = null;
         PairFloatArray xy2 = null;
 
-        double tolerance = generalTolerance;
+        int tolerance = 5;
 
         // consensus indexes
         EpipolarTransformationFit bestFit = null;
@@ -205,8 +203,9 @@ public class RANSACSolver {
             
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    StereoProjectionTransformer.calculateEpipolarDistanceError(
-                        fm, matchedLeftXY, matchedRightXY, tolerance);
+                    //StereoProjectionTransformer.calculateSampsonsError(fm,
+                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                        matchedLeftXY, matchedRightXY, tolerance, false);
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -271,8 +270,9 @@ public class RANSACSolver {
             EpipolarTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                        inliersLeftXY, inliersRightXY, tolerance);
+                    //StereoProjectionTransformer.calculateSampsonsError(fm,
+                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm,  
+                        inliersLeftXY, inliersRightXY, tolerance, false);
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -286,8 +286,9 @@ public class RANSACSolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                inliersLeftXY, inliersRightXY, tolerance);
+                StereoProjectionTransformer.calculateSampsonsError(fm,
+                //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                inliersLeftXY, inliersRightXY, tolerance, false);
             
             consensusFit = fit;
         }

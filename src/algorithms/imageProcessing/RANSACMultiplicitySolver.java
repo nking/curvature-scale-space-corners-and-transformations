@@ -1,15 +1,12 @@
 package algorithms.imageProcessing;
 
-import algorithms.SubsetChooser;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,8 +40,6 @@ import org.ejml.simple.SimpleMatrix;
 public class RANSACMultiplicitySolver {
 
     private boolean debug = true;
-
-    private double generalTolerance = 3;//5
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -84,10 +79,6 @@ public class RANSACMultiplicitySolver {
             + matchedLeftXY.size());
         }
         
-        if (true) {
-            throw new UnsupportedOperationException("not yet implemented");
-        }
-       
         /*
         -- randomly sample 7 points from matchedLeftXY then randomly sample
            from the left's right match if more than one match is present.
@@ -109,9 +100,7 @@ public class RANSACMultiplicitySolver {
         int nSet = 7;
         
         int nPoints = matchedLeftXY.size();
-        
-        int tolerance = 3;
-        
+                
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
@@ -137,11 +126,13 @@ public class RANSACMultiplicitySolver {
                 count++;
             }
         }
-    
+            
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
-
-        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
-            nSet, 0.5);
+        
+        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(
+            nPoints, nAllMultiplicity, nSet, 0.5);
+        
+        long nMaxIter0 = 3 * nMaxIter;
       
         if (nPoints == nSet) {
             nMaxIter = 1;
@@ -158,7 +149,9 @@ public class RANSACMultiplicitySolver {
         
         log.info("nPoints=" + nPoints + " n including multiplicity=" + nAllMultiplicity);
         
-        while ((nIter < nMaxIter) && (nIter < 10000)) {
+        int tolerance = 1;
+        
+        while ((nIter < nMaxIter) &&(nIter < nMaxIter0)) {
               
             MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
             
@@ -206,7 +199,9 @@ public class RANSACMultiplicitySolver {
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
                     StereoProjectionTransformer.calculateSampsonsError(fm, 
-                        evalAllLeft, evalAllRight, tolerance);
+                    //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                        evalAllLeft, evalAllRight, tolerance, true);
+                
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -224,10 +219,10 @@ public class RANSACMultiplicitySolver {
             nIter++;
             
             // recalculate nMaxIter
-            if ((bestFit != null) && ((nIter % 40) == 0)) {
+            if ((bestFit != null) && ((nIter % 50) == 0)) {
                 double ratio = (double)bestFit.getInlierIndexes().size()/(double)nAllMultiplicity;
-                nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
-                    nSet, ratio);
+                nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(
+                    nPoints, nAllMultiplicity, nSet, ratio);
             }
         }
         
@@ -276,8 +271,9 @@ public class RANSACMultiplicitySolver {
             EpipolarTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    StereoProjectionTransformer.calculateSampsonsError(fm, 
-                        inliersLeftXY, inliersRightXY, tolerance);
+                    StereoProjectionTransformer.calculateSampsonsError(fm,
+                    //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                        inliersLeftXY, inliersRightXY, tolerance, true);
                 if (fitI.isBetter(bestFit)) {
                     fit = fitI;
                 }
@@ -290,8 +286,9 @@ public class RANSACMultiplicitySolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                StereoProjectionTransformer.calculateSampsonsError(fm, 
-                inliersLeftXY, inliersRightXY, tolerance);
+                StereoProjectionTransformer.calculateSampsonsError(fm,
+                //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                inliersLeftXY, inliersRightXY, tolerance, true);
             
             consensusFit = fit;
         }

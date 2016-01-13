@@ -836,8 +836,8 @@ public class MiscDebug {
         int n = points.getN();
         
         for (int i = 0; i < n; ++i) {
-            int x = (int)Math.round(points.getX(i));
-            int y = (int)Math.round(points.getY(i));
+            int x = Math.round(points.getX(i));
+            int y = Math.round(points.getY(i));
             for (int dx = -1 * nExtraForDot; dx <= nExtraForDot; ++dx) {
                 for (int dy = -1 * nExtraForDot; dy <= nExtraForDot; ++dy) {
                     int x1 = x + dx;

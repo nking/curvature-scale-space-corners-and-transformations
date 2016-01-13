@@ -8,7 +8,11 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 import org.ejml.simple.*;
 
@@ -1280,11 +1284,12 @@ public class StereoProjectionTransformer {
      * @param leftPoints
      * @param rightPoints
      * @param tolerance
+     * @param filterForDegenerate 
      * @return
      */
     public static EpipolarTransformationFit calculateEpipolarDistanceError(
         SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
-        double tolerance) {
+        double tolerance, boolean filterForDegenerate) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1324,6 +1329,11 @@ public class StereoProjectionTransformer {
             inlierIndexes.add(Integer.valueOf(i));
 
             errors.add(Double.valueOf(dist));
+        }
+        
+        if (filterForDegenerate) {
+            filterForDegenerate(leftPoints, inlierIndexes, errors);
+            filterForDegenerate(rightPoints, inlierIndexes, errors);
         }
 
         EpipolarTransformationFit fit = null;
@@ -1465,7 +1475,7 @@ public class StereoProjectionTransformer {
     }
 
     public static EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, int tolerance) {
+        SimpleMatrix x1, SimpleMatrix x2, int tolerance, boolean filterForDegenerate) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1496,7 +1506,7 @@ public class StereoProjectionTransformer {
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
         
-        //TODO: consider using the normalized matrixes and normalized tolerance?
+        //TODO: consider using the normalized matrixes and normalized tolerance during error calc too?
         
         SimpleMatrix fmT = fm.transpose();
                 
@@ -1554,6 +1564,11 @@ public class StereoProjectionTransformer {
             }
         }
         
+        if (filterForDegenerate) {
+            filterForDegenerate(x1, outputInliers, outputDistances);
+            filterForDegenerate(x2, outputInliers, outputDistances);
+        }
+        
         EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
             outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
     
@@ -1562,6 +1577,67 @@ public class StereoProjectionTransformer {
         return fit;
     }
     
+    private static void filterForDegenerate(SimpleMatrix xy1,
+        List<Integer> outputInliers, List<Double> outputDistances) {
+        
+        Map<PairInt, List<Integer>> pointIndexes = new HashMap<PairInt, List<Integer>>();
+        
+        for (int i = 0; i < outputInliers.size(); ++i) {
+            
+            int idx = outputInliers.get(i);
+            
+            int x1 = (int)Math.round(xy1.get(0, idx));
+            int y1 = (int)Math.round(xy1.get(1, idx));
+            
+            PairInt p1 = new PairInt(x1, y1);
+            
+            List<Integer> oIndexes = pointIndexes.get(p1);
+            if (oIndexes == null) {
+                oIndexes = new ArrayList<Integer>();
+                pointIndexes.put(p1, oIndexes);
+            }
+            oIndexes.add(Integer.valueOf(i));            
+        }
+        
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (Entry<PairInt, List<Integer>> entry : pointIndexes.entrySet()) {
+                        
+            List<Integer> oIndexes = entry.getValue();
+            if (oIndexes.size() < 2) {
+                continue;
+            }
+            
+            double minError = Double.MAX_VALUE;
+            int minIdx = -1;
+            for (Integer index : oIndexes) {
+                int idx = index.intValue();
+                double error = outputDistances.get(idx);
+                if (error < minError) {
+                    minError = error;
+                    minIdx = idx;
+                }
+            }
+            
+            assert(minIdx > -1);
+            
+            for (Integer index : oIndexes) {
+                int idx = index.intValue();
+                if (idx == minIdx) {
+                    continue;
+                }
+                remove.add(Integer.valueOf(idx));
+            }            
+        }
+        Collections.sort(remove);
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            outputDistances.remove(idx);
+            outputInliers.remove(idx);
+        }        
+    }
+
     /**
     calculate the 4 possible projection matrices from the essential matrix.
     * Note that the essential matrix is the transformation matrix between points

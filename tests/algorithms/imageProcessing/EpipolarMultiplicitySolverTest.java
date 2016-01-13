@@ -16,7 +16,7 @@ public class EpipolarMultiplicitySolverTest extends TestCase {
     public EpipolarMultiplicitySolverTest() {
     }
     
-    public void est0() throws Exception {
+    public void test0() throws Exception {
                 
         String fileName1, fileName2;
         
@@ -28,7 +28,7 @@ public class EpipolarMultiplicitySolverTest extends TestCase {
         //    with small projection effects.
         //    need to use matching of top k solutions...
         
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 5; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
