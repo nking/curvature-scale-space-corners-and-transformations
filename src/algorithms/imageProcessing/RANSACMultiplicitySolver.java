@@ -220,7 +220,7 @@ public class RANSACMultiplicitySolver {
             
             // recalculate nMaxIter
             if ((bestFit != null) && ((nIter % 50) == 0)) {
-                double ratio = (double)bestFit.getInlierIndexes().size()/(double)nAllMultiplicity;
+                double ratio = (double)bestFit.getInlierIndexes().size()/(double)nPoints;
                 nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(
                     nPoints, nAllMultiplicity, nSet, ratio);
             }
