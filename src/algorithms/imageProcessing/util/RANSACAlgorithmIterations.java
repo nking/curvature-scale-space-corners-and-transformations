@@ -1,5 +1,7 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.misc.MiscMath;
+
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
  * should be used to ensure with 99% certainty that a set of points is 
@@ -85,9 +87,12 @@ public class RANSACAlgorithmIterations {
         int nPoints, int nPointsIncludingDegenerate, int sampleSize, 
         double expectedFractionTruePoints) {
         
-        // TODO: calculate.  temporarily using uniform distribution
-        return estimateNIterFor99PercentConfidence(nPoints, sampleSize,
-            expectedFractionTruePoints);
+        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, 
+            nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
+        
+        long nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
+                
+        return nIter;
     }
     
     public double calculateTrueSampleProbability(int nPoints, int sampleSize,
@@ -101,6 +106,76 @@ public class RANSACAlgorithmIterations {
         }
         
         return factor;
+    }
+    
+    public double calculateTrueSampleProbabilityForMultiplyMatched(
+        int nPoints, int nAllMultiplicity, 
+        int sampleSize, double expectedFractionTruePoints) {
+        
+        /* 
+        making an assumption of avg multiplicity for all and using the same
+        logic as for singly matched points ts start, then adding the multiple
+        matching logic:
+        
+        example:  5 points in set 1 and each is singly matched to a point in set 2.
+                  sample size, k, is 2.
+                  there are 3 true point 1's {0, 2, 3}
+        
+        the number of combinations of the singly matched dataset are n!/(k!(n-k)!)
+        nCombinations=10. 
+        pSample (as seen in CountingTest) is the factors of nTrueMatches/nPoints
+        reduced for each subsequent point due to drawing without replacement.
+        pSample=(3./5)*(2./4)=0.3 
+        The expected number of 'true' samples, that is samples composed of only
+        truely matched points is then pSample*nCombinations = 0.3*10 = 3.
+        nTrueSamples=3 is verified as seen here:
+        0 1
+        0 2 * 
+        0 3 *
+        0 4
+        1 2
+        1 3
+        1 4
+        2 3 *
+        2 4
+        3 4
+        
+        For multiply matched points, the number of combinations increases,
+        but the number of truly matched remains the same.
+        
+        The number of all point pairs is the multiplicity * nPoints
+        (or alternatively, can be given the total number including multiplicity).
+        
+        The number of combinations for the multiply matched is 
+            nMultiplyMatched!/(k!(nMultiplyMatched-k)!)
+        
+        The multiply mapped pSample is
+            pSample_singly_matched * nComb_singlyMatched / nComb_multiplyMatched
+        
+        For the example above, nComb_multiplyMatched = (10*9)/2. = 45.
+           so pSample_multiply_matched = 0.3 * (10./45.) = 0.067
+        
+        A better determination would use the real integrated CDF of the
+        inhomogeneous distribution, but this number is used to quickly 
+        make an estimate.
+        
+        Using the maximum multiplicity would lead to a safe overestimate,
+        so should consider that for another method.
+        */
+        
+        double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, 
+            expectedFractionTruePoints);
+        
+        long nCombinationsSingle = MiscMath.computeNDivNMinusK(nPoints, 
+            sampleSize)/MiscMath.factorial(sampleSize);
+        
+        long nCombinationsMultiple = MiscMath.computeNDivNMinusK(nAllMultiplicity, 
+            sampleSize)/MiscMath.factorial(sampleSize);
+        
+        double pSampleMultiple = pSampleSingle * 
+            (nCombinationsSingle/nCombinationsMultiple);
+        
+        return pSampleMultiple;
     }
 
 }
