@@ -490,6 +490,32 @@ public class MiscMath {
         
         return new double[]{avgX, stdDevX};
     }
+    /**
+     * given an array of points, return the average and standard deviation from
+     * the average
+     * @param x
+     * @return 
+     */
+    public static double[] getAvgAndStDev(List<Double> x) {
+        
+        int length = x.size();
+        
+        long sumX = 0;
+        for (int i = 0; i < length; i++) {
+            sumX += x.get(i);
+        }
+        
+        double avgX = (double)sumX/(double)length;
+        
+        sumX = 0;
+        for (int i = 0; i < length; i++) {
+            double diffX = x.get(i) - avgX;
+            sumX += (diffX * diffX);
+        }
+        double stdDevX = (Math.sqrt(sumX/(length - 1.0f)));
+        
+        return new double[]{avgX, stdDevX};
+    }
     
     /**
      * given an array of points, return the average and standard deviation from

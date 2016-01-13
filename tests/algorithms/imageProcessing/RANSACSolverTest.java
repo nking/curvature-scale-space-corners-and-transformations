@@ -46,7 +46,7 @@ public class RANSACSolverTest extends TestCase {
         
         RANSACSolver solver = new RANSACSolver();
         
-        StereoProjectionTransformerFit fit = solver.calculateEpipolarProjection(
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
             leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
         
         assertNotNull(fit);

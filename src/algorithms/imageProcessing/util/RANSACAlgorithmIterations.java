@@ -1,7 +1,5 @@
 package algorithms.imageProcessing.util;
 
-import algorithms.misc.MiscMath;
-
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
  * should be used to ensure with 99% certainty that a set of points is 

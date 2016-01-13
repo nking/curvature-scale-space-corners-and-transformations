@@ -40,7 +40,7 @@ public class StereoProjectionTransformerTest extends TestCase {
         settings.setToUse2ndDerivCorners();
         
         EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);
-        StereoProjectionTransformerFit fit = solver.solve();
+        EpipolarTransformationFit fit = solver.solve();
 
         int[] x1 = new int[]{248,341,154,341,341,339,341,249,341,155,};
         int[] y1 = new int[]{109,204,295,204,204,295,204,205,204,201,};

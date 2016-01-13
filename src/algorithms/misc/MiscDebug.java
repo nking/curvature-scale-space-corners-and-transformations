@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -789,6 +790,72 @@ public class MiscDebug {
         } catch (IOException e) {
             
             log.severe(e.getMessage());
+        }
+    }
+    
+    public static void plotPoints(GreyscaleImage image, SimpleMatrix points, 
+        int nExtraForDot, String fileNameSuffix) {
+        
+        Image img = image.copyToColorGreyscale();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int n = points.numCols();
+        
+        for (int i = 0; i < n; ++i) {
+            int x = (int)Math.round(points.get(0, i));
+            int y = (int)Math.round(points.get(1, i));
+            for (int dx = -1 * nExtraForDot; dx <= nExtraForDot; ++dx) {
+                for (int dy = -1 * nExtraForDot; dy <= nExtraForDot; ++dy) {
+                    int x1 = x + dx;
+                    int y1 = y + dy;
+                    if ((x1 > -1) && (x1 < w) && (y1 > -1) && (y1 < h)) {
+                        img.setRGB(x1, y1, 255, 0, 0);
+                    }
+                }
+            }
+        }
+        
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
+                + ".png", img);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
+        }
+    }
+    
+    public static void plotPoints(GreyscaleImage image, PairFloatArray points, 
+        int nExtraForDot, String fileNameSuffix) {
+        
+        Image img = image.copyToColorGreyscale();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int n = points.getN();
+        
+        for (int i = 0; i < n; ++i) {
+            int x = (int)Math.round(points.getX(i));
+            int y = (int)Math.round(points.getY(i));
+            for (int dx = -1 * nExtraForDot; dx <= nExtraForDot; ++dx) {
+                for (int dy = -1 * nExtraForDot; dy <= nExtraForDot; ++dy) {
+                    int x1 = x + dx;
+                    int y1 = y + dy;
+                    if ((x1 > -1) && (x1 < w) && (y1 > -1) && (y1 < h)) {
+                        img.setRGB(x1, y1, 255, 0, 0);
+                    }
+                }
+            }
+        }
+        
+        try {
+            String dirPath = ResourceFinder.findDirectory("bin");
+            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
+                + ".png", img);
+        } catch (Exception e) {
+             e.printStackTrace();
+            log.severe("ERROR: " + e.getMessage());
         }
     }
     

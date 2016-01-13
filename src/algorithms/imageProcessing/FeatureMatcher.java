@@ -33,7 +33,37 @@ public class FeatureMatcher {
     
     public FeatureMatcher() {
     }
+      
+    /**
+     * same as ditherAndRotateForBestLocation2 except have added a filter
+     * to remove matches with a cosine similarity larger than 0.95.
+     * 
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param dither
+     * @param img1
+     * @param img2
+     * @return 
+     */
+    public FeatureComparisonStat ditherAndRotateForBestLocation3(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        CornerRegion region1, CornerRegion region2, int dither,
+        GreyscaleImage img1, GreyscaleImage img2) {
         
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+
+        return ditherAndRotateForBestLocation3(features1, features2,
+            x1, y1, x2, y2, dither, img1, img2);
+    }
+    
     public FeatureComparisonStat ditherAndRotateForBestLocation2(
         IntensityFeatures features1, IntensityFeatures features2, 
         CornerRegion region1, CornerRegion region2, int dither,
@@ -91,7 +121,7 @@ public class FeatureMatcher {
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
                 rotations[0] = rot1;
-                rotations[1] = rot1 - 10;//5?
+                rotations[1] = rot1 - 10;
                 rotations[2] = rot1 + 10;
                 //rotations[3] = rot1 - 20;
                 //rotations[4] = rot1 + 20;
@@ -112,6 +142,95 @@ public class FeatureMatcher {
                     
                     FeatureComparisonStat stat = IntensityFeatures.calculateStats(
                         desc1, x1d, y1d, desc2, x2, y2);
+                   
+                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
+                       
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
+    protected FeatureComparisonStat ditherAndRotateForBestLocation3(
+        IntensityFeatures features1, IntensityFeatures features2, 
+        final int x1, final int y1, final int x2, final int y2,      
+        int dither, GreyscaleImage img1, GreyscaleImage img2) {
+        
+        FeatureComparisonStat best = null;
+        
+        int rot2;
+        try {
+            rot2 = features2.calculateOrientation(x2, y2);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+        
+        IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
+        
+        if (desc2 == null) {
+            return null;
+        }
+        
+        int[] rotations = new int[3];
+        
+        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+            if (!features1.isWithinXBounds(img1, x1d)) {
+                continue;
+            }
+            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                if (!features1.isWithinYBounds(img1, y1d)) {
+                    continue;
+                }
+                
+                int rot1;
+                try {
+                    rot1 = features1.calculateOrientation(x1d, y1d);
+                } catch (CornerRegionDegneracyException e) {
+                    continue;
+                }
+                // fetch rotation for this point (x1d, y1d) and try this
+                // rotation and -20, -10, +10 and +20
+                rotations[0] = rot1;
+                rotations[1] = rot1 - 10;
+                rotations[2] = rot1 + 10;
+                //rotations[3] = rot1 - 20;
+                //rotations[4] = rot1 + 20;
+        
+                for (int rotD1 : rotations) {
+                    
+                    if (rotD1 > 359) {
+                        rotD1 = rotD1 - 360;
+                    } else if (rotD1 < 0) {
+                        rotD1 += 360;
+                    }
+                    IntensityDescriptor desc1 = features1.extractIntensity(
+                        img1, x1d, y1d, rotD1);
+        
+                    if (desc1 == null) {
+                        continue;
+                    }
+                    
+                    FeatureComparisonStat stat = IntensityFeatures.calculateStats(
+                        desc1, x1d, y1d, desc2, x2, y2);
+                    
+                    float cSim = desc1.calculateCosineSimilarity(desc2);
+                    
+                    if (cSim < 0.95) {
+                        continue;
+                    }
                    
                     if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {
                        

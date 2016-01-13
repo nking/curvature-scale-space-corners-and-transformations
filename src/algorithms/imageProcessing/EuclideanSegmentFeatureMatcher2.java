@@ -108,12 +108,8 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         */
         
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>(); 
-        //List<PairInt> matched1 = new ArrayList<PairInt>();
-        //List<PairInt> matched2 = new ArrayList<PairInt>();
         for (FeatureComparisonStat stat :  matcher.getSolutionStats()) {
             stats.add(stat.copy());
-            //matched1.add(stat.getImg1Point().copy());
-            //matched2.add(stat.getImg2Point().copy());
         }
         
         matcher = null;
@@ -179,13 +175,7 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             
         log.info("full frame soln: " + soln.getParams().toString());
         
-        if (useBinned) {
-            stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
-                img2Helper.getGreyscaleImage(), stats, 
-                binFactor1, binFactor2, f1.getRotatedOffsets());
-        }
-        
-        copyToInstanceVars(stats);
+        copyToInstanceVars(soln.getComparisonStats());
         
         solutionTransformation = soln.getParams().copy();
                 

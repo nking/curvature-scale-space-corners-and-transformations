@@ -1,11 +1,17 @@
 package algorithms.imageProcessing;
 
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
@@ -45,7 +51,7 @@ public class RANSACSolver {
      * @return
      * @throws NoSuchAlgorithmException
      */
-    public StereoProjectionTransformerFit calculateEpipolarProjection(
+    public EpipolarTransformationFit calculateEpipolarProjection(
         PairFloatArray matchedLeftXY, PairFloatArray matchedRightXY,
         PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
         throws NoSuchAlgorithmException {
@@ -68,7 +74,7 @@ public class RANSACSolver {
 
         SimpleMatrix input2 =
             StereoProjectionTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
-
+        
         return calculateEpipolarProjection(input1, input2,
             outputLeftXY, outputRightXY);
     }
@@ -85,7 +91,7 @@ public class RANSACSolver {
      * @return
      * @throws NoSuchAlgorithmException
      */
-    public StereoProjectionTransformerFit calculateEpipolarProjection(
+    public EpipolarTransformationFit calculateEpipolarProjection(
         SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
         PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
         throws NoSuchAlgorithmException {
@@ -124,41 +130,6 @@ public class RANSACSolver {
 
            an improvement on the algorithm is to adaptively determine the
            number of iterations necessary to find a large enough consensus.
-
-        ---------
-        Note, the random selection would ideally draw one combination of n!/(k!*(n-k)!))
-        possible subsets.  That requires an enumeration of each combination findable
-        by an O(1) operation.  Gosper's hack returns the unique subsets in an ordered
-        manner, but a way to access that (i.e. "random access") would need to be made to have
-        truly uniform random selection.
-
-        Below, am using k draws of random numbers to create a combination of unique indexes
-        from n indexes.  The probability of selecting one unique combination within all
-        possible combinations is 1./(n!/(k!(n-k)!)).  Although that's for a single draw
-        rather than composed of k draws, it's close enough to see that the probability
-        of drawing the same combination is low, so have chosen to allow the possible repeat
-        evaluation of a set of numbers for now but the sort of the 7 numbers to
-        check for unique combination is considered in the calculation below.
-
-        Note, that a non-uniform random selection algorithm could be made by using
-        BigInteger and drawing random numbers between the low value of k bits set to 1 and
-        the high value of n bits with the highest k bits set to 1.
-        Upon each random selection within that range, one could find the next lowest number
-        with k bits set to 1 (find lowest set bit, change it to 0 and set the 2 below it to
-        1 etc to total k set bits).
-        If that bitstring has already been selected randomly, can use Gosper's hack
-        to return the next k=7 bitstring.
-        The universe of numbers drawn from is larger than the total number of
-        possible combinations, so the process is a non-uniform random selection.
-
-        The current implementation of drawing k=7 unique indexes randomly and then sorting
-        their order is 7 random operations * 7 * log_2(7) steps so 7 * 7 * 20 steps for a single
-        iteration of selecting a subset.
-          The BigInteger random suggestion above in contrast would be the
-          BigInteger random operation plus up to 6 set bit operations plus possibly
-          half a dozen bit operations from Gosper's hack if need to
-          select again, so the BigInteger implementation might be useful.
-
         */
 
         int nSet = 7;
@@ -177,11 +148,9 @@ public class RANSACSolver {
 
         double tolerance = generalTolerance;
 
-        // ====== find matched pairs incremently, and best among only 7 point match ====
-
-        StereoProjectionTransformerFit bestFit = null;
-        List<Integer> inlierIndexes = null;
-
+        // consensus indexes
+        EpipolarTransformationFit bestFit = null;
+        
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
 
         /*
@@ -191,31 +160,38 @@ public class RANSACSolver {
         */
         int nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);
 
-        float convergence = 0.5f * matchedLeftXY.numCols();
-        if (convergence < 7) {
-            convergence = 7;
-        }
-
         if (nPoints == 7) {
             nMaxIter = 1;
         }
 
         int nIter = 0;
 
-        for (int i = 0; i < nMaxIter; i++) {
+        SubsetChooser subsetChooser = new SubsetChooser(nPoints, nSet);
+        
+        int[] selectedIndexes = new int[nSet];
+        
+        SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
+        SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
 
-            MiscMath.chooseRandomly(sr, selected, nPoints);
+        int nV = subsetChooser.getNextSubset(selectedIndexes);
+        
+        while ((nV != -1) && (nIter < nMaxIter) && (nIter < 2000)) {
+            
+            int count = 0;
+            
+            for (int bitIndex : selectedIndexes) {
 
-            xy1 = new PairFloatArray();
-            xy2 = new PairFloatArray();
-            for (int j = 0; j < selected.length; j++) {
-                int idx = selected[j];
-                xy1.add(
-                    (float)matchedLeftXY.get(0, idx),
-                    (float)matchedLeftXY.get(1, idx));
-                xy2.add(
-                    (float)matchedRightXY.get(0, idx),
-                    (float)matchedRightXY.get(1, idx));
+                int idx = bitIndex;
+
+                sampleLeft.set(0, count, matchedLeftXY.get(0, idx));
+                sampleLeft.set(1, count, matchedLeftXY.get(1, idx));
+                sampleLeft.set(2, count, 1);
+                                
+                sampleRight.set(0, count, matchedRightXY.get(0, idx));
+                sampleRight.set(1, count, matchedRightXY.get(1, idx));
+                sampleRight.set(2, count, 1);
+                
+                count++;
             }
 
             StereoProjectionTransformer spTransformer = new
@@ -223,38 +199,49 @@ public class RANSACSolver {
 
             // determine matrix from 7 points.
             List<SimpleMatrix> fms =
-                spTransformer.calculateEpipolarProjectionFor7Points(xy1, xy2);
+                spTransformer.calculateEpipolarProjectionFor7Points(sampleLeft, 
+                    sampleRight);
 
             if (fms == null || fms.isEmpty()) {
                 nIter++;
                 continue;
             }
 
-            SimpleMatrix fm = fms.get(0);
-
-            // evaluate fit against all points
-            StereoProjectionTransformerFit fit =
-                spTransformer.evaluateFitForAlreadyMatched(
-                fm, matchedLeftXY, matchedRightXY, tolerance);
-
-            List<Integer> indexes = fit.getInlierIndexes();
-
-            nIter++;
-
-            if (fitIsBetter(bestFit, fit)) {
-                
-                bestFit = fit;
-                inlierIndexes = indexes;
-
-                if (false && hasConverged(bestFit) && 
-                    (inlierIndexes.size() >= convergence)) {
-                    
-                    break;
+            // use point dist to epipolar lines to estimate errors of sample
+            EpipolarTransformationFit fit = null;
+            
+            for (SimpleMatrix fm : fms) {
+                EpipolarTransformationFit fitI = 
+                    StereoProjectionTransformer.calculateEpipolarDistanceError(
+                        fm, matchedLeftXY, matchedRightXY, tolerance);
+                if (fitI.isBetter(fit)) {
+                    fit = fitI;
                 }
+            }
+            
+            if (fit == null) {
+                nIter++;
+                continue;
+            }
+               
+            if (fit.isBetter(bestFit)) {
+                bestFit = fit;
+            }
+
+            nV = subsetChooser.getNextSubset(selectedIndexes);
+            
+            nIter++;
+            
+            // recalculate nMaxIter
+            if ((bestFit != null) && ((nIter % 10) == 0)) {
+                double ratio = (double)bestFit.getInlierIndexes().size()
+                    /(double)matchedLeftXY.numCols();
+                nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
+                    nSet, ratio);
             }
         }
 
-        if (bestFit == null) {
+        if (bestFit.getInlierIndexes().isEmpty()) {
             log.info("no solution.  nIter=" + nIter);
             return null;
         }
@@ -262,126 +249,73 @@ public class RANSACSolver {
         // store inliers in outputLeftXY and outputRightXY and redo the
         // entire fit using only the inliers to determine the fundamental
         // matrix.
-        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, inlierIndexes.size());
-        SimpleMatrix inliersRightXY = new SimpleMatrix(3, inlierIndexes.size());
+        int n = bestFit.getInlierIndexes().size();
+        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, n);
+        SimpleMatrix inliersRightXY = new SimpleMatrix(3, n);
 
         int count = 0;
-        for (Integer idx : inlierIndexes) {
-            int idxInt = idx.intValue();
-            
-            float x = (float)matchedLeftXY.get(0, idxInt);
-            float y = (float)matchedLeftXY.get(1, idxInt);
-            inliersLeftXY.set(0, count, x);
-            inliersLeftXY.set(1, count, y);
+        for (Integer idx : bestFit.getInlierIndexes()) {
+            int idxInt = idx.intValue();            
+            inliersLeftXY.set(0, count, matchedLeftXY.get(0, idxInt));
+            inliersLeftXY.set(1, count, matchedLeftXY.get(1, idxInt));
             inliersLeftXY.set(2, count, 1);
-            
-            x = (float)matchedRightXY.get(0, idxInt);
-            y = (float)matchedRightXY.get(1, idxInt);
-            inliersRightXY.set(0, count, x);
-            inliersRightXY.set(1, count, y);
+            inliersRightXY.set(0, count, matchedRightXY.get(0, idxInt));
+            inliersRightXY.set(1, count, matchedRightXY.get(1, idxInt));
             inliersRightXY.set(2, count, 1);
             count++;
         }
 
         StereoProjectionTransformer spTransformer = new
             StereoProjectionTransformer();
-
-        StereoProjectionTransformerFit finalFit = null;
-
-        if (nPoints == 7) {
-
-            finalFit = bestFit;
-
-        } else {
-
-            SimpleMatrix finalFM = null;
-            if (inliersLeftXY.numCols() == 7) {
-                List<SimpleMatrix> fms =
-                    spTransformer.calculateEpipolarProjectionFor7Points(
-                    inliersLeftXY, inliersRightXY);
-                if (fms == null || fms.isEmpty()) {
-                    return null;
-                }
-                finalFM = fms.get(0);
-            } else {
-                finalFM =
-                    spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
-                    inliersLeftXY, inliersRightXY);
+        
+        EpipolarTransformationFit consensusFit = null;
+        
+        if (inliersRightXY.numCols() == 7) {
+            
+            List<SimpleMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
+                inliersLeftXY, inliersRightXY);
+            if (fms == null || fms.isEmpty()) {
+                return null;
             }
-
-            //fit against all because the new fit may be slighty different
-            finalFit = spTransformer.evaluateFitForAlreadyMatched(finalFM,
-                matchedLeftXY, matchedRightXY, tolerance);
-
+            EpipolarTransformationFit fit = null;
+            for (SimpleMatrix fm : fms) {
+                EpipolarTransformationFit fitI = 
+                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                        inliersLeftXY, inliersRightXY, tolerance);
+                if (fitI.isBetter(fit)) {
+                    fit = fitI;
+                }
+            }
+            consensusFit = fit;
+            
+        } else {
+            
+            SimpleMatrix fm = 
+                spTransformer.calculateEpipolarProjectionForPerfectlyMatched(
+                inliersLeftXY, inliersRightXY);
+            
+            EpipolarTransformationFit fit = 
+                StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
+                inliersLeftXY, inliersRightXY, tolerance);
+            
+            consensusFit = fit;
         }
         
-        for (Integer idx : finalFit.getInlierIndexes()) {
-            int idxInt = idx.intValue();
+        for (Integer index : consensusFit.getInlierIndexes()) {
+            int idx = index.intValue();
             outputLeftXY.add(
-                (float)matchedLeftXY.get(0, idxInt),
-                (float)matchedLeftXY.get(1, idxInt));
+                (float)inliersLeftXY.get(0, idx),
+                (float)inliersLeftXY.get(1, idx));
             outputRightXY.add(
-                (float)matchedRightXY.get(0, idxInt),
-                (float)matchedRightXY.get(1, idxInt));
+                (float)inliersRightXY.get(0, idx),
+                (float)inliersRightXY.get(1, idx));
         }
-
+        
         log.info("nIter=" + nIter);
 
-        log.info("best fit from 7-point: " + bestFit.toString());
+        log.info("final fit: " + consensusFit.toString());
 
-        log.info("final fit: " + finalFit.toString());
-
-        return finalFit;
+        return consensusFit;
     }
 
-    boolean fitIsBetter(StereoProjectionTransformerFit bestFit,
-        StereoProjectionTransformerFit compareFit) {
-
-        if (compareFit == null) {
-            return false;
-        }
-        if (bestFit == null) {
-            return true;
-        }
-
-        long nMatches = compareFit.getNMatches();
-
-        if (nMatches > bestFit.getNMatches()) {
-
-            return true;
-
-        } else if (nMatches == bestFit.getNMatches()) {
-
-            if (!Double.isNaN(compareFit.getMeanDistance()) && (
-                compareFit.getMeanDistance()
-                < bestFit.getMeanDistance())) {
-
-                return true;
-
-            } else if (compareFit.getMeanDistance()
-                == bestFit.getMeanDistance()) {
-
-                if (compareFit.getStDevFromMean()< bestFit.getStDevFromMean()) {
-
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private boolean hasConverged(StereoProjectionTransformerFit bestFit) {
-        if (bestFit == null) {
-            return false;
-        }
-        
-        double limit = 0.2;
-
-        if ((bestFit.getMeanDistance() < limit) && bestFit.getStDevFromMean()
-            < limit) {
-            return true;
-        }
-        return false;
-    }
 }

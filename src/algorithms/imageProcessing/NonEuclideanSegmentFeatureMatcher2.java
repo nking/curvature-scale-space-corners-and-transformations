@@ -1,27 +1,21 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * create lists of singly matched points between 2 images.
- * It uses the criteria that matches are discarded if a point has a second
- * best match whose SSD is within 0.8*SSD of best match.
+ * create lists of possibly degenerately matched points between 2 images.
+ * It uses the cosine similarity of the descriptors along with a threshold
+ * of 0.95 to keep matches above the threshold even if there are more than
+ * one.
  * 
  * @author nichole
  */
-public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
+public class NonEuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
     
-    /**
-     *
-     * @param img1 the first image holding objects for which a Euclidean
-     * transformation is found that can be applied to put it in
-     * the same scale reference frame as image2.
-     * @param img2 the second image representing the reference frame that
-     * image1 is transformed to using the resulting parameters,
-     * @param settings
-     */
-    public NonEuclideanSegmentFeatureMatcher(ImageExt img1, ImageExt img2, 
+    public NonEuclideanSegmentFeatureMatcher2(ImageExt img1, ImageExt img2, 
         FeatureMatcherSettings settings) {
 
         super(img1, img2, settings);
@@ -64,48 +58,37 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
         List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
             type, useBinned);
         
-        boolean matchCurveToCurve = true;
+        List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
+        List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
+        for (int i = 0; i < corners1List.size(); ++i) {
+            corners1.addAll(corners1List.get(i));
+        }
+        for (int i = 0; i < corners2List.size(); ++i) {
+            corners2.addAll(corners2List.get(i));
+        }
          
         int dither = 1;
         
         List<FeatureComparisonStat> stats;
         
-        if (matchCurveToCurve) {
+        CosineSimilarityCornerMatcher<CornerRegion> matcher = 
+            new CosineSimilarityCornerMatcher<CornerRegion>(dither);
         
-            CurveToCurveCornerMatcher<CornerRegion> matcher = 
-                new CurveToCurveCornerMatcher<CornerRegion>(dither);
-        
-            boolean matched = matcher.matchCorners(f1, f2, 
-                corners1List, corners2List, img1, img2, binFactor1, binFactor2);
+        boolean matched = matcher.matchCorners(f1, f2, 
+            corners1, corners2, img1, img2);
 
-            if (!matched) {
-                return false;
-            }
-            
-            stats = matcher.getSolutionStats();
-
-        } else {
-            
-            List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
-            List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
-            for (int i = 0; i < corners1List.size(); ++i) {
-                corners1.addAll(corners1List.get(i));
-            }
-            for (int i = 0; i < corners2List.size(); ++i) {
-                corners2.addAll(corners2List.get(i));
-            }
-        
-            CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
-        
-            boolean matched = matcher.matchCorners(f1, f2, corners1, corners2, 
-                img1, img2, binFactor1, binFactor2);
-            
-            if (!matched) {
-                return false;
-            }
-                
-            stats = matcher.getSolutionStats();
+        if (!matched) {
+            return false;
         }
+        
+        Map<PairInt, List<PairInt>> matched1Matched2 = matcher.getMatched1Matched2();
+        Map<PairInt, List<FeatureComparisonStat>> solutionStats0
+            = matcher.getSolutionStats();
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        
+        /*
+    use a ransac solver that chooses from a degenerate matched list
         
         if (stats.isEmpty()) {
             return false;
@@ -119,7 +102,7 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
         
         copyToInstanceVars(stats);
                 
-        return true;
+        return true;*/
     }
     
 }

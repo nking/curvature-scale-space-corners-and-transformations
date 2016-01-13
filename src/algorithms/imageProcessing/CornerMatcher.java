@@ -1,14 +1,15 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.util.MiscStats;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
 /**
- *
+ * create lists of singly matched points between 2 images.
+ * It uses the criteria that matches are discarded if a point has a second
+ * best match whose SSD is within 0.8*SSD of best match.
  * @author nichole
  */
 public class CornerMatcher<T extends CornerRegion> {
