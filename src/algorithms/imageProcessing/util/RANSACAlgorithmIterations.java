@@ -145,6 +145,15 @@ public class RANSACAlgorithmIterations {
         
         The number of all point pairs is the multiplicity * nPoints
         (or alternatively, can be given the total number including multiplicity).
+      
+        Using the sample example, adding a multiplicity of '2' to each point,
+        the number of all point pairs is 2 * nPoints = 10.
+        the number of possible combinations is 10*9./2 = 45.
+        The number of true samples hasn't changed and that is still 3.
+        The pSample then must be 3./45. = 0.067.
+        so the multiply mapped pSample is pSample_singly_matched*nComb_singlyMatched/nComb_multiplyMatched
+          
+        So the pSample for the degenerately mapped can be estimated using:
         
         The number of combinations for the multiply matched is 
             nMultiplyMatched!/(k!(nMultiplyMatched-k)!)
@@ -152,8 +161,8 @@ public class RANSACAlgorithmIterations {
         The multiply mapped pSample is
             pSample_singly_matched * nComb_singlyMatched / nComb_multiplyMatched
         
-        For the example above, nComb_multiplyMatched = (10*9)/2. = 45.
-           so pSample_multiply_matched = 0.3 * (10./45.) = 0.067
+        For the example above,
+            pSample_multiply_matched = 0.3 * (10./45.) = 0.067
         
         A better determination would use the real integrated CDF of the
         inhomogeneous distribution, but this number is used to quickly 
