@@ -723,6 +723,34 @@ public class MiscMath {
     }
     
     /**
+     * compute n!/k!(n-k)!
+     *
+     * @param n
+     * @param k
+     * @return
+     */
+    public static long computeNDivKTimesNMinusK(int n, int k) {
+
+        if (n == k) {
+            return 1;
+        }
+        
+        if (k > 12) {
+            return computeNDivKTimesNMinusKBigInteger(n, k);
+        }
+
+        double result = 1;
+        for (int i = n; i > (n-k); i--) {
+            result *= i;
+        }
+        double divisor = factorial(k);
+        
+        result = result/divisor;
+        
+        return Math.round(result);
+    }
+    
+    /**
      * compute n!
      *
      * @param n
@@ -1992,6 +2020,25 @@ public class MiscMath {
         }
         
         return new int[]{maxX, maxY};
+    }
+
+    protected static long computeNDivKTimesNMinusKBigInteger(int n, int k) {
+        
+        if (n == k) {
+            return 1;
+        }
+        
+        BigInteger result = BigInteger.ONE;
+        for (int i = n; i > (n-k); i--) {
+            BigInteger m = new BigInteger(MiscMath.writeToBigEndianBytes(i));
+            result = result.multiply(m);
+        }
+        
+        BigInteger divisor = factorialBigInteger(k);
+        
+        result = result.divide(divisor);
+
+        return result.longValueExact();
     }
 
 }

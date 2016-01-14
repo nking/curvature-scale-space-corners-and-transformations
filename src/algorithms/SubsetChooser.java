@@ -59,7 +59,7 @@ public class SubsetChooser {
 
         count = 1;
 
-        np = MiscMath.computeNDivNMinusK(n, k)/MiscMath.factorial(k);
+        np = MiscMath.computeNDivKTimesNMinusK(n, k);
 
         if (n < 64) {
             

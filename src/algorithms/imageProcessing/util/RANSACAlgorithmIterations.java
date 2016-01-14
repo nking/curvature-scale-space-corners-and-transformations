@@ -75,17 +75,42 @@ public class RANSACAlgorithmIterations {
     public long estimateNIterFor99PercentConfidence(
         int nPoints, int sampleSize, double expectedFractionTruePoints) {
         
+        if (sampleSize < 1) {
+            throw new IllegalArgumentException("sampleSize must be > 0");
+        }
+        if (nPoints < 1 || (nPoints > 1789)) {
+            throw new IllegalArgumentException("nPoints must be a positive number < 1790");
+        }
+        if (expectedFractionTruePoints < 0.0000001 || (expectedFractionTruePoints > 1.0)) {
+            throw new IllegalArgumentException(
+            "expectedFractionTruePoints must be larger than 0 and less than 1");
+        }
+        
         double pSample = calculateTrueSampleProbability(nPoints, sampleSize, 
             expectedFractionTruePoints);
         
+        // pSample must be larger than approx 1e-16 and <= 0.99
+        
         long nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
-                
+           
         return nIter;
     }
     
     public long estimateNIterFor99PercentConfidenceDegenerate(
         int nPoints, int nPointsIncludingDegenerate, int sampleSize, 
         double expectedFractionTruePoints) {
+        
+        if (sampleSize < 1) {
+            throw new IllegalArgumentException("sampleSize must be > 0");
+        }
+        if (nPoints < 1 || (nPoints > 1789) ) {
+            throw new IllegalArgumentException("nPoints must be a positive " 
+                + " number < 1790 or even smaller considering multiplicity");
+        }
+        if (expectedFractionTruePoints < 0.0000001 || expectedFractionTruePoints > 1.0) {
+            throw new IllegalArgumentException(
+            "expectedFractionTruePoints must be larger than 0 and less than 1");
+        }
         
         double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, 
             nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
@@ -175,11 +200,10 @@ public class RANSACAlgorithmIterations {
         double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, 
             expectedFractionTruePoints);
         
-        double nCombinationsSingle = MiscMath.computeNDivNMinusK(nPoints, 
-            sampleSize)/MiscMath.factorial(sampleSize);
+        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);
         
-        double nCombinationsMultiple = MiscMath.computeNDivNMinusK(nAllMultiplicity, 
-            sampleSize)/MiscMath.factorial(sampleSize);
+        double nCombinationsMultiple = 
+            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);
         
         double pSampleMultiple = pSampleSingle * 
             (nCombinationsSingle/nCombinationsMultiple);
