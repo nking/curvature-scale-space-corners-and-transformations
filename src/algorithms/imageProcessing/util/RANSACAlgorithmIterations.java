@@ -104,6 +104,55 @@ public class RANSACAlgorithmIterations {
             throw new IllegalArgumentException("sampleSize must be > 0");
         }
         if (nPoints < 1 || (nPoints > 1789) ) {
+            throw new IllegalArgumentException("nPoints must be a positive " +
+            " number < 1790 or even smaller considering multiplicity");
+        }
+        if (expectedFractionTruePoints < 0.0000001 || expectedFractionTruePoints > 1.0) {
+            throw new IllegalArgumentException(
+            "expectedFractionTruePoints must be larger than 0 and less than 1");
+        }
+        if (nPoints <= sampleSize) {
+            throw new IllegalArgumentException("nPoints must be larger than sampleSize");
+        }
+        
+        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, 
+            nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
+
+        long nIter;
+        
+        if (pSample == 0) {
+            return Long.MAX_VALUE;
+        } else if (pSample < 1E-16) {
+            // return naive estimate
+            return Math.round(1./pSample);
+        } else {
+            nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
+        }
+        
+        return nIter;
+    }
+    
+    /**
+     * calculate the probability of drawing an all 'T' sample of sampleSize 
+     * points from a universe of nPoints of which 
+     * (expectedFractionTruePoints*nPoints) are 'T'.  
+     * The calculation is drawing each point without replacement,
+     * that is (nTruePts/nPts) * ((nTrue-1)/(nPoints-1)) * ((nTrue-2)/(nPoints-2)) ...
+     * 
+     * If nTruePts is less than sampleSize (due to small expectedFractionTruePoints
+     * for example), the calculation becomes 
+     * @param nPoints
+     * @param sampleSize
+     * @param expectedFractionTruePoints
+     * @return 
+     */
+    public double calculateTrueSampleProbability(int nPoints, int sampleSize,
+        double expectedFractionTruePoints) {
+        
+        if (sampleSize < 1) {
+            throw new IllegalArgumentException("sampleSize must be > 0");
+        }
+        if (nPoints < 1 || (nPoints > 1789) ) {
             throw new IllegalArgumentException("nPoints must be a positive " 
                 + " number < 1790 or even smaller considering multiplicity");
         }
@@ -111,23 +160,26 @@ public class RANSACAlgorithmIterations {
             throw new IllegalArgumentException(
             "expectedFractionTruePoints must be larger than 0 and less than 1");
         }
-        
-        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, 
-            nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
-        
-        long nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;
-                
-        return nIter;
-    }
-    
-    public double calculateTrueSampleProbability(int nPoints, int sampleSize,
-        double expectedFractionTruePoints) {
+        if (nPoints <= sampleSize) {
+            throw new IllegalArgumentException("nPoints must be larger than sampleSize");
+        }
         
         double nTruePoints = nPoints * expectedFractionTruePoints;
         
         double factor = 1;
-        for (int i = 0; i < sampleSize; ++i) {
-            factor *= (double)(nTruePoints - i)/(double)(nPoints - i);
+        
+        if (nTruePoints >= sampleSize) {        
+            for (int i = 0; i < sampleSize; ++i) {
+                factor *= (double)(nTruePoints - i)/(double)(nPoints - i);
+            }
+        } else {
+            //know that the number is still smaller than (1./nPoints)^sampleSize.
+            //For nTruePoints of 1, looks like (1./nPoints)*(1./(nPoints-sampleSize))^(sampleSize-1)
+            for (int i = 0; i < (int)nTruePoints; ++i) {
+                factor *= (double)(nTruePoints - i)/(double)(nPoints - i);
+            }
+            int pow = (sampleSize - (int)nTruePoints);
+            factor *= Math.pow((1./(nPoints - sampleSize)), pow);
         }
         
         return factor;
@@ -207,7 +259,7 @@ public class RANSACAlgorithmIterations {
         
         double pSampleMultiple = pSampleSingle * 
             (nCombinationsSingle/nCombinationsMultiple);
-        
+
         return pSampleMultiple;
     }
 

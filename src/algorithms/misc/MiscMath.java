@@ -8,7 +8,10 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -723,7 +726,10 @@ public class MiscMath {
     }
     
     /**
-     * compute n!/k!(n-k)!
+     * compute n!/k!(n-k)!.  Note that if n or k are larger than 12,
+     * computeNDivKTimesNMinusKBigInteger is used and in that case,
+     * if the result is larger than Long.MAX_VALUE, LONG.MAX_VALUE is
+     * returned.
      *
      * @param n
      * @param k
@@ -735,7 +741,7 @@ public class MiscMath {
             return 1;
         }
         
-        if (k > 12) {
+        if (k > 12 || n > 12) {
             return computeNDivKTimesNMinusKBigInteger(n, k);
         }
 
@@ -2022,23 +2028,54 @@ public class MiscMath {
         return new int[]{maxX, maxY};
     }
 
+    /**
+     * computes n!/(k!(n-k)!) and if result overflows a long, returns Long.MAX_VALUE.
+     * 
+     * @param n
+     * @param k
+     * @return 
+     */
     protected static long computeNDivKTimesNMinusKBigInteger(int n, int k) {
         
-        if (n == k) {
-            return 1;
+        BigInteger result = computeNDivKTimesNMinusKBigIntegerExact(n, k);
+        
+        // work around for failure of result.compareTo(BigInteger.valueOf(Long.MAX_VALUE))
+        if (result.bitLength() > 62) {
+            return Long.MAX_VALUE;
         }
         
-        BigInteger result = BigInteger.ONE;
-        for (int i = n; i > (n-k); i--) {
-            BigInteger m = new BigInteger(MiscMath.writeToBigEndianBytes(i));
-            result = result.multiply(m);
-        }
-        
-        BigInteger divisor = factorialBigInteger(k);
-        
-        result = result.divide(divisor);
-
         return result.longValueExact();
+    }
+    
+    /**
+     * 
+     * @param n
+     * @param k
+     * @return 
+     */
+    protected static BigInteger computeNDivKTimesNMinusKBigIntegerExact(int n, int k) {
+        
+        if (n == k) {
+            return BigInteger.ONE;
+        }
+        
+        BigDecimal num = BigDecimal.ONE;
+        for (int i = n; i > (n - k); --i) {
+            BigDecimal m = new BigDecimal(Integer.toString(i));
+            num = num.multiply(m);
+        }
+        
+        BigDecimal divisor = BigDecimal.ONE;
+        for (int i = 2; i <= k; i++) {
+            BigDecimal m = new BigDecimal(Integer.toString(i));
+            divisor = divisor.multiply(m);
+        }
+                
+        num = num.divide(divisor, RoundingMode.UP);
+        
+        num = num.round(MathContext.DECIMAL64);
+        
+        return num.toBigInteger();
     }
 
 }

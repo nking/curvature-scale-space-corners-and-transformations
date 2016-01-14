@@ -6,13 +6,17 @@ import algorithms.misc.MiscMath;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 public class CountingTest extends TestCase {
 
-    public void test0() throws Exception {
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
+    public void est0() throws Exception {
         
         /*
         a quick test of expected number of samples composed of all true matches
@@ -86,19 +90,19 @@ public class CountingTest extends TestCase {
             pSample *= ((double)knownTruePoints.size() - i)/(double)(nPoints - i);
         }
         
-        System.out.println("nPoints=" + nPoints + " k=" + k + " ratio=" + ratio);
-        System.out.println("(nTrue/nPoints)*((nTrue-1)/(nPoints-1))**((nTrue-2)/(nPoints-2))..." + pSample);
-        System.out.println("nComb=" + nComb.toString());
-        System.out.println("nSamplesTrue=" + nSamplesTrue.toString());
+        log.info("nPoints=" + nPoints + " k=" + k + " ratio=" + ratio);
+        log.info("(nTrue/nPoints)*((nTrue-1)/(nPoints-1))**((nTrue-2)/(nPoints-2))..." + pSample);
+        log.info("nComb=" + nComb.toString());
+        log.info("nSamplesTrue=" + nSamplesTrue.toString());
         
         BigDecimal nExpectedTrueSamples = new BigDecimal(nComb);
         BigDecimal nExpectedTrueSamples1 = nExpectedTrueSamples.multiply(new BigDecimal(Double.toString(pSample)));
         
-        System.out.println("nExpectedTrueSamples1=" + nExpectedTrueSamples1.toString());
+        log.info("nExpectedTrueSamples1=" + nExpectedTrueSamples1.toString());
         
         BigDecimal nSamplesTrueD = new BigDecimal(nSamplesTrue);
         BigDecimal expectedDivFound1 = nExpectedTrueSamples1.divide(nSamplesTrueD, RoundingMode.HALF_UP);
-        System.out.println("true samples expected/found="
+        log.info("true samples expected/found="
             + " " + expectedDivFound1.toString());
         
         assertTrue(Math.abs(expectedDivFound1.doubleValue() - 1.0) < 0.05);
@@ -114,7 +118,7 @@ public class CountingTest extends TestCase {
         RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
         long nIter99 = nIterC.estimateNIterFor99PercentConfidence(nPoints, k, ratio);
                 
-        System.out.println("nIterNaive=" + nIterNaive + " nIter99=" + nIter99
+        log.info("nIterNaive=" + nIterNaive + " nIter99=" + nIter99
             + " nIter99PercentConfidence=" + nIter99PercentConfidence);
     }
     
@@ -128,19 +132,19 @@ public class CountingTest extends TestCase {
         
         double factor1 = nIterC.calculateTrueSampleProbability(nPoints, k, ratio);
         
-        System.out.println("pSample=" + factor1);
+        log.info("pSample=" + factor1);
                 
         int nIter = 50;
         double prob = Math.pow(1. - factor1, nIter);
-        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        log.info("nIter=" + nIter + " prob=" + (1.-prob));
         
         nIter = 100;
         prob =  Math.pow(1. - factor1, nIter);
-        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        log.info("nIter=" + nIter + " prob=" + (1.-prob));
         
         nIter = 700;
         prob = Math.pow(1. - factor1, nIter);
-        System.out.println("nIter=" + nIter + " prob=" + (1.-prob));
+        log.info("nIter=" + nIter + " prob=" + (1.-prob));
         
     }
 
@@ -179,7 +183,90 @@ public class CountingTest extends TestCase {
         also make an example for that.
         */
         
-        //TODO: add a test for this
+        //since the concept is sound, will test over the range of valid
+        //  arguments looking for numerical errors 
+        
+        RANSACAlgorithmIterations nIterC = new RANSACAlgorithmIterations();
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        log.info("SEED=" + seed);
+        sr.setSeed(seed);
+        
+        /*
+        k must always be <= nPoints.
+        
+        since k will always be 7 in this context, will not test for large k
+        
+        therefore, nPoints must be >= 7.  largest expected nPoints would be
+        a few hundred for reasonable setting.  the number of combinations
+        is expressed as long, so the maximum number of nPoints (if multiplicity is 1)
+        would be 
+          ((n_max*(n_max-1)*(n_max-2)*(n_max-3)*(n_max-4)*(n_max-5)*(n_max-6))/6300.) < (2^63 - 1)
+        so a maximum of 1789
+        
+        ratio should be > 0 and <= 1
+        
+        multiplicity isn't expected to be larger than 10 ever (hard wired in
+        CosineSimilarityCornerMatcher which I keep editing, but could consider
+        a single case of multiplicity of some fraction of nPoints, maybe 0.2.
+        */
+        
+        int nTests = 100;
+        
+        for (int i = 0; i < nTests; ++i) {
+            
+            long nIter = 0;
+            int k=-1; 
+            int nPoints = -1;
+            int nMultiplicity = -1; 
+            int nAll = -1;;
+            double ratio = -1;
+            try {
+                k = sr.nextInt(10) + 7;
+
+                nPoints = sr.nextInt(300) + k + 1;
+
+                ratio = sr.nextDouble() + 0.0001;
+
+                nMultiplicity = sr.nextInt(9) + 1;
+
+                nAll = nPoints * nMultiplicity;
+
+                nIter = nIterC.estimateNIterFor99PercentConfidenceDegenerate(
+                    nPoints, nAll, k, ratio);
+                
+            } catch (Throwable t) {
+                log.info("k=" + k + " nPoints=" + nPoints + " ratio=" + ratio + 
+                    " nMultiplicity=" + nMultiplicity + " nAll=" + nAll +
+                    " nIter=" + nIter);
+                log.severe(t.getMessage());
+                t.printStackTrace();
+                fail(t.getMessage());
+            }
+            
+            if (nIter < 0) {
+                log.info("k=" + k + " nPoints=" + nPoints + " ratio=" + ratio + 
+                    " nMultiplicity=" + nMultiplicity + " nAll=" + nAll +
+                    " nIter=" + nIter);
+            }
+            
+            assertTrue(nIter > 0);            
+        }
+        
+        int k = 7;
+        int nPoints = 1780;
+        int nAll = nPoints;
+        double ratio = 0.5;
+        boolean noErrors = true;
+        try {
+            long nIter = nIterC.estimateNIterFor99PercentConfidenceDegenerate(
+                nPoints, nAll, k, ratio);            
+            assertTrue(nIter > 0);
+        } catch (Throwable t) {
+            noErrors = false;
+        }
+        assertTrue(noErrors);
         
     }
 }
