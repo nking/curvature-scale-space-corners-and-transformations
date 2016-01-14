@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.SubsetChooser;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;

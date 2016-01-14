@@ -36,6 +36,8 @@ public class SubsetChooser {
      * @param n the number of indexes that the selector will choose from
      * @param k the subset size of selected indexes.  the maximum value currently
      * accepted is 12.
+     * @throws ArithmeticException thrown when number of combinations is out of 
+     * range of type long
      */
     public SubsetChooser(int n, int k) {
         
@@ -59,7 +61,7 @@ public class SubsetChooser {
 
         count = 1;
 
-        np = MiscMath.computeNDivKTimesNMinusK(n, k);
+        np = MiscMath.computeNDivKTimesNMinusKExact(n, k);
 
         if (n < 64) {
             

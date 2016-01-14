@@ -906,42 +906,86 @@ public class StereoProjectionTransformer {
         */
         double scaleFactor = Math.sqrt(2)/mean;
 
-        /*
-        x_1_0  x_1_1  x_1_2  x_1_3
-        y_1_0  y_1_1  y_1_2  y_1_3
-        1      1      1      1
-
-        t00     t01(=0)  t02
-        t10(=0) t11      t12
-        0        0        1
-
-        x_1_0*t00 + y_1_0*t01 + 1*t02 = (x_1_0 - cX) * s = x_1_0 * s - cX * s
-                         0
-             => t01 = 0
-             => t00 = scaleFactor
-             => t02 = -scaleFactor * centroidXY[0]
-
-        x_1_0*t10 + y_1_0*t11 + 1*t12 = (y_1_0 - cY) * s = y_1_0 * s - cY * s
-            0
-             => t10 = 0
-             => t11 = scaleFactor
-             => t12 = -scaleFactor * centroidXY[1]
-        */
-
-        double[][] t = new double[3][];
-        t[0] = new double[]{scaleFactor, 0,           -scaleFactor * centroidXY[0]};
-        t[1] = new double[]{0,           scaleFactor, -scaleFactor * centroidXY[1]};
-        t[2] = new double[]{0,           0,           1};
-        SimpleMatrix tMatrix = new SimpleMatrix(t);
-
+        SimpleMatrix tMatrix = createScaleTranslationMatrix(scaleFactor, 
+            centroidXY[0], centroidXY[1]);
+        
         SimpleMatrix normXY = new SimpleMatrix(MatrixUtil.dot(tMatrix, xy));
-
+        
         NormalizedXY normalizedXY = new NormalizedXY();
         normalizedXY.setCentroidXY(centroidXY);
         normalizedXY.setNormMatrix(tMatrix);
         normalizedXY.setXy(normXY);
 
         return normalizedXY;
+    }
+    
+    /**
+     * create a matrix to be applied on the left side of the dot operator
+     * with a matrix of points to transform the points by scale and translation.
+     * @param scale
+     * @param centroidX
+     * @param centroidY
+     * @return 
+     */
+    protected SimpleMatrix createScaleTranslationMatrix(double scale, 
+        double centroidX, double centroidY) {
+        
+        /*
+        scale, rotate, then translate.
+        let xc = x centroid
+        let yc = y centroid
+        let sX = scaleFactor in x
+        let sY = scaleFactor in y
+            here, sX = sY
+        let r = rotation 
+            here, rotation = 0, so math.cos(0)=1, math.sin(0)=0
+        let tX = x translation
+            here, tX = -xc*sX
+        let tY = y translation
+            here, tY = -yc*sY
+        
+        transformation equations for x are for translating the points to the 
+        centroid, then scaling them
+           x_transformed = xc*s + ((x - xc)*s) + tX = x*s - xc*s
+           y_transformed = yc*s + ((y - yc)*s) + tY = y*s - yc*s
+        
+        matrix for xy matrix has format xy[row][col] 
+            where row=0 is x and row=1 is y, and row=2 is placeholder of value 1
+        x[0]  x[1]  x[2]  x[3]
+        y[0]  y[1]  y[2]  y[3]
+        1      1      1     1
+        
+        Formatting the scale and translation into a matrix that can be used
+        with dot operator to transform the points.
+        Because the xy points have the x and y along rows, this new transformation
+        matrix must be used on the left side of the dot operation.
+        
+           t dot xy = tranformed xy
+
+        t00     t01      t02
+        t10     t11      t12
+        0        0        1
+        
+        t00*x[0] + t01*y[0] + t02*1 = x[0]*s - xc*s
+                         0
+             => t00 = s
+             => t01 = 0
+             => t02 = -xc*s
+
+        t10*x[0] + t11*y[0] + t12*1 = y[0]*s - yc*s      
+            0
+             => t10 = 0
+             => t11 = s
+             => t12 = -yc*s
+        */
+
+        double[][] t = new double[3][];
+        t[0] = new double[]{scale,       0,     -centroidX*scale};
+        t[1] = new double[]{0,           scale, -centroidY*scale};
+        t[2] = new double[]{0,           0,           1};
+        SimpleMatrix tMatrix = new SimpleMatrix(t);
+
+        return tMatrix;
     }
 
     /**

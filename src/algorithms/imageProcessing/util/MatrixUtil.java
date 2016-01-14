@@ -266,30 +266,24 @@ public class MatrixUtil {
         for (int i = 0; i < cRows; i++) {
             m[i] = new double[cCols];
         }
-        /*
-        0     1     0     2  1
-        1000  100  10     3  0
-                          4  0
         
-        0*2    + 1*3   + 0*4     0*1    +  1*0   +  0*0
-        1000*2 + 100*3 + 10*4    1000*1 +  100*0 + 10*0
+        /*
+        t00  t01  t02       x1  x2  x3  x4
+        t10  t11  t12       y1  y2  y3  y4
+        t20  t21  t22       1    1   1   1
+        
+        row=0, col=0:nCols0  times and plus col=0, row=0:nRows1 --> stored in row, row + (cAdd=0)
+        row=1, col=0:nCols0  times and plus col=0, row=0:nRows1 --> stored in row, row + (cAdd=0)
+                
+        row=0, col=0:nCols0  times and plus col=(cAdd=1), row=0:nRows1 --> stored in row, row + (cAdd=0)
         */
-                
+        
         for (int colAdd = 0; colAdd < m2.numCols(); colAdd++) {
-            for (int cRow = 0; cRow < cRows; cRow++) {
+            for (int row = 0; row < m1.numRows(); ++row) {
                 for (int col = 0; col < m1.numCols(); col++) {
-                
-                    // a[0][0]  b[0][0]
-                    // a[0][1]  b[1][0]
-                    // a[0][2]  b[2][0]
-                    //
-                    // a[1][0]  b[0][0]
-                    //
-                    // a[1][0]  b[0][0]
-                    //
-                    double a = m1.get(cRow, col);
+                    double a = m1.get(row, col);
                     double b = m2.get(col, colAdd);
-                    m[cRow][colAdd] += (a * b);
+                    m[row][colAdd] += (a * b);
                 }
             }
         }

@@ -757,6 +757,38 @@ public class MiscMath {
     }
     
     /**
+     * compute n!/k!(n-k)!.  Note that if n or k are larger than 12,
+     * computeNDivKTimesNMinusKBigIntegerExact is used and in that case,
+     * if the result is larger than Long.MAX_VALUE an exception is thrown.
+     *
+     * @param n
+     * @param k
+     * @return
+     * @throws ArithmeticException thrown when result is out of range of type long
+     */
+    public static long computeNDivKTimesNMinusKExact(int n, int k) {
+
+        if (n == k) {
+            return 1;
+        }
+        
+        if (k > 12 || n > 12) {
+            BigInteger result = computeNDivKTimesNMinusKBigIntegerExact(n, k);
+            return result.longValueExact();
+        }
+
+        double result = 1;
+        for (int i = n; i > (n-k); i--) {
+            result *= i;
+        }
+        double divisor = factorial(k);
+        
+        result = result/divisor;
+        
+        return Math.round(result);
+    }
+    
+    /**
      * compute n!
      *
      * @param n
@@ -2048,10 +2080,11 @@ public class MiscMath {
     }
     
     /**
-     * 
+     * compute n!/k!(n-k)!
      * @param n
      * @param k
      * @return 
+     * @throws ArithmeticException thrown when result is out of range of type long
      */
     protected static BigInteger computeNDivKTimesNMinusKBigIntegerExact(int n, int k) {
         

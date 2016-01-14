@@ -1,10 +1,13 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.StereoProjectionTransformer.NormalizedXY;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.awt.Color;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -21,7 +24,69 @@ public class StereoProjectionTransformerTest extends TestCase {
     public StereoProjectionTransformerTest() {
     }
     
-    public void testCalcEpipolar() throws Exception {
+    public void testCreateScaleTranslationMatrix() throws Exception {
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        log.info("SEED=" + seed);
+        sr.setSeed(seed);
+        
+        StereoProjectionTransformer sTransformer = new StereoProjectionTransformer();
+        
+        int w = 300;
+        int h = 400;
+        double scale = Math.sqrt(2.)/150.;
+        double centroidX = (w/2);
+        double centroidY = (h/2);
+        
+        SimpleMatrix tMatrix = sTransformer.createScaleTranslationMatrix(scale, 
+            centroidX, centroidY);
+        
+        double sqrtTwo = Math.sqrt(2);
+        /*
+        x_transformed = xc*s + ((x - xc)*s) + tX = x*s - xc
+        y_transformed = yc*s + ((y - yc)*s) + tY = y*s - yc
+        */
+        int nTests = 1;
+        int nPoints = 100;
+        SimpleMatrix xy = new SimpleMatrix(3, nPoints);
+        double[][] xyExpectedTr = new double[2][nPoints];
+        for (int j = 0; j < 2; ++j) {
+            xyExpectedTr[j] = new double[nPoints];
+        }
+        for (int i = 0; i < nTests; ++i) {
+            for (int j = 0; j < nPoints; ++j) {
+                int x = sr.nextInt(w);
+                int y = sr.nextInt(h);
+                double xt = (x*scale) + -centroidX*scale;
+                double yt = (y*scale) + -centroidY*scale;
+                xy.set(0, j, x);
+                xy.set(1, j, y);
+                xy.set(2, j, 1);
+                xyExpectedTr[0][j] = xt;
+                xyExpectedTr[1][j] = yt;
+                //System.out.println(
+                //    String.format("(%.5f, %.5f) --> (%.5f, %.5f)", 
+                //    (float)x, (float)y, (float)xt, (float)yt));
+            }
+            
+            double[][] xyTransformed = MatrixUtil.dot(tMatrix, xy);
+        
+            double avgDist = 0;
+            for (int j = 0; j < nPoints; ++j) {
+                double xt = xyTransformed[0][j];
+                double yt = xyTransformed[1][j];
+                assertTrue(Math.abs(xt - xyExpectedTr[0][j]) < 0.01);
+                assertTrue(Math.abs(yt - xyExpectedTr[1][j]) < 0.01);
+                avgDist += Math.sqrt(xt*xt + yt*yt);
+            }
+            avgDist /= (double)nPoints;
+            assertTrue(avgDist <= sqrtTwo);
+        }
+           
+    }
+    
+    public void estCalcEpipolar() throws Exception {
 
         String fileName1 = "checkerboard_01.jpg";
         String fileName2 = "checkerboard_02.jpg";
