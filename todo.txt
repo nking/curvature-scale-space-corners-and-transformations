@@ -1,9 +1,9 @@
--- create an interace for a model and evaluator and factory classes for
-   them.
+-- create an interface for a model and evaluator and factory classes for
+   them for use with ransac.
    -- wanting the RANSAC classes to be able to choose homology, that
       is euclidean or epipolar.
-      -- for tne ransac solver for multiplicity, need to be able to use a euclidean
-         model and evaluator.
+      -- for the ransac solver for multiplicity, need to be able to use a euclidean
+         model and evaluator as a choice.
          checkerboard tests are not solved well by epipolar, essentially due to the
          inability to evaluate point distances along the length of the epipolar lines..
          the solution tends to converge towards points along along a line in image 1
@@ -26,9 +26,9 @@
          points within a blob by curvature or a property indicating
          it's more unique. 
          -- a sampling function could be made to bias the selection
-          towards blobs which have more points, however, and in that
-          case, the statistics for calculating max iteration has to
-          be implemented.
+          towards blobs which have more points, however, a different
+          method for calculating the maximum number of iterations 
+          would need to be made.
     For the goal of finding a single euclidean transformation for
     2 images, this should be robust.  
        -- merton college image is good test.  it is large and has
@@ -36,25 +36,15 @@
           the current euclidean matcher tries all combinations, so
           does find the true solution, but its runtime is long.
 
-   details for quick implementation before refactoring all of these components
-   to better see choices and methods.
+   Details for quick implementation before refactoring all of these components
+   to better see choices and methods:
       EuclideanSegmentFeatureMatcher2
         -- contains the logic for creating the point lists and associating
            them w/ blobs and further removing difficult to localize points
            (which itself is not necessary for some types of points...corners
            created from canny edges or perimeters, for example).
-        --> would want to substitute 'BlobCornersEuclideanCalculator2'
-            with an implementation that uses ransac.
-            -- should be able to reuse 
-               for a quick look at this as a method,
-               but would prefer to implement evaluateWithMatchedLists
-               after a working version is in place.
-               -- using 'evaluateWithMatchedLists' produces a smaller list
-               of correspondence, so should consider following the solution
-               with a step to add more points.
-               (in more than one class have this step w/ canny edge corners
-               and a given euclidean transformation,
-               so should place that in its own class to reuse).
+        --> would want to create a switch for ransac or not, and use that where
+            BlobCornersEuclideanCalculator2 is created.
       (1) edit EuclideanSegmentFeatureMatcher2 to allow choice of ransac
           and add a switch to use that where BlobCornersEuclideanCalculator2 is
           constructed.
@@ -66,6 +56,12 @@
               so no need to use features again.)
               ** note, this same logic should be placed in the unimplemented 
                   BlobCornersEuclideanCalculator2.evaluateWithMatchedLists
+      (3) in more than one class, there exists logic for harvesting more points
+          to create a larger correspondence given the transformation solution.
+          should place this in its own class.
+          its the section of code at the end of the wrappers that creates
+          new canny edge corners, and uses given euclidean params to
+          match corners using features.
 
 -- consider alternate means of still finding the correct solution for checkerboard when best matches are false...
 
