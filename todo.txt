@@ -28,7 +28,7 @@
        -- merton college image is good test.  it is large and has
           many very good points associated w/ blobs.
           the current euclidean matcher tries all combinations, so
-          does find the true solution, but it's runtime is long.
+          does find the true solution, but its runtime is long.
 
 -- consider alternate means of still finding the correct solution for checkerboard when best matches are false...
 
