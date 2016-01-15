@@ -63,11 +63,13 @@ public class RANSACSolver {
             + matchedLeftXY.getN());
         }
 
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+        
         SimpleMatrix input1 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);
+            spTransformer.rewriteInto3ColumnMatrix(matchedLeftXY);
 
         SimpleMatrix input2 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
+            spTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
         
         return calculateEpipolarProjection(input1, input2,
             outputLeftXY, outputRightXY);

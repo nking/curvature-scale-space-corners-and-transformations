@@ -136,15 +136,17 @@ public class EpipolarSolver {
     }
 
     private void plotFit(EpipolarTransformationFit fit) {
+
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
         
         Image img1Cp = img1.copyImage();
         Image img2Cp = img2.copyImage();
 
         SimpleMatrix input1
-            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);
+            = spTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);
 
         SimpleMatrix input2
-            = StereoProjectionTransformer.rewriteInto3ColumnMatrix(solutionRightXY);
+            = spTransformer.rewriteInto3ColumnMatrix(solutionRightXY);
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
             double x = input1.get(0, ii);
@@ -158,8 +160,6 @@ public class EpipolarSolver {
             ImageIOHelper.addPointToImage((float) x2, (float) y2, img2Cp, 3,
                 255, 0, 0);
         }
-
-        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
 
         for (int ii = 0; ii < input2.numCols(); ii++) {
 
