@@ -217,11 +217,14 @@ public class StereoProjectionTransformerTest extends TestCase {
         int image1Height, int image2Width, int image2Height, String outfileNumber) 
         throws IOException {
 
+        StereoProjectionTransformer st = new
+            StereoProjectionTransformer();
+        
         SimpleMatrix input1 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(set1);
+            st.rewriteInto3ColumnMatrix(set1);
 
         SimpleMatrix input2 =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(set2);
+            st.rewriteInto3ColumnMatrix(set2);
 
         for (int ii = 0; ii < input1.numCols(); ii++) {
             double x = input1.get(0, ii);
