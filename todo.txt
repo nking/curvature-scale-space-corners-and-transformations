@@ -13,10 +13,9 @@
       need a clearer interface for seeing the choices for creating points
       and the choices for matching points and the choices for whether to 
       solve for epipolar or euclidean to make the final correspondence list.
-      this includes fixing the inverted paradigm of NonEuclideanSegmentFeatureMatcher2
-      too.
-   -- delay these refactorings until the next ransac variation for groups of points
-      is implemented (see next bullet)
+      this includes fixing the inverted paradigm of EpipolarSolver
+      too
+   -- implementing the refactoring before further changes to tidy up the classes.
 
 -- implement use of RANSAC for a pattern of groups of points.
    -- the creation of points uses 2nd derivatives and filter for

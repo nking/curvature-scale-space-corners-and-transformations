@@ -1,0 +1,35 @@
+a summary of the feature matchers before making an agile story and tasks
+from these.
+
+each of the matchers has these steps:
+
+(1) create points of interest and any associated data products
+    such as blobs or blob perimeters.
+
+    corner types:
+      -- segmentation + blob extraction + perimeter extraction
+         + corners of perimeters + optional addition of corners
+         by bisecting existing corners along their perimeters.
+      -- canny edges + corners
+      -- 2nd derivatives in the image for some number limit.
+
+    filters available for above corners, depending upon corner type:
+        -- filter for those w/o close 2nd best.
+        -- filter to remove those w/ eigenvalues suggesting not easy 
+           to localize (due to being on an edge, for example).  
+
+(2) optionally, create lists from the corners before homology based matching.
+    -- can associate the corners with blobs, making groups of corners.
+       (this is the default w/ blob based corners, and should
+       be an option for all others, but requires making the blobs
+       using segmentation as a separate step).
+    -- can make a list of the top k matches for each image1 corner
+       to image 2 corners using:
+       -- cosine similarity to filter out those w/ sim < 0.95
+          -- the top k matches by SSD are kept
+          -- * could implement top k by similarity value instead.
+    
+(3) the homology solvers take the point lists and solve for transformations
+    and then evaluate for best transformations.
+    the current matchers are:
+    -- 
