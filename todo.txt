@@ -1,96 +1,23 @@
--- feature matching
-   looking at the big picture of "feature matchers" to review what
-   have implemented and what needs to be implemented.
+-- consider alternate means of still finding the correct solution for checkerboard when best matches are false...
 
-   (1) CurveCornerEuclideanMatcher - done
-       given curve1 and curve2, finds the best euclidean transformation
-       between them if any.  uses features and greyscale image and gradient image.
-       this method is meant to be useful by many different larger matching patterns.
-   (2) the contour matcher - components exist
-       given curve1 and curve2 w/o greyscale image,
-       uses properties of curvature scale space to match and return
-       best euclidean transformation.
-       -- note that the current works on closed curves,
-          but a version could be made to work on partial contours
-          such as the available profiles of half dome - it has
-          very distinctive curves, but a different amount of them
-          in images.  stonehenge is a good test image too...
-    (3) CornerMatcher - done, ** but needs improvements
-        given 2 sets of corners, finds the best SSD match for each 
-        corner1, discarding those that have a similar SSD 2nd best.
-    (4) EuclideanSegmentFeatureMatcher
-        goal is to find best single euclidean transformation for image1 to image2.
-        uses segmentation to create blobs.
-        solves for transformation of each blob in one image against the other.
-        keeps the best blob1 solution for each blob1.
-        evaluates all blob1 transformations to find the best for the image.
-        -- pros: for panorama and stereo does lead to a solution.
-                 solves for rotation too.
-        -- cons: long runtime due to curve to curve transformation comparisons.
-                 also, have to sometimes discard very good matching points 
-                 because the curve only has 2 and needs at least 3 in order to
-                 estimate a euclidean transformation.
-        Summary:
-            The class can make a very good correspondence list w/ few errors.
-            With the same assumption of panoramic or stereo images, essentially,
-            one might be able to make a faster solution by:
-       (4a) made class called EuclideanSegmentFeatureMatcher2
-                -- finds best SSD matches for each point image wide, discarding if
-                   has close second best.
-                -- then use the association of best matches w/ blobs and combinations
-                   of pairs of those blobs to calculate euclidean transformations.
-                   -- order blobs1 matched by descending numbers of matched and same
-                      for blobs2.
-                      -- create transformations from the pairings.
-                         -- evaluate each transformation with all corners.
-                         -- is there a point where can see that evaluation is very 
-                            high so can stop and consider it solved?
-                difficult test cases:
-                    merton college had windows which had best false matches,
-                    but the method above led to at least one true solution 
-                    making it to the evaluation stage and so the true overall solution
-                    was found.  (one blob's best matches were true and so the
-                    evaluation found largest number of transformed matched w/ low SSD sums). 
-                    in this suggested EuclideanSegmentFeatureMatcher2 here, the matches are fixed for
-                    calculating a transformation, but should not be considered
-                    fixed for evaluation.
-                    --> the difference in runtime complexity for this approach compared to the existing:
+-- revisit the merton college epipolar solution.
+   -- if non-euclidean solves it better, no need.
 
-                        example1: 50 curves for img1 and img2, each w/ 10 points (npoints = 500 total for each image)
-                        example2: 50 curves for img1 and img2, each w/ 5 points (npoints = 250 total for each image)
+-- use git mv to move feature matching code to new package
 
-                        example1, current class logic:
-                            50*50:
-                                10*10 to find best SSD
-                                + up to (10*9/2) calculations of transformation * evalution over 10
-                                keeps best 1 out of 50
-                            evaluates up to 50 transformations on 50 points to find best
-                         total==> (50*50*(100 + 45*10)) + 50*50 = 1.38 million at most
-                      
-                        example1, proposed class logic:
-                            500*500 to find each best matches.
-                            500*50 at most to find which blob a point belongs to
-                            + at most 50*49/2 combinations of evaluation (each is 500 comparisons) to find best transformation.
-                              that is if assume want to use only 2 blobs for a solution and they have at least 3 points total.
-                          total==> 500*500 + 500*50 + (50*49/2)*500 = 0.89 million at most
-                             note that if the filter by 2nd best results in fewer than 2 points per blob,
-                             would need to use combinations of 3 blobs.
-                             n!/3!*(n-3)! = 50*49*48/6 = 16 times more points 
+-- how to detect repetition?
+(Schaffalitzky and Zisserman, BMVC‘98)
 
-
-    (5) NonEuclideanSegmentFeatureMatcher
-        creates "corners" using 2nd derivatives of gaussian and finds the
-        best match for each in image1 to each in image2.
-        the matches look very good, but points which are not in the true
-        union of the true solution are matched too, so
-        presumably some assumptions about homology are needed as a 
-        filter before using EpipolarSolver, but maybe not.
-        I think RANSAC can handle as high as 50% false matches, but need to find reference for that.
-
-     Might also consider implementing a matcher more like some of the dense disparity map makers
+--   Might consider implementing a matcher more like some of the dense disparity map makers
      that rectify images and scan along rows between control points.  Would make a sparse
      version here.  Need to import my delaunay divide and conquer class from my private code
      and improve it for this.
+
+     -- need tests w/ extreme difference in resolution to examine sparse handling of descriptor
+        cell sizes (a sparse handling of image pyramid).
+
+-- consider making a more precise "unbinning method" using bilinear interpretaion.  the 
+   method exists, but isn't in use.
 
 -- more ransac and epipolar solver tests.
    -- improving the ransac sampling method (and making it useful for an
@@ -234,10 +161,6 @@ design class to hold sampling
 -- update the command line runners.
 
 -- Parzen window method in pattern recognition
-
-** -- consider a detailed look at the books test matching.
-      the largest group of matches alone determines the solution, but
-      it looks like other group solutions should contribute, but might need larger tolerance
 
 ** -- consider the extreme unlikely case of only circles in an image.  there wouldn't be stable
       corners nor stable inflection points (except in the backgrounds possibly).
@@ -487,6 +410,13 @@ http://sipi.usc.edu/database/database.php?volume=misc
 http://homepages.inf.ed.ac.uk/rbf/CVonline/Imagedbase.htm#segmentation
 
 -- finish the method converting from fundamental matrix to essential matrix.
+
+    -- can use the 5pt algorithm of Nister & Stewenius 
+       the input points have to be normalized by inv camera matrix x = K^-1 x.
+       K has camera intrinsics.
+       solves for the roots of a 10th degree polynomial and each real root is
+       possibly an essential matrix.
+       can evaluate the sampson's error for each and the min error is the solution.
 
  /*
     https://github.com/jesolem/PCV
