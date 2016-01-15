@@ -27,7 +27,7 @@ public class EpipolarTransformationFit {
     
     private double stDevFromMean = Double.MAX_VALUE;
     
-    private final SimpleMatrix fundamentalMatrix;
+    private SimpleMatrix fundamentalMatrix;
     
     private final List<Integer> inlierIndexes;
     
@@ -165,5 +165,9 @@ public class EpipolarTransformationFit {
      */
     public List<Double> getErrors() {
         return errors;
+    }
+    
+    public void setFundamentalMatrix(SimpleMatrix theFM) {
+        fundamentalMatrix = theFM;
     }
 }

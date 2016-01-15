@@ -25,29 +25,30 @@ public class RANSACSolverTest extends TestCase {
     
         //TODO: add the reference for this data here.
         
-        PairFloatArray leftTrueMatches = new PairFloatArray();
-        PairFloatArray rightTrueMatches = new PairFloatArray();
+        PairIntArray leftTrueMatches = new PairIntArray();
+        PairIntArray rightTrueMatches = new PairIntArray();
         getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
         
-        PairFloatArray leftFalseMatches = new PairFloatArray();
-        PairFloatArray rightFalseMatches = new PairFloatArray();
+        PairIntArray leftFalseMatches = new PairIntArray();
+        PairIntArray rightFalseMatches = new PairIntArray();
         getMertonCollegeFalseMatch1(leftFalseMatches, rightFalseMatches);
         getMertonCollegeFalseMatch2(leftFalseMatches, rightFalseMatches);
         getMertonCollegeFalseMatch3(leftFalseMatches, rightFalseMatches);
         
-        PairFloatArray leftTruePlusFalse = leftTrueMatches.copy();
-        PairFloatArray rightTruePlusFalse = rightTrueMatches.copy();
+        PairIntArray leftTruePlusFalse = leftTrueMatches.copy();
+        PairIntArray rightTruePlusFalse = rightTrueMatches.copy();
         getMertonCollegeFalseMatch1(leftTruePlusFalse, rightTruePlusFalse);
         getMertonCollegeFalseMatch2(leftTruePlusFalse, rightTruePlusFalse);
         getMertonCollegeFalseMatch3(leftTruePlusFalse, rightTruePlusFalse);
         
-        PairFloatArray outputLeft = new PairFloatArray(); 
-        PairFloatArray outputRight = new PairFloatArray();
+        PairIntArray outputLeft = new PairIntArray(); 
+        PairIntArray outputRight = new PairIntArray();
         
         RANSACSolver solver = new RANSACSolver();
         
         EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
-            leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
+            //leftTruePlusFalse, rightTruePlusFalse, outputLeft, outputRight);
+            leftTrueMatches, rightTrueMatches, outputLeft, outputRight);
         
         assertNotNull(fit);
         
@@ -135,6 +136,58 @@ public class RANSACSolverTest extends TestCase {
         */
     }
     
+    protected void getMertonCollege10TrueMatches(PairIntArray left, 
+        PairIntArray right) {
+        
+        /*
+        58, 103   32, 100
+        486, 46   474, 49
+        845, 127  878, 151
+        949, 430  998, 471
+        541, 428  533, 460
+        225, 453  213, 498
+        49, 509   21, 571
+        373, 239  365, 258
+        737, 305  762, 335
+        84, 273   60, 298
+        */
+        
+        left.add(58, 103);  right.add(32, 100);
+        left.add(486, 46);   right.add(474, 49);
+        left.add(845, 127);   right.add(878, 151);
+        left.add(949, 430);   right.add(998, 471);
+        left.add(541, 428);   right.add(533, 460);
+        left.add(225, 453);   right.add(213, 498);
+        left.add(49, 509);   right.add(21, 571);
+        left.add(373, 239);   right.add(365, 258);
+        left.add(737, 305);   right.add(762, 335);
+        left.add(84, 273);   right.add(60, 298);
+    }
+    
+    protected void getMertonCollege7TrueMatches(PairIntArray left, 
+        PairIntArray right) {
+        
+        /*
+        58, 103   32, 100
+        486, 46   474, 49
+        845, 127  878, 151
+        949, 430  998, 471
+        541, 428  533, 460
+        225, 453  213, 498
+        49, 509   21, 571
+        
+        */
+        
+        left.add(58, 103);  right.add(32, 100);
+        left.add(486, 46);   right.add(474, 49);
+        left.add(845, 127);   right.add(878, 151);
+        left.add(949, 430);   right.add(998, 471);
+        left.add(541, 428);   right.add(533, 460);
+        left.add(225, 453);   right.add(213, 498);
+        left.add(49, 509);   right.add(21, 571);
+        
+    }
+    
     protected void getMertonCollege10TrueMatches(PairFloatArray left, 
         PairFloatArray right) {
         
@@ -187,24 +240,24 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    protected void getMertonCollegeFalseMatch1(PairFloatArray left, 
-        PairFloatArray right) {
+    protected void getMertonCollegeFalseMatch1(PairIntArray left, 
+        PairIntArray right) {
         //765, 487   753, 552
         left.add(765, 487);   right.add(753, 552);
     }
-    protected void getMertonCollegeFalseMatch2(PairFloatArray left, 
-        PairFloatArray right) {
+    protected void getMertonCollegeFalseMatch2(PairIntArray left, 
+        PairIntArray right) {
         //253, 141    256, 229
         left.add(253, 141);   right.add(256, 229);
     }
-    protected void getMertonCollegeFalseMatch3(PairFloatArray left, 
-        PairFloatArray right) {
+    protected void getMertonCollegeFalseMatch3(PairIntArray left, 
+        PairIntArray right) {
         //459, 354  432, 525
         left.add(459, 354);   right.add(432, 525);
     }
     
-    private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
-        PairFloatArray set2, Image img1, Image img2, int image1Width,
+    private void overplotEpipolarLines(SimpleMatrix fm, PairIntArray set1,
+        PairIntArray set2, Image img1, Image img2, int image1Width,
         int image1Height, int image2Width, int image2Height, String outfileNumber) 
         throws IOException {
 

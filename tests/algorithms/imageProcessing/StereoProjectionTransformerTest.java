@@ -24,7 +24,7 @@ public class StereoProjectionTransformerTest extends TestCase {
     public StereoProjectionTransformerTest() {
     }
     
-    public void testCreateScaleTranslationMatrix() throws Exception {
+    public void estCreateScaleTranslationMatrix() throws Exception {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -83,137 +83,68 @@ public class StereoProjectionTransformerTest extends TestCase {
             avgDist /= (double)nPoints;
             assertTrue(avgDist <= sqrtTwo);
         }
-           
     }
     
-    public void estCalcEpipolar() throws Exception {
-
-        String fileName1 = "checkerboard_01.jpg";
-        String fileName2 = "checkerboard_02.jpg";
-        int idx = fileName1.lastIndexOf(".");
-        String fileName1Root = fileName1.substring(0, idx);
+    public void testNormalization() throws Exception {
         
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+        // add reference for the merton college images (they're in testresources directory)
         
-        FeatureMatcherSettings settings = new FeatureMatcherSettings();
-        settings.setDebug(true);
-        settings.setStartWithBinnedImages(true);
-        settings.setUseNormalizedFeatures(true);
-        settings.setToUse2ndDerivCorners();
+        PairIntArray left7 = new PairIntArray();
+        PairIntArray right7 = new PairIntArray();
+        getMertonCollege7TrueMatches(left7, right7);
         
-        EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);
-        EpipolarTransformationFit fit = solver.solve();
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+        
+        SimpleMatrix inputLeft =
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(left7);
 
-        int[] x1 = new int[]{248,341,154,341,341,339,341,249,341,155,};
-        int[] y1 = new int[]{109,204,295,204,204,295,204,205,204,201,};
-        int[] x2 = new int[]{264,169,354,169,169,170,169,264,169,353,};
-        int[] y2 = new int[]{385,293,202,293,293,198,293,290,293,292,};
-
-        /*
-        StereoProjectionTransformer spTr = new StereoProjectionTransformer();
-
-        public SimpleMatrix calculateEpipolarProjection(
-        PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
-        */
-
-        //PairFloatArray calculateDistancesFromEpipolar(
-        //SimpleMatrix fm, SimpleMatrix matchedLeftPoints, 
-        //SimpleMatrix matchedRightPoints) {
+        SimpleMatrix inputRight =
+            StereoProjectionTransformer.rewriteInto3ColumnMatrix(right7);
+        
+        NormalizedXY normalizedXY1 = spTransformer.normalize(inputLeft);
+        NormalizedXY normalizedXY2 = spTransformer.normalize(inputRight);
+ /*       
+        List<SimpleMatrix> fms =
+            spTransformer.calculateEpipolarProjectionFor7PointsNormalized(
+            normalizedXY1.getXy(), normalizedXY2.getXy());
+        
+        assertNotNull(fms.get(0));
+        
+        SimpleMatrix normFM = fms.get(0);
+        
+        SimpleMatrix t1 = normalizedXY1.getNormalizationMatrix();
+        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix();
+        
+        SimpleMatrix denormFM = spTransformer.denormalizeTheFundamentalMatrix(
+            normFM, t1, t2);
+        
+        //norm:
+        //    F = (T_2)^T * F * T_1
+        //
+        //denorm:
+        //    F = (T_1)^T * F * T_2
+        
+        //SimpleMatrix normFM2 = t2.transpose().mult(denormFM.mult(t1));
+        SimpleMatrix normFM2 = t2.transpose().mult(denormFM).mult(t1);
+        
+        log.info("normalized fm = " + normFM.toString());
+        
+        log.info("normalized fm denormalized then normalized = " + normFM2.toString());
+            
+        SimpleMatrix denormFM2 = t1.transpose().mult(
+            normFM2.mult(t2));
+        
+        log.info("denormalized fm = " + denormFM.toString());
+        
+        log.info("denormalized fm normalized then denormalized = " + denormFM2.toString());
+ */
     }
+    
     
     /*
     for more datasets:
     http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
     */
-    
-    public void estRANSAC() throws Exception {
-    
-        //TODO: add the reference for this data here.
-        String fileName1 = "merton_college_I_001.jpg";
-        String fileName2 = "merton_college_I_002.jpg";
-            
-        PairFloatArray left7 = new PairFloatArray();
-        PairFloatArray right7 = new PairFloatArray();
-        getMertonCollege7TrueMatches(left7, right7);
-        
-        StereoProjectionTransformer spTr = new StereoProjectionTransformer();
-        
-        SimpleMatrix left7XY = 
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(left7);
-        SimpleMatrix right7XY =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(right7);
-        
-        List<SimpleMatrix> fits = spTr.calculateEpipolarProjectionFor7Points(
-            left7XY, right7XY);
-         
-        assertTrue(fits.size() == 1);
-        
-        SimpleMatrix fit = fits.get(0);
-                        
-        log.info("fit=" + fit.toString());
-
-        String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
-
-        Image img1 = ImageIOHelper.readImageAsGrayScale(filePath1);
-        int image1Width = img1.getWidth();
-        int image1Height = img1.getHeight();
-        Image img2 = ImageIOHelper.readImageAsGrayScale(filePath2);
-        int image2Width = img2.getWidth();
-        int image2Height = img2.getHeight();
-
-        overplotEpipolarLines(fit, left7, right7,
-            img1, img2, 
-            image1Width, image1Height, image2Width, image2Height, 
-            Integer.valueOf(0).toString()); 
-        
-        /*
-        solution for 7pt epipolar when points are not normalized:
-        INFO: fit=Type = dense , numRows = 3 , numCols = 3
-         [junit] -0.000  -0.000  -0.006  
-         [junit]  0.000  -0.000   0.062  
-         [junit]  0.004  -0.071   1.000 
-        */
-        
-        assertTrue(Math.abs(fit.get(0, 0) - 0) < 0.005);
-        assertTrue(Math.abs(fit.get(1, 0) - 0) < 0.005);
-        assertTrue(Math.abs(fit.get(2, 0) - 0) < 0.005);
-        
-        assertTrue(Math.abs(fit.get(0, 1) - 0) < 0.005);
-        assertTrue(Math.abs(fit.get(1, 1) - 0) < 0.005);
-        assertTrue(Math.abs(fit.get(2, 1) - -0.071) < 0.005);
-        
-        assertTrue(Math.abs(fit.get(0, 2) - -0.006) < 0.005);
-        assertTrue(Math.abs(fit.get(1, 2) - 0.062) < 0.005);
-        assertTrue(Math.abs(fit.get(2, 2) - 1.0) < 0.005);
-    }
-    
-    protected void getMertonCollege7TrueMatches(PairFloatArray left, 
-        PairFloatArray right) {
-        
-        /*
-        58, 103   32, 100
-        486, 46   474, 49
-        845, 127  878, 151
-        949, 430  998, 471
-        541, 428  533, 460
-        225, 453  213, 498
-        49, 509   21, 571
-        
-        */
-        
-        left.add(58, 103);  right.add(32, 100);
-        left.add(486, 46);   right.add(474, 49);
-        left.add(845, 127);   right.add(878, 151);
-        left.add(949, 430);   right.add(998, 471);
-        left.add(541, 428);   right.add(533, 460);
-        left.add(225, 453);   right.add(213, 498);
-        left.add(49, 509);   right.add(21, 571);
-        
-    }
     
     private void overplotEpipolarLines(SimpleMatrix fm, PairFloatArray set1,
         PairFloatArray set2, Image img1, Image img2, int image1Width,
@@ -289,6 +220,60 @@ public class StereoProjectionTransformerTest extends TestCase {
             return Color.ORANGE;
         }
     }
+    
+    
+    protected void getMertonCollege10TrueMatches(PairIntArray left, 
+        PairIntArray right) {
+        
+        /*
+        58, 103   32, 100
+        486, 46   474, 49
+        845, 127  878, 151
+        949, 430  998, 471
+        541, 428  533, 460
+        225, 453  213, 498
+        49, 509   21, 571
+        373, 239  365, 258
+        737, 305  762, 335
+        84, 273   60, 298
+        */
+        
+        left.add(58, 103);  right.add(32, 100);
+        left.add(486, 46);   right.add(474, 49);
+        left.add(845, 127);   right.add(878, 151);
+        left.add(949, 430);   right.add(998, 471);
+        left.add(541, 428);   right.add(533, 460);
+        left.add(225, 453);   right.add(213, 498);
+        left.add(49, 509);   right.add(21, 571);
+        left.add(373, 239);   right.add(365, 258);
+        left.add(737, 305);   right.add(762, 335);
+        left.add(84, 273);   right.add(60, 298);
+    }
+    
+    protected void getMertonCollege7TrueMatches(PairIntArray left, 
+        PairIntArray right) {
+        
+        /*
+        58, 103   32, 100
+        486, 46   474, 49
+        845, 127  878, 151
+        949, 430  998, 471
+        541, 428  533, 460
+        225, 453  213, 498
+        49, 509   21, 571
+        
+        */
+        
+        left.add(58, 103);  right.add(32, 100);
+        left.add(486, 46);   right.add(474, 49);
+        left.add(845, 127);   right.add(878, 151);
+        left.add(949, 430);   right.add(998, 471);
+        left.add(541, 428);   right.add(533, 460);
+        left.add(225, 453);   right.add(213, 498);
+        left.add(49, 509);   right.add(21, 571);
+        
+    }
+    
     public static void main(String[] args) {
         
         try {

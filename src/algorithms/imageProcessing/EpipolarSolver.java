@@ -27,8 +27,8 @@ public class EpipolarSolver {
     }
     private State state = null;
 
-    private PairFloatArray solutionLeftXY = null;
-    private PairFloatArray solutionRightXY = null;
+    private PairIntArray solutionLeftXY = null;
+    private PairIntArray solutionRightXY = null;
 
     private final FeatureMatcherSettings featureSettings;
 
@@ -97,10 +97,10 @@ public class EpipolarSolver {
 
         int n = points1.size();
 
-        PairFloatArray matchedLeftXY = new PairFloatArray(n);
-        PairFloatArray matchedRightXY = new PairFloatArray(n);
-        PairFloatArray outputLeftXY = new PairFloatArray(n);
-        PairFloatArray outputRightXY = new PairFloatArray(n);
+        PairIntArray matchedLeftXY = new PairIntArray(n);
+        PairIntArray matchedRightXY = new PairIntArray(n);
+        PairIntArray outputLeftXY = new PairIntArray(n);
+        PairIntArray outputRightXY = new PairIntArray(n);
 
         for (int i = 0; i < n; ++i) {
             matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());

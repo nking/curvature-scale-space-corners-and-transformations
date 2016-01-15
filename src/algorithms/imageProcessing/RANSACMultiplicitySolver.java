@@ -4,6 +4,7 @@ import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -97,6 +98,9 @@ public class RANSACMultiplicitySolver {
               distance to epipolar lines is larger than tolerance of 3 pixels or so.      
         */
 
+        throw new UnsupportedOperationException("not yet implemented");
+        
+        /*
         int nSet = 7;
         
         int nPoints = matchedLeftXY.size();
@@ -111,6 +115,11 @@ public class RANSACMultiplicitySolver {
             nAllMultiplicity += matchedRightXYs.get(i).size();
         }
         
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+        
+        PairIntArray originalLeftXY = new PairIntArray(nAllMultiplicity);
+        PairIntArray originalRightXY = new PairIntArray(nAllMultiplicity);
+        
         SimpleMatrix evalAllLeft = new SimpleMatrix(3, nAllMultiplicity);
         SimpleMatrix evalAllRight = new SimpleMatrix(3, nAllMultiplicity);
         int count = 0;
@@ -123,6 +132,8 @@ public class RANSACMultiplicitySolver {
                 evalAllRight.set(0, count, rgt.getX());
                 evalAllRight.set(1, count, rgt.getY());
                 evalAllRight.set(2, count, 2);
+                originalLeftXY.add(lft.getX(), lft.getY());
+                originalRightXY.add(rgt.getX(), rgt.getY());
                 count++;
             }
         }
@@ -182,8 +193,6 @@ public class RANSACMultiplicitySolver {
                 count++;
             }
            
-            StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
-
             // determine matrix from 7 points.
             List<SimpleMatrix> fms = spTransformer.calculateEpipolarProjectionFor7Points(
                 sampleLeft, sampleRight);
@@ -198,9 +207,9 @@ public class RANSACMultiplicitySolver {
             
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    StereoProjectionTransformer.calculateSampsonsError(fm, 
-                    //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                        evalAllLeft, evalAllRight, tolerance, true);
+                    spTransformer.calculateEpipolarDistanceErrorThenFilter(fm, 
+                        evalAllLeft, evalAllRight, originalLeftXY, originalRightXY,
+                        tolerance, tolerance);
                 
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
@@ -241,6 +250,10 @@ public class RANSACMultiplicitySolver {
         // calculate fundamental matrix using filtered consensus
         SimpleMatrix inliersLeftXY = new SimpleMatrix(3, matchedLRM.size());
         SimpleMatrix inliersRightXY = new SimpleMatrix(3, matchedLRM.size());
+        // because filter for errors is usable on normalized data too, need
+        // the arrays of original coordinates (which is redundant for unnormalized data)
+        PairIntArray unnormInliersLeftXY = new PairIntArray(matchedLRM.size());
+        PairIntArray unnormInliersRightXY = new PairIntArray(matchedLRM.size());
         count = 0;
         for (Integer index : matchedLRM) {
             int idx = index.intValue();
@@ -253,11 +266,11 @@ public class RANSACMultiplicitySolver {
             inliersRightXY.set(1, count, evalAllRight.get(1, idx));
             inliersRightXY.set(2, count, 1);
             
+            unnormInliersLeftXY.add(originalLeftXY.getX(idx), originalLeftXY.getY(idx));
+            unnormInliersRightXY.add(originalRightXY.getX(idx), originalRightXY.getY(idx));
+            
             count++;
         }
-        
-        StereoProjectionTransformer spTransformer = new
-            StereoProjectionTransformer();
         
         EpipolarTransformationFit consensusFit = null;
         
@@ -271,9 +284,9 @@ public class RANSACMultiplicitySolver {
             EpipolarTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    StereoProjectionTransformer.calculateSampsonsError(fm,
-                    //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                        inliersLeftXY, inliersRightXY, tolerance, true);
+                    spTransformer.calculateEpipolarDistanceErrorThenFilter(fm,
+                        inliersLeftXY, inliersRightXY, unnormInliersLeftXY, 
+                        unnormInliersRightXY, tolerance, tolerance);
                 if (fitI.isBetter(bestFit)) {
                     fit = fitI;
                 }
@@ -286,28 +299,29 @@ public class RANSACMultiplicitySolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                StereoProjectionTransformer.calculateSampsonsError(fm,
-                //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                inliersLeftXY, inliersRightXY, tolerance, true);
+                spTransformer.calculateEpipolarDistanceErrorThenFilter(fm,
+                    inliersLeftXY, inliersRightXY, unnormInliersLeftXY, 
+                    unnormInliersRightXY, tolerance, tolerance);
             
             consensusFit = fit;
         }
         
+        // these are not normalized
         for (Integer index : consensusFit.getInlierIndexes()) {
             int idx = index.intValue();
             outputLeftXY.add(
-                (float)inliersLeftXY.get(0, idx),
-                (float)inliersLeftXY.get(1, idx));
+                (int)Math.round(inliersLeftXY.get(0, idx)),
+                (int)Math.round(inliersLeftXY.get(1, idx)));
             outputRightXY.add(
-                (float)inliersRightXY.get(0, idx),
-                (float)inliersRightXY.get(1, idx));
+                (int)Math.round(inliersRightXY.get(0, idx)),
+                (int)Math.round(inliersRightXY.get(1, idx)));
         }
         
         log.info("nIter=" + nIter);
 
         log.info("final fit: " + consensusFit.toString());
 
-        return consensusFit;
+        return consensusFit;*/
     }
 
     private Set<Integer> filterForDegeneracy(EpipolarTransformationFit fit, 

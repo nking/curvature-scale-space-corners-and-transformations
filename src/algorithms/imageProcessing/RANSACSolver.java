@@ -1,8 +1,10 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
@@ -44,8 +46,8 @@ public class RANSACSolver {
      * @throws NoSuchAlgorithmException
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
-        PairFloatArray matchedLeftXY, PairFloatArray matchedRightXY,
-        PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
+        PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
+        PairIntArray outputLeftXY, PairIntArray outputRightXY)
         throws NoSuchAlgorithmException {
 
         if (matchedLeftXY == null) {
@@ -85,7 +87,7 @@ public class RANSACSolver {
      */
     public EpipolarTransformationFit calculateEpipolarProjection(
         SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
-        PairFloatArray outputLeftXY, PairFloatArray outputRightXY)
+        PairIntArray outputLeftXY, PairIntArray outputRightXY)
         throws NoSuchAlgorithmException {
 
         if (matchedLeftXY == null) {
@@ -127,16 +129,15 @@ public class RANSACSolver {
         int nSet = 7;
 
         int nPoints = matchedLeftXY.numCols();
+        
+        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
 
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+            
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
-
-        int[] selected = new int[nSet];
-
-        PairFloatArray xy1 = null;
-        PairFloatArray xy2 = null;
 
         int tolerance = 5;
 
@@ -184,9 +185,6 @@ public class RANSACSolver {
                 count++;
             }
 
-            StereoProjectionTransformer spTransformer = new
-                StereoProjectionTransformer();
-
             // determine matrix from 7 points.
             List<SimpleMatrix> fms =
                 spTransformer.calculateEpipolarProjectionFor7Points(sampleLeft, 
@@ -202,9 +200,9 @@ public class RANSACSolver {
             
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    //StereoProjectionTransformer.calculateSampsonsError(fm,
-                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                        matchedLeftXY, matchedRightXY, tolerance, false);
+                    spTransformer.calculateError(fm, matchedLeftXY, 
+                        matchedRightXY, errorType, tolerance);
+                
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -230,7 +228,7 @@ public class RANSACSolver {
             }
         }
 
-        if (bestFit.getInlierIndexes().isEmpty()) {
+        if (bestFit == null || bestFit.getInlierIndexes().isEmpty()) {
             log.info("no solution.  nIter=" + nIter);
             return null;
         }
@@ -254,9 +252,6 @@ public class RANSACSolver {
             count++;
         }
 
-        StereoProjectionTransformer spTransformer = new
-            StereoProjectionTransformer();
-        
         EpipolarTransformationFit consensusFit = null;
         
         if (inliersRightXY.numCols() == 7) {
@@ -269,9 +264,8 @@ public class RANSACSolver {
             EpipolarTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    //StereoProjectionTransformer.calculateSampsonsError(fm,
-                    StereoProjectionTransformer.calculateEpipolarDistanceError(fm,  
-                        inliersLeftXY, inliersRightXY, tolerance, false);
+                    spTransformer.calculateError(fm,  
+                        inliersLeftXY, inliersRightXY, errorType, tolerance);
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -285,9 +279,8 @@ public class RANSACSolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                StereoProjectionTransformer.calculateSampsonsError(fm,
-                //StereoProjectionTransformer.calculateEpipolarDistanceError(fm, 
-                inliersLeftXY, inliersRightXY, tolerance, false);
+                spTransformer.calculateError(fm,
+                inliersLeftXY, inliersRightXY, errorType, tolerance);
             
             consensusFit = fit;
         }
@@ -295,11 +288,11 @@ public class RANSACSolver {
         for (Integer index : consensusFit.getInlierIndexes()) {
             int idx = index.intValue();
             outputLeftXY.add(
-                (float)inliersLeftXY.get(0, idx),
-                (float)inliersLeftXY.get(1, idx));
+                (int)Math.round(inliersLeftXY.get(0, idx)),
+                (int)Math.round(inliersLeftXY.get(1, idx)));
             outputRightXY.add(
-                (float)inliersRightXY.get(0, idx),
-                (float)inliersRightXY.get(1, idx));
+                (int)Math.round(inliersRightXY.get(0, idx)),
+                (int)Math.round(inliersRightXY.get(1, idx)));
         }
         
         log.info("nIter=" + nIter);

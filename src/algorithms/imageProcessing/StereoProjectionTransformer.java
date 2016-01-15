@@ -134,6 +134,13 @@ import org.ejml.simple.*;
  be reduced to a single solution.
  The normalization and denormalization steps before and following the solution,
  are the same as in the 8-point solution.
+ * 
+
+    right epipolar lines:
+        fm * leftXY
+    left epipolar lines:
+        fm^T * rightXY
+   
  * </pre>
  *
  * @author nichole
@@ -141,31 +148,6 @@ import org.ejml.simple.*;
 public class StereoProjectionTransformer {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
-
-    private SimpleMatrix leftXY = null;
-
-    private SimpleMatrix rightXY = null;
-
-    private SimpleMatrix fundamentalMatrix = null;
-
-    private double[] leftEpipole = null;
-
-    private double[] rightEpipole = null;
-
-    /**
-     * each row is an epipolar line in the right image.
-     * Each column corresponds to a point in leftXY and rightXY which are
-     * in the same column.
-     */
-    private SimpleMatrix epipolarLinesInRight = null;
-
-    /**
-     * calculate the epipolar projection for a set of 8 or more unmatched
-     * points.  It uses PointMatcher, RANSACSolver and PointPartitioner
-     * to obtain a solution for part of the images that best fits all of
-     * the points.
-     */
-    private SimpleMatrix epipolarLinesInLeft = null;
 
     /**
      * calculate the fundamental matrix for the given matched left and
@@ -241,23 +223,8 @@ public class StereoProjectionTransformer {
 
         //the matrix convention is [mRows][nCols]
 
-        leftXY = theLeftXY;
-
-        rightXY = theRightXY;
-
-        fundamentalMatrix = calculateFundamentalMatrix(leftXY, rightXY)
-            .transpose();
-
-        // 2 x 3 matrix of leftEpipole in column 0 and rightEpipole in column 1.
-        double[][] leftRightEpipoles = calculateEpipoles(fundamentalMatrix);
-
-        leftEpipole = leftRightEpipoles[0];
-
-        rightEpipole = leftRightEpipoles[1];
-
-        epipolarLinesInRight = calculateRightEpipolarLines();
-
-        epipolarLinesInLeft = calculateLeftEpipolarLines();
+        SimpleMatrix fundamentalMatrix = calculateFundamentalMatrix(theLeftXY, 
+            theRightXY).transpose();
 
         return fundamentalMatrix;
     }
@@ -388,14 +355,10 @@ public class StereoProjectionTransformer {
                 + " theLeftXY.n=" + theLeftXY.numCols());
         }
 
-        leftXY = theLeftXY;
-
-        rightXY = theRightXY;
-
         //x is xy[0], y is xy[1], xy[2] is all 1's
-        NormalizedXY normalizedXY1 = normalize(leftXY);
+        NormalizedXY normalizedXY1 = normalize(theLeftXY);
 
-        NormalizedXY normalizedXY2 = normalize(rightXY);
+        NormalizedXY normalizedXY2 = normalize(theRightXY);
 
         double[][] m = createFundamentalMatrix(
             normalizedXY1.getXy(), normalizedXY2.getXy());
@@ -444,11 +407,13 @@ public class StereoProjectionTransformer {
 
             denormFundamentalMatrix = denormFundamentalMatrix.transpose();
 
+            /*
             SimpleMatrix validated = validateSolution(denormFundamentalMatrix);
 
             if (validated != null) {
                 denormalizedSolutions.add(validated);
-            }
+            }*/
+                denormalizedSolutions.add(denormFundamentalMatrix);
         }
 
         return denormalizedSolutions;
@@ -525,7 +490,8 @@ public class StereoProjectionTransformer {
     * Otherwise it is called cheirality-preserving.
     */
     @SuppressWarnings({"unchecked"})
-    private SimpleMatrix validateSolution(SimpleMatrix solution) {
+    private SimpleMatrix validateSolution(SimpleMatrix solution, SimpleMatrix leftXY,
+        SimpleMatrix rightXY) {
 
         /*
         function OK = signs_OK(F,x1,x2)
@@ -834,9 +800,6 @@ public class StereoProjectionTransformer {
             denormalizeTheFundamentalMatrix(theFundamentalMatrix,
                 normalizedXY1, normalizedXY2);
 
-       denormFundamentalMatrix = denormFundamentalMatrix.scale(
-            1./denormFundamentalMatrix.get(2, 2));
-
         return denormFundamentalMatrix;
     }
 
@@ -857,6 +820,9 @@ public class StereoProjectionTransformer {
 
         SimpleMatrix denormFundamentalMatrix = t1Transpose.mult(
             normalizedFundamentalMatrix.mult(t2));
+
+        denormFundamentalMatrix = denormFundamentalMatrix.scale(
+            1./denormFundamentalMatrix.get(2, 2));
 
         return denormFundamentalMatrix;
     }
@@ -1180,28 +1146,6 @@ public class StereoProjectionTransformer {
         return e;
     }
 
-    private SimpleMatrix calculateRightEpipolarLines() {
-
-        /* calculate right epipolar lines
-        F * leftPoint
-        */
-
-        SimpleMatrix m = fundamentalMatrix.mult(leftXY);
-
-        return m;
-    }
-
-    private SimpleMatrix calculateLeftEpipolarLines() {
-
-        //calculate left epipolar lines:  F^T * rightPoint
-
-        SimpleMatrix fundamentalMatrixTranspose = fundamentalMatrix.transpose();
-
-        SimpleMatrix m = fundamentalMatrixTranspose.mult(rightXY);
-
-        return m;
-    }
-
     public static class NormalizedXY {
 
         /**
@@ -1257,33 +1201,6 @@ public class StereoProjectionTransformer {
         }
     }
 
-    public double[] getLeftEpipole() {
-        return leftEpipole;
-    }
-    public double[] getRightEpipole() {
-        return rightEpipole;
-    }
-    public SimpleMatrix getEpipolarLinesInRight() {
-        return epipolarLinesInRight;
-    }
-    public SimpleMatrix getEpipolarLinesInLeft() {
-        return epipolarLinesInLeft;
-    }
-
-    public PairIntArray getEpipolarLineInLeft(int imgWidth, int imgHeight,
-        int pointNumber) {
-
-        return getEpipolarLine(epipolarLinesInLeft, imgWidth, imgHeight,
-             pointNumber);
-    }
-
-    public PairIntArray getEpipolarLineInRight(int imgWidth, int imgHeight,
-        int pointNumber) {
-
-        return getEpipolarLine(epipolarLinesInRight, imgWidth, imgHeight,
-            pointNumber);
-    }
-
     PairIntArray getEpipolarLine(SimpleMatrix epipolarLines, int imgWidth,
         int imgHeight, int pointNumber) {
 
@@ -1314,26 +1231,17 @@ public class StereoProjectionTransformer {
         return line;
     }
 
-    SimpleMatrix calculateEpipolarRightLines(SimpleMatrix points) {
-        return fundamentalMatrix.mult(points);
-    }
-
-    SimpleMatrix calculateEpipolarLeftLines(SimpleMatrix points) {
-        return fundamentalMatrix.transpose().mult(points);
-    }
-
     /**
      * evaluate fit for already matched point lists
      * @param fm
      * @param leftPoints
      * @param rightPoints
      * @param tolerance
-     * @param filterForDegenerate 
      * @return
      */
     public static EpipolarTransformationFit calculateEpipolarDistanceError(
         SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
-        double tolerance, boolean filterForDegenerate) {
+        double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1375,11 +1283,6 @@ public class StereoProjectionTransformer {
             errors.add(Double.valueOf(dist));
         }
         
-        if (filterForDegenerate) {
-            filterForDegenerate(leftPoints, inlierIndexes, errors);
-            filterForDegenerate(rightPoints, inlierIndexes, errors);
-        }
-
         EpipolarTransformationFit fit = null;
          
         if (errors.size() > 0) {
@@ -1395,6 +1298,76 @@ public class StereoProjectionTransformer {
         return fit;
     }
 
+    /**
+     * evaluate fit for already matched point lists
+     * @param fm
+     * @param leftPoints
+     * @param rightPoints
+     * @param tolerance
+     * @return
+     */
+    public static EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
+        SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
+        double tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (leftPoints == null) {
+            throw new IllegalArgumentException("leftPoints cannot be null");
+        }
+        if (rightPoints == null) {
+            throw new IllegalArgumentException("rightPoints cannot be null");
+        }
+        int nRows = leftPoints.getMatrix().getNumRows();
+        if (nRows != rightPoints.getMatrix().getNumRows()) {
+            throw new IllegalArgumentException("matrices must have same number of rows");
+        }
+
+        //2D point (x,y) and line (a, b, c): dist=(a*x + b*y + c)/sqrt(a^2 + b^2)
+
+        PairFloatArray distances = calculateDistancesFromEpipolar(fm,
+            leftPoints, rightPoints);
+
+        List<Double> errors = new ArrayList<Double>();
+
+        List<Integer> inlierIndexes = new ArrayList<Integer>();
+
+        for (int i = 0; i < distances.getN(); ++i) {
+
+            float leftPtD = distances.getX(i);
+
+            float rightPtD = distances.getY(i);
+
+            float dist = (float)Math.sqrt(leftPtD*leftPtD + rightPtD*rightPtD);
+
+            if (dist > tolerance) {
+                continue;
+            }
+
+            inlierIndexes.add(Integer.valueOf(i));
+
+            errors.add(Double.valueOf(dist));
+        }
+        
+        filterForDegenerate(leftPoints, inlierIndexes, errors);
+        filterForDegenerate(rightPoints, inlierIndexes, errors);
+
+        EpipolarTransformationFit fit = null;
+         
+        if (errors.size() > 0) {
+            fit = new EpipolarTransformationFit(fm, inlierIndexes, 
+                ErrorType.DIST_TO_EPIPOLAR_LINE, errors, tolerance);
+        } else {
+            fit = new EpipolarTransformationFit(fm, new ArrayList<Integer>(), 
+                ErrorType.DIST_TO_EPIPOLAR_LINE, new ArrayList<Double>(), tolerance);
+        }
+
+        fit.setNMaxMatchable(leftPoints.numCols());
+
+        return fit;
+    }
+    
     /**
      * find the distance of the given points from their respective projective
      * epipolar lines.
@@ -1463,63 +1436,29 @@ public class StereoProjectionTransformer {
 
         return distances;
     }
-
-    public PairIntArray getRightXYInt() {
-        return getXYInt(rightXY);
-    }
-
-    public PairIntArray getLeftXYInt() {
-        return getXYInt(leftXY);
-    }
-
-    public int getNumberOfMatches() {
-        return leftXY.numCols();
-    }
-
-    public PairFloatArray getRightXYFloat() {
-        return getXYFloat(rightXY);
-    }
-
-    public PairFloatArray getLeftXYFloat() {
-        return getXYFloat(leftXY);
-    }
-
-    private PairIntArray getXYInt(SimpleMatrix leftOrRightXY) {
-
-        int nPoints = leftOrRightXY.numCols();
-
-        PairIntArray out = new PairIntArray();
-
-        for (int i = 0; i < nPoints; i++) {
-
-            float xP = (float) leftOrRightXY.get(0, i);
-            float yP = (float) leftOrRightXY.get(1, i);
-
-            out.add(Math.round(xP), Math.round(yP));
+    
+    public static EpipolarTransformationFit calculateErrorThenFilter(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, int tolerance) {
+         
+        if (errorType.equals(ErrorType.SAMPSONS)) {
+            return calculateSampsonsErrorThenFilter(fm, x1, x2, tolerance);
+        } else {
+            return calculateEpipolarDistanceErrorThenFilter(fm, x1, x2, tolerance);
         }
-
-        return out;
     }
-
-    private PairFloatArray getXYFloat(SimpleMatrix leftOrRightXY) {
-
-        int nPoints = leftOrRightXY.numCols();
-
-        PairFloatArray out = new PairFloatArray();
-
-        for (int i = 0; i < nPoints; i++) {
-
-            float xP = (float) leftOrRightXY.get(0, i);
-            float yP = (float) leftOrRightXY.get(1, i);
-
-            out.add(xP, yP);
+    
+    public static EpipolarTransformationFit calculateError(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, int tolerance) {
+         
+        if (errorType.equals(ErrorType.SAMPSONS)) {
+            return calculateSampsonsError(fm, x1, x2, tolerance);
+        } else {
+            return calculateEpipolarDistanceError(fm, x1, x2, tolerance);
         }
-
-        return out;
     }
 
     public static EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, int tolerance, boolean filterForDegenerate) {
+        SimpleMatrix x1, SimpleMatrix x2, int tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1608,10 +1547,107 @@ public class StereoProjectionTransformer {
             }
         }
         
-        if (filterForDegenerate) {
-            filterForDegenerate(x1, outputInliers, outputDistances);
-            filterForDegenerate(x2, outputInliers, outputDistances);
+        EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
+            outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
+    
+        fit.setNMaxMatchable(x1.numCols());
+        
+        return fit;
+    }
+    
+    //follow errors w/ filter for degeneracy
+    public static EpipolarTransformationFit calculateSampsonsErrorThenFilter(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, int tolerance) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
         }
+        if (x1 == null) {
+            throw new IllegalArgumentException("x1 cannot be null");
+        }
+        if (x2 == null) {
+            throw new IllegalArgumentException("x2 cannot be null");
+        }
+        if (fm.numRows() != 3 || fm.numCols() != 3) {
+            throw new IllegalArgumentException("fm should have 3 rows and 3 columns");
+        }
+        if (x1.numRows() != x2.numRows() || x1.numCols() != x2.numCols()) {
+            throw new IllegalArgumentException("x1 and x2 must be same sizes");
+        }
+        
+        /*
+        geometric error of the final solution or the 7-point sample trial,
+        can be approximated by Sampon's error:
+             (x2_i * F * x1_i^T)^2                 (x2_i * F * x1_i^T)^2
+           ---------------------------------  +  ---------------------------
+             (F*x1_i^T)_x^2 + (F*x1_i^T)_y^2     (x2_i*F)_x^2 + (x2_i*F)_y^2
+        
+        reference?
+        */
+        
+        List<Integer> outputInliers = new ArrayList<Integer>();
+        List<Double> outputDistances = new ArrayList<Double>();
+        
+        //TODO: consider using the normalized matrixes and normalized tolerance during error calc too?
+        
+        SimpleMatrix fmT = fm.transpose();
+                
+        int n = x1.numCols();
+        
+        // 1 x n
+        SimpleMatrix x2tFx1 = new SimpleMatrix(1, n);
+        
+        boolean extractRow = false;
+        for (int col = 0; col < n; ++col) {
+            // 3 x 1 ==> T ==> 1 x 3
+            SimpleMatrix x2T_i = x2.extractVector(extractRow, col).transpose();
+            
+            // x2T_i * F is 1X3 * 3X3 = 1X3
+            SimpleMatrix x2T_iF = x2T_i.mult(fm);
+            
+            // 3 x 1
+            SimpleMatrix x1_i = x1.extractVector(extractRow, col);
+            
+            // x2T_iF * x1_i is 1X3 * 3X1 = 1X1
+            SimpleMatrix result = x2T_iF.mult(x1_i);
+            
+            x2tFx1.set(0, col, result.get(0, 0));            
+        }
+        
+        //Fx1 = F * x1  is 3X3 * 3Xn = 3Xn
+        SimpleMatrix fx1 = fm.mult(x1);
+        
+        //Ftx2 = F' * x2  is 3x3 * 3xn = 3xn
+        SimpleMatrix ftx2 = fmT.mult(x2);
+        
+        for (int col = 0; col < n; ++col) {
+            double x2tFx1_j = x2tFx1.get(0, col);
+            double a = x2tFx1_j * x2tFx1_j;
+            
+            double t1 = fx1.get(0, col);
+            t1 *= t1;
+            
+            double t2 = fx1.get(1, col);
+            t2 *= t2;
+            
+            double t3 = ftx2.get(0, col);
+            t3 *= t3;
+            
+            double t4 = ftx2.get(1, col);
+            t4 *= t4;
+            
+            double b = t1 + t2 + t3 + t4;
+            
+            double error = a/b;
+                        
+            if (error < tolerance) {
+                outputInliers.add(Integer.valueOf(col));
+                outputDistances.add(Double.valueOf(error));
+            }
+        }
+        
+        filterForDegenerate(x1, outputInliers, outputDistances);
+        filterForDegenerate(x2, outputInliers, outputDistances);
         
         EpipolarTransformationFit fit = new EpipolarTransformationFit(fm,
             outputInliers, ErrorType.SAMPSONS, outputDistances, tolerance);
