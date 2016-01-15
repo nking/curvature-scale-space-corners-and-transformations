@@ -2,6 +2,12 @@
    them.
    -- wanting the RANSAC classes to be able to choose homology, that
       is euclidean or epipolar.
+      -- for tne ransac solver for multiplicity, need to be able to use a euclidean
+         model and evaluator.
+         checkerboard tests are not solved well by epipolar, essentially due to the
+         inability to evaluate point distances along the length of the epipolar lines..
+         the solution tends to converge towards points along along a line in image 1
+         matched to spatially distributed points in image 2.
    -- delay this until the next ransac variation for groups of points
       is implemented (see next bullet)
 
@@ -29,6 +35,37 @@
           many very good points associated w/ blobs.
           the current euclidean matcher tries all combinations, so
           does find the true solution, but its runtime is long.
+
+   details for quick implementation before refactoring all of these components
+   to better see choices and methods.
+      EuclideanSegmentFeatureMatcher2
+        -- contains the logic for creating the point lists and associating
+           them w/ blobs and further removing difficult to localize points
+           (which itself is not necessary for some types of points...corners
+           created from canny edges or perimeters, for example).
+        --> would want to substitute 'BlobCornersEuclideanCalculator2'
+            with an implementation that uses ransac.
+            -- should be able to reuse 
+               for a quick look at this as a method,
+               but would prefer to implement evaluateWithMatchedLists
+               after a working version is in place.
+               -- using 'evaluateWithMatchedLists' produces a smaller list
+               of correspondence, so should consider following the solution
+               with a step to add more points.
+               (in more than one class have this step w/ canny edge corners
+               and a given euclidean transformation,
+               so should place that in its own class to reuse).
+      (1) edit EuclideanSegmentFeatureMatcher2 to allow choice of ransac
+          and add a switch to use that where BlobCornersEuclideanCalculator2 is
+          constructed.
+      (2) The 3rd ransac variation should be created for this purpose,
+          RANSACForGroupedPointsSolver.java
+          -- need an evaluation for only the points associated w/
+              blobs, and based only on distance 
+              (these points were already matched to one another based upon ssd,
+              so no need to use features again.)
+              ** note, this same logic should be placed in the unimplemented 
+                  BlobCornersEuclideanCalculator2.evaluateWithMatchedLists
 
 -- consider alternate means of still finding the correct solution for checkerboard when best matches are false...
 
