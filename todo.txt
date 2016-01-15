@@ -8,7 +8,14 @@
          inability to evaluate point distances along the length of the epipolar lines..
          the solution tends to converge towards points along along a line in image 1
          matched to spatially distributed points in image 2.
-   -- delay this until the next ransac variation for groups of points
+   -- the refactoring to use this pattern for ransac also needs refactoring of
+      the other feature matching classes.
+      need a clearer interface for seeing the choices for creating points
+      and the choices for matching points and the choices for whether to 
+      solve for epipolar or euclidean to make the final correspondence list.
+      this includes fixing the inverted paradigm of NonEuclideanSegmentFeatureMatcher2
+      too.
+   -- delay these refactorings until the next ransac variation for groups of points
       is implemented (see next bullet)
 
 -- implement use of RANSAC for a pattern of groups of points.
