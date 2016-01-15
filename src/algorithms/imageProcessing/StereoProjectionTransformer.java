@@ -158,7 +158,7 @@ public class StereoProjectionTransformer {
      * @return 
      */
     public SimpleMatrix calculateEpipolarProjection(
-        PairFloatArray pointsLeftXY,  PairFloatArray pointsRightXY) {
+        PairIntArray pointsLeftXY,  PairIntArray pointsRightXY) {
 
         if (pointsLeftXY == null) {
             throw new IllegalArgumentException("pointsLeftXY cannot be null");
@@ -296,7 +296,7 @@ public class StereoProjectionTransformer {
      * @return
      */
     public List<SimpleMatrix> calculateEpipolarProjectionFor7Points(
-        PairFloatArray pointsLeftXY, PairFloatArray pointsRightXY) {
+        PairIntArray pointsLeftXY, PairIntArray pointsRightXY) {
 
         if (pointsLeftXY == null) {
             throw new IllegalArgumentException("refactorLeftXY cannot be null");
@@ -959,7 +959,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return
      */
-    public static SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
+    public SimpleMatrix rewriteInto3ColumnMatrix(PairFloatArray xyPairs) {
 
         SimpleMatrix xy = new SimpleMatrix(3, xyPairs.getN());
 
@@ -981,7 +981,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return
      */
-    public static SimpleMatrix rewriteInto3ColumnMatrix(List<PairInt> xyPairs) {
+    public SimpleMatrix rewriteInto3ColumnMatrix(List<PairInt> xyPairs) {
 
         SimpleMatrix xy = new SimpleMatrix(3, xyPairs.size());
 
@@ -1004,7 +1004,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return
      */
-    public static SimpleMatrix rewriteFirstItemInto3ColumnMatrix(List<List<PairInt>> xyPairs) {
+    public SimpleMatrix rewriteFirstItemInto3ColumnMatrix(List<List<PairInt>> xyPairs) {
 
         SimpleMatrix xy = new SimpleMatrix(3, xyPairs.size());
 
@@ -1028,7 +1028,7 @@ public class StereoProjectionTransformer {
      * @param xyPairs
      * @return
      */
-    public static SimpleMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
+    public SimpleMatrix rewriteInto3ColumnMatrix(PairIntArray xyPairs) {
 
         SimpleMatrix xy = new SimpleMatrix(3, xyPairs.getN());
 
@@ -1239,7 +1239,7 @@ public class StereoProjectionTransformer {
      * @param tolerance
      * @return
      */
-    public static EpipolarTransformationFit calculateEpipolarDistanceError(
+    public EpipolarTransformationFit calculateEpipolarDistanceError(
         SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
         double tolerance) {
         
@@ -1306,7 +1306,7 @@ public class StereoProjectionTransformer {
      * @param tolerance
      * @return
      */
-    public static EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
+    public EpipolarTransformationFit calculateEpipolarDistanceErrorThenFilter(
         SimpleMatrix fm, SimpleMatrix leftPoints, SimpleMatrix rightPoints, 
         double tolerance) {
         
@@ -1379,7 +1379,7 @@ public class StereoProjectionTransformer {
      * @param tolerance
      * @return
      */
-    static PairFloatArray calculateDistancesFromEpipolar(
+    PairFloatArray calculateDistancesFromEpipolar(
         SimpleMatrix fm, SimpleMatrix matchedLeftPoints,
         SimpleMatrix matchedRightPoints) {
 
@@ -1437,8 +1437,8 @@ public class StereoProjectionTransformer {
         return distances;
     }
     
-    public static EpipolarTransformationFit calculateErrorThenFilter(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, int tolerance) {
+    public EpipolarTransformationFit calculateErrorThenFilter(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, double tolerance) {
          
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsErrorThenFilter(fm, x1, x2, tolerance);
@@ -1447,8 +1447,8 @@ public class StereoProjectionTransformer {
         }
     }
     
-    public static EpipolarTransformationFit calculateError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, int tolerance) {
+    public EpipolarTransformationFit calculateError(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, ErrorType errorType, double tolerance) {
          
         if (errorType.equals(ErrorType.SAMPSONS)) {
             return calculateSampsonsError(fm, x1, x2, tolerance);
@@ -1456,9 +1456,9 @@ public class StereoProjectionTransformer {
             return calculateEpipolarDistanceError(fm, x1, x2, tolerance);
         }
     }
-
-    public static EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, int tolerance) {
+    
+    public EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1556,8 +1556,8 @@ public class StereoProjectionTransformer {
     }
     
     //follow errors w/ filter for degeneracy
-    public static EpipolarTransformationFit calculateSampsonsErrorThenFilter(SimpleMatrix fm,
-        SimpleMatrix x1, SimpleMatrix x2, int tolerance) {
+    public EpipolarTransformationFit calculateSampsonsErrorThenFilter(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, double tolerance) {
         
         if (fm == null) {
             throw new IllegalArgumentException("fm cannot be null");
@@ -1657,7 +1657,7 @@ public class StereoProjectionTransformer {
         return fit;
     }
     
-    private static void filterForDegenerate(SimpleMatrix xy1,
+    private void filterForDegenerate(SimpleMatrix xy1,
         List<Integer> outputInliers, List<Double> outputDistances) {
         
         Map<PairInt, List<Integer>> pointIndexes = new HashMap<PairInt, List<Integer>>();

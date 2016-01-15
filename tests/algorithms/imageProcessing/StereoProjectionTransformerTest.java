@@ -1,6 +1,6 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.StereoProjectionTransformer.NormalizedXY;
+import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
@@ -24,7 +24,7 @@ public class StereoProjectionTransformerTest extends TestCase {
     public StereoProjectionTransformerTest() {
     }
     
-    public void estCreateScaleTranslationMatrix() throws Exception {
+    public void testCreateScaleTranslationMatrix() throws Exception {
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
@@ -85,61 +85,127 @@ public class StereoProjectionTransformerTest extends TestCase {
         }
     }
     
-    public void testNormalization() throws Exception {
-        
-        // add reference for the merton college images (they're in testresources directory)
-        
-        PairIntArray left7 = new PairIntArray();
-        PairIntArray right7 = new PairIntArray();
-        getMertonCollege7TrueMatches(left7, right7);
+    public void testMoreThan7Points() throws Exception {
+            
+        PairIntArray leftTrueMatches = new PairIntArray();
+        PairIntArray rightTrueMatches = new PairIntArray();
+        getMertonCollege10TrueMatches(leftTrueMatches, rightTrueMatches);
         
         StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
         
-        SimpleMatrix inputLeft =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(left7);
+        SimpleMatrix fm = spTransformer.calculateEpipolarProjection(
+            leftTrueMatches, rightTrueMatches);
 
-        SimpleMatrix inputRight =
-            StereoProjectionTransformer.rewriteInto3ColumnMatrix(right7);
+        assertNotNull(fm);
         
-        NormalizedXY normalizedXY1 = spTransformer.normalize(inputLeft);
-        NormalizedXY normalizedXY2 = spTransformer.normalize(inputRight);
- /*       
-        List<SimpleMatrix> fms =
-            spTransformer.calculateEpipolarProjectionFor7PointsNormalized(
-            normalizedXY1.getXy(), normalizedXY2.getXy());
+        double tolerance = 3;
         
-        assertNotNull(fms.get(0));
+        SimpleMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
+        SimpleMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
+        EpipolarTransformationFit fit = spTransformer.calculateError(fm, matchedLeftXY, 
+            matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
         
-        SimpleMatrix normFM = fms.get(0);
+        assertNotNull(fit);
+        assertNotNull(fit.getErrorType());
+        assertEquals(10, fit.getErrors().size());
+        assertEquals(10, fit.getInlierIndexes().size());
+        fit.calculateErrorStatistics();
+        double mean = fit.getMeanError();
+        double stdev = fit.getStDevFromMean();
+        List<Double> errors = fit.getErrors();
         
-        SimpleMatrix t1 = normalizedXY1.getNormalizationMatrix();
-        SimpleMatrix t2 = normalizedXY2.getNormalizationMatrix();
+        assertTrue(mean < tolerance);
+        assertTrue(stdev < tolerance);
+        for (Double error : errors) {
+            assertTrue(error < tolerance);
+        }
         
-        SimpleMatrix denormFM = spTransformer.denormalizeTheFundamentalMatrix(
-            normFM, t1, t2);
+        EpipolarTransformationFit fit2 = spTransformer.calculateError(fm, 
+            matchedLeftXY, matchedRightXY, ErrorType.SAMPSONS, tolerance);
         
-        //norm:
-        //    F = (T_2)^T * F * T_1
-        //
-        //denorm:
-        //    F = (T_1)^T * F * T_2
+        assertNotNull(fit2);
+        assertNotNull(fit2.getErrorType());
+        assertEquals(10, fit2.getErrors().size());
+        assertEquals(10, fit2.getInlierIndexes().size());
+        fit2.calculateErrorStatistics();
+        double mean2 = fit2.getMeanError();
+        double stdev2 = fit2.getStDevFromMean();
+        List<Double> errors2 = fit2.getErrors();
         
-        //SimpleMatrix normFM2 = t2.transpose().mult(denormFM.mult(t1));
-        SimpleMatrix normFM2 = t2.transpose().mult(denormFM).mult(t1);
-        
-        log.info("normalized fm = " + normFM.toString());
-        
-        log.info("normalized fm denormalized then normalized = " + normFM2.toString());
-            
-        SimpleMatrix denormFM2 = t1.transpose().mult(
-            normFM2.mult(t2));
-        
-        log.info("denormalized fm = " + denormFM.toString());
-        
-        log.info("denormalized fm normalized then denormalized = " + denormFM2.toString());
- */
+        assertTrue(mean2 < tolerance);
+        assertTrue(stdev2 < tolerance);
+        for (Double error : errors2) {
+            assertTrue(error < tolerance);
+        }
     }
     
+    public void test7Points() throws Exception {
+            
+        PairIntArray leftTrueMatches = new PairIntArray();
+        PairIntArray rightTrueMatches = new PairIntArray();
+        getMertonCollege7TrueMatches(leftTrueMatches, rightTrueMatches);
+        
+        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
+        
+        List<SimpleMatrix> fms =
+            spTransformer.calculateEpipolarProjectionFor7Points(leftTrueMatches, 
+            rightTrueMatches);
+
+        assertNotNull(fms);
+        assertFalse(fms.isEmpty());
+        
+        double tolerance = 3;
+        
+        SimpleMatrix matchedLeftXY = spTransformer.rewriteInto3ColumnMatrix(leftTrueMatches);
+        SimpleMatrix matchedRightXY = spTransformer.rewriteInto3ColumnMatrix(rightTrueMatches);
+        EpipolarTransformationFit fit = null;
+        for (SimpleMatrix fm : fms) {
+            EpipolarTransformationFit fitI = 
+                spTransformer.calculateError(fm, matchedLeftXY, 
+                    matchedRightXY, ErrorType.DIST_TO_EPIPOLAR_LINE, tolerance);
+            if (fitI.isBetter(fit)) {
+                fit = fitI;
+            }
+        }
+        assertNotNull(fit);
+        assertNotNull(fit.getErrorType());
+        assertEquals(7, fit.getErrors().size());
+        assertEquals(7, fit.getInlierIndexes().size());
+        fit.calculateErrorStatistics();
+        double mean = fit.getMeanError();
+        double stdev = fit.getStDevFromMean();
+        List<Double> errors = fit.getErrors();
+        
+        assertTrue(mean < 0.001);
+        assertTrue(stdev < 0.001);
+        for (Double error : errors) {
+            assertTrue(error < 0.001);
+        }
+        
+        EpipolarTransformationFit fit2 = null;
+        for (SimpleMatrix fm : fms) {
+            EpipolarTransformationFit fitI = 
+                spTransformer.calculateError(fm, matchedLeftXY, 
+                    matchedRightXY, ErrorType.SAMPSONS, tolerance);
+            if (fitI.isBetter(fit2)) {
+                fit2 = fitI;
+            }
+        }
+        assertNotNull(fit2);
+        assertNotNull(fit2.getErrorType());
+        assertEquals(7, fit2.getErrors().size());
+        assertEquals(7, fit2.getInlierIndexes().size());
+        fit2.calculateErrorStatistics();
+        double mean2 = fit2.getMeanError();
+        double stdev2 = fit2.getStDevFromMean();
+        List<Double> errors2 = fit2.getErrors();
+        
+        assertTrue(mean2 < 0.001);
+        assertTrue(stdev2 < 0.001);
+        for (Double error : errors2) {
+            assertTrue(error < 0.001);
+        }
+    }
     
     /*
     for more datasets:
@@ -220,7 +286,6 @@ public class StereoProjectionTransformerTest extends TestCase {
             return Color.ORANGE;
         }
     }
-    
     
     protected void getMertonCollege10TrueMatches(PairIntArray left, 
         PairIntArray right) {

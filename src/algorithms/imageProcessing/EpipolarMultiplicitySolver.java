@@ -30,8 +30,8 @@ public class EpipolarMultiplicitySolver {
     }
     private State state = null;
 
-    private PairFloatArray solutionLeftXY = null;
-    private PairFloatArray solutionRightXY = null;
+    private PairIntArray solutionLeftXY = null;
+    private PairIntArray solutionRightXY = null;
 
     private final FeatureMatcherSettings featureSettings;
 
@@ -82,8 +82,8 @@ public class EpipolarMultiplicitySolver {
         }
         assert(matchedLeftXY.size() == matchedRightXYs.size());
              
-        PairFloatArray outputLeftXY = new PairFloatArray();
-        PairFloatArray outputRightXY = new PairFloatArray();
+        PairIntArray outputLeftXY = new PairIntArray();
+        PairIntArray outputRightXY = new PairIntArray();
      
         RANSACMultiplicitySolver solver = new RANSACMultiplicitySolver();
         

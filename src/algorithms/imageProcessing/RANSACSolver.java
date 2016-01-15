@@ -130,7 +130,7 @@ public class RANSACSolver {
 
         int nPoints = matchedLeftXY.numCols();
         
-        ErrorType errorType = ErrorType.DIST_TO_EPIPOLAR_LINE;
+        ErrorType errorType = ErrorType.SAMPSONS;
 
         StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();
             

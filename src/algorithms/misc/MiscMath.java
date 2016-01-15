@@ -515,7 +515,7 @@ public class MiscMath {
             double diffX = x.get(i) - avgX;
             sumX += (diffX * diffX);
         }
-        double stdDevX = (Math.sqrt(sumX/(length - 1.0f)));
+        double stdDevX = (Math.sqrt((double)sumX/((double)length - 1.)));
         
         return new double[]{avgX, stdDevX};
     }
