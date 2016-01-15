@@ -1,3 +1,30 @@
+-- create an interace for a model and evaluator and factory classes for
+   them.
+   -- wanting the RANSAC classes to be able to choose homology, that
+      is euclidean or epipolar.
+   -- delay this until the next ransac variation for groups of points
+      is implemented (see next bullet)
+
+-- implement use of RANSAC for a pattern of groups of points.
+   -- the creation of points uses 2nd derivatives and filter for
+      those without a close 2nd best, then associates the points
+      with the blobs extracted from the atrous based segmentation.
+   -- the groups of points can be chosen from randomly. the goal
+      is still to find other true points.
+      -- the statistics are on a "group" basis, that is each group
+         can be counted as if it were a point and it doesn't matter
+         which point is chosen from the group.  might use a round
+         robin algorithm to avoid another computationally expensive
+         random invocation.  in that case, might want to rank the
+         points within a blob by curvature or a property indicating
+         it's more unique. 
+    For the goal of finding a single euclidean transformation for
+    2 images, this should be robust.  
+       -- merton college image is good test.  it is large and has
+          many very good points associated w/ blobs.
+          the current euclidean matcher tries all combinations, so
+          does find the best solution, but it's runtime is long.
+
 -- consider alternate means of still finding the correct solution for checkerboard when best matches are false...
 
 -- revisit the merton college epipolar solution.
