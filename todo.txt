@@ -12,15 +12,13 @@
    -- the sample to create homology from chooses one point from
       any group.
       -- the statistics are on a "group" basis, that is each group
-         can be counted as if it were a point and it doesn't matter
+         can be counted as if it were a point (all points in
+         a group should be similarly 'T' or 'F') and it doesn't matter
          which point is chosen from the group.  might use a round
          robin algorithm to avoid another computationally expensive
          random invocation.  in that case, might want to rank the
          points within a blob by curvature or a property indicating
          it's more unique. 
-         the reason the statistics can be considered the same as 
-         the statistics treating each group as a point is that all
-         the points should be similarly 'T' or 'F' in a group.
          -- a sampling function could be made to bias the selection
           towards blobs which have more points, however, and in that
           case, the statistics for calculating max iteration has to
