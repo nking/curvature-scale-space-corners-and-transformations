@@ -357,32 +357,32 @@ import java.util.Stack;
 
     public static PairInt[] convert(CornerRegion[] c) {
         
-<span class="nc" id="L360">        PairInt[] output = new PairInt[c.length];</span>
+<span class="fc" id="L360">        PairInt[] output = new PairInt[c.length];</span>
         
-<span class="nc bnc" id="L362" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; ++i) {</span>
             
-<span class="nc" id="L364">            CornerRegion cr = c[i];</span>
-<span class="nc" id="L365">            int x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L366">            int y = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L367">            output[i] = new PairInt(x, y);</span>
+<span class="fc" id="L364">            CornerRegion cr = c[i];</span>
+<span class="fc" id="L365">            int x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L366">            int y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L367">            output[i] = new PairInt(x, y);</span>
         }
         
-<span class="nc" id="L370">        return output;</span>
+<span class="fc" id="L370">        return output;</span>
     }
     
     public static PairInt[] convert(List&lt;CornerRegion&gt; c) {
         
-<span class="nc" id="L375">        PairInt[] output = new PairInt[c.size()];</span>
+<span class="fc" id="L375">        PairInt[] output = new PairInt[c.size()];</span>
         
-<span class="nc bnc" id="L377" title="All 2 branches missed.">        for (int i = 0; i &lt; c.size(); ++i) {</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (int i = 0; i &lt; c.size(); ++i) {</span>
             
-<span class="nc" id="L379">            CornerRegion cr = c.get(i);</span>
-<span class="nc" id="L380">            int x = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L381">            int y = cr.getY()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L382">            output[i] = new PairInt(x, y);</span>
+<span class="fc" id="L379">            CornerRegion cr = c.get(i);</span>
+<span class="fc" id="L380">            int x = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L381">            int y = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L382">            output[i] = new PairInt(x, y);</span>
         }
         
-<span class="nc" id="L385">        return output;</span>
+<span class="fc" id="L385">        return output;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

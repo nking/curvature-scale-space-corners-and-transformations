@@ -134,13 +134,37 @@ public class PixelThetaDescriptor extends ThetaDescriptor {
     }
 
     @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="nc" id="L140">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (!(otherDesc instanceof PixelThetaDescriptor)) {</span>
+<span class="nc" id="L144">            throw new IllegalArgumentException(</span>
+            &quot;otherDesc has to be type ThetaDescriptor&quot;);
+        }
+        
+<span class="nc" id="L148">        PixelThetaDescriptor other = (PixelThetaDescriptor)otherDesc;</span>
+        
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (this.a.length != other.a.length) {</span>
+<span class="nc" id="L151">            throw new IllegalArgumentException(</span>
+            &quot;this and other arrays must have the same lengths&quot;);
+        }
+         
+<span class="nc" id="L155">        float cSim = MiscMath.calculateCosineSimilarity(a, other.a, sentinel);</span>
+                
+<span class="nc" id="L157">        return cSim;</span>
+    }
+    
+    @Override
     public int getCentralIndex() {
-<span class="nc" id="L138">        return centralIndex;</span>
+<span class="nc" id="L162">        return centralIndex;</span>
     }
 
     @Override
     public String toString() {
-<span class="nc" id="L143">        return Arrays.toString(a);</span>
+<span class="nc" id="L167">        return Arrays.toString(a);</span>
     }
     
 }

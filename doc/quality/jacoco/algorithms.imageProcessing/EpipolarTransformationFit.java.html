@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EpipolarTransformationFit.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EpipolarTransformationFit.java</span></div><h1>EpipolarTransformationFit.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.misc.MiscMath;
+import java.util.ArrayList;
+import java.util.List;
+import org.ejml.simple.SimpleMatrix;
+
+/**
+ *
+ * @author nichole
+ */
+public class EpipolarTransformationFit {
+    
+    private final ErrorType errorType;
+    
+    /**
+     * when value is not Long.MIN_VALUE, it holds the maximum number of points
+     * that were possible to match.  This may not always be populated, so 
+     * check value before using.
+     */
+<span class="fc" id="L22">    private long nMaxMatchable = Long.MIN_VALUE;</span>
+    
+    private final double tolerance;
+    
+<span class="fc" id="L26">    private double meanError = Double.MAX_VALUE;</span>
+    
+<span class="fc" id="L28">    private double stDevFromMean = Double.MAX_VALUE;</span>
+    
+    private SimpleMatrix fundamentalMatrix;
+    
+    private final List&lt;Integer&gt; inlierIndexes;
+    
+    private final List&lt;Double&gt; errors;
+
+    public EpipolarTransformationFit(SimpleMatrix theFundamentalMatrix,
+        List&lt;Integer&gt; theInlierIndexes, ErrorType theErrorType,
+<span class="fc" id="L38">        List&lt;Double&gt; theErrors, double theTolerance) {</span>
+        
+<span class="fc" id="L40">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
+<span class="fc" id="L41">        tolerance = theTolerance;</span>
+<span class="fc" id="L42">        inlierIndexes = new ArrayList&lt;Integer&gt;(theInlierIndexes);</span>
+<span class="fc" id="L43">        errorType = theErrorType;</span>
+<span class="fc" id="L44">        errors = new ArrayList&lt;Double&gt;(theErrors);</span>
+<span class="fc" id="L45">    }</span>
+    
+    public void calculateErrorStatistics() {
+        
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (meanError != Double.MAX_VALUE) {</span>
+            // has already been calculated
+<span class="fc" id="L51">            return;</span>
+        }
+        
+<span class="fc" id="L54">        double[] avgAndStDv = MiscMath.getAvgAndStDev(errors);</span>
+        
+<span class="fc" id="L56">        meanError = avgAndStDv[0];</span>
+<span class="fc" id="L57">        stDevFromMean = avgAndStDv[1];</span>
+<span class="fc" id="L58">    }</span>
+    
+    public SimpleMatrix getFundamentalMatrix() {
+<span class="fc" id="L61">        return fundamentalMatrix;</span>
+    }
+    
+    /**
+     * @return the nMatches
+     */
+    public long getNMatches() {
+<span class="nc" id="L68">        return inlierIndexes.size();</span>
+    }
+    
+    /**
+     * @param theNumberOfPossibleMatches
+     */
+    public void setNMaxMatchable(long theNumberOfPossibleMatches) {
+<span class="fc" id="L75">        nMaxMatchable = theNumberOfPossibleMatches;</span>
+<span class="fc" id="L76">    }</span>
+    
+    /**
+     * @return the nMaxMatchable
+     */
+    public long getNMaxMatchable() {
+<span class="nc" id="L82">        return nMaxMatchable;</span>
+    }
+
+    /**
+     * @return the tolerance
+     */
+    public double getTolerance() {
+<span class="nc" id="L89">        return tolerance;</span>
+    }
+
+    public double getMeanError() {
+<span class="fc" id="L93">        return meanError;</span>
+    }
+
+    /**
+     * @return the stDevFromAvg
+     */
+    public double getStDevFromMean() {
+<span class="fc" id="L100">        return stDevFromMean;</span>
+    }
+    
+    /**
+     * compare to other by the number of inliers, else if tie, compares
+     * mean of errors, else if tie, compares mean of standard deviation of mean
+     * of errors, else returns false.
+     * @param other
+     * @return 
+     */
+    public boolean isBetter(EpipolarTransformationFit other) {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (other == null) {</span>
+<span class="fc" id="L112">            return true;</span>
+        }
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (this.inlierIndexes.size() &gt; other.inlierIndexes.size()) {</span>
+<span class="fc" id="L115">            return true;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        } else if (this.inlierIndexes.size() &lt; other.inlierIndexes.size()) {</span>
+<span class="fc" id="L117">            return false;</span>
+        }
+<span class="fc" id="L119">        calculateErrorStatistics();</span>
+<span class="fc" id="L120">        other.calculateErrorStatistics();</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (meanError &lt; other.meanError) {</span>
+<span class="fc" id="L122">            return true;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        } else if (meanError &gt; other.meanError) {</span>
+<span class="fc" id="L124">            return false;</span>
+        }
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (stDevFromMean &lt; other.stDevFromMean) {</span>
+<span class="fc" id="L127">            return true;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        } else if (stDevFromMean &gt; other.stDevFromMean) {</span>
+<span class="fc" id="L129">            return false;</span>
+        }
+        
+        // these are equivalent
+<span class="fc" id="L133">        return false;</span>
+    }
+
+    public List&lt;Integer&gt; getInlierIndexes() {
+        
+<span class="fc" id="L138">        return inlierIndexes;</span>
+    }
+    
+    @Override
+    public String toString() {
+        
+<span class="fc" id="L144">        StringBuilder sb = new StringBuilder();</span>
+        
+<span class="fc" id="L146">        sb.append(&quot;nMatchedPoints=&quot;).append(Long.toString(inlierIndexes.size()))</span>
+<span class="fc" id="L147">            .append(&quot; nMaxMatchable=&quot;).append(Long.toString(nMaxMatchable))</span>
+<span class="fc" id="L148">            .append(&quot; tolerance=&quot;).append(Double.toString(tolerance))</span>
+<span class="fc" id="L149">            .append(&quot; meanDistFromModel=&quot;).append(Double.toString(meanError))</span>
+<span class="fc" id="L150">            .append(&quot; stDevFromMean=&quot;).append(Double.toString(stDevFromMean))</span>
+            ;
+        
+<span class="fc" id="L153">        return sb.toString();</span>
+    }
+
+    /**
+     * @return the errorType
+     */
+    public ErrorType getErrorType() {
+<span class="fc" id="L160">        return errorType;</span>
+    }
+
+    /**
+     * @return the errors
+     */
+    public List&lt;Double&gt; getErrors() {
+<span class="fc" id="L167">        return errors;</span>
+    }
+    
+    public void setFundamentalMatrix(SimpleMatrix theFM) {
+<span class="nc" id="L171">        fundamentalMatrix = theFM;</span>
+<span class="nc" id="L172">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

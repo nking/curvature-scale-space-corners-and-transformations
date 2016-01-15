@@ -764,7 +764,7 @@ import java.util.logging.Logger;
         int binFactor2) {
         
 <span class="fc" id="L766">        int transTol = 30;</span>
-<span class="pc bpc" id="L767" title="1 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
+<span class="pc bpc" id="L767" title="3 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
 <span class="fc" id="L768">            transTol /= ((binFactor1 + binFactor2)/2.f);</span>
         }
         
@@ -1391,8 +1391,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L1391">        img2Intersection[3] = q4TrTr;</span>
         
 <span class="fc bfc" id="L1393" title="All 2 branches covered.">        for (double[] xyTr : img2Intersection) {</span>
-<span class="pc bpc" id="L1394" title="1 of 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L1395">                xyTr[0] = 0;</span>
+<span class="fc bfc" id="L1394" title="All 2 branches covered.">            if (xyTr[0] &lt; 0) {</span>
+<span class="fc" id="L1395">                xyTr[0] = 0;</span>
 <span class="pc bpc" id="L1396" title="1 of 2 branches missed.">            } else if (xyTr[0] &gt; (img2Width - 1)) {</span>
 <span class="nc" id="L1397">                xyTr[0] = (img2Width - 1);</span>
             }

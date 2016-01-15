@@ -1,332 +1,267 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RANSACAlgorithmIterations.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">RANSACAlgorithmIterations.java</span></div><h1>RANSACAlgorithmIterations.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
 
+import algorithms.misc.MiscMath;
+
 /**
  * estimates the number of iterations for a RANSAC type algorithm that 
- * should be used to ensure with 95% certainty that a set of points is 
+ * should be used to ensure with 99% certainty that a set of points is 
  * findable as a subset of n matchable points.
- * 
+&lt;pre&gt;
+nPoints is the number of points that contain true and false matches.
+        
+nTruePoints is the number of true matches within nPoints.
+        
+k is the number of points to draw at one time for a RANSAC sample test iteration.
+
+nCombinations is the number of combinations of samples of size k is nPoints!/(k!*(nPoints-k)!).
+
+For a sample, the first draw of a matching point out of nPoints has 
+possibility of being all 'true' points = (nTruePoints/nPoints).
+For the same sample, the second draw in the sample has the possibility 
+of being all 'true' points = (nTruePoints - 1)/(nPoints - 1).
+etc.   The possibility that the sample is composed of all 'true' points is
+then (nTruePoints/nPoints) * ((nTruePoints - 1)/(nPoints - 1)) *
+         ((nTruePoints - 2)/(nPoints - 2)) ... ((nTruePoints - k - 1)/(nPoints - k - 1))
+
+The total number of 'true' samples within all possible combinations of size k 
+from nPoints is then
+nCombinations * ((nTruePoints/nPoints)*(nTruePoints - 1)/(nPoints - 1)...((nTruePoints - k-1)/(nPoints - k-1))
+(this is verified in algorithms.stats.ransac.CountingTest)
+
+The fraction of all 'true' samples, 
+that is the number of samples composed of all 'true' points divided by number of 
+all possible samples,
+is then just the possibility that a sample is all 'true', that is
+     ((nTruePoints/nPoints)*(nTruePoints - 1)/(nPoints - 1)...((nTruePoints - k-1)/(nPoints - k-1))
+
+let pSample be the fraction just calculated.
+
+knowing pSample for a sample now, need to calculate the number of samples that
+need to be drawn in order to have a high confidence that at least one
+sample was a true sample.
+
+Naively, that would be the inverse of pSample.
+
+Now that have the statistics in a form of 2 states, can use binomial statistics,
+the binomial theorem, to determine the number of fails before the first
+success (sample is 'true').   This is similar to a Geometric distribution when
+simplified below.
+          
+    m = the number of success trials which is the minimum here, '1'
+    nIter is the number of iterations needed 
+    
+    P(m|pSample,nIter) = pSample^m * (1 - pSample)^(nIter-m) * nCombinations
+                       = pSample * (1 - pSample)^(nIter-1) * nCombinations
+                       = pSample * nCombinations * (1 - pSample)^(nIter-1)
+                       
+               having defined m = 1 and knowing pSample represents the number of
+               true samples divided by nCombinations, can simplify
+               pSample * nCombinations as '1'
+               
+    P(m|pSample,nIter) = (1 - pSample)^(nIter-1)
+    
+    P(m|pSample,nIter) is 1 - Pconfidence where Pconfidence used here will be 0.99
+     
+    Then solving for nIter:
+         math.log(1. - Pconfid) = (nIter-1) * math.log(1. - pSample)
+    then
+         nIter = (math.log(1. - Pconfid) / math.log(1. - pSample)) + 1
+         
+&lt;/pre&gt;
  * @author nichole
  */
-<span class="fc" id="L10">public class RANSACAlgorithmIterations {</span>
-    
-    /**
-     The estimate assumes that at least 25 percent of the nMatchedPoints
-     are outliers and determines the number of iterations needed for a 95%
-     certainty that 8 points drawn randomly from nMatchedPoints will all be
-     &quot;true&quot; matches, that is, not outliers.
-     
-     &lt;pre&gt;
-     It uses this table generated below following the statistics in the comments
-     at the end of this class.
-     
-                    | nInliers percentage of nTotal
-     nMatchedPoints |   50       75       100
-     ------------------------------------------------------
-       30   |       | 0.001  | 0.05   |  1.0
-       50   |       | 0.002  | 0.07   |  1.0
-      100   |       | 0.003  | 0.09   |  1.0
-      500   |       | 0.004  | 0.1    |  1.0
-     1000   |       | 0.004  | 0.1    |  1.0
-     &lt;/pre&gt;
-     
-     * @param nMatchedPoints
-     * @return 
-     */
-    public int estimateNIterForTwentyFivePercentOutliersFor8Points(
-        int nMatchedPoints) {
+<span class="fc" id="L73">public class RANSACAlgorithmIterations {</span>
+
+    public long estimateNIterFor99PercentConfidence(
+        int nPoints, int sampleSize, double expectedFractionTruePoints) {
         
-        double p;
-<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (nMatchedPoints &lt;= 30) {</span>
-<span class="nc" id="L40">            p = 0.05;</span>
-<span class="nc bnc" id="L41" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 50) {</span>
-<span class="nc" id="L42">            p = 0.07;</span>
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 100) {</span>
-<span class="nc" id="L44">            p = 0.09;</span>
-        } else  {
-<span class="nc" id="L46">            p = 0.1;</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (sampleSize &lt; 1) {</span>
+<span class="nc" id="L79">            throw new IllegalArgumentException(&quot;sampleSize must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">        if (nPoints &lt; 1 || (nPoints &gt; 1789)) {</span>
+<span class="nc" id="L82">            throw new IllegalArgumentException(&quot;nPoints must be a positive number &lt; 1790&quot;);</span>
+        }
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        if (expectedFractionTruePoints &lt; 0.0000001 || (expectedFractionTruePoints &gt; 1.0)) {</span>
+<span class="nc" id="L85">            throw new IllegalArgumentException(</span>
+            &quot;expectedFractionTruePoints must be larger than 0 and less than 1&quot;);
         }
         
-<span class="nc" id="L49">        int nIter = (int)Math.round(1./p);</span>
+<span class="fc" id="L89">        double pSample = calculateTrueSampleProbability(nPoints, sampleSize, </span>
+            expectedFractionTruePoints);
         
-<span class="nc" id="L51">        return nIter;</span>
+        // pSample must be larger than approx 1e-16 and &lt;= 0.99
+        
+<span class="fc" id="L94">        long nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;</span>
+           
+<span class="fc" id="L96">        return nIter;</span>
     }
     
-    /**
-     The estimate assumes that at least 50 percent of the nMatchedPoints
-     are outliers and determines the number of iterations needed for a 95%
-     certainty that 8 points drawn randomly from nMatchedPoints will all be
-     &quot;true&quot; matches, that is, not outliers.
-     
-     &lt;pre&gt;
-     It uses this table generated below following the statistics in the comments
-     at the end of this class.
-     
-                    | nInliers percentage of nTotal
-     nMatchedPoints |   50       75       100
-     ------------------------------------------------------
-       30   |       | 0.001  | 0.05   |  1.0
-       50   |       | 0.002  | 0.07   |  1.0
-      100   |       | 0.003  | 0.09   |  1.0
-      500   |       | 0.004  | 0.1    |  1.0
-     1000   |       | 0.004  | 0.1    |  1.0
-     &lt;/pre&gt;
-     
-     * @param nMatchedPoints
-     * @return 
-     */
-    public int estimateNIterForFiftyPercentOutliersFor8Points(int nMatchedPoints) {
+    public long estimateNIterFor99PercentConfidenceDegenerate(
+        int nPoints, int nPointsIncludingDegenerate, int sampleSize, 
+        double expectedFractionTruePoints) {
         
-        double p;
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (nMatchedPoints &lt;= 30) {</span>
-<span class="nc" id="L81">            p = 0.001;</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 50) {</span>
-<span class="nc" id="L83">            p = 0.002;</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">        } else if (nMatchedPoints &lt;= 100) {</span>
-<span class="nc" id="L85">            p = 0.003;</span>
-        } else  {
-<span class="nc" id="L87">            p = 0.004;</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (sampleSize &lt; 1) {</span>
+<span class="nc" id="L104">            throw new IllegalArgumentException(&quot;sampleSize must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L106" title="2 of 4 branches missed.">        if (nPoints &lt; 1 || (nPoints &gt; 1789) ) {</span>
+<span class="nc" id="L107">            throw new IllegalArgumentException(&quot;nPoints must be a positive &quot; +</span>
+            &quot; number &lt; 1790 or even smaller considering multiplicity&quot;);
+        }
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">        if (expectedFractionTruePoints &lt; 0.0000001 || expectedFractionTruePoints &gt; 1.0) {</span>
+<span class="nc" id="L111">            throw new IllegalArgumentException(</span>
+            &quot;expectedFractionTruePoints must be larger than 0 and less than 1&quot;);
+        }
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (nPoints &lt;= sampleSize) {</span>
+<span class="nc" id="L115">            throw new IllegalArgumentException(&quot;nPoints must be larger than sampleSize&quot;);</span>
         }
         
-<span class="nc" id="L90">        int nIter = (int)Math.round(1./p);</span>
-        
-<span class="nc" id="L92">        return nIter;</span>
-    }
+<span class="fc" id="L118">        double pSample = calculateTrueSampleProbabilityForMultiplyMatched(nPoints, </span>
+            nPointsIncludingDegenerate, sampleSize, expectedFractionTruePoints);
 
-    /**
-     The estimate assumes that at least 50 percent of the nMatchedPoints
-     are outliers and determines the number of iterations needed for a 95%
-     certainty that 7 points drawn randomly from nMatchedPoints will all be
-     &quot;true&quot; matches, that is, not outliers.
-     
-     &lt;pre&gt;
-     It uses this table generated below following the statistics in the comments
-     at the end of this class.
-     
-                    | nInliers percentage of nTotal
-     nMatchedPoints |   50       75       100
-     ------------------------------------------------------
-       30   |       | 0.003  | 0.084  |  1.0
-       50   |       | 0.0048 | 0.10   |  1.0
-      100   |       | 0.006  | 0.124  |  1.0
-      500   |       | 0.0075 | 0.132  |  1.0
-     1000   |       | 0.0076 | 0.133  |  1.0
-     &lt;/pre&gt;
-     
-     * @param nMatchedPoints
-     * @return 
-     */
-    public int estimateNIterForFiftyPercentOutliersFor7Points(int nMatchedPoints) {
+        long nIter;
         
-        double p;
-<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (nMatchedPoints &lt;= 30) {</span>
-<span class="fc" id="L122">            p = 0.003;</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">        } else if (nMatchedPoints &lt;= 50) {</span>
-<span class="fc" id="L124">            p = 0.0048;</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        } else if (nMatchedPoints &lt;= 100) {</span>
-<span class="fc" id="L126">            p = 0.006;</span>
-        } else  {
-<span class="fc" id="L128">            p = 0.0075;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (pSample == 0) {</span>
+<span class="nc" id="L124">            return Long.MAX_VALUE;</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        } else if (pSample &lt; 1E-16) {</span>
+            // return naive estimate
+<span class="fc" id="L127">            return Math.round(1./pSample);</span>
+        } else {
+<span class="fc" id="L129">            nIter = Math.round(Math.log(1. - 0.99) / Math.log(1. - pSample)) + 1;</span>
         }
         
-<span class="fc" id="L131">        int nIter = (int)Math.round(1./p);</span>
-        
-<span class="fc" id="L133">        return nIter;</span>
+<span class="fc" id="L132">        return nIter;</span>
     }
-
+    
     /**
-     The estimate assumes that at least 15 percent of the nPoints
-     are true matches with points in another set of points
-     and determines the number of iterations needed for a 95%
-     certainty that 2 points drawn randomly from nPoints will all be
-     &quot;truly matchable&quot; with points in set2 (whose characteristics are
-     presumed to be similar).
-     
-     &lt;pre&gt;
-     It uses this table generated below following the statistics in the comments
-     at the end of this class.
-     
-             | nInliers percentage of nTotal
-     nPoints |  15        25       50       75
-     ------------------------------------------------------
-       30    | 0.014  | 0.05   | 0.24   |  0.53
-       50    | 0.017  | 0.054  | 0.245  |  0.54
-      100    | 0.021  | 0.061  | 0.247  |  0.56
-      177    | 0.021  | 0.061  | 0.246  |  0.56
-      500    | 0.022  | 0.062  | 0.25   |  0.56
-     1000    | 0.022  | 0.062  | 0.25   |  0.56
-     &lt;/pre&gt;
-     
+     * calculate the probability of drawing an all 'T' sample of sampleSize 
+     * points from a universe of nPoints of which 
+     * (expectedFractionTruePoints*nPoints) are 'T'.  
+     * The calculation is drawing each point without replacement,
+     * that is (nTruePts/nPts) * ((nTrue-1)/(nPoints-1)) * ((nTrue-2)/(nPoints-2)) ...
+     * 
+     * If nTruePts is less than sampleSize (due to small expectedFractionTruePoints
+     * for example), the calculation becomes 
      * @param nPoints
+     * @param sampleSize
+     * @param expectedFractionTruePoints
      * @return 
      */
-    public int estimateNIterForFifteenPercentOutliersFor2Points(int nPoints) {
+    public double calculateTrueSampleProbability(int nPoints, int sampleSize,
+        double expectedFractionTruePoints) {
         
-        double p;
-<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (nPoints &lt;= 30) {</span>
-<span class="nc" id="L166">            p = 0.014;</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">        } else if (nPoints &lt;= 50) {</span>
-<span class="nc" id="L168">            p = 0.017;</span>
-<span class="nc bnc" id="L169" title="All 2 branches missed.">        } else if (nPoints &lt;= 100) {</span>
-<span class="nc" id="L170">            p = 0.021;</span>
-        } else  {
-<span class="nc" id="L172">            p = 0.022;</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (sampleSize &lt; 1) {</span>
+<span class="nc" id="L153">            throw new IllegalArgumentException(&quot;sampleSize must be &gt; 0&quot;);</span>
+        }
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">        if (nPoints &lt; 1 || (nPoints &gt; 1789) ) {</span>
+<span class="nc" id="L156">            throw new IllegalArgumentException(&quot;nPoints must be a positive &quot; </span>
+                + &quot; number &lt; 1790 or even smaller considering multiplicity&quot;);
+        }
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">        if (expectedFractionTruePoints &lt; 0.0000001 || expectedFractionTruePoints &gt; 1.0) {</span>
+<span class="nc" id="L160">            throw new IllegalArgumentException(</span>
+            &quot;expectedFractionTruePoints must be larger than 0 and less than 1&quot;);
+        }
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (nPoints &lt;= sampleSize) {</span>
+<span class="nc" id="L164">            throw new IllegalArgumentException(&quot;nPoints must be larger than sampleSize&quot;);</span>
         }
         
-<span class="nc" id="L175">        int nIter = (int)Math.round(1./p);</span>
+<span class="fc" id="L167">        double nTruePoints = nPoints * expectedFractionTruePoints;</span>
         
-<span class="nc" id="L177">        return nIter;</span>
+<span class="fc" id="L169">        double factor = 1;</span>
+        
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (nTruePoints &gt;= sampleSize) {        </span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">            for (int i = 0; i &lt; sampleSize; ++i) {</span>
+<span class="fc" id="L173">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
+            }
+        } else {
+            //know that the number is still smaller than (1./nPoints)^sampleSize.
+            //For nTruePoints of 1, looks like (1./nPoints)*(1./(nPoints-sampleSize))^(sampleSize-1)
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            for (int i = 0; i &lt; (int)nTruePoints; ++i) {</span>
+<span class="fc" id="L179">                factor *= (nTruePoints - i)/(double)(nPoints - i);</span>
+            }
+<span class="fc" id="L181">            int pow = (sampleSize - (int)nTruePoints);</span>
+<span class="fc" id="L182">            factor *= Math.pow((1./(nPoints - sampleSize)), pow);</span>
+        }
+        
+<span class="fc" id="L185">        return factor;</span>
     }
     
-    /**
-    using estimates for the number of iterations required to
-    lower the probability that a set of nSet inliers is not found to 
-    1-0.95=0.05 from:
-    http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
-
-    Note: this assumes that the user's nPoints &gt;&gt; nIter.
-
-    g = probability of inliers in pairs of (unmatchedLeftXY, unmatchedRightXY)
-
-    p = nSet
-
-    0.05 = (1 - g^p)^nIter
-
-    log(0.05) = nIter * log(1 - g^p) ==&gt; nIter = log(0.05) / log(1 - g^p)
-
-    for g=0.5 and p=7, nIter = 382.
-    int nIter = (int)Math.ceil(Math.log(0.05)/Math.log(1 - Math.pow(g, nSet)));
+    public double calculateTrueSampleProbabilityForMultiplyMatched(
+        int nPoints, int nAllMultiplicity, int sampleSize, 
+        double expectedFractionTruePoints) {
         
-     * @return 
-     */
-    public int estimateNIterUsingStandardRANSACApproximation(
-        double probabilityOfInliers, int nSubset) {
+        /* 
+        making an assumption of avg multiplicity for all and using the same
+        logic as for singly matched points ts start, then adding the multiple
+        matching logic:
         
-<span class="nc" id="L204">        int nIter = (int)Math.ceil(Math.log(0.05)/</span>
-<span class="nc" id="L205">            Math.log(1 - Math.pow(probabilityOfInliers, nSubset)));</span>
+        example:  5 points in set 1 and each is singly matched to a point in set 2.
+                  sample size, k, is 2.
+                  there are 3 true point 1's {0, 2, 3}
         
-<span class="nc" id="L207">        return nIter;</span>
+        the number of combinations of the singly matched dataset are n!/(k!(n-k)!)
+        nCombinations=10. 
+        pSample (as seen in CountingTest) is the factors of nTrueMatches/nPoints
+        reduced for each subsequent point due to drawing without replacement.
+        pSample=(3./5)*(2./4)=0.3 
+        The expected number of 'true' samples, that is samples composed of only
+        truely matched points is then pSample*nCombinations = 0.3*10 = 3.
+        nTrueSamples=3 is verified as seen here:
+        0 1
+        0 2 * 
+        0 3 *
+        0 4
+        1 2
+        1 3
+        1 4
+        2 3 *
+        2 4
+        3 4
+        
+        For multiply matched points, the number of combinations increases,
+        but the number of truly matched remains the same.
+        
+        The number of all point pairs is the multiplicity * nPoints
+        (or alternatively, can be given the total number including multiplicity).
+      
+        Using the sample example, adding a multiplicity of '2' to each point,
+        the number of all point pairs is 2 * nPoints = 10.
+        the number of possible combinations is 10*9./2 = 45.
+        The number of true samples hasn't changed and that is still 3.
+        The pSample then must be 3./45. = 0.067.
+        so the multiply mapped pSample is pSample_singly_matched*nComb_singlyMatched/nComb_multiplyMatched
+          
+        in detail:
+        
+        The number of combinations for the multiply matched is 
+            nMultiplyMatched!/(k!(nMultiplyMatched-k)!)
+        
+        The multiply mapped pSample is
+            pSample_singly_matched * nComb_singlyMatched / nComb_multiplyMatched
+        
+        For the example above,
+            pSample_multiply_matched = 0.3 * (10./45.) = 0.067
+        
+        A better determination would use the real integrated CDF of the
+        inhomogeneous distribution, but this number is used to quickly 
+        make an estimate.
+        
+        Using the maximum multiplicity would lead to a safe overestimate,
+        so should consider that for another method.
+        */
+        
+<span class="fc" id="L252">        double pSampleSingle = calculateTrueSampleProbability(nPoints, sampleSize, </span>
+            expectedFractionTruePoints);
+        
+<span class="fc" id="L255">        double nCombinationsSingle = MiscMath.computeNDivKTimesNMinusK(nPoints, sampleSize);</span>
+        
+<span class="fc" id="L257">        double nCombinationsMultiple = </span>
+<span class="fc" id="L258">            MiscMath.computeNDivKTimesNMinusK(nAllMultiplicity, sampleSize);</span>
+        
+<span class="fc" id="L260">        double pSampleMultiple = pSampleSingle * </span>
+            (nCombinationsSingle/nCombinationsMultiple);
+
+<span class="fc" id="L263">        return pSampleMultiple;</span>
     }
 
 }
-
-/*
-&lt;pre&gt;
-There are nTotal matches, that is nTotal sets of points thought to be matched.
-
-nInliers is the number of points within nTotal that are within tolerance
-of a good fit (which is defined as a 'true' match).
-
-p = (nInliers/nTotal) inliers
-1 - p = 1 - (nInliers/nTotal) outliers or (nOutliers/nTotal)
-
-subset size is 8
-
-8 points are drawn randomly from nTotal points.
-
-probability of drawing 8 'true' inliers:
-
-                             C(8 inliers of nInliers)
-     p = 8 inliers =  -------------------------------------   
-                       C(8 points drawn from nTotal points)
-
-                      where C is C(n, k) = n! / ( k!*(n - k)! )
-
-                       ( nInliers! / ( 8!*(nInliers - 8)! )
-                   =  -------------------------------------------
-                       ( nTotal! / ( 8!*(nTotal - 8)! )
-
-what number of throws will result in 95% certainty that a subset of 8 contained 
-all 'true' inliers?
-
-(Bernoulli process:)
-     throw nRequired number of times. 
-     p above gives probability of success for a throw.
-     we want to know the total probability that results in one of the 
-     nRequired being a success (all inliers).
-
-     P(k) = (n!/(k!(n-k)!)) * p^k * (1 - p)^(N-k)
-
-     P(1) = (nRequired!/(1!(nRequired-1)!)) * p^1 * (1 - p)^(nRequired-1)
-
-     PDesired = (nRequired!/(1!(nRequired-1)!)) * p^1 * (1 - p)^(nRequired-1)
-                 nRequired!
-              = -------------- * p * (1 - p)^(nRequired - 1)
-                (nRequired-1)!
-
-              = nRequired * p * (1 - p)^(nRequired - 1)
-
-     set PDesired = 0.95;  estimate p for nInliers = 0%, 25%, 50%, 75%, 100%
-     and estimate nRequired from those.
-
-used the python scripts below for a quick fill of this table:
-
-      p:
-            | nInliers percentage of nTotal
-     nToTal |  25       50       75       100
-     ------------------------------------------------------
-       30   |  ~0    | 0.001  | 0.05   |  1.0
-       50   |  ~0    | 0.002  | 0.07   |  1.0
-      100   |  ~0    | 0.003  | 0.09   |  1.0
-      500   |  ~0    | 0.004  | 0.1    |  1.0
-     1000   |  ~0    | 0.004  | 0.1    |  1.0
-
-for PDesired = 0.95, nTotal=30, p=75%(=0.05)
-     0.95 = nRequired * p * (1 - p)^(nRequired - 1)
-     0.95 = nRequired * 0.05 * (0.95)^(nRequired - 1)
-     19 = nRequired * (0.95)^(nRequired - 1)
-        = nRequired * math.pow(0.95, (nRequired - 1))
-        = nRequired * 0.95
-
-====&gt; nRequired = 1/p &lt;====
-
-python code for the table above:
-
-def factorial(n) :
-    result = 1;
-    n = int(n)
-    for i in range(1, n+1):
-        result *= i;
-    return result;
-
-def factorialNDivNMinusK(n, k) :
-    result = 1;
-    n = int(n)
-    for i in range((n-k)+1, n+1):
-        result *= i;
-    return result;
-
-def tbl() :
-    nTotal = [30, 50, 100, 500, 1000];
-    nInFrac = [.25, .50, .75, 1.0];
-    fracLen = len(nInFrac)
-    for nT in nTotal:
-        for ii in range(0, fracLen):
-            nF = nInFrac[ii]
-            nI = nT * nF
-            f0 = factorialNDivNMinusK(nI, 7) * 1.0
-            f2 = factorialNDivNMinusK(nT, 7) * 1.0
-            f7 = factorial(7) * 1.0
-            p = f0 / f2
-            f0 = f0 / f7
-            f2 = f2 / f7
-            print &quot;nTotal=&quot;, nT, &quot; nInliers fraction=&quot;, nF, &quot; p=&quot;, p
-    return;
-
-==============
-
-The same logic as above, used for finding 2 truly matchable points within set1:
-
-      p:
-            | nInliers percentage of nTotal
-     nToTal |  15        25       50       75
-     ------------------------------------------------------
-       30   | 0.014  | 0.05   | 0.24   |  0.53
-       50   | 0.017  | 0.054  | 0.245  |  0.54
-      100   | 0.021  | 0.061  | 0.247  |  0.56
-      177   | 0.021  | 0.061  | 0.246  |  0.56
-      500   | 0.022  | 0.062  | 0.25   |  0.56
-     1000   | 0.022  | 0.062  | 0.25   |  0.56
-
-&lt;/pre&gt;
-*/
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

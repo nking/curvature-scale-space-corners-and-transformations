@@ -2949,15 +2949,15 @@ import java.util.logging.Logger;
 <span class="fc" id="L2949">            values, Errors.populateYErrorsBySqrt(values));</span>
 <span class="fc" id="L2950">        List&lt;Integer&gt; indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.05f);</span>
 
-<span class="fc bfc" id="L2952" title="All 2 branches covered.">        if (indexes.size() &lt;= 3) {</span>
-<span class="fc" id="L2953">            binWidth = 10;</span>
-<span class="fc" id="L2954">            hist = Histogram.createSimpleHistogram(0, 255, binWidth,</span>
-<span class="fc" id="L2955">                values, Errors.populateYErrorsBySqrt(values));</span>
-<span class="fc" id="L2956">            indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.05f);</span>
+<span class="pc bpc" id="L2952" title="1 of 2 branches missed.">        if (indexes.size() &lt;= 3) {</span>
+<span class="nc" id="L2953">            binWidth = 10;</span>
+<span class="nc" id="L2954">            hist = Histogram.createSimpleHistogram(0, 255, binWidth,</span>
+<span class="nc" id="L2955">                values, Errors.populateYErrorsBySqrt(values));</span>
+<span class="nc" id="L2956">            indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.05f);</span>
 
-<span class="fc" id="L2958">            int k = 3;</span>
-<span class="pc bpc" id="L2959" title="1 of 2 branches missed.">            int idx = (indexes.size() &lt; k) ? indexes.size() : k;</span>
-<span class="fc" id="L2960">            indexes = indexes.subList(0, idx);</span>
+<span class="nc" id="L2958">            int k = 3;</span>
+<span class="nc bnc" id="L2959" title="All 2 branches missed.">            int idx = (indexes.size() &lt; k) ? indexes.size() : k;</span>
+<span class="nc" id="L2960">            indexes = indexes.subList(0, idx);</span>
         }
 
         /*
@@ -3009,10 +3009,10 @@ import java.util.logging.Logger;
 
 <span class="pc bpc" id="L3010" title="2 of 4 branches missed.">        if (toleranceInValue &gt; -1 &amp;&amp; !colorPixelMap.isEmpty()) {</span>
             // use higher &gt; 1 when bp/cp2 &gt;&gt; 1
-<span class="fc bfc" id="L3012" title="All 2 branches covered.">            if ((blackPixels.size()/addToColor.size()) &gt; 10) {</span>
+<span class="pc bpc" id="L3012" title="1 of 2 branches missed.">            if ((blackPixels.size()/addToColor.size()) &gt; 10) {</span>
 <span class="fc" id="L3013">                correctForIllumination(input, 2, colorPixelMap);</span>
             } else {
-<span class="fc" id="L3015">                correctForIllumination(input, toleranceInValue, colorPixelMap);</span>
+<span class="nc" id="L3015">                correctForIllumination(input, toleranceInValue, colorPixelMap);</span>
             }
         }
 /*
@@ -3039,7 +3039,7 @@ MiscDebug.writeImage(input, &quot;_after2_illumc0_&quot; + MiscDebug.getCurrentT
 <span class="fc" id="L3039">        toleranceInValue = determineToleranceForIllumCorr(colorPixelMap3, nTotC);</span>
 <span class="pc bpc" id="L3040" title="2 of 4 branches missed.">        if (toleranceInValue &gt; -1 &amp;&amp; !colorPixelMap3.isEmpty()) {</span>
 <span class="pc bpc" id="L3041" title="1 of 2 branches missed.">            if ((toleranceInValue == 1) &amp;&amp;</span>
-<span class="fc bfc" id="L3042" title="All 2 branches covered.">                ((blackPixels.size()/colorPixelMap2.size()) &gt; 10)) {</span>
+<span class="pc bpc" id="L3042" title="1 of 2 branches missed.">                ((blackPixels.size()/colorPixelMap2.size()) &gt; 10)) {</span>
 <span class="pc bpc" id="L3043" title="1 of 2 branches missed.">                if ((blackPixels.size()/colorPixelMap.size()) &gt; 10) {</span>
 <span class="fc" id="L3044">                    toleranceInValue = 10;</span>
                 } else {
@@ -3347,36 +3347,36 @@ MiscDebug.writeImage(input, &quot;_after3_illumc0_&quot; + MiscDebug.getCurrentT
             // because that may be the only contrast in the image.
             // an example of that happening wouldbe a blue sky and blue mountains
             // very similar in color.
-<span class="pc bpc" id="L3350" title="1 of 4 branches missed.">            if ((indexes.size() == 1) &amp;&amp; (nTotCategoryMembers == thetaMap.size())) {</span>
+<span class="pc bpc" id="L3350" title="2 of 4 branches missed.">            if ((indexes.size() == 1) &amp;&amp; (nTotCategoryMembers == thetaMap.size())) {</span>
 <span class="nc" id="L3351">                return -1;</span>
             }
 
             // from lowest to highest peak, are there continuous values &gt;= 1/4 lowest peak?
-<span class="fc bfc" id="L3355" title="All 2 branches covered.">            if (indexes.size() &gt; 1) {</span>
+<span class="pc bpc" id="L3355" title="1 of 2 branches missed.">            if (indexes.size() &gt; 1) {</span>
 
-<span class="fc" id="L3357">                Collections.sort(indexes);</span>
+<span class="nc" id="L3357">                Collections.sort(indexes);</span>
 
-<span class="fc" id="L3359">                int minPeak = Integer.MAX_VALUE;</span>
-<span class="fc bfc" id="L3360" title="All 2 branches covered.">                for (Integer index : indexes) {</span>
-<span class="fc" id="L3361">                    int v = hist.getYHist()[index.intValue()];</span>
-<span class="fc bfc" id="L3362" title="All 2 branches covered.">                    if (v &lt; minPeak) {</span>
-<span class="fc" id="L3363">                        minPeak = v;</span>
+<span class="nc" id="L3359">                int minPeak = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L3360" title="All 2 branches missed.">                for (Integer index : indexes) {</span>
+<span class="nc" id="L3361">                    int v = hist.getYHist()[index.intValue()];</span>
+<span class="nc bnc" id="L3362" title="All 2 branches missed.">                    if (v &lt; minPeak) {</span>
+<span class="nc" id="L3363">                        minPeak = v;</span>
                     }
-<span class="fc" id="L3365">                }</span>
+<span class="nc" id="L3365">                }</span>
 
-<span class="fc" id="L3367">                int nBelow = 0;</span>
-<span class="fc" id="L3368">                int n = 0;</span>
-<span class="fc" id="L3369">                int limit = minPeak/4;</span>
-<span class="fc" id="L3370">                for (int i = indexes.get(0).intValue();</span>
-<span class="fc bfc" id="L3371" title="All 2 branches covered.">                    i &lt; indexes.get(indexes.size() - 1).intValue(); ++i) {</span>
-<span class="fc" id="L3372">                    int v = hist.getYHist()[i];</span>
-<span class="fc bfc" id="L3373" title="All 2 branches covered.">                    if (v &lt; limit) {</span>
-<span class="fc" id="L3374">                        nBelow++;</span>
+<span class="nc" id="L3367">                int nBelow = 0;</span>
+<span class="nc" id="L3368">                int n = 0;</span>
+<span class="nc" id="L3369">                int limit = minPeak/4;</span>
+<span class="nc" id="L3370">                for (int i = indexes.get(0).intValue();</span>
+<span class="nc bnc" id="L3371" title="All 2 branches missed.">                    i &lt; indexes.get(indexes.size() - 1).intValue(); ++i) {</span>
+<span class="nc" id="L3372">                    int v = hist.getYHist()[i];</span>
+<span class="nc bnc" id="L3373" title="All 2 branches missed.">                    if (v &lt; limit) {</span>
+<span class="nc" id="L3374">                        nBelow++;</span>
                     }
-<span class="fc" id="L3376">                    n++;</span>
+<span class="nc" id="L3376">                    n++;</span>
                 }
 
-<span class="pc bpc" id="L3379" title="1 of 2 branches missed.">                if (((float)nBelow/(float)n) &lt; 0.5) {</span>
+<span class="nc bnc" id="L3379" title="All 2 branches missed.">                if (((float)nBelow/(float)n) &lt; 0.5) {</span>
 <span class="nc" id="L3380">                    tolerance = 3;</span>
                 }
             }

@@ -111,30 +111,63 @@ public class ClrGradientDescriptor implements GradientDescriptor {
         
 <span class="nc" id="L112">        return sumSquaredError;</span>
     }
+    
+    @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="nc" id="L119">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (!(otherDesc instanceof ClrIntensityDescriptor)) {</span>
+<span class="nc" id="L123">            throw new IllegalArgumentException(</span>
+            &quot;otherDesc has to be type ClrIntensityDescriptor&quot;);
+        }
+        
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (!(otherDesc instanceof ClrGradientDescriptor)) {</span>
+<span class="nc" id="L128">            throw new IllegalArgumentException(</span>
+            &quot;otherDesc has to be type ClrGradientDescriptor&quot;);
+        }
+        
+<span class="nc" id="L132">        ClrGradientDescriptor other = (ClrGradientDescriptor)otherDesc;</span>
+        
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (this.red.length != other.red.length) {</span>
+<span class="nc" id="L135">            throw new IllegalArgumentException(</span>
+            &quot;this and other arrays must have the same lengths&quot;);
+        }
+         
+<span class="nc" id="L139">        float cSimR = MiscMath.calculateCosineSimilarity(red, other.red, sentinel);</span>
+<span class="nc" id="L140">        float cSimG = MiscMath.calculateCosineSimilarity(green, other.green, sentinel);</span>
+<span class="nc" id="L141">        float cSimB = MiscMath.calculateCosineSimilarity(blue, other.blue, sentinel);</span>
+                
+<span class="nc" id="L143">        float avg = (cSimR + cSimG + cSimB)/3.f;</span>
+        
+<span class="nc" id="L145">        return avg;</span>
+    }
 
     @Override
     public int getCentralIndex() {
-<span class="nc" id="L117">        return centralIndex;</span>
+<span class="nc" id="L150">        return centralIndex;</span>
     }
 
     @Override
     public int getMaximum() {
         //TODO: may need to change when used
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (maximum == Integer.MIN_VALUE) {</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">            for (int i = 0; i &lt; red.length; ++i) {</span>
-<span class="nc bnc" id="L125" title="All 2 branches missed.">                if (red[i] &gt; maximum) {</span>
-<span class="nc" id="L126">                    maximum = red[i];</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (maximum == Integer.MIN_VALUE) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            for (int i = 0; i &lt; red.length; ++i) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                if (red[i] &gt; maximum) {</span>
+<span class="nc" id="L159">                    maximum = red[i];</span>
                 }
-<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (green[i] &gt; maximum) {</span>
-<span class="nc" id="L129">                    maximum = green[i];</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                if (green[i] &gt; maximum) {</span>
+<span class="nc" id="L162">                    maximum = green[i];</span>
                 }
-<span class="nc bnc" id="L131" title="All 2 branches missed.">                if (blue[i] &gt; maximum) {</span>
-<span class="nc" id="L132">                    maximum = blue[i];</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                if (blue[i] &gt; maximum) {</span>
+<span class="nc" id="L165">                    maximum = blue[i];</span>
                 }
             }
         }
         
-<span class="nc" id="L137">        return maximum;</span>
+<span class="nc" id="L170">        return maximum;</span>
     }
 
 }

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EpipolarMultiplicitySolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">EpipolarMultiplicitySolver.java</span></div><h1>EpipolarMultiplicitySolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
+
+/**
+ * class encapsulating the steps from generating a degenerate correspondenc list
+ * to solving for the best epipolar projection.
+ 
+ * @author nichole
+ */
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">public class EpipolarMultiplicitySolver {</span>
+
+    private final ImageExt img1;
+    private final ImageExt img2;
+
+    private static enum State {
+        INITIALIZED, SOLVED, NO_SOLUTION
+    }
+<span class="fc" id="L31">    private State state = null;</span>
+
+<span class="fc" id="L33">    private PairIntArray solutionLeftXY = null;</span>
+<span class="fc" id="L34">    private PairIntArray solutionRightXY = null;</span>
+
+    private final FeatureMatcherSettings featureSettings;
+
+<span class="fc" id="L38">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    public EpipolarMultiplicitySolver(ImageExt image1, ImageExt image2,
+<span class="fc" id="L41">        FeatureMatcherSettings settings) {</span>
+
+<span class="fc" id="L43">        img1 = image1;</span>
+<span class="fc" id="L44">        img2 = image2;</span>
+
+<span class="fc" id="L46">        featureSettings = settings.copy();</span>
+
+<span class="fc" id="L48">        state = State.INITIALIZED;</span>
+<span class="fc" id="L49">    }</span>
+    
+    public EpipolarTransformationFit solve() throws IOException,
+        NoSuchAlgorithmException {
+
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (!state.equals(State.INITIALIZED)) {</span>
+<span class="nc" id="L55">            throw new IllegalStateException(&quot;solve() has already been invoked&quot;);</span>
+        }
+
+        //NOTE: will change this to the non euclidean solver soon
+<span class="fc" id="L59">        NonEuclideanSegmentFeatureMatcher2 wrapper</span>
+            = new NonEuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
+
+<span class="fc" id="L62">        boolean solved = wrapper.match();</span>
+
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">        if (!solved) {</span>
+<span class="nc" id="L65">            state = State.NO_SOLUTION;</span>
+<span class="nc" id="L66">            return null;</span>
+        }
+         
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (wrapper.getSolutionMatched2Multiplicity().size() &lt; 7) {</span>
+<span class="nc" id="L70">            state = State.NO_SOLUTION;</span>
+<span class="nc" id="L71">            return null;</span>
+        }
+        
+<span class="fc" id="L74">        List&lt;PairInt&gt; matchedLeftXY = new ArrayList&lt;PairInt&gt;();       </span>
+<span class="fc" id="L75">        List&lt;List&lt;PairInt&gt;&gt; matchedRightXYs = new ArrayList&lt;List&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (int i = 0; i &lt; wrapper.getSolutionMatched1().size(); ++i) {</span>
+<span class="fc" id="L77">            List&lt;PairInt&gt; list = wrapper.getSolutionMatched2Multiplicity().get(i);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (list.size() &gt; 0) {</span>
+<span class="fc" id="L79">                matchedRightXYs.add(list);</span>
+<span class="fc" id="L80">                matchedLeftXY.add(wrapper.getSolutionMatched1().get(i));</span>
+            }
+        }
+<span class="pc bpc" id="L83" title="3 of 4 branches missed.">        assert(matchedLeftXY.size() == matchedRightXYs.size());</span>
+             
+<span class="fc" id="L85">        PairIntArray outputLeftXY = new PairIntArray();</span>
+<span class="fc" id="L86">        PairIntArray outputRightXY = new PairIntArray();</span>
+     
+<span class="fc" id="L88">        RANSACMultiplicitySolver solver = new RANSACMultiplicitySolver();</span>
+        
+<span class="fc" id="L90">        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(</span>
+            matchedLeftXY, matchedRightXYs, outputLeftXY, outputRightXY);
+        
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (fit != null) {</span>
+
+            //TODO: check that stdev is reasonable
+<span class="fc" id="L96">            state = State.SOLVED;</span>
+
+<span class="fc" id="L98">            this.solutionLeftXY = outputLeftXY;</span>
+
+<span class="fc" id="L100">            this.solutionRightXY = outputRightXY;</span>
+
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (featureSettings.debug()) {</span>
+<span class="fc" id="L103">                plotFit(fit);</span>
+            }
+
+<span class="fc" id="L106">            return fit;</span>
+
+        } else {
+
+<span class="nc" id="L110">            state = State.NO_SOLUTION;</span>
+
+<span class="nc" id="L112">            return null;</span>
+        }
+    }
+
+    private void plotFit(EpipolarTransformationFit fit) {
+
+<span class="pc bpc" id="L118" title="2 of 4 branches missed.">        if (this.img1 == null || this.img2 == null) {</span>
+<span class="nc" id="L119">            return;</span>
+        }
+        
+<span class="fc" id="L122">         StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();</span>
+         
+<span class="fc" id="L124">        Image img1Cp = img1.copyImage();</span>
+<span class="fc" id="L125">        Image img2Cp = img2.copyImage();</span>
+
+<span class="fc" id="L127">        SimpleMatrix input1</span>
+<span class="fc" id="L128">            = spTransformer.rewriteInto3ColumnMatrix(solutionLeftXY);</span>
+
+<span class="fc" id="L130">        SimpleMatrix input2</span>
+<span class="fc" id="L131">            = spTransformer.rewriteInto3ColumnMatrix(solutionRightXY);</span>
+
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
+
+<span class="fc" id="L135">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
+
+<span class="fc" id="L137">            SimpleMatrix epipolarLinesInLeft = fit.getFundamentalMatrix().transpose().mult(input2);</span>
+
+<span class="fc" id="L139">            PairIntArray leftLine = spTransformer.getEpipolarLine(</span>
+<span class="fc" id="L140">                epipolarLinesInLeft, img1Cp.getWidth(), img1Cp.getHeight(), ii);</span>
+
+<span class="fc" id="L142">            ImageIOHelper.addCurveToImage(leftLine, img1Cp, 0, rgb[0], rgb[1], rgb[2]);</span>
+        }
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
+
+<span class="fc" id="L147">            int[] rgb = ImageIOHelper.getNextRGB(ii);</span>
+
+<span class="fc" id="L149">            SimpleMatrix epipolarLinesInRight = fit.getFundamentalMatrix().mult(input1);</span>
+
+<span class="fc" id="L151">            PairIntArray rightLine = spTransformer.getEpipolarLine(</span>
+<span class="fc" id="L152">                epipolarLinesInRight, img2Cp.getWidth(), img2Cp.getHeight(), ii);</span>
+
+<span class="fc" id="L154">            ImageIOHelper.addCurveToImage(rightLine, img2Cp, 0,</span>
+                rgb[0], rgb[1], rgb[2]);
+        }
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input1.numCols(); ii++) {</span>
+<span class="fc" id="L159">            double x = input1.get(0, ii);</span>
+<span class="fc" id="L160">            double y = input1.get(1, ii);</span>
+<span class="fc" id="L161">            ImageIOHelper.addPointToImage((float) x, (float) y, img1Cp, 3,</span>
+                255, 0, 0);
+        }
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int ii = 0; ii &lt; input2.numCols(); ii++) {</span>
+<span class="fc" id="L165">            double x2 = input2.get(0, ii);</span>
+<span class="fc" id="L166">            double y2 = input2.get(1, ii);</span>
+<span class="fc" id="L167">            ImageIOHelper.addPointToImage((float) x2, (float) y2, img2Cp, 3,</span>
+                255, 0, 0);
+        }
+
+        String dirPath;
+        try {
+<span class="fc" id="L173">            dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+
+<span class="fc" id="L175">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L176">                dirPath + &quot;/tmp_m_1_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img1Cp);</span>
+
+<span class="fc" id="L178">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L179">                dirPath + &quot;/tmp_m_2_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img2Cp);</span>
+
+<span class="nc" id="L181">        } catch (IOException ex) {</span>
+<span class="nc" id="L182">            Logger.getLogger(EpipolarMultiplicitySolver.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L183">        }</span>
+<span class="fc" id="L184">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

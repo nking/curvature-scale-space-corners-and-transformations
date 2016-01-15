@@ -56,7 +56,7 @@ public class FixedDistanceGroupFinder {
     }
     
     public int getNumberOfGroups() {
-<span class="fc" id="L59">        return groupList.size();</span>
+<span class="nc" id="L59">        return groupList.size();</span>
     }
     
     /**
@@ -66,13 +66,13 @@ public class FixedDistanceGroupFinder {
      */
     public Set&lt;Integer&gt; getGroupIndexes(final int groupNumber) {
         
-<span class="pc bpc" id="L69" title="2 of 4 branches missed.">        if (groupNumber &lt; 0 || groupNumber &gt; (groupList.size() - 1)) {</span>
+<span class="nc bnc" id="L69" title="All 4 branches missed.">        if (groupNumber &lt; 0 || groupNumber &gt; (groupList.size() - 1)) {</span>
 <span class="nc" id="L70">            throw new IllegalArgumentException(&quot;groupNumber is out of bounds&quot;);</span>
         }
         
-<span class="fc" id="L73">        Set&lt;Integer&gt; set = groupList.get(groupNumber);</span>
+<span class="nc" id="L73">        Set&lt;Integer&gt; set = groupList.get(groupNumber);</span>
         
-<span class="fc" id="L75">        return set;</span>
+<span class="nc" id="L75">        return set;</span>
     }
 
     /**

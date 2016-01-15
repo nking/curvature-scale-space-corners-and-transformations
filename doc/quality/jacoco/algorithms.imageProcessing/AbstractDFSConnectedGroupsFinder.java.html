@@ -48,7 +48,7 @@ public abstract class AbstractDFSConnectedGroupsFinder {
 <span class="fc" id="L48">        Integer uGroupId = pointToGroupMap.get(uPoint);</span>
 <span class="fc" id="L49">        Integer vGroupId = pointToGroupMap.get(vPoint);</span>
 <span class="fc bfc" id="L50" title="All 2 branches covered.">        if (uGroupId == null) {</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">            if (vGroupId == null) {</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            if (vGroupId == null) {</span>
 <span class="fc" id="L52">                uGroupId = Integer.valueOf(groupMembership.size());</span>
 <span class="fc" id="L53">                pointToGroupMap.put(uPoint, uGroupId);</span>
 <span class="fc" id="L54">                pointToGroupMap.put(vPoint, uGroupId);</span>
@@ -57,8 +57,8 @@ public abstract class AbstractDFSConnectedGroupsFinder {
 <span class="fc" id="L57">                set.add(vPoint);</span>
 <span class="fc" id="L58">                groupMembership.add(set);</span>
 <span class="fc" id="L59">            } else {</span>
-<span class="fc" id="L60">                groupMembership.get(vGroupId).add(uPoint);</span>
-<span class="fc" id="L61">                pointToGroupMap.put(uPoint, vGroupId);</span>
+<span class="nc" id="L60">                groupMembership.get(vGroupId).add(uPoint);</span>
+<span class="nc" id="L61">                pointToGroupMap.put(uPoint, vGroupId);</span>
             }
         } else {
 <span class="fc bfc" id="L64" title="All 2 branches covered.">            if (vGroupId == null) {</span>

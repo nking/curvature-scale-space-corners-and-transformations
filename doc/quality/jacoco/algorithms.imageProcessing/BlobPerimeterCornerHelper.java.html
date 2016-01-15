@@ -190,8 +190,8 @@ import java.util.logging.Logger;
                 
 <span class="fc" id="L191">        List&lt;PairIntArray&gt; blobPerimeters = blobPerimeters = segBlobPerimetersMap.get(type);</span>
         
-<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (blobPerimeters != null) {</span>
-<span class="fc" id="L194">            return blobPerimeters;</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (blobPerimeters != null) {</span>
+<span class="nc" id="L194">            return blobPerimeters;</span>
         }
         
 <span class="fc" id="L197">        List&lt;Set&lt;PairInt&gt;&gt; blobs = segBlobsMap.get(type);</span>
@@ -343,7 +343,7 @@ import java.util.logging.Logger;
         
 <span class="fc" id="L344">        boolean useBinned = false;</span>
                 
-<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (blobs == null) {</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if (blobs == null) {</span>
             
 <span class="fc" id="L348">            blobs = BlobsAndPerimeters.extractBlobsFromSegmentedImage(</span>
                 imgHelper, type, useBinned, filterOutImageBoundaryBlobs,

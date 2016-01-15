@@ -122,7 +122,7 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L122" title="All 2 branches covered.">        if (matchedBlobStatsSublist.size() == 1) {</span>
 <span class="fc" id="L123">            TransformationParameters params = MiscStats.calculateTransformation(</span>
 <span class="fc" id="L124">                1, 1, matchedBlobStatsSublist.get(0), new float[4], true);</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">            if (params != null) {</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (params != null) {</span>
 <span class="fc" id="L126">                parametersList.add(params);</span>
 <span class="fc" id="L127">                log.info(&quot;single high matching params=&quot; + params.toString());</span>
             }

@@ -5,6 +5,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.awt.Color;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import org.ejml.simple.SimpleMatrix;
@@ -78,62 +79,21 @@ public class RANSACSolverTest extends TestCase {
         log.info("rightTrueMatches=" + rightTrueMatches.getN());
         log.info("outputRight=" + outputRight.getN());
         
-        //TODO: calculate the tolerance when finished with refactoring
-        
-        assertTrue(Math.abs(n - leftTrueMatches.getN()) < Math.sqrt(leftTrueMatches.getN()));
-        assertTrue(Math.abs(outputRight.getN() - rightTrueMatches.getN()) < Math.sqrt(rightTrueMatches.getN()));
-        
-        /* re-enable when refactored
-        for (int i = 0; i < outputLeft.getN(); ++i) {
-            float xL = outputLeft.getX(i);
-            float yL = outputLeft.getY(i);
-            float xR = outputRight.getX(i);
-            float yR = outputRight.getY(i);
-            boolean removed = false;
-            for (int j = 0; j < leftTrueMatches.getN(); ++j) {
-                float diffXL = Math.abs(xL - leftTrueMatches.getX(j));
-                float diffYL = Math.abs(yL - leftTrueMatches.getY(j));
-                float diffXR = Math.abs(xR - rightTrueMatches.getX(j));
-                float diffYR = Math.abs(yR - rightTrueMatches.getY(j));
-                if ((diffXL < 0.1) && (diffYL < 0.1) && (diffXR < 0.1) && (diffYR < 0.1)) {
-                    leftTrueMatches.removeRange(j, j);
-                    rightTrueMatches.removeRange(j, j);
-                    removed = true;
-                    break;
-                }
-            }
-            assertTrue(removed);
-        }
-        assertTrue(leftTrueMatches.getN() == 0);
-        assertTrue(rightTrueMatches.getN() == 0);
-        */
-        
         /*
-        solution for 7pt epipolar when points are not normalized:
-        INFO: fit=Type = dense , numRows = 3 , numCols = 3
-         [junit] -0.000  -0.000  -0.006  
-         [junit]  0.000  -0.000   0.062  
-         [junit]  0.004  -0.071   1.000 
-        
         solution when all 10 are given and the first randomly chosen among
         them are used:
                   -0.000  -0.000   0.000  
           [junit]  0.000   0.000   0.036  
           [junit] -0.002  -0.045   1.000 
         */
-        /*
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(0, 0) - 0) < 0.005);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(1, 0) - 0) < 0.005);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(2, 0) - 0.004) < 0.01);
         
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(0, 1) - 0) < 0.005);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(1, 1) - 0) < 0.005);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(2, 1) - -0.071) < 0.1);
+        List<Double> errors = fit.getErrors();
+        assertTrue(leftTrueMatches.getN() == outputLeft.getN());
         
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(0, 2) - -0.006) < 0.01);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(1, 2) - 0.062) < 0.1);
-        assertTrue(Math.abs(fit.getFundamentalMatrix().get(2, 2) - 1.0) < 0.005);
-        */
+        for (double error : errors) {
+            assertTrue(error < 3);
+        }
+            
     }
     
     protected void getMertonCollege10TrueMatches(PairIntArray left, 

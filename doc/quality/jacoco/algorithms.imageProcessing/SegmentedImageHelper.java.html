@@ -365,11 +365,11 @@ public class SegmentedImageHelper {
                         
 <span class="nc" id="L366">            imgSegmentedMap.put(type, segImg);</span>
             
-<span class="fc bfc" id="L368" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_HIST)) {</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        } else if (type.equals(SegmentationType.GREYSCALE_HIST)) {</span>
             
-<span class="fc" id="L370">            segImg = imageSegmentation.createGreyscale3(img);</span>
+<span class="nc" id="L370">            segImg = imageSegmentation.createGreyscale3(img);</span>
                         
-<span class="fc" id="L372">            imgSegmentedMap.put(type, segImg);</span>
+<span class="nc" id="L372">            imgSegmentedMap.put(type, segImg);</span>
             
 <span class="fc bfc" id="L374" title="All 2 branches covered.">        } else if (type.equals(SegmentationType.GREYSCALE_KMPP)) {</span>
             
@@ -492,7 +492,7 @@ public class SegmentedImageHelper {
      * @return
      */
     public int getBinFactor(boolean getForBinned) {
-<span class="fc bfc" id="L495" title="All 2 branches covered.">        return getForBinned ? binFactor : 1;</span>
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">        return getForBinned ? binFactor : 1;</span>
     }
 
     public boolean isInDebugMode() {

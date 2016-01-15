@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RANSACMultiplicitySolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">RANSACMultiplicitySolver.java</span></div><h1>RANSACMultiplicitySolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
+
+import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
+
+/**
+ * given matched point lists, determine the best epipolar solution using a
+ * 7-point epipolar calculation and random draws of 7 points from the
+ * matched point lists under the assumption that some of the matched points
+ * are not true (correct) matches.
+ * &lt;pre&gt;
+ * useful reading:
+ * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+ * and
+ * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
+ * 
+ * This algorithm differs from RANSACSolver.java in that it accepts more than
+ * one match for point1 to point2 where point1 is a ppint in image1 and point2
+ * is a point in image2.
+ * 
+ * It follows &quot;Generalized RANSAC framework for relaxed correspondence problems&quot;
+   by Zhang and Kosecka in choosing randomly from a single point in image1 but 
+   then choosing randomly from that point's possibly multiple matches.
+   &lt;/pre&gt;
+ * @author nichole
+ */
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">public class RANSACMultiplicitySolver {</span>
+
+<span class="fc" id="L44">    private boolean debug = true;</span>
+
+<span class="fc" id="L46">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    /**
+     * NOT READY FOR USE YET
+     * calculate the epipolar projection among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.
+     *
+     * @param matchedLeftXY
+     * @param matchedRightXYs
+     * @param outputLeftXY
+     * @param outputRightXY
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public EpipolarTransformationFit calculateEpipolarProjection(
+        List&lt;PairInt&gt; matchedLeftXY, List&lt;List&lt;PairInt&gt;&gt; matchedRightXYs,
+        PairIntArray outputLeftXY, PairIntArray outputRightXY)
+        throws NoSuchAlgorithmException {
+
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L67">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (matchedRightXYs == null) {</span>
+<span class="nc" id="L70">            throw new IllegalArgumentException(&quot;matchedRightXYs cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (matchedLeftXY.size() != matchedRightXYs.size()) {</span>
+<span class="nc" id="L73">            throw new IllegalArgumentException(</span>
+            &quot;matchedLeftXY and matchedRightXYs must be same size&quot;);
+        }
+        
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (matchedLeftXY.size() &lt; 7) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L79">            throw new IllegalArgumentException(</span>
+            &quot;the algorithms require 7 or more points.  matchedLeftXY.n=&quot; 
+<span class="nc" id="L81">            + matchedLeftXY.size());</span>
+        }
+        
+        /*
+        -- randomly sample 7 points from matchedLeftXY then randomly sample
+           from the left's right match if more than one match is present.
+        -- calculate the epipolar fundamental matrix from the 7
+        -- evaluate the sample:
+           using Sampson's error:
+              if error &lt; tolerance, stores the entire sample in consensus
+        -- check whether to exit loop:
+           recalculate expected iterations and compare to nIterations or max
+           nIterations
+        -- after exit from the loop, the largest consensus is used to
+           re-calculate the fundamental matrix as the last result.
+           note that if there aren't enough points in a consensus to
+           calculate the fundamental matrix, the result is null.
+              Should presumably then filter out points whose error determined by 
+              distance to epipolar lines is larger than tolerance of 3 pixels or so.      
+        */
+
+<span class="fc" id="L102">        int nSet = 7;</span>
+        
+<span class="fc" id="L104">        int nPoints = matchedLeftXY.size();</span>
+        
+<span class="fc" id="L106">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+                
+<span class="fc" id="L108">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L109">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L110">        log.info(&quot;SEED=&quot; + seed + &quot; nPoints=&quot; + nPoints);</span>
+<span class="fc" id="L111">        sr.setSeed(seed);</span>
+        
+<span class="fc" id="L113">        int nAllMultiplicity = 0;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedLeftXY.size(); ++i) {</span>
+<span class="fc" id="L115">            nAllMultiplicity += matchedRightXYs.get(i).size();</span>
+        }
+        
+<span class="fc" id="L118">        StereoProjectionTransformer spTransformer = new StereoProjectionTransformer();</span>
+        
+<span class="fc" id="L120">        PairIntArray originalLeftXY = new PairIntArray(nAllMultiplicity);</span>
+<span class="fc" id="L121">        PairIntArray originalRightXY = new PairIntArray(nAllMultiplicity);</span>
+        
+<span class="fc" id="L123">        SimpleMatrix evalAllLeft = new SimpleMatrix(3, nAllMultiplicity);</span>
+<span class="fc" id="L124">        SimpleMatrix evalAllRight = new SimpleMatrix(3, nAllMultiplicity);</span>
+<span class="fc" id="L125">        int count = 0;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedLeftXY.size(); ++i) {</span>
+<span class="fc" id="L127">            PairInt lft = matchedLeftXY.get(i);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            for (PairInt rgt : matchedRightXYs.get(i)) {</span>
+<span class="fc" id="L129">                evalAllLeft.set(0, count, lft.getX());</span>
+<span class="fc" id="L130">                evalAllLeft.set(1, count, lft.getY());</span>
+<span class="fc" id="L131">                evalAllLeft.set(2, count, 1);</span>
+<span class="fc" id="L132">                evalAllRight.set(0, count, rgt.getX());</span>
+<span class="fc" id="L133">                evalAllRight.set(1, count, rgt.getY());</span>
+<span class="fc" id="L134">                evalAllRight.set(2, count, 2);</span>
+<span class="fc" id="L135">                originalLeftXY.add(lft.getX(), lft.getY());</span>
+<span class="fc" id="L136">                originalRightXY.add(rgt.getX(), rgt.getY());</span>
+<span class="fc" id="L137">                count++;</span>
+<span class="fc" id="L138">            }</span>
+        }
+            
+<span class="fc" id="L141">        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();</span>
+        
+<span class="fc" id="L143">        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(</span>
+            nPoints, nAllMultiplicity, nSet, 0.5);
+        
+<span class="fc" id="L146">        long nMaxIter0 = 100000;</span>
+      
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (nPoints == nSet) {</span>
+<span class="nc" id="L149">            nMaxIter = 1;</span>
+        }
+
+<span class="fc" id="L152">        int nIter = 0;</span>
+        
+<span class="fc" id="L154">        EpipolarTransformationFit bestFit = null;</span>
+                    
+<span class="fc" id="L156">        int[] selectedIndexes = new int[nSet];</span>
+        
+<span class="fc" id="L158">        SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);</span>
+<span class="fc" id="L159">        SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);</span>
+        
+<span class="fc" id="L161">        log.info(&quot;nPoints=&quot; + nPoints + &quot; n including multiplicity=&quot; + nAllMultiplicity);</span>
+        
+<span class="fc" id="L163">        int tolerance = 3;</span>
+        
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">        while ((nIter &lt; nMaxIter) &amp;&amp; (nIter &lt; nMaxIter0)) {</span>
+              
+<span class="fc" id="L167">            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);</span>
+            
+<span class="fc" id="L169">            count = 0;</span>
+            
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            for (int bitIndex : selectedIndexes) {</span>
+
+<span class="fc" id="L173">                int idx = bitIndex;</span>
+
+<span class="fc" id="L175">                sampleLeft.set(0, count, matchedLeftXY.get(idx).getX());</span>
+<span class="fc" id="L176">                sampleLeft.set(1, count, matchedLeftXY.get(idx).getY());</span>
+<span class="fc" id="L177">                sampleLeft.set(2, count, 1);</span>
+                
+                // handle multiplicity
+                PairInt rightP;
+<span class="fc" id="L181">                int nr = matchedRightXYs.get(idx).size();</span>
+<span class="pc bpc" id="L182" title="3 of 4 branches missed.">                assert(nr != 0);</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                if (nr &gt; 1) {</span>
+<span class="fc" id="L184">                    int idx2 = sr.nextInt(nr);</span>
+<span class="fc" id="L185">                    rightP = matchedRightXYs.get(idx).get(idx2);</span>
+<span class="fc" id="L186">                } else {</span>
+<span class="nc" id="L187">                    rightP = matchedRightXYs.get(idx).get(0);</span>
+                }
+<span class="fc" id="L189">                sampleRight.set(0, count, rightP.getX());</span>
+<span class="fc" id="L190">                sampleRight.set(1, count, rightP.getY());</span>
+<span class="fc" id="L191">                sampleRight.set(2, count, 1);</span>
+                
+<span class="fc" id="L193">                count++;</span>
+            }
+           
+            // determine matrix from 7 points.
+<span class="fc" id="L197">            List&lt;SimpleMatrix&gt; fms = spTransformer.calculateEpipolarProjectionFor7Points(</span>
+                sampleLeft, sampleRight);
+            
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
+<span class="nc" id="L201">                nIter++;</span>
+<span class="nc" id="L202">                continue;</span>
+            }
+                        
+            // use Sampson's to estimate errors of sample
+<span class="fc" id="L206">            EpipolarTransformationFit fit = null;</span>
+            
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            for (SimpleMatrix fm : fms) {</span>
+<span class="fc" id="L209">                EpipolarTransformationFit fitI = </span>
+<span class="fc" id="L210">                    spTransformer.calculateErrorThenFilter(fm, </span>
+                        evalAllLeft, evalAllRight, errorType, tolerance);
+                
+<span class="fc bfc" id="L213" title="All 2 branches covered.">                if (fitI.isBetter(fit)) {</span>
+<span class="fc" id="L214">                    fit = fitI;</span>
+                }
+<span class="fc" id="L216">            }</span>
+            
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            if (fit == null) {</span>
+<span class="nc" id="L219">                nIter++;</span>
+<span class="nc" id="L220">                continue;</span>
+            }
+            
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
+<span class="fc" id="L224">                bestFit = fit;</span>
+            }
+                        
+<span class="fc" id="L227">            nIter++;</span>
+            
+            // recalculate nMaxIter
+<span class="pc bpc" id="L230" title="1 of 4 branches missed.">            if ((bestFit != null) &amp;&amp; ((nIter % 50) == 0)) {</span>
+<span class="fc" id="L231">                double ratio = (double)bestFit.getInlierIndexes().size()/(double)nPoints;</span>
+<span class="fc" id="L232">                nMaxIter = nEstimator.estimateNIterFor99PercentConfidenceDegenerate(</span>
+                    nPoints, nAllMultiplicity, nSet, ratio);
+            }
+<span class="fc" id="L235">        }</span>
+        
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L238">            return null;</span>
+        }
+        
+        // filter for degeneracy cLIndexes and cRMultiplicityIndexes using cErrors
+<span class="fc" id="L242">        Set&lt;Integer&gt; matchedLRM = filterForDegeneracy(bestFit,</span>
+            evalAllLeft, evalAllRight);
+        
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (matchedLRM.size() &lt; 7) {</span>
+<span class="nc" id="L246">            return null;</span>
+        }
+                
+        // calculate fundamental matrix using filtered consensus
+<span class="fc" id="L250">        SimpleMatrix inliersLeftXY = new SimpleMatrix(3, matchedLRM.size());</span>
+<span class="fc" id="L251">        SimpleMatrix inliersRightXY = new SimpleMatrix(3, matchedLRM.size());</span>
+        
+<span class="fc" id="L253">        count = 0;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (Integer index : matchedLRM) {</span>
+<span class="fc" id="L255">            int idx = index.intValue();</span>
+            
+<span class="fc" id="L257">            inliersLeftXY.set(0, count, evalAllLeft.get(0, idx));</span>
+<span class="fc" id="L258">            inliersLeftXY.set(1, count, evalAllLeft.get(1, idx));</span>
+<span class="fc" id="L259">            inliersLeftXY.set(2, count, 1);</span>
+            
+<span class="fc" id="L261">            inliersRightXY.set(0, count, evalAllRight.get(0, idx));</span>
+<span class="fc" id="L262">            inliersRightXY.set(1, count, evalAllRight.get(1, idx));</span>
+<span class="fc" id="L263">            inliersRightXY.set(2, count, 1);</span>
+            
+<span class="fc" id="L265">            count++;</span>
+<span class="fc" id="L266">        }</span>
+        
+<span class="fc" id="L268">        EpipolarTransformationFit consensusFit = null;</span>
+        
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        if (inliersRightXY.numCols() == 7) {</span>
+            
+<span class="nc" id="L272">            List&lt;SimpleMatrix&gt; fms = spTransformer.calculateEpipolarProjectionFor7Points(</span>
+                inliersLeftXY, inliersRightXY);
+<span class="nc bnc" id="L274" title="All 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
+<span class="nc" id="L275">                return null;</span>
+            }
+<span class="nc" id="L277">            EpipolarTransformationFit fit = null;</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            for (SimpleMatrix fm : fms) {</span>
+<span class="nc" id="L279">                EpipolarTransformationFit fitI = </span>
+<span class="nc" id="L280">                    spTransformer.calculateErrorThenFilter(fm,</span>
+                        inliersLeftXY, inliersRightXY, errorType, tolerance);
+<span class="nc bnc" id="L282" title="All 2 branches missed.">                if (fitI.isBetter(bestFit)) {</span>
+<span class="nc" id="L283">                    fit = fitI;</span>
+                }
+<span class="nc" id="L285">            }</span>
+<span class="nc" id="L286">            consensusFit = fit;</span>
+            
+<span class="nc" id="L288">        } else {</span>
+            
+<span class="fc" id="L290">            SimpleMatrix fm = spTransformer.calculateEpipolarProjection(</span>
+                inliersLeftXY, inliersRightXY);
+            
+<span class="fc" id="L293">            EpipolarTransformationFit fit = </span>
+<span class="fc" id="L294">                spTransformer.calculateErrorThenFilter(fm,</span>
+                    inliersLeftXY, inliersRightXY, errorType, tolerance);
+            
+<span class="fc" id="L297">            consensusFit = fit;</span>
+        }
+        
+        // these are not normalized
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        for (Integer index : consensusFit.getInlierIndexes()) {</span>
+<span class="fc" id="L302">            int idx = index.intValue();</span>
+<span class="fc" id="L303">            outputLeftXY.add(</span>
+<span class="fc" id="L304">                (int)Math.round(inliersLeftXY.get(0, idx)),</span>
+<span class="fc" id="L305">                (int)Math.round(inliersLeftXY.get(1, idx)));</span>
+<span class="fc" id="L306">            outputRightXY.add(</span>
+<span class="fc" id="L307">                (int)Math.round(inliersRightXY.get(0, idx)),</span>
+<span class="fc" id="L308">                (int)Math.round(inliersRightXY.get(1, idx)));</span>
+<span class="fc" id="L309">        }</span>
+        
+<span class="fc" id="L311">        log.info(&quot;nIter=&quot; + nIter);</span>
+
+<span class="fc" id="L313">        log.info(&quot;final fit: &quot; + consensusFit.toString());</span>
+
+<span class="fc" id="L315">        return consensusFit;</span>
+    }
+
+    private Set&lt;Integer&gt; filterForDegeneracy(EpipolarTransformationFit fit, 
+        SimpleMatrix allLeft, SimpleMatrix allRight) {
+        
+<span class="fc" id="L321">        Set&lt;Integer&gt; matchedLRM = new HashSet&lt;Integer&gt;();</span>
+        
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">        if (fit == null || fit.getInlierIndexes().isEmpty()) {</span>
+<span class="nc" id="L324">            return matchedLRM;</span>
+        }
+        
+        //temporary look at all matchings
+        if (true) {
+<span class="fc" id="L329">            matchedLRM.addAll(fit.getInlierIndexes());</span>
+<span class="fc" id="L330">            return matchedLRM;</span>
+        }
+        
+        // key=left point coordinates, value=right indexes
+        Map&lt;PairInt, List&lt;Integer&gt;&gt; pointIndexes = new HashMap&lt;PairInt, List&lt;Integer&gt;&gt;();
+        Map&lt;PairInt, List&lt;Double&gt;&gt; pointErrors = new HashMap&lt;PairInt, List&lt;Double&gt;&gt;();
+        
+        for (int i = 0; i &lt; fit.getInlierIndexes().size(); ++i) {
+            
+            int idx = fit.getInlierIndexes().get(i);
+            
+            int xL = (int)Math.round(allLeft.get(0, idx));
+            int yL = (int)Math.round(allLeft.get(1, idx));
+            PairInt key = new PairInt(xL, yL);
+            
+            Integer key2 = Integer.valueOf(idx);
+            
+            List&lt;Integer&gt; indexes2 = pointIndexes.get(key);
+            List&lt;Double&gt; errors = pointErrors.get(key);
+            
+            if (indexes2 == null) {
+                assert(errors == null);
+                indexes2 = new ArrayList&lt;Integer&gt;();
+                pointIndexes.put(key, indexes2);
+                
+                errors = new ArrayList&lt;Double&gt;();
+                pointErrors.put(key, errors);
+            } else {
+                assert(errors != null);
+            }
+            
+            indexes2.add(key2);
+            errors.add(fit.getErrors().get(i));
+        }
+                
+        // if values in pointIndexes are &gt; 1 in size, keep one w/ smallest error
+        for (Entry&lt;PairInt, List&lt;Integer&gt;&gt; entry : pointIndexes.entrySet()) {
+                        
+            List&lt;Integer&gt; indexes = entry.getValue();
+            if (indexes.size() &lt; 2) {
+                matchedLRM.add(indexes.get(0));
+                continue;
+            }
+            
+            PairInt lftPt = entry.getKey();
+            
+            double minError = Double.MAX_VALUE;
+            Integer minErrorIndex = null;
+            for (int i = 0; i &lt; indexes.size(); ++i) {
+                double error = pointErrors.get(lftPt).get(i).doubleValue();
+                if (error &lt; minError) {
+                    minError = error;
+                    minErrorIndex = indexes.get(i);;
+                }
+            }
+            
+            assert(minErrorIndex != null);
+            
+            matchedLRM.add(minErrorIndex); 
+        }
+        
+        // filter for degeneracy for multiple matches to right set
+        // key=right point coordinates, value=right indexes
+        pointIndexes = new HashMap&lt;PairInt, List&lt;Integer&gt;&gt;();
+        pointErrors = new HashMap&lt;PairInt, List&lt;Double&gt;&gt;();
+        
+        for (int i = 0; i &lt; fit.getInlierIndexes().size(); ++i) {
+            
+            int idx = fit.getInlierIndexes().get(i);
+            
+            Integer key2 = Integer.valueOf(idx);
+            
+            if (!matchedLRM.contains(key2)) {
+                continue;
+            }
+            
+            int xR = (int)Math.round(allRight.get(0, idx));
+            int yR = (int)Math.round(allRight.get(1, idx));
+            PairInt key = new PairInt(xR, yR);
+                        
+            List&lt;Integer&gt; indexes2 = pointIndexes.get(key);
+            List&lt;Double&gt; errors = pointErrors.get(key);
+            
+            if (indexes2 == null) {
+                assert(errors == null);
+                indexes2 = new ArrayList&lt;Integer&gt;();
+                pointIndexes.put(key, indexes2);
+                
+                errors = new ArrayList&lt;Double&gt;();
+                pointErrors.put(key, errors);
+            } else {
+                assert(errors != null);
+            }
+            
+            indexes2.add(key2);
+            errors.add(fit.getErrors().get(i));
+        }
+        
+        matchedLRM.clear();
+        
+        for (Entry&lt;PairInt, List&lt;Integer&gt;&gt; entry : pointIndexes.entrySet()) {
+                        
+            List&lt;Integer&gt; indexes = entry.getValue();
+            if (indexes.size() &lt; 2) {
+                matchedLRM.add(indexes.get(0));
+                continue;
+            }
+            
+            PairInt lftPt = entry.getKey();
+            
+            double minError = Double.MAX_VALUE;
+            Integer minErrorIndex = null;
+            for (int i = 0; i &lt; indexes.size(); ++i) {
+                double error = pointErrors.get(lftPt).get(i).doubleValue();
+                if (error &lt; minError) {
+                    minError = error;
+                    minErrorIndex = indexes.get(i);;
+                }
+            }
+            
+            assert(minErrorIndex != null);
+            
+            matchedLRM.add(minErrorIndex); 
+        }
+        
+        return matchedLRM;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
