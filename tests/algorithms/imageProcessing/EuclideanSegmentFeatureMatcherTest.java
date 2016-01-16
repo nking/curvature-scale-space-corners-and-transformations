@@ -25,7 +25,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 5; i < 6; ++i) {
+        for (int i = 3; i < 6; ++i) {
             
             switch(i) {
                 case 0: {
@@ -78,7 +78,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
                 
-        for (int i = 5; i < 6; ++i) {
+        for (int i = 0; i < 3; ++i) {
             fileName1 = null;
             fileName2 = null;
             switch(i) {
@@ -190,13 +190,17 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         
         log.info("fileName1Root=" + fileName1Root);
         
-        CorrespondenceList cl = wrapper.matchFeatures();
+        boolean matched = wrapper.match();
         
-        assertNotNull(cl);
-                
-        float scale = cl.getScale();
+        assertTrue(matched);
+
+        TransformationParameters params = wrapper.getSolutionTransformation();
         
-        int rotationInDegrees = cl.getRotationInDegrees();
+        log.info("params=" + params);
+
+        float scale = params.getScale();
+        
+        int rotationInDegrees = Math.round(params.getRotationInDegrees());
         
         log.info("scale for " + fileName1 + " =" + scale + " rotationDeg=" + 
             rotationInDegrees);
@@ -205,18 +209,77 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         
         if (fileName1.contains("checkerboard")) {
             if (rotateBy90) {
-                assertTrue(Math.abs(cl.getTranslationX() - 473) < 10);
-                assertTrue(Math.abs(cl.getTranslationY() - -7) < 10);
-                float diffRot = AngleUtil.getAngleDifference(270, cl.getRotationInDegrees());
+                assertTrue(Math.abs(params.getTranslationX() - 464) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - -11) < 10);
+                float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             } else {
-                assertTrue(Math.abs(cl.getTranslationX() - -71) < 15);
-                assertTrue(Math.abs(cl.getTranslationY() - -6) < 15);
-                float diffRot = AngleUtil.getAngleDifference(353, cl.getRotationInDegrees());
+                assertTrue(Math.abs(params.getTranslationX() - -85) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - -11) < 10);
+                float diffRot = AngleUtil.getAngleDifference(360, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             }
+        } else if (fileName1.contains("brown")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(params.getTranslationX() - 276) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - 5) < 10);
+                float diffRot = AngleUtil.getAngleDifference(260, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(params.getTranslationX() - -250) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - -82) < 10);
+                float diffRot = AngleUtil.getAngleDifference(350, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            }
+        } else if (fileName1.contains("venturi")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(params.getTranslationX() - 605) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - 0) < 10);
+                float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(params.getTranslationX() - -40) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - 2) < 10);
+                float diffRot = AngleUtil.getAngleDifference(345, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            }
+        } else if (fileName1.contains("books")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(params.getTranslationX() - 574) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - 5) < 40);
+                float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(params.getTranslationX() - -52) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - -26) < 40);
+                float diffRot = AngleUtil.getAngleDifference(354, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 15);
+            }
+        } else if (fileName1.contains("campus")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(params.getTranslationX() - 737) < 10);
+                assertTrue(Math.abs(params.getTranslationY() - 2) < 10);
+                float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(params.getTranslationX() - 258) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - 7) < 40);
+                float diffRot = AngleUtil.getAngleDifference(345, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 15);
+            }
+        } else if (fileName1.contains("merton")) {
+            if (rotateBy90) {
+                assertTrue(Math.abs(params.getTranslationX() - 1062) < 50);
+                assertTrue(Math.abs(params.getTranslationY() - 8) < 10);
+                float diffRot = AngleUtil.getAngleDifference(269, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 20);
+            } else {
+                assertTrue(Math.abs(params.getTranslationX() - -42) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - -7) < 40);
+                float diffRot = AngleUtil.getAngleDifference(357, params.getRotationInDegrees());
+                assertTrue(Math.abs(diffRot) < 15);
+            }
         }
-
     }
     
      public static void main(String[] args) {

@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -8,8 +7,6 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
@@ -18,6 +15,10 @@ import org.ejml.simple.SimpleMatrix;
  * class encapsulating the steps from generating a degenerate correspondenc list
  * to solving for the best epipolar projection.
  
+ * Note, the design of this class is inverted from the paradigm of classes
+ * inheriting AbstractFeatureMatcher, but that will be changed in the near
+ * future with the refactoring of all of these feature matching classes.
+ * 
  * @author nichole
  */
 public class EpipolarMultiplicitySolver {

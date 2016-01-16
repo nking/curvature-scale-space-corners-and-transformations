@@ -48,7 +48,8 @@ public class BlobCornersEuclideanCalculator2 {
         List<CornerRegion> allCorners1, List<CornerRegion> allCorners2,
         int binFactor1, int binFactor2) {
         
-        // calculate all transformations
+        // calculate all transformations, returns transformations from all
+        // combinations of 2 if enough points per blob, else combinations of 3
         List<TransformationParameters> params = calculateTransformations(
             matchedLists);
         

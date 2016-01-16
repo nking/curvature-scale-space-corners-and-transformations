@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
@@ -70,19 +69,17 @@ public class EpipolarSolver {
             EuclideanSegmentFeatureMatcher wrapper2
                 = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
 
-            CorrespondenceList cl = wrapper2.matchFeatures();
+            boolean matched = wrapper2.match();
 
-            if (cl == null) {
+            if (!matched) {
                 state = State.NO_SOLUTION;
                 return null;
             }
 
-            log.info("params from scale calc: scale=" + cl.getScale()
-                + " rot(deg)=" + cl.getRotationInDegrees()
-                + " tx=" + cl.getTranslationX() + " ty=" + cl.getTranslationY());
+            log.info("params from 2nd matcher=" + wrapper2.getSolutionTransformation());
 
-            points1 = cl.getPoints1();
-            points2 = cl.getPoints2();
+            points1 = wrapper2.getSolutionMatched1();
+            points2 = wrapper2.getSolutionMatched2();
 
         } else {
 

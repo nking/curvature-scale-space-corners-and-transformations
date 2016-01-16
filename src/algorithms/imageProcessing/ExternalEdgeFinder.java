@@ -33,12 +33,16 @@ public class ExternalEdgeFinder {
         // find the convex hull of edgesAsReferenceFrame
         GrahamScan grahamScan = calculateConvexHull(edgesAsReferenceFrame);
         
+        Set<Integer> skipSet = new HashSet<Integer>();
+        
+        if (grahamScan == null) {
+            return skipSet;
+        }
+        
         // hull has start and end points repeated:
         float[] xHull = grahamScan.getXHull();
         float[] yHull = grahamScan.getYHull();
-        expandHull(xHull, yHull, buffer);
-        
-        Set<Integer> skipSet = new HashSet<Integer>();
+        expandHull(xHull, yHull, buffer);        
         
         PointInPolygon pointInPolygonChecker = new PointInPolygon();
         
@@ -117,6 +121,9 @@ public class ExternalEdgeFinder {
         int n2 = 0;
         for (PairIntArray edge : edges) {
             n2 += edge.getN();
+        }
+        if (n2 < 3) {
+            return null;
         }
         int count = 0;
         float[] x2 = new float[n2];

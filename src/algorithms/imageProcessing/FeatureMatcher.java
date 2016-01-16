@@ -508,7 +508,7 @@ public class FeatureMatcher {
                 MiscDebug.writeImage(filteredTransformedC1, gsImg2.copyToColorGreyscale(), 
                     "filtered_1_trans_corners_");
             } catch (IOException ex) {
-                Logger.getLogger(EuclideanSegmentFeatureMatcher.class.getName()).log(
+                Logger.getLogger(FeatureMatcher.class.getName()).log(
                     Level.SEVERE, null, ex);
             }
         }
@@ -1010,6 +1010,10 @@ public class FeatureMatcher {
         List<CornerRegion> outFilteredC2,
         int img1Width, int img1Height, int img2Width, int img2Height) {
         
+        if (c1.length < 3 || c2.length < 3) {
+            return;
+        }
+        
         /*
         make convex hull of corners1 and transform the hull to corners2
            where will only keep the corners2 that are within the transformed
@@ -1061,6 +1065,10 @@ public class FeatureMatcher {
 
             TransformationParameters revParams = tc.swapReferenceFrames(params);
         
+            if (outFilteredC2.size() < 3) {
+                return;
+            }
+            
             PairInt[] corners2 = Misc.convert(outFilteredC2);
             scan = new GrahamScanPairInt<PairInt>();
             scan.computeHull(corners2);

@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -194,9 +196,18 @@ public abstract class AbstractFeatureMatcher {
             img1Helper.getBlobs(type, useBinned, filterOutImageBoundaryBlobs, 
                 filterOutZeroPixels);
             
-            // pre-make the blobs using non-default variables:
             img2Helper.getBlobs(type, useBinned, filterOutImageBoundaryBlobs, 
-                filterOutZeroPixels);           
+                filterOutZeroPixels); 
+            
+            if (settings.doUse2ndDerivCorners()) {
+                img1Helper.extractSecondDerivativeCorners(type, useBinned);
+                img2Helper.extractSecondDerivativeCorners(type, useBinned);
+            } else {
+                img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
+                    doNotAddPoints);
+                img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
+                    doNotAddPoints);
+            }
         }
         
         if (settings.doUse2ndDerivCorners()) {
@@ -369,6 +380,121 @@ public abstract class AbstractFeatureMatcher {
         }
     }
     
+    protected void extractCannyCornerRegions(GreyscaleImage img1,
+        GreyscaleImage img2, Set<CornerRegion> outputCornerRegions1,
+        Set<CornerRegion> outputCornerRegions2) {
+
+        GreyscaleImage gsImg1 = img1.copyImage();
+        GreyscaleImage gsImg2 = img2.copyImage();
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(gsImg1, SIGMA.ONE);
+
+        CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg1);
+        detector.doNotPerformHistogramEqualization();
+        detector.findCorners();
+
+        Set<CornerRegion> cornerRegions1 = detector.getEdgeCornerRegions(true);
+        //cornerRegions1 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
+        outputCornerRegions1.addAll(cornerRegions1);
+
+        imageProcessor.blur(gsImg2, SIGMA.ONE);
+
+        detector = new CurvatureScaleSpaceCornerDetector(gsImg2);
+        detector.doNotPerformHistogramEqualization();
+        detector.findCorners();
+        Set<CornerRegion> cornerRegions2 = detector.getEdgeCornerRegions(true);
+        //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+
+        outputCornerRegions2.addAll(cornerRegions2);
+    }
+    
+    protected List<FeatureComparisonStat> findCorrespondence(GreyscaleImage img1,
+        GreyscaleImage img2, Set<CornerRegion> cornerRegions1,
+        Set<CornerRegion> cornerRegions2, TransformationParameters parameters,
+        RotatedOffsets rotatedOffsets, int dither2, int transXYTol,
+        float scaleTol, float rotationInRadiansTol) {
+
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        List<FeatureComparisonStat> stats = 
+            featureMatcher.findSimilarFeaturesAsStats(img1,
+            cornerRegions1.toArray(new CornerRegion[cornerRegions1.size()]),
+            img2, cornerRegions2.toArray(new CornerRegion[cornerRegions2.size()]),
+            parameters, scaleTol, rotationInRadiansTol, transXYTol,
+            dither2, rotatedOffsets);
+        
+        return stats;
+    }
+
+    protected MatchingSolution transformSolutionToFullFrames(MatchingSolution 
+        soln, BlobPerimeterCornerHelper img1Helper, 
+        BlobPerimeterCornerHelper img2Helper, int binFactor1, int binFactor2) {
+        
+        if (binFactor1 == 1 && binFactor2 == 1) {
+            return soln;
+        }
+       
+        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+        
+        assert(rotatedOffsets.containsData());
+        
+        List<FeatureComparisonStat> stats = soln.getComparisonStats();
+        
+        for (int i = 0; i < stats.size(); ++i) {
+            FeatureComparisonStat stat = stats.get(i);
+            stat.setBinFactor1(binFactor1);
+            stat.setBinFactor2(binFactor2);
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = (binFactor1 != 1) ? 
+                img1Helper.getGreyscaleImageBinned() :
+                img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = (binFactor2 != 1) ? 
+                img2Helper.getGreyscaleImageBinned() :
+                img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, stats, 
+                "_matched_binned_" + settings.getDebugTag() 
+                + MiscDebug.getCurrentTimeFormatted(), 1);
+        }
+        
+        FeatureMatcher matcher = new FeatureMatcher();
+        
+        List<FeatureComparisonStat> fullStats = matcher.reviseStatsForFullImages(
+            img1Helper.getGreyscaleImage(),
+            img2Helper.getGreyscaleImage(),
+            settings,
+            soln.getParams(), soln.getComparisonStats(),
+            binFactor1, binFactor2, rotatedOffsets);
+            
+        if ((fullStats == null) || fullStats.isEmpty()) {
+            return null;
+        }
+        
+        TransformationParameters revisedParams = 
+            MiscStats.calculateTransformation(1, 1, fullStats,
+                new float[4], false);
+        
+        if (revisedParams == null) {
+            return null;
+        }
+        
+        if (settings.debug()) {
+            GreyscaleImage im1 = img1Helper.getGreyscaleImage();
+            GreyscaleImage im2 = img2Helper.getGreyscaleImage();
+            MiscDebug.writeImages(im1, im2, fullStats, 
+                "_matched_" + settings.getDebugTag() +
+                MiscDebug.getCurrentTimeFormatted(), 2);
+        }
+        
+        MatchingSolution fullSoln = new MatchingSolution(revisedParams, 
+            fullStats, 1, 1);
+        
+        return fullSoln;
+    }
+
     /**
      * get a copy of the solution's feature stats.
      * @return 

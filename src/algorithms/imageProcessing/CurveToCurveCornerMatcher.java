@@ -119,7 +119,7 @@ System.out.println(sb.toString());
 */
         Map<PairInt, List<FeatureComparisonStat>> statsMap = 
             new HashMap<PairInt, List<FeatureComparisonStat>>();
-                
+        
         for (int idx1 = 0; idx1 < cornerLists1.size(); ++idx1) {
 
             List<T> corners1 = cornerLists1.get(idx1);
@@ -153,8 +153,6 @@ System.out.println(sb.toString());
                 }
                 
                 List<FeatureComparisonStat> stats2 = matcher.getSolutionStats();
-
-                MiscStats.filterForDegeneracy(stats2);
                 
                 int nEval = stats2.size();
 

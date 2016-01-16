@@ -34,7 +34,9 @@ each of the matchers has these steps:
     
 (3) the homology solvers take the point lists and solve for transformations
     and then evaluate for best transformations.
-    the current matchers are:
+
+-------
+The current matchers, before final refactoring and adding from todo.txt, are:
 
     EpipolarSolver:
         - EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher
@@ -67,9 +69,8 @@ each of the matchers has these steps:
             successful.
 
     EuclideanSegmentFeatureMatcher
-        - BlobScaleFinderWrapper is given images.  it contains logic for
-          creating points and then uses 
-          - BlobCornersEuclideanCalculator for very detailed, somewhat long running
+        - extends AbstractFeatureMatcher to make corner lists
+          - uses BlobCornersEuclideanCalculator for very detailed, somewhat long running
             transformation calculations.
             - uses CurveCornerEuclideanMatcher to find best transformation for each
               blob pair, that is a blob in image1 paired to a blob in image 2.

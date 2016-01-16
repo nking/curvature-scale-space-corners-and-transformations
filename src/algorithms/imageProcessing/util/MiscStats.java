@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.imageProcessing.FeatureComparisonStat;
 import algorithms.imageProcessing.FeatureMatcher;
 import algorithms.imageProcessing.MatchedPointsTransformationCalculator;
@@ -1510,6 +1511,167 @@ public class MiscStats {
         }
         
         return combinedParams;
+    }
+    
+    /**
+     * a method to determine the intersection of transformed image 1 with
+     * image 2 and then examine the distribution of stats's points in 
+     * 4 quadrants of the intersection to return whether stats are present in
+     * all quadrants.  A caveat of the method is that not all of the 
+     * intersection necessarily has image details which could be matched, for 
+     * example, clear sky does not have corners using the methods here.
+     * @param stats
+     * @param params
+     * @param image1Width
+     * @param image1Height
+     * @param image2Width
+     * @param image2Height
+     * @return 
+     */
+    public static boolean statsCoverIntersection(List<FeatureComparisonStat> stats,
+        TransformationParameters params, int image1Width, int image1Height,
+        int image2Width, int image2Height) {
+        
+        /*
+        calculate the intersection of the 2 images.
+        divide the region into 4 parts (2 vertical and 2 horizontal) by noting
+        the 4 boundary points for each and making a polygon for each.
+        
+        then use point in polygon tests to count the number of stats.point2's
+        in each of the 4 regions.        
+        */
+        
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        double[][] img2Intersection = MiscStats.getBoundsOfIntersectionInFrame2(
+            params, image1Width, image1Height, image2Width, image2Height);
+        
+        float[] d1 = new float[]{
+            (float)((img2Intersection[0][0] + img2Intersection[1][0])/2.f),
+            (float)((img2Intersection[0][1] + img2Intersection[1][1])/2.f)};     
+        float[] d2 = new float[]{
+            (float)((img2Intersection[1][0] + img2Intersection[2][0])/2.f),
+            (float)((img2Intersection[1][1] + img2Intersection[2][1])/2.f)};
+        float[] d4 = new float[]{
+            (float)((img2Intersection[0][0] + img2Intersection[3][0])/2.f),
+            (float)((img2Intersection[0][1] + img2Intersection[3][1])/2.f)};
+        float[] d5 = new float[]{
+            (float)((img2Intersection[2][0] + img2Intersection[3][0])/2.f),
+            (float)((img2Intersection[2][1] + img2Intersection[3][1])/2.f)};
+        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};
+        
+        float[] xPoly0 = new float[5];
+        float[] yPoly0 = new float[5];
+        xPoly0[0] = (float)img2Intersection[0][0];
+        yPoly0[0] = (float)img2Intersection[0][1];
+        xPoly0[1] = d1[0];
+        yPoly0[1] = d1[1];
+        xPoly0[2] = d3[0];
+        yPoly0[2] = d3[1];
+        xPoly0[3] = d4[0];
+        yPoly0[3] = d4[1];
+        xPoly0[4] = xPoly0[0];
+        yPoly0[4] = yPoly0[0];
+
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        float[] xPoly1 = new float[5];
+        float[] yPoly1 = new float[5];
+        xPoly1[0] = d1[0];
+        yPoly1[0] = d1[1];
+        xPoly1[1] = (float)img2Intersection[1][0];
+        yPoly1[1] = (float)img2Intersection[1][1];
+        xPoly1[2] = d2[0];
+        yPoly1[2] = d2[1];
+        xPoly1[3] = d3[0];
+        yPoly1[3] = d3[1];
+        xPoly1[4] = xPoly1[0];
+        yPoly1[4] = yPoly1[0];
+        
+        float[] xPoly2 = new float[5];
+        float[] yPoly2 = new float[5];
+        xPoly2[0] = d3[0];
+        yPoly2[0] = d3[1];
+        xPoly2[1] = d2[0];
+        yPoly2[1] = d2[1];
+        xPoly2[2] = (float)img2Intersection[2][0];
+        yPoly2[2] = (float)img2Intersection[2][1];
+        xPoly2[3] = d5[0];
+        yPoly2[3] = d5[1];
+        xPoly2[4] = xPoly2[0];
+        yPoly2[4] = yPoly2[0];
+        
+        /*
+       / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
+        |
+        |                                 d2           d3             d4
+        |
+        0    ( tr )    ( tr )            (x2q1, y2q1)  d1   (x2q0, y2q0)
+          0 -->
+        */
+        
+        float[] xPoly3 = new float[5];
+        float[] yPoly3 = new float[5];
+        xPoly3[0] = d4[0];
+        yPoly3[0] = d4[1];
+        xPoly3[1] = d3[0];
+        yPoly3[1] = d3[1];
+        xPoly3[2] = d5[0];
+        yPoly3[2] = d5[1];
+        xPoly3[3] = (float)img2Intersection[3][0];
+        yPoly3[3] = (float)img2Intersection[3][1];
+        xPoly3[4] = xPoly3[0];
+        yPoly3[4] = yPoly3[0];
+        
+        PointInPolygon poly = new PointInPolygon();
+        
+        int[] count = new int[4];
+        for (FeatureComparisonStat stat : stats) {
+            int x = stat.getImg2Point().getX() * stat.getBinFactor2();
+            int y = stat.getImg2Point().getY() * stat.getBinFactor2();
+            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);
+            if (isIn) {
+                count[0]++;
+            } else {
+                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);
+                if (isIn) {
+                    count[1]++;
+                } else {
+                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);
+                    if (isIn) {
+                        count[2]++;
+                    } else {
+                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);
+                        if (isIn) {
+                            count[3]++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        int nq = 0;
+        for (int c : count) {
+            if (c > 0) {
+                nq++;
+            }
+        }
+        
+        return (nq == 4);
     }
     
 }
