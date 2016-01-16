@@ -132,6 +132,11 @@ public class EuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
         // transform images to full size
         soln = transformSolutionToFullFrames(soln, img1Helper, img2Helper, 
             binFactor1, binFactor2);
+
+        if (soln == null || soln.getComparisonStats() == null || 
+            soln.getComparisonStats().isEmpty()) {
+            return false;
+        }
             
         TransformationParameters params = soln.getParams();
                 
