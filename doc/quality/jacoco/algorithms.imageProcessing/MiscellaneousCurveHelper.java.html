@@ -53,8 +53,8 @@ import org.ejml.simple.*;
      */
     public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
 
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
-<span class="nc" id="L57">            return false;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="fc" id="L57">            return false;</span>
         }
 
 <span class="fc" id="L60">        int nNeg = 0;</span>
@@ -1242,8 +1242,8 @@ import org.ejml.simple.*;
 <span class="fc" id="L1242">        Boolean widthIsAlongX = null;</span>
 <span class="fc bfc" id="L1243" title="All 4 branches covered.">        while ((dx == 0) || (dy == 0)) {</span>
 <span class="fc" id="L1244">            i++;</span>
-<span class="pc bpc" id="L1245" title="1 of 2 branches missed.">            if (i &gt;= stopIndex) {</span>
-<span class="nc" id="L1246">                return lineSegmentRanges;</span>
+<span class="fc bfc" id="L1245" title="All 2 branches covered.">            if (i &gt;= stopIndex) {</span>
+<span class="fc" id="L1246">                return lineSegmentRanges;</span>
             }
 <span class="fc" id="L1248">            dx = (curve.getX(i) - curve.getX(i - 1));</span>
 <span class="fc" id="L1249">            dy = (curve.getY(i) - curve.getY(i - 1));</span>

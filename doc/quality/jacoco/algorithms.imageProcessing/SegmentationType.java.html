@@ -13,16 +13,18 @@
         scale space followed by adaptive mean thresholding (scl=4?);
     COLOR_POLARCIEXY = color to greyscale using polar theta of CIEXY;
     ADAPTIVE_MEAN uses adaptive mean thresholding w h=2
+    NONE = no segmentation is performed allowing special handling of the points.
 &lt;/pre&gt;
 @author nichole
  */
-<span class="pc" id="L19">public enum SegmentationType {</span>
-<span class="fc" id="L20">    GREYSCALE_WAVELET, GREYSCALE_CANNY,</span>
-<span class="fc" id="L21">    GREYSCALE_HIST,</span>
-<span class="fc" id="L22">    GREYSCALE_KMPP,</span>
-<span class="fc" id="L23">    DT_CLUSTERING,</span>
-<span class="fc" id="L24">    COLOR_POLARCIEXY_ADAPT,</span>
-<span class="fc" id="L25">    COLOR_POLARCIEXY,</span>
-<span class="fc" id="L26">    ADAPTIVE_MEAN;</span>
+<span class="pc" id="L20">public enum SegmentationType {</span>
+<span class="fc" id="L21">    GREYSCALE_WAVELET, GREYSCALE_CANNY,</span>
+<span class="fc" id="L22">    GREYSCALE_HIST,</span>
+<span class="fc" id="L23">    GREYSCALE_KMPP,</span>
+<span class="fc" id="L24">    DT_CLUSTERING,</span>
+<span class="fc" id="L25">    COLOR_POLARCIEXY_ADAPT,</span>
+<span class="fc" id="L26">    COLOR_POLARCIEXY,</span>
+<span class="fc" id="L27">    ADAPTIVE_MEAN,</span>
+<span class="fc" id="L28">    NONE;</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

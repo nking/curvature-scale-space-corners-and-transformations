@@ -52,9 +52,9 @@ import java.util.Set;
 
 <span class="fc" id="L53">                int index = sr.nextInt(n);</span>
 
-<span class="fc bfc" id="L55" title="All 2 branches covered.">                while (output.get(index).getN() == subsetSize) {</span>
-<span class="fc" id="L56">                    index++;</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                    if (index == n) {</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                while (output.get(index).getN() == subsetSize) {</span>
+<span class="nc" id="L56">                    index++;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                    if (index == n) {</span>
 <span class="nc" id="L58">                        index = 0;</span>
                     }
                 }
@@ -64,18 +64,18 @@ import java.util.Set;
 
             // fill up the first bin if it's smaller than subsetSize
 <span class="fc" id="L66">            int lastIdx = n - 1;</span>
-<span class="pc bpc" id="L67" title="3 of 4 branches missed.">            while ((output.get(0).getN() &lt; subsetSize) &amp;&amp; (lastIdx &gt; 0)) {</span>
-<span class="nc" id="L68">                int nToAdd = subsetSize - output.get(0).getN();</span>
-<span class="nc" id="L69">                PairIntArray p = output.get(lastIdx);</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">                int canAdd = (p.getN() &lt; nToAdd) ? p.getN() : nToAdd;</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">                for (int i = 0; i &lt; canAdd; ++i) {</span>
-<span class="nc" id="L72">                    int idx = p.getN() - 1 - i;</span>
-<span class="nc" id="L73">                    output.get(0).add(p.getX(idx), p.getY(idx));</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">            while ((output.get(0).getN() &lt; subsetSize) &amp;&amp; (lastIdx &gt; 0)) {</span>
+<span class="fc" id="L68">                int nToAdd = subsetSize - output.get(0).getN();</span>
+<span class="fc" id="L69">                PairIntArray p = output.get(lastIdx);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                int canAdd = (p.getN() &lt; nToAdd) ? p.getN() : nToAdd;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                for (int i = 0; i &lt; canAdd; ++i) {</span>
+<span class="fc" id="L72">                    int idx = p.getN() - 1 - i;</span>
+<span class="fc" id="L73">                    output.get(0).add(p.getX(idx), p.getY(idx));</span>
                 }
-<span class="nc bnc" id="L75" title="All 2 branches missed.">                for (int i = 0; i &lt; nToAdd; ++i) {</span>
-<span class="nc" id="L76">                    p.removeRange(p.getN() - 1, p.getN() - 1);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">                for (int i = 0; i &lt; nToAdd; ++i) {</span>
+<span class="fc" id="L76">                    p.removeRange(p.getN() - 1, p.getN() - 1);</span>
                 }
-<span class="nc" id="L78">            }</span>
+<span class="fc" id="L78">            }</span>
 
 <span class="fc" id="L80">            return output;</span>
 
@@ -147,8 +147,8 @@ import java.util.Set;
 <span class="fc" id="L147">                Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
 <span class="fc bfc" id="L148" title="All 2 branches covered.">                while (chosen.size() &lt; nPerBin) {</span>
 <span class="fc" id="L149">                    int idx = sr.nextInt(binOfPoints.getN());</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
-<span class="nc" id="L151">                        idx = sr.nextInt(binOfPoints.getN());</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                    while (chosen.contains(Integer.valueOf(idx))) {</span>
+<span class="fc" id="L151">                        idx = sr.nextInt(binOfPoints.getN());</span>
                     }
 <span class="fc" id="L153">                    reduced.add(binOfPoints.getX(idx), binOfPoints.getY(idx));</span>
 <span class="fc" id="L154">                    chosen.add(Integer.valueOf(idx));</span>

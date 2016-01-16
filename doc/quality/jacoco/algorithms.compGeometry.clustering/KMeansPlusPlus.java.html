@@ -314,12 +314,12 @@ public class KMeansPlusPlus {
 
 <span class="fc bfc" id="L315" title="All 2 branches covered.">        for (int i = 0; i &lt; sumStDev.length; i++) {</span>
 
-<span class="fc bfc" id="L317" title="All 2 branches covered.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">            if ((float)(nSumStDev[i] - 1) &gt; 0) {</span>
                 // divide by N-1 rather because mean was calc'ed from the data
 <span class="fc" id="L319">                sumStDev[i] = </span>
 <span class="fc" id="L320">                    (float)Math.sqrt(sumStDev[i]/(float)(nSumStDev[i] - 1.));</span>
             } else {
-<span class="fc" id="L322">                sumStDev[i] = 0;</span>
+<span class="nc" id="L322">                sumStDev[i] = 0;</span>
             }
 <span class="fc" id="L324">            seedVariances[i] = sumStDev[i];</span>
 

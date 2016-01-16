@@ -119,7 +119,7 @@ System.out.println(sb.toString());
 */
 <span class="fc" id="L120">        Map&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt; statsMap = </span>
             new HashMap&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt;();
-                
+        
 <span class="fc bfc" id="L123" title="All 2 branches covered.">        for (int idx1 = 0; idx1 &lt; cornerLists1.size(); ++idx1) {</span>
 
 <span class="fc" id="L125">            List&lt;T&gt; corners1 = cornerLists1.get(idx1);</span>
@@ -153,36 +153,34 @@ System.out.println(sb.toString());
                 }
                 
 <span class="fc" id="L155">                List&lt;FeatureComparisonStat&gt; stats2 = matcher.getSolutionStats();</span>
-
-<span class="fc" id="L157">                MiscStats.filterForDegeneracy(stats2);</span>
                 
-<span class="fc" id="L159">                int nEval = stats2.size();</span>
+<span class="fc" id="L157">                int nEval = stats2.size();</span>
 
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">                if (nEval &lt; 1) {</span>
-<span class="nc" id="L162">                    continue;</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                if (nEval &lt; 1) {</span>
+<span class="nc" id="L160">                    continue;</span>
                 }
                 
-<span class="fc" id="L165">                double cost = MiscStats.calculateCombinedIntensityStat(stats2);</span>
+<span class="fc" id="L163">                double cost = MiscStats.calculateCombinedIntensityStat(stats2);</span>
 
-<span class="fc bfc" id="L167" title="All 2 branches covered.">                if (cost &lt; minCost) {</span>
-<span class="fc" id="L168">                    maxNEval = nEval;</span>
-<span class="fc" id="L169">                    maxNEvalIndex2 = index2;</span>
-<span class="fc" id="L170">                    minCost = cost;</span>
-<span class="fc" id="L171">                    minCostStats = stats2;</span>
-<span class="fc bfc" id="L172" title="All 4 branches covered.">                } else if ((maxNEval == 2) &amp;&amp; (nEval &gt; 3)) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">                if (cost &lt; minCost) {</span>
+<span class="fc" id="L166">                    maxNEval = nEval;</span>
+<span class="fc" id="L167">                    maxNEvalIndex2 = index2;</span>
+<span class="fc" id="L168">                    minCost = cost;</span>
+<span class="fc" id="L169">                    minCostStats = stats2;</span>
+<span class="fc bfc" id="L170" title="All 4 branches covered.">                } else if ((maxNEval == 2) &amp;&amp; (nEval &gt; 3)) {</span>
                     //TODO: may need to revise this
-<span class="fc" id="L174">                    double avgCost = (cost + minCost)/2.;</span>
-<span class="fc bfc" id="L175" title="All 2 branches covered.">                    if ((Math.abs(cost - avgCost)/(0.1*avgCost)) &lt; 2) {</span>
-<span class="fc" id="L176">                        maxNEval = nEval;</span>
-<span class="fc" id="L177">                        maxNEvalIndex2 = index2;</span>
-<span class="fc" id="L178">                        minCost = cost;</span>
-<span class="fc" id="L179">                        minCostStats = stats2;</span>
+<span class="fc" id="L172">                    double avgCost = (cost + minCost)/2.;</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">                    if ((Math.abs(cost - avgCost)/(0.1*avgCost)) &lt; 2) {</span>
+<span class="fc" id="L174">                        maxNEval = nEval;</span>
+<span class="fc" id="L175">                        maxNEvalIndex2 = index2;</span>
+<span class="fc" id="L176">                        minCost = cost;</span>
+<span class="fc" id="L177">                        minCostStats = stats2;</span>
                     }
                 }
             }
 
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">            if (minCostStats != null) {</span>
-<span class="fc" id="L185">                statsMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()),</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (minCostStats != null) {</span>
+<span class="fc" id="L183">                statsMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()),</span>
                     minCostStats);
             }
         }
@@ -192,32 +190,32 @@ System.out.println(sb.toString());
         // other objects due to motion or perspective change or different
         // camera perspective, etc.
         
-<span class="fc" id="L195">        List&lt;FeatureComparisonStat&gt; stats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
-<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (Entry&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt; entry : statsMap.entrySet()) {</span>
-<span class="fc" id="L197">            stats.addAll(entry.getValue());</span>
-<span class="fc" id="L198">        }</span>
+<span class="fc" id="L193">        List&lt;FeatureComparisonStat&gt; stats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        for (Entry&lt;PairInt, List&lt;FeatureComparisonStat&gt;&gt; entry : statsMap.entrySet()) {</span>
+<span class="fc" id="L195">            stats.addAll(entry.getValue());</span>
+<span class="fc" id="L196">        }</span>
         
-<span class="fc" id="L200">        MiscStats.filterForDegeneracy(stats);</span>
+<span class="fc" id="L198">        MiscStats.filterForDegeneracy(stats);</span>
         
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (stats.isEmpty()) {</span>
-<span class="nc" id="L203">            state = State.FAILED;</span>
-<span class="nc" id="L204">            return false;</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (stats.isEmpty()) {</span>
+<span class="nc" id="L201">            state = State.FAILED;</span>
+<span class="nc" id="L202">            return false;</span>
         }
         
-<span class="fc" id="L207">        solutionStats = stats;</span>
+<span class="fc" id="L205">        solutionStats = stats;</span>
     
-<span class="fc" id="L209">        List&lt;PairInt&gt; matched1 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L207">        List&lt;PairInt&gt; matched1 = new ArrayList&lt;PairInt&gt;();</span>
     
-<span class="fc" id="L211">        List&lt;PairInt&gt; matched2 = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L209">        List&lt;PairInt&gt; matched2 = new ArrayList&lt;PairInt&gt;();</span>
         
-<span class="fc bfc" id="L213" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
-<span class="fc" id="L214">            PairInt p1 = stat.getImg1Point();</span>
-<span class="fc" id="L215">            PairInt p2 = stat.getImg2Point();</span>
-<span class="fc" id="L216">            matched1.add(p1);</span>
-<span class="fc" id="L217">            matched2.add(p2);</span>
-<span class="fc" id="L218">        }</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="fc" id="L212">            PairInt p1 = stat.getImg1Point();</span>
+<span class="fc" id="L213">            PairInt p2 = stat.getImg2Point();</span>
+<span class="fc" id="L214">            matched1.add(p1);</span>
+<span class="fc" id="L215">            matched2.add(p2);</span>
+<span class="fc" id="L216">        }</span>
 
-<span class="fc" id="L220">        return true;</span>
+<span class="fc" id="L218">        return true;</span>
     }
     
 }

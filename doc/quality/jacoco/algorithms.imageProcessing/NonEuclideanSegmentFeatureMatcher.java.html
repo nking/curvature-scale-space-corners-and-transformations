@@ -29,97 +29,177 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
 
     @Override
     protected boolean match(SegmentationType type, boolean useBinned) {
+
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (settings.doUse2ndDerivCorners()) {</span>
+<span class="fc" id="L34">            return matchFor2ndDerivPts(type, useBinned);</span>
+        }
+
+        int binFactor1, binFactor2;
+        GreyscaleImage img1, img2;
+        IntensityFeatures f1, f2;
+
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (useBinned) {</span>
+<span class="fc" id="L42">            binFactor1 = img1Helper.getBinFactor(useBinned);</span>
+<span class="fc" id="L43">            binFactor2 = img2Helper.getBinFactor(useBinned);</span>
+<span class="fc" id="L44">            img1 = img1Helper.getGreyscaleImageBinned();</span>
+<span class="fc" id="L45">            img2 = img2Helper.getGreyscaleImageBinned();</span>
+<span class="fc" id="L46">            f1 = featuresBinned1;</span>
+<span class="fc" id="L47">            f2 = featuresBinned2;</span>
+        } else {
+<span class="nc" id="L49">            binFactor1 = 1;</span>
+<span class="nc" id="L50">            binFactor2 = 1;</span>
+<span class="nc" id="L51">            img1 = img1Helper.getGreyscaleImage();</span>
+<span class="nc" id="L52">            img2 = img2Helper.getGreyscaleImage();</span>
+<span class="nc" id="L53">            f1 = features1;</span>
+<span class="nc" id="L54">            f2 = features2;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (!f1.gradientWasCreated()) {</span>
+<span class="nc" id="L56">                f1.calculateGradientWithGreyscale(</span>
+<span class="nc" id="L57">                    img1Helper.getGreyscaleImage().copyImage());</span>
+            }
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (!f2.gradientWasCreated()) {</span>
+<span class="nc" id="L60">                f2.calculateGradientWithGreyscale(</span>
+<span class="nc" id="L61">                    img2Helper.getGreyscaleImage().copyImage());</span>
+            }
+        }
+                
+<span class="fc" id="L65">        List&lt;List&lt;CornerRegion&gt;&gt; corners1List = img1Helper.getPerimeterCorners(</span>
+            type, useBinned);
+        
+<span class="fc" id="L68">        List&lt;List&lt;CornerRegion&gt;&gt; corners2List = img2Helper.getPerimeterCorners(</span>
+            type, useBinned);
+        
+<span class="fc" id="L71">        boolean filterForLocalization = true;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (filterForLocalization) {</span>
+<span class="fc" id="L73">            filterForLocalization2(img1, f1, corners1List);</span>
+<span class="fc" id="L74">            filterForLocalization2(img2, f2, corners2List);</span>
+        }
+        
+<span class="fc" id="L77">        boolean matchCurveToCurve = true;</span>
+         
+<span class="fc" id="L79">        int dither = 1;</span>
+        
+        List&lt;FeatureComparisonStat&gt; stats;
+        
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (matchCurveToCurve) {</span>
+        
+<span class="fc" id="L85">            CurveToCurveCornerMatcher&lt;CornerRegion&gt; matcher = </span>
+                new CurveToCurveCornerMatcher&lt;CornerRegion&gt;(dither);
+        
+<span class="fc" id="L88">            boolean matched = matcher.matchCorners(f1, f2, </span>
+                corners1List, corners2List, img1, img2, binFactor1, binFactor2);
+
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            if (!matched) {</span>
+<span class="nc" id="L92">                return false;</span>
+            }
+            
+<span class="fc" id="L95">            stats = matcher.getSolutionStats();</span>
+
+<span class="fc" id="L97">        } else {</span>
+            
+<span class="nc" id="L99">            List&lt;CornerRegion&gt; corners1 = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="nc" id="L100">            List&lt;CornerRegion&gt; corners2 = new ArrayList&lt;CornerRegion&gt;();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (int i = 0; i &lt; corners1List.size(); ++i) {</span>
+<span class="nc" id="L102">                corners1.addAll(corners1List.get(i));</span>
+            }
+<span class="nc bnc" id="L104" title="All 2 branches missed.">            for (int i = 0; i &lt; corners2List.size(); ++i) {</span>
+<span class="nc" id="L105">                corners2.addAll(corners2List.get(i));</span>
+            }
+        
+<span class="nc" id="L108">            CornerMatcher&lt;CornerRegion&gt; matcher = new CornerMatcher&lt;CornerRegion&gt;(dither);</span>
+        
+<span class="nc" id="L110">            boolean matched = matcher.matchCorners(f1, f2, corners1, corners2, </span>
+                img1, img2, binFactor1, binFactor2);
+            
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (!matched) {</span>
+<span class="nc" id="L114">                return false;</span>
+            }
+                
+<span class="nc" id="L117">            stats = matcher.getSolutionStats();</span>
+        }
+        
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (stats.isEmpty()) {</span>
+<span class="nc" id="L121">            return false;</span>
+        }
+                
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (useBinned) {</span>
+<span class="fc" id="L125">            stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), </span>
+<span class="fc" id="L126">                img2Helper.getGreyscaleImage(), stats, </span>
+<span class="fc" id="L127">                binFactor1, binFactor2, f1.getRotatedOffsets());</span>
+        }
+        
+<span class="fc" id="L130">        copyToInstanceVars(stats);</span>
+                
+<span class="fc" id="L132">        return true;</span>
+    }
+    
+    protected boolean matchFor2ndDerivPts(SegmentationType type, boolean useBinned) {
         
         int binFactor1, binFactor2;
         GreyscaleImage img1, img2;
         IntensityFeatures f1, f2;
         
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (useBinned) {</span>
-<span class="fc" id="L38">            binFactor1 = img1Helper.getBinFactor(useBinned);</span>
-<span class="fc" id="L39">            binFactor2 = img2Helper.getBinFactor(useBinned);</span>
-<span class="fc" id="L40">            img1 = img1Helper.getGreyscaleImageBinned();</span>
-<span class="fc" id="L41">            img2 = img2Helper.getGreyscaleImageBinned();</span>
-<span class="fc" id="L42">            f1 = featuresBinned1;</span>
-<span class="fc" id="L43">            f2 = featuresBinned2;</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (useBinned) {</span>
+<span class="fc" id="L142">            binFactor1 = img1Helper.getBinFactor(useBinned);</span>
+<span class="fc" id="L143">            binFactor2 = img2Helper.getBinFactor(useBinned);</span>
+<span class="fc" id="L144">            img1 = img1Helper.getGreyscaleImageBinned();</span>
+<span class="fc" id="L145">            img2 = img2Helper.getGreyscaleImageBinned();</span>
+<span class="fc" id="L146">            f1 = featuresBinned1;</span>
+<span class="fc" id="L147">            f2 = featuresBinned2;</span>
         } else {
-<span class="nc" id="L45">            binFactor1 = 1;</span>
-<span class="nc" id="L46">            binFactor2 = 1;</span>
-<span class="nc" id="L47">            img1 = img1Helper.getGreyscaleImage();</span>
-<span class="nc" id="L48">            img2 = img2Helper.getGreyscaleImage();</span>
-<span class="nc" id="L49">            f1 = features1;</span>
-<span class="nc" id="L50">            f2 = features2;</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">            if (!f1.gradientWasCreated()) {</span>
-<span class="nc" id="L52">                f1.calculateGradientWithGreyscale(</span>
-<span class="nc" id="L53">                    img1Helper.getGreyscaleImage().copyImage());</span>
+<span class="nc" id="L149">            binFactor1 = 1;</span>
+<span class="nc" id="L150">            binFactor2 = 1;</span>
+<span class="nc" id="L151">            img1 = img1Helper.getGreyscaleImage();</span>
+<span class="nc" id="L152">            img2 = img2Helper.getGreyscaleImage();</span>
+<span class="nc" id="L153">            f1 = features1;</span>
+<span class="nc" id="L154">            f2 = features2;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            if (!f1.gradientWasCreated()) {</span>
+<span class="nc" id="L156">                f1.calculateGradientWithGreyscale(</span>
+<span class="nc" id="L157">                    img1Helper.getGreyscaleImage().copyImage());</span>
             }
-<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (!f2.gradientWasCreated()) {</span>
-<span class="nc" id="L56">                f2.calculateGradientWithGreyscale(</span>
-<span class="nc" id="L57">                    img2Helper.getGreyscaleImage().copyImage());</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            if (!f2.gradientWasCreated()) {</span>
+<span class="nc" id="L160">                f2.calculateGradientWithGreyscale(</span>
+<span class="nc" id="L161">                    img2Helper.getGreyscaleImage().copyImage());</span>
             }
         }
+                
+<span class="fc" id="L165">        List&lt;CornerRegion&gt; corners1 = new ArrayList&lt;CornerRegion&gt;(</span>
+<span class="fc" id="L166">            img1Helper.getAllCorners(type, useBinned));</span>
         
-<span class="fc" id="L61">        List&lt;List&lt;CornerRegion&gt;&gt; corners1List = img1Helper.getPerimeterCorners(</span>
-            type, useBinned);
+<span class="fc" id="L168">        List&lt;CornerRegion&gt; corners2 = new ArrayList&lt;CornerRegion&gt;(</span>
+<span class="fc" id="L169">            img2Helper.getAllCorners(type, useBinned));</span>
         
-<span class="fc" id="L64">        List&lt;List&lt;CornerRegion&gt;&gt; corners2List = img2Helper.getPerimeterCorners(</span>
-            type, useBinned);
-        
-<span class="fc" id="L67">        boolean matchCurveToCurve = true;</span>
-         
-<span class="fc" id="L69">        int dither = 1;</span>
-        
-        List&lt;FeatureComparisonStat&gt; stats;
-        
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (matchCurveToCurve) {</span>
-        
-<span class="fc" id="L75">            CurveToCurveCornerMatcher&lt;CornerRegion&gt; matcher = </span>
-                new CurveToCurveCornerMatcher&lt;CornerRegion&gt;(dither);
-        
-<span class="fc" id="L78">            boolean matched = matcher.matchCorners(f1, f2, </span>
-                corners1List, corners2List, img1, img2, binFactor1, binFactor2);
+<span class="fc" id="L171">        boolean filterForLocalization = true;</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (filterForLocalization) {</span>
+<span class="fc" id="L173">            filterForLocalization(img1, f1, corners1);</span>
+<span class="fc" id="L174">            filterForLocalization(img2, f2, corners2);</span>
+        }
+       
+<span class="fc" id="L177">        int dither = 1;</span>
+                
+<span class="fc" id="L179">        CornerMatcher&lt;CornerRegion&gt; matcher = new CornerMatcher&lt;CornerRegion&gt;(dither);</span>
 
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            if (!matched) {</span>
-<span class="nc" id="L82">                return false;</span>
-            }
-            
-<span class="fc" id="L85">            stats = matcher.getSolutionStats();</span>
+<span class="fc" id="L181">        boolean matched = matcher.matchCorners(f1, f2, corners1, corners2, </span>
+            img1, img2, binFactor1, binFactor2);
 
-<span class="fc" id="L87">        } else {</span>
-            
-<span class="nc" id="L89">            List&lt;CornerRegion&gt; corners1 = new ArrayList&lt;CornerRegion&gt;();</span>
-<span class="nc" id="L90">            List&lt;CornerRegion&gt; corners2 = new ArrayList&lt;CornerRegion&gt;();</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">            for (int i = 0; i &lt; corners1List.size(); ++i) {</span>
-<span class="nc" id="L92">                corners1.addAll(corners1List.get(i));</span>
-            }
-<span class="nc bnc" id="L94" title="All 2 branches missed.">            for (int i = 0; i &lt; corners2List.size(); ++i) {</span>
-<span class="nc" id="L95">                corners2.addAll(corners2List.get(i));</span>
-            }
-        
-<span class="nc" id="L98">            CornerMatcher&lt;CornerRegion&gt; matcher = new CornerMatcher&lt;CornerRegion&gt;(dither);</span>
-        
-<span class="nc" id="L100">            boolean matched = matcher.matchCorners(f1, f2, corners1, corners2, </span>
-                img1, img2, binFactor1, binFactor2);
-            
-<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (!matched) {</span>
-<span class="nc" id="L104">                return false;</span>
-            }
-                
-<span class="nc" id="L107">            stats = matcher.getSolutionStats();</span>
-        }
-        
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (stats.isEmpty()) {</span>
-<span class="nc" id="L111">            return false;</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (!matched) {</span>
+<span class="nc" id="L185">            return false;</span>
         }
                 
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (useBinned) {</span>
-<span class="fc" id="L115">            stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), </span>
-<span class="fc" id="L116">                img2Helper.getGreyscaleImage(), stats, </span>
-<span class="fc" id="L117">                binFactor1, binFactor2, f1.getRotatedOffsets());</span>
+<span class="fc" id="L188">        List&lt;FeatureComparisonStat&gt; stats = matcher.getSolutionStats();</span>
+        
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (stats.isEmpty()) {</span>
+<span class="nc" id="L191">            return false;</span>
+        }
+                
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (useBinned) {</span>
+<span class="fc" id="L195">            stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), </span>
+<span class="fc" id="L196">                img2Helper.getGreyscaleImage(), stats, </span>
+<span class="fc" id="L197">                binFactor1, binFactor2, f1.getRotatedOffsets());</span>
         }
         
-<span class="fc" id="L120">        copyToInstanceVars(stats);</span>
+<span class="fc" id="L200">        copyToInstanceVars(stats);</span>
                 
-<span class="fc" id="L122">        return true;</span>
+<span class="fc" id="L202">        return true;</span>
     }
     
 }

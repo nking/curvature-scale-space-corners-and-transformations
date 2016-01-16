@@ -74,28 +74,28 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; perimeters1.size(); ++i) {</span>
 <span class="fc" id="L75">            PairIntArray edge = perimeters1.get(i);</span>
 <span class="pc bpc" id="L76" title="1 of 2 branches missed.">            if (edge.getN() &gt; 0) {</span>
-<span class="nc" id="L77">                filterCorners(edge, corners1List.get(i), dist);</span>
-<span class="nc" id="L78">                allEdgesEmpty1 = false;</span>
+<span class="fc" id="L77">                filterCorners(edge, corners1List.get(i), dist);</span>
+<span class="fc" id="L78">                allEdgesEmpty1 = false;</span>
             }
         }
 <span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; perimeters2.size(); ++i) {</span>
 <span class="fc" id="L82">            PairIntArray edge = perimeters2.get(i);</span>
 <span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (edge.getN() &gt; 0) {</span>
-<span class="nc" id="L84">                filterCorners(edge, corners2List.get(i), dist);</span>
-<span class="nc" id="L85">                allEdgesEmpty2 = false;</span>
+<span class="fc" id="L84">                filterCorners(edge, corners2List.get(i), dist);</span>
+<span class="fc" id="L85">                allEdgesEmpty2 = false;</span>
             }
         }
 
         if (true) {
 <span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (!allEdgesEmpty1) {</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">                for (List&lt;CornerRegion&gt; list : corners1List) {</span>
-<span class="nc" id="L92">                    sortCornersToCCW(list);</span>
-<span class="nc" id="L93">                }</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                for (List&lt;CornerRegion&gt; list : corners1List) {</span>
+<span class="fc" id="L92">                    sortCornersToCCW(list);</span>
+<span class="fc" id="L93">                }</span>
             }
 <span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (!allEdgesEmpty2) {</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">                for (List&lt;CornerRegion&gt; list : corners2List) {</span>
-<span class="nc" id="L97">                    sortCornersToCCW(list);</span>
-<span class="nc" id="L98">                }</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                for (List&lt;CornerRegion&gt; list : corners2List) {</span>
+<span class="fc" id="L97">                    sortCornersToCCW(list);</span>
+<span class="fc" id="L98">                }</span>
             }
         }
 /*
@@ -289,7 +289,7 @@ System.out.println(sb.toString());
 <span class="fc bfc" id="L289" title="All 4 branches covered.">                } else if ((maxNEval == 2) &amp;&amp; (nEval &gt; 3)) {</span>
                     //TODO: may need to revise this
 <span class="fc" id="L291">                    double avgCost = (cost + minCost)/2.;</span>
-<span class="pc bpc" id="L292" title="1 of 2 branches missed.">                    if ((Math.abs(cost - avgCost)/(0.1*avgCost)) &lt; 2) {</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">                    if ((Math.abs(cost - avgCost)/(0.1*avgCost)) &lt; 2) {</span>
 <span class="fc" id="L293">                        maxNEval = nEval;</span>
 <span class="fc" id="L294">                        maxNEvalParams = params;</span>
 <span class="fc" id="L295">                        maxNEvalIndex2 = index2;</span>
@@ -299,7 +299,7 @@ System.out.println(sb.toString());
                 }
             }
 
-<span class="pc bpc" id="L302" title="1 of 2 branches missed.">            if (maxNEvalParams != null) {</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            if (maxNEvalParams != null) {</span>
                 //log.info(idx1 + &quot; best has nEval=&quot; + maxNEval + &quot; for idx2=&quot; + maxNEvalIndex2);
 <span class="fc" id="L304">                trMap.put(new PairInt(idx1, maxNEvalIndex2.intValue()),</span>
                     maxNEvalParams);
@@ -460,11 +460,11 @@ System.out.println(sb.toString());
 <span class="nc" id="L460">                tolTransXY2 = 1;</span>
             }
 <span class="fc" id="L462">            int dither2 = Math.round(dither * params.getScale());</span>
-<span class="fc bfc" id="L463" title="All 2 branches covered.">            if (dither2 == 0) {</span>
-<span class="fc" id="L464">                dither2 = 1;</span>
-<span class="pc bpc" id="L465" title="1 of 2 branches missed.">            } else if (dither2 &gt; dither) {</span>
+<span class="pc bpc" id="L463" title="1 of 2 branches missed.">            if (dither2 == 0) {</span>
+<span class="nc" id="L464">                dither2 = 1;</span>
+<span class="fc bfc" id="L465" title="All 2 branches covered.">            } else if (dither2 &gt; dither) {</span>
                 // large dither makes runtime larger
-<span class="nc" id="L467">                dither2 = dither;</span>
+<span class="fc" id="L467">                dither2 = dither;</span>
             }
 
 <span class="fc" id="L470">            int nEval = 0;</span>
@@ -551,7 +551,7 @@ System.out.println(sb.toString());
             }
             
 <span class="fc" id="L553">            removedIndexes = FeatureMatcher.removeIntensityOutliers(stats, 1.25f); </span>
-<span class="pc bpc" id="L554" title="1 of 2 branches missed.">            if (removedIndexes.size() &lt; distances.size()) {</span>
+<span class="fc bfc" id="L554" title="All 2 branches covered.">            if (removedIndexes.size() &lt; distances.size()) {</span>
 <span class="fc bfc" id="L555" title="All 2 branches covered.">                for (int i = (removedIndexes.size() - 1); i &gt; -1; --i) {</span>
 <span class="fc" id="L556">                    int rmIdx = removedIndexes.get(i);</span>
 <span class="fc" id="L557">                    distances.remove(rmIdx);</span>
@@ -565,8 +565,8 @@ System.out.println(sb.toString());
 <span class="fc" id="L565">                nEval = stats.size();</span>
             }
             
-<span class="pc bpc" id="L568" title="1 of 2 branches missed.">            if (nEval == 0) {</span>
-<span class="nc" id="L569">                continue;</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">            if (nEval == 0) {</span>
+<span class="fc" id="L569">                continue;</span>
             }
 
             // distance needs to be adjusted by scale, else the cost prefers
@@ -584,7 +584,7 @@ System.out.println(sb.toString());
 
 <span class="fc bfc" id="L585" title="All 2 branches covered.">            boolean t1 = (normalizedCost &lt; bestCost);</span>
            
-<span class="pc bpc" id="L587" title="1 of 4 branches missed.">            if (t1 &amp;&amp; (nEval &gt; 2)) {</span>
+<span class="fc bfc" id="L587" title="All 4 branches covered.">            if (t1 &amp;&amp; (nEval &gt; 2)) {</span>
 <span class="fc" id="L588">                bestCost = normalizedCost;</span>
 <span class="fc" id="L589">                bestParams = params;</span>
 <span class="fc" id="L590">                bestStats = stats;</span>
@@ -656,66 +656,66 @@ System.out.println(sb.toString());
         if there are more than 1 corner within dist of 2 or so of on another,
         remove all except strongest corner.
         */
-<span class="nc" id="L659">        List&lt;Set&lt;Integer&gt;&gt; closeCornerIndexes = findCloseCorners(dist, regions);</span>
+<span class="fc" id="L659">        List&lt;Set&lt;Integer&gt;&gt; closeCornerIndexes = findCloseCorners(dist, regions);</span>
 
-<span class="nc bnc" id="L661" title="All 2 branches missed.">        if (closeCornerIndexes.isEmpty()) {</span>
-<span class="nc" id="L662">            return;</span>
+<span class="fc bfc" id="L661" title="All 2 branches covered.">        if (closeCornerIndexes.isEmpty()) {</span>
+<span class="fc" id="L662">            return;</span>
         }
 
-<span class="nc" id="L665">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L666" title="All 2 branches missed.">        for (Set&lt;Integer&gt; set : closeCornerIndexes) {</span>
-<span class="nc" id="L667">            float maxK = Float.MIN_VALUE;</span>
-<span class="nc" id="L668">            Integer maxKIndex = null;</span>
-<span class="nc bnc" id="L669" title="All 2 branches missed.">            for (Integer index : set) {</span>
-<span class="nc" id="L670">                CornerRegion cr = regions.get(index.intValue());</span>
-<span class="nc" id="L671">                float k = cr.getK()[cr.getKMaxIdx()];</span>
-<span class="nc bnc" id="L672" title="All 2 branches missed.">                if (k &gt; maxK) {</span>
-<span class="nc" id="L673">                    maxK = k;</span>
-<span class="nc" id="L674">                    maxKIndex = index;</span>
+<span class="fc" id="L665">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">        for (Set&lt;Integer&gt; set : closeCornerIndexes) {</span>
+<span class="fc" id="L667">            float maxK = Float.MIN_VALUE;</span>
+<span class="fc" id="L668">            Integer maxKIndex = null;</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">            for (Integer index : set) {</span>
+<span class="fc" id="L670">                CornerRegion cr = regions.get(index.intValue());</span>
+<span class="fc" id="L671">                float k = cr.getK()[cr.getKMaxIdx()];</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">                if (k &gt; maxK) {</span>
+<span class="fc" id="L673">                    maxK = k;</span>
+<span class="fc" id="L674">                    maxKIndex = index;</span>
                 }
-<span class="nc" id="L676">            }</span>
-<span class="nc bnc" id="L677" title="All 2 branches missed.">            for (Integer index : set) {</span>
-<span class="nc bnc" id="L678" title="All 2 branches missed.">                if (!index.equals(maxKIndex)) {</span>
-<span class="nc" id="L679">                    remove.add(index);</span>
+<span class="fc" id="L676">            }</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">            for (Integer index : set) {</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">                if (!index.equals(maxKIndex)) {</span>
+<span class="fc" id="L679">                    remove.add(index);</span>
                 }
-<span class="nc" id="L681">            }</span>
-<span class="nc" id="L682">        }</span>
+<span class="fc" id="L681">            }</span>
+<span class="fc" id="L682">        }</span>
 
-<span class="nc bnc" id="L684" title="All 2 branches missed.">        if (remove.size() &gt; 1) {</span>
-<span class="nc" id="L685">            Collections.sort(remove);</span>
+<span class="fc bfc" id="L684" title="All 2 branches covered.">        if (remove.size() &gt; 1) {</span>
+<span class="fc" id="L685">            Collections.sort(remove);</span>
         }
-<span class="nc bnc" id="L687" title="All 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L688">            regions.remove(remove.get(i).intValue());</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L688">            regions.remove(remove.get(i).intValue());</span>
         }
-<span class="nc" id="L690">    }</span>
+<span class="fc" id="L690">    }</span>
 
     private static List&lt;Set&lt;Integer&gt;&gt; findCloseCorners(float tolD,
         List&lt;CornerRegion&gt; regions) {
 
-<span class="nc" id="L695">        float[] x = new float[regions.size()];</span>
-<span class="nc" id="L696">        float[] y = new float[regions.size()];</span>
-<span class="nc bnc" id="L697" title="All 2 branches missed.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
-<span class="nc" id="L698">            CornerRegion cr = regions.get(i);</span>
-<span class="nc" id="L699">            x[i] = cr.getX()[cr.getKMaxIdx()];</span>
-<span class="nc" id="L700">            y[i] = cr.getY()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L695">        float[] x = new float[regions.size()];</span>
+<span class="fc" id="L696">        float[] y = new float[regions.size()];</span>
+<span class="fc bfc" id="L697" title="All 2 branches covered.">        for (int i = 0; i &lt; regions.size(); ++i) {</span>
+<span class="fc" id="L698">            CornerRegion cr = regions.get(i);</span>
+<span class="fc" id="L699">            x[i] = cr.getX()[cr.getKMaxIdx()];</span>
+<span class="fc" id="L700">            y[i] = cr.getY()[cr.getKMaxIdx()];</span>
         }
 
-<span class="nc" id="L703">        List&lt;Set&lt;Integer&gt;&gt; close = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+<span class="fc" id="L703">        List&lt;Set&lt;Integer&gt;&gt; close = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
 
-<span class="nc" id="L705">        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);</span>
+<span class="fc" id="L705">        FixedDistanceGroupFinder groupFinder = new FixedDistanceGroupFinder(x, y);</span>
 
-<span class="nc" id="L707">        groupFinder.findGroupsOfPoints(tolD);</span>
+<span class="fc" id="L707">        groupFinder.findGroupsOfPoints(tolD);</span>
 
-<span class="nc" id="L709">        int nGroups = groupFinder.getNumberOfGroups();</span>
+<span class="fc" id="L709">        int nGroups = groupFinder.getNumberOfGroups();</span>
 
-<span class="nc bnc" id="L711" title="All 2 branches missed.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="nc" id="L712">            Set&lt;Integer&gt; group = groupFinder.getGroupIndexes(i);</span>
-<span class="nc bnc" id="L713" title="All 2 branches missed.">            if (group.size() &gt; 1) {</span>
-<span class="nc" id="L714">                close.add(group);</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L712">            Set&lt;Integer&gt; group = groupFinder.getGroupIndexes(i);</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">            if (group.size() &gt; 1) {</span>
+<span class="fc" id="L714">                close.add(group);</span>
             }
         }
 
-<span class="nc" id="L718">        return close;</span>
+<span class="fc" id="L718">        return close;</span>
     }
 
     private double distance(double x1, double y1, double x2, double y2) {
@@ -730,26 +730,26 @@ System.out.println(sb.toString());
 
     private void sortCornersToCCW(List&lt;CornerRegion&gt; corners) {
 
-<span class="nc" id="L733">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
-<span class="nc" id="L734">        PairIntArray cornerXY = new PairIntArray();</span>
-<span class="nc bnc" id="L735" title="All 2 branches missed.">        for (int ii = 0; ii &lt; corners.size(); ++ii) {</span>
-<span class="nc" id="L736">            CornerRegion cr = corners.get(ii);</span>
-<span class="nc" id="L737">            cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);</span>
+<span class="fc" id="L733">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L734">        PairIntArray cornerXY = new PairIntArray();</span>
+<span class="fc bfc" id="L735" title="All 2 branches covered.">        for (int ii = 0; ii &lt; corners.size(); ++ii) {</span>
+<span class="fc" id="L736">            CornerRegion cr = corners.get(ii);</span>
+<span class="fc" id="L737">            cornerXY.add(cr.getX()[cr.getKMaxIdx()], cr.getY()[cr.getKMaxIdx()]);</span>
         }
-<span class="nc" id="L739">        boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);</span>
-<span class="nc bnc" id="L740" title="All 2 branches missed.">        if (isCW) {</span>
-<span class="nc" id="L741">            int n = corners.size();</span>
-<span class="nc bnc" id="L742" title="All 2 branches missed.">            if (n &gt; 1) {</span>
-<span class="nc" id="L743">                int end = n &gt;&gt; 1;</span>
-<span class="nc bnc" id="L744" title="All 2 branches missed.">                for (int ii = 0; ii &lt; end; ii++) {</span>
-<span class="nc" id="L745">                    int idx2 = n - ii - 1;</span>
-<span class="nc" id="L746">                    CornerRegion swap = corners.get(ii);</span>
-<span class="nc" id="L747">                    corners.set(ii, corners.get(idx2));</span>
-<span class="nc" id="L748">                    corners.set(idx2, swap);</span>
+<span class="fc" id="L739">        boolean isCW = curveHelper.curveIsOrderedClockwise(cornerXY);</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">        if (isCW) {</span>
+<span class="fc" id="L741">            int n = corners.size();</span>
+<span class="pc bpc" id="L742" title="1 of 2 branches missed.">            if (n &gt; 1) {</span>
+<span class="fc" id="L743">                int end = n &gt;&gt; 1;</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">                for (int ii = 0; ii &lt; end; ii++) {</span>
+<span class="fc" id="L745">                    int idx2 = n - ii - 1;</span>
+<span class="fc" id="L746">                    CornerRegion swap = corners.get(ii);</span>
+<span class="fc" id="L747">                    corners.set(ii, corners.get(idx2));</span>
+<span class="fc" id="L748">                    corners.set(idx2, swap);</span>
                 }
             }
         }
-<span class="nc" id="L752">    }</span>
+<span class="fc" id="L752">    }</span>
 
     private boolean paramsAreValid(TransformationParameters params) {
 <span class="pc bpc" id="L755" title="1 of 2 branches missed.">        if (params == null) {</span>

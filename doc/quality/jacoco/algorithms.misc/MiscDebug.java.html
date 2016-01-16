@@ -1011,17 +1011,17 @@ import org.ejml.simple.SimpleMatrix;
     public static void plotCorners(GreyscaleImage imgGrey, 
         Collection&lt;PairInt&gt; points, String fileNameSuffix, int pointSize) {
         
-<span class="fc" id="L1014">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
-<span class="fc" id="L1015">        ImageIOHelper.addCurveToImage(points, imgW, pointSize, 255, 0, 0);</span>
+<span class="nc" id="L1014">        Image imgW = ImageIOHelper.convertImage(imgGrey);</span>
+<span class="nc" id="L1015">        ImageIOHelper.addCurveToImage(points, imgW, pointSize, 255, 0, 0);</span>
         try {
-<span class="fc" id="L1017">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
-<span class="fc" id="L1018">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
+<span class="nc" id="L1017">            String dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+<span class="nc" id="L1018">            ImageIOHelper.writeOutputImage(dirPath + &quot;/img&quot; + fileNameSuffix </span>
                 + &quot;.png&quot;, imgW);
 <span class="nc" id="L1020">        } catch (Exception e) {</span>
 <span class="nc" id="L1021">             e.printStackTrace();</span>
 <span class="nc" id="L1022">            log.severe(&quot;ERROR: &quot; + e.getMessage());</span>
-<span class="fc" id="L1023">        }</span>
-<span class="fc" id="L1024">    }</span>
+<span class="nc" id="L1023">        }</span>
+<span class="nc" id="L1024">    }</span>
 
     public static void printCornerRegion(CornerRegion[] cr) {
 <span class="nc" id="L1027">        StringBuilder sb = new StringBuilder();</span>
@@ -1084,10 +1084,10 @@ import org.ejml.simple.SimpleMatrix;
             
 <span class="fc bfc" id="L1085" title="All 2 branches covered.">            for (int dx = (-1*pointSize); dx &lt; (pointSize + 1); dx++) {</span>
 <span class="fc" id="L1086">                float xx = x + dx;</span>
-<span class="pc bpc" id="L1087" title="2 of 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
+<span class="fc bfc" id="L1087" title="All 4 branches covered.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (img.getWidth() - 1))) {</span>
 <span class="fc bfc" id="L1088" title="All 2 branches covered.">                    for (int dy = (-1*pointSize); dy &lt; (pointSize + 1); dy++) {</span>
 <span class="fc" id="L1089">                        float yy = y + dy;</span>
-<span class="pc bpc" id="L1090" title="2 of 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
+<span class="fc bfc" id="L1090" title="All 4 branches covered.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (img.getHeight() - 1))) {</span>
 <span class="fc" id="L1091">                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);</span>
                         }
                     }
