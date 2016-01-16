@@ -18,6 +18,9 @@ each of the matchers has these steps:
         -- filter to remove those w/ eigenvalues suggesting not easy 
            to localize (due to being on an edge, for example).  
 
+    note, implicit logic in any step using SSD is filtering to remove 
+          pairs with SSD larger than its auto-correlation errors.
+
 (2) optionally, create lists from the corners before homology based matching.
     -- can associate the corners with blobs, making groups of corners.
        (this is the default w/ blob based corners, and should
@@ -32,4 +35,66 @@ each of the matchers has these steps:
 (3) the homology solvers take the point lists and solve for transformations
     and then evaluate for best transformations.
     the current matchers are:
-    -- 
+
+    EpipolarSolver:
+        - EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher
+          to make points lists, else, if there are few to no matches,
+          uses EuclideanSegmentFeatureMatcher
+          - uses CornerMatcher.java on a list of all corners from image 1 and same
+            from image 2.  
+            uses SSD and a 2nd best filter to find the best match for each corner
+            then filters for degeneracy, keeping the best ssd when degenerately matched.
+          - filters for localizability
+          - then uses BlobCornersEuclideanCalculator2 to associate the 
+            corners with blobs, then makes candidate transformations with
+            combinations of blobs (k = 2 or 3 (3 if not enough total points in 2 blobs
+            on average)).
+            then evaluates all transformations for the best fit to all corners.
+        - uses RANSACSolver, mostly as an exercise since the matches are already determined very well.
+
+    EpipolarMultiplicitySolver
+        - NonEuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher
+          to make point lists.
+          - filters for localizability
+          - uses CosineSimilarityCornerMatcher to match each corner in image2 to the top K
+            corners in image2 using first a filter for point pairs having cosine similarity > 0.95
+            and then by top K of SSD.
+        - RANSACMultiplicitySolver to attempt to create epipolar projection solution
+            of points while rejecting outliers.  
+            this last step is not successful with checkerboard test images or brown & lowe test
+            images (solution converges on straight lines of points in image 1),
+            but ransac w/ euclidean transformation and evaluation would probably be
+            successful.
+
+    EuclideanSegmentFeatureMatcher
+        - BlobScaleFinderWrapper is given images.  it contains logic for
+          creating points and then uses 
+          - BlobCornersEuclideanCalculator for very detailed, somewhat long running
+            transformation calculations.
+            - uses CurveCornerEuclideanMatcher to find best transformation for each
+              blob pair, that is a blob in image1 paired to a blob in image 2.
+              - discards blobs which have < 3 points.  then finds the best matches 
+                between two blobs using ssd and transformation and passes that
+            - evaluates the blob to blob transformations to find the best for all
+              corners
+         * this is the longest running method and tries the most combinations of
+           groups of points to make candidate transformations that are then evaluated.
+
+    NonEuclideanSegmentFeatureMatcher
+        - extends AbstractFeatureMatcher to make corner lists
+        - has choices
+           - curve to curve matching
+             - uses CurveToCurveCornerMatcher 
+               for each blob to blob comparison, 
+                  - CornerMatcher.java given a corner list from a single blob from image1
+                    and the same from image2, uses SSD and a filter for 2nd best match
+                    to make best match for each corner in list 1.
+               the cost of each best blob image1 match is compared to find the best for
+               the individual blob.
+               Then all of those matches are placed into a stats list and filtered for
+               best when degenerately matched.
+           - all corner to corner matching
+               uses CornerMatcher.java to find best matches for each corner and the filters
+               for best when degenerately matched.
+        no homology based logic is used for this.  the solution list is the combined
+            matches just mentioned and it still includes false matches.
