@@ -24,16 +24,13 @@ public class EpipolarSolverTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
         
-        // TODO: follow up on changes needed for repeated patterns
-        //    with small projection effects.
-        //    need to use matching of top k solutions...
-        
         for (int i = 0; i < 6; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     settings.setUseNormalizedFeatures(true);
+                    settings.setToUse2ndDerivCorners();
                     break;
                 }
                 case 1: {
@@ -72,7 +69,7 @@ public class EpipolarSolverTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         

@@ -4,6 +4,8 @@ import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,9 +44,40 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         
           super(image1, image2, settings);
     }
+    
+    @Override
+    protected void prepareCorners(SegmentationType type, boolean useBinned) 
+        throws IOException, NoSuchAlgorithmException {
+        
+        // overriding to add logic for settings for 2nd deriv points
+        
+        super.prepareCorners(type, useBinned);
+        
+        if (settings.doUse2ndDerivCorners() && type.equals(SegmentationType.NONE)) {
+            
+            // create blobs, and associate 2nd deriv pts with the blobs.
+            // Note that this is repeating some work.
+            // these feature matchers will be refactored soon.
+            
+            SegmentationType type2 = SegmentationType.GREYSCALE_WAVELET;
+
+            img1Helper.applySegmentation(type2, useBinned);
+            img2Helper.applySegmentation(type2, useBinned);
+
+            img1Helper.extractSecondDerivativeCorners(type2, useBinned);
+            img2Helper.extractSecondDerivativeCorners(type2, useBinned);
+        }
+        
+    }
 
     @Override
     protected boolean match(SegmentationType type, boolean useBinned) {
+        
+        if (settings.doUse2ndDerivCorners() && type.equals(SegmentationType.NONE)) {
+            // for 2nd pt derivs, need to override the type to wavelet.
+            // this should be handled better after refacoring.
+            type = SegmentationType.GREYSCALE_WAVELET;
+        }
         
         int binFactor1, binFactor2;
         GreyscaleImage img1, img2;

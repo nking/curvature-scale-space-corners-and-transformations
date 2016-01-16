@@ -183,6 +183,10 @@ public class SegmentedImageHelper {
     public void applySegmentation(SegmentationType type, 
         boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
         
+        if (type.equals(SegmentationType.NONE)) {
+            return;
+        }
+        
         if (applyToBinnedImage) {
             applySegmentationToBinned(type);
         } else {
@@ -201,6 +205,10 @@ public class SegmentedImageHelper {
     protected void applySegmentationToBinned(SegmentationType type) throws
         IOException, NoSuchAlgorithmException {
 
+        if (type.equals(SegmentationType.NONE)) {
+            return;
+        }
+        
         if (type.equals(SegmentationType.GREYSCALE_KMPP) || 
             type.equals(SegmentationType.DT_CLUSTERING)) {
             applySegmentationToBinned(type, 2);
@@ -220,6 +228,10 @@ public class SegmentedImageHelper {
     protected void applySegmentation(SegmentationType type) throws IOException,
         NoSuchAlgorithmException {
 
+        if (type.equals(SegmentationType.NONE)) {
+            return;
+        }
+        
         if (type.equals(SegmentationType.GREYSCALE_KMPP) || 
             type.equals(SegmentationType.DT_CLUSTERING)) {
             applySegmentation(type, 2);

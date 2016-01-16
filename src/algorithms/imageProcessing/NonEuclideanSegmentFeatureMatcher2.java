@@ -61,20 +61,29 @@ public class NonEuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
                     img2Helper.getGreyscaleImage().copyImage());
             }
         }
-        
-        List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
-            type, useBinned);
-        
-        List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
-            type, useBinned);
-        
         List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
         List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
-        for (int i = 0; i < corners1List.size(); ++i) {
-            corners1.addAll(corners1List.get(i));
-        }
-        for (int i = 0; i < corners2List.size(); ++i) {
-            corners2.addAll(corners2List.get(i));
+        
+        if (settings.doUse2ndDerivCorners()) {
+         
+            corners1.addAll(img1Helper.getAllCorners(type, useBinned));
+            corners2.addAll(img2Helper.getAllCorners(type, useBinned));
+            
+        } else {
+            
+            List<List<CornerRegion>> corners1List = img1Helper.getPerimeterCorners(
+                type, useBinned);
+
+            List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
+                type, useBinned);
+
+
+            for (int i = 0; i < corners1List.size(); ++i) {
+                corners1.addAll(corners1List.get(i));
+            }
+            for (int i = 0; i < corners2List.size(); ++i) {
+                corners2.addAll(corners2List.get(i));
+            }
         }
         
         boolean filterForLocalization = true;
@@ -236,30 +245,4 @@ public class NonEuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
         return solutionMatched2Multiplicity;
     }
 
-    private void filterForLocalization(GreyscaleImage img, 
-        IntensityFeatures f, List<CornerRegion> corners) {
-                
-        List<Integer> remove = new ArrayList<Integer>();
-        
-        for (int i = 0; i < corners.size(); ++i) {
-            CornerRegion cr = corners.get(i);
-            
-            try {
-                int x = cr.getX()[cr.getKMaxIdx()];
-                int y = cr.getY()[cr.getKMaxIdx()];
-                if (f.removeDueToLocalization(img, x, y,
-                    f.calculateOrientation(x, y))) {
-                    remove.add(Integer.valueOf(i));
-                    continue;
-                }
-            } catch (CornerRegion.CornerRegionDegneracyException ex) {
-            }
-        }
-        
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i);
-            corners.remove(idx);
-        }
-    }
-    
 }

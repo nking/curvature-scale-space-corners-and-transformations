@@ -131,9 +131,12 @@ public abstract class AbstractFeatureMatcher {
             useSameSegmentation = true;
         }
         
+        //TODO: document this logic for the user
         SegmentationType type = SegmentationType.GREYSCALE_WAVELET;
         if (settings.doOverrideWithCannySegmentation()) {
             type = SegmentationType.GREYSCALE_CANNY;
+        } else if (settings.doUse2ndDerivCorners()) {
+            type = SegmentationType.NONE;
         }
         
         boolean[] useBinned = settings.startWithBinnedImages() ? 
@@ -200,6 +203,7 @@ public abstract class AbstractFeatureMatcher {
                 filterOutZeroPixels); 
             
             if (settings.doUse2ndDerivCorners()) {
+                //TODO: consider using extractSecondDerivativeCornersithoutBlobs instead
                 img1Helper.extractSecondDerivativeCorners(type, useBinned);
                 img2Helper.extractSecondDerivativeCorners(type, useBinned);
             } else {
@@ -211,8 +215,8 @@ public abstract class AbstractFeatureMatcher {
         }
         
         if (settings.doUse2ndDerivCorners()) {
-            img1Helper.extractSecondDerivativeCorners(type, useBinned);
-            img2Helper.extractSecondDerivativeCorners(type, useBinned);
+            img1Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
+            img2Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
         } else {
             img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
             img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
@@ -495,6 +499,40 @@ public abstract class AbstractFeatureMatcher {
         return fullSoln;
     }
 
+    protected void filterForLocalization(GreyscaleImage img, 
+        IntensityFeatures f, List<CornerRegion> corners) {
+                
+        List<Integer> remove = new ArrayList<Integer>();
+        
+        for (int i = 0; i < corners.size(); ++i) {
+            CornerRegion cr = corners.get(i);
+            
+            try {
+                int x = cr.getX()[cr.getKMaxIdx()];
+                int y = cr.getY()[cr.getKMaxIdx()];
+                if (f.removeDueToLocalization(img, x, y,
+                    f.calculateOrientation(x, y))) {
+                    remove.add(Integer.valueOf(i));
+                }
+            } catch (CornerRegion.CornerRegionDegneracyException ex) {
+            }
+        }
+        
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int idx = remove.get(i);
+            corners.remove(idx);
+        }
+    }
+    
+    protected void filterForLocalization2(GreyscaleImage img, 
+        IntensityFeatures f, List<List<CornerRegion>> corners) {
+                        
+        for (int i = 0; i < corners.size(); ++i) {
+            List<CornerRegion> cr = corners.get(i);
+            filterForLocalization(img, f, cr);
+        }
+    }
+    
     /**
      * get a copy of the solution's feature stats.
      * @return 

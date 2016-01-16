@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -41,6 +42,14 @@ public class BlobPerimeterCornerHelper {
     protected Map<SegmentationType, List<List<CornerRegion>>>
         segBinnedCornersMap = new HashMap<SegmentationType, 
         List<List<CornerRegion>>>();
+    
+    // ---------- these 2 maps are specifically for segmentation type NONE --
+    protected Map<SegmentationType, List<CornerRegion>>
+        segAllCornersMap = new HashMap<SegmentationType, List<CornerRegion>>();
+    
+    protected Map<SegmentationType, List<CornerRegion>>
+        segBinnedAllCornersMap = new HashMap<SegmentationType, List<CornerRegion>>();
+    //--------------------------------------------------------------------------
     
     public BlobPerimeterCornerHelper(final ImageExt img) {
         imgHelper = new SegmentedImageHelper(img);
@@ -106,10 +115,18 @@ public class BlobPerimeterCornerHelper {
     }
     
     public GreyscaleImage getSegmentationImage(SegmentationType type) {
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored image");
+        }
         return imgHelper.getSegmentationImage(type);
     }
 
     public GreyscaleImage getBinnedSegmentationImage(SegmentationType type) {
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored image");
+        }
         return imgHelper.getBinnedSegmentationImage(type);
     }
 
@@ -163,6 +180,11 @@ public class BlobPerimeterCornerHelper {
     public List<PairIntArray> getBlobPerimeters(SegmentationType type, boolean 
         useBinnedImage) {
         
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored perimeter list");
+        }
+        
         boolean filterOutImageBoundaryBlobs = false;
         
         boolean filterOutZeroPixels = true;
@@ -175,6 +197,11 @@ public class BlobPerimeterCornerHelper {
         useBinnedImage, boolean filterOutImageBoundaryBlobs, 
         boolean filterOutZeroPixels) {
                 
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored perimeter list");
+        }
+        
         if (useBinnedImage) {
             return getBinnedBlobPerimeters(type, filterOutImageBoundaryBlobs,
                 filterOutZeroPixels);
@@ -274,6 +301,11 @@ public class BlobPerimeterCornerHelper {
     public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
         useBinnedImage) {
         
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored blobs list");
+        }
+        
         boolean filterOutImageBoundaryBlobs = false;
         
         return getBlobs(type, useBinnedImage, filterOutImageBoundaryBlobs);
@@ -281,7 +313,12 @@ public class BlobPerimeterCornerHelper {
     
     public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
         useBinnedImage, boolean filterOutImageBoundaryBlobs) {
-                
+         
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored blobs list");
+        }
+        
         boolean filterOutZeroPixels = true;
         
         if (useBinnedImage) {
@@ -296,7 +333,12 @@ public class BlobPerimeterCornerHelper {
     public List<Set<PairInt>> getBlobs(SegmentationType type, boolean 
         useBinnedImage, boolean filterOutImageBoundaryBlobs,
         boolean filterOutZeroPixels) {
-                        
+              
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE does not have a stored blobs list");
+        }
+        
         if (useBinnedImage) {
             return getBinnedBlobs(type, filterOutImageBoundaryBlobs,
                 filterOutZeroPixels);
@@ -374,8 +416,47 @@ public class BlobPerimeterCornerHelper {
     
     public List<List<CornerRegion>> getPerimeterCorners(
         SegmentationType type, boolean applyToBinnedImage) {
-         
+        
+        if (type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type NONE needs to use getAllCorners(...)");
+        }
+        
         return generatePerimeterCorners(type, applyToBinnedImage);
+    }
+    
+    public List<CornerRegion> getAllCorners(SegmentationType type, 
+        boolean applyToBinnedImage) {
+        
+        if (applyToBinnedImage) {
+            return getAllCornersForBinned(type);
+        } else {
+            return getAllCornersUnbinned(type);
+        }
+    }
+    
+    private List<CornerRegion> getAllCornersForBinned(SegmentationType type) {
+        
+        List<CornerRegion> corners = segBinnedAllCornersMap.get(type);
+        
+        if (corners != null) {
+            return corners;
+        }
+        
+        throw new IllegalArgumentException("corners have not been created" +
+            " for type " + type);
+    }
+    
+    private List<CornerRegion> getAllCornersUnbinned(SegmentationType type) {
+        
+        List<CornerRegion> corners = segAllCornersMap.get(type);
+        
+        if (corners != null) {
+            return corners;
+        }
+        
+        throw new IllegalArgumentException("corners have not been created" +
+            " for type " + type);
     }
     
     protected List<List<CornerRegion>> 
@@ -498,6 +579,32 @@ public class BlobPerimeterCornerHelper {
             extractSecondDerivativeCornersForBinned(type);
         } else {
             extractSecondDerivativeCornersForUnbinned(type);
+        }
+    }
+    
+    /**
+     * extract the corners as second derivative gaussian high value points
+     * and filter or do not filter for association with blobs.
+     * Note, these corners are stored in a data structure that is only accessed
+     * if type is NONE.
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractSecondDerivativeCornersWithoutBlobs(SegmentationType type, 
+        boolean applyToBinnedImage) {
+        
+        if (!type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be NONE to store and retrieve the points"
+            + " correctly.  Blobs must be created separately with a type that"
+            + " is not NONE");
+        }
+                
+        if (applyToBinnedImage) {
+            extractSecondDerivativeCornersForBinnedWithoutBlobs(type);
+        } else {
+            extractSecondDerivativeCornersForUnbinnedWithoutBlobs(type);
         }
     }
 
@@ -800,7 +907,7 @@ public class BlobPerimeterCornerHelper {
             200, true);
         
         corners = new ArrayList<List<CornerRegion>>();
-        
+           
         List<Set<PairInt>> pixels2 = new ArrayList<Set<PairInt>>();
         
         for (int i = 0; i < blobs.size(); ++i) {
@@ -851,6 +958,54 @@ public class BlobPerimeterCornerHelper {
         
         assert(perimeterLists.size() == corners.size());
         
+    }
+    
+    private void extractSecondDerivativeCornersForBinnedWithoutBlobs(SegmentationType type) {
+        
+        if (!type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be NONE to store and retrieve the points"
+            + " correctly.  Blobs must be created separately with a type that"
+            + " is not NONE");
+        }
+        
+        List<CornerRegion> corners = segBinnedAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+                
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            //200, true);
+             350, true);
+        
+        corners = new ArrayList<CornerRegion>();
+        
+        for (PairInt p : pixels) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+            cr.setIndexWithinCurve(-1);
+            corners.add(cr);
+        }
+        
+        segBinnedAllCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_"
+                        + MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+                
     }
     
     private void extractSecondDerivativeCornersForUnbinned(SegmentationType type) {
@@ -941,6 +1096,54 @@ public class BlobPerimeterCornerHelper {
         
     }
 
+    private void extractSecondDerivativeCornersForUnbinnedWithoutBlobs(SegmentationType type) {
+        
+        if (!type.equals(SegmentationType.NONE)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be NONE to store and retrieve the points"
+            + " correctly.  Blobs must be created separately with a type that"
+            + " is not NONE");
+        }
+        
+        List<CornerRegion> corners = segAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+                
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage gsImg = this.getGreyscaleImage();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            //200, true);
+            350, true);
+        
+        corners = new ArrayList<CornerRegion>();
+        
+        for (PairInt p : pixels) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+            cr.setIndexWithinCurve(-1);
+            corners.add(cr);
+        }
+        
+        segAllCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_"
+                        + MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+                
+    }
+    
     private void reduceTo8NeighborCentroids(List<Set<PairInt>> pixelLists) {
         
         Set<PairInt> processed = new HashSet<PairInt>();

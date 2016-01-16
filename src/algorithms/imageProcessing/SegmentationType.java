@@ -13,6 +13,7 @@ package algorithms.imageProcessing;
         scale space followed by adaptive mean thresholding (scl=4?);
     COLOR_POLARCIEXY = color to greyscale using polar theta of CIEXY;
     ADAPTIVE_MEAN uses adaptive mean thresholding w h=2
+    NONE = no segmentation is performed allowing special handling of the points.
 </pre>
 @author nichole
  */
@@ -23,5 +24,6 @@ public enum SegmentationType {
     DT_CLUSTERING,
     COLOR_POLARCIEXY_ADAPT,
     COLOR_POLARCIEXY,
-    ADAPTIVE_MEAN;
+    ADAPTIVE_MEAN,
+    NONE;
 }

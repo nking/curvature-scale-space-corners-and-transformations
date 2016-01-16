@@ -51,46 +51,21 @@ public class EpipolarSolver {
             throw new IllegalStateException("solve() has already been invoked");
         }
 
-        //NOTE: will change this to the non euclidean solver soon
-        EuclideanSegmentFeatureMatcher2 wrapper
-            = new EuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
+        NonEuclideanSegmentFeatureMatcher matcher = 
+            new NonEuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
+        
+        //EuclideanSegmentFeatureMatcher2 matcher
+        //    = new EuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
 
-        boolean solved = wrapper.match();
+        boolean solved = matcher.match();
 
-        if (!solved) {
+        if (!solved || (matcher.getSolutionMatched1().size() < 7)) {
             state = State.NO_SOLUTION;
             return null;
         }
 
-        List<PairInt> points1, points2;
-
-        if (wrapper.getSolutionMatched1().size() < 7) {
-
-            EuclideanSegmentFeatureMatcher wrapper2
-                = new EuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
-
-            boolean matched = wrapper2.match();
-
-            if (!matched) {
-                state = State.NO_SOLUTION;
-                return null;
-            }
-
-            log.info("params from 2nd matcher=" + wrapper2.getSolutionTransformation());
-
-            points1 = wrapper2.getSolutionMatched1();
-            points2 = wrapper2.getSolutionMatched2();
-
-        } else {
-
-            points1 = wrapper.getSolutionMatched1();
-            points2 = wrapper.getSolutionMatched2();
-            TransformationParameters params = wrapper.getSolutionTransformationParameters();
-
-            log.info("params from scale calc: scale=" + params.getScale()
-                + " rot(deg)=" + params.getRotationInDegrees()
-                + " tx=" + params.getTranslationX() + " ty=" + params.getTranslationY());
-        }
+        List<PairInt> points1 = matcher.getSolutionMatched1();
+        List<PairInt> points2 = matcher.getSolutionMatched2();
 
         int n = points1.size();
 
