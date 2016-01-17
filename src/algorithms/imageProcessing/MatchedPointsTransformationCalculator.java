@@ -750,6 +750,189 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     }
 
     /**
+     * coordinate transformations from pair 1 to pair 2 are calculated from
+     * the widest pairings of the given matched points.  No standard 
+     * deviations from mean values are calculated and no filtering is
+     * performed.  The method is meant to be used with code which will use
+     * other methods to filter the points.
+     *
+     * positive Y is up
+       positive X is right
+       positive theta starts from Y=0, X>=0 and proceeds CW
+                270
+                 |
+                 |
+          180--------- 0   +X
+                 |
+                 |
+                 90
+                 -Y
+     * </pre>
+     * @param matchedXY1
+     * @param matchedXY2
+     * @param centroidX1
+     * @param centroidY1
+     * @return
+     */
+    public TransformationParameters calulateEuclideanWithoutFilter(
+        PairIntArray matchedXY1, PairIntArray matchedXY2,
+        final double centroidX1, final double centroidY1) {
+        
+        if (matchedXY1 == null) {
+            throw new IllegalArgumentException("matchedXY1 cannot be null");
+        }
+        if (matchedXY2 == null) {
+            throw new IllegalArgumentException("matchedXY2 cannot be null");
+        }
+        if (matchedXY1.getN() != matchedXY2.getN()) {
+            throw new IllegalArgumentException(
+            "matchedXY1 must be the same length as matchedXY2");
+        }
+        if (matchedXY1.getN() < 2) {
+            throw new IllegalArgumentException(
+            "matchedXY1 must have at least 2 points");
+        }
+       
+        /*
+        solve for rotation.
+
+        Take the same 2 pairs int both images and get the difference in their
+        angles:
+            tan(theta) = y / x
+
+        For example:
+            theta of pair in image1:
+                theta = math.atan( (y1-y0)/(x1-x0) )
+                      = 0.7853981633974483 radians
+                      = 45 degrees
+
+            theta of pair in image2:
+                theta = math.atan( (yt1-yt0)/(xt1-xt0) )
+                      = 0.3490522203358645
+                      = 20.0
+
+            rotation = theta_image1 - theta_image2 = 25 degrees
+        */
+            
+        //choosing pairs of points by pairing for maximum distance.
+        Set<PairInt> pairIndexes = new HashSet<PairInt>();     
+        useGreedyMatching(matchedXY1, pairIndexes);
+        
+        AngleUtil angleUtil = new AngleUtil();
+        
+        double[] thetas = new double[pairIndexes.size()];
+
+        float scaleSum = 0;
+        float transXSum= 0;
+        float transYSum = 0;
+        int count = 0;
+        for (PairInt pairIndex : pairIndexes) {
+
+            int idx1 = pairIndex.getX();
+            int idx2 = pairIndex.getY();
+
+            int set1X1 = matchedXY1.getX(idx1);
+            int set1Y1 = matchedXY1.getY(idx1);
+            int set1X2 = matchedXY1.getX(idx2);
+            int set1Y2 = matchedXY1.getY(idx2);
+
+            int set2X1 = matchedXY2.getX(idx1);
+            int set2Y1 = matchedXY2.getY(idx1);
+            int set2X2 = matchedXY2.getX(idx2);
+            int set2Y2 = matchedXY2.getY(idx2);
+
+            double dx1 = set1X1 - set1X2;
+            double dy1 = set1Y1 - set1Y2;
+
+            double dx2 = set2X1 - set2X2;
+            double dy2 = set2Y1 - set2Y2;
+            
+            double theta = angleUtil.subtract(dx1, dy1, dx2, dy2);
+
+            theta *= -1;
+            
+            if (theta < 0) {
+                theta += 2 * Math.PI;
+            }
+            
+            double sep1 = Math.sqrt((dx1*dx1) + (dy1*dy1));
+
+            double sep2 = Math.sqrt((dx2*dx2) + (dy2*dy2));
+
+            double scale = sep2/sep1;
+            
+            /*
+            estimate translation:
+
+            xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) - ((y0-yc)*scale*math.sin(theta)))
+
+            xt_0 = xr_0 + transX = x1
+
+            yr_0 = yc*scale + (((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+            yt_0 = yr_0 + transY = y1
+            */
+            double mc = Math.cos(theta);
+            double ms = Math.sin(theta);
+
+            double tr1X1 = centroidX1 * scale + (((set1X1 - centroidX1) * scale * mc)
+                + ((set1Y1 - centroidY1) * scale * ms));
+
+            double tr1Y1 = centroidY1 * scale + (-(set1X1 - centroidX1) * scale * ms)
+                + ((set1Y1 - centroidY1) * scale * mc);
+
+            double tr1X2 = centroidX1 * scale + (((set1X2 - centroidX1) * scale * mc)
+                + ((set1Y2 - centroidY1) * scale * ms));
+
+            double tr1Y2 = centroidY1 * scale + (-(set1X2 - centroidX1) * scale * ms)
+                + ((set1Y2 - centroidY1) * scale * mc);
+
+            double transX1 = (set2X1 - tr1X1);
+            double transX2 = (set2X2 - tr1X2);
+            double transY1 = (set2Y1 - tr1Y1);
+            double transY2 = (set2Y2 - tr1Y2);
+
+            double transX = 0.5 * (transX1 + transX2);
+
+            double transY = 0.5 * (transY1 + transY2);
+                        
+            thetas[count] = theta;
+            
+            scaleSum += scale;
+            transXSum += transX;
+            transYSum += transY;
+            count++;
+        }
+        
+        float scaleAvg = scaleSum/(float)pairIndexes.size();
+        float transXAvg = transXSum/(float)pairIndexes.size();
+        float transYAvg = transYSum/(float)pairIndexes.size();
+                
+        boolean useRadians = true;
+        double thetaAvg = AngleUtil.calculateAverageWithQuadrantCorrections(
+            thetas, useRadians);
+        
+        TransformationParameters params = new TransformationParameters();
+        params.setRotationInRadians((float)thetaAvg);
+        params.setScale(scaleAvg);
+        params.setTranslationX(transXAvg);
+        params.setTranslationY(transYAvg);
+        params.setOriginX((float)centroidX1);
+        params.setOriginY((float)centroidY1);
+        // this is the number of data points as the number of pairs
+        params.setNumberOfPointsUsed(matchedXY1.getN());
+     
+        if (debug) {
+            log.info("params: " + params.toString());
+        }
+
+        return params;
+    }
+
+    public MatchedPointsTransformationCalculator() {
+    }
+
+    /**
      * from a set of transformation parameters params that transform
      * points in reference frame 1 into reference frame 2, create
      * a transformation that can transform points in reference frame 2
@@ -1100,6 +1283,11 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
     
     private void useGreedyMatching(PairIntArray matchedXY1, 
         Set<PairInt> pairIndexes) {
+        
+        if (matchedXY1.getN() == 2) {
+            pairIndexes.add(new PairInt(0, 1));
+            return;
+        }
 
         for (int i1 = 0; i1 < matchedXY1.getN(); ++i1) {
             

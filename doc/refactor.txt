@@ -42,7 +42,7 @@ The current matchers, before final refactoring and adding from todo.txt, are:
         - NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher
           to make points lists
           - see summary of its logic below.
-        - uses RANSACSolver, mostly as an exercise since the matches are already determined very well.
+        - uses RANSACSolver
        this one can be tuned to extract fewer points in 
        BlobPerimeterCornerHelper.extractSecondDerivativeCornersForBinnedWithoutBlobs
        Note that it quickly matches even for a dataset which only

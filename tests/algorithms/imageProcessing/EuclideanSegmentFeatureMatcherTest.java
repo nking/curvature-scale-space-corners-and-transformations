@@ -25,7 +25,7 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
       
-        for (int i = 3; i < 6; ++i) {
+        for (int i = 3; i < 5; ++i) {
             
             switch(i) {
                 case 0: {

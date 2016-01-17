@@ -3,12 +3,11 @@ package algorithms.imageProcessing;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
@@ -124,6 +123,9 @@ public class RANSACSolver {
            re-calculate the fundamental matrix as the last result.
            note that if there aren't enough points in a consensus to
            calculate the fundamental matrix, the result is null.
+
+           an improvement on the algorithm is to adaptively determine the
+           number of iterations necessary to find a large enough consensus.
         */
 
         int nSet = 7;
@@ -239,7 +241,7 @@ public class RANSACSolver {
         int n = bestFit.getInlierIndexes().size();
         SimpleMatrix inliersLeftXY = new SimpleMatrix(3, n);
         SimpleMatrix inliersRightXY = new SimpleMatrix(3, n);
-        
+
         int count = 0;
         for (Integer idx : bestFit.getInlierIndexes()) {
             int idxInt = idx.intValue();            
@@ -264,8 +266,8 @@ public class RANSACSolver {
             EpipolarTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
                 EpipolarTransformationFit fitI = 
-                    spTransformer.calculateError(fm, matchedLeftXY, 
-                        matchedRightXY, errorType, tolerance);
+                    spTransformer.calculateError(fm,  
+                        inliersLeftXY, inliersRightXY, errorType, tolerance);
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
@@ -279,23 +281,20 @@ public class RANSACSolver {
                 inliersLeftXY, inliersRightXY);
             
             EpipolarTransformationFit fit = 
-                spTransformer.calculateError(fm, matchedLeftXY, 
-                    matchedRightXY, errorType, tolerance);
+                spTransformer.calculateError(fm,
+                inliersLeftXY, inliersRightXY, errorType, tolerance);
             
             consensusFit = fit;
         }
         
-        // write to output and convert the coordinate indexes to the original point indexes
-        List<Integer> inlierIndexes = consensusFit.getInlierIndexes();
-        for (int i = 0; i < inlierIndexes.size(); ++i) {
-            Integer index = inlierIndexes.get(i);
+        for (Integer index : consensusFit.getInlierIndexes()) {
             int idx = index.intValue();
             outputLeftXY.add(
-                (int)Math.round(matchedLeftXY.get(0, idx)),
-                (int)Math.round(matchedLeftXY.get(1, idx)));
+                (int)Math.round(inliersLeftXY.get(0, idx)),
+                (int)Math.round(inliersLeftXY.get(1, idx)));
             outputRightXY.add(
-                (int)Math.round(matchedRightXY.get(0, idx)),
-                (int)Math.round(matchedRightXY.get(1, idx)));
+                (int)Math.round(inliersRightXY.get(0, idx)),
+                (int)Math.round(inliersRightXY.get(1, idx)));
         }
         
         log.info("nIter=" + nIter);

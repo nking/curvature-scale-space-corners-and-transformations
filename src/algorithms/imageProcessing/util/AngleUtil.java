@@ -2,6 +2,7 @@ package algorithms.imageProcessing.util;
 
 import algorithms.MergeSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import java.util.List;
 
 /**
@@ -504,6 +505,69 @@ public class AngleUtil {
         }
 
         return mean;
+    }
+
+    /**
+     calculate the average of the angles using quadrant corrections (note,
+     * angles is modified by descending sort).
+     Runtime complexity is O(N*lg2N) for sort plus O(N).
+     * Note, may change to use CountingSort for N > 80 and max(angles) ~ 360
+     * in the future.
+
+     * @param angles angles in units of degrees.  Note that this array
+     * is modified by use here so pass a copy if it should not be.
+     * @param useRadians
+     * @return
+     */
+    public static double calculateAverageWithQuadrantCorrections(
+        double[] angles, boolean useRadians) {
+
+        //TODO: because 360 is usually the max value, if N is > 80, can
+        // use CountingSort here for better performance.
+        // CountingSort is O(maxValue) while MergeSort is O(N*lg_2(N))
+        QuickSort.descendingSort(angles);
+
+        double twoPI = useRadians ? 2. * Math.PI : 360;
+        
+        // visit in order of large values to low to store quadrant corrections
+        double avg = 0;
+        for (int i = 0; i < angles.length; ++i) {
+
+            double angle1 = angles[i];
+
+            if (i == 0) {
+
+                avg = angle1;
+
+            } else {
+
+                double angle0 = avg;
+
+                // add a phase to next value if it's closer to current with addition
+                if ((angle0 - angle1) > Math.abs(angle0 - (angle1 + twoPI))) {
+                    angle1 += twoPI;
+                    if (useRadians) {
+                        angles[i] = angle1;
+                    } else {
+                        angles[i] = Math.round(angle1);
+                    }
+                }
+
+                avg = (angle0 + angle1)/2.f;
+            }
+        }
+        
+        avg = 0;
+        for (double a : angles) {
+            avg += a;
+        }
+        avg /= (double)angles.length;
+        
+        if (avg > twoPI) {
+            avg -= twoPI;
+        }
+
+        return avg;
     }
 
     /**

@@ -173,4 +173,42 @@ public class AngleUtilTest extends TestCase {
         assertTrue(Math.abs(avg - 355) < 0.1);
         
     }
+    
+    public void testCalculateAverageWithQuadrantCorrections() throws Exception {
+        
+        boolean useRadians = false;
+        double[] angles = new double[]{0, 350, 340};
+        double expected = (350. + 340. + 360.)/3.;
+        double result = AngleUtil.calculateAverageWithQuadrantCorrections(angles,
+            useRadians);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        useRadians = false;
+        angles = new double[]{350, 10, 20};
+        expected = (350. + 370. + 380.)/3.;
+        expected -= 360;
+        result = AngleUtil.calculateAverageWithQuadrantCorrections(angles,
+            useRadians);
+        assertTrue(Math.abs(result - expected) < 0.1);
+        
+        //-----
+        useRadians = true;
+        angles = new double[]{0, 350.*Math.PI/180., 340.*Math.PI/180.};
+        double e0 = 2.*Math.PI;
+        double e1 = 350.*Math.PI/180.;
+        double e2 = 340.*Math.PI/180.;
+        expected = (e0 + e1 + e2)/3.;
+        result = AngleUtil.calculateAverageWithQuadrantCorrections(angles,
+            useRadians);
+        assertTrue(Math.abs(result - expected) < 0.01);
+        
+        useRadians = true;
+        angles = new double[]{350.*Math.PI/180., 10.*Math.PI/180., 20.*Math.PI/180.};
+        expected = ((350.*Math.PI/180.) + (370.*Math.PI/180.) + (380.*Math.PI/180.))/3.;
+        expected -= (2.*Math.PI);
+        result = AngleUtil.calculateAverageWithQuadrantCorrections(angles,
+            useRadians);
+        assertTrue(Math.abs(result - expected) < 0.01);
+    }
+    
 }
