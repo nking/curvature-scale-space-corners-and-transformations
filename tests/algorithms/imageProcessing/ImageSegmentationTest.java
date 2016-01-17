@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.features.BlobPerimeterCornerHelper;
+import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

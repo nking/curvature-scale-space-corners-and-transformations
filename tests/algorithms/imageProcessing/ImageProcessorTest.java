@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Complex;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;

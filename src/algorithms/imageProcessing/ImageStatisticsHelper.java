@@ -1,6 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointInPolygon;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.Errors;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -10,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import algorithms.imageProcessing.transform.Transformer;
 
 /**
  *

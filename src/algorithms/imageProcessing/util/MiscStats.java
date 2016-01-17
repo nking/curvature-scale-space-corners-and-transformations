@@ -1,11 +1,11 @@
 package algorithms.imageProcessing.util;
 
 import algorithms.compGeometry.PointInPolygon;
-import algorithms.imageProcessing.FeatureComparisonStat;
-import algorithms.imageProcessing.FeatureMatcher;
-import algorithms.imageProcessing.MatchedPointsTransformationCalculator;
-import algorithms.imageProcessing.TransformationParameters;
-import algorithms.imageProcessing.Transformer;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.features.FeatureMatcher;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;

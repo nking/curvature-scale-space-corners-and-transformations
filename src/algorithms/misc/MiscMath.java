@@ -2,8 +2,8 @@ package algorithms.misc;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.CornerRegion;
-import algorithms.imageProcessing.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;

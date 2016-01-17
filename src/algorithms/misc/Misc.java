@@ -1,6 +1,6 @@
 package algorithms.misc;
 
-import algorithms.imageProcessing.CornerRegion;
+import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;

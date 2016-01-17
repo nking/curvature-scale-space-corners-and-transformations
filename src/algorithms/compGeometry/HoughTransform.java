@@ -1,9 +1,9 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.CornerRegion;
+import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
-import algorithms.imageProcessing.IntensityFeatures;
+import algorithms.imageProcessing.features.IntensityFeatures;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;

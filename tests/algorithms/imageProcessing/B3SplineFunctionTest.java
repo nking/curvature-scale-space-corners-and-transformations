@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;

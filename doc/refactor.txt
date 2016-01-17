@@ -38,6 +38,16 @@ each of the matchers has these steps:
 -------
 The current matchers, before final refactoring and adding from todo.txt, are:
 
+    EuclideanSolver:
+        - NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher
+          to make points lists
+          - see summary of its logic below.
+        - uses RANSACEuclideanSolver
+       this one can be tuned to extract fewer points in 
+       BlobPerimeterCornerHelper.extractSecondDerivativeCornersForBinnedWithoutBlobs
+       Note that it quickly matches even for a dataset which only
+       had 20% true points or so and effectively removes false positives with homology
+
     EpipolarSolver:
         - NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher
           to make points lists

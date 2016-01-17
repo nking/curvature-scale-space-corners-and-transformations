@@ -2,8 +2,8 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.PointPartitioner.Bounds;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.PointSampling;
-import algorithms.imageProcessing.PointValueDistr;
+import algorithms.imageProcessing.features.PointSampling;
+import algorithms.imageProcessing.features.PointValueDistr;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;

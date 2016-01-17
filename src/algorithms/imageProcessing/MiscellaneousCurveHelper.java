@@ -2,6 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.convexHull.GrahamScanPairInt;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.misc.AverageUtil;

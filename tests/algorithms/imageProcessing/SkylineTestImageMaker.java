@@ -6,6 +6,7 @@ import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.SkylineExtractor.RemovedSets;
 import algorithms.imageProcessing.optimization.ANDedClauses;
 import algorithms.imageProcessing.optimization.SkylineANDedClauses;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairInt;

@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceInflectionMapper;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
 import java.io.File;

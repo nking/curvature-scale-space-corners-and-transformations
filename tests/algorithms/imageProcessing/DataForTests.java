@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;

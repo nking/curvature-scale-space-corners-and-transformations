@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.transform.TransformationParameters;
+
 /**
  *
  * @author nichole

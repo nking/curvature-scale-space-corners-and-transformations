@@ -1,5 +1,11 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.features.BlobPerimeterRegion;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceImagePoint;
+import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

@@ -2,7 +2,7 @@ package algorithms.imageProcessing.optimization;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.CurvatureScaleSpaceCornerDetector;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
