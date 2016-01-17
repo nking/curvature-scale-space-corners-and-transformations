@@ -35,7 +35,12 @@ public class CornerRegionTest extends TestCase {
         cr.set(2, 0.35f, 141, 255);
         
         boolean caughtException = false;
-        double orientation = cr.getRelativeOrientation();
+        
+        try {
+            double orientation = cr.getRelativeOrientation();
+        } catch (CornerRegionDegneracyException e) {
+            caughtException = true;
+        }
         
         assertTrue(caughtException);
     }
@@ -51,8 +56,13 @@ public class CornerRegionTest extends TestCase {
         cr.set(4, 0.28f, 140, 255);
         
         boolean caughtException = false;
-        double orientation = cr.getRelativeOrientation();
-        assertTrue(Math.abs(orientation - 1) < 1);
+        
+        try {
+            double orientation = cr.getRelativeOrientation();
+            assertTrue(Math.abs(orientation - 1) < 1);
+        } catch (CornerRegionDegneracyException e) {
+            caughtException = true;
+        }
         
         assertFalse(caughtException);
     }
