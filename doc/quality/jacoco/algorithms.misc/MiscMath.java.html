@@ -2,8 +2,8 @@
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
-import algorithms.imageProcessing.CornerRegion;
-import algorithms.imageProcessing.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
@@ -1539,12 +1539,12 @@ import java.util.Set;
 <span class="fc bfc" id="L1539" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
 <span class="fc" id="L1541">            float v1 = a[i];</span>
-<span class="pc bpc" id="L1542" title="1 of 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1543">                continue;</span>
+<span class="fc bfc" id="L1542" title="All 2 branches covered.">            if (v1 == sentinel) {</span>
+<span class="fc" id="L1543">                continue;</span>
             }
 <span class="fc" id="L1545">            float v2 = b[i];</span>
-<span class="pc bpc" id="L1546" title="1 of 2 branches missed.">            if (v2 == sentinel) {</span>
-<span class="nc" id="L1547">                continue;</span>
+<span class="fc bfc" id="L1546" title="All 2 branches covered.">            if (v2 == sentinel) {</span>
+<span class="fc" id="L1547">                continue;</span>
             }
             
 <span class="fc" id="L1550">            float diff = v1 - v2;</span>
@@ -1759,8 +1759,8 @@ import java.util.Set;
 <span class="fc bfc" id="L1759" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
             
 <span class="fc" id="L1761">            float v1 = a[i];</span>
-<span class="pc bpc" id="L1762" title="1 of 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1763">                continue;</span>
+<span class="fc bfc" id="L1762" title="All 2 branches covered.">            if (v1 == sentinel) {</span>
+<span class="fc" id="L1763">                continue;</span>
             }
             
 <span class="fc" id="L1766">            float diff = a[i] - vc;</span>

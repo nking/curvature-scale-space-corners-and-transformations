@@ -1,0 +1,798 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceCornerDetector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.scaleSpace</a> &gt; <span class="el_source">CurvatureScaleSpaceCornerDetector.java</span></div><h1>CurvatureScaleSpaceCornerDetector.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.scaleSpace;
+
+import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.NearestPoints;
+import algorithms.imageProcessing.CannyEdgeFilter;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairInt;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * The code is implemented from interpreting several papers by the authors
+ * Farzin Mokhtarian and Alan Mackworth.
+ *
+ * They prescribe a method for detecting features and corners that is scale
+ * invariant, rotation and translation invariant and does not create
+ * artifacts as a side effect.
+ *
+ * The method finds edges in an image and then calculates the curvature of
+ * the edges to find &quot;inflection&quot; points along the curve.  Those points of
+ * inflection as a function of scale parameter t are then findable in
+ * another image that may have rotation or translation, for example, using
+ * a search method such as A* to find the best matching features in t space.
+ * The process of creating the scale based curves is repeated for increasing
+ * sigma until no points are found with curvature = 0.
+ *
+ * The method uses the recursive and separable properties of Gaussians where
+ * possible.  (NOTE, not finished implementing the recursive portion).
+ *
+ * @author nichole
+ */
+public class CurvatureScaleSpaceCornerDetector extends
+    AbstractCurvatureScaleSpaceMapper {
+
+    /**
+     * corners detected in the image.  the false corners have been removed
+     */
+<span class="pc" id="L52">    protected PairIntArray corners = new PairIntArray();</span>
+
+    /**
+     * this is not ready for use yet.  when implemented it should hold
+     * a sublist of corners that are better to use for matching the same
+     * in other images.
+     * TODO: populate this with edgeCornerRegionMap values
+     */
+<span class="pc" id="L60">    protected PairIntArray cornersForMatching = new PairIntArray();</span>
+
+<span class="pc" id="L62">    protected Map&lt;Integer, List&lt;CornerRegion&gt;&gt; edgeCornerRegionMap = new</span>
+        HashMap&lt;Integer, List&lt;CornerRegion&gt;&gt;();
+    
+    /**
+     * corners populated if extractSkyline is true
+     */
+<span class="pc" id="L68">    protected PairIntArray skylineCorners = new PairIntArray();</span>
+
+<span class="pc" id="L70">    protected boolean enableJaggedLineCorrections = true;</span>
+    
+<span class="pc" id="L72">    protected float factorIncreaseForCurvatureMinimum = 1.f;</span>
+    
+<span class="pc" id="L74">    protected boolean performWholeImageCorners = true;</span>
+    
+<span class="pc" id="L76">    protected boolean doStoreCornerRegions = true;</span>
+            
+    public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
+
+<span class="fc" id="L80">        super(input);</span>
+<span class="fc" id="L81">    }</span>
+    
+    public CurvatureScaleSpaceCornerDetector(final GreyscaleImage input) {
+
+<span class="fc" id="L85">        super(input);</span>
+<span class="fc" id="L86">    }</span>
+
+    public CurvatureScaleSpaceCornerDetector(final ImageExt input,
+        List&lt;PairIntArray&gt; theEdges) {
+
+<span class="nc" id="L91">        super(input, theEdges);</span>
+<span class="nc" id="L92">    }</span>
+    
+    /**
+     * set the edge detector to create edges that are better for outdoor
+     * conditions and calculate corners only for the skyline.  
+     * Note that the skyline extraction is currently
+     * a long running process.
+     */
+    void calculateSkylineCornersOnly() {
+        
+<span class="nc" id="L102">        useOutdoorModeAndExtractSkyline();</span>
+        
+<span class="nc" id="L104">        performWholeImageCorners = false;</span>
+<span class="nc" id="L105">    }</span>
+  
+    public void enableJaggedLineCorrections() {
+<span class="nc" id="L108">        enableJaggedLineCorrections = true;</span>
+<span class="nc" id="L109">    }</span>
+    public void disableJaggedLineCorrections() {
+<span class="nc" id="L111">        enableJaggedLineCorrections = false;</span>
+<span class="nc" id="L112">    }</span>
+    
+    public void doNotStoreCornerRegions() {
+<span class="nc" id="L115">        doStoreCornerRegions = false;</span>
+<span class="nc" id="L116">    }</span>
+    
+    public void increaseFactorForCurvatureMinimum(float factor) {
+<span class="nc" id="L119">        factorIncreaseForCurvatureMinimum = factor;</span>
+<span class="nc" id="L120">    }</span>
+    
+    public void resetFactorForCurvatureMinimum() {
+<span class="nc" id="L123">        factorIncreaseForCurvatureMinimum = 1.f;</span>
+<span class="nc" id="L124">    }</span>
+    
+    public void findCorners() {
+
+        // extract edges and junction maps:
+<span class="fc" id="L129">        initialize();</span>
+
+<span class="pc bpc" id="L131" title="3 of 4 branches missed.">        if (extractSkyline &amp;&amp; !skylineEdges.isEmpty()) {</span>
+<span class="nc" id="L132">            calculateSkylineCorners();</span>
+        }
+
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (!performWholeImageCorners) {</span>
+<span class="nc" id="L136">            return;</span>
+        }
+             
+        // not re-using return maps for now, but they are available here
+        // while refactoring the public method returns and signatures
+<span class="fc" id="L141">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; maps =</span>
+<span class="fc" id="L142">            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);        </span>
+<span class="fc" id="L143">    }</span>
+    
+    @Override
+    protected void reinitializeSpecialization() {
+<span class="nc" id="L147">        corners = new PairIntArray();</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * find corners iteratively until approximately the number desired are
+     * found.  This method is useful for creating corners in stereo projection
+     * images - it helps to adjust the image intensity levels so that
+     * similar edges can be formed in both images.
+     * Presumably, if calibration of the images were possible, findCorners()
+     * should alone provide a stable result (where calibration of the images
+     * are steps such as bias removal, flat field corrections, intensity
+     * corrections using standard candles, and corrections to make the
+     * point spread functions similar for the images).
+     *
+     * @param approxNumberOfCornersDesired
+     * @param filterOnlyAboveThisNumberOfCorners if the default number of corners
+     * produced is this larger or larger, the method will iteratively
+     * increase the lower intensity filter until approxNumberOfCornersDesired
+     * are produced, else if the default number of corners is less
+     * than useOnlyAboveThisNumberOfCorners, the method will not filter
+     * the image further.
+     */
+    public void findCornersIteratively(int approxNumberOfCornersDesired,
+        int filterOnlyAboveThisNumberOfCorners) {
+
+        //TODO: this method needs to be refactored
+        
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (!performWholeImageCorners) {</span>
+<span class="nc" id="L175">            throw new IllegalStateException(</span>
+                &quot;performWholeImageCorners is currently set to false&quot;);
+        }
+
+<span class="nc" id="L179">        float lowerThresholdStepSize = 1.0f;</span>
+        
+<span class="nc" id="L181">        int nCorners = corners.getN();</span>
+
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        float lowThreshold = (useOutdoorMode) ?</span>
+            CannyEdgeFilter.defaultOutdoorLowThreshold :
+            CannyEdgeFilter.defaultLowThreshold;
+        
+<span class="nc bnc" id="L187" title="All 4 branches missed.">        if ((nCorners &gt; 0) &amp;&amp; (nCorners &lt; filterOnlyAboveThisNumberOfCorners)) {</span>
+<span class="nc" id="L188">            return;</span>
+<span class="nc bnc" id="L189" title="All 4 branches missed.">        } else if ((nCorners &gt; 0) &amp;&amp; (nCorners &lt; approxNumberOfCornersDesired)) {</span>
+<span class="nc" id="L190">            return;</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        } else if (state.ordinal() &lt; CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {</span>
+<span class="nc" id="L192">            findCorners();</span>
+        }
+
+<span class="nc" id="L195">        nCorners = corners.getN();</span>
+
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (nCorners &lt; filterOnlyAboveThisNumberOfCorners) {</span>
+<span class="nc" id="L198">            return;</span>
+        }
+
+        //TODO: this could be improved to assert a minimum presence of corners
+        // at boundaries and throughout the image compared to the first round.
+        // In other words, would not want to remove all corners for an important
+        // part of the image intersection with another image.
+
+<span class="nc" id="L206">        List&lt;PairIntArray&gt; prevEdges = copy(this.edges);</span>
+<span class="nc" id="L207">        PairIntArray prevCorners = corners.copy();</span>
+
+<span class="nc" id="L209">        int nIter = 0;</span>
+            
+<span class="nc bnc" id="L211" title="All 4 branches missed.">        while ((nCorners &gt; 0) &amp;&amp; (nCorners &gt; approxNumberOfCornersDesired)) {</span>
+
+<span class="nc" id="L213">            log.info(&quot;nCorners=&quot; + nCorners);</span>
+
+<span class="nc" id="L215">            prevEdges = copy(this.edges);</span>
+<span class="nc" id="L216">            prevCorners = this.corners.copy();</span>
+
+            //TODO: needs adjustments:
+<span class="nc" id="L219">            float additionalBlurSigma = 0;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            if (nIter == 0) {</span>
+                //additionalBlurSigma = 1;
+                /*if (nCorners &gt; 1000) {
+                    lowerThresholdStepSize  = 1.5f;
+                } else {*/
+<span class="nc" id="L225">                    lowerThresholdStepSize = 0.5f;</span>
+                //}
+            }
+            
+<span class="nc" id="L229">            lowThreshold += lowerThresholdStepSize;</span>
+            
+<span class="nc" id="L231">            reinitialize(lowThreshold, additionalBlurSigma);</span>
+
+<span class="nc" id="L233">            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);</span>
+
+<span class="nc" id="L235">            includeJunctionsInCorners();</span>
+            
+<span class="nc" id="L237">            nCorners = corners.getN();</span>
+            
+<span class="nc" id="L239">            nIter++;</span>
+<span class="nc" id="L240">        }</span>
+
+<span class="nc" id="L242">        if (Math.abs(corners.getN() - approxNumberOfCornersDesired) &gt;</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">            Math.abs(prevCorners.getN() - approxNumberOfCornersDesired)) {</span>
+            
+<span class="nc" id="L245">            this.edges = prevEdges;</span>
+<span class="nc" id="L246">            this.corners = prevCorners;</span>
+        }
+        
+<span class="nc" id="L249">    }</span>
+
+    /**
+     * Find corners in the edges by creating scale space maps for each edge that
+     * range from a maximum value determined in getMaxSIGMAForECSS() and
+     * determine the corners in the highest sigma of those maps and refine the
+     * corner locations in the smaller sigma maps.  The corners are found using
+     * the curvature minima and maxima points in the curve.  A lower threshold
+     * is determined and used during the maxima finding and minima comparison.
+     * Each corner candidate is larger than one of the adjacent minima by
+     * a factor such as 2 or 3.
+     * The results are set in the instance variable corners.
+     * The returned variable is the set of scale space maps which might be
+     * useful for other purposes, but are no longer needed for the corner
+     * determination.
+     *
+     * @param theEdges
+     * @param doUseOutdoorMode
+     * @param outputCorners
+     * @return scale space maps for each edge
+     */
+    protected Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt;
+    findCornersInScaleSpaceMaps(final List&lt;PairIntArray&gt; theEdges, 
+        final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
+
+<span class="fc" id="L274">        CSSCornerMaker cornerMaker = new CSSCornerMaker(this.img.getWidth(),</span>
+<span class="fc" id="L275">            this.img.getHeight());</span>
+        
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (enableJaggedLineCorrections) {</span>
+<span class="fc" id="L278">            cornerMaker.enableJaggedLineCorrections();</span>
+        }
+        
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (!doStoreCornerRegions) {</span>
+<span class="nc" id="L282">            cornerMaker.doNotStoreCornerRegions();</span>
+        }
+        
+<span class="fc" id="L285">        cornerMaker.increaseFactorForCurvatureMinimum(</span>
+            factorIncreaseForCurvatureMinimum);
+        
+        //map w/ key = edge index,
+        //   values = junctions on edge as (x,y) and edge curve indexs
+<span class="fc" id="L290">        Map&lt;Integer, Set&lt;PairIntWithIndex&gt;&gt; junctionCoords = getJunctionCoordinates();</span>
+        
+<span class="fc" id="L292">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; sMap =</span>
+<span class="fc" id="L293">            cornerMaker.findCornersInScaleSpaceMaps(theEdges, junctionCoords,</span>
+                doUseOutdoorMode, outputCorners); 
+        
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">        if (doStoreCornerRegions) {</span>
+<span class="fc" id="L297">            edgeCornerRegionMap.clear();</span>
+<span class="fc" id="L298">            Map&lt;Integer, List&lt;CornerRegion&gt;&gt; tmp = cornerMaker.getEdgeCornerRegionMap();</span>
+<span class="fc" id="L299">            edgeCornerRegionMap.putAll(tmp);</span>
+        }
+    
+        //TODO: place in the replacement for aspects:
+        /*if (true) {
+            try {
+                Image imgCp = this.img.copyToColorGreyscale();
+                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
+                MiscDebug.writeImage(imgCp, &quot;_dbg_edges_&quot;);
+                imgCp = imgCp = this.img.copyToColorGreyscale();
+                for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {
+                    for (CornerRegion cr : entry.getValue()) {
+                        int x = cr.getX()[cr.getKMaxIdx()];
+                        int y = cr.getY()[cr.getKMaxIdx()];
+                        ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                    }
+                }
+                MiscDebug.writeImage(imgCp, &quot;_dbg_cornerregions_&quot;);
+                imgCp = this.img.copyToColorGreyscale();
+                for (int ii = 0; ii &lt; outputCorners.getN(); ++ii) {
+                    int x = outputCorners.getX(ii);
+                    int y = outputCorners.getY(ii);
+                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
+                }
+                MiscDebug.writeImage(imgCp, &quot;_dbg_corners_&quot;);
+            } catch (IOException ex) {
+                Logger.getLogger(this.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }*/
+        
+<span class="fc" id="L329">        return sMap;</span>
+    }
+
+    public PairIntArray getCorners() {
+<span class="fc" id="L333">        return corners;</span>
+    }
+
+    public PairIntArray getCornersForMatching() {
+<span class="nc" id="L337">        return cornersForMatching;</span>
+    }
+
+    /**
+     * &lt;em&gt;note, this is not ready for use yet.&lt;/em&gt;
+     * it's meant to be a sublist of
+     * the variable &quot;corners&quot; selected to be better for matching the same
+     * corners in other images.
+     * @return
+     */
+    public PairIntArray getCornersForMatchingInOriginalReferenceFrame() {
+
+<span class="nc" id="L349">        PairIntArray co = new PairIntArray();</span>
+        /*for (int i = 0; i &lt; cornersForMatching.getN(); i++) {
+            int x = cornersForMatching.getX(i);
+            int y = cornersForMatching.getY(i);
+            x += this.trimmedXOffset;
+            y += this.trimmedYOffset;
+            co.add(x, y);
+        }*/
+
+<span class="nc" id="L358">        return co;</span>
+    }
+
+    public PairIntArray getSkylineCornersInOriginalReferenceFrame() {
+
+<span class="nc" id="L363">        PairIntArray co = new PairIntArray();</span>
+
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        for (int i = 0; i &lt; skylineCorners.getN(); i++) {</span>
+<span class="nc" id="L366">            int x = skylineCorners.getX(i);</span>
+<span class="nc" id="L367">            int y = skylineCorners.getY(i);</span>
+<span class="nc" id="L368">            x += this.trimmedXOffset;</span>
+<span class="nc" id="L369">            y += this.trimmedYOffset;</span>
+<span class="nc" id="L370">            co.add(x, y);</span>
+        }
+
+<span class="nc" id="L373">        return co;</span>
+    }
+
+    public PairIntArray getCornersInOriginalReferenceFrame() {
+        
+<span class="fc" id="L378">PairIntArray cp = corners.copy();</span>
+<span class="fc" id="L379">MultiArrayMergeSort.sortByYThenX(cp);</span>
+  
+<span class="fc" id="L381">        PairIntArray co = new PairIntArray();</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">        for (int i = 0; i &lt; corners.getN(); i++) {</span>
+<span class="fc" id="L383">            int x = corners.getX(i);</span>
+<span class="fc" id="L384">            int y = corners.getY(i);</span>
+<span class="fc" id="L385">            x += this.trimmedXOffset;</span>
+<span class="fc" id="L386">            y += this.trimmedYOffset;</span>
+<span class="fc" id="L387">            co.add(x, y);</span>
+        }
+
+<span class="fc" id="L390">        return co;</span>
+    }
+
+    public List&lt;PairIntArray&gt; getEdgesInOriginalReferenceFrame() {
+
+<span class="fc" id="L395">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+
+<span class="fc" id="L399">            PairIntArray ce = new PairIntArray();</span>
+
+<span class="fc" id="L401">            PairIntArray edge = edges.get(i);</span>
+
+<span class="fc bfc" id="L403" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="fc" id="L404">                int x = edge.getX(j);</span>
+<span class="fc" id="L405">                int y = edge.getY(j);</span>
+<span class="fc" id="L406">                x += this.trimmedXOffset;</span>
+<span class="fc" id="L407">                y += this.trimmedYOffset;</span>
+<span class="fc" id="L408">                ce.add(x, y);</span>
+            }
+
+<span class="fc" id="L411">            output.add(ce);</span>
+        }
+
+<span class="fc" id="L414">        return output;</span>
+    }
+
+    public List&lt;PairIntArray&gt; getSkylineEdgesInOriginalReferenceFrame() {
+
+<span class="nc" id="L419">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+
+<span class="nc bnc" id="L421" title="All 2 branches missed.">        for (int i = 0; i &lt; skylineEdges.size(); i++) {</span>
+
+<span class="nc" id="L423">            PairIntArray ce = new PairIntArray();</span>
+
+<span class="nc" id="L425">            PairIntArray edge = skylineEdges.get(i);</span>
+
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="nc" id="L428">                int x = edge.getX(j);</span>
+<span class="nc" id="L429">                int y = edge.getY(j);</span>
+<span class="nc" id="L430">                x += this.trimmedXOffset;</span>
+<span class="nc" id="L431">                y += this.trimmedYOffset;</span>
+<span class="nc" id="L432">                ce.add(x, y);</span>
+            }
+
+<span class="nc" id="L435">            output.add(ce);</span>
+        }
+
+<span class="nc" id="L438">        return output;</span>
+    }
+
+    private List&lt;PairIntArray&gt; copy(List&lt;PairIntArray&gt; edges) {
+<span class="nc" id="L442">        List&lt;PairIntArray&gt; copied = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc bnc" id="L443" title="All 2 branches missed.">        for (PairIntArray edge : edges) {</span>
+<span class="nc" id="L444">            copied.add(edge.copy());</span>
+<span class="nc" id="L445">        }</span>
+<span class="nc" id="L446">        return copied;</span>
+    }
+
+    //NOT READY FOR USE YET
+    private void calculateSkylineCorners() {
+
+<span class="nc bnc" id="L452" title="All 2 branches missed.">        if (!extractSkyline) {</span>
+<span class="nc" id="L453">            return;</span>
+        }
+
+<span class="nc" id="L456">        PairIntArray theSkylineCorners = new PairIntArray();</span>
+    
+<span class="nc" id="L458">        enableJaggedLineCorrections = false;</span>
+        
+<span class="nc" id="L460">        Map&lt;PairIntArray, Map&lt;SIGMA, ScaleSpaceCurve&gt; &gt; maps =</span>
+<span class="nc" id="L461">            findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);</span>
+
+        // TODO: improve this for resolution
+        
+        // smoothing does not make fewer points, so using min curvature factor
+        
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (filterProducts == null) {</span>
+<span class="nc" id="L468">            throw new IllegalStateException(&quot;Error in use of method.  filterProducts should not be null.&quot;);</span>
+        }
+        
+<span class="nc bnc" id="L471" title="All 2 branches missed.">        float nGoalCorners = (filterProducts.getGradientXY().getNPixels() </span>
+            &lt; 500000) ? 50.f : 100.f;
+        
+        // want about 50 points
+<span class="nc" id="L475">        float factor = (float)theSkylineCorners.getN()/nGoalCorners;</span>
+        
+<span class="nc bnc" id="L477" title="All 2 branches missed.">        if (factor &gt; 1.2) {</span>
+            
+            //TODO: consider saving the space curves to make recalc faster
+            
+<span class="nc" id="L481">            increaseFactorForCurvatureMinimum(4.0f * factor);</span>
+            
+<span class="nc" id="L483">            PairIntArray theSkylineCorners2 = new PairIntArray();</span>
+            
+<span class="nc" id="L485">            maps = findCornersInScaleSpaceMaps(skylineEdges, false, </span>
+                theSkylineCorners2);
+            
+<span class="nc" id="L488">            log.info(&quot;before curvature factor change, number of skyline corners=&quot; </span>
+<span class="nc" id="L489">                + theSkylineCorners.getN());</span>
+<span class="nc" id="L490">            log.info(&quot;after=&quot; + theSkylineCorners2.getN());</span>
+            
+<span class="nc" id="L492">            theSkylineCorners = theSkylineCorners2;</span>
+            
+<span class="nc" id="L494">            resetFactorForCurvatureMinimum();</span>
+        }
+        
+<span class="nc bnc" id="L497" title="All 2 branches missed.">        if (theSkylineCorners.getN() &gt; 0) {</span>
+<span class="nc" id="L498">            skylineCorners.addAll(theSkylineCorners);</span>
+        }
+        
+<span class="nc" id="L501">        enableJaggedLineCorrections = true;</span>
+        
+<span class="nc" id="L503">        log.info(&quot;number of skyline corners=&quot; + theSkylineCorners.getN());</span>
+<span class="nc" id="L504">    }</span>
+
+    public Map&lt;Integer, List&lt;CornerRegion&gt;&gt; getEdgeCornerRegionMap() {
+<span class="nc" id="L507">        return edgeCornerRegionMap;</span>
+    }
+    
+    public Set&lt;CornerRegion&gt; getEdgeCornerRegions() {
+        
+<span class="nc" id="L512">        Set&lt;CornerRegion&gt; set = new HashSet&lt;CornerRegion&gt;();</span>
+        
+<span class="nc bnc" id="L514" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {</span>
+<span class="nc" id="L515">            set.addAll(entry.getValue());</span>
+<span class="nc" id="L516">        }</span>
+        
+<span class="nc" id="L518">        return set;</span>
+    }
+    
+     public Set&lt;CornerRegion&gt; getEdgeCornerRegionsInOriginalReferenceFrame() {
+        
+<span class="nc" id="L523">        Set&lt;CornerRegion&gt; set = new HashSet&lt;CornerRegion&gt;();</span>
+        
+<span class="nc bnc" id="L525" title="All 2 branches missed.">        for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {</span>
+<span class="nc bnc" id="L526" title="All 2 branches missed.">            for (CornerRegion cr : entry.getValue()) {</span>
+<span class="nc" id="L527">                CornerRegion crCopy = cr.copy();</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">                for (int i = 0; i &lt; cr.getX().length; ++i) {</span>
+<span class="nc" id="L529">                    int x = cr.getX()[i] + this.trimmedXOffset;</span>
+<span class="nc" id="L530">                    int y = cr.getY()[i] + this.trimmedYOffset;</span>
+<span class="nc" id="L531">                    crCopy.set(i, cr.getK()[i], x, y);</span>
+                }
+<span class="nc" id="L533">                set.add(crCopy);</span>
+<span class="nc" id="L534">            }</span>
+<span class="nc" id="L535">        }</span>
+        
+<span class="nc" id="L537">        return set;</span>
+    }
+     
+    public Set&lt;CornerRegion&gt; getEdgeCornerRegionsInOriginalReferenceFrame(
+        boolean removeAmbiguousPeaks) {
+        
+<span class="nc bnc" id="L543" title="All 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
+<span class="nc" id="L544">            return getEdgeCornerRegionsInOriginalReferenceFrame();</span>
+        }
+
+<span class="nc" id="L547">        Set&lt;CornerRegion&gt; set = getEdgeCornerRegions(removeAmbiguousPeaks);</span>
+       
+<span class="nc" id="L549">        Set&lt;CornerRegion&gt; edited = new HashSet&lt;CornerRegion&gt;();</span>
+        
+<span class="nc bnc" id="L551" title="All 2 branches missed.">        for (CornerRegion cr : set) {</span>
+<span class="nc" id="L552">            CornerRegion crCopy = cr.copy();</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">            for (int i = 0; i &lt; crCopy.getX().length; ++i) {</span>
+<span class="nc" id="L554">                int x = crCopy.getX()[i] + this.trimmedXOffset;</span>
+<span class="nc" id="L555">                int y = crCopy.getY()[i] + this.trimmedYOffset;</span>
+<span class="nc" id="L556">                crCopy.set(i, crCopy.getK()[i], x, y);</span>
+            }
+<span class="nc" id="L558">            edited.add(crCopy);</span>
+<span class="nc" id="L559">        }</span>
+        
+<span class="nc" id="L561">        return edited;</span>
+    }
+    
+    public Set&lt;CornerRegion&gt; getEdgeCornerRegions(boolean removeAmbiguousPeaks) {
+        
+<span class="pc bpc" id="L566" title="1 of 2 branches missed.">        if (!removeAmbiguousPeaks) {</span>
+<span class="nc" id="L567">            return getEdgeCornerRegions();</span>
+        }
+/*        
+        Map&lt;Integer, Set&lt;Integer&gt; &gt; theJunctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();
+
+        Map&lt;Integer, PairInt&gt; theJunctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();
+        
+        EdgeExtractorWithJunctions.findJunctions(edges, 
+            theJunctionMap, theJunctionLocationMap, img.getWidth(), img.getHeight());
+
+        this.junctionLocationMap = theJunctionLocationMap;
+        this.junctionMap = theJunctionMap;
+  */      
+<span class="fc" id="L580">        Set&lt;CornerRegion&gt; set = new HashSet&lt;CornerRegion&gt;();</span>
+       
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        for (Entry&lt;Integer, List&lt;CornerRegion&gt;&gt; entry : edgeCornerRegionMap.entrySet()) {</span>
+<span class="fc" id="L583">            set.addAll(entry.getValue());</span>
+<span class="fc" id="L584">        }</span>
+        
+<span class="fc" id="L586">        return set;</span>
+    }
+
+    /**
+     * search for the point (x, y) within the junction maps, and if found,
+     * construct best defining CornerRegion for the point.  The best defining
+     * region for the curvature neighbors appears to be the lowest intensity 
+     * pixels when the edge surrounds a void or dark patch.
+     * This method may need to be revised or used with segmentation or 
+     * object recognition (in which case it probably belongs in a class
+     * to specialize handling of the junction points for the EdgeExtractorWithJunctions).
+     * 
+     * Note that the CornerRegions are not necessarily in the same frame
+     * as the original image (they do not have trimmedXOffset and trimmedYOffset
+     * added to them).
+     * 
+     * NOTE: there is a flaw here that this instance does not retain the
+     * scale space curves or the curvature of all edges currently,
+     * so 2 dummy values for the neighboring curvatures are returned
+     * (a flag is set in the CornerRegion to indicate that).
+     * 
+     * @param x
+     * @param y
+     * @param k not used, just stored in the returned CornerRegion
+     * @return 
+     */
+    protected List&lt;CornerRegion&gt; searchForCornerRegionWithinJunctions(int x, 
+        int y, float k) {
+        
+<span class="nc" id="L615">        Integer pixIndex = Integer.valueOf(img.getIndex(x, y));</span>
+
+        // if the corner is a junction, these are it's neighbors:
+<span class="nc" id="L618">        Set&lt;Integer&gt; junctionAdjPixIndexes = junctionMap.get(pixIndex);</span>
+
+<span class="nc" id="L620">        PairInt edgeLocation = junctionLocationMap.get(pixIndex);</span>
+                
+<span class="nc bnc" id="L622" title="All 6 branches missed.">        if ((junctionAdjPixIndexes == null || junctionAdjPixIndexes.isEmpty())</span>
+            &amp;&amp; (edgeLocation == null)) {
+<span class="nc" id="L624">            return null;</span>
+        }
+        
+<span class="nc bnc" id="L627" title="All 4 branches missed.">        if (junctionAdjPixIndexes == null || junctionAdjPixIndexes.isEmpty()) {</span>
+            // because edgeLocation is not null, this pixel is in a junction.
+            // iterate over each of the 8 neighbors and if it's in the
+            // junctionLocationMap, add it to junctionAdjPixIndexes for
+            // making CornerRegions
+<span class="nc bnc" id="L632" title="All 2 branches missed.">            if (junctionAdjPixIndexes == null) {</span>
+<span class="nc" id="L633">                junctionAdjPixIndexes = new HashSet&lt;Integer&gt;();</span>
+            }
+<span class="nc" id="L635">            int[] dx8 = new int[]{-1, -1,  0,  1, 1, 1, 0, -1};</span>
+<span class="nc" id="L636">            int[] dy8 = new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">            for (int i = 0; i &lt; dx8.length; ++i) {</span>
+<span class="nc" id="L638">                int x1 = x + dx8[i];</span>
+<span class="nc" id="L639">                int y1 = y + dy8[i];</span>
+<span class="nc bnc" id="L640" title="All 6 branches missed.">                if (x1 &lt; 0 || y1 &lt; 0 || (x1 &gt; (img.getWidth() - 1)) || </span>
+<span class="nc bnc" id="L641" title="All 2 branches missed.">                (y1 &gt; (img.getHeight() - 1))) {</span>
+<span class="nc" id="L642">                    continue;</span>
+                }
+<span class="nc" id="L644">                Integer pixIndex1 = Integer.valueOf(img.getIndex(x1, y1));</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">                if (junctionLocationMap.containsKey(pixIndex1)) {</span>
+<span class="nc" id="L646">                    junctionAdjPixIndexes.add(pixIndex1);</span>
+                }
+            }
+        }
+        
+<span class="nc" id="L651">        List&lt;CornerRegion&gt; output = new ArrayList&lt;CornerRegion&gt;();</span>
+        
+<span class="nc" id="L653">        List&lt;Integer&gt; list = new ArrayList&lt;Integer&gt;(junctionAdjPixIndexes);</span>
+        
+<span class="nc bnc" id="L655" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
+            
+<span class="nc" id="L657">            Integer pixIndex1 = list.get(i);</span>
+            
+<span class="nc" id="L659">            PairInt edgeLocation1 = junctionLocationMap.get(pixIndex1);</span>
+            
+<span class="nc" id="L661">            PairIntArray edge1 = edges.get(edgeLocation1.getX());</span>
+            
+            //TODO: there's a bug in the junctionMap state!!!!  needs to be refactored
+<span class="nc" id="L664">            int x1 = edge1.getX(edgeLocation1.getY());</span>
+<span class="nc" id="L665">            int y1 = edge1.getY(edgeLocation1.getY());</span>
+            
+<span class="nc bnc" id="L667" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; list.size(); ++j) {</span>
+                
+<span class="nc" id="L669">                Integer pixIndex2 = list.get(j);</span>
+                                
+<span class="nc" id="L671">                PairInt edgeLocation2 = junctionLocationMap.get(pixIndex2);</span>
+                
+<span class="nc" id="L673">                PairIntArray edge2 = edges.get(edgeLocation2.getX());</span>
+                
+                //TODO: there's a bug in the junctionMap state!!!!
+<span class="nc" id="L676">                int x2 = edge2.getX(edgeLocation2.getY());</span>
+<span class="nc" id="L677">                int y2 = edge2.getY(edgeLocation2.getY());</span>
+            
+                // making only 3 pixel regions instead of 5 for now
+                
+<span class="nc" id="L681">                CornerRegion cr = new CornerRegion(edgeLocation.getX(), 3, 1);</span>
+<span class="nc" id="L682">                cr.setFlagThatNeighborsHoldDummyValues();</span>
+
+                // add the image offsets
+<span class="nc" id="L685">                cr.set(0, 0.1f*k, x1, y1);</span>
+<span class="nc" id="L686">                cr.set(1, k, x, y);</span>
+<span class="nc" id="L687">                cr.set(2, 0.1f*k, x2, y2);</span>
+                
+<span class="nc" id="L689">                output.add(cr);</span>
+            }
+        }
+        
+<span class="nc" id="L693">        return output;</span>
+    }
+    
+    /**
+     * search for the point (x, y) within the junction maps and return true
+     * if found.
+     * 
+     * @param x
+     * @param y
+     * @return 
+     */
+    protected boolean isInAJunction(int x, int y) {
+        
+<span class="nc" id="L706">        Integer pixIndex = Integer.valueOf(img.getIndex(x, y));</span>
+
+<span class="nc" id="L708">        Set&lt;Integer&gt; junctionAdjPixIndexes = junctionMap.get(pixIndex);</span>
+
+<span class="nc bnc" id="L710" title="All 4 branches missed.">        if (junctionAdjPixIndexes != null &amp;&amp; !junctionAdjPixIndexes.isEmpty()) {</span>
+<span class="nc" id="L711">            return true;</span>
+        }
+        
+<span class="nc" id="L714">        return junctionLocationMap.containsKey(pixIndex);</span>
+    }
+    
+    private void includeJunctionsInCorners() {
+
+<span class="nc" id="L719">        int nTot = corners.getN();</span>
+
+<span class="nc" id="L721">        int[] x = new int[nTot];</span>
+<span class="nc" id="L722">        int[] y = new int[nTot];</span>
+
+<span class="nc" id="L724">        System.arraycopy(corners.getX(), 0, x, 0, corners.getN());</span>
+<span class="nc" id="L725">        System.arraycopy(corners.getY(), 0, y, 0, corners.getN());</span>
+
+<span class="nc" id="L727">        Set&lt;PairInt&gt; corners2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L728" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.getN(); i++) {</span>
+<span class="nc" id="L729">            int x2 = corners.getX(i);</span>
+<span class="nc" id="L730">            int y2 = corners.getY(i);</span>
+<span class="nc" id="L731">            corners2.add(new PairInt(x2, y2));</span>
+        }
+
+        //TODO: should be '3'?
+<span class="nc" id="L735">        float sepDist = 4;</span>
+
+<span class="nc" id="L737">        final NearestPoints nearestPoints = new NearestPoints(x, y);</span>
+
+<span class="nc bnc" id="L739" title="All 2 branches missed.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : junctionMap.entrySet()) {</span>
+
+<span class="nc" id="L741">            int pixIdx = entry.getKey().intValue();</span>
+
+<span class="nc" id="L743">            int xP = img.getCol(pixIdx);</span>
+<span class="nc" id="L744">            int yP = img.getRow(pixIdx);</span>
+
+<span class="nc" id="L746">            Set&lt;PairInt&gt; overlapping = nearestPoints.findNeighbors(xP, yP,</span>
+                sepDist);
+
+<span class="nc bnc" id="L749" title="All 2 branches missed.">            for (PairInt p : overlapping) {</span>
+<span class="nc" id="L750">                corners2.remove(p);</span>
+<span class="nc" id="L751">            }</span>
+
+<span class="nc" id="L753">            corners2.add(new PairInt(xP, yP));</span>
+<span class="nc" id="L754">        }</span>
+
+<span class="nc" id="L756">        corners = new PairIntArray();</span>
+
+<span class="nc bnc" id="L758" title="All 2 branches missed.">        for (PairInt p : corners2) {</span>
+<span class="nc" id="L759">            corners.add(p.getX(), p.getY());</span>
+<span class="nc" id="L760">        }</span>
+
+<span class="nc" id="L762">    }</span>
+    
+    /**
+     * extract from junction maps, a map w/ key = edge index,
+     * values = junctions on edge as (x,y) and edge curve index.
+     * @return 
+     */
+    private Map&lt;Integer, Set&lt;PairIntWithIndex&gt;&gt; getJunctionCoordinates() {
+        
+<span class="fc" id="L771">        Map&lt;Integer, Set&lt;PairIntWithIndex&gt;&gt; edgeCoordsMap = new HashMap&lt;Integer, Set&lt;PairIntWithIndex&gt;&gt;();</span>
+                
+<span class="fc bfc" id="L773" title="All 2 branches covered.">        for (Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : junctionMap.entrySet()) {</span>
+
+<span class="fc" id="L775">            int pixIdx = entry.getKey().intValue();</span>
+
+<span class="fc" id="L777">            int xP = img.getCol(pixIdx);</span>
+<span class="fc" id="L778">            int yP = img.getRow(pixIdx);</span>
+            
+<span class="fc" id="L780">            PairInt edgeLocation = junctionLocationMap.get(Integer.valueOf(pixIdx));</span>
+            
+<span class="fc" id="L782">            Integer edgeIndex = Integer.valueOf(edgeLocation.getX());</span>
+            
+<span class="fc" id="L784">            PairIntWithIndex p = new PairIntWithIndex(xP, yP, edgeLocation.getY());</span>
+            
+<span class="fc" id="L786">            Set&lt;PairIntWithIndex&gt; set = edgeCoordsMap.get(edgeIndex);</span>
+<span class="fc bfc" id="L787" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L788">                set = new HashSet&lt;PairIntWithIndex&gt;();</span>
+<span class="fc" id="L789">                edgeCoordsMap.put(edgeIndex, set);</span>
+            }
+            
+<span class="fc" id="L792">            set.add(p);</span>
+<span class="fc" id="L793">        }</span>
+        
+<span class="fc" id="L795">        return edgeCoordsMap;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

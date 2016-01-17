@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ImageStatisticsHelper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">ImageStatisticsHelper.java</span></div><h1>ImageStatisticsHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.compGeometry.PointInPolygon;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.util.Errors;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -10,12 +13,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import algorithms.imageProcessing.transform.Transformer;
 
 /**
  *
  * @author nichole
  */
-<span class="nc" id="L18">public class ImageStatisticsHelper {</span>
+<span class="nc" id="L22">public class ImageStatisticsHelper {</span>
     
     /**
      * calculates the mean of values and returns it.
@@ -24,13 +28,13 @@ import java.util.Set;
      */
     public static int getMean(final GreyscaleImage img) {
         
-<span class="fc" id="L27">        long sum = 0;</span>
+<span class="fc" id="L31">        long sum = 0;</span>
         
-<span class="fc bfc" id="L29" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); i++) {</span>
-<span class="fc" id="L30">            sum += img.getValue(i);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); i++) {</span>
+<span class="fc" id="L34">            sum += img.getValue(i);</span>
         }
 
-<span class="fc" id="L33">        return (int)(sum/img.getNPixels());</span>
+<span class="fc" id="L37">        return (int)(sum/img.getNPixels());</span>
     }
     
     /**
@@ -40,40 +44,40 @@ import java.util.Set;
      */
     public static int getMedian(final GreyscaleImage img) {
         
-<span class="fc" id="L43">        int[] values = new int[img.getNPixels()];</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc" id="L45">            values[i] = img.getValue(i);</span>
+<span class="fc" id="L47">        int[] values = new int[img.getNPixels()];</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L49">            values[i] = img.getValue(i);</span>
         }
         
-<span class="fc" id="L48">        return getMedian(values); </span>
+<span class="fc" id="L52">        return getMedian(values); </span>
     }
     
     public static int getMean(int[] a) {
-<span class="fc" id="L52">        long sum = 0;</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc" id="L54">            sum += a[i];</span>
+<span class="fc" id="L56">        long sum = 0;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L58">            sum += a[i];</span>
         }
-<span class="fc" id="L56">        return (int)(sum/a.length);</span>
+<span class="fc" id="L60">        return (int)(sum/a.length);</span>
     }
     
     public static float getMean(float[] a) {
-<span class="fc" id="L60">        double sum = 0.;</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc" id="L62">            sum += a[i];</span>
+<span class="fc" id="L64">        double sum = 0.;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L66">            sum += a[i];</span>
         }
-<span class="fc" id="L64">        return (float)(sum/a.length);</span>
+<span class="fc" id="L68">        return (float)(sum/a.length);</span>
     }
     
     public static int getMedian(int[] a) {
-<span class="fc" id="L68">        int[] c = Arrays.copyOf(a, a.length);</span>
-<span class="fc" id="L69">        Arrays.sort(c);</span>
-<span class="fc" id="L70">        return c[c.length/2];</span>
+<span class="fc" id="L72">        int[] c = Arrays.copyOf(a, a.length);</span>
+<span class="fc" id="L73">        Arrays.sort(c);</span>
+<span class="fc" id="L74">        return c[c.length/2];</span>
     }
     
     public static float getMedian(float[] a) {
-<span class="fc" id="L74">        float[] c = Arrays.copyOf(a, a.length);</span>
-<span class="fc" id="L75">        Arrays.sort(c);</span>
-<span class="fc" id="L76">        return c[c.length/2];</span>
+<span class="fc" id="L78">        float[] c = Arrays.copyOf(a, a.length);</span>
+<span class="fc" id="L79">        Arrays.sort(c);</span>
+<span class="fc" id="L80">        return c[c.length/2];</span>
     }
     
     /**
@@ -84,13 +88,13 @@ import java.util.Set;
      */
     public static float[] getQuartiles(float[] a) {
         
-<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (a.length &lt; 3) {</span>
-<span class="nc" id="L88">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (a.length &lt; 3) {</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
         }
         
-<span class="fc" id="L91">        float[] c = Arrays.copyOf(a, a.length);</span>
+<span class="fc" id="L95">        float[] c = Arrays.copyOf(a, a.length);</span>
         
-<span class="fc" id="L93">        Arrays.sort(c);</span>
+<span class="fc" id="L97">        Arrays.sort(c);</span>
         
         /*
                       median
@@ -100,13 +104,13 @@ import java.util.Set;
                 q1   q2   q3   q4
         */
         
-<span class="fc" id="L103">        int medianIdx = c.length &gt;&gt; 1;</span>
+<span class="fc" id="L107">        int medianIdx = c.length &gt;&gt; 1;</span>
         
-<span class="fc" id="L105">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+<span class="fc" id="L109">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
         
-<span class="fc" id="L107">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
+<span class="fc" id="L111">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
                 
-<span class="fc" id="L109">        return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
+<span class="fc" id="L113">        return new float[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
     }
     
     /**
@@ -117,13 +121,13 @@ import java.util.Set;
      */
     public static int[] getQuartiles(List&lt;Integer&gt; a) {
         
-<span class="fc" id="L120">        int n = a.size();</span>
+<span class="fc" id="L124">        int n = a.size();</span>
         
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
-<span class="nc" id="L123">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (n &lt; 3) {</span>
+<span class="nc" id="L127">            throw new IllegalArgumentException(&quot;a.length must be at least 3&quot;);</span>
         }
                 
-<span class="fc" id="L126">        Collections.sort(a);</span>
+<span class="fc" id="L130">        Collections.sort(a);</span>
         
         /*
                       median
@@ -133,21 +137,21 @@ import java.util.Set;
                 q1   q2   q3   q4
         */
         
-<span class="fc" id="L136">        int medianIdx = n &gt;&gt; 1;</span>
+<span class="fc" id="L140">        int medianIdx = n &gt;&gt; 1;</span>
         
-<span class="fc" id="L138">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+<span class="fc" id="L142">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
         
-<span class="fc" id="L140">        int q34Idx = (n + (medianIdx + 1))/2;</span>
+<span class="fc" id="L144">        int q34Idx = (n + (medianIdx + 1))/2;</span>
                 
-<span class="fc" id="L142">        return new int[]{a.get(q12Idx).intValue(), a.get(medianIdx).intValue(), </span>
-<span class="fc" id="L143">            a.get(q34Idx).intValue(), a.get(n - 1).intValue()};</span>
+<span class="fc" id="L146">        return new int[]{a.get(q12Idx).intValue(), a.get(medianIdx).intValue(), </span>
+<span class="fc" id="L147">            a.get(q34Idx).intValue(), a.get(n - 1).intValue()};</span>
     }
     
     public static int[] getQuartiles(int[] a) {
         
-<span class="nc" id="L148">        int[] c = Arrays.copyOf(a, a.length);</span>
+<span class="nc" id="L152">        int[] c = Arrays.copyOf(a, a.length);</span>
         
-<span class="nc" id="L150">        Arrays.sort(c);</span>
+<span class="nc" id="L154">        Arrays.sort(c);</span>
         
         /*
                       median
@@ -157,13 +161,13 @@ import java.util.Set;
                 q1   q2   q3   q4
         */
         
-<span class="nc" id="L160">        int medianIdx = c.length &gt;&gt; 1;</span>
+<span class="nc" id="L164">        int medianIdx = c.length &gt;&gt; 1;</span>
         
-<span class="nc" id="L162">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
+<span class="nc" id="L166">        int q12Idx = (medianIdx - 1) &gt;&gt; 1;</span>
         
-<span class="nc" id="L164">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
+<span class="nc" id="L168">        int q34Idx = (c.length + (medianIdx + 1))/2;</span>
                 
-<span class="nc" id="L166">        return new int[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
+<span class="nc" id="L170">        return new int[]{c[q12Idx], c[medianIdx], c[q34Idx], c[c.length - 1]};</span>
     }
    
     /**
@@ -178,9 +182,9 @@ import java.util.Set;
     public static ImageStatistics examineImageBorders(final GreyscaleImage input, 
         int borderWidth, boolean useSturges) {
                        
-<span class="fc" id="L181">        float[] values = new float[input.getNPixels()];</span>
+<span class="fc" id="L185">        float[] values = new float[input.getNPixels()];</span>
         
-<span class="fc" id="L183">        int count = 0;</span>
+<span class="fc" id="L187">        int count = 0;</span>
         
         /**
          * | |
@@ -188,10 +192,10 @@ import java.util.Set;
          * | |
          * | |
          */
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (int i = 0; i &lt; borderWidth; i++) {</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L193">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L194">                count++;</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        for (int i = 0; i &lt; borderWidth; i++) {</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L197">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L198">                count++;</span>
             }
         }
         
@@ -201,24 +205,10 @@ import java.util.Set;
          * | |        | |
          * | |        | |
          */
-<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (int i = (input.getWidth() - borderWidth); i &lt; input.getWidth(); i++) {</span>
-<span class="fc bfc" id="L205" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L206">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L207">                count++;</span>
-            }
-        }
-        
-        /**
-         *   _________
-         * | |________| |
-         * | |        | |
-         * | |        | |
-         * | |        | |
-         */
-<span class="fc bfc" id="L218" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
-<span class="fc bfc" id="L219" title="All 2 branches covered.">            for (int j = 0; j &lt; borderWidth; j++) {</span>
-<span class="fc" id="L220">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L221">                count++;</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = (input.getWidth() - borderWidth); i &lt; input.getWidth(); i++) {</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            for (int j = 0; j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L210">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L211">                count++;</span>
             }
         }
         
@@ -226,19 +216,33 @@ import java.util.Set;
          *   _________
          * | |________| |
          * | |        | |
-         * | |________| |
-         * | |________| |
+         * | |        | |
+         * | |        | |
          */
-<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">            for (int j = (input.getHeight() - borderWidth); j &lt; input.getHeight(); j++) {</span>
-<span class="fc" id="L234">                values[count] = input.getValue(i, j);                </span>
-<span class="fc" id="L235">                count++;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            for (int j = 0; j &lt; borderWidth; j++) {</span>
+<span class="fc" id="L224">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L225">                count++;</span>
             }
         }
         
-<span class="fc" id="L239">        values = Arrays.copyOf(values, count);</span>
+        /**
+         *   _________
+         * | |________| |
+         * | |        | |
+         * | |________| |
+         * | |________| |
+         */
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        for (int i = borderWidth; i &lt; (input.getWidth() - borderWidth); i++) {</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            for (int j = (input.getHeight() - borderWidth); j &lt; input.getHeight(); j++) {</span>
+<span class="fc" id="L238">                values[count] = input.getValue(i, j);                </span>
+<span class="fc" id="L239">                count++;</span>
+            }
+        }
         
-<span class="fc" id="L241">        return examine(values, useSturges);</span>
+<span class="fc" id="L243">        values = Arrays.copyOf(values, count);</span>
+        
+<span class="fc" id="L245">        return examine(values, useSturges);</span>
     }
     
     /**
@@ -252,13 +256,13 @@ import java.util.Set;
     public static ImageStatistics examineImage(final GreyscaleImage img, 
         boolean useSturges) {
                        
-<span class="fc" id="L255">        float[] values = new float[img.getNPixels()];</span>
+<span class="fc" id="L259">        float[] values = new float[img.getNPixels()];</span>
         
-<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc" id="L258">            values[i] = img.getValue(i);</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L262">            values[i] = img.getValue(i);</span>
         }
         
-<span class="fc" id="L261">        return examine(values, useSturges);</span>
+<span class="fc" id="L265">        return examine(values, useSturges);</span>
     }
     
     /**
@@ -271,41 +275,41 @@ import java.util.Set;
      */
     public static ImageStatistics examine(float[] pixValues, boolean useSturges) {
         
-<span class="fc" id="L274">        ImageStatistics stats = new ImageStatistics();</span>
+<span class="fc" id="L278">        ImageStatistics stats = new ImageStatistics();</span>
           
-<span class="fc" id="L276">        stats.setMedian(getMedian(pixValues));</span>
+<span class="fc" id="L280">        stats.setMedian(getMedian(pixValues));</span>
         
-<span class="fc" id="L278">        stats.setMean(getMean(pixValues));</span>
+<span class="fc" id="L282">        stats.setMean(getMean(pixValues));</span>
         
-<span class="fc" id="L280">        stats.setMin(MiscMath.findMin(pixValues));</span>
+<span class="fc" id="L284">        stats.setMin(MiscMath.findMin(pixValues));</span>
         
-<span class="fc" id="L282">        float xMax = MiscMath.findMax(pixValues);</span>
+<span class="fc" id="L286">        float xMax = MiscMath.findMax(pixValues);</span>
         
-<span class="fc" id="L284">        stats.setMax(xMax);</span>
+<span class="fc" id="L288">        stats.setMax(xMax);</span>
         
-<span class="fc" id="L286">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
+<span class="fc" id="L290">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValues);</span>
 
-<span class="fc bfc" id="L288" title="All 2 branches covered.">        HistogramHolder hist = useSturges ?</span>
-<span class="fc" id="L289">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        HistogramHolder hist = useSturges ?</span>
+<span class="fc" id="L293">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValues, </span>
                 simulatedErrors)
-<span class="fc" id="L291">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
+<span class="fc" id="L295">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValues, simulatedErrors);
         
         // think we probably want to remove the highest intensity bin, so
         // can think         
-<span class="fc" id="L296">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="fc" id="L300">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="fc" id="L298">        float mode = hist.getXHist()[yMaxIdx];</span>
+<span class="fc" id="L302">        float mode = hist.getXHist()[yMaxIdx];</span>
         
-<span class="fc" id="L300">        stats.setMode(mode);</span>
+<span class="fc" id="L304">        stats.setMode(mode);</span>
         
-<span class="fc" id="L302">        stats.setHistogram(hist);</span>
+<span class="fc" id="L306">        stats.setHistogram(hist);</span>
         
-<span class="fc" id="L304">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValues));</span>
+<span class="fc" id="L308">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValues));</span>
         
-<span class="fc" id="L306">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
+<span class="fc" id="L310">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
         
-<span class="fc" id="L308">        return stats;</span>
+<span class="fc" id="L312">        return stats;</span>
     }
     
     /**
@@ -318,46 +322,46 @@ import java.util.Set;
      */
     public static ImageStatistics examine(int[] pixValues, boolean useSturges) {
         
-<span class="fc" id="L321">        ImageStatistics stats = new ImageStatistics();</span>
+<span class="fc" id="L325">        ImageStatistics stats = new ImageStatistics();</span>
           
-<span class="fc" id="L323">        stats.setMedian(getMedian(pixValues));</span>
+<span class="fc" id="L327">        stats.setMedian(getMedian(pixValues));</span>
         
-<span class="fc" id="L325">        stats.setMean(getMean(pixValues));</span>
+<span class="fc" id="L329">        stats.setMean(getMean(pixValues));</span>
         
-<span class="fc" id="L327">        stats.setMin(MiscMath.findMin(pixValues));</span>
+<span class="fc" id="L331">        stats.setMin(MiscMath.findMin(pixValues));</span>
         
-<span class="fc" id="L329">        float xMax = MiscMath.findMax(pixValues);</span>
+<span class="fc" id="L333">        float xMax = MiscMath.findMax(pixValues);</span>
         
-<span class="fc" id="L331">        stats.setMax(xMax);</span>
+<span class="fc" id="L335">        stats.setMax(xMax);</span>
         
-<span class="fc" id="L333">        float[] pixValuesF = new float[pixValues.length];</span>
-<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (int i = 0; i &lt; pixValuesF.length; ++i) {</span>
-<span class="fc" id="L335">            pixValuesF[i] = pixValues[i];</span>
+<span class="fc" id="L337">        float[] pixValuesF = new float[pixValues.length];</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        for (int i = 0; i &lt; pixValuesF.length; ++i) {</span>
+<span class="fc" id="L339">            pixValuesF[i] = pixValues[i];</span>
         }
         
-<span class="fc" id="L338">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValuesF);</span>
+<span class="fc" id="L342">        float[] simulatedErrors = Errors.populateYErrorsBySqrt(pixValuesF);</span>
 
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
-<span class="pc" id="L341">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValuesF, </span>
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        HistogramHolder hist = useSturges ?</span>
+<span class="pc" id="L345">            Histogram.calculateSturgesHistogram(0.0f, 256.0f, pixValuesF, </span>
                 simulatedErrors)
-<span class="pc" id="L343">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
+<span class="pc" id="L347">            : Histogram.createSimpleHistogram(0.0f, 256.0f,</span>
                 10, pixValuesF, simulatedErrors);
         
         // think we probably want to remove the highest intensity bin, so
         // can think         
-<span class="fc" id="L348">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="fc" id="L352">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="fc" id="L350">        float mode = hist.getXHist()[yMaxIdx];</span>
+<span class="fc" id="L354">        float mode = hist.getXHist()[yMaxIdx];</span>
         
-<span class="fc" id="L352">        stats.setMode(mode);</span>
+<span class="fc" id="L356">        stats.setMode(mode);</span>
         
-<span class="fc" id="L354">        stats.setHistogram(hist);</span>
+<span class="fc" id="L358">        stats.setHistogram(hist);</span>
         
-<span class="fc" id="L356">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValuesF));</span>
+<span class="fc" id="L360">        stats.setQuartiles(ImageStatisticsHelper.getQuartiles(pixValuesF));</span>
         
-<span class="fc" id="L358">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
+<span class="fc" id="L362">        stats.setHistogramAreaFraction(hist.getHistArea(xMax, 2));</span>
         
-<span class="fc" id="L360">        return stats;</span>
+<span class="fc" id="L364">        return stats;</span>
     }
     
     /**
@@ -375,87 +379,87 @@ import java.util.Set;
     public static ImageStatistics examineImageBorders(final GreyscaleImage input,
         boolean useSturges) {
                         
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
-<span class="nc" id="L379">            return null;</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 5) {</span>
+<span class="nc" id="L383">            return null;</span>
         }
         
         // if &lt;= 256x256, use whole image
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
-<span class="fc" id="L384">            return examineImage(input, useSturges);</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">        if ((input.getWidth() * input.getHeight()) &lt; 65537) {</span>
+<span class="fc" id="L388">            return examineImage(input, useSturges);</span>
         }
         
-<span class="fc" id="L387">        int width = 10;</span>
+<span class="fc" id="L391">        int width = 10;</span>
         
-<span class="pc bpc" id="L389" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
-<span class="nc" id="L390">            width = 1;</span>
-<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
-<span class="nc" id="L392">            width = 5;</span>
-<span class="pc bpc" id="L393" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
-<span class="fc" id="L394">            width = 10;</span>
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">        if (input.getWidth() &lt; 20) {</span>
+<span class="nc" id="L394">            width = 1;</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 50) {</span>
+<span class="nc" id="L396">            width = 5;</span>
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        } else if (input.getWidth() &lt; 1000) {</span>
+<span class="fc" id="L398">            width = 10;</span>
         } else {
             // choose 5 percent of image width or a default of 100 pixels?
-<span class="nc" id="L397">            width = 100;</span>
+<span class="nc" id="L401">            width = 100;</span>
         }
         
-<span class="fc" id="L400">        return examineImageBorders(input, width, useSturges);</span>
+<span class="fc" id="L404">        return examineImageBorders(input, width, useSturges);</span>
     }
      
     public static int countPixels(final GreyscaleImage img, int lowValue, 
         int highValue) {
         
-<span class="fc" id="L406">        int c = 0;</span>
+<span class="fc" id="L410">        int c = 0;</span>
         
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
-<span class="fc bfc" id="L409" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
-<span class="fc" id="L410">                int v = img.getValue(col, row);</span>
-<span class="fc bfc" id="L411" title="All 4 branches covered.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
-<span class="fc" id="L412">                    c++;</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">        for (int col = 0; col &lt; img.getWidth(); col++) {</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">            for (int row = 0; row &lt; img.getHeight(); row++) {</span>
+<span class="fc" id="L414">                int v = img.getValue(col, row);</span>
+<span class="fc bfc" id="L415" title="All 4 branches covered.">                if ((v &gt;= lowValue) &amp;&amp; (v &lt;= highValue)) {</span>
+<span class="fc" id="L416">                    c++;</span>
                 }
             }
         }
         
-<span class="fc" id="L417">        return c;</span>
+<span class="fc" id="L421">        return c;</span>
     }
 
     public static float[] calculateAvgCIEXY(ImageExt input, Set&lt;PairInt&gt; points) {
         
-<span class="nc bnc" id="L422" title="All 2 branches missed.">        if (points.isEmpty()) {</span>
-<span class="nc" id="L423">            return new float[]{Float.NaN, Float.NaN};</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        if (points.isEmpty()) {</span>
+<span class="nc" id="L427">            return new float[]{Float.NaN, Float.NaN};</span>
         }
             
-<span class="nc" id="L426">        float cieXSum = 0;</span>
-<span class="nc" id="L427">        float cieYSum = 0;</span>
-<span class="nc bnc" id="L428" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L429">            cieXSum += input.getCIEX(p.getX(), p.getY());</span>
-<span class="nc" id="L430">            cieYSum += input.getCIEY(p.getX(), p.getY());</span>
-<span class="nc" id="L431">        }</span>
+<span class="nc" id="L430">        float cieXSum = 0;</span>
+<span class="nc" id="L431">        float cieYSum = 0;</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L433">            cieXSum += input.getCIEX(p.getX(), p.getY());</span>
+<span class="nc" id="L434">            cieYSum += input.getCIEY(p.getX(), p.getY());</span>
+<span class="nc" id="L435">        }</span>
         
-<span class="nc" id="L433">        cieXSum /= (float)points.size();</span>
-<span class="nc" id="L434">        cieYSum /= (float)points.size();</span>
+<span class="nc" id="L437">        cieXSum /= (float)points.size();</span>
+<span class="nc" id="L438">        cieYSum /= (float)points.size();</span>
         
-<span class="nc" id="L436">        return new float[]{cieXSum, cieYSum};</span>
+<span class="nc" id="L440">        return new float[]{cieXSum, cieYSum};</span>
     }
 
     static float[] calculateAvgRGB(ImageExt input, Set&lt;PairInt&gt; points) {
         
-<span class="nc bnc" id="L441" title="All 2 branches missed.">        if (points.isEmpty()) {</span>
-<span class="nc" id="L442">            return new float[]{Float.NaN, Float.NaN, Float.NaN};</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (points.isEmpty()) {</span>
+<span class="nc" id="L446">            return new float[]{Float.NaN, Float.NaN, Float.NaN};</span>
         }
             
-<span class="nc" id="L445">        float rSum = 0;</span>
-<span class="nc" id="L446">        float gSum = 0;</span>
-<span class="nc" id="L447">        float bSum = 0;</span>
-<span class="nc bnc" id="L448" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L449">            rSum += input.getR(p.getX(), p.getY());</span>
-<span class="nc" id="L450">            gSum += input.getG(p.getX(), p.getY());</span>
-<span class="nc" id="L451">            bSum += input.getB(p.getX(), p.getY());</span>
-<span class="nc" id="L452">        }</span>
+<span class="nc" id="L449">        float rSum = 0;</span>
+<span class="nc" id="L450">        float gSum = 0;</span>
+<span class="nc" id="L451">        float bSum = 0;</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L453">            rSum += input.getR(p.getX(), p.getY());</span>
+<span class="nc" id="L454">            gSum += input.getG(p.getX(), p.getY());</span>
+<span class="nc" id="L455">            bSum += input.getB(p.getX(), p.getY());</span>
+<span class="nc" id="L456">        }</span>
         
-<span class="nc" id="L454">        rSum /= (float)points.size();</span>
-<span class="nc" id="L455">        gSum /= (float)points.size();</span>
-<span class="nc" id="L456">        bSum /= (float)points.size();</span>
+<span class="nc" id="L458">        rSum /= (float)points.size();</span>
+<span class="nc" id="L459">        gSum /= (float)points.size();</span>
+<span class="nc" id="L460">        bSum /= (float)points.size();</span>
         
-<span class="nc" id="L458">        return new float[]{rSum, gSum, bSum};</span>
+<span class="nc" id="L462">        return new float[]{rSum, gSum, bSum};</span>
     }
     
     /**
@@ -477,20 +481,20 @@ import java.util.Set;
         parameters, List&lt;FeatureComparisonStat&gt; stats,
         int img1Width, int img1Height, int img2Width, int img2Height) {
         
-<span class="nc bnc" id="L480" title="All 4 branches missed.">        if (parameters == null || stats.size() &lt; 4) {</span>
-<span class="nc" id="L481">            return false;</span>
+<span class="nc bnc" id="L484" title="All 4 branches missed.">        if (parameters == null || stats.size() &lt; 4) {</span>
+<span class="nc" id="L485">            return false;</span>
         }
-<span class="nc" id="L483">        int[] counts = getQuadrantCountsForIntersection(parameters, stats,</span>
+<span class="nc" id="L487">        int[] counts = getQuadrantCountsForIntersection(parameters, stats,</span>
             img1Width, img1Height, img2Width, img2Height);
         
-<span class="nc" id="L486">        int nq = 0;</span>
-<span class="nc bnc" id="L487" title="All 2 branches missed.">        for (int c : counts) {</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">            if (c &gt; 0) {</span>
-<span class="nc" id="L489">                nq++;</span>
+<span class="nc" id="L490">        int nq = 0;</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        for (int c : counts) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">            if (c &gt; 0) {</span>
+<span class="nc" id="L493">                nq++;</span>
             }
         }
         
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        return (nq == 4);</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">        return (nq == 4);</span>
     }
     
     /**
@@ -512,8 +516,8 @@ import java.util.Set;
         parameters, List&lt;FeatureComparisonStat&gt; stats,
         int img1Width, int img1Height, int img2Width, int img2Height) {
         
-<span class="nc bnc" id="L515" title="All 2 branches missed.">        if (parameters == null) {</span>
-<span class="nc" id="L516">            return new int[4];</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">        if (parameters == null) {</span>
+<span class="nc" id="L520">            return new int[4];</span>
         }
         
         /*
@@ -534,35 +538,35 @@ import java.util.Set;
           0 --&gt;
         */
         
-<span class="nc" id="L537">        double[][] img2Intersection = getBoundsOfIntersectionInFrame2(</span>
+<span class="nc" id="L541">        double[][] img2Intersection = getBoundsOfIntersectionInFrame2(</span>
             parameters, img1Width, img1Height, img2Width, img2Height);
         
-<span class="nc" id="L540">        float[] d1 = new float[]{</span>
+<span class="nc" id="L544">        float[] d1 = new float[]{</span>
             (float)((img2Intersection[0][0] + img2Intersection[1][0])/2.f),
             (float)((img2Intersection[0][1] + img2Intersection[1][1])/2.f)};     
-<span class="nc" id="L543">        float[] d2 = new float[]{</span>
+<span class="nc" id="L547">        float[] d2 = new float[]{</span>
             (float)((img2Intersection[1][0] + img2Intersection[2][0])/2.f),
             (float)((img2Intersection[1][1] + img2Intersection[2][1])/2.f)};
-<span class="nc" id="L546">        float[] d4 = new float[]{</span>
+<span class="nc" id="L550">        float[] d4 = new float[]{</span>
             (float)((img2Intersection[0][0] + img2Intersection[3][0])/2.f),
             (float)((img2Intersection[0][1] + img2Intersection[3][1])/2.f)};
-<span class="nc" id="L549">        float[] d5 = new float[]{</span>
+<span class="nc" id="L553">        float[] d5 = new float[]{</span>
             (float)((img2Intersection[2][0] + img2Intersection[3][0])/2.f),
             (float)((img2Intersection[2][1] + img2Intersection[3][1])/2.f)};
-<span class="nc" id="L552">        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};</span>
+<span class="nc" id="L556">        float[] d3 = new float[]{(d2[0] + d4[0])/2.f, (d1[1] + d5[1])/2.f};</span>
         
-<span class="nc" id="L554">        float[] xPoly0 = new float[5];</span>
-<span class="nc" id="L555">        float[] yPoly0 = new float[5];</span>
-<span class="nc" id="L556">        xPoly0[0] = (float)img2Intersection[0][0];</span>
-<span class="nc" id="L557">        yPoly0[0] = (float)img2Intersection[0][1];</span>
-<span class="nc" id="L558">        xPoly0[1] = d1[0];</span>
-<span class="nc" id="L559">        yPoly0[1] = d1[1];</span>
-<span class="nc" id="L560">        xPoly0[2] = d3[0];</span>
-<span class="nc" id="L561">        yPoly0[2] = d3[1];</span>
-<span class="nc" id="L562">        xPoly0[3] = d4[0];</span>
-<span class="nc" id="L563">        yPoly0[3] = d4[1];</span>
-<span class="nc" id="L564">        xPoly0[4] = xPoly0[0];</span>
-<span class="nc" id="L565">        yPoly0[4] = yPoly0[0];</span>
+<span class="nc" id="L558">        float[] xPoly0 = new float[5];</span>
+<span class="nc" id="L559">        float[] yPoly0 = new float[5];</span>
+<span class="nc" id="L560">        xPoly0[0] = (float)img2Intersection[0][0];</span>
+<span class="nc" id="L561">        yPoly0[0] = (float)img2Intersection[0][1];</span>
+<span class="nc" id="L562">        xPoly0[1] = d1[0];</span>
+<span class="nc" id="L563">        yPoly0[1] = d1[1];</span>
+<span class="nc" id="L564">        xPoly0[2] = d3[0];</span>
+<span class="nc" id="L565">        yPoly0[2] = d3[1];</span>
+<span class="nc" id="L566">        xPoly0[3] = d4[0];</span>
+<span class="nc" id="L567">        yPoly0[3] = d4[1];</span>
+<span class="nc" id="L568">        xPoly0[4] = xPoly0[0];</span>
+<span class="nc" id="L569">        yPoly0[4] = yPoly0[0];</span>
 
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -573,31 +577,31 @@ import java.util.Set;
           0 --&gt;
         */
         
-<span class="nc" id="L576">        float[] xPoly1 = new float[5];</span>
-<span class="nc" id="L577">        float[] yPoly1 = new float[5];</span>
-<span class="nc" id="L578">        xPoly1[0] = d1[0];</span>
-<span class="nc" id="L579">        yPoly1[0] = d1[1];</span>
-<span class="nc" id="L580">        xPoly1[1] = (float)img2Intersection[1][0];</span>
-<span class="nc" id="L581">        yPoly1[1] = (float)img2Intersection[1][1];</span>
-<span class="nc" id="L582">        xPoly1[2] = d2[0];</span>
-<span class="nc" id="L583">        yPoly1[2] = d2[1];</span>
-<span class="nc" id="L584">        xPoly1[3] = d3[0];</span>
-<span class="nc" id="L585">        yPoly1[3] = d3[1];</span>
-<span class="nc" id="L586">        xPoly1[4] = xPoly1[0];</span>
-<span class="nc" id="L587">        yPoly1[4] = yPoly1[0];</span>
+<span class="nc" id="L580">        float[] xPoly1 = new float[5];</span>
+<span class="nc" id="L581">        float[] yPoly1 = new float[5];</span>
+<span class="nc" id="L582">        xPoly1[0] = d1[0];</span>
+<span class="nc" id="L583">        yPoly1[0] = d1[1];</span>
+<span class="nc" id="L584">        xPoly1[1] = (float)img2Intersection[1][0];</span>
+<span class="nc" id="L585">        yPoly1[1] = (float)img2Intersection[1][1];</span>
+<span class="nc" id="L586">        xPoly1[2] = d2[0];</span>
+<span class="nc" id="L587">        yPoly1[2] = d2[1];</span>
+<span class="nc" id="L588">        xPoly1[3] = d3[0];</span>
+<span class="nc" id="L589">        yPoly1[3] = d3[1];</span>
+<span class="nc" id="L590">        xPoly1[4] = xPoly1[0];</span>
+<span class="nc" id="L591">        yPoly1[4] = yPoly1[0];</span>
         
-<span class="nc" id="L589">        float[] xPoly2 = new float[5];</span>
-<span class="nc" id="L590">        float[] yPoly2 = new float[5];</span>
-<span class="nc" id="L591">        xPoly2[0] = d3[0];</span>
-<span class="nc" id="L592">        yPoly2[0] = d3[1];</span>
-<span class="nc" id="L593">        xPoly2[1] = d2[0];</span>
-<span class="nc" id="L594">        yPoly2[1] = d2[1];</span>
-<span class="nc" id="L595">        xPoly2[2] = (float)img2Intersection[2][0];</span>
-<span class="nc" id="L596">        yPoly2[2] = (float)img2Intersection[2][1];</span>
-<span class="nc" id="L597">        xPoly2[3] = d5[0];</span>
-<span class="nc" id="L598">        yPoly2[3] = d5[1];</span>
-<span class="nc" id="L599">        xPoly2[4] = xPoly2[0];</span>
-<span class="nc" id="L600">        yPoly2[4] = yPoly2[0];</span>
+<span class="nc" id="L593">        float[] xPoly2 = new float[5];</span>
+<span class="nc" id="L594">        float[] yPoly2 = new float[5];</span>
+<span class="nc" id="L595">        xPoly2[0] = d3[0];</span>
+<span class="nc" id="L596">        yPoly2[0] = d3[1];</span>
+<span class="nc" id="L597">        xPoly2[1] = d2[0];</span>
+<span class="nc" id="L598">        yPoly2[1] = d2[1];</span>
+<span class="nc" id="L599">        xPoly2[2] = (float)img2Intersection[2][0];</span>
+<span class="nc" id="L600">        yPoly2[2] = (float)img2Intersection[2][1];</span>
+<span class="nc" id="L601">        xPoly2[3] = d5[0];</span>
+<span class="nc" id="L602">        yPoly2[3] = d5[1];</span>
+<span class="nc" id="L603">        xPoly2[4] = xPoly2[0];</span>
+<span class="nc" id="L604">        yPoly2[4] = yPoly2[0];</span>
         
         /*
        / \   ( tr )    ( tr )            (x2q2, y2q2)  d5   (x2q3, y2q3)
@@ -608,47 +612,47 @@ import java.util.Set;
           0 --&gt;
         */
         
-<span class="nc" id="L611">        float[] xPoly3 = new float[5];</span>
-<span class="nc" id="L612">        float[] yPoly3 = new float[5];</span>
-<span class="nc" id="L613">        xPoly3[0] = d4[0];</span>
-<span class="nc" id="L614">        yPoly3[0] = d4[1];</span>
-<span class="nc" id="L615">        xPoly3[1] = d3[0];</span>
-<span class="nc" id="L616">        yPoly3[1] = d3[1];</span>
-<span class="nc" id="L617">        xPoly3[2] = d5[0];</span>
-<span class="nc" id="L618">        yPoly3[2] = d5[1];</span>
-<span class="nc" id="L619">        xPoly3[3] = (float)img2Intersection[3][0];</span>
-<span class="nc" id="L620">        yPoly3[3] = (float)img2Intersection[3][1];</span>
-<span class="nc" id="L621">        xPoly3[4] = xPoly3[0];</span>
-<span class="nc" id="L622">        yPoly3[4] = yPoly3[0];</span>
+<span class="nc" id="L615">        float[] xPoly3 = new float[5];</span>
+<span class="nc" id="L616">        float[] yPoly3 = new float[5];</span>
+<span class="nc" id="L617">        xPoly3[0] = d4[0];</span>
+<span class="nc" id="L618">        yPoly3[0] = d4[1];</span>
+<span class="nc" id="L619">        xPoly3[1] = d3[0];</span>
+<span class="nc" id="L620">        yPoly3[1] = d3[1];</span>
+<span class="nc" id="L621">        xPoly3[2] = d5[0];</span>
+<span class="nc" id="L622">        yPoly3[2] = d5[1];</span>
+<span class="nc" id="L623">        xPoly3[3] = (float)img2Intersection[3][0];</span>
+<span class="nc" id="L624">        yPoly3[3] = (float)img2Intersection[3][1];</span>
+<span class="nc" id="L625">        xPoly3[4] = xPoly3[0];</span>
+<span class="nc" id="L626">        yPoly3[4] = yPoly3[0];</span>
         
-<span class="nc" id="L624">        PointInPolygon poly = new PointInPolygon();</span>
+<span class="nc" id="L628">        PointInPolygon poly = new PointInPolygon();</span>
         
-<span class="nc" id="L626">        int[] count = new int[4];</span>
-<span class="nc bnc" id="L627" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
-<span class="nc" id="L628">            int x = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
-<span class="nc" id="L629">            int y = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
-<span class="nc" id="L630">            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);</span>
-<span class="nc bnc" id="L631" title="All 2 branches missed.">            if (isIn) {</span>
-<span class="nc" id="L632">                count[0]++;</span>
+<span class="nc" id="L630">        int[] count = new int[4];</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">        for (FeatureComparisonStat stat : stats) {</span>
+<span class="nc" id="L632">            int x = stat.getImg2Point().getX() * stat.getBinFactor2();</span>
+<span class="nc" id="L633">            int y = stat.getImg2Point().getY() * stat.getBinFactor2();</span>
+<span class="nc" id="L634">            boolean isIn = poly.isInSimpleCurve(x, y, xPoly0, yPoly0, 5);</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">            if (isIn) {</span>
+<span class="nc" id="L636">                count[0]++;</span>
             } else {
-<span class="nc" id="L634">                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);</span>
-<span class="nc bnc" id="L635" title="All 2 branches missed.">                if (isIn) {</span>
-<span class="nc" id="L636">                    count[1]++;</span>
+<span class="nc" id="L638">                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);</span>
+<span class="nc bnc" id="L639" title="All 2 branches missed.">                if (isIn) {</span>
+<span class="nc" id="L640">                    count[1]++;</span>
                 } else {
-<span class="nc" id="L638">                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">                    if (isIn) {</span>
-<span class="nc" id="L640">                        count[2]++;</span>
+<span class="nc" id="L642">                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">                    if (isIn) {</span>
+<span class="nc" id="L644">                        count[2]++;</span>
                     } else {
-<span class="nc" id="L642">                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);</span>
-<span class="nc bnc" id="L643" title="All 2 branches missed.">                        if (isIn) {</span>
-<span class="nc" id="L644">                            count[3]++;</span>
+<span class="nc" id="L646">                        isIn = poly.isInSimpleCurve(x, y, xPoly3, yPoly3, 5);</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                        if (isIn) {</span>
+<span class="nc" id="L648">                            count[3]++;</span>
                         }
                     }
                 }
             }
-<span class="nc" id="L649">        }</span>
+<span class="nc" id="L653">        }</span>
         
-<span class="nc" id="L651">        return count;</span>
+<span class="nc" id="L655">        return count;</span>
     }
     
     /**
@@ -675,12 +679,12 @@ import java.util.Set;
         
         //calculate the intersection of the 2 images
         
-<span class="nc" id="L678">        MatchedPointsTransformationCalculator tc = </span>
+<span class="nc" id="L682">        MatchedPointsTransformationCalculator tc = </span>
             new MatchedPointsTransformationCalculator();
         
-<span class="nc" id="L681">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L685">        Transformer transformer = new Transformer();</span>
         
-<span class="nc" id="L683">        TransformationParameters revParams = tc.swapReferenceFrames(parameters);</span>
+<span class="nc" id="L687">        TransformationParameters revParams = tc.swapReferenceFrames(parameters);</span>
         
         /*
         
@@ -693,67 +697,67 @@ import java.util.Set;
         */
         
         // determine intersection of img2 with img1 in img1 reference frame
-<span class="nc" id="L696">        double[] q1Tr = transformer.applyTransformation(revParams, </span>
+<span class="nc" id="L700">        double[] q1Tr = transformer.applyTransformation(revParams, </span>
             img2Width - 1, 0);
         
-<span class="nc" id="L699">        double[] q2Tr = transformer.applyTransformation(revParams, </span>
+<span class="nc" id="L703">        double[] q2Tr = transformer.applyTransformation(revParams, </span>
             0, 0);
         
-<span class="nc" id="L702">        double[] q3Tr = transformer.applyTransformation(revParams, </span>
+<span class="nc" id="L706">        double[] q3Tr = transformer.applyTransformation(revParams, </span>
             0, img2Height - 1);
         
-<span class="nc" id="L705">        double[] q4Tr = transformer.applyTransformation(revParams, </span>
+<span class="nc" id="L709">        double[] q4Tr = transformer.applyTransformation(revParams, </span>
             img2Width - 1, img2Height - 1);
         
         // if the transformed bounds are off image, reset the bounds to img1 bounds
-<span class="nc" id="L709">        double[][] img1Intersection = new double[4][2];</span>
-<span class="nc" id="L710">        img1Intersection[0] = q1Tr;</span>
-<span class="nc" id="L711">        img1Intersection[1] = q2Tr;</span>
-<span class="nc" id="L712">        img1Intersection[2] = q3Tr;</span>
-<span class="nc" id="L713">        img1Intersection[3] = q4Tr;</span>
+<span class="nc" id="L713">        double[][] img1Intersection = new double[4][2];</span>
+<span class="nc" id="L714">        img1Intersection[0] = q1Tr;</span>
+<span class="nc" id="L715">        img1Intersection[1] = q2Tr;</span>
+<span class="nc" id="L716">        img1Intersection[2] = q3Tr;</span>
+<span class="nc" id="L717">        img1Intersection[3] = q4Tr;</span>
         
-<span class="nc bnc" id="L715" title="All 2 branches missed.">        for (double[] xyTr : img1Intersection) {</span>
-<span class="nc bnc" id="L716" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L717">                xyTr[0] = 0;</span>
-<span class="nc bnc" id="L718" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img1Width - 1)) {</span>
-<span class="nc" id="L719">                xyTr[0] = (img1Width - 1);</span>
+<span class="nc bnc" id="L719" title="All 2 branches missed.">        for (double[] xyTr : img1Intersection) {</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
+<span class="nc" id="L721">                xyTr[0] = 0;</span>
+<span class="nc bnc" id="L722" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img1Width - 1)) {</span>
+<span class="nc" id="L723">                xyTr[0] = (img1Width - 1);</span>
             }
-<span class="nc bnc" id="L721" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
-<span class="nc" id="L722">                xyTr[1] = 0;</span>
-<span class="nc bnc" id="L723" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img1Height - 1)) {</span>
-<span class="nc" id="L724">                xyTr[1] = (img1Height - 1);</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
+<span class="nc" id="L726">                xyTr[1] = 0;</span>
+<span class="nc bnc" id="L727" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img1Height - 1)) {</span>
+<span class="nc" id="L728">                xyTr[1] = (img1Height - 1);</span>
             }
         }
         
         // transform the img1 intersection into reference frame of img2
-<span class="nc" id="L729">        double[] q1TrTr = transformer.applyTransformation(parameters, q1Tr[0], q1Tr[1]);</span>
+<span class="nc" id="L733">        double[] q1TrTr = transformer.applyTransformation(parameters, q1Tr[0], q1Tr[1]);</span>
         
-<span class="nc" id="L731">        double[] q2TrTr = transformer.applyTransformation(parameters, q2Tr[0], q2Tr[1]);</span>
+<span class="nc" id="L735">        double[] q2TrTr = transformer.applyTransformation(parameters, q2Tr[0], q2Tr[1]);</span>
         
-<span class="nc" id="L733">        double[] q3TrTr = transformer.applyTransformation(parameters, q3Tr[0], q3Tr[1]);</span>
+<span class="nc" id="L737">        double[] q3TrTr = transformer.applyTransformation(parameters, q3Tr[0], q3Tr[1]);</span>
         
-<span class="nc" id="L735">        double[] q4TrTr = transformer.applyTransformation(parameters, q4Tr[0], q4Tr[1]);</span>
+<span class="nc" id="L739">        double[] q4TrTr = transformer.applyTransformation(parameters, q4Tr[0], q4Tr[1]);</span>
         
-<span class="nc" id="L737">        double[][] img2Intersection = new double[4][2];</span>
-<span class="nc" id="L738">        img2Intersection[0] = q1TrTr;</span>
-<span class="nc" id="L739">        img2Intersection[1] = q2TrTr;</span>
-<span class="nc" id="L740">        img2Intersection[2] = q3TrTr;</span>
-<span class="nc" id="L741">        img2Intersection[3] = q4TrTr;</span>
+<span class="nc" id="L741">        double[][] img2Intersection = new double[4][2];</span>
+<span class="nc" id="L742">        img2Intersection[0] = q1TrTr;</span>
+<span class="nc" id="L743">        img2Intersection[1] = q2TrTr;</span>
+<span class="nc" id="L744">        img2Intersection[2] = q3TrTr;</span>
+<span class="nc" id="L745">        img2Intersection[3] = q4TrTr;</span>
         
-<span class="nc bnc" id="L743" title="All 2 branches missed.">        for (double[] xyTr : img2Intersection) {</span>
-<span class="nc bnc" id="L744" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L745">                xyTr[0] = 0;</span>
-<span class="nc bnc" id="L746" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img2Width - 1)) {</span>
-<span class="nc" id="L747">                xyTr[0] = (img2Width - 1);</span>
+<span class="nc bnc" id="L747" title="All 2 branches missed.">        for (double[] xyTr : img2Intersection) {</span>
+<span class="nc bnc" id="L748" title="All 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
+<span class="nc" id="L749">                xyTr[0] = 0;</span>
+<span class="nc bnc" id="L750" title="All 2 branches missed.">            } else if (xyTr[0] &gt; (img2Width - 1)) {</span>
+<span class="nc" id="L751">                xyTr[0] = (img2Width - 1);</span>
             }
-<span class="nc bnc" id="L749" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
-<span class="nc" id="L750">                xyTr[1] = 0;</span>
-<span class="nc bnc" id="L751" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img2Height - 1)) {</span>
-<span class="nc" id="L752">                xyTr[1] = (img2Height - 1);</span>
+<span class="nc bnc" id="L753" title="All 2 branches missed.">            if (xyTr[1] &lt; 0) {</span>
+<span class="nc" id="L754">                xyTr[1] = 0;</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">            } else if (xyTr[1] &gt; (img2Height - 1)) {</span>
+<span class="nc" id="L756">                xyTr[1] = (img2Height - 1);</span>
             }
         }
         
-<span class="nc" id="L756">        return img2Intersection;</span>
+<span class="nc" id="L760">        return img2Intersection;</span>
     }
 
 }

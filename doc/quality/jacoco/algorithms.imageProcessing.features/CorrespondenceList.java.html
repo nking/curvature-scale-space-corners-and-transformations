@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CorrespondenceList.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">CorrespondenceList.java</span></div><h1>CorrespondenceList.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.util.PairInt;
+import java.util.List;
+
+/**
+ *
+ * @author nichole
+ */
+public class CorrespondenceList {
+    
+    private final float scale;
+    private final int rotationInDegrees;
+    private final int translationX;
+    private final int translationY;
+    private final int rangeRotation;
+    private final int rangeTranslationX;
+    private final int rangeTranslationY;
+    
+    private final List&lt;PairInt&gt; points1;
+    private final List&lt;PairInt&gt; points2;
+    
+    public CorrespondenceList(float scale, int rotationInDegrees, 
+        int translationX, int translationY, int rangeRotation,
+        int rangeTranslationX, int rangeTranslationY, 
+<span class="nc" id="L26">        List&lt;PairInt&gt; matched1, List&lt;PairInt&gt; matched2) {</span>
+        
+<span class="nc" id="L28">        this.scale = scale;</span>
+<span class="nc" id="L29">        this.rotationInDegrees = rotationInDegrees;</span>
+<span class="nc" id="L30">        this.translationX = translationX;</span>
+<span class="nc" id="L31">        this.translationY = translationY;</span>
+        
+<span class="nc" id="L33">        this.rangeRotation = rangeRotation;</span>
+<span class="nc" id="L34">        this.rangeTranslationX = rangeTranslationX;</span>
+<span class="nc" id="L35">        this.rangeTranslationY = rangeTranslationY;</span>
+        
+<span class="nc" id="L37">        this.points1 = matched1;</span>
+<span class="nc" id="L38">        this.points2 = matched2;</span>
+<span class="nc" id="L39">    }</span>
+
+    /**
+     * @return the scale
+     */
+    public float getScale() {
+<span class="nc" id="L45">        return scale;</span>
+    }
+
+    /**
+     * @return the rotationInDegrees
+     */
+    public int getRotationInDegrees() {
+<span class="nc" id="L52">        return rotationInDegrees;</span>
+    }
+
+    /**
+     * @return the translationX
+     */
+    public int getTranslationX() {
+<span class="nc" id="L59">        return translationX;</span>
+    }
+
+    /**
+     * @return the translationY
+     */
+    public int getTranslationY() {
+<span class="nc" id="L66">        return translationY;</span>
+    }
+
+    /**
+     * @return the rangeRotation
+     */
+    public int getRangeRotation() {
+<span class="nc" id="L73">        return rangeRotation;</span>
+    }
+
+    /**
+     * @return the rangeTranslationX
+     */
+    public int getRangeTranslationX() {
+<span class="nc" id="L80">        return rangeTranslationX;</span>
+    }
+
+    /**
+     * @return the rangeTranslationY
+     */
+    public int getRangeTranslationY() {
+<span class="nc" id="L87">        return rangeTranslationY;</span>
+    }
+
+    /**
+     * @return the points1
+     */
+    public List&lt;PairInt&gt; getPoints1() {
+<span class="nc" id="L94">        return points1;</span>
+    }
+
+    /**
+     * @return the points2
+     */
+    public List&lt;PairInt&gt; getPoints2() {
+<span class="nc" id="L101">        return points2;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

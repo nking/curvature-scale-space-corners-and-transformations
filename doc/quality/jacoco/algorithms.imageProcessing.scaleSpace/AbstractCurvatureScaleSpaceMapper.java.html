@@ -1,0 +1,621 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AbstractCurvatureScaleSpaceMapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.scaleSpace</a> &gt; <span class="el_source">AbstractCurvatureScaleSpaceMapper.java</span></div><h1>AbstractCurvatureScaleSpaceMapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.scaleSpace;
+
+import algorithms.imageProcessing.CannyEdgeFilter;
+import algorithms.imageProcessing.CannyEdgeFilterSettings;
+import algorithms.imageProcessing.ClosedCurveAndJunctionFinder;
+import algorithms.imageProcessing.EdgeExtractorWithJunctions;
+import algorithms.imageProcessing.EdgeFilterProducts;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.IEdgeExtractor;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.SkylineExtractor;
+import algorithms.misc.HistogramHolder;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayComparator;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+public abstract class AbstractCurvatureScaleSpaceMapper {
+
+<span class="fc" id="L35">    protected CurvatureScaleSpaceMapperState state = </span>
+        CurvatureScaleSpaceMapperState.UNINITIALIZED;
+    
+    protected GreyscaleImage img;
+    
+    protected final ImageExt originalImg;
+    
+    /**
+     * edges extracted from image.  if an instance of PairIntArrayWithColor
+     * is present, that holds a color field in which a value of '1' means
+     * the curve is closed.
+     */
+<span class="fc" id="L47">    protected List&lt;PairIntArray&gt; edges = new ArrayList&lt;PairIntArray&gt;();</span>
+    
+    /**
+     * if extractSkline is true, this is populated with the sky line
+     * edge(s).
+     */
+<span class="fc" id="L53">    protected final List&lt;PairIntArray&gt; skylineEdges = new ArrayList&lt;PairIntArray&gt;();</span>
+        
+<span class="fc" id="L55">    protected boolean doNotNormalizeByHistogram = false;</span>
+    
+<span class="fc" id="L57">    protected boolean useLineDrawingMode = false;</span>
+        
+<span class="fc" id="L59">    protected boolean useLowestHighIntensityCutoff = false;</span>
+    
+<span class="fc" id="L61">    protected boolean useLowHighIntensityCutoff = false;</span>
+    
+<span class="fc" id="L63">    protected boolean extractSkyline = false;</span>
+    
+    protected final int trimmedXOffset;
+    
+    protected final int trimmedYOffset;
+    
+<span class="fc" id="L69">    protected boolean useOutdoorMode = false;</span>
+    
+<span class="fc" id="L71">    protected HistogramHolder imgHistogram = null;</span>
+    
+<span class="fc" id="L73">    protected EdgeFilterProducts filterProducts = null;</span>
+    
+    /**
+     * map with key = center of junction pixel coordinates; 
+     * value = set of adjacent pixels when there are more than the preceding 
+     * and next.
+     */
+<span class="fc" id="L80">    protected Map&lt;Integer, Set&lt;Integer&gt;&gt; junctionMap = new HashMap&lt;Integer, Set&lt;Integer&gt;&gt;();</span>
+
+    /**
+     * map with key = pixel coordinates of all pixels involved in junctions;
+     * value = PairInt holding index of edge that pixel is located in and
+     * holding the index within that edge of the pixel.
+     * for example, a pixel located in edges(0) at offset=100
+     * would have PairInt(0, 100) as a value.
+     */
+<span class="fc" id="L89">    protected Map&lt;Integer, PairInt&gt; junctionLocationMap = new HashMap&lt;Integer, PairInt&gt;();</span>
+     
+<span class="fc" id="L91">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+    
+    /**
+     * constructor w/ input image which is operated on.  the same instance
+     * input is modified by this class.
+     * 
+     * @param input 
+     */
+<span class="fc" id="L99">    public AbstractCurvatureScaleSpaceMapper(ImageExt input) {</span>
+        
+<span class="fc" id="L101">        img = input.copyToGreyscale();</span>
+        
+<span class="fc" id="L103">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L105">        originalImg = (ImageExt)input.copyImage();</span>
+            
+<span class="fc" id="L107">        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);</span>
+        
+<span class="fc" id="L109">        trimmedXOffset = offsetXY[0];</span>
+        
+<span class="fc" id="L111">        trimmedYOffset = offsetXY[1];</span>
+<span class="fc" id="L112">    }</span>
+    
+<span class="fc" id="L114">    public AbstractCurvatureScaleSpaceMapper(GreyscaleImage input) {</span>
+        
+<span class="fc" id="L116">        img = input.copyImage();</span>
+        
+<span class="fc" id="L118">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L120">        originalImg = ImageIOHelper.convertImage(input);</span>
+            
+<span class="fc" id="L122">        int[] offsetXY = imageProcessor.shrinkImageToFirstNonZeros(img);</span>
+        
+<span class="fc" id="L124">        trimmedXOffset = offsetXY[0];</span>
+        
+<span class="fc" id="L126">        trimmedYOffset = offsetXY[1];</span>
+<span class="fc" id="L127">    }</span>
+    
+    /**
+     * constructor with input image and the already extracted edges.
+     * The input image is needed only for debugging purposes and 
+     * may be removed as an argument after testing is complete.
+     * @param input
+     * @param theEdges 
+     */
+    public AbstractCurvatureScaleSpaceMapper(ImageExt input, 
+<span class="fc" id="L137">        List&lt;PairIntArray&gt; theEdges) {</span>
+        
+<span class="fc" id="L139">        img = input.copyToGreyscale();</span>
+        
+<span class="fc" id="L141">        ImageProcessor ImageProcessor = new ImageProcessor();</span>
+        
+<span class="fc" id="L143">        originalImg = (ImageExt)input.copyImage();</span>
+        
+<span class="fc" id="L145">        int[] offsetXY = ImageProcessor.shrinkImageToFirstNonZeros(img);</span>
+        
+<span class="fc" id="L147">        trimmedXOffset = offsetXY[0];</span>
+        
+<span class="fc" id="L149">        trimmedYOffset = offsetXY[1];</span>
+        
+<span class="fc" id="L151">        this.edges = new ArrayList&lt;PairIntArray&gt;(theEdges);</span>
+        
+<span class="fc" id="L153">        state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+<span class="fc" id="L154">    }</span>
+
+    /**
+     * apply histogram normalization before processing.  For some images, this
+     * will increase the contrast of fainter features.
+     */
+    public void doNotPerformHistogramEqualization() {
+<span class="fc" id="L161">        this.doNotNormalizeByHistogram = true;</span>
+<span class="fc" id="L162">    }</span>
+    
+    public void useLowestHighIntensityCutoff() {
+<span class="nc" id="L165">        useLowestHighIntensityCutoff = true;</span>
+<span class="nc" id="L166">    }</span>
+    
+    public void useLowHighIntensityCutoff() {
+<span class="nc" id="L169">        useLowHighIntensityCutoff = true;</span>
+<span class="nc" id="L170">    }</span>
+    
+    public void useLineDrawingMode() {
+<span class="fc" id="L173">        useLineDrawingMode = true;</span>
+<span class="fc" id="L174">    }</span>
+    
+    public void useOutdoorMode() {
+        
+<span class="nc" id="L178">        useLowestHighIntensityCutoff();</span>
+        
+<span class="nc" id="L180">        useOutdoorMode = true;</span>
+<span class="nc" id="L181">    }</span>
+    
+    /**
+     * set the edge detector to create edges that are better for outdoor
+     * conditions and also extract the skyline from the intermediate
+     * image products.  Note that the skyline extraction is currently
+     * a long running process.
+     */
+    public void useOutdoorModeAndExtractSkyline() {
+        
+<span class="nc" id="L191">        useLowestHighIntensityCutoff();</span>
+        
+<span class="nc" id="L193">        useOutdoorMode = true;</span>
+        
+<span class="nc" id="L195">        extractSkyline = true;</span>
+<span class="nc" id="L196">    }</span>
+    
+    protected void initialize() {
+        
+<span class="fc" id="L200">        if (state.ordinal() &lt; </span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {</span>
+            
+            // (1) apply an edge filter
+<span class="fc" id="L204">            applyEdgeFilter();</span>
+            
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">            if (extractSkyline &amp;&amp; skylineEdges.isEmpty()) {</span>
+                
+<span class="nc" id="L208">                List&lt;PairIntArray&gt; skyEdges = extractSkyline();</span>
+                                    
+<span class="nc" id="L210">                skylineEdges.addAll(skyEdges);</span>
+            }
+            
+            // (2) extract edges and create junction maps
+<span class="fc" id="L214">            extractEdges();</span>
+            
+            //TODO: note that there may be a need to search for closed
+            //      curves in the EdgeContourExtractor instead of here
+            //      in order to create shapes instead of creating
+            //      lines preferentially.
+<span class="fc" id="L220">            markTheClosedCurves();</span>
+            
+<span class="fc" id="L222">            state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+        }
+<span class="fc" id="L224">    }</span>
+    
+    protected abstract void reinitializeSpecialization();
+    
+    protected void reinitialize(float cannyLowThreshold, float additionalBlurSigma) {
+        
+<span class="nc" id="L230">        if (state.ordinal() &lt; </span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {</span>
+            
+<span class="nc" id="L233">            throw new IllegalStateException(</span>
+                &quot;initialize() should have been invoked before reinitialize(...)&quot;);
+            
+        } else {
+                       
+<span class="nc" id="L238">            GreyscaleImage input = filterProducts.getGradientXY().copyImage();</span>
+<span class="nc" id="L239">            GreyscaleImage gTheta = filterProducts.getTheta();</span>
+<span class="nc" id="L240">            HistogramHolder hist = imgHistogram;</span>
+        
+<span class="nc" id="L242">            reinitializeSpecialization();</span>
+            
+<span class="nc" id="L244">            edges.clear();</span>
+            
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            if (additionalBlurSigma &gt; 0) {</span>
+                
+                // (1) apply an edge filter
+                
+<span class="nc" id="L250">                CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+
+<span class="nc" id="L252">                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
+        
+<span class="nc" id="L254">                filter.setSetters(settings);</span>
+                
+<span class="nc" id="L256">                filter.setAdditionalImageBlur(additionalBlurSigma);</span>
+                
+<span class="nc" id="L258">                filter.overrideLowThreshold(cannyLowThreshold);</span>
+                
+<span class="nc" id="L260">                img = originalImg.copyToGreyscale();</span>
+                
+<span class="nc" id="L262">                filter.applyFilter(img);</span>
+                
+<span class="nc" id="L264">                filterProducts = filter.getEdgeFilterProducts();</span>
+        
+<span class="nc" id="L266">                imgHistogram = filter.getImgHistogram();</span>
+                
+<span class="nc" id="L268">                img = filterProducts.getGradientXY();</span>
+                
+<span class="nc" id="L270">            } else {</span>
+            
+                // (1) re-apply an edge filter
+
+<span class="nc" id="L274">                CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+<span class="nc" id="L275">                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
+
+<span class="nc" id="L277">                filter.setSetters(settings);</span>
+
+<span class="nc" id="L279">                filter.overrideLowThreshold(cannyLowThreshold);</span>
+
+<span class="nc" id="L281">                filter.reApply2LayerFilter(input, gTheta, hist);</span>
+
+<span class="nc" id="L283">                img = input;</span>
+                
+            }
+            
+            // (2) extract edges
+<span class="nc" id="L288">            extractEdges();</span>
+            
+            //TODO: note that there may be a need to search for closed
+            //      curves in the EdgeContourExtractor instead of here
+            //      in order to create shapes instead of creating
+            //      lines preferentially.
+            // (3) look for t-junctions and closed curves
+<span class="nc" id="L295">            markTheClosedCurves();</span>
+            
+<span class="nc" id="L297">            state = CurvatureScaleSpaceMapperState.INITIALIZED;</span>
+        }
+<span class="nc" id="L299">    }</span>
+
+    protected void applyEdgeFilter() {
+        
+<span class="fc" id="L303">        CannyEdgeFilter filter = new CannyEdgeFilter();</span>
+
+<span class="fc" id="L305">        CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
+        
+<span class="fc" id="L307">        filter.setSetters(settings);</span>
+                
+<span class="fc" id="L309">        filter.applyFilter(img);</span>
+        
+<span class="fc" id="L311">        filterProducts = filter.getEdgeFilterProducts();</span>
+        
+<span class="fc" id="L313">        imgHistogram = filter.getImgHistogram();</span>
+                                
+<span class="fc" id="L315">        state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;</span>
+<span class="fc" id="L316">    }</span>
+    
+    /**
+     * use the output from the canny edge filter and the theta image
+     * it produced to find the skyline in the image, extract it as
+     * an edge(s) and make several pixels adjustment to align with
+     * the output of the canny edge filter (which should be a binary
+     * image with edges as 0's).   NOTE that this is currently a long
+     * running process.
+     * 
+     */
+    protected List&lt;PairIntArray&gt; extractSkyline() {
+                
+        try {            
+            
+<span class="nc" id="L331">            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();</span>
+            
+<span class="nc" id="L333">            SkylineExtractor skylineExtractor = new SkylineExtractor();</span>
+            
+<span class="nc" id="L335">            PairIntArray outputSkyCentroid = new PairIntArray();</span>
+<span class="nc" id="L336">            GreyscaleImage out = skylineExtractor.createSkyline(</span>
+<span class="nc" id="L337">                filterProducts.getTheta(), filterProducts.getGradientXY(),</span>
+                this.originalImg, settings, outputSkyCentroid);
+             
+<span class="nc" id="L340">            List&lt;PairIntArray&gt; skyEdges = skylineExtractor.getSkylineEdges();</span>
+            
+<span class="nc bnc" id="L342" title="All 2 branches missed.">            if (skyEdges == null) {</span>
+<span class="nc" id="L343">                return new ArrayList&lt;PairIntArray&gt;();</span>
+            }
+            
+<span class="nc" id="L346">            Collections.sort(skyEdges, new PairIntArrayComparator());</span>
+
+            //reverse the list so the edges with largest numbers of points are
+            // at smaller indexes
+<span class="nc" id="L350">            int n = skyEdges.size();</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">            if (n &gt; 1) {</span>
+<span class="nc" id="L352">                int end = n &gt;&gt; 1;</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">                for (int i = 0; i &lt; end; i++) {</span>
+<span class="nc" id="L354">                    int idx2 = n - i - 1;                </span>
+<span class="nc" id="L355">                    PairIntArray swap = skyEdges.get(i);</span>
+<span class="nc" id="L356">                    skyEdges.set(i, skyEdges.get(idx2));</span>
+<span class="nc" id="L357">                    skyEdges.set(idx2, swap);</span>
+                }
+            }
+            
+<span class="nc" id="L361">            return skyEdges;</span>
+            
+<span class="nc" id="L363">        } catch(IOException e) {</span>
+<span class="nc" id="L364">            log.severe(e.getMessage());</span>
+            
+<span class="nc" id="L366">        } catch(NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L367">            log.severe(e.getMessage());</span>
+<span class="nc" id="L368">        }</span>
+        
+<span class="nc" id="L370">        return new ArrayList&lt;PairIntArray&gt;();</span>
+    }
+    
+    public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
+    
+<span class="fc" id="L375">        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();</span>
+        
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L378">            settings.setUseOutdoorMode();</span>
+        }
+        
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if (doNotNormalizeByHistogram) {</span>
+<span class="fc" id="L382">            settings.setDoNotNormalizeByHistogram();</span>
+        }
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L385">            settings.setUseLineDrawingMode();</span>
+        }
+        
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">        if (useLowestHighIntensityCutoff) {</span>
+<span class="nc" id="L389">            settings.setOverrideHighThreshold(1.0f);</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">        } else if (useLowHighIntensityCutoff) {</span>
+<span class="nc" id="L391">            settings.setOverrideHighThreshold(2.0f);</span>
+        }
+        
+<span class="fc" id="L394">        return settings;</span>
+    }
+    
+    protected void extractEdges() {
+        
+        IEdgeExtractor contourExtractor;
+        
+<span class="fc" id="L401">        contourExtractor = new EdgeExtractorWithJunctions(img);</span>
+        
+        //TODO: for closed curves, might consider always ordering them the
+        // same here (counter clock wise)
+        
+<span class="fc" id="L406">        List&lt;PairIntArray&gt; tmpEdges = contourExtractor.findEdges();</span>
+       
+<span class="fc" id="L408">        edges.clear();</span>
+<span class="fc" id="L409">        edges.addAll(tmpEdges);</span>
+        
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">        if (contourExtractor instanceof EdgeExtractorWithJunctions) {</span>
+
+<span class="fc" id="L413">            junctionMap.clear();</span>
+<span class="fc" id="L414">            junctionLocationMap.clear();</span>
+            
+<span class="fc" id="L416">            Map&lt;Integer, Set&lt;Integer&gt;&gt; jm</span>
+                = ((EdgeExtractorWithJunctions) contourExtractor)
+<span class="fc" id="L418">                .getJunctionMap();</span>
+
+<span class="fc bfc" id="L420" title="All 2 branches covered.">            if (!jm.isEmpty()) {</span>
+
+<span class="fc" id="L422">                junctionMap.putAll(jm);</span>
+
+<span class="fc" id="L424">                junctionLocationMap.putAll(</span>
+                    ((EdgeExtractorWithJunctions) contourExtractor)
+<span class="fc" id="L426">                    .getLocatorForJunctionAssociatedPoints()</span>
+                );
+            }
+        }
+        
+<span class="fc" id="L431">        state = CurvatureScaleSpaceMapperState.EDGES_EXTRACTED;</span>
+        
+<span class="fc" id="L433">        log.fine(&quot;edges extracted&quot;);</span>
+<span class="fc" id="L434">    }</span>
+
+    protected void markTheClosedCurves() {
+        
+<span class="fc" id="L438">        ClosedCurveAndJunctionFinder ccjFinder = </span>
+            new ClosedCurveAndJunctionFinder();
+        
+<span class="fc" id="L441">        ccjFinder.findClosedCurves(edges);</span>
+       
+<span class="fc" id="L443">    }</span>
+  
+    public List&lt;PairIntArray&gt; getEdges() {
+<span class="fc" id="L446">        return edges;</span>
+    }
+    
+    public List&lt;PairIntArray&gt; getSkylineEdges() {
+<span class="nc" id="L450">        return skylineEdges;</span>
+    }
+
+    protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
+        int nExtraForDot, int value) {
+        
+<span class="nc bnc" id="L456" title="All 2 branches missed.">        for (int i = 0; i &lt; edge.getN(); i++) {</span>
+<span class="nc" id="L457">            int x = edge.getX(i);</span>
+<span class="nc" id="L458">            int y = edge.getY(i);</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">            for (int dx = -1 * nExtraForDot; dx &lt; (nExtraForDot + 1); dx++) {</span>
+<span class="nc" id="L460">                float xx = x + dx;</span>
+<span class="nc bnc" id="L461" title="All 4 branches missed.">                if ((xx &gt; -1) &amp;&amp; (xx &lt; (input.getWidth() - 1))) {</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">                    for (int dy = -1 * nExtraForDot; dy &lt; (nExtraForDot + 1); </span>
+<span class="nc" id="L463">                        dy++) {</span>
+                        
+<span class="nc" id="L465">                        float yy = y + dy;</span>
+<span class="nc bnc" id="L466" title="All 4 branches missed.">                        if ((yy &gt; -1) &amp;&amp; (yy &lt; (input.getHeight() - 1))) {</span>
+<span class="nc" id="L467">                            input.setValue((int) xx, (int) yy, value);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L473">    }</span>
+    
+    public boolean getInitialized() {
+        
+<span class="fc" id="L477">        return (state.ordinal() &gt;= </span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal());</span>
+    }
+    
+    public GreyscaleImage getImage() {
+<span class="fc" id="L482">        return img;</span>
+    }
+
+    public Image getOriginalImage() {
+<span class="nc" id="L486">        return originalImg;</span>
+    }
+    
+    public int getTrimmedXOffset() {
+<span class="fc" id="L490">        return trimmedXOffset;</span>
+    }
+    
+    public int getTrimmedYOffset() {
+<span class="fc" id="L494">        return trimmedYOffset;</span>
+    }
+   
+    public EdgeFilterProducts getEdgeFilterProducts() {
+<span class="nc" id="L498">        return filterProducts;</span>
+    }
+    
+    public Map&lt;Integer, Set&lt;Integer&gt;&gt; getJunctionMap() {        
+<span class="nc" id="L502">        return junctionMap;</span>
+    }
+    
+    /*
+    The making of a curvature scale space image is in
+    &quot;Scale-Based Description and Recognition of Planar Curves and Two-Dimensional
+    Shapes&quot; by FARZIN MOKHTARIAN AND ALAN MACKWORTH
+    IEEE 'TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+    VOL. PAMI-8, NO. 1. JANUARY 1986
+    https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;ved=0CCIQFjAA&amp;url=https%3A%2F%2Fwww.cs.ubc.ca%2F~mack%2FPublications%2FIEEE-PAMI86.pdf&amp;ei=jiIFVJGNLIa0igLv74DgDw&amp;usg=AFQjCNHj7v2JaUDqSFkQZSNOSpqBbfbOAQ&amp;sig2=L08nOsKD1Mw_XJX-EPmY-w&amp;bvm=bv.74115972,d.cGE
+    planar curve:
+    f_curve = {x(t), y(t)}
+    t = linear function of the path length bounded by values [0, 1], that is,
+    one can make this by scaling the range os indexes for x and y
+    for a curve to values between 0 and 1.
+    If f_curve is closed, x(t) and y(t) are periodic functions.
+    The curvature, k, is the the change of the angle of the tangent line at
+    point P on arc s with respect to the arc length s.
+    #  /
+    # /
+    #/      /|
+    P   ds / | dy
+    #/      /__|
+    # /        dx
+    #  /
+    /
+    / theta
+    ._________
+    ds^2 = dx^2 + dy^2
+    ds = sqrt(dx^2 + dy^2) = sqrt(1 + (dy/dx)^2)*dx = sqrt((dx/dy)^2 + 1)*dy
+    k = dTheta/ds = 1/rho
+    where rho is the radius of the circle of curvature at point P
+    dTheta   dTheta   dx
+    ------ = ------ * --
+    ds       dx      ds
+    theta = tan^-1 (dy / dx)
+    d                 d/dx (dy/dx)      d^2y/dx^2
+    dTheta/dx = -- arctan(dy/dx) = ------------- = -------------
+    dx                 1 + (dy/dx)^2   1 + (dy/dx)^2
+    dx    1             1
+    -- = ------ = -------------------
+    ds   ds/dx    sqrt(1 + (dy/dx)^2)
+    and use y' = (dy/dx)
+    and use y&quot; = (d^2y/dx^2)
+    dTheta          y&quot;                  1
+    k =  ------ = --------------- * -------------------
+    ds     (1 + (dy/dx)^2)   sqrt(1 + (dy/dx)^2)
+    d^2y/dx^2
+    = ---------------------  for planar curves
+    (1 + (dy/dx)^2)^(1.5)
+     * the sign of k is + if y&quot; is + and is - if y&quot; is -. the absolute value
+    might be used instead though.
+    NOTE that if dy/dx doesn’t exist at a point, such as where
+    the tangent line is parallel to the y-axis,
+    one can invert the y/x relationships in k to x/y
+    (d^2x/dy^2)
+    k = ---------------------
+    (1 + (dx/dy)^2)^(1.5)
+     * Need to express k in terms of a function of t, the parameteric form of k
+    dTheta   dTheta   dt     1     dTheta
+    k = ------ = ------ * -- = ----- * ------
+    ds       dt      ds   ds/dt     dt
+    where (ds/dt)^2 = (dx/dt)^2 + (dy/dt)^2
+    dy   dy/dt
+    tan(theta) = -- = -----
+    dx   dx/dt
+    d
+    --(tan(theta)) = sec^2(theta) * (dTheta/dt)
+    dt
+    (d^2y/dt^2)   (dy/dt)*(d^2x/dt^2)
+    = ----------- - -------------------
+    (dx/dt)           (dx/dt)^2
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = -----------------------------------------
+    (dx/dt)^2
+    dTheta        1         (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    so ------ = ------------ * -----------------------------------------
+    dt      sec^2(theta)                   (dx/dt)^2
+    1           (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------- * -----------------------------------------
+    1 + tan^2(theta)                 (dx/dt)^2
+    1           (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------- * -----------------------------------------
+    1 + (dy/dt)^2                  (dx/dt)^2
+    ---------
+    (dx/dt)^2
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ------------------------------------------
+    (dx/dt)^2 + (dy/dt)^2
+     * now can return to
+    1      dTheta
+    k_geodesic = ----- *  ------
+    ds/dt     dt
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = ---------------------------------------------------------
+    (((dx/dt)^2 + (dy/dt)^2)^(0.5)) * ((dx/dt)^2 + (dy/dt)^2)
+    (d^2y/dt^2)*(dx/dt) - (dy/dt)*(d^2x/dt^2)
+    = -----------------------------------------
+    ((dx/dt)^2 + (dy/dt)^2)^(1.5)
+    REWRITE in terms of code:
+    X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~)
+    k(t,o~) = ----------------------------------------------------------------
+    (X^2(t,o~) + Y^2(t,o~))^1.5
+    where o~ denotes the width of the Gaussian
+    convolve X and Y w/ one dimensional gaussian kernel each:
+    X(t, o~) = Integ(x(v) * exp(-(v)^2/2o~^2) * dv)
+    Y(t, o~) = Integ(y(v) * exp(-(v)^2/2o~^2) * dv)
+    Integ denotes the integral evaluated from -infinity to +infinity.
+    First Deriv:
+    X_dot(t,o~) = Integ(x(v) * (-2*(v)) * exp(-(v)^2/2o~^2) * dv)
+    Y_dot(t,o~) = Integ(y(v) * (-2*(v)) * exp(-(v)^2/2o~^2) * dv)
+    Second Deriv:
+    X_dot_dot(t,o~) = Integ(x(v) * (-2 + 4 * (v)^2)) * exp(-(v)^2/2o~^2) * dv)
+    Y_dot_dot(t,o~) = Integ(y(v) * (-2 + 4 * (v)^2)) * exp(-(v)^2/2o~^2) * dv)
+    The curvture of a straight line is zero.
+    Points where k = 0 are called the points of inflection.
+     */
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

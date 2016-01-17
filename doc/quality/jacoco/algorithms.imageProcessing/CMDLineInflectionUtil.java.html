@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CMDLineInflectionUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CMDLineInflectionUtil.java</span></div><h1>CMDLineInflectionUtil.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceInflectionMapper;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.util.PairIntArray;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,30 +19,30 @@ import java.util.List;
  */
 public class CMDLineInflectionUtil {
     
-<span class="nc" id="L19">    private static String sep = System.getProperty(&quot;file.separator&quot;);</span>
+<span class="nc" id="L22">    private static String sep = System.getProperty(&quot;file.separator&quot;);</span>
     
-<span class="nc" id="L21">    private static String eol = System.getProperty(&quot;line.separator&quot;);</span>
+<span class="nc" id="L24">    private static String eol = System.getProperty(&quot;line.separator&quot;);</span>
     
-<span class="nc" id="L23">    private static String cwd = System.getProperty(&quot;user.dir&quot;) + sep;</span>
+<span class="nc" id="L26">    private static String cwd = System.getProperty(&quot;user.dir&quot;) + sep;</span>
     
-<span class="nc" id="L25">    public CMDLineInflectionUtil() {</span>
-<span class="nc" id="L26">    }</span>
+<span class="nc" id="L28">    public CMDLineInflectionUtil() {</span>
+<span class="nc" id="L29">    }</span>
     
     protected String checkFilePath(String filePath) {
         
-<span class="nc" id="L30">        filePath = filePath.trim();</span>
-<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (!filePath.startsWith(sep)) {</span>
-<span class="nc" id="L32">            filePath = cwd + filePath;</span>
+<span class="nc" id="L33">        filePath = filePath.trim();</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        if (!filePath.startsWith(sep)) {</span>
+<span class="nc" id="L35">            filePath = cwd + filePath;</span>
         }
         
-<span class="nc" id="L35">        File file = new File(filePath);</span>
+<span class="nc" id="L38">        File file = new File(filePath);</span>
         
-<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (!file.exists()) {</span>
-<span class="nc" id="L38">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (!file.exists()) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(</span>
                 &quot;ERROR could not find file path: &quot; + filePath);
         }
         
-<span class="nc" id="L42">        return filePath;</span>
+<span class="nc" id="L45">        return filePath;</span>
     }
     
     
@@ -47,188 +50,188 @@ public class CMDLineInflectionUtil {
         PairIntArray xy2, TransformationParameters transformationParams, 
         String imageFileName1, String imageFileName2) throws IOException {
         
-<span class="nc" id="L50">        String outFilePath = cwd + &quot;matching_points_&quot; + imageFileName1 +</span>
+<span class="nc" id="L53">        String outFilePath = cwd + &quot;matching_points_&quot; + imageFileName1 +</span>
             &quot;_&quot; + imageFileName2 + &quot;.tsv&quot;;
         
-<span class="nc" id="L53">        FileWriter fw = null;</span>
-<span class="nc" id="L54">        BufferedWriter writer = null;</span>
+<span class="nc" id="L56">        FileWriter fw = null;</span>
+<span class="nc" id="L57">        BufferedWriter writer = null;</span>
         
         try {
-<span class="nc" id="L57">            File file = new File(outFilePath);</span>
-<span class="nc" id="L58">            file.delete();</span>
-<span class="nc" id="L59">            file.createNewFile();</span>
+<span class="nc" id="L60">            File file = new File(outFilePath);</span>
+<span class="nc" id="L61">            file.delete();</span>
+<span class="nc" id="L62">            file.createNewFile();</span>
 
-<span class="nc" id="L61">            fw = new FileWriter(file);</span>
-<span class="nc" id="L62">            writer = new BufferedWriter(fw);</span>
+<span class="nc" id="L64">            fw = new FileWriter(file);</span>
+<span class="nc" id="L65">            writer = new BufferedWriter(fw);</span>
             
-<span class="nc" id="L64">            writer.write(&quot;#image1\t\timage1 transformed\t\timage2&quot;);</span>
-<span class="nc" id="L65">            writer.write(eol);</span>
+<span class="nc" id="L67">            writer.write(&quot;#image1\t\timage1 transformed\t\timage2&quot;);</span>
+<span class="nc" id="L68">            writer.write(eol);</span>
             
-<span class="nc bnc" id="L67" title="All 2 branches missed.">            for (int i = 0; i &lt; xy1.getN(); i++) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            for (int i = 0; i &lt; xy1.getN(); i++) {</span>
                 
-<span class="nc" id="L69">                String line = String.format(&quot;%d\t%d\t\t%d\t%d\t\t%d\t%d&quot;,</span>
-<span class="nc" id="L70">                    xy1.getX(i), xy1.getY(i), </span>
-<span class="nc" id="L71">                    xy1Tr.getX(i), xy1Tr.getY(i), xy2.getX(i), xy2.getY(i));</span>
+<span class="nc" id="L72">                String line = String.format(&quot;%d\t%d\t\t%d\t%d\t\t%d\t%d&quot;,</span>
+<span class="nc" id="L73">                    xy1.getX(i), xy1.getY(i), </span>
+<span class="nc" id="L74">                    xy1Tr.getX(i), xy1Tr.getY(i), xy2.getX(i), xy2.getY(i));</span>
                 
-<span class="nc" id="L73">                writer.write(line);</span>
+<span class="nc" id="L76">                writer.write(line);</span>
                 
-<span class="nc" id="L75">                writer.write(eol);</span>
+<span class="nc" id="L78">                writer.write(eol);</span>
                 
-<span class="nc bnc" id="L77" title="All 2 branches missed.">                if ((i % 10) == 0) {</span>
-<span class="nc" id="L78">                    writer.flush();;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                if ((i % 10) == 0) {</span>
+<span class="nc" id="L81">                    writer.flush();;</span>
                 }
             }
 
-<span class="nc" id="L82">            writer.flush();</span>
+<span class="nc" id="L85">            writer.flush();</span>
 
         } finally {
 
-<span class="nc bnc" id="L86" title="All 4 branches missed.">            if (writer != null) {</span>
-<span class="nc" id="L87">                writer.close();</span>
+<span class="nc bnc" id="L89" title="All 4 branches missed.">            if (writer != null) {</span>
+<span class="nc" id="L90">                writer.close();</span>
             }
-<span class="nc bnc" id="L89" title="All 4 branches missed.">            if (fw != null) {</span>
-<span class="nc" id="L90">                fw.close();</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">            if (fw != null) {</span>
+<span class="nc" id="L93">                fw.close();</span>
             }
             
-<span class="nc" id="L93">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
-<span class="nc" id="L94">        }</span>
-<span class="nc" id="L95">    }</span>
+<span class="nc" id="L96">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
+<span class="nc" id="L97">        }</span>
+<span class="nc" id="L98">    }</span>
     
     private void writeEdges(List&lt;PairIntArray&gt; edges1, PairIntArray[] edges1Tr, 
         String imageFileName1, String imageFileName2) throws IOException {
         
-<span class="nc bnc" id="L100" title="All 2 branches missed.">        if (edges1.size() != edges1Tr.length) {</span>
-<span class="nc" id="L101">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (edges1.size() != edges1Tr.length) {</span>
+<span class="nc" id="L104">            throw new IllegalStateException(</span>
                 &quot;each curve in edges1 must have a parallel curve &quot;
                 + &quot;with the same number of points in edges1Tr&quot;);
         }
         
-<span class="nc" id="L106">        String outFilePath = cwd + &quot;transformed_edges_&quot; + imageFileName1 +</span>
+<span class="nc" id="L109">        String outFilePath = cwd + &quot;transformed_edges_&quot; + imageFileName1 +</span>
             &quot;_&quot; + imageFileName2 + &quot;.tsv&quot;;
         
-<span class="nc" id="L109">        FileWriter fw = null;</span>
-<span class="nc" id="L110">        BufferedWriter writer = null;</span>
+<span class="nc" id="L112">        FileWriter fw = null;</span>
+<span class="nc" id="L113">        BufferedWriter writer = null;</span>
         
         try {
-<span class="nc" id="L113">            File file = new File(outFilePath);</span>
-<span class="nc" id="L114">            file.delete();</span>
-<span class="nc" id="L115">            file.createNewFile();</span>
+<span class="nc" id="L116">            File file = new File(outFilePath);</span>
+<span class="nc" id="L117">            file.delete();</span>
+<span class="nc" id="L118">            file.createNewFile();</span>
 
-<span class="nc" id="L117">            fw = new FileWriter(file);</span>
-<span class="nc" id="L118">            writer = new BufferedWriter(fw);</span>
+<span class="nc" id="L120">            fw = new FileWriter(file);</span>
+<span class="nc" id="L121">            writer = new BufferedWriter(fw);</span>
             
-<span class="nc" id="L120">            writer.write(&quot;#image1 points in edges\t\ttransformed points to image 2 reference frame&quot;);</span>
-<span class="nc" id="L121">            writer.write(eol);</span>
+<span class="nc" id="L123">            writer.write(&quot;#image1 points in edges\t\ttransformed points to image 2 reference frame&quot;);</span>
+<span class="nc" id="L124">            writer.write(eol);</span>
             
-<span class="nc bnc" id="L123" title="All 2 branches missed.">            for (int i = 0; i &lt; edges1.size(); i++) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            for (int i = 0; i &lt; edges1.size(); i++) {</span>
                                     
-<span class="nc" id="L125">                PairIntArray edge1 = edges1.get(i);</span>
+<span class="nc" id="L128">                PairIntArray edge1 = edges1.get(i);</span>
 
-<span class="nc" id="L127">                PairIntArray edge1Tr = edges1Tr[i];</span>
+<span class="nc" id="L130">                PairIntArray edge1Tr = edges1Tr[i];</span>
 
-<span class="nc bnc" id="L129" title="All 2 branches missed.">                if (edge1.getN() != edge1Tr.getN()) {</span>
-<span class="nc" id="L130">                throw new IllegalStateException(</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">                if (edge1.getN() != edge1Tr.getN()) {</span>
+<span class="nc" id="L133">                throw new IllegalStateException(</span>
                     &quot;each curve in edges1 must have a parallel curve &quot; 
                      + &quot;with the same number of points in edges1Tr&quot;);
                 }
 
-<span class="nc bnc" id="L135" title="All 2 branches missed.">                for (int j = 0; j &lt; edge1.getN(); j++) {</span>
-<span class="nc" id="L136">                    int x1 = edge1.getX(j);</span>
-<span class="nc" id="L137">                    int y1 = edge1.getY(j);</span>
-<span class="nc" id="L138">                    int x1Tr = edge1Tr.getX(j);</span>
-<span class="nc" id="L139">                    int y1Tr = edge1Tr.getY(j);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                for (int j = 0; j &lt; edge1.getN(); j++) {</span>
+<span class="nc" id="L139">                    int x1 = edge1.getX(j);</span>
+<span class="nc" id="L140">                    int y1 = edge1.getY(j);</span>
+<span class="nc" id="L141">                    int x1Tr = edge1Tr.getX(j);</span>
+<span class="nc" id="L142">                    int y1Tr = edge1Tr.getY(j);</span>
 
-<span class="nc" id="L141">                    String line = String.format(&quot;%d\t%d\t\t%d\t%d&quot;,</span>
-<span class="nc" id="L142">                        x1, y1, x1Tr, y1Tr);</span>
+<span class="nc" id="L144">                    String line = String.format(&quot;%d\t%d\t\t%d\t%d&quot;,</span>
+<span class="nc" id="L145">                        x1, y1, x1Tr, y1Tr);</span>
 
-<span class="nc" id="L144">                    writer.write(line);</span>
-<span class="nc" id="L145">                    writer.write(eol);</span>
+<span class="nc" id="L147">                    writer.write(line);</span>
+<span class="nc" id="L148">                    writer.write(eol);</span>
 
-<span class="nc bnc" id="L147" title="All 2 branches missed.">                    if ((j % 10) == 0) {</span>
-<span class="nc" id="L148">                        writer.flush();;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                    if ((j % 10) == 0) {</span>
+<span class="nc" id="L151">                        writer.flush();;</span>
                     }
                 }
             }                
 
-<span class="nc" id="L153">            writer.flush();</span>
+<span class="nc" id="L156">            writer.flush();</span>
 
         } finally {
 
-<span class="nc bnc" id="L157" title="All 4 branches missed.">            if (writer != null) {</span>
-<span class="nc" id="L158">                writer.close();</span>
+<span class="nc bnc" id="L160" title="All 4 branches missed.">            if (writer != null) {</span>
+<span class="nc" id="L161">                writer.close();</span>
             }
-<span class="nc bnc" id="L160" title="All 4 branches missed.">            if (fw != null) {</span>
-<span class="nc" id="L161">                fw.close();</span>
+<span class="nc bnc" id="L163" title="All 4 branches missed.">            if (fw != null) {</span>
+<span class="nc" id="L164">                fw.close();</span>
             }
             
-<span class="nc" id="L164">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
-<span class="nc" id="L165">        }</span>
-<span class="nc" id="L166">    }</span>
+<span class="nc" id="L167">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
+<span class="nc" id="L168">        }</span>
+<span class="nc" id="L169">    }</span>
     
     private void writeTransformation(TransformationParameters 
         transformationParams, String imageFileName1, String imageFileName2) 
         throws IOException {
         
-<span class="nc" id="L172">        String outFilePath = cwd + &quot;transformation_&quot; + imageFileName1 + &quot;_&quot; + </span>
+<span class="nc" id="L175">        String outFilePath = cwd + &quot;transformation_&quot; + imageFileName1 + &quot;_&quot; + </span>
             imageFileName2 + &quot;.txt&quot;;
         
-<span class="nc" id="L175">        FileWriter fw = null;</span>
-<span class="nc" id="L176">        BufferedWriter writer = null;</span>
+<span class="nc" id="L178">        FileWriter fw = null;</span>
+<span class="nc" id="L179">        BufferedWriter writer = null;</span>
         
         try {
-<span class="nc" id="L179">            File file = new File(outFilePath);</span>
-<span class="nc" id="L180">            file.delete();</span>
-<span class="nc" id="L181">            file.createNewFile();</span>
+<span class="nc" id="L182">            File file = new File(outFilePath);</span>
+<span class="nc" id="L183">            file.delete();</span>
+<span class="nc" id="L184">            file.createNewFile();</span>
 
-<span class="nc" id="L183">            fw = new FileWriter(file);</span>
-<span class="nc" id="L184">            writer = new BufferedWriter(fw);</span>
+<span class="nc" id="L186">            fw = new FileWriter(file);</span>
+<span class="nc" id="L187">            writer = new BufferedWriter(fw);</span>
             
-<span class="nc" id="L186">            writer.write(&quot;#transformation parameters for &quot; </span>
+<span class="nc" id="L189">            writer.write(&quot;#transformation parameters for &quot; </span>
                 + imageFileName1 + &quot; to &quot; + imageFileName2);
-<span class="nc" id="L188">            writer.write(eol);</span>
+<span class="nc" id="L191">            writer.write(eol);</span>
             
-<span class="nc" id="L190">            double scale = transformationParams.getScale();</span>
-<span class="nc" id="L191">            double rotRad = transformationParams.getRotationInRadians();</span>
-<span class="nc" id="L192">            double rotDeg = transformationParams.getRotationInDegrees();</span>
-<span class="nc" id="L193">            double transX = transformationParams.getTranslationX();</span>
-<span class="nc" id="L194">            double transY = transformationParams.getTranslationY();</span>
+<span class="nc" id="L193">            double scale = transformationParams.getScale();</span>
+<span class="nc" id="L194">            double rotRad = transformationParams.getRotationInRadians();</span>
+<span class="nc" id="L195">            double rotDeg = transformationParams.getRotationInDegrees();</span>
+<span class="nc" id="L196">            double transX = transformationParams.getTranslationX();</span>
+<span class="nc" id="L197">            double transY = transformationParams.getTranslationY();</span>
             
-<span class="nc" id="L196">            writer.write(&quot;#scale\trotRad\trotDeg\ttransX\ttransY&quot;);</span>
+<span class="nc" id="L199">            writer.write(&quot;#scale\trotRad\trotDeg\ttransX\ttransY&quot;);</span>
             
-<span class="nc" id="L198">            writer.write(eol);</span>
+<span class="nc" id="L201">            writer.write(eol);</span>
             
-<span class="nc" id="L200">            writer.write(Double.toString(scale));</span>
-<span class="nc" id="L201">            writer.write(&quot;\t&quot;);</span>
-<span class="nc" id="L202">            writer.write(Double.toString(rotRad));</span>
-<span class="nc" id="L203">            writer.write(&quot;\t&quot;);</span>
-<span class="nc" id="L204">            writer.write(Double.toString(rotDeg));</span>
-<span class="nc" id="L205">            writer.write(&quot;\t&quot;);</span>
-<span class="nc" id="L206">            writer.write(Double.toString(transX));</span>
-<span class="nc" id="L207">            writer.write(&quot;\t&quot;);</span>
-<span class="nc" id="L208">            writer.write(Double.toString(transY));</span>
-<span class="nc" id="L209">            writer.write(&quot;\t&quot;);</span>
+<span class="nc" id="L203">            writer.write(Double.toString(scale));</span>
+<span class="nc" id="L204">            writer.write(&quot;\t&quot;);</span>
+<span class="nc" id="L205">            writer.write(Double.toString(rotRad));</span>
+<span class="nc" id="L206">            writer.write(&quot;\t&quot;);</span>
+<span class="nc" id="L207">            writer.write(Double.toString(rotDeg));</span>
+<span class="nc" id="L208">            writer.write(&quot;\t&quot;);</span>
+<span class="nc" id="L209">            writer.write(Double.toString(transX));</span>
+<span class="nc" id="L210">            writer.write(&quot;\t&quot;);</span>
+<span class="nc" id="L211">            writer.write(Double.toString(transY));</span>
+<span class="nc" id="L212">            writer.write(&quot;\t&quot;);</span>
             
-<span class="nc" id="L211">            writer.flush();</span>
+<span class="nc" id="L214">            writer.flush();</span>
 
         } finally {
 
-<span class="nc bnc" id="L215" title="All 4 branches missed.">            if (writer != null) {</span>
-<span class="nc" id="L216">                writer.close();</span>
+<span class="nc bnc" id="L218" title="All 4 branches missed.">            if (writer != null) {</span>
+<span class="nc" id="L219">                writer.close();</span>
             }
-<span class="nc bnc" id="L218" title="All 4 branches missed.">            if (fw != null) {</span>
-<span class="nc" id="L219">                fw.close();</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">            if (fw != null) {</span>
+<span class="nc" id="L222">                fw.close();</span>
             }
             
-<span class="nc" id="L222">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
-<span class="nc" id="L223">        }</span>
-<span class="nc" id="L224">    }</span>
+<span class="nc" id="L225">            System.out.println(eol + &quot;wrote: &quot; + outFilePath);</span>
+<span class="nc" id="L226">        }</span>
+<span class="nc" id="L227">    }</span>
     
     public static void main(String[] args) {
         
         if (true) {
-<span class="nc" id="L229">            System.out.println(&quot;temporarily disabled while refactoring this...&quot; </span>
+<span class="nc" id="L232">            System.out.println(&quot;temporarily disabled while refactoring this...&quot; </span>
             + &quot; see InflectionMapperOneObjectTest for the contour matching portion that solves for scale.&quot;);
-<span class="nc" id="L231">            return;</span>
+<span class="nc" id="L234">            return;</span>
         }
         
         System.out.println(Arrays.toString(args));
@@ -447,32 +450,32 @@ public class CMDLineInflectionUtil {
     
     public static void printUsage() {
                 
-<span class="nc" id="L450">        System.out.println(eol + &quot;Runner to invoke transformation of image1 to&quot;);</span>
-<span class="nc" id="L451">        System.out.println(&quot;reference frame of image 2 via inflection points.&quot;);</span>
-<span class="nc" id="L452">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
-<span class="nc" id="L453">        System.out.println(&quot;  -image1=path_to_image_1&quot;);</span>
-<span class="nc" id="L454">        System.out.println(&quot;  -image2=path_to_image_2&quot;);</span>
-<span class="nc" id="L455">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
-<span class="nc" id="L456">        System.out.println(&quot;  -text_output&quot;);</span>
-<span class="nc" id="L457">        System.out.println(&quot;      writes a file called matching_points.tsv in the&quot;);</span>
-<span class="nc" id="L458">        System.out.println(&quot;      current directory.  Also writes transformation.txt&quot;);</span>
-<span class="nc" id="L459">        System.out.println(&quot;      and transformed_edges.tsv&quot;);</span>
-<span class="nc" id="L460">        System.out.println(&quot;  -mark_image&quot;);</span>
-<span class="nc" id="L461">        System.out.println(&quot;      writes 2 files called matching_points.png in the&quot;);</span>
-<span class="nc" id="L462">        System.out.println(&quot;      current directory. It's the images with &quot;);</span>
-<span class="nc" id="L463">        System.out.println(&quot;      inflection points overplotted.&quot;);</span>
-<span class="nc" id="L464">        System.out.println(&quot;  -include_edges&quot;);</span>
-<span class="nc" id="L465">        System.out.println(&quot;      in the written matching_points.png, includes the&quot;);</span>
-<span class="nc" id="L466">        System.out.println(&quot;      edges in the image.&quot;);</span>
-<span class="nc" id="L467">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
-<span class="nc" id="L468">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
-<span class="nc" id="L469">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
-<span class="nc" id="L470">        System.out.println(&quot;  -refine_transformations&quot;);</span>
-<span class="nc" id="L471">        System.out.println(&quot;      improve the transformations (takes more time).&quot;);</span>
-<span class="nc" id="L472">        System.out.println(eol</span>
+<span class="nc" id="L453">        System.out.println(eol + &quot;Runner to invoke transformation of image1 to&quot;);</span>
+<span class="nc" id="L454">        System.out.println(&quot;reference frame of image 2 via inflection points.&quot;);</span>
+<span class="nc" id="L455">        System.out.println(eol + &quot;Required arguments:&quot;);</span>
+<span class="nc" id="L456">        System.out.println(&quot;  -image1=path_to_image_1&quot;);</span>
+<span class="nc" id="L457">        System.out.println(&quot;  -image2=path_to_image_2&quot;);</span>
+<span class="nc" id="L458">        System.out.println(eol + &quot;Optional arguments:&quot;);</span>
+<span class="nc" id="L459">        System.out.println(&quot;  -text_output&quot;);</span>
+<span class="nc" id="L460">        System.out.println(&quot;      writes a file called matching_points.tsv in the&quot;);</span>
+<span class="nc" id="L461">        System.out.println(&quot;      current directory.  Also writes transformation.txt&quot;);</span>
+<span class="nc" id="L462">        System.out.println(&quot;      and transformed_edges.tsv&quot;);</span>
+<span class="nc" id="L463">        System.out.println(&quot;  -mark_image&quot;);</span>
+<span class="nc" id="L464">        System.out.println(&quot;      writes 2 files called matching_points.png in the&quot;);</span>
+<span class="nc" id="L465">        System.out.println(&quot;      current directory. It's the images with &quot;);</span>
+<span class="nc" id="L466">        System.out.println(&quot;      inflection points overplotted.&quot;);</span>
+<span class="nc" id="L467">        System.out.println(&quot;  -include_edges&quot;);</span>
+<span class="nc" id="L468">        System.out.println(&quot;      in the written matching_points.png, includes the&quot;);</span>
+<span class="nc" id="L469">        System.out.println(&quot;      edges in the image.&quot;);</span>
+<span class="nc" id="L470">        System.out.println(&quot;  -input_is_line_drawing&quot;);</span>
+<span class="nc" id="L471">        System.out.println(&quot;      changes internal logic to handle an image&quot;);</span>
+<span class="nc" id="L472">        System.out.println(&quot;      of lines or solid blocks.&quot;);</span>
+<span class="nc" id="L473">        System.out.println(&quot;  -refine_transformations&quot;);</span>
+<span class="nc" id="L474">        System.out.println(&quot;      improve the transformations (takes more time).&quot;);</span>
+<span class="nc" id="L475">        System.out.println(eol</span>
             + &quot;Note that default is to create matching_points.tsv in the currect directory&quot;);
-<span class="nc" id="L474">        System.out.println(eol);</span>
-<span class="nc" id="L475">    }</span>
+<span class="nc" id="L477">        System.out.println(eol);</span>
+<span class="nc" id="L478">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

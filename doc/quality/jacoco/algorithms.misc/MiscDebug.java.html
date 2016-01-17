@@ -3,17 +3,17 @@
 import algorithms.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.CornerRegion;
-import algorithms.imageProcessing.CorrespondenceList;
-import algorithms.imageProcessing.CurvatureScaleSpaceContour;
-import algorithms.imageProcessing.FeatureComparisonStat;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.features.CorrespondenceList;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import static algorithms.imageProcessing.ImageIOHelper.getNextColorRGB;
-import algorithms.imageProcessing.ScaleSpaceCurveImage;
+import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurveImage;
 import algorithms.util.Errors;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
@@ -389,7 +389,7 @@ import org.ejml.simple.SimpleMatrix;
 <span class="fc" id="L389">                    int row = cr.getY()[cr.getKMaxIdx()];</span>
 <span class="fc bfc" id="L390" title="All 2 branches covered.">                    for (int dx = (-1 * nExtraForDot); dx &lt; (nExtraForDot + 1); dx++) {</span>
 <span class="fc" id="L391">                        int xx = col + dx;</span>
-<span class="pc bpc" id="L392" title="2 of 4 branches missed.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
+<span class="pc bpc" id="L392" title="1 of 4 branches missed.">                        if ((xx &lt; 0) || (xx &gt; (w - 1))) {</span>
 <span class="nc" id="L393">                            continue;</span>
                         }
 <span class="fc bfc" id="L395" title="All 2 branches covered.">                        for (int dy = (-1 * nExtraForDot); dy &lt; (nExtraForDot + 1); ++dy) {</span>

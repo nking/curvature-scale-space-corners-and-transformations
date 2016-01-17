@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NextCorner.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">NextCorner.java</span></div><h1>NextCorner.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.scaleSpace.DescendingKComparator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
+
+/**
+ * A class to serve the purpose of an adjacency matrix (via rules to choose
+ * the &quot;neighbor corner&quot;) and the state of &quot;un-visited&quot; for the search
+ * algorithm.
+ * 
+ * @author nichole
+ */
+<span class="nc bnc" id="L15" title="All 2 branches missed.">public class NextCorner&lt;T extends CornerRegion&gt; {</span>
+    
+    /**
+     * a list of corners extracted from a closed curve in a digital image
+     */
+    protected final TreeSet&lt;T&gt; origCorners;
+    
+    /**
+     * A list of indexes to origCorners carrying corner regions from the curve, 
+     * that is, closed curve edge, given to the corner matcher.
+     * 
+     * Note that the lists are ordered by descending peak sigma.   Note also 
+     * that the List&lt;Integer&gt; indexes are referred to as corner indexes.
+     */
+    protected final TreeSet&lt;T&gt; remainingCorners;
+    
+    private final List&lt;Integer&gt; matchedCornerIndexes1;
+    private final List&lt;Integer&gt; matchedCornerIndexes2;
+    
+    protected final List&lt;FeatureComparisonStat&gt; matchedStats;
+    protected final List&lt;Double&gt; matchedDist;
+    
+<span class="nc" id="L37">    protected int matchedEdgeNumber1 = -1;</span>
+<span class="nc" id="L38">    protected int matchedEdgeNumber2 = -1;</span>
+    
+<span class="nc" id="L40">    public NextCorner(final List&lt;T&gt; corners) {</span>
+                
+<span class="nc" id="L42">        origCorners = new TreeSet&lt;T&gt;(new DescendingKComparator());</span>
+                        
+        // populate with contours that haven't been visited
+<span class="nc" id="L45">        remainingCorners = new TreeSet&lt;T&gt;(</span>
+            new DescendingKComparator());
+        
+<span class="nc" id="L48">        matchedStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+        
+<span class="nc" id="L50">        matchedDist = new ArrayList&lt;Double&gt;();</span>
+        
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.size(); i++) {</span>
+            
+<span class="nc" id="L54">            T corner = corners.get(i);</span>
+            
+<span class="nc" id="L56">            origCorners.add(corner);</span>
+            
+<span class="nc" id="L58">            remainingCorners.add(corner);</span>
+        }
+
+<span class="nc" id="L61">        matchedCornerIndexes1 = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc" id="L62">        matchedCornerIndexes2 = new ArrayList&lt;Integer&gt;();</span>
+        
+<span class="nc" id="L64">    }</span>
+    
+    public void addMatchedCorners(T corner1, T corner2, Integer cornerIndex1, 
+        Integer cornerIndex2, FeatureComparisonStat stat) {
+        
+<span class="nc" id="L69">        double dist = Double.POSITIVE_INFINITY;</span>
+        
+<span class="nc" id="L71">        addMatchedCorners(corner1, corner2, cornerIndex1, cornerIndex2, stat,</span>
+            dist);
+<span class="nc" id="L73">    }</span>
+    
+    public void addMatchedCorners(T corner1, T corner2, Integer cornerIndex1, 
+        Integer cornerIndex2, FeatureComparisonStat stat, double dist) {
+        
+<span class="nc" id="L78">        markAsVisited(corner1);</span>
+        
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (corner2 == null) {</span>
+<span class="nc" id="L81">            return;</span>
+        }
+        
+<span class="nc" id="L84">        matchedCornerIndexes1.add(cornerIndex1);</span>
+<span class="nc" id="L85">        matchedCornerIndexes2.add(cornerIndex2);</span>
+<span class="nc" id="L86">        matchedStats.add(stat);</span>
+<span class="nc" id="L87">        matchedDist.add(Double.valueOf(dist));</span>
+        
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (matchedEdgeNumber1 == -1) {</span>
+<span class="nc" id="L90">            matchedEdgeNumber1 = corner1.getEdgeIdx();</span>
+        } else {
+<span class="nc bnc" id="L92" title="All 4 branches missed.">            assert(matchedEdgeNumber1 == corner1.getEdgeIdx());</span>
+        }
+        
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (matchedEdgeNumber2 == -1) {</span>
+<span class="nc" id="L96">            matchedEdgeNumber2 = corner2.getEdgeIdx();</span>
+        } else {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">            assert(matchedEdgeNumber2 == corner2.getEdgeIdx());</span>
+        }    
+<span class="nc" id="L100">    }</span>
+    
+    /**
+     * get cost as normalized sum of SSDs times normalized sums of distances
+     * @param maxSSD
+     * @param maxDistance
+     * @return
+     */
+    public double getNormalizedCost(double maxSSD, double maxDistance) {
+
+<span class="nc" id="L110">        double sumSSD = 0;</span>
+<span class="nc" id="L111">        double sumDist = 0;</span>
+        
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedStats.size(); ++i) {</span>
+<span class="nc" id="L114">            sumSSD += matchedStats.get(i).getSumIntensitySqDiff();</span>
+<span class="nc" id="L115">            sumDist += matchedDist.get(i).doubleValue();</span>
+        }
+<span class="nc" id="L117">        sumSSD /= (double)matchedStats.size();</span>
+<span class="nc" id="L118">        sumDist /= (double)matchedStats.size();</span>
+        
+<span class="nc" id="L120">        sumSSD /= maxSSD;</span>
+<span class="nc" id="L121">        sumDist /= maxDistance;</span>
+
+<span class="nc" id="L123">        double normalizedCost = sumSSD * sumDist;</span>
+        
+<span class="nc" id="L125">        return normalizedCost;</span>
+    }
+    
+    /**
+     * find the largest remaining corner within the list of unvisited.
+     * side-effect of removing the returned corner index from the look-up data
+     * structures.
+     * 
+     * @return 
+     */
+    public T findStrongestRemainingCorner() {
+        
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (remainingCorners.isEmpty()) {</span>
+<span class="nc" id="L138">            return null;</span>
+        }
+        
+<span class="nc" id="L141">        T corner = remainingCorners.first();</span>
+        
+<span class="nc" id="L143">        boolean removed = remainingCorners.remove(corner);</span>
+                
+<span class="nc bnc" id="L145" title="All 4 branches missed.">        assert(removed == true);</span>
+        
+<span class="nc" id="L147">        return corner;</span>
+    }
+    
+    public void markAsVisited(CornerRegion corner) {        
+<span class="nc" id="L151">        remainingCorners.remove(corner);</span>
+<span class="nc" id="L152">    }</span>
+    
+    public int getMatchedEdgeNumber2() {
+<span class="nc" id="L155">        return matchedEdgeNumber2;</span>
+    }
+    public int getMatchedEdgeNumber1() {
+<span class="nc" id="L158">        return matchedEdgeNumber1;</span>
+    }
+    
+    /**
+     * find the next smallest sigma peak out of all contours. Note that
+     * this method has the side effect of removing the returned contour
+     * from the internal look-up data structures.
+     * 
+     * @param target the contour or which to find the next smallest contour
+     * 
+     * @return 
+     */
+    public T findTheNextSmallestUnvisitedSibling(T target) { 
+
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (target == null) {</span>
+<span class="nc" id="L173">            return null;</span>
+        }
+        
+<span class="nc" id="L176">        T nextLower = origCorners.higher(target);</span>
+        
+<span class="nc bnc" id="L178" title="All 4 branches missed.">        while ((nextLower != null) &amp;&amp; !remainingCorners.contains(nextLower)) {</span>
+<span class="nc" id="L179">            nextLower = origCorners.higher(nextLower);</span>
+        }
+                
+<span class="nc bnc" id="L182" title="All 2 branches missed.">        if (nextLower != null) {</span>
+            
+<span class="nc" id="L184">            boolean removed = remainingCorners.remove(nextLower);</span>
+            
+<span class="nc bnc" id="L186" title="All 4 branches missed.">            assert(removed);</span>
+            
+<span class="nc" id="L188">            return nextLower;</span>
+        }
+        
+<span class="nc" id="L191">        return null;</span>
+    }
+    
+    public List&lt;Integer&gt; getMatchedCornerIndexes1() {
+<span class="nc" id="L195">        return matchedCornerIndexes1;</span>
+    }
+    
+    public List&lt;Integer&gt; getMatchedCornerIndexes2() {
+<span class="nc" id="L199">        return matchedCornerIndexes2;</span>
+    }
+    
+    public List&lt;FeatureComparisonStat&gt; getMatchedFeatureComparisonStats() {
+<span class="nc" id="L203">        return matchedStats;</span>
+    }
+    
+    public List&lt;Double&gt; getMatchedDistances() {
+<span class="nc" id="L207">        return matchedDist;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

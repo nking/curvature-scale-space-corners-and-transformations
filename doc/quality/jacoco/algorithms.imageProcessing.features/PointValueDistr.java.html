@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PointValueDistr.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">PointValueDistr.java</span></div><h1>PointValueDistr.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.util.PairInt;
+import java.math.BigInteger;
+
+/**
+ *
+ * @author nichole
+ */
+public class PointValueDistr {
+
+    private final BigInteger maxValue;
+    private final PairInt[] points;
+    private final BigInteger[] cumulativeValues;
+    
+    public PointValueDistr(BigInteger maxValue, PairInt[] points,
+<span class="fc" id="L17">        BigInteger[] cumulativeValues) {</span>
+<span class="fc" id="L18">        this.maxValue = maxValue;</span>
+<span class="fc" id="L19">        this.points = points;</span>
+<span class="fc" id="L20">        this.cumulativeValues = cumulativeValues;</span>
+<span class="fc" id="L21">    }</span>
+
+    public BigInteger getMaxValue() {
+<span class="fc" id="L24">        return maxValue;</span>
+    }
+
+    public PairInt[] getPoints() {
+<span class="fc" id="L28">        return points;</span>
+    }
+
+    public BigInteger[] getCumulativeValues() {
+<span class="nc" id="L32">        return cumulativeValues;</span>
+    }
+    
+    /**
+     * search for best match to value in the internal array of cumulative values.
+     * runtime complexity is O(lg(n_points)).
+     * @param value
+     * @return 
+     */
+    public PairInt getForCumulativeValue(BigInteger value) {
+        
+<span class="nc" id="L43">        int idx = getPointsIndexForCumulativeValue(value);</span>
+ 
+<span class="nc" id="L45">        return points[idx];</span>
+    }
+    
+    /**
+     * search for best match to value in the internal array of cumulative values.
+     * runtime complexity is O(lg(n_points)).
+     * @param value
+     * @return 
+     */
+    public int getPointsIndexForCumulativeValue(BigInteger value) {
+        
+        // binary search for value
+        
+<span class="fc" id="L58">        int n = cumulativeValues.length;</span>
+           
+<span class="fc" id="L60">        int lowIdx = 0;</span>
+<span class="fc" id="L61">        int highIdx = n - 1;</span>
+<span class="fc" id="L62">        int midIdx = (highIdx + lowIdx) &gt;&gt; 1;</span>
+        
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        while (lowIdx != highIdx) {</span>
+
+<span class="fc" id="L66">            midIdx = (highIdx + lowIdx) &gt;&gt; 1;</span>
+            
+<span class="fc" id="L68">            BigInteger v = cumulativeValues[midIdx];</span>
+            
+            //-1, 0 or 1 when v is less than, equal to, or greater than value.
+<span class="fc" id="L71">            int comp = v.compareTo(value);</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (comp &gt; 0) {</span>
+
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">                if (highIdx == midIdx) {</span>
+<span class="nc" id="L76">                    highIdx--;</span>
+                } else {
+<span class="fc" id="L78">                    highIdx = midIdx;</span>
+                }
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            } else if (comp &lt; 0) {</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                if (lowIdx == midIdx) {</span>
+<span class="fc" id="L84">                    lowIdx++;</span>
+                } else {
+<span class="fc" id="L86">                    lowIdx = midIdx;</span>
+                }
+
+            } else {
+                // is equal
+<span class="fc" id="L91">                return midIdx;</span>
+            }
+<span class="fc" id="L93">        }</span>
+ 
+<span class="fc" id="L95">        return midIdx;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

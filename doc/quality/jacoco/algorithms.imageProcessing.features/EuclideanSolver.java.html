@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EuclideanSolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">EuclideanSolver.java</span></div><h1>EuclideanSolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * class encapsulating the steps from scale calculation to matching corners to
+ * making correspondence lists to solving for epipolar projection.
+ *
+ * @author nichole
+ */
+public class EuclideanSolver {
+
+    private final ImageExt img1;
+    private final ImageExt img2;
+
+    private enum State {
+        INITIALIZED, SOLVED, NO_SOLUTION
+    }
+<span class="fc" id="L30">    private State state = null;</span>
+
+<span class="fc" id="L32">    private PairIntArray solutionLeftXY = null;</span>
+<span class="fc" id="L33">    private PairIntArray solutionRightXY = null;</span>
+
+    private final FeatureMatcherSettings featureSettings;
+
+<span class="fc" id="L37">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    public EuclideanSolver(ImageExt image1, ImageExt image2,
+<span class="fc" id="L40">        FeatureMatcherSettings settings) {</span>
+
+<span class="fc" id="L42">        img1 = image1;</span>
+<span class="fc" id="L43">        img2 = image2;</span>
+
+<span class="fc" id="L45">        featureSettings = settings.copy();</span>
+
+<span class="fc" id="L47">        state = State.INITIALIZED;</span>
+<span class="fc" id="L48">    }</span>
+
+    public EuclideanTransformationFit solve() throws IOException,
+        NoSuchAlgorithmException {
+
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (!state.equals(State.INITIALIZED)) {</span>
+<span class="nc" id="L54">            throw new IllegalStateException(&quot;solve() has already been invoked&quot;);</span>
+        }
+
+<span class="fc" id="L57">        NonEuclideanSegmentFeatureMatcher matcher = </span>
+            new NonEuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
+        
+<span class="fc" id="L60">        boolean solved = matcher.match();</span>
+
+<span class="pc bpc" id="L62" title="2 of 4 branches missed.">        if (!solved || (matcher.getSolutionMatched1().size() &lt; 7)) {</span>
+<span class="nc" id="L63">            state = State.NO_SOLUTION;</span>
+<span class="nc" id="L64">            return null;</span>
+        }
+
+<span class="fc" id="L67">        List&lt;PairInt&gt; points1 = matcher.getSolutionMatched1();</span>
+<span class="fc" id="L68">        List&lt;PairInt&gt; points2 = matcher.getSolutionMatched2();</span>
+
+<span class="fc" id="L70">        int n = points1.size();</span>
+
+<span class="fc" id="L72">        PairIntArray matchedLeftXY = new PairIntArray(n);</span>
+<span class="fc" id="L73">        PairIntArray matchedRightXY = new PairIntArray(n);</span>
+<span class="fc" id="L74">        PairIntArray outputLeftXY = new PairIntArray(n);</span>
+<span class="fc" id="L75">        PairIntArray outputRightXY = new PairIntArray(n);</span>
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L78">            matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());</span>
+<span class="fc" id="L79">            matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());</span>
+        }
+        
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (featureSettings.debug()) {</span>
+<span class="fc" id="L83">            plotFit(matchedLeftXY, matchedRightXY, &quot;ransac_input&quot;);</span>
+        }
+
+<span class="fc" id="L86">        RANSACEuclideanSolver solver = new RANSACEuclideanSolver();</span>
+<span class="fc" id="L87">        EuclideanTransformationFit fit = solver.calculateEuclideanTransformation(</span>
+            matchedLeftXY, matchedRightXY, outputLeftXY, outputRightXY);
+        
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (fit != null) {</span>
+
+            //TODO: check that stdev is reasonable
+<span class="fc" id="L93">            state = State.SOLVED;</span>
+
+<span class="fc" id="L95">            this.solutionLeftXY = outputLeftXY;</span>
+
+<span class="fc" id="L97">            this.solutionRightXY = outputRightXY;</span>
+
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">            if (featureSettings.debug()) {</span>
+<span class="fc" id="L100">                plotFit(outputLeftXY, outputRightXY, &quot;tmp_m&quot;);</span>
+            }
+
+<span class="fc" id="L103">            return fit;</span>
+
+        } else {
+
+<span class="nc" id="L107">            state = State.NO_SOLUTION;</span>
+
+<span class="nc" id="L109">            return null;</span>
+        }
+    }
+
+    private void plotFit(PairIntArray xy1, PairIntArray xy2, String fileSuffix) {
+        
+<span class="fc" id="L115">        Image img1Cp = img1.copyImage();</span>
+<span class="fc" id="L116">        Image img2Cp = img2.copyImage();</span>
+
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        for (int ii = 0; ii &lt; xy1.getN(); ii++) {</span>
+<span class="fc" id="L119">            double x = xy1.getX(ii);</span>
+<span class="fc" id="L120">            double y = xy1.getY(ii);</span>
+<span class="fc" id="L121">            ImageIOHelper.addPointToImage((float) x, (float) y, img1Cp, 3,</span>
+                255, 0, 0);
+        }
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int ii = 0; ii &lt; xy2.getN(); ii++) {</span>
+<span class="fc" id="L125">            double x = xy2.getX(ii);</span>
+<span class="fc" id="L126">            double y = xy2.getY(ii);</span>
+<span class="fc" id="L127">            ImageIOHelper.addPointToImage((float) x, (float) y, img2Cp, 3,</span>
+                255, 0, 0);
+        }
+
+        String dirPath;
+        try {
+<span class="fc" id="L133">            dirPath = ResourceFinder.findDirectory(&quot;bin&quot;);</span>
+
+<span class="fc" id="L135">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L136">                dirPath + &quot;/&quot; + fileSuffix + &quot;_1_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img1Cp);</span>
+
+<span class="fc" id="L138">            ImageIOHelper.writeOutputImage(</span>
+<span class="fc" id="L139">                dirPath + &quot;/&quot; + fileSuffix + &quot;_2_&quot; + featureSettings.getDebugTag() + &quot;.png&quot;, img2Cp);</span>
+
+<span class="nc" id="L141">        } catch (IOException ex) {</span>
+<span class="nc" id="L142">            Logger.getLogger(EuclideanSolver.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L143">        }</span>
+<span class="fc" id="L144">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

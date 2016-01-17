@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>CurvatureScaleSpaceInflectionMapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.scaleSpace</a> &gt; <span class="el_source">CurvatureScaleSpaceInflectionMapper.java</span></div><h1>CurvatureScaleSpaceInflectionMapper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.scaleSpace;
+
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.util.PairIntArray;
+import java.util.List;
+
+/**
+ * class to map contours from one image to another and return the
+ * matched inflection points and a transformation matrix that can
+ * be applied to the first to put it into the frame of the second.
+ *
+ * The algorithm used for matching scale space image contours is documented in
+ * CSSContourMatcherWrapper
+ * @see algorithms.imageProcessing.CSSContourMatcherWrapper
+ *
+ * @author nichole
+ */
+public final class CurvatureScaleSpaceInflectionMapper extends
+    AbstractCurvatureScaleSpaceInflectionMapper {
+
+    protected final ImageExt image1;
+    protected final ImageExt image2;
+    // for debugging, keeping a reference of originals
+    protected final Image originalImage1;
+    protected final Image originalImage2;
+
+    public final int image1OriginalWidth;
+    public final int image1OriginalHeight;
+    protected final int image2OriginalWidth;
+    protected final int image2OriginalHeight;
+
+<span class="fc" id="L35">    public CurvatureScaleSpaceInflectionMapper(ImageExt image1, ImageExt image2) {</span>
+
+<span class="fc" id="L37">        this.image1 = image1;</span>
+<span class="fc" id="L38">        this.image2 = image2;</span>
+
+<span class="fc" id="L40">        originalImage1 = (ImageExt)image1.copyImage();</span>
+<span class="fc" id="L41">        originalImage2 = (ImageExt)image2.copyImage();</span>
+
+<span class="fc" id="L43">        image1OriginalWidth = image1.getWidth();</span>
+<span class="fc" id="L44">        image1OriginalHeight = image1.getHeight();</span>
+<span class="fc" id="L45">        image2OriginalWidth = image2.getWidth();</span>
+<span class="fc" id="L46">        image2OriginalHeight = image2.getHeight();</span>
+
+<span class="fc" id="L48">    }</span>
+
+    public TransformationParameters createEuclideanTransformationImpl() {
+
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (bestFittingParameters == null) {</span>
+<span class="nc" id="L53">            return null;</span>
+        }
+
+<span class="fc" id="L56">        MatchedPointsTransformationCalculator tc = new</span>
+            MatchedPointsTransformationCalculator();
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (debug) {</span>
+<span class="fc" id="L60">            tc.useDebugMode();</span>
+        }
+
+        //TODO: temporarily disabling the refinement while fixing PointMatcher
+        if (false &amp;&amp; doRefineTransformations) {
+
+            /*
+            boolean reverseDatasetOrder = bestFittingParameters.getScale() &lt; 1.0;
+
+            log.info(&quot;BEFORE REFINEMENT:\n&quot; + bestFittingParameters.toString());
+
+            PairIntArray[] set1 = getMatchedEdges1InOriginalReferenceFrameArray();
+            PairIntArray[] set2 = getMatchedEdges2InOriginalReferenceFrameArray();
+            EdgeMatcher matcher = new EdgeMatcher();
+            TransformationPointFit fit2 = null;
+            if (reverseDatasetOrder) {
+                fit2 = matcher.refineTransformation(set2, set1, bestFittingParameters);
+            } else {
+                fit2 = matcher.refineTransformation(set1, set2, bestFittingParameters);
+            }
+
+            if (reverseDatasetOrder) {
+                bestFittingParameters = tc.swapReferenceFrames(bestFittingParameters);
+            }
+
+            if (fit2 != null) {
+                log.info(&quot;FINAL:\n&quot; + fit2.toString());
+                bestFittingParameters = fit2.getParameters();
+            }*/
+        }
+
+<span class="fc" id="L91">        return bestFittingParameters;</span>
+    }
+
+
+    @Override
+    protected List&lt;PairIntArray&gt; getEdges(CurvatureScaleSpaceImageMaker imgMaker) {
+
+<span class="fc" id="L98">        return imgMaker.getClosedCurves();</span>
+    }
+
+    protected Image getImage1() {
+<span class="nc" id="L102">        return image1;</span>
+    }
+
+    protected Image getImage2() {
+<span class="nc" id="L106">        return image2;</span>
+    }
+
+    Image getOriginalImage1() {
+<span class="nc" id="L110">        return originalImage1;</span>
+    }
+
+    Image getOriginalImage2() {
+<span class="nc" id="L114">        return originalImage2;</span>
+    }
+
+    @Override
+    protected void createEdges1() {
+
+        // note that if the orientation of image2 with respect to image1 is
+        // more than 180 degrees, the code in the edge extractor will be forming
+        // the edges by reading in the reverse direction in x and y,
+        // so the edges will have opposite orientation.
+        // The code also reverses edges to append curves read in other directions,
+        // so in general, one cannot assure that the points are ordered in
+        // a clockwise or counterclockwise manner at this point.
+        // the curves tend to be ordered counter clockwise.
+        // because the closed curve shapes are not simple convex or concave
+        // shapes sometimes, it's not as easy to tell whether points are
+        // ordered clockwise in a curve.
+        // Tests so far show that testing the contour peak points
+        // (left and right) for clockwise order gives the right answer
+        // and is less work computationally
+<span class="fc" id="L134">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image1);</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L136">            imgMaker.useLineDrawingMode();</span>
+        }
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L139">            imgMaker.useOutdoorMode();</span>
+        }
+<span class="fc" id="L141">        imgMaker.initialize();</span>
+
+<span class="fc" id="L143">        edges1 = getEdges(imgMaker);</span>
+<span class="fc" id="L144">        offsetImageX1 = imgMaker.getTrimmedXOffset();</span>
+<span class="fc" id="L145">        offsetImageY1 = imgMaker.getTrimmedYOffset();</span>
+
+<span class="fc" id="L147">    }</span>
+
+    @Override
+    protected void createEdges2() {
+
+<span class="fc" id="L152">        CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image2);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
+<span class="fc" id="L154">            imgMaker.useLineDrawingMode();</span>
+        }
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (useOutdoorMode) {</span>
+<span class="nc" id="L157">            imgMaker.useOutdoorMode();</span>
+        }
+<span class="fc" id="L159">        imgMaker.initialize();</span>
+
+<span class="fc" id="L161">        edges2 = getEdges(imgMaker);</span>
+<span class="fc" id="L162">        offsetImageX2 = imgMaker.getTrimmedXOffset();</span>
+<span class="fc" id="L163">        offsetImageY2 = imgMaker.getTrimmedYOffset();</span>
+
+<span class="fc" id="L165">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

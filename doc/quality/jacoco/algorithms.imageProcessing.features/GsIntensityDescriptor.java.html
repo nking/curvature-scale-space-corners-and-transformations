@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>GsIntensityDescriptor.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">GsIntensityDescriptor.java</span></div><h1>GsIntensityDescriptor.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.misc.MiscMath;
+import java.util.Arrays;
+
+/**
+ *
+ * @author nichole
+ */
+public class GsIntensityDescriptor implements IntensityDescriptor {
+
+<span class="fc" id="L12">    public static float sentinel = Float.MIN_VALUE;</span>
+    
+    protected final float[] grey;
+    
+<span class="fc" id="L16">    protected float sumSquaredError = Float.NaN;</span>
+    
+<span class="fc" id="L18">    protected boolean hasBeenNormalized = false;</span>
+    
+    /**
+     * the index within array grey that the central pixel
+     * value is stored in.
+     */
+    protected final int centralIndex;
+    
+<span class="fc" id="L26">    public GsIntensityDescriptor(float[] intensities, int centralPixelIndex) {</span>
+<span class="fc" id="L27">        this.grey = intensities;</span>
+<span class="fc" id="L28">        this.centralIndex = centralPixelIndex;</span>
+<span class="fc" id="L29">    }</span>
+    
+    /**
+     * NOT YET IMPLEMENTED
+     * apply a normalization to pixel values to try to reduce the differences 
+     * due to images of the same region due to lighting or perspective 
+     * for example.
+     * The method invoked a second time does not change the internal values.
+     */
+    @Override
+    public void applyNormalization() {
+        
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">        if (hasBeenNormalized) {</span>
+<span class="nc" id="L42">            return;</span>
+        }
+        
+        /*        
+        histogram equalization at the pre-processing stage of the entire image
+        can stretch the range of values over the available range, but for
+        images containing a small intersection of content that might not be
+        a helpful operation.
+        
+        corrections at the block level for illumination probably need to 
+        be derived at a larger level with knowledge of the illumination
+        source...
+        */
+        
+<span class="fc" id="L56">        float[] meanAndStDev = MiscMath.getAvgAndStDevIgnoreForSentinel(grey, </span>
+            grey.length, sentinel);
+        
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; grey.length; ++i) {</span>
+<span class="fc" id="L60">            grey[i] -= meanAndStDev[0];</span>
+        }
+        
+<span class="fc" id="L63">        hasBeenNormalized = true;</span>
+<span class="fc" id="L64">    }</span>
+
+    @Override
+    public boolean isNormalized() {
+<span class="fc" id="L68">        return hasBeenNormalized;</span>
+    }
+    
+    @Override
+    public float calculateSSD(IDescriptor otherDesc) {
+        
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="nc" id="L75">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (!(otherDesc instanceof GsIntensityDescriptor)) {</span>
+<span class="nc" id="L79">            throw new IllegalArgumentException(</span>
+            &quot;otherDesc has to be type GsIntensityDescriptor&quot;);
+        }
+        
+<span class="fc" id="L83">        GsIntensityDescriptor other = (GsIntensityDescriptor)otherDesc;</span>
+        
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (this.grey.length != other.grey.length) {</span>
+<span class="nc" id="L86">            throw new IllegalArgumentException(</span>
+            &quot;this and other arrays must have the same lengths&quot;);
+        }
+         
+<span class="fc" id="L90">        float ssd = MiscMath.calculateSSD(grey, other.grey, sentinel);</span>
+                
+<span class="fc" id="L92">        return ssd;</span>
+    }
+    
+    @Override
+    public float calculateCosineSimilarity(IDescriptor otherDesc) {
+        
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (otherDesc == null) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;otherDesc cannot be null&quot;);</span>
+        }
+        
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (!(otherDesc instanceof GsIntensityDescriptor)) {</span>
+<span class="nc" id="L103">            throw new IllegalArgumentException(</span>
+            &quot;otherDesc has to be type GsIntensityDescriptor&quot;);
+        }
+        
+<span class="fc" id="L107">        GsIntensityDescriptor other = (GsIntensityDescriptor)otherDesc;</span>
+        
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (this.grey.length != other.grey.length) {</span>
+<span class="nc" id="L110">            throw new IllegalArgumentException(</span>
+            &quot;this and other arrays must have the same lengths&quot;);
+        }
+         
+<span class="fc" id="L114">        float cSim = MiscMath.calculateCosineSimilarity(grey, other.grey, sentinel);</span>
+                
+<span class="fc" id="L116">        return cSim;</span>
+    }
+    
+    /**
+     * Determine the sum squared error within this descriptor using 
+     * auto-correlation and the assumption that the value at the middle index 
+     * is the value from the original central pixel.
+     * Note that the value is persisted after one calculation.  Any use
+     * of normalization should happen before this is first invoked.
+     * (A function with a force calculation argument can be made if necessary though).
+     * @return 
+     */
+    @Override
+    public float sumSquaredError() {
+        
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (!Float.isNaN(sumSquaredError)) {</span>
+<span class="fc" id="L132">            return sumSquaredError;</span>
+        }
+        
+<span class="fc" id="L135">        float vc = grey[centralIndex];</span>
+        
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="nc" id="L138">            throw new IllegalStateException(</span>
+            &quot;ERROR: the central value for the array is somehow sentinel&quot;);
+        }
+        
+<span class="fc" id="L142">        float sqErr = MiscMath.sumSquaredError(grey, sentinel, centralIndex);</span>
+            
+<span class="fc" id="L144">        this.sumSquaredError = sqErr;</span>
+        
+<span class="fc" id="L146">        return sumSquaredError;</span>
+    }
+
+    protected float[] getInternalArrayCopy() {
+<span class="nc" id="L150">        return Arrays.copyOf(grey, grey.length);</span>
+    }
+
+    @Override
+    public int getCentralIndex() {
+<span class="fc" id="L155">        return centralIndex;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L160">        return Arrays.toString(grey);</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

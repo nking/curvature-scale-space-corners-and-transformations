@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>TransformationPair4.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.scaleSpace</a> &gt; <span class="el_source">TransformationPair4.java</span></div><h1>TransformationPair4.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.scaleSpace;
+
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author nichole
+ */
+public class TransformationPair4 implements Comparable&lt;TransformationPair4&gt; {
+    
+    private final int startIdx1;
+    
+    private final int startIdx2;
+            
+<span class="nc" id="L18">    private double cost = Double.MAX_VALUE;</span>
+    
+<span class="nc" id="L20">    private List&lt;CornerRegion&gt; matchedCornerRegions1 = new ArrayList&lt;CornerRegion&gt;();</span>
+    
+<span class="nc" id="L22">    private List&lt;CornerRegion&gt; matchedCornerRegions2 = new ArrayList&lt;CornerRegion&gt;();</span>
+    
+<span class="nc" id="L24">    private List&lt;FeatureComparisonStat&gt; matchedCompStats = new ArrayList&lt;FeatureComparisonStat&gt;();</span>
+    
+<span class="nc" id="L26">    private int cornerListIndex1 = -1;</span>
+    
+<span class="nc" id="L28">    private int cornerListIndex2 = -1;</span>
+           
+    public TransformationPair4(int startRegionIndex1, int startRegionIndex2,
+<span class="nc" id="L31">        int size) {</span>
+        
+<span class="nc" id="L33">        this.startIdx1 = startRegionIndex1;</span>
+        
+<span class="nc" id="L35">        this.startIdx2 = startRegionIndex2;        </span>
+<span class="nc" id="L36">    }</span>
+
+    /**
+     * @return the startRegionIndex1
+     */
+    public int getStartRegionIndex1() {
+<span class="nc" id="L42">        return startIdx1;</span>
+    }
+
+    /**
+     * @return the startRegionIndex2
+     */
+    public int getStartRegionIndex2() {
+<span class="nc" id="L49">        return startIdx2;</span>
+    }
+
+    public void addMatched(CornerRegion region1, CornerRegion region2,
+        FeatureComparisonStat stat) {
+        
+<span class="nc" id="L55">        matchedCornerRegions1.add(region1);</span>
+<span class="nc" id="L56">        matchedCornerRegions2.add(region2);</span>
+<span class="nc" id="L57">        matchedCompStats.add(stat);</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * @return the cost
+     */
+    public double getCost() {
+<span class="nc" id="L64">        return cost;</span>
+    }
+
+    /**
+     * @param cost the cost to set
+     */
+    public void setCost(double cost) {
+<span class="nc" id="L71">        this.cost = cost;</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * @return the matchedContourRegions1
+     */
+    public List&lt;CornerRegion&gt; getMatchedCornerRegions1() {
+<span class="nc" id="L78">        return matchedCornerRegions1;</span>
+    }
+
+    /**
+     * @return the matchedContourRegions2
+     */
+    public List&lt;CornerRegion&gt; getMatchedCornerRegions2() {
+<span class="nc" id="L85">        return matchedCornerRegions2;</span>
+    }
+
+    /**
+     * @return the matchedCompStats
+     */
+    public List&lt;FeatureComparisonStat&gt; getMatchedCompStats() {
+<span class="nc" id="L92">        return matchedCompStats;</span>
+    }
+
+    public void setCornerListIndex1(int idx) {
+<span class="nc" id="L96">        this.cornerListIndex1 = idx;</span>
+<span class="nc" id="L97">    }</span>
+
+    public void setCornerListIndex2(int idx) {
+<span class="nc" id="L100">        this.cornerListIndex2 = idx;</span>
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public int compareTo(TransformationPair4 other) {
+        
+<span class="nc" id="L106">        int tN = matchedCompStats.size();</span>
+<span class="nc" id="L107">        double tCost = cost;</span>
+        
+<span class="nc" id="L109">        int oN = other.getMatchedCompStats().size();</span>
+<span class="nc" id="L110">        double oCost = other.getCost();</span>
+        
+<span class="nc bnc" id="L112" title="All 8 branches missed.">        if (((tN &gt;= oN) &amp;&amp; (tCost &lt; oCost)) || ((oCost == tCost) &amp;&amp; (tN &gt; oN))) {</span>
+<span class="nc" id="L113">            return -1;</span>
+<span class="nc bnc" id="L114" title="All 4 branches missed.">        } else if ((tN == oN) &amp;&amp; (oCost == tCost)) {</span>
+<span class="nc" id="L115">            return 0;</span>
+        } else {
+<span class="nc" id="L117">            return 1;</span>
+        }
+    }
+
+    /**
+     * @return the cornerListIndex1
+     */
+    public int getCornerListIndex1() {
+<span class="nc" id="L125">        return cornerListIndex1;</span>
+    }
+
+    /**
+     * @return the cornerListIndex2
+     */
+    public int getCornerListIndex2() {
+<span class="nc" id="L132">        return cornerListIndex2;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

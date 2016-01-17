@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MiscStats.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">MiscStats.java</span></div><h1>MiscStats.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
 
 import algorithms.compGeometry.PointInPolygon;
-import algorithms.imageProcessing.FeatureComparisonStat;
-import algorithms.imageProcessing.FeatureMatcher;
-import algorithms.imageProcessing.MatchedPointsTransformationCalculator;
-import algorithms.imageProcessing.TransformationParameters;
-import algorithms.imageProcessing.Transformer;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.features.FeatureMatcher;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath;
@@ -765,7 +765,7 @@ import java.util.logging.Logger;
         int binFactor2) {
         
 <span class="fc" id="L767">        int transTol = 30;</span>
-<span class="pc bpc" id="L768" title="3 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
+<span class="pc bpc" id="L768" title="1 of 4 branches missed.">        if (binFactor1 != 1 || binFactor2 != 1) {</span>
 <span class="fc" id="L769">            transTol /= ((binFactor1 + binFactor2)/2.f);</span>
         }
         
@@ -1392,8 +1392,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L1392">        img2Intersection[3] = q4TrTr;</span>
         
 <span class="fc bfc" id="L1394" title="All 2 branches covered.">        for (double[] xyTr : img2Intersection) {</span>
-<span class="pc bpc" id="L1395" title="1 of 2 branches missed.">            if (xyTr[0] &lt; 0) {</span>
-<span class="nc" id="L1396">                xyTr[0] = 0;</span>
+<span class="fc bfc" id="L1395" title="All 2 branches covered.">            if (xyTr[0] &lt; 0) {</span>
+<span class="fc" id="L1396">                xyTr[0] = 0;</span>
 <span class="fc bfc" id="L1397" title="All 2 branches covered.">            } else if (xyTr[0] &gt; (img2Width - 1)) {</span>
 <span class="fc" id="L1398">                xyTr[0] = (img2Width - 1);</span>
             }
@@ -1648,8 +1648,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L1648">                count[0]++;</span>
             } else {
 <span class="fc" id="L1650">                isIn = poly.isInSimpleCurve(x, y, xPoly1, yPoly1, 5);</span>
-<span class="pc bpc" id="L1651" title="1 of 2 branches missed.">                if (isIn) {</span>
-<span class="nc" id="L1652">                    count[1]++;</span>
+<span class="fc bfc" id="L1651" title="All 2 branches covered.">                if (isIn) {</span>
+<span class="fc" id="L1652">                    count[1]++;</span>
                 } else {
 <span class="fc" id="L1654">                    isIn = poly.isInSimpleCurve(x, y, xPoly2, yPoly2, 5);</span>
 <span class="fc bfc" id="L1655" title="All 2 branches covered.">                    if (isIn) {</span>

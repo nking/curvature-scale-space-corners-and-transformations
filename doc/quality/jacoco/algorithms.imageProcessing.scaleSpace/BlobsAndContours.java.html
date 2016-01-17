@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BlobsAndContours.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.scaleSpace</a> &gt; <span class="el_source">BlobsAndContours.java</span></div><h1>BlobsAndContours.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.scaleSpace;
+
+import algorithms.QuickSort;
+import algorithms.imageProcessing.SegmentationType;
+import algorithms.imageProcessing.features.BlobPerimeterCornerHelper;
+import algorithms.imageProcessing.features.BlobPerimeterRegion;
+import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * holds the blobs, their ordered perimeters, and the scale space image
+ * contours of the perimeters
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">public class BlobsAndContours  {</span>
+
+<span class="fc" id="L28">    protected static boolean debug = false;</span>
+<span class="fc" id="L29">    protected static String debugTag = &quot;&quot;;</span>
+
+    public static List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; populateContours(
+        final BlobPerimeterCornerHelper blobPerimeterHelper,
+        SegmentationType type, boolean useBinnedImage) {
+
+<span class="fc" id="L35">        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours</span>
+            = new ArrayList&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt;();
+
+<span class="fc" id="L38">        List&lt;ScaleSpaceCurveImage&gt; scaleSpaceImages</span>
+            = new ArrayList&lt;ScaleSpaceCurveImage&gt;();
+
+<span class="fc" id="L41">        boolean setToExtractWeakCurvesTooIfNeeded = false;</span>
+
+<span class="fc" id="L43">        boolean allContoursZero = true;</span>
+
+<span class="fc" id="L45">        List&lt;PairIntArray&gt; blobOrderedPerimeters =</span>
+<span class="fc" id="L46">            blobPerimeterHelper.getBlobPerimeters(type, useBinnedImage);</span>
+
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (int edgeIndex = 0; edgeIndex &lt; blobOrderedPerimeters.size(); ++edgeIndex) {</span>
+
+<span class="fc" id="L50">            PairIntArray edge = blobOrderedPerimeters.get(edgeIndex);</span>
+
+<span class="fc" id="L52">            ScaleSpaceCurveImage sscImg =</span>
+<span class="fc" id="L53">                CurvatureScaleSpaceInflectionSingleEdgeMapper.createScaleSpaceImage(</span>
+                    edge, edgeIndex);
+
+<span class="fc" id="L56">            scaleSpaceImages.add(sscImg);</span>
+        }
+
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L60">            plot(scaleSpaceImages, &quot;before_contours_&quot; + debugTag);</span>
+        }
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (int edgeIndex = 0; edgeIndex &lt; blobOrderedPerimeters.size(); ++edgeIndex) {</span>
+
+<span class="fc" id="L65">            PairIntArray edge = blobOrderedPerimeters.get(edgeIndex);</span>
+
+<span class="fc" id="L67">            ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);</span>
+
+<span class="fc" id="L69">            List&lt;CurvatureScaleSpaceContour&gt; c =</span>
+<span class="fc" id="L70">                CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(</span>
+                sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
+
+            /*if (c.isEmpty() &amp;&amp; (somewhat large)) {
+                c = CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(
+                    sscImg, edgeIndex, true, edge);
+            }*/
+
+            //TODO: consider extracting smaller contours for each edge if needed
+            // instead of only when there are no strong contours
+
+<span class="fc" id="L81">            contours.add(c);</span>
+
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (!c.isEmpty()) {</span>
+<span class="fc" id="L84">                allContoursZero = false;</span>
+            }
+        }
+
+        //TODO: consider whether want to include weak contours
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (allContoursZero) {</span>
+
+<span class="nc" id="L91">            setToExtractWeakCurvesTooIfNeeded = true;</span>
+
+<span class="nc" id="L93">            contours.clear();</span>
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            for (int edgeIndex = 0; edgeIndex &lt; blobOrderedPerimeters.size(); ++edgeIndex) {</span>
+
+<span class="nc" id="L97">                PairIntArray edge = blobOrderedPerimeters.get(edgeIndex);</span>
+
+<span class="nc" id="L99">                ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(edgeIndex);</span>
+
+<span class="nc" id="L101">                List&lt;CurvatureScaleSpaceContour&gt; c =</span>
+<span class="nc" id="L102">                    CurvatureScaleSpaceInflectionSingleEdgeMapper.populateContours(</span>
+                    sscImg, edgeIndex, setToExtractWeakCurvesTooIfNeeded, edge);
+
+<span class="nc" id="L105">                contours.add(c);</span>
+            }
+        }
+
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L110">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
+        }
+
+<span class="pc bpc" id="L113" title="3 of 4 branches missed.">        assert(blobOrderedPerimeters.size() == contours.size());</span>
+        
+<span class="fc" id="L115">        combineOverlappingPeaks(0.04f, 6.f, blobOrderedPerimeters, contours);</span>
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L118">            plot(scaleSpaceImages, &quot;debug_after_contours_&quot; + debugTag);</span>
+        }
+
+<span class="pc bpc" id="L121" title="3 of 4 branches missed.">        assert(blobOrderedPerimeters.size() == contours.size());</span>
+
+<span class="fc" id="L123">        return contours;</span>
+    }
+
+    private static void plot(List&lt;ScaleSpaceCurveImage&gt; scaleSpaceImages,
+        String label) {
+
+        try {
+<span class="nc" id="L130">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            for (int i = 0; i &lt; scaleSpaceImages.size(); ++i) {</span>
+
+<span class="nc" id="L134">                ScaleSpaceCurveImage sscImg = scaleSpaceImages.get(i);</span>
+
+<span class="nc" id="L136">                String str = Integer.toString(i);</span>
+
+<span class="nc" id="L138">                MiscDebug.plotScaleSpaceCurve(plotter, sscImg, str);</span>
+            }
+
+<span class="nc" id="L141">            String filePath = plotter.writeFile(label);</span>
+
+<span class="nc" id="L143">            Logger.getLogger(BlobsAndContours.class.getName()).info(</span>
+                &quot;write filePath=&quot; + filePath);
+
+<span class="nc" id="L146">            int z = 1;</span>
+
+<span class="nc" id="L148">        } catch (IOException ex) {</span>
+<span class="nc" id="L149">        }</span>
+<span class="nc" id="L150">    }</span>
+
+    /**
+     * contour peaks that overlap on the scale-free axis of the scale space
+     * images are combined if they are close in (x, y) space too.
+     *
+     * @param tolT
+     * @param tolD
+     * @param blobOrderedPerimeters
+     * @param contoursList
+     */
+    protected static void combineOverlappingPeaks(final float tolT, 
+        final float tolD, List&lt;PairIntArray&gt; blobOrderedPerimeters,
+        List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contoursList) {
+
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (int listIdx = 0; listIdx &lt; contoursList.size(); ++listIdx) {</span>
+
+<span class="fc" id="L167">            PairIntArray curve = blobOrderedPerimeters.get(listIdx);</span>
+            
+<span class="fc" id="L169">            List&lt;CurvatureScaleSpaceContour&gt; contours = contoursList.get(listIdx);</span>
+
+<span class="fc" id="L171">            combineOverlappingPeaks(tolT, tolD, curve, contours);</span>
+        }
+<span class="fc" id="L173">    }</span>
+    
+    private static double distance(float x0, float y0, float x1, float y1) {
+<span class="fc" id="L176">        double dX = x0 - x1;</span>
+<span class="fc" id="L177">        double dY = y0 - y1;</span>
+<span class="fc" id="L178">        double dist = Math.sqrt(dX * dX + dY * dY);</span>
+<span class="fc" id="L179">        return dist;</span>
+    }
+
+    private static List&lt;Set&lt;Integer&gt;&gt; findOverlappingPeaks(float[] t, 
+        float tolT, int[] idxs, float[]x, float[]y, float tolD, 
+        boolean isClosedCurve) {
+        
+<span class="fc" id="L186">        int n = t.length;</span>
+        
+<span class="fc" id="L188">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
+<span class="fc" id="L191">            float deltaT = t[i + 1] - t[i];</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            if (deltaT &gt; tolT) {</span>
+<span class="fc" id="L193">                continue;</span>
+            }
+<span class="fc" id="L195">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L196">            set.add(Integer.valueOf(i));</span>
+<span class="fc" id="L197">            set.add(Integer.valueOf(i + 1));</span>
+            // check wrap around for i==0
+<span class="pc bpc" id="L199" title="1 of 4 branches missed.">            if ((i == 0) &amp;&amp; isClosedCurve) {</span>
+<span class="fc" id="L200">                float deltaT2 = (1 - t[n - 1]) + t[0];</span>
+<span class="pc bpc" id="L201" title="3 of 4 branches missed.">                if ((deltaT2 &lt;= tolT) &amp;&amp; (distance(x[idxs[n - 1]], y[idxs[n - 1]], </span>
+                    x[idxs[0]], y[idxs[0]]) &lt;= tolD)) {
+                    
+<span class="nc" id="L204">                    set.add(Integer.valueOf(n - 1));</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">                    for (int j = (n - 1); j &gt; 0; --j) {</span>
+<span class="nc" id="L206">                        deltaT2 = t[j] - t[j - 1];</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">                        if ((deltaT2 &lt;= tolT) </span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                            &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
+                            x[idxs[j - 1]], y[idxs[j - 1]]) &lt;= tolD)) {
+<span class="nc" id="L210">                            set.add(Integer.valueOf(j - 1));</span>
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            // check forward until not within tolT
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; (n - 1); ++j) {</span>
+<span class="fc" id="L219">                i = j;</span>
+<span class="fc" id="L220">                float deltaT2 = t[j] - t[j + 1];</span>
+<span class="pc bpc" id="L221" title="1 of 4 branches missed.">                if ((deltaT2 &lt;= tolT) &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
+                    x[idxs[j + 1]], y[idxs[j + 1]]) &lt;= tolD)) {
+<span class="fc" id="L223">                    set.add(Integer.valueOf(j + 1));</span>
+                } else {
+                    break;
+                }
+            }
+<span class="fc" id="L228">            combineIndexes.add(set);</span>
+        }
+        
+<span class="fc" id="L231">        return combineIndexes;</span>
+    }
+
+    private static List&lt;Set&lt;Integer&gt;&gt; findOverlappingPeaks(int[] curveIndexes, 
+        int tolIndexes, int[] idxs, float[]x, float[]y, float tolD, 
+        boolean isClosedCurve) {
+        
+<span class="nc" id="L238">        int n = curveIndexes.length;</span>
+        
+<span class="nc" id="L240">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = new ArrayList&lt;Set&lt;Integer&gt;&gt;();</span>
+
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
+<span class="nc" id="L243">            int deltaT = curveIndexes[i + 1] - curveIndexes[i];</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (deltaT &gt; tolIndexes) {</span>
+<span class="nc" id="L245">                continue;</span>
+            }
+<span class="nc" id="L247">            Set&lt;Integer&gt; set = new HashSet&lt;Integer&gt;();</span>
+<span class="nc" id="L248">            set.add(Integer.valueOf(i));</span>
+<span class="nc" id="L249">            set.add(Integer.valueOf(i + 1));</span>
+            // check wrap around for i==0
+<span class="nc bnc" id="L251" title="All 4 branches missed.">            if ((i == 0) &amp;&amp; isClosedCurve) {</span>
+<span class="nc" id="L252">                int deltaT2 = (1 - curveIndexes[n - 1]) + curveIndexes[0];</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[n - 1]], y[idxs[n - 1]], </span>
+                    x[idxs[0]], y[idxs[0]]) &lt;= tolD)) {
+                    
+<span class="nc" id="L256">                    set.add(Integer.valueOf(n - 1));</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                    for (int j = (n - 1); j &gt; 0; --j) {</span>
+<span class="nc" id="L258">                        deltaT2 = curveIndexes[j] - curveIndexes[j - 1];</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                        if ((deltaT2 &lt;= tolIndexes) </span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                            &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
+                            x[idxs[j - 1]], y[idxs[j - 1]]) &lt;= tolD)) {
+<span class="nc" id="L262">                            set.add(Integer.valueOf(j - 1));</span>
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            // check forward until not within tolIndexes
+<span class="nc bnc" id="L270" title="All 2 branches missed.">            for (int j = (i + 1); j &lt; (n - 1); ++j) {</span>
+<span class="nc" id="L271">                i = j;</span>
+<span class="nc" id="L272">                int deltaT2 = curveIndexes[j] - curveIndexes[j + 1];</span>
+<span class="nc bnc" id="L273" title="All 4 branches missed.">                if ((deltaT2 &lt;= tolIndexes) &amp;&amp; (distance(x[idxs[j]], y[idxs[j]], </span>
+                    x[idxs[j + 1]], y[idxs[j + 1]]) &lt;= tolD)) {
+<span class="nc" id="L275">                    set.add(Integer.valueOf(j + 1));</span>
+                } else {
+                    break;
+                }
+            }
+<span class="nc" id="L280">            combineIndexes.add(set);</span>
+        }
+        
+<span class="nc" id="L283">        return combineIndexes;</span>
+    }
+
+    /**
+     * combine peaks which overlap in the scale free length axis and
+     * are close within tolerance in (x, y) space too and return the
+     * indexes that were deleted with respect to the given contours
+     * list.
+     * @param tolT
+     * @param tolD
+     * @param curve
+     * @param contours
+     * @return 
+     */
+    public static List&lt;Integer&gt; combineOverlappingPeaks(float tolT, float tolD, 
+        PairIntArray curve, List&lt;CurvatureScaleSpaceContour&gt; contours) {
+        
+        // presumably these are all closed curves, but verify that:
+<span class="fc" id="L301">        boolean isClosedCurve = false;</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">        if ((curve instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">            (((PairIntArrayWithColor)curve).getColor() == 1)) {</span>
+<span class="fc" id="L304">            isClosedCurve = true;</span>
+        }
+
+        /*
+        -- make an index array sorted by scale free length
+        -- then traverse the sorted peak to find those withing 0.025 of
+           one another on scale free axis and within distance of 5 or so in
+           (x,y) space and replace them with the average.  the strongest
+           sigma is retained for the average.
+        */
+<span class="fc" id="L314">        int n = contours.size();</span>
+<span class="fc" id="L315">        float[] x = new float[n];</span>
+<span class="fc" id="L316">        float[] y = new float[n];</span>
+<span class="fc" id="L317">        float[] t = new float[n];</span>
+<span class="fc" id="L318">        int[] idxs = new int[n];</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+
+<span class="fc" id="L321">            CurvatureScaleSpaceContour contour = contours.get(i);</span>
+
+<span class="fc" id="L323">            CurvatureScaleSpaceImagePoint[] peakDetails = contour.getPeakDetails();</span>
+
+<span class="pc bpc" id="L325" title="3 of 4 branches missed.">            assert (peakDetails.length == 1);</span>
+
+<span class="fc" id="L327">            CurvatureScaleSpaceImagePoint peakDetail = peakDetails[0];</span>
+<span class="fc" id="L328">            x[i] = peakDetail.getXCoord();</span>
+<span class="fc" id="L329">            y[i] = peakDetail.getYCoord();</span>
+<span class="fc" id="L330">            t[i] = peakDetail.getScaleFreeLength();</span>
+<span class="fc" id="L331">            idxs[i] = i;</span>
+        }
+<span class="fc" id="L333">        QuickSort.sortBy1stArg(t, idxs, 0, n - 1);</span>
+            
+<span class="fc" id="L335">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(t, tolT, idxs, </span>
+            x, y, tolD, isClosedCurve);
+
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (combineIndexes.isEmpty()) {</span>
+<span class="fc" id="L339">            return null;</span>
+        }
+
+<span class="fc" id="L342">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+            
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
+            //keep the one with largest sigma
+<span class="fc" id="L346">            float sigmaMax = Float.MIN_VALUE;</span>
+<span class="fc" id="L347">            int sigmaMaxIdx = -1;</span>
+<span class="fc" id="L348">            float xAvg = 0;</span>
+<span class="fc" id="L349">            float yAvg = 0;</span>
+<span class="fc" id="L350">            float tAvg = 0;</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            for (Integer index : combineSet) {</span>
+<span class="fc" id="L352">                int idx0 = idxs[index.intValue()];</span>
+<span class="fc" id="L353">                tAvg += t[index.intValue()];</span>
+<span class="fc" id="L354">                xAvg += x[idx0];</span>
+<span class="fc" id="L355">                yAvg += y[idx0];</span>
+<span class="fc" id="L356">                CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(idx0).getPeakDetails();</span>
+<span class="fc" id="L357">                float sigma = peakDetails[0].getSigma();</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">                if (sigma &gt; sigmaMax) {</span>
+<span class="fc" id="L359">                    sigmaMax = sigma;</span>
+<span class="fc" id="L360">                    sigmaMaxIdx = idx0;</span>
+                }
+<span class="fc" id="L362">            }</span>
+<span class="fc" id="L363">            xAvg /= (float)combineSet.size();</span>
+<span class="fc" id="L364">            yAvg /= (float)combineSet.size();</span>
+<span class="fc" id="L365">            tAvg /= (float)combineSet.size();</span>
+<span class="fc bfc" id="L366" title="All 2 branches covered.">            for (Integer index : combineSet) {</span>
+<span class="fc" id="L367">                int idx0 = idxs[index.intValue()];</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">                if (idx0 != sigmaMaxIdx) {</span>
+<span class="fc" id="L369">                    remove.add(Integer.valueOf(idx0));</span>
+                }
+<span class="fc" id="L371">            }</span>
+<span class="fc" id="L372">            CurvatureScaleSpaceImagePoint[] peakDetails = contours.get(sigmaMaxIdx).getPeakDetails();</span>
+<span class="fc" id="L373">            peakDetails[0] = new CurvatureScaleSpaceImagePoint(sigmaMax, </span>
+<span class="fc" id="L374">                tAvg, Math.round(xAvg), Math.round(yAvg), peakDetails[0].getCoordIdx());</span>
+<span class="fc" id="L375">        }</span>
+
+<span class="fc" id="L377">        Collections.sort(remove);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L379">            int idx = remove.get(i).intValue();</span>
+<span class="fc" id="L380">            contours.remove(idx);</span>
+        }
+        
+<span class="fc" id="L383">        return remove;</span>
+    }
+
+    public static List&lt;List&lt;BlobPerimeterRegion&gt;&gt; populateRegions(BlobPerimeterCornerHelper 
+        imgHelper, List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; contours, 
+        SegmentationType type, boolean useBinned) {
+        
+<span class="nc" id="L390">        List&lt;PairIntArray&gt; perimeterLists = imgHelper.getBlobPerimeters(type, useBinned);</span>
+        
+<span class="nc" id="L392">        List&lt;Set&lt;PairInt&gt;&gt; blobs = imgHelper.getBlobs(type, useBinned);</span>
+        
+<span class="nc" id="L394">        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprs = new ArrayList&lt;List&lt;BlobPerimeterRegion&gt;&gt;();</span>
+        
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+            
+<span class="nc" id="L398">            List&lt;BlobPerimeterRegion&gt; bpr = extractBlobPerimeterRegions(i,</span>
+<span class="nc" id="L399">                contours.get(i), perimeterLists.get(i), blobs.get(i));</span>
+            
+<span class="nc" id="L401">            bprs.add(bpr);</span>
+        }
+        
+<span class="nc" id="L404">        return bprs;</span>
+    }
+
+    public static List&lt;BlobPerimeterRegion&gt; extractBlobPerimeterRegions(
+        int theEdgeIndex, List&lt;CurvatureScaleSpaceContour&gt; contours,
+        PairIntArray closedCurve, Set&lt;PairInt&gt; blob) {
+
+<span class="nc" id="L411">        List&lt;BlobPerimeterRegion&gt; bprList = new ArrayList&lt;BlobPerimeterRegion&gt;();</span>
+                
+<span class="nc bnc" id="L413" title="All 2 branches missed.">        for (int i = 0; i &lt; contours.size(); ++i) {</span>
+            
+<span class="nc" id="L415">            CurvatureScaleSpaceContour c = contours.get(i);</span>
+            
+<span class="nc bnc" id="L417" title="All 4 branches missed.">            assert(c.getPeakDetails().length == 1);</span>
+            
+<span class="nc" id="L419">            BlobPerimeterRegion bpr = extractBlobPerimeterRegion(theEdgeIndex, </span>
+<span class="nc" id="L420">                c.getPeakDetails()[0], closedCurve, blob);</span>
+            
+<span class="nc" id="L422">            bpr.setIndexWithinCurve(c.getPeakDetails()[0].getCoordIdx());</span>
+                      
+<span class="nc" id="L424">            bprList.add(bpr);</span>
+        }
+        
+<span class="nc" id="L427">        return bprList;</span>
+    }
+    
+    /**
+     * extract the local points surrounding (x, y) on the
+     * perimeter and return an object when creating descriptors.
+     * Note that the perimeter is expected to be a closed curve.
+     * @param theEdgeIndex
+     * @param perimeter
+     * @param blob
+     * @return
+     */
+    public static BlobPerimeterRegion extractBlobPerimeterRegion(
+        int theEdgeIndex, CurvatureScaleSpaceImagePoint peakDetail, 
+        PairIntArray perimeter, Set&lt;PairInt&gt; blob) {
+        
+<span class="nc bnc" id="L443" title="All 4 branches missed.">        if (perimeter == null || (perimeter.getN() &lt; 4)) {</span>
+<span class="nc" id="L444">            throw new IllegalArgumentException(</span>
+            &quot;perimeter cannot be null and must have at least 4 points&quot;);
+        }
+        
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (blob == null) {</span>
+<span class="nc" id="L449">            throw new IllegalArgumentException(&quot;blob cannot be null&quot;);</span>
+        }
+        
+        //TODO: consider asserting that this is a closed curve
+        // because of averaging for some peaks, sometimes
+        // (x[detailIdx, y[detailIdx]) != (peakDetail.getXCoord(), peakDetail.getYCoord())
+        // so for those, have to use the preceding index and then
+        // the next + 1 (instead of next)
+        
+<span class="nc" id="L458">        int detailIdx = peakDetail.getCoordIdx();</span>
+<span class="nc" id="L459">        float sigma = peakDetail.getSigma();</span>
+
+        // inflection points are found in between extremes of curvature,
+        // so detailIdx must not be one of the curve endpoints.
+
+<span class="nc" id="L464">        int xm = peakDetail.getXCoord();</span>
+<span class="nc" id="L465">        int ym = peakDetail.getYCoord();</span>
+
+        int xPrev, yPrev;
+        int xNext, yNext;
+        
+<span class="nc bnc" id="L470" title="All 2 branches missed.">        if (detailIdx == 0) {</span>
+            
+            // wrap around closed curve
+<span class="nc" id="L473">            xPrev = perimeter.getX(perimeter.getN() - 1);</span>
+<span class="nc" id="L474">            yPrev = perimeter.getY(perimeter.getN() - 1);</span>
+            
+<span class="nc bnc" id="L476" title="All 4 branches missed.">            if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
+<span class="nc" id="L477">                xNext = perimeter.getX(detailIdx + 2);</span>
+<span class="nc" id="L478">                yNext = perimeter.getY(detailIdx + 2);</span>
+            } else {
+<span class="nc" id="L480">                xNext = perimeter.getX(detailIdx + 1);</span>
+<span class="nc" id="L481">                yNext = perimeter.getY(detailIdx + 1);</span>
+            }
+            
+<span class="nc bnc" id="L484" title="All 4 branches missed.">        } else if ((xm != perimeter.getX(detailIdx)) || (ym != perimeter.getY(detailIdx))) {</span>
+            
+<span class="nc" id="L486">            xPrev = perimeter.getX(detailIdx - 1);</span>
+<span class="nc" id="L487">            yPrev = perimeter.getY(detailIdx - 1);</span>
+            
+<span class="nc bnc" id="L489" title="All 2 branches missed.">            if ((detailIdx + 2) &lt; perimeter.getN()) {</span>
+<span class="nc" id="L490">                xNext = perimeter.getX(detailIdx + 2);</span>
+<span class="nc" id="L491">                yNext = perimeter.getY(detailIdx + 2);</span>
+            } else {
+                // this is a closed curve, so wrap around
+<span class="nc" id="L494">                xNext = perimeter.getX(0);</span>
+<span class="nc" id="L495">                yNext = perimeter.getY(0);</span>
+            }
+            
+        } else {
+            
+<span class="nc" id="L500">            xPrev = perimeter.getX(detailIdx - 1);</span>
+<span class="nc" id="L501">            yPrev = perimeter.getY(detailIdx - 1);</span>
+            
+<span class="nc bnc" id="L503" title="All 2 branches missed.">            if ((detailIdx + 1) &lt; perimeter.getN()) {</span>
+<span class="nc" id="L504">                xNext = perimeter.getX(detailIdx + 1);</span>
+<span class="nc" id="L505">                yNext = perimeter.getY(detailIdx + 1);</span>
+            } else {
+                // this is a closed curve, so wrap around
+<span class="nc" id="L508">                xNext = perimeter.getX(0);</span>
+<span class="nc" id="L509">                yNext = perimeter.getY(0);</span>
+            }
+            
+        }
+        
+<span class="nc" id="L514">        BlobPerimeterRegion region = new BlobPerimeterRegion(theEdgeIndex, </span>
+            xPrev, yPrev, xm, ym, xNext, yNext, blob, sigma);
+       
+<span class="nc" id="L517">        region.setIndexWithinCurve(detailIdx);</span>
+
+<span class="nc" id="L519">        return region;</span>
+    }
+    
+    /**
+     * contour peaks that overlap on the scale-free axis of the scale space
+     * images are combined if they are close in (x, y) space too.
+     *
+     * @param tolT
+     * @param tolD
+     * @param blobOrderedPerimeters
+     * @param bprLists
+     */
+    protected static void combineOverlappingPeaks0(final int tolIndexes, 
+        final float tolD, List&lt;PairIntArray&gt; blobOrderedPerimeters,
+        List&lt;List&lt;BlobPerimeterRegion&gt;&gt; bprLists) {
+
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (int listIdx = 0; listIdx &lt; bprLists.size(); ++listIdx) {</span>
+
+<span class="nc" id="L537">            PairIntArray curve = blobOrderedPerimeters.get(listIdx);</span>
+            
+<span class="nc" id="L539">            List&lt;BlobPerimeterRegion&gt; bprs = bprLists.get(listIdx);</span>
+
+<span class="nc" id="L541">            combineOverlappingPeaks0(tolIndexes, tolD, curve, bprs);</span>
+        }
+<span class="nc" id="L543">    }</span>
+    
+    /**
+     * combine peaks which overlap in the scale free length axis and
+     * are close within tolerance in (x, y) space too and return the
+     * indexes that were deleted with respect to the given contours
+     * list.
+     * @param tolIndexes
+     * @param tolD
+     * @param curve
+     * @param bprs
+     * @return 
+     */
+    public static List&lt;Integer&gt; combineOverlappingPeaks0(int tolIndexes, float tolD, 
+        PairIntArray curve, List&lt;BlobPerimeterRegion&gt; bprs) {
+        
+        // presumably these are all closed curves, but verify that:
+<span class="nc" id="L560">        boolean isClosedCurve = false;</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">        if ((curve instanceof PairIntArrayWithColor) &amp;&amp;</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">            (((PairIntArrayWithColor)curve).getColor() == 1)) {</span>
+<span class="nc" id="L563">            isClosedCurve = true;</span>
+        }
+
+        /*
+        -- make an index array sorted by scale free length
+        -- then traverse the sorted peak to find those withing 0.025 of
+           one another on scale free axis and within distance of 5 or so in
+           (x,y) space and replace them with the average.  the strongest
+           sigma is retained for the average.
+        */
+<span class="nc" id="L573">        int n = bprs.size();</span>
+<span class="nc" id="L574">        float[] x = new float[n];</span>
+<span class="nc" id="L575">        float[] y = new float[n];</span>
+<span class="nc" id="L576">        int[] curveIndexes = new int[n];</span>
+<span class="nc" id="L577">        int[] idxs = new int[n];</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">        for (int i = 0; i &lt; bprs.size(); ++i) {</span>
+
+<span class="nc" id="L580">            BlobPerimeterRegion bpr = bprs.get(i);</span>
+
+<span class="nc" id="L582">            x[i] = bpr.getX()[1];</span>
+<span class="nc" id="L583">            y[i] = bpr.getY()[1];</span>
+<span class="nc" id="L584">            curveIndexes[i] = bpr.getIndexWithinCurve();</span>
+<span class="nc bnc" id="L585" title="All 2 branches missed.">            if (curveIndexes[i] == -1) {</span>
+<span class="nc" id="L586">                throw new IllegalStateException(&quot;bpr is missing curve index&quot;);</span>
+            }
+<span class="nc" id="L588">            idxs[i] = i;</span>
+        }
+        
+<span class="nc" id="L591">        QuickSort.sortBy1stArg(curveIndexes, idxs);</span>
+                    
+<span class="nc" id="L593">        List&lt;Set&lt;Integer&gt;&gt; combineIndexes = findOverlappingPeaks(curveIndexes, </span>
+            tolIndexes, idxs, x, y, tolD, isClosedCurve);
+
+<span class="nc bnc" id="L596" title="All 2 branches missed.">        if (combineIndexes.isEmpty()) {</span>
+<span class="nc" id="L597">            return null;</span>
+        }
+
+<span class="nc" id="L600">        List&lt;Integer&gt; remove = new ArrayList&lt;Integer&gt;();</span>
+            
+<span class="nc bnc" id="L602" title="All 2 branches missed.">        for (Set&lt;Integer&gt; combineSet : combineIndexes) {</span>
+            //keep the one with largest sigma
+<span class="nc" id="L604">            float sigmaMax = Float.MIN_VALUE;</span>
+<span class="nc" id="L605">            int sigmaMaxIdx = -1;</span>
+            
+<span class="nc bnc" id="L607" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L608">                int idx0 = idxs[index.intValue()];                                </span>
+<span class="nc" id="L609">                float sigma = bprs.get(idx0).getSigma();</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">                if (sigma &gt; sigmaMax) {</span>
+<span class="nc" id="L611">                    sigmaMax = sigma;</span>
+<span class="nc" id="L612">                    sigmaMaxIdx = idx0;</span>
+                }
+                
+<span class="nc" id="L615">            }</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">            for (Integer index : combineSet) {</span>
+<span class="nc" id="L617">                int idx0 = idxs[index.intValue()];</span>
+<span class="nc bnc" id="L618" title="All 2 branches missed.">                if (idx0 != sigmaMaxIdx) {</span>
+<span class="nc" id="L619">                    remove.add(Integer.valueOf(idx0));</span>
+                }
+<span class="nc" id="L621">            }</span>
+<span class="nc" id="L622">        }</span>
+
+<span class="nc" id="L624">        Collections.sort(remove);</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">        for (int i = (remove.size() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L626">            int idx = remove.get(i).intValue();</span>
+<span class="nc" id="L627">            bprs.remove(idx);</span>
+        }
+        
+<span class="nc" id="L630">        return remove;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

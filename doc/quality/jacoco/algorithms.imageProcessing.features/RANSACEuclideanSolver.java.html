@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RANSACEuclideanSolver.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">RANSACEuclideanSolver.java</span></div><h1>RANSACEuclideanSolver.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.MiscMath;
+import algorithms.util.PairIntArray;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ * uses the RANSAC algorithm on combinations of 3 points to calculate
+ * euclidean transformations and evaluate them against all points.
+ *
+ * &lt;pre&gt;
+ * useful reading:
+ * http://6.869.csail.mit.edu/fa12/lectures/lecture13ransac/lecture13ransac.pdf
+ * and
+ * http://www.dtic.mil/dtic/tr/fulltext/u2/a460585.pdf
+ * &lt;/pre&gt;
+ *
+ * @author nichole
+ */
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">public class RANSACEuclideanSolver {</span>
+
+<span class="fc" id="L29">    private boolean debug = true;</span>
+
+<span class="fc" id="L31">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    /**
+     * NOT COMPLETELY READY FOR USE YET
+     * calculate the euclidean projection among the given points with the
+     * assumption that some of the points in the matched lists are not
+     * true matches.
+     *
+     * @param matchedLeftXY
+     * @param matchedRightXY
+     * @param outputLeftXY
+     * @param outputRightXY
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public EuclideanTransformationFit calculateEuclideanTransformation(
+        PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
+        PairIntArray outputLeftXY, PairIntArray outputRightXY)
+        throws NoSuchAlgorithmException {
+
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (matchedLeftXY == null) {</span>
+<span class="nc" id="L52">            throw new IllegalArgumentException(&quot;matchedLeftXY cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (matchedRightXY == null) {</span>
+<span class="nc" id="L55">            throw new IllegalArgumentException(&quot;matchedRightXY cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (matchedLeftXY.getN() &lt; 2) {</span>
+            // cannot use this algorithm.
+<span class="nc" id="L59">            throw new IllegalArgumentException(</span>
+            &quot;the algorithms require 2 or more points.  matchedLeftXY.n=&quot; 
+<span class="nc" id="L61">            + matchedLeftXY.getN());</span>
+        }
+
+        /*
+        -- randomly sample 2 points from nPoints
+        -- calculate the transformation from the 2
+        -- evaluate all nPoints against the transformation and keep each point 
+           which has error &lt; tolerance.   those points are a consensus of this 
+           model (the fundamental matrix)
+        -- if the number of points in the consensus is &gt; required, exit loop,
+           else repeat (note that each consensus is stored separately for
+           each iteration.  note that the loop is terminated if the number of
+           iterations has exceeded a predetermined maximum.
+        -- after exit from the loop, the largest consensus is used to
+           re-calculate the fundamental matrix as the last result.
+           note that if there aren't enough points in a consensus to
+           calculate the transformation, the result is null.
+        */
+
+<span class="fc" id="L80">        int nSet = 2;</span>
+
+<span class="fc" id="L82">        int nPoints = matchedLeftXY.getN();</span>
+        
+<span class="fc" id="L84">        MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();</span>
+        
+<span class="fc" id="L86">        EuclideanEvaluator evaluator = new EuclideanEvaluator();</span>
+            
+<span class="fc" id="L88">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="fc" id="L89">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L90">        log.info(&quot;SEED=&quot; + seed + &quot; nPoints=&quot; + nPoints);</span>
+<span class="fc" id="L91">        sr.setSeed(seed);</span>
+
+<span class="fc" id="L93">        int tolerance = 5;</span>
+
+        // consensus indexes
+<span class="fc" id="L96">        EuclideanTransformationFit bestFit = null;</span>
+        
+<span class="fc" id="L98">        RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();</span>
+
+        /*
+        could consider a threshold max iteration based upon the image size such
+        as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
+        which uses 0.6% of the maximum image dimension.
+        */
+<span class="fc" id="L105">        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.4);</span>
+
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (nPoints == 2) {</span>
+<span class="nc" id="L108">            nMaxIter = 1;</span>
+        }
+
+<span class="fc" id="L111">        int nIter = 0;</span>
+        
+<span class="fc" id="L113">        int[] selectedIndexes = new int[nSet];</span>
+        
+<span class="fc" id="L115">        PairIntArray sampleLeft = new PairIntArray(nSet);</span>
+<span class="fc" id="L116">        PairIntArray sampleRight = new PairIntArray(nSet);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (int i = 0; i &lt; nSet; ++i) {</span>
+<span class="fc" id="L118">            sampleLeft.add(0, 0);</span>
+<span class="fc" id="L119">            sampleRight.add(0, 0);</span>
+        }
+<span class="pc bpc" id="L121" title="3 of 4 branches missed.">        assert(sampleLeft.getN() == nSet);</span>
+        
+<span class="pc bpc" id="L123" title="1 of 4 branches missed.">        while ((nIter &lt; nMaxIter) &amp;&amp; (nIter &lt; 2000)) {</span>
+            
+<span class="fc" id="L125">            MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);</span>
+            
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            for (int i = 0; i &lt; selectedIndexes.length; ++i) {</span>
+<span class="fc" id="L128">                int idx = selectedIndexes[i];</span>
+<span class="fc" id="L129">                sampleLeft.set(i, matchedLeftXY.getX(idx), matchedLeftXY.getY(idx));</span>
+<span class="fc" id="L130">                sampleRight.set(i, matchedRightXY.getX(idx), matchedRightXY.getY(idx));</span>
+            }
+<span class="pc bpc" id="L132" title="3 of 4 branches missed.">            assert(sampleRight.getN() == nSet);</span>
+            
+<span class="fc" id="L134">            TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
+                sampleLeft, sampleRight, 0, 0);
+
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">            if (params == null) {</span>
+<span class="nc" id="L138">                nIter++;</span>
+<span class="nc" id="L139">                continue;</span>
+            }
+
+<span class="fc" id="L142">            EuclideanTransformationFit fit = evaluator.evaluate(matchedLeftXY,</span>
+                matchedRightXY, params, tolerance);
+                    
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (fit == null) {</span>
+<span class="nc" id="L146">                nIter++;</span>
+<span class="nc" id="L147">                continue;</span>
+            }
+               
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
+<span class="fc" id="L151">                bestFit = fit;</span>
+            }
+            
+<span class="fc" id="L154">            nIter++;</span>
+            
+            // recalculate nMaxIter
+<span class="pc bpc" id="L157" title="1 of 4 branches missed.">            if ((bestFit != null) &amp;&amp; ((nIter % 10) == 0)) {</span>
+                
+<span class="fc" id="L159">                double ratio = (double)bestFit.getInlierIndexes().size()</span>
+<span class="fc" id="L160">                    /(double)matchedLeftXY.getN();</span>
+                
+<span class="fc" id="L162">                nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, </span>
+                    nSet, ratio);
+            }
+<span class="fc" id="L165">        }</span>
+
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">        if (bestFit == null || bestFit.getInlierIndexes().isEmpty()) {</span>
+<span class="nc" id="L168">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
+<span class="nc" id="L169">            return null;</span>
+        } else {
+<span class="fc" id="L171">            log.info(&quot;bestFit before consensus = &quot; + bestFit.getTransformationParameters().toString());</span>
+        }
+
+        // store inliers in outputLeftXY and outputRightXY and redo the
+        // entire fit using only the inliers to determine the fundamental
+        // matrix.
+<span class="fc" id="L177">        int n = bestFit.getInlierIndexes().size();</span>
+<span class="fc" id="L178">        PairIntArray inliersLeftXY = new PairIntArray(n);</span>
+<span class="fc" id="L179">        PairIntArray inliersRightXY = new PairIntArray(n);</span>
+<span class="fc" id="L180">        int count = 0;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (Integer idx : bestFit.getInlierIndexes()) {            </span>
+<span class="fc" id="L182">            int idxInt = idx.intValue(); </span>
+<span class="fc" id="L183">            inliersLeftXY.add(matchedLeftXY.getX(idxInt), matchedLeftXY.getY(idxInt));</span>
+<span class="fc" id="L184">            inliersRightXY.add(matchedRightXY.getX(idxInt), matchedRightXY.getY(idxInt));            </span>
+<span class="fc" id="L185">            count++;</span>
+<span class="fc" id="L186">        }</span>
+<span class="pc bpc" id="L187" title="3 of 4 branches missed.">        assert(n == count);</span>
+<span class="pc bpc" id="L188" title="3 of 4 branches missed.">        assert(n == inliersLeftXY.getN());</span>
+        
+<span class="fc" id="L190">        TransformationParameters params = tc.calulateEuclideanWithoutFilter(</span>
+            inliersLeftXY, inliersRightXY, 0, 0);
+        
+<span class="fc" id="L193">        log.info(&quot;consensusParams=&quot; + params.toString());</span>
+
+<span class="fc" id="L195">        EuclideanTransformationFit consensusFit = evaluator.evaluate(matchedLeftXY,</span>
+            matchedRightXY, params, tolerance);
+        
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">        if (consensusFit == null || consensusFit.getInlierIndexes().isEmpty()) {</span>
+<span class="nc" id="L199">            log.info(&quot;no consensus possible for given points&quot;);</span>
+<span class="nc" id="L200">            return null;</span>
+        } else {
+<span class="fc" id="L202">            log.info(&quot;consensus nEval=&quot; + consensusFit.getInlierIndexes().size());</span>
+        }
+        
+        // inlierIndexes are w.r.t matchedLeftXY
+<span class="fc" id="L206">        List&lt;Integer&gt; inlierIndexes = consensusFit.getInlierIndexes();</span>
+        // write to output and convert the coordinate indexes to the original point indexes
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="fc" id="L209">            Integer index = inlierIndexes.get(i);</span>
+<span class="fc" id="L210">            int idx = index.intValue();</span>
+<span class="pc bpc" id="L211" title="3 of 4 branches missed.">            assert(idx &lt; matchedLeftXY.getN());</span>
+<span class="fc" id="L212">            outputLeftXY.add(matchedLeftXY.getX(idx), matchedLeftXY.getY(idx));</span>
+<span class="fc" id="L213">            outputRightXY.add(matchedRightXY.getX(idx), matchedRightXY.getY(idx));</span>
+        }
+        
+<span class="fc" id="L216">        log.info(&quot;nIter=&quot; + nIter);</span>
+
+<span class="fc" id="L218">        log.info(&quot;final fit: &quot; + consensusFit.toString());</span>
+
+<span class="fc" id="L220">        return consensusFit;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
