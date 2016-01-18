@@ -225,8 +225,8 @@ public class EuclideanSolverTest extends TestCase {
             }
         } else if (fileName1.contains("campus")) {
             if (rotateBy90) {
-                assertTrue(Math.abs(params.getTranslationX() - 737) < 10);
-                assertTrue(Math.abs(params.getTranslationY() - 2) < 10);
+                assertTrue(Math.abs(params.getTranslationX() - 737) < 25);
+                assertTrue(Math.abs(params.getTranslationY() - 2) < 25);
                 float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             } else {
