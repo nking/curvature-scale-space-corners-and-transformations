@@ -35,7 +35,7 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
     @Override
     protected boolean match(SegmentationType type, boolean useBinned) {
 
-        if (settings.doUse2ndDerivCorners()) {
+        if (settings.doUse2ndDerivCorners() || settings.doOverrideWithCannySegmentation()) {
             return matchFor2ndDerivPts(type, useBinned);
         }
 

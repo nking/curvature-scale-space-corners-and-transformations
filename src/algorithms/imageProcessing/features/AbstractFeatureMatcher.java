@@ -191,8 +191,22 @@ public abstract class AbstractFeatureMatcher {
         
         List<HoughTransformLines> houghTransformLines1;
         List<HoughTransformLines> houghTransformLines2;
-                
-        if (type.equals(SegmentationType.GREYSCALE_CANNY)) {
+        
+        //TODO: refactor the building of corners to remove the use of blobs as a default
+        if (settings.doOverrideWithCannySegmentation()) {
+               
+            img1Helper.extractCannyCornersWithoutBlobs(type, useBinned);
+            img2Helper.extractCannyCornersWithoutBlobs(type, useBinned);
+            
+            Logger.getLogger(this.getClass().getName()).info(
+                "nPts canny img1 = " + img1Helper.getAllCorners(
+                    SegmentationType.GREYSCALE_CANNY, useBinned).size());
+
+            Logger.getLogger(this.getClass().getName()).info(
+                "nPts canny img2 = " + img2Helper.getAllCorners(
+                    SegmentationType.GREYSCALE_CANNY, useBinned).size());
+            
+        } else if (type.equals(SegmentationType.GREYSCALE_CANNY)) {
             
             boolean filterOutImageBoundaryBlobs = true;
             boolean filterOutZeroPixels = false;
@@ -205,30 +219,20 @@ public abstract class AbstractFeatureMatcher {
             img2Helper.getBlobs(type, useBinned, filterOutImageBoundaryBlobs, 
                 filterOutZeroPixels); 
             
-            if (settings.doUse2ndDerivCorners()) {
-                //TODO: consider using extractSecondDerivativeCornersithoutBlobs instead
-                img1Helper.extractSecondDerivativeCorners(type, useBinned);
-                img2Helper.extractSecondDerivativeCorners(type, useBinned);
-                
-                Logger.getLogger(this.getClass().getName()).info(
-                    "nPts 2nd deriv img1 = " + img1Helper.getAllCorners(
-                    SegmentationType.NONE, useBinned).size());
-                
-                Logger.getLogger(this.getClass().getName()).info(
-                    "nPts 2nd deriv img2 = " + img2Helper.getAllCorners(
-                    SegmentationType.NONE, useBinned).size());
-                
-            } else {
-                img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
-                    doNotAddPoints);
-                img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
-                    doNotAddPoints);
-            }
-        }
-        
-        if (settings.doUse2ndDerivCorners()) {
-            img1Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
-            img2Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
+            img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
+                doNotAddPoints);
+            img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
+                doNotAddPoints);
+            
+        } else if (settings.doUse2ndDerivCorners()) {
+            
+            img1Helper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, useBinned);
+            img2Helper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, useBinned);
+            img1Helper.extractSecondDerivativeCorners(SegmentationType.GREYSCALE_WAVELET, useBinned);
+            img2Helper.extractSecondDerivativeCorners(SegmentationType.GREYSCALE_WAVELET, useBinned);
+                        
+      //      img1Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
+      //      img2Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
             
             Logger.getLogger(this.getClass().getName()).info(
                 "nPts 2nd deriv img1 = " + img1Helper.getAllCorners(

@@ -54,6 +54,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
     protected boolean doNotNormalizeByHistogram = false;
     
+    protected boolean doNotFindJunctions = false;
+    
     protected boolean useLineDrawingMode = false;
         
     protected boolean useLowestHighIntensityCutoff = false;
@@ -159,6 +161,10 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      */
     public void doNotPerformHistogramEqualization() {
         this.doNotNormalizeByHistogram = true;
+    }
+    
+    public void doNotFindJunctions() {
+        doNotFindJunctions = true;
     }
     
     public void useLowestHighIntensityCutoff() {
@@ -408,7 +414,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         edges.clear();
         edges.addAll(tmpEdges);
         
-        if (contourExtractor instanceof EdgeExtractorWithJunctions) {
+        if (!doNotFindJunctions && (contourExtractor instanceof 
+            EdgeExtractorWithJunctions)) {
 
             junctionMap.clear();
             junctionLocationMap.clear();

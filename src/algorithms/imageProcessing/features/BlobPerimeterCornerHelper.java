@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.*;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -584,10 +585,35 @@ public class BlobPerimeterCornerHelper {
     }
     
     /**
+     * extract the canny edge corners and do not filter for association with blobs.
+     * Note, these corners are stored in a data structure that is only accessed
+     * if type is NONE and using getAllCorners()
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractCannyCornersWithoutBlobs(SegmentationType type, 
+        boolean applyToBinnedImage) {
+        
+        if (!type.equals(SegmentationType.GREYSCALE_CANNY)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be GREYSCALE_CANNY to store and retrieve the points"
+            + " correctly.  Any blobs needed must be created separately with a type that"
+            + " is not NONE");
+        }
+                
+        if (applyToBinnedImage) {
+            extractCannyCornersForBinnedWithoutBlobs(type);
+        } else {
+            extractCannyCornersForUnbinnedWithoutBlobs(type);
+        }
+    }
+    
+    /**
      * extract the corners as second derivative gaussian high value points
      * and filter or do not filter for association with blobs.
      * Note, these corners are stored in a data structure that is only accessed
-     * if type is NONE.
+     * if type is NONE and using getAllCorners()
      * 
      * @param type 
      * @param applyToBinnedImage 
@@ -905,7 +931,8 @@ public class BlobPerimeterCornerHelper {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
-            200, true);
+            //200, true);
+            5000, true);
         
         corners = new ArrayList<List<CornerRegion>>();
            
@@ -947,6 +974,18 @@ public class BlobPerimeterCornerHelper {
         }
         
         segBinnedCornersMap.put(type, corners);
+        
+        //TODO: corner making will be refactored soon. this addition here allows later logic
+        // using getAllCorners to fetch the 2nd deriv corners as expected.
+        // (haven't created settings for end deriv + blob assoc filter yet)
+        List<CornerRegion> corners2 = segBinnedAllCornersMap.get(SegmentationType.NONE);
+        if (corners2 == null) {
+            corners2 = new ArrayList<CornerRegion>();
+            for (List<CornerRegion> list : corners) {
+                corners2.addAll(list);
+            }
+            segBinnedAllCornersMap.put(SegmentationType.NONE, corners2);
+        }
 
         if (imgHelper.isInDebugMode()) {
             MiscDebug.writeEdgesAndCorners(perimeterLists, corners,
@@ -959,6 +998,118 @@ public class BlobPerimeterCornerHelper {
         
         assert(perimeterLists.size() == corners.size());
         
+    }
+    
+    private void extractCannyCornersForBinnedWithoutBlobs(SegmentationType type) {
+        
+        if (!type.equals(SegmentationType.GREYSCALE_CANNY)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be GREYSCALE_CANNY to store and retrieve the points"
+            + " correctly.  Any blobs needed must be created separately with a type that"
+            + " is not NONE");
+        }
+        
+        List<CornerRegion> corners = segBinnedAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+                        
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned().copyImage();
+        
+        CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg);
+        detector.disableJaggedLineCorrections();
+        detector.doNotFindJunctions();
+        detector.doNotStoreCornerRegions();
+        
+        detector.findCorners();
+                       
+        PairIntArray c1 = detector.getCorners();
+        //Set<CornerRegion> cornersA = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        
+        if (c1 == null) {
+            Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).severe("no cornerw were found");
+            return;
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+        
+        for (int i = 0; i < c1.getN(); ++i) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, c1.getX(i), c1.getY(i));
+            cr.setIndexWithinCurve(-1);
+            corners.add(cr);
+        }
+                
+        segBinnedAllCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_"
+                        + MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    private void extractCannyCornersForUnbinnedWithoutBlobs(SegmentationType type) {
+        
+        if (!type.equals(SegmentationType.GREYSCALE_CANNY)) {
+            throw new IllegalArgumentException(
+            "segmentation type must be GREYSCALE_CANNY to store and retrieve the points"
+            + " correctly.  Any blobs needed must be created separately with a type that"
+            + " is not NONE");
+        }
+        
+        List<CornerRegion> corners = segAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+                        
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned().copyImage();
+        
+        CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg);
+        detector.disableJaggedLineCorrections();
+        detector.doNotFindJunctions();
+        detector.doNotStoreCornerRegions();
+        
+        detector.findCorners();
+        
+        PairIntArray c1 = detector.getCorners();
+        //Set<CornerRegion> cornersA = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);
+        
+        if (c1 == null) {
+            Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).severe("no cornerw were found");
+            return;
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+        
+        for (int i = 0; i < c1.getN(); ++i) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, c1.getX(i), c1.getY(i));
+            cr.setIndexWithinCurve(-1);
+            corners.add(cr);
+        }
+                
+        segAllCornersMap.put(type, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_"
+                        + MiscDebug.getCurrentTimeFormatted());
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
     }
     
     private void extractSecondDerivativeCornersForBinnedWithoutBlobs(SegmentationType type) {
@@ -982,7 +1133,8 @@ public class BlobPerimeterCornerHelper {
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
             //500, true);
-             1000, true);
+             //1000, true);
+             5000, true);
         
         corners = new ArrayList<CornerRegion>();
         
@@ -1041,7 +1193,8 @@ public class BlobPerimeterCornerHelper {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
-            200, true);
+            //200, true);
+            5000, true);
         
         corners = new ArrayList<List<CornerRegion>>();
         
@@ -1084,6 +1237,18 @@ public class BlobPerimeterCornerHelper {
         
         segCornersMap.put(type, corners);
 
+        //TODO: corner making will be refactored soon. this addition here allows later logic
+        // using getAllCorners to fetch the 2nd deriv corners as expected.
+        // (haven't created settings for end deriv + blob assoc filter yet)
+        List<CornerRegion> corners2 = segAllCornersMap.get(SegmentationType.NONE);
+        if (corners2 == null) {
+            corners2 = new ArrayList<CornerRegion>();
+            for (List<CornerRegion> list : corners) {
+                corners2.addAll(list);
+            }
+            segAllCornersMap.put(SegmentationType.NONE, corners2);
+        }
+        
         if (imgHelper.isInDebugMode()) {
             MiscDebug.writeEdgesAndCorners(perimeterLists, corners,
                 1, gsImg, "blob_corners_" + imgHelper.getDebugTag() + "_"
@@ -1118,7 +1283,8 @@ public class BlobPerimeterCornerHelper {
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
             //500, true);
-            1000, true);
+            //1000, true);
+            5000, true);
         
         corners = new ArrayList<CornerRegion>();
         

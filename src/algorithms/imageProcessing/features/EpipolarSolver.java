@@ -59,9 +59,6 @@ public class EpipolarSolver {
         NonEuclideanSegmentFeatureMatcher matcher = 
             new NonEuclideanSegmentFeatureMatcher(img1, img2, featureSettings);
         
-        //EuclideanSegmentFeatureMatcher2 matcher
-        //    = new EuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
-
         boolean solved = matcher.match();
 
         if (!solved || (matcher.getSolutionMatched1().size() < 7)) {
@@ -82,6 +79,10 @@ public class EpipolarSolver {
         for (int i = 0; i < n; ++i) {
             matchedLeftXY.add(points1.get(i).getX(), points1.get(i).getY());
             matchedRightXY.add(points2.get(i).getX(), points2.get(i).getY());
+        }
+        
+        if (featureSettings.debug()) {
+            plotFit(matchedLeftXY, matchedRightXY, "ransac_input");
         }
 
         RANSACSolver solver = new RANSACSolver();
@@ -112,6 +113,39 @@ public class EpipolarSolver {
         }
     }
 
+    private void plotFit(PairIntArray xy1, PairIntArray xy2, String fileSuffix) {
+        
+        Image img1Cp = img1.copyImage();
+        Image img2Cp = img2.copyImage();
+
+        for (int ii = 0; ii < xy1.getN(); ii++) {
+            double x = xy1.getX(ii);
+            double y = xy1.getY(ii);
+            ImageIOHelper.addPointToImage((float) x, (float) y, img1Cp, 3,
+                255, 0, 0);
+        }
+        for (int ii = 0; ii < xy2.getN(); ii++) {
+            double x = xy2.getX(ii);
+            double y = xy2.getY(ii);
+            ImageIOHelper.addPointToImage((float) x, (float) y, img2Cp, 3,
+                255, 0, 0);
+        }
+
+        String dirPath;
+        try {
+            dirPath = ResourceFinder.findDirectory("bin");
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + fileSuffix + "_1_" + featureSettings.getDebugTag() + ".png", img1Cp);
+
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + fileSuffix + "_2_" + featureSettings.getDebugTag() + ".png", img2Cp);
+
+        } catch (IOException ex) {
+            Logger.getLogger(EuclideanSolver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     private void plotFit(EpipolarTransformationFit fit) {
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
