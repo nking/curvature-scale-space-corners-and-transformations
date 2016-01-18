@@ -981,8 +981,8 @@ public class BlobPerimeterCornerHelper {
         GreyscaleImage gsImg = this.getGreyscaleImageBinned();
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
-            //200, true);
-             500, true);
+            //500, true);
+             1000, true);
         
         corners = new ArrayList<CornerRegion>();
         
@@ -995,7 +995,7 @@ public class BlobPerimeterCornerHelper {
         }
         
         segBinnedAllCornersMap.put(type, corners);
-
+        
         if (imgHelper.isInDebugMode()) {
             try {
                 MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
@@ -1117,8 +1117,8 @@ public class BlobPerimeterCornerHelper {
         GreyscaleImage gsImg = this.getGreyscaleImage();
         
         Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
-            //200, true);
-            500, true);
+            //500, true);
+            1000, true);
         
         corners = new ArrayList<CornerRegion>();
         

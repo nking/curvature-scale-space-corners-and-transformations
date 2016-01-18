@@ -1,8 +1,7 @@
-package algorithms.imageProcessing.features;
+package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.transform.EuclideanTransformationFit;
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +58,28 @@ public class EuclideanEvaluator {
             params.copy(), inlierIndexes, distances, tolerance);
         
         return fit;
+    }
+    
+    public EuclideanTransformationFit evaluate(List<FeatureComparisonStat> stats, 
+        TransformationParameters params, int tolerance) {
+        
+        if (stats == null) {
+            throw new IllegalArgumentException("xy1 cannot be null");
+        }
+        
+        PairIntArray xy1 = new PairIntArray(stats.size());
+        PairIntArray xy2 = new PairIntArray(stats.size());
+        
+        for (FeatureComparisonStat stat : stats) {
+            
+            PairInt p1 = stat.getImg1Point().copy();
+            PairInt p2 = stat.getImg2Point().copy();
+            
+            xy1.add(p1.getX(), p1.getY());
+            xy2.add(p2.getX(), p2.getY());
+        }
+        
+        return evaluate(xy1, xy2, params, tolerance);
     }
    
 }

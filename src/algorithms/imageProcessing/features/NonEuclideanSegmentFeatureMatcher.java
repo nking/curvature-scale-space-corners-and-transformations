@@ -15,6 +15,8 @@ import java.util.List;
  */
 public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
     
+    protected List<FeatureComparisonStat> rejectedBy2ndBest = new ArrayList<FeatureComparisonStat>();
+        
     /**
      *
      * @param img1 the first image holding objects for which a Euclidean
@@ -81,6 +83,8 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
          
         int dither = 1;
         
+        List<FeatureComparisonStat> rb2j = new ArrayList<FeatureComparisonStat>();
+            
         List<FeatureComparisonStat> stats;
         
         if (matchCurveToCurve) {
@@ -98,7 +102,7 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
             stats = matcher.getSolutionStats();
 
         } else {
-            
+                        
             List<CornerRegion> corners1 = new ArrayList<CornerRegion>();
             List<CornerRegion> corners2 = new ArrayList<CornerRegion>();
             for (int i = 0; i < corners1List.size(); ++i) {
@@ -117,7 +121,9 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
                 return false;
             }
                 
-            stats = matcher.getSolutionStats();
+            stats = matcher.getSolutionStats();   
+            
+            rb2j.addAll(matcher.getRejectedBy2ndBest());
         }
         
         if (stats.isEmpty()) {
@@ -128,9 +134,13 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
             stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
                 img2Helper.getGreyscaleImage(), stats, 
                 binFactor1, binFactor2, f1.getRotatedOffsets());
+            
+            rb2j = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
+                img2Helper.getGreyscaleImage(), rb2j, 
+                binFactor1, binFactor2, f1.getRotatedOffsets());
         }
         
-        copyToInstanceVars(stats);
+        copyToInstanceVars(stats, rb2j);
                 
         return true;
     }
@@ -176,7 +186,11 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
             filterForLocalization(img1, f1, corners1);
             filterForLocalization(img2, f2, corners2);
         }
-       
+        
+        log.info("nPts after localization filter img1 = " + corners1.size());
+
+        log.info("nPts after localization filter img2 = " + corners2.size());
+               
         int dither = 1;
                 
         CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
@@ -190,19 +204,44 @@ public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
                 
         List<FeatureComparisonStat> stats = matcher.getSolutionStats();
         
+        log.info("nPts after SSD match (incl filter for 2nd best) = " + stats.size());
+        
+        log.info("nPts in 2nd best rejection list = " + matcher.getRejectedBy2ndBest().size());
+        
         if (stats.isEmpty()) {
             return false;
         }
+        
+        List<FeatureComparisonStat> rb2j = 
+            new ArrayList<FeatureComparisonStat>(matcher.getRejectedBy2ndBest());
                 
         if (useBinned) {
             stats = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
                 img2Helper.getGreyscaleImage(), stats, 
                 binFactor1, binFactor2, f1.getRotatedOffsets());
+            
+            rb2j = reviseStatsForFullImages(img1Helper.getGreyscaleImage(), 
+                img2Helper.getGreyscaleImage(), rb2j, 
+                binFactor1, binFactor2, f1.getRotatedOffsets());
         }
         
-        copyToInstanceVars(stats);
+        copyToInstanceVars(stats, rb2j);
                 
         return true;
+    }
+
+    private void copyToInstanceVars(List<FeatureComparisonStat> stats, 
+        List<FeatureComparisonStat> rejBy2ndBest) {
+        
+        super.copyToInstanceVars(stats);
+        
+        rejectedBy2ndBest.clear();
+        
+        rejectedBy2ndBest.addAll(rejBy2ndBest);        
+    }
+    
+    public List<FeatureComparisonStat> getRejectedBy2ndBest() {
+        return rejectedBy2ndBest;
     }
     
 }

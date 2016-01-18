@@ -19,6 +19,8 @@ public class CornerMatcher<T extends CornerRegion> {
 
     private List<FeatureComparisonStat> solutionStats = null;
     
+    private List<FeatureComparisonStat> rejectedBy2ndBest = new ArrayList<FeatureComparisonStat>();
+    
     private List<PairInt> matched1 = null;
     
     private List<PairInt> matched2 = null;
@@ -63,6 +65,8 @@ public class CornerMatcher<T extends CornerRegion> {
         }
         
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
@@ -140,12 +144,14 @@ public class CornerMatcher<T extends CornerRegion> {
                 
                 if (ratio < 0.8) {
                     stats.add(best);
+                } else {
+                    rejectedBy2ndBest.add(best);
                 }
             }
         }
         
         MiscStats.filterForDegeneracy(stats);
-        
+                
         assignInstanceResults(stats);
         
         return !stats.isEmpty();
@@ -188,4 +194,8 @@ public class CornerMatcher<T extends CornerRegion> {
         return matched2;
     }
 
+    public List<FeatureComparisonStat> getRejectedBy2ndBest() {
+        return rejectedBy2ndBest;
+    }
+    
 }

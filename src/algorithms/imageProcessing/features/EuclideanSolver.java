@@ -3,13 +3,19 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.transform.EuclideanEvaluator;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,6 +37,7 @@ public class EuclideanSolver {
 
     private PairIntArray solutionLeftXY = null;
     private PairIntArray solutionRightXY = null;
+    private TransformationParameters solutionParams = null;
 
     private final FeatureMatcherSettings featureSettings;
 
@@ -91,6 +98,44 @@ public class EuclideanSolver {
 
             //TODO: check that stdev is reasonable
             state = State.SOLVED;
+            
+            this.solutionParams = fit.getTransformationParameters().copy();
+            
+            log.info(featureSettings.getDebugTag() + 
+                " nPts matched from ransac solver = " + outputLeftXY.getN()); 
+                        
+            if ((matcher.getRejectedBy2ndBest().size() > 0) && (outputLeftXY.getN() < 30)) {
+                
+                if (featureSettings.debug()) {
+                    PairIntArray lt = new PairIntArray(n);
+                    PairIntArray rt = new PairIntArray(n);
+                    for (int i = 0; i < matcher.getRejectedBy2ndBest().size(); ++i) {
+                        FeatureComparisonStat stat = matcher.getRejectedBy2ndBest().get(i);
+                        lt.add(stat.getImg1Point().getX(), stat.getImg1Point().getY());
+                        rt.add(stat.getImg2Point().getX(), stat.getImg2Point().getY());
+                    }
+                    if (featureSettings.debug()) {
+                        plotFit(lt, rt, "rej_by_2nd_best_filter");
+                    }
+                }
+                int nBefore = outputLeftXY.getN();
+                int tolerance = 10;//5;
+                addRejectedIfPossible(matcher.getRejectedBy2ndBest(),
+                    solutionParams, outputLeftXY, outputRightXY, tolerance);
+                int nAfter = outputLeftXY.getN();
+                
+                if ((nAfter - nBefore) > 12) {
+                    float[] weights = new float[nAfter];
+                    Arrays.fill(weights, 1.f/(float)nAfter);
+                    MatchedPointsTransformationCalculator tc = new MatchedPointsTransformationCalculator();
+                    TransformationParameters params = tc.calulateEuclidean(outputLeftXY, 
+                        outputRightXY, weights, 0, 0, new float[4]);
+                    log.info("nPts=" + outputLeftXY.getN() + " re-calc params=" + params.toString());
+                    this.solutionParams = params.copy();
+                }
+                
+                log.info("nPts after adding rejected that fit transform " + nAfter);
+            }
 
             this.solutionLeftXY = outputLeftXY;
 
@@ -140,6 +185,56 @@ public class EuclideanSolver {
 
         } catch (IOException ex) {
             Logger.getLogger(EuclideanSolver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * add points from rejectedBy2ndBest if their transformations are within
+     * tolerance of the given params and if they do not already exist in
+     * the output data structures.
+     * @param rejectedBy2ndBest
+     * @param params
+     * @param outputLeftXY
+     * @param outputRightXY 
+     */
+    private void addRejectedIfPossible(List<FeatureComparisonStat> 
+        rejectedBy2ndBest, TransformationParameters params, 
+        PairIntArray outputLeftXY, PairIntArray outputRightXY,
+        int tolerance) {
+        
+        if (rejectedBy2ndBest.isEmpty()) {
+            return;
+        }
+        
+        EuclideanEvaluator evaluator = new EuclideanEvaluator();
+
+        EuclideanTransformationFit fit = evaluator.evaluate(rejectedBy2ndBest,
+            params, tolerance);
+        
+        // add matching stats to output if not already matched
+        List<Integer> inlierIndexes = fit.getInlierIndexes();
+        
+        if (inlierIndexes.isEmpty()) {
+            return;
+        }
+        
+        Set<PairInt> left = Misc.convert(outputLeftXY);
+        Set<PairInt> right = Misc.convert(outputRightXY);
+        
+        for (Integer index : inlierIndexes) {
+            FeatureComparisonStat stat = rejectedBy2ndBest.get(index.intValue());
+            PairInt p1 = stat.getImg1Point();
+            if (left.contains(p1)) {
+                continue;
+            }
+            PairInt p2 = stat.getImg2Point();
+            if (right.contains(p2)) {
+                continue;
+            }
+            outputLeftXY.add(p1.getX(), p1.getY());
+            outputRightXY.add(p2.getX(), p2.getY());
+            left.add(p1);
+            right.add(p2);
         }
     }
 

@@ -209,6 +209,15 @@ public abstract class AbstractFeatureMatcher {
                 //TODO: consider using extractSecondDerivativeCornersithoutBlobs instead
                 img1Helper.extractSecondDerivativeCorners(type, useBinned);
                 img2Helper.extractSecondDerivativeCorners(type, useBinned);
+                
+                Logger.getLogger(this.getClass().getName()).info(
+                    "nPts 2nd deriv img1 = " + img1Helper.getAllCorners(
+                    SegmentationType.NONE, useBinned).size());
+                
+                Logger.getLogger(this.getClass().getName()).info(
+                    "nPts 2nd deriv img2 = " + img2Helper.getAllCorners(
+                    SegmentationType.NONE, useBinned).size());
+                
             } else {
                 img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned, 
                     doNotAddPoints);
@@ -220,6 +229,14 @@ public abstract class AbstractFeatureMatcher {
         if (settings.doUse2ndDerivCorners()) {
             img1Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
             img2Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
+            
+            Logger.getLogger(this.getClass().getName()).info(
+                "nPts 2nd deriv img1 = " + img1Helper.getAllCorners(
+                    SegmentationType.NONE, useBinned).size());
+
+            Logger.getLogger(this.getClass().getName()).info(
+                "nPts 2nd deriv img2 = " + img2Helper.getAllCorners(
+                    SegmentationType.NONE, useBinned).size());
         } else {
             img1Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
             img2Helper.extractBlobPerimeterAsCornerRegions(type, useBinned);
@@ -333,6 +350,10 @@ public abstract class AbstractFeatureMatcher {
         int prevBinFactor2, RotatedOffsets rotatedOffsets) {
         
         log.info("refine stats for full image reference frames");
+        
+        if (stats.isEmpty()) {
+            return stats;
+        }
         
         List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
         

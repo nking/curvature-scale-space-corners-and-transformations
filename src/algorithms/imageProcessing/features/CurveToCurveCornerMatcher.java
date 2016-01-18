@@ -205,9 +205,9 @@ System.out.println(sb.toString());
         
         solutionStats = stats;
     
-        List<PairInt> matched1 = new ArrayList<PairInt>();
+        matched1 = new ArrayList<PairInt>();
     
-        List<PairInt> matched2 = new ArrayList<PairInt>();
+        matched2 = new ArrayList<PairInt>();
         
         for (FeatureComparisonStat stat : stats) {
             PairInt p1 = stat.getImg1Point();
