@@ -155,7 +155,7 @@ public class RANSACEuclideanSolver {
             nIter++;
             
             // recalculate nMaxIter
-            if ((bestFit != null) && ((nIter % 10) == 0)) {
+            if ((bestFit != null) && ((nIter % 50) == 0)) {
                 
                 double ratio = (double)bestFit.getInlierIndexes().size()
                     /(double)matchedLeftXY.getN();

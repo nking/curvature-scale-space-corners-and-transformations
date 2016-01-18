@@ -213,8 +213,8 @@ public class EuclideanSolverTest extends TestCase {
             }
         } else if (fileName1.contains("books")) {
             if (rotateBy90) {
-                assertTrue(Math.abs(params.getTranslationX() - 600) < 35);
-                assertTrue(Math.abs(params.getTranslationY() - 5) < 35);
+                assertTrue(Math.abs(params.getTranslationX() - 610) < 40);
+                assertTrue(Math.abs(params.getTranslationY() - 5) < 30);
                 float diffRot = AngleUtil.getAngleDifference(270, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             } else {
@@ -237,8 +237,8 @@ public class EuclideanSolverTest extends TestCase {
             }
         } else if (fileName1.contains("merton")) {
             if (rotateBy90) {
-                assertTrue(Math.abs(params.getTranslationX() - 1045) < 25);
-                assertTrue(Math.abs(params.getTranslationY() - -18) < 25);
+                assertTrue(Math.abs(params.getTranslationX() - 1050) < 45);
+                assertTrue(Math.abs(params.getTranslationY() - -18) < 35);
                 float diffRot = AngleUtil.getAngleDifference(269, params.getRotationInDegrees());
                 assertTrue(Math.abs(diffRot) < 20);
             } else {
@@ -248,6 +248,5 @@ public class EuclideanSolverTest extends TestCase {
                 assertTrue(Math.abs(diffRot) < 15);
             }
         }
-        
     }
 }
