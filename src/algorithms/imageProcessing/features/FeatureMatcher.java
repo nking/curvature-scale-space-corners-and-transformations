@@ -168,6 +168,129 @@ public class FeatureMatcher {
         return best;
     }
     
+    public FeatureComparisonStat findBestMatch(
+        IntensityClrFeatures features1, IntensityClrFeatures features2, 
+        CornerRegion region1, CornerRegion region2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2
+        ) {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        
+        return findBestMatch(features1, features2, x1, y1, x2, y2, 
+            redImg1, greenImg1, blueImg1, redImg2, greenImg2, blueImg2);
+    }
+  
+    public FeatureComparisonStat findBestMatch(
+        IntensityClrFeatures features1, IntensityClrFeatures features2,
+        int x1, int y1, int x2, int y2,
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1,
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2
+        ) {
+
+        int rot2;
+        try {
+            rot2 = features2.calculateOrientation(x2, y2);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+        
+        /*
+        extractIntensityO3(GreyscaleImage redImg, 
+        GreyscaleImage greenImg, GreyscaleImage blueImg,
+        final int xCenter, final int yCenter, final int rotation)
+        */
+        
+        IntensityDescriptor desc2_o1 = features2.extractIntensityO1(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_o1 == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_o2 = features2.extractIntensityO2(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_o2 == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_o3 = features2.extractIntensityO3(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_o3 == null) {
+            return null;
+        }
+                
+        int rot1;
+        try {
+            rot1 = features1.calculateOrientation(x1, y1);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+                
+        IntensityDescriptor desc1_o1 = features2.extractIntensityO1(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_o1 == null) {
+            return null;
+        }
+        IntensityDescriptor desc1_o2 = features2.extractIntensityO2(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_o2 == null) {
+            return null;
+        }
+        IntensityDescriptor desc1_o3 = features2.extractIntensityO1(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_o3 == null) {
+            return null;
+        }
+
+        FeatureComparisonStat stat_o1 = IntensityFeatures.calculateStats(
+            desc1_o1, x1, y1, desc2_o1, x2, y2);
+        
+        if (stat_o1.getSumIntensitySqDiff() >= stat_o1.getImg2PointIntensityErr()) {
+            return null;
+        }
+        
+        FeatureComparisonStat stat_o2 = IntensityFeatures.calculateStats(
+            desc1_o2, x1, y1, desc2_o2, x2, y2);
+        
+        if (stat_o2.getSumIntensitySqDiff() >= stat_o2.getImg2PointIntensityErr()) {
+            return null;
+        }
+        
+        FeatureComparisonStat stat_o3 = IntensityFeatures.calculateStats(
+            desc1_o3, x1, y1, desc2_o3, x2, y2);
+        
+        if (stat_o3.getSumIntensitySqDiff() >= stat_o3.getImg2PointIntensityErr()) {
+            return null;
+        }
+        
+        double ssdIntensity = 
+            Math.sqrt(stat_o1.getSumIntensitySqDiff()) +
+            Math.sqrt(stat_o2.getSumIntensitySqDiff()) +
+            Math.sqrt(stat_o3.getSumIntensitySqDiff());
+        
+        double err2SqIntensity = 
+            Math.sqrt(stat_o1.getImg2PointIntensityErr()) +
+            Math.sqrt(stat_o2.getImg2PointIntensityErr()) +
+            Math.sqrt(stat_o3.getImg2PointIntensityErr());
+        
+        log.info(String.format("(%d,%d), (%d,%d)  %.1f  %.1f  %.1f => %.1f (%.1f)",
+            x1, y1, x2, y2, 
+            stat_o1.getSumIntensitySqDiff(), stat_o2.getSumIntensitySqDiff(),
+            stat_o3.getSumIntensitySqDiff(), ssdIntensity, err2SqIntensity));
+        
+        FeatureComparisonStat best = new FeatureComparisonStat();
+        best.setImg1Point(new PairInt(x1, y1));
+        best.setImg2Point(new PairInt(x2, y2));
+        best.setSumIntensitySqDiff((float) ssdIntensity);
+        best.setImg2PointIntensityErr((float) err2SqIntensity);
+
+        return best;
+    }
+    
     protected FeatureComparisonStat ditherAndRotateForBestLocation3(
         IntensityFeatures features1, IntensityFeatures features2, 
         final int x1, final int y1, final int x2, final int y2,      

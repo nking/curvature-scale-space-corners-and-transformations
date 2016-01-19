@@ -1100,6 +1100,39 @@ public class MiscDebug {
         ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + ".png", img);
     }
 
+    public static void writeImage(Set<PairInt> points, Image img, 
+        String fileSuffix) throws IOException {
+       
+        int rClr = 255;
+        int gClr = 0;
+        int bClr = 0;
+        
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            int pointSize = 1;//+ Math.round((k - 0.1f)/0.1f);
+            if (pointSize < 0) {
+                pointSize = 1;
+            }
+            
+            for (int dx = (-1*pointSize); dx < (pointSize + 1); dx++) {
+                float xx = x + dx;
+                if ((xx > -1) && (xx < (img.getWidth() - 1))) {
+                    for (int dy = (-1*pointSize); dy < (pointSize + 1); dy++) {
+                        float yy = y + dy;
+                        if ((yy > -1) && (yy < (img.getHeight() - 1))) {
+                            img.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
+                        }
+                    }
+                }
+            }
+        }
+        
+        String dirPath = algorithms.util.ResourceFinder.findDirectory("bin");
+        String sep = System.getProperty("file.separator");
+        ImageIOHelper.writeOutputImage(dirPath + sep + fileSuffix + ".png", img);
+    }
+
     public static void debugPlot(List<CurvatureScaleSpaceContour> result, ImageExt 
         img, int xOffset, int yOffset, String fileSuffix) {
         

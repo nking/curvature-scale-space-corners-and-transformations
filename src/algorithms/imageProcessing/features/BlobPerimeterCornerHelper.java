@@ -575,12 +575,29 @@ public class BlobPerimeterCornerHelper {
      * @param applyToBinnedImage 
     */
     public void extractSecondDerivativeCorners(SegmentationType type, 
-        boolean applyToBinnedImage) {
+        boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
                 
         if (applyToBinnedImage) {
-            extractSecondDerivativeCornersForBinned(type);
+            extractSecondDerivativeCornersForBinned2(type);
         } else {
-            extractSecondDerivativeCornersForUnbinned(type);
+            extractSecondDerivativeCornersForUnbinned2(type);
+        }
+    }
+    
+    /**
+     * extract the corners as second derivative gaussian high value points
+     * and keep those associated with blobs created for type and binning.
+     * 
+     * @param type 
+     * @param applyToBinnedImage 
+    */
+    public void extractSecondDerivativeCornersToColor(SegmentationType type, 
+        boolean applyToBinnedImage) throws IOException, NoSuchAlgorithmException {
+                
+        if (applyToBinnedImage) {
+            extractSecondDerivativeCornersForBinned3(type);
+        } else {
+            extractSecondDerivativeCornersForUnbinned3(type);
         }
     }
     
@@ -997,6 +1014,306 @@ public class BlobPerimeterCornerHelper {
             " corners.size()=" + corners.size());
         
         assert(perimeterLists.size() == corners.size());
+        
+    }
+    
+    /**
+     * places corners in the "all corners" map obtainable by getAllCorners(SegmentationType.NONE).
+     * It extracts the 2nd deriv pts and filters to keep only those that are
+     * coincident w/ pix value > 0 from the segmentation image.
+     * @param type 
+     */
+    private void extractSecondDerivativeCornersForBinned2(SegmentationType type) 
+        throws IOException, NoSuchAlgorithmException {
+        
+        List<CornerRegion> corners = segBinnedAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned();
+                        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            //200, true);
+            5000, true);
+        
+        this.imgHelper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, true);
+        GreyscaleImage segImg = this.imgHelper.getBinnedSegmentationImage(type);
+        Set<PairInt> pixSet = new HashSet<PairInt>();
+        for (int i = 0; i < segImg.getWidth(); ++i) {
+            for (int j = 0; j < segImg.getHeight(); ++j) {
+                int v = segImg.getValue(i, j);
+                if (v > 0) {
+                    pixSet.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+                   
+        for (PairInt p : pixels) {
+            if (pixSet.contains(p)) {
+                CornerRegion cr = new CornerRegion(0, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.add(cr);
+            }
+        }
+        
+        segBinnedAllCornersMap.put(SegmentationType.NONE, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(pixels, gsImg.copyToColorGreyscale(),
+                    "all_2ndderiv_" + imgHelper.getDebugTag() + "_" + ts);
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+        
+    }
+    
+    /**
+     * places corners in the "all corners" map obtainable by getAllCorners(SegmentationType.NONE).
+     * It extracts the 2nd deriv pts and filters to keep only those that are
+     * coincident w/ pix value > 0 from the segmentation image.
+     * @param type 
+     */
+    private void extractSecondDerivativeCornersForBinned3(SegmentationType type) 
+        throws IOException, NoSuchAlgorithmException {
+        
+        List<CornerRegion> corners = segBinnedAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        int binFactor = imgHelper.getBinFactor();
+        Image clrImg = this.getImage();
+        ImageProcessor imageProcessor = new ImageProcessor();
+        clrImg = imageProcessor.binImage(clrImg, binFactor);
+        GreyscaleImage rImg = clrImg.copyRedToGreyscale();
+        GreyscaleImage gImg = clrImg.copyGreenToGreyscale();
+        GreyscaleImage bImg = clrImg.copyBlueToGreyscale();
+                                        
+        Set<PairInt> pR = imageProcessor.extract2ndDerivPoints(rImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pG = imageProcessor.extract2ndDerivPoints(gImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pB = imageProcessor.extract2ndDerivPoints(bImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pixels = new HashSet<PairInt>();
+        pixels.addAll(pR);
+        pixels.addAll(pG);
+        pixels.addAll(pB);
+                
+        boolean use1D = true;
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        GreyscaleImage rSegImg = imageSegmentation.createGreyscale5(rImg, use1D);
+        GreyscaleImage gSegImg = imageSegmentation.createGreyscale5(gImg, use1D);
+        GreyscaleImage bSegImg = imageSegmentation.createGreyscale5(bImg, use1D);
+        
+        GreyscaleImage tmpSegImgForPrinting = rSegImg.copyImage();
+        
+        Set<PairInt> pixSet = new HashSet<PairInt>();
+        for (int i = 0; i < rSegImg.getWidth(); ++i) {
+            for (int j = 0; j < rSegImg.getHeight(); ++j) {
+                if (rSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                } else if (gSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                    tmpSegImgForPrinting.setValue(i, j, gSegImg.getValue(i, j));
+                } else if (bSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                    tmpSegImgForPrinting.setValue(i, j, bSegImg.getValue(i, j));
+                }
+            }
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+                   
+        for (PairInt p : pixels) {
+            if (pixSet.contains(p)) {
+                CornerRegion cr = new CornerRegion(0, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.add(cr);
+            }
+        }
+        
+        segBinnedAllCornersMap.put(SegmentationType.NONE, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(pixels, this.getGreyscaleImage(true).copyToColorGreyscale(),
+                    "all_2ndderiv_" + imgHelper.getDebugTag() + "_" + ts);
+                MiscDebug.writeImage(corners, this.getGreyscaleImage(true).copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_" + ts);
+                MiscDebug.writeImage(tmpSegImgForPrinting, 
+                    "segmented_" + imgHelper.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    /**
+     * places corners in the "all corners" map obtainable by getAllCorners.
+     * It extracts the 2nd deriv pts and filters to keep only those that are
+     * coincident w/ pix value > 0 from the segmentation image.
+     * @param type 
+     */
+    private void extractSecondDerivativeCornersForUnbinned2(SegmentationType type) throws IOException, NoSuchAlgorithmException {
+        
+        List<CornerRegion> corners = segAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        GreyscaleImage gsImg = this.getGreyscaleImageBinned();
+                        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+            //200, true);
+            5000, true);
+        
+        this.imgHelper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, false);
+        GreyscaleImage segImg = this.imgHelper.getSegmentationImage(type);
+        Set<PairInt> pixSet = new HashSet<PairInt>();
+        for (int i = 0; i < segImg.getWidth(); ++i) {
+            for (int j = 0; j < segImg.getHeight(); ++j) {
+                int v = segImg.getValue(i, j);
+                if (v > 0) {
+                    pixSet.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+                   
+        for (PairInt p : pixels) {
+            if (pixSet.contains(p)) {
+                CornerRegion cr = new CornerRegion(0, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.add(cr);
+            }
+        }
+        
+        segAllCornersMap.put(SegmentationType.NONE, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(pixels, gsImg.copyToColorGreyscale(),
+                    "all_2ndderiv_" + imgHelper.getDebugTag() + "_" + ts);
+                MiscDebug.writeImage(corners, gsImg.copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+        
+    }
+    
+    /**
+     * places corners in the "all corners" map obtainable by getAllCorners.
+     * It extracts the 2nd deriv pts and filters to keep only those that are
+     * coincident w/ pix value > 0 from the segmentation image.
+     * @param type 
+     */
+    private void extractSecondDerivativeCornersForUnbinned3(SegmentationType type) 
+        throws IOException, NoSuchAlgorithmException {
+        
+        List<CornerRegion> corners = segAllCornersMap.get(type);
+
+        if (corners != null) {
+            return;
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Image clrImg = this.getImage();        
+        GreyscaleImage rImg = clrImg.copyRedToGreyscale();
+        GreyscaleImage gImg = clrImg.copyGreenToGreyscale();
+        GreyscaleImage bImg = clrImg.copyBlueToGreyscale();
+                                        
+        Set<PairInt> pR = imageProcessor.extract2ndDerivPoints(rImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pG = imageProcessor.extract2ndDerivPoints(gImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pB = imageProcessor.extract2ndDerivPoints(bImg,
+            //200, true);
+            5000, true);
+        Set<PairInt> pixels = new HashSet<PairInt>();
+        pixels.addAll(pR);
+        pixels.addAll(pG);
+        pixels.addAll(pB);
+                
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        GreyscaleImage rSegImg = imageSegmentation.createGreyscale5(rImg);
+        GreyscaleImage gSegImg = imageSegmentation.createGreyscale5(gImg);
+        GreyscaleImage bSegImg = imageSegmentation.createGreyscale5(bImg);
+        
+        Set<PairInt> pixSet = new HashSet<PairInt>();
+        for (int i = 0; i < rSegImg.getWidth(); ++i) {
+            for (int j = 0; j < rSegImg.getHeight(); ++j) {
+                if (rSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                } else if (gSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                } else if (bSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        corners = new ArrayList<CornerRegion>();
+                   
+        for (PairInt p : pixels) {
+            if (pixSet.contains(p)) {
+                CornerRegion cr = new CornerRegion(0, 1, 0);
+                cr.setFlagThatNeighborsHoldDummyValues();
+                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+                cr.setIndexWithinCurve(-1);
+                corners.add(cr);
+            }
+        }
+        
+        segAllCornersMap.put(SegmentationType.NONE, corners);
+
+        if (imgHelper.isInDebugMode()) {
+            try {
+                long ts = MiscDebug.getCurrentTimeFormatted();
+                MiscDebug.writeImage(pixels, this.getGreyscaleImage(false).copyToColorGreyscale(),
+                    "all_2ndderiv_" + imgHelper.getDebugTag() + "_" + ts);
+                MiscDebug.writeImage(corners, this.getGreyscaleImage(false).copyToColorGreyscale(),
+                    "corners_" + imgHelper.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
         
     }
     

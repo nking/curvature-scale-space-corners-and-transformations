@@ -164,6 +164,7 @@ public class SegmentedImageHelper {
             HistogramEqualization hEq = new HistogramEqualization(imgGrey);
             hEq.applyFilter();
             didApplyHistEq = true;
+            log.info("histogram equalization performed");
         }
     }
     

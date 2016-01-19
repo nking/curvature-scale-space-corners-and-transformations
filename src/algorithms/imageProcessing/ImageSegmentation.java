@@ -3093,12 +3093,23 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
      */
     public GreyscaleImage createGreyscale5(GreyscaleImage input) {
 
+        boolean use1D = false;
+        return createGreyscale5(input, use1D);
+    }
+    
+    /**
+     * segmentation algorithm using an a trous wavelet transform.
+     *
+     * @param input
+     * @return the segmented image holding values 0 or 250.
+     */
+    public GreyscaleImage createGreyscale5(GreyscaleImage input, boolean use1D) {
+
         ATrousWaveletTransform wt = new ATrousWaveletTransform();
 
         List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
         List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
 
-        boolean use1D = false;
         if (use1D) {
             wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);
         } else {

@@ -157,6 +157,137 @@ public class CornerMatcher<T extends CornerRegion> {
         return !stats.isEmpty();
     }
     
+    /**
+     * match corners using the O1, O2, O3 color space
+     * @param features1
+     * @param features2
+     * @param corners1
+     * @param corners2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @param binFactor1
+     * @param binFactor2
+     * @return 
+     */
+    @SuppressWarnings({"unchecked"})
+    public boolean matchCorners(
+        final IntensityClrFeatures features1, final IntensityClrFeatures features2,
+        final List<T> corners1,final List<T> corners2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2) {
+
+        if (state != null) {
+            resetDefaults();
+        }
+        
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        for (int i = 0; i < corners1.size(); ++i) {
+
+            T region1 = corners1.get(i);
+
+            FeatureComparisonStat best = null;
+            int bestIdx2 = -1;
+            FeatureComparisonStat best2nd = null;
+            int bestIdx2_2nd = -1;
+
+            for (int j = 0; j < corners2.size(); ++j) {
+
+                T region2 = corners2.get(j);
+
+                FeatureComparisonStat compStat = 
+                    featureMatcher.findBestMatch(features1, features2, 
+                        region1, region2, redImg1, greenImg1, blueImg1, 
+                        redImg2, greenImg2, blueImg2);
+                                
+                if ((compStat == null) ||
+                    (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                    ) {
+                    continue;
+                }
+                
+                if ((best2nd != null) && (compStat.getSumIntensitySqDiff() 
+                    >= best2nd.getSumIntensitySqDiff())) {
+                    continue;
+                }
+                
+                log.info("   ===>");
+                
+                if (best == null) {
+                    best = compStat;
+                    bestIdx2 = j;
+                } else if (best2nd == null) {
+                    if (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        best2nd = best;
+                        bestIdx2_2nd = bestIdx2;
+                        best = compStat;
+                        bestIdx2 = j;
+                    } else {
+                        best2nd = compStat;
+                        bestIdx2_2nd = j;
+                    }
+                } else {
+                    // we know it's better than 2nd best
+                    if (compStat.getSumIntensitySqDiff() < best.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        best2nd = best;
+                        bestIdx2_2nd = bestIdx2;
+                        best = compStat;
+                        bestIdx2 = j;
+                    } else {
+                        // replaces 2nd best
+                        best2nd = compStat;
+                        bestIdx2_2nd = j;
+                    }
+                }
+            }
+            
+            if (best == null) {
+                continue;
+            }
+
+            if (best2nd == null) {
+                stats.add(best);
+                log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                        best.getImg1Point().getX(), best.getImg1Point().getY(),
+                        best.getImg2Point().getX(), best.getImg2Point().getY(),
+                        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+            } else {
+                
+                //TODO: the ratio threshold may need to be revised.
+                // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
+                
+                float ratio = best.getSumIntensitySqDiff()/best2nd.getSumIntensitySqDiff();
+                
+                if (ratio < 0.8) {
+                    stats.add(best);
+                    log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                        best.getImg1Point().getX(), best.getImg1Point().getY(),
+                        best.getImg2Point().getX(), best.getImg2Point().getY(),
+                        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+                } else {
+                    rejectedBy2ndBest.add(best);
+                }
+            }
+        }
+        
+        MiscStats.filterForDegeneracy(stats);
+                
+        assignInstanceResults(stats);
+        
+        return !stats.isEmpty();
+    }
+    
     private void assignInstanceResults(List<FeatureComparisonStat> stats) {
         
         this.solutionStats = stats;

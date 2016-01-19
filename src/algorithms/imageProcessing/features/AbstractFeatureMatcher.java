@@ -226,10 +226,8 @@ public abstract class AbstractFeatureMatcher {
             
         } else if (settings.doUse2ndDerivCorners()) {
             
-            img1Helper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, useBinned);
-            img2Helper.applySegmentation(SegmentationType.GREYSCALE_WAVELET, useBinned);
-            img1Helper.extractSecondDerivativeCorners(SegmentationType.GREYSCALE_WAVELET, useBinned);
-            img2Helper.extractSecondDerivativeCorners(SegmentationType.GREYSCALE_WAVELET, useBinned);
+            img1Helper.extractSecondDerivativeCornersToColor(SegmentationType.GREYSCALE_WAVELET, useBinned);
+            img2Helper.extractSecondDerivativeCornersToColor(SegmentationType.GREYSCALE_WAVELET, useBinned);
                         
       //      img1Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);
       //      img2Helper.extractSecondDerivativeCornersWithoutBlobs(type, useBinned);

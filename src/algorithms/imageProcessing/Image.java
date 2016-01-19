@@ -662,6 +662,84 @@ public class Image {
     }
     
     /**
+     * using the color tables of awt and BufferedImage, convert this image
+     * to greyscale.
+     * @return 
+     */
+    public GreyscaleImage copyRedToGreyscale() {
+        
+        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :
+            GreyscaleImage.Type.Bits32;
+        
+        GreyscaleImage out = new GreyscaleImage(width, height, type);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                int rgb = getRGB(i, j);
+                                
+                int r = (rgb >> 16) & 0xFF;
+                                    
+                out.setValue(i, j, r);
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * using the color tables of awt and BufferedImage, convert this image
+     * to greyscale.
+     * @return 
+     */
+    public GreyscaleImage copyGreenToGreyscale() {
+        
+        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :
+            GreyscaleImage.Type.Bits32;
+        
+        GreyscaleImage out = new GreyscaleImage(width, height, type);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                int rgb = getRGB(i, j);
+                                
+                int g = (rgb >> 8) & 0xFF;
+                                    
+                out.setValue(i, j, g);
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
+     * using the color tables of awt and BufferedImage, convert this image
+     * to greyscale.
+     * @return 
+     */
+    public GreyscaleImage copyBlueToGreyscale() {
+        
+        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :
+            GreyscaleImage.Type.Bits32;
+        
+        GreyscaleImage out = new GreyscaleImage(width, height, type);
+        
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                
+                int rgb = getRGB(i, j);
+                                
+                int b = rgb & 0xFF;  
+                                    
+                out.setValue(i, j, b);
+            }
+        }
+        
+        return out;
+    }
+    
+    /**
      * reset the contents of this image to the contents of copyThis, but
      * only if the dimensions are the same.
      * 

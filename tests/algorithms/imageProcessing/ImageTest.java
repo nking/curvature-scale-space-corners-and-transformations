@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
 /**
@@ -104,6 +105,49 @@ public class ImageTest extends TestCase {
             assertEquals(r, img.getR(pixIdx));
         }
         
+    }
+    
+    public void testCopy() throws Exception {
+        
+        String fileName2 = "two_circles_color2.png";
+            
+        String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+
+        GreyscaleImage imgR2 = ImageIOHelper.readImage(filePath2).copyRedToGreyscale();
+        GreyscaleImage imgG2 = ImageIOHelper.readImage(filePath2).copyGreenToGreyscale();
+        GreyscaleImage imgB2 = ImageIOHelper.readImage(filePath2).copyBlueToGreyscale();
+
+        assertEquals(100, imgR2.getWidth());
+        assertEquals(100, imgG2.getWidth());
+        assertEquals(100, imgB2.getWidth());
+        assertEquals(100, imgR2.getHeight());
+        assertEquals(100, imgG2.getHeight());
+        assertEquals(100, imgB2.getHeight());
+        
+        // image has a white circle
+        
+        int nr = 0;
+        int ng = 0;
+        int nb = 0;
+        for (int i = 0; i < imgR2.getWidth(); ++i) {
+            for (int j = 0; j < imgR2.getHeight(); ++j) {
+                int v = imgR2.getValue(i, j);
+                if (v > 0) {
+                    nr++;
+                }
+                v = imgG2.getValue(i, j);
+                if (v > 0) {
+                    ng++;
+                }
+                v = imgB2.getValue(i, j);
+                if (v > 0) {
+                    nb++;
+                }
+            }
+        }   
+        assertTrue(((float)nr/(float)imgR2.getNPixels()) > 0.8);
+        assertTrue((nr > ng) && (ng > 0));
+        assertTrue((ng > nb) && (nb > 0));
     }
     
 }
