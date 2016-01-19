@@ -99,6 +99,23 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         greenBinnedImg2 = imgBinned2.copyGreenToGreyscale();
         blueBinnedImg2 = imgBinned2.copyBlueToGreyscale();
         
+        /*
+        // once have the points later, might further filter w/ ciexy
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        //
+        //applyUsingCIEXYPolarThetaThenHistogram then reassign the colors?
+        //createGreyscale3
+        GreyscaleImage imgSeg1 = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(
+            imgBinned1.copyToImageExt());
+        GreyscaleImage imgSeg2 = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(
+            imgBinned2.copyToImageExt());
+        //ImageExt imgSeg1 = imgBinned1.copyToImageExt();
+        //ImageExt imgSeg2 = imgBinned2.copyToImageExt();
+        //imageSegmentation.applyUsingKMPP(redBinnedImg1, binFactor1);
+        MiscDebug.writeImage(imgSeg1, "ciexy_1");
+        MiscDebug.writeImage(imgSeg2, "ciexy_2");
+        */
+        
         GreyscaleImage gsImg1 = imgBinned1.copyToGreyscale();
         GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
         
@@ -132,9 +149,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         if (settings.debug()) {
             try {
                 long ts = MiscDebug.getCurrentTimeFormatted();
-                MiscDebug.writeImage(corners1, blueBinnedImg1.copyToColorGreyscale(),
+                MiscDebug.writeImage(corners1, imgBinned1.copyImage(),
                     "corners_filtered_" + settings.getDebugTag() + "_1_" + ts);
-                MiscDebug.writeImage(corners2, blueBinnedImg2.copyToColorGreyscale(),
+                MiscDebug.writeImage(corners2, imgBinned2.copyImage(),
                     "corners_filtered_" + settings.getDebugTag() + "_2_" + ts);
             } catch (IOException ex) {
                 Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
