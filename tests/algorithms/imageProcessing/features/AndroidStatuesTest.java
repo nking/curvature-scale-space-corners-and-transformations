@@ -36,10 +36,10 @@ public class AndroidStatuesTest extends TestCase {
         for (int i = 0; i < 1; ++i) {
             switch(i) {
                 case 0: {
-                    //fileName1 = "android_statues_02.jpg";
-                    //fileName2 = "android_statues_04.jpg";
-                    fileName1 = "android_statues_02_gingerbreadman.jpg";
-                    fileName2 = "android_statues_04_gingerbreadman.jpg";
+                    fileName1 = "android_statues_02.jpg";
+                    fileName2 = "android_statues_04.jpg";
+                    //fileName1 = "android_statues_02_gingerbreadman.jpg";
+                    //fileName2 = "android_statues_04_gingerbreadman.jpg";
                     settings.setUseNormalizedFeatures(true);
                     settings.setToUse2ndDerivCorners();
                     break;

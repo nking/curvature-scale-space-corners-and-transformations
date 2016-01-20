@@ -181,22 +181,14 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
         rb2j = reviseStatsForFullImages(rb2j, binFactor1, binFactor2, rotatedOffsets);
         
-        if (settings.debug()) {
+        /*if (settings.debug()) {
             log.info("removed due to having close 2nd best:");
             for (FeatureComparisonStat stat : rb2j) {
-//TMP debugging to find if gingerbread tie ever matches
-if ((Math.abs(stat.getImg1Point().getX() - 94) < 10) && 
-    (Math.abs(stat.getImg1Point().getY() - 149) < 10)) {
-    log.info(String.format("  **(%d,%d), (%d,%d)  %.1f  (%.1f)",
-        stat.getImg1Point().getX(), stat.getImg1Point().getY(),
-        stat.getImg2Point().getX(), stat.getImg2Point().getY(),
-        stat.getSumIntensitySqDiff(), stat.getImg2PointIntensityErr()));
-}
-                //log.info(
-                //    String.format("%s %s", stat.getImg1Point().toString(),
-                //    stat.getImg2Point().toString()));
+                log.info(
+                    String.format("%s %s", stat.getImg1Point().toString(),
+                    stat.getImg2Point().toString()));
             }
-        }
+        }*/
 
         copyToInstanceVars(stats, rb2j);
                 

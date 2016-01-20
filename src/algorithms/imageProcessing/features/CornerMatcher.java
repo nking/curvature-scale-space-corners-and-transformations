@@ -158,7 +158,7 @@ public class CornerMatcher<T extends CornerRegion> {
     }
     
     /**
-     * match corners using the O1, O2, O3 color space
+     * match corners using the color descriptors
      * @param features1
      * @param features2
      * @param corners1
@@ -266,8 +266,9 @@ public class CornerMatcher<T extends CornerRegion> {
                 // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
                 
                 float ratio = best.getSumIntensitySqDiff()/best2nd.getSumIntensitySqDiff();
-                
-                if (ratio < 0.8) {
+
+                //if (ratio < 0.8) {
+                if (ratio < 0.9) {
                     stats.add(best);
                     //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
                     //    best.getImg1Point().getX(), best.getImg1Point().getY(),
