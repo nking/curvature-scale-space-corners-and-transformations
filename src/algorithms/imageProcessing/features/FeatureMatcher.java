@@ -187,7 +187,92 @@ public class FeatureMatcher {
             redImg1, greenImg1, blueImg1, redImg2, greenImg2, blueImg2);
     }
   
+    /**
+     * uses delta E 1994 based upon CIE LAB color space
+     * @param features1
+     * @param features2
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @return 
+     */
     public FeatureComparisonStat findBestMatch(
+        IntensityClrFeatures features1, IntensityClrFeatures features2,
+        int x1, int y1, int x2, int y2,
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1,
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2
+        ) {
+
+        int rot2;
+        try {
+            rot2 = features2.calculateOrientation(x2, y2);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+        
+        IntensityDescriptor desc2_l = features2.extractIntensityLOfCIELAB(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_l == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_a = features2.extractIntensityAOfCIELAB(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_a == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_b = features2.extractIntensityBOfCIELAB(redImg2, 
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_b == null) {
+            return null;
+        }
+                
+        int rot1;
+        try {
+            rot1 = features1.calculateOrientation(x1, y1);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+                
+        IntensityDescriptor desc1_l = features2.extractIntensityLOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_l == null) {
+            return null;
+        }
+        IntensityDescriptor desc1_a = features2.extractIntensityAOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_a == null) {
+            return null;
+        }
+        IntensityDescriptor desc1_b = features2.extractIntensityBOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
+        if (desc1_b == null) {
+            return null;
+        }
+
+        FeatureComparisonStat stat_deltaE = IntensityClrFeatures.calculateStats(
+            desc1_l, desc1_a, desc1_b, x1, y1, desc2_l, desc2_a, desc2_b, x2, y2);
+        
+        if ((stat_deltaE.getSumIntensitySqDiff() >= stat_deltaE.getImg2PointIntensityErr()) 
+            || Float.isNaN(stat_deltaE.getSumIntensitySqDiff())
+            || Float.isNaN(stat_deltaE.getImg2PointIntensityErr())
+            ) {
+            return null;
+        }
+        
+        stat_deltaE.setImg1Point(new PairInt(x1, y1));
+        stat_deltaE.setImg2Point(new PairInt(x2, y2));
+
+        return stat_deltaE;
+    }
+    
+    public FeatureComparisonStat findBestMatchO123(
         IntensityClrFeatures features1, IntensityClrFeatures features2,
         int x1, int y1, int x2, int y2,
         GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1,
@@ -267,6 +352,7 @@ public class FeatureMatcher {
             return null;
         }
         
+        /*
         double ssdIntensity = 
             Math.sqrt(stat_o1.getSumIntensitySqDiff()) +
             Math.sqrt(stat_o2.getSumIntensitySqDiff()) +
@@ -276,6 +362,14 @@ public class FeatureMatcher {
             Math.sqrt(stat_o1.getImg2PointIntensityErr()) +
             Math.sqrt(stat_o2.getImg2PointIntensityErr()) +
             Math.sqrt(stat_o3.getImg2PointIntensityErr());
+        */
+        double ssdIntensity = 
+            Math.sqrt(stat_o1.getSumIntensitySqDiff()) +
+            Math.sqrt(stat_o2.getSumIntensitySqDiff());
+        
+        double err2SqIntensity = 
+            Math.sqrt(stat_o1.getImg2PointIntensityErr()) +
+            Math.sqrt(stat_o2.getImg2PointIntensityErr());
         
         log.info(String.format("(%d,%d), (%d,%d)  %.1f  %.1f  %.1f => %.1f (%.1f)",
             x1, y1, x2, y2, 

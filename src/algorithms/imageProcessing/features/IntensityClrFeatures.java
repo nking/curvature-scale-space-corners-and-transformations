@@ -3,11 +3,14 @@ package algorithms.imageProcessing.features;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.QuickSort;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
+import static algorithms.imageProcessing.features.GsIntensityDescriptor.sentinel;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +25,7 @@ import org.ejml.simple.SimpleMatrix;
  * @author nichole
  */
 public class IntensityClrFeatures {
-    
+
     /**
      * the half width of a block.  For example, to extract the 25 pixels
      * centered on (xc, yc), bHalfW would be '2'.  a minimum of 5 seems to be
@@ -55,6 +58,20 @@ public class IntensityClrFeatures {
     
     protected Map<PairInt, Map<Integer, IntensityDescriptor>> 
         intensity3Blocks = new HashMap<PairInt, Map<Integer, IntensityDescriptor>>();
+    
+    /**
+    key = pixel coordinates of center of frame;
+    value = map with key = rotation (in degrees) of the frame and value = the
+     *     extracted descriptor
+     */
+    protected Map<PairInt, Map<Integer, IntensityDescriptor>> 
+        intensityLBlocks = new HashMap<PairInt, Map<Integer, IntensityDescriptor>>();
+    
+    protected Map<PairInt, Map<Integer, IntensityDescriptor>> 
+        intensityABlocks = new HashMap<PairInt, Map<Integer, IntensityDescriptor>>();
+    
+    protected Map<PairInt, Map<Integer, IntensityDescriptor>> 
+        intensityBBlocks = new HashMap<PairInt, Map<Integer, IntensityDescriptor>>();
         
     /**
      * key = pixel coordinates;
@@ -178,6 +195,177 @@ public class IntensityClrFeatures {
         if (descriptor != null) {
             descriptors.put(rotationKey, descriptor);
         }
+        
+        return descriptor;
+    }
+    
+    /**
+     * extract the L intensity of CIE LAB color space from the images for the 
+     * given block center and return it in a descriptor (note, if not already
+     * cached, it computes L, A, and B descriptors and caches them all).
+     * @param redImg
+     * @param greenImg
+     * @param blueImg
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensityLOfCIELAB(GreyscaleImage redImg, 
+        GreyscaleImage greenImg, GreyscaleImage blueImg,
+        final int xCenter, final int yCenter, final int rotation) {
+     
+        if (redImg == null) {
+            throw new IllegalStateException("redImg cannot be null");
+        }
+        if (greenImg == null) {
+            throw new IllegalStateException("greenImg cannot be null");
+        }
+        if (redImg.getWidth() != greenImg.getWidth() || redImg.getHeight() != greenImg.getHeight()) {
+            throw new IllegalStateException("redImg and greenImg must be the same size");
+        }
+                
+        checkBounds(redImg, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        // if this is present, then L, A, and B are all present, else all missing
+        Map<Integer, IntensityDescriptor> descriptors = intensityLBlocks.get(p);
+                
+        if (descriptors != null) {
+            IntensityDescriptor descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        }
+        
+        calculateAndCacheCIELABForCells(redImg, greenImg, blueImg, xCenter, 
+            yCenter, rotation);
+        
+        descriptors = intensityLBlocks.get(p);
+        if (descriptors == null) {
+            return null;
+        }
+        
+        // this is possibly null if near the edge of image
+        IntensityDescriptor descriptor = descriptors.get(rotationKey);
+        
+        return descriptor;
+    }
+    
+    /**
+     * extract the A intensity of CIE LAB color space from the images for the 
+     * given block center and return it in a descriptor (note, if not already
+     * cached, it computes L, A, and B descriptors and caches them all).
+     * @param redImg
+     * @param greenImg
+     * @param blueImg
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensityAOfCIELAB(GreyscaleImage redImg, 
+        GreyscaleImage greenImg, GreyscaleImage blueImg,
+        final int xCenter, final int yCenter, final int rotation) {
+     
+        if (redImg == null) {
+            throw new IllegalStateException("redImg cannot be null");
+        }
+        if (greenImg == null) {
+            throw new IllegalStateException("greenImg cannot be null");
+        }
+        if (redImg.getWidth() != greenImg.getWidth() || redImg.getHeight() != greenImg.getHeight()) {
+            throw new IllegalStateException("redImg and greenImg must be the same size");
+        }
+                
+        checkBounds(redImg, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        // if this is present, then L, A, and B are all present, else all missing
+        Map<Integer, IntensityDescriptor> descriptors = intensityABlocks.get(p);
+                
+        if (descriptors != null) {
+            IntensityDescriptor descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        }
+        
+        calculateAndCacheCIELABForCells(redImg, greenImg, blueImg, xCenter, 
+            yCenter, rotation);
+        
+        descriptors = intensityABlocks.get(p);
+        if (descriptors == null) {
+            return null;
+        }
+        
+        // this is possibly null if near the edge of image
+        IntensityDescriptor descriptor = descriptors.get(rotationKey);
+        
+        return descriptor;
+    }
+    
+    /**
+     * extract the B intensity of CIE LAB color space from the images for the 
+     * given block center and return it in a descriptor (note, if not already
+     * cached, it computes L, A, and B descriptors and caches them all).
+     * @param redImg
+     * @param greenImg
+     * @param blueImg
+     * @param xCenter
+     * @param yCenter
+     * @param rotation dominant orientation in degrees for feature at
+     * (xCenter, yCenter)
+     * @return
+     */
+    public IntensityDescriptor extractIntensityBOfCIELAB(GreyscaleImage redImg, 
+        GreyscaleImage greenImg, GreyscaleImage blueImg,
+        final int xCenter, final int yCenter, final int rotation) {
+     
+        if (redImg == null) {
+            throw new IllegalStateException("redImg cannot be null");
+        }
+        if (greenImg == null) {
+            throw new IllegalStateException("greenImg cannot be null");
+        }
+        if (redImg.getWidth() != greenImg.getWidth() || redImg.getHeight() != greenImg.getHeight()) {
+            throw new IllegalStateException("redImg and greenImg must be the same size");
+        }
+                
+        checkBounds(redImg, xCenter, yCenter);
+        
+        PairInt p = new PairInt(xCenter, yCenter);
+        
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        // if this is present, then L, A, and B are all present, else all missing
+        Map<Integer, IntensityDescriptor> descriptors = intensityBBlocks.get(p);
+                
+        if (descriptors != null) {
+            IntensityDescriptor descriptor = descriptors.get(rotationKey);
+            if (descriptor != null) {
+                return descriptor;
+            }
+        }
+        
+        calculateAndCacheCIELABForCells(redImg, greenImg, blueImg, xCenter, 
+            yCenter, rotation);
+        
+        descriptors = intensityBBlocks.get(p);
+        if (descriptors == null) {
+            return null;
+        }
+        
+        // this is possibly null if near the edge of image
+        IntensityDescriptor descriptor = descriptors.get(rotationKey);
         
         return descriptor;
     }
@@ -864,6 +1052,207 @@ public class IntensityClrFeatures {
             return true;
         }
         return false;
+    }
+
+    private void calculateAndCacheCIELABForCells(GreyscaleImage redImg, 
+        GreyscaleImage greenImg, GreyscaleImage blueImg, 
+        int xCenter, int yCenter, int rotation) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float sentinel = GsIntensityDescriptor.sentinel;
+        
+        int cellDim = 2;        
+        int nCellsAcross = 6;
+        int nColsHalf = nCellsAcross / 2;
+        int range0 = cellDim * nColsHalf;
+        
+        int[] xOffsets = rotatedOffsets.getXOffsets(rotation);
+        int[] yOffsets = rotatedOffsets.getYOffsets(rotation);
+        
+        int w = redImg.getWidth();
+        int h = redImg.getHeight();
+
+        float[] outputL = new float[nCellsAcross * nCellsAcross];
+        float[] outputA = new float[nCellsAcross * nCellsAcross];
+        float[] outputB = new float[nCellsAcross * nCellsAcross];
+
+        int n2 = cellDim * cellDim;
+        
+        //index of center pixel in array of descriptor:
+        int centralPixelIndex = (nCellsAcross*nColsHalf) + nColsHalf;
+        
+        int count = 0;
+        int idx = 0;
+        for (int dx = -range0; dx < range0; dx += cellDim) {
+            for (int dy = -range0; dy < range0; dy += cellDim) {
+                boolean withinBounds = true;
+                int cCount = 0;
+                // ---- sum within the cell ----
+                float lSum = 0;
+                float aSum = 0;
+                float bSum = 0;
+                for (int i = 0; i < n2; ++i) {
+                    int xOff = xOffsets[idx];
+                    int yOff = yOffsets[idx];
+                    idx++;
+                    int x = xOff + xCenter;
+                    int y = yOff + yCenter;
+                    if ((x < 0) || (x > (w - 1)) || (y < 0) || (y > (h - 1))) {
+                        withinBounds = false;
+                        break;
+                    }
+                    int r = redImg.getValue(x, y);
+                    int g = greenImg.getValue(x, y);
+                    int b = blueImg.getValue(x, y);
+                    
+                    float[] lab = cieC.rgbToCIELAB(r, g, b);
+                    
+                    lSum += lab[0];
+                    aSum += lab[1];
+                    bSum += lab[2];
+                    
+                    cCount++;
+                }
+                if (!withinBounds || (cCount == 0)) {
+                    if (count == centralPixelIndex) {
+                        return;
+                    }
+                    outputL[count] = sentinel;
+                    outputA[count] = sentinel;
+                    outputB[count] = sentinel;
+                    count++;
+                    continue;
+                }
+                lSum /= (float) cCount;
+                aSum /= (float) cCount;
+                bSum /= (float) cCount;
+                outputL[count] = lSum;
+                outputA[count] = aSum;
+                outputB[count] = bSum;
+                count++;
+            }
+        }
+
+        PairInt p = new PairInt(xCenter, yCenter);
+        Integer rotationKey = Integer.valueOf(rotation);
+        
+        IntensityDescriptor descL = new GsIntensityDescriptor(outputL, centralPixelIndex);
+        IntensityDescriptor descA = new GsIntensityDescriptor(outputA, centralPixelIndex);
+        IntensityDescriptor descB = new GsIntensityDescriptor(outputB, centralPixelIndex);
+        
+        Map<Integer, IntensityDescriptor> dL = new HashMap<Integer, IntensityDescriptor>();
+        dL.put(rotationKey, descL);
+        this.intensityLBlocks.put(p, dL);
+        
+        Map<Integer, IntensityDescriptor> dA = new HashMap<Integer, IntensityDescriptor>();
+        dA.put(rotationKey, descA);
+        this.intensityABlocks.put(p, dA);
+        
+        Map<Integer, IntensityDescriptor> dB = new HashMap<Integer, IntensityDescriptor>();
+        dB.put(rotationKey, descB);
+        this.intensityBBlocks.put(p, dB);
+    }
+    
+    public static FeatureComparisonStat calculateStats(IntensityDescriptor 
+        desc1_l, IntensityDescriptor desc1_a, IntensityDescriptor desc1_b, 
+        int x1, int y1, 
+        IntensityDescriptor desc2_l, IntensityDescriptor desc2_a, 
+        IntensityDescriptor desc2_b, int x2, int y2) {
+        
+        if (desc1_l == null) {
+            throw new IllegalArgumentException("desc1_l cannot be null");
+        }
+        if (desc1_a == null) {
+            throw new IllegalArgumentException("desc1_a cannot be null");
+        }
+        if (desc1_b == null) {
+            throw new IllegalArgumentException("desc1_b cannot be null");
+        }
+        if (desc2_l == null) {
+            throw new IllegalArgumentException("desc2_l cannot be null");
+        }
+        if (desc2_a == null) {
+            throw new IllegalArgumentException("desc2_a cannot be null");
+        }
+        if (desc2_b == null) {
+            throw new IllegalArgumentException("desc2_b cannot be null");
+        }
+        
+        float[] l1 = ((GsIntensityDescriptor)desc1_l).grey;
+        float[] a1 = ((GsIntensityDescriptor)desc1_a).grey;
+        float[] b1 = ((GsIntensityDescriptor)desc1_b).grey;
+        
+        float[] l2 = ((GsIntensityDescriptor)desc2_l).grey;
+        float[] a2 = ((GsIntensityDescriptor)desc2_a).grey;
+        float[] b2 = ((GsIntensityDescriptor)desc2_b).grey;
+        
+        int n = l1.length;
+        int centralPixIdx1 = desc1_l.getCentralIndex();
+        int centralPixIdx2 = desc2_l.getCentralIndex();
+        
+        float vcL1 = l1[centralPixIdx1];
+        if (vcL1 == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        float vcA1 = a1[centralPixIdx1];
+        float vcB1 = b1[centralPixIdx1];
+        
+        float vcL2 = l2[centralPixIdx2];
+        if (vcL2 == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        float vcA2 = a2[centralPixIdx2];
+        float vcB2 = b2[centralPixIdx2];
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double deltaEC = cieC.calcDeltaECIE94(vcL1, vcA1, vcB1, vcL2, vcA2, vcB2);
+        
+        int count = 0;
+        //TODO: review the math for auto-correlation here since it is estimated from 2 points instead of 1
+        double autoCorrel = 0;
+        double deltaESum = 0;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            float vL1 = l1[i];
+            if (vL1 == sentinel) {
+                continue;
+            }
+            float vL2 = l2[i];
+            if (vL2 == sentinel) {
+                continue;
+            }
+            float vA1 = a1[i];
+            float vB1 = b1[i];
+            float vA2 = a2[i];
+            float vB2 = b2[i];
+            
+            double deltaE = cieC.calcDeltaECIE94(vL1, vA1, vB1, vL2, vA2, vB2);
+            
+            double diff = deltaE - deltaEC;
+        
+            autoCorrel += (diff * diff);
+            
+            deltaESum += (deltaE * deltaE);
+            
+            count++;
+        }
+        
+        autoCorrel /= (double)count;
+        
+        deltaESum /= (double)count;
+         
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumIntensitySqDiff((float)deltaESum);
+        stat.setImg2PointIntensityErr((float)autoCorrel);
+        
+        return stat;
     }
     
 }

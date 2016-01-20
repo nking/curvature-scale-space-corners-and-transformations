@@ -38,6 +38,7 @@ public class AndroidStatuesTest extends TestCase {
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
                     fileName2 = "android_statues_04.jpg";
+                    //fileName2 = "android_statues_04_gingerbreadman.jpg";
                     settings.setUseNormalizedFeatures(true);
                     settings.setToUse2ndDerivCorners();
                     break;

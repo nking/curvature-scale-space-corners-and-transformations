@@ -197,6 +197,21 @@ public class ImageProcessor {
 
         return img2;
     }
+    
+    public void capToRange(GreyscaleImage img, int minV, int maxV) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        for (int col = 0; col < w; ++col) {
+            for (int row = 0; row < h; ++row) {
+                int v = img.getValue(col, row);
+                if (v < minV) {
+                    img.setValue(col, row, minV);
+                } else if (v > maxV) {
+                    img.setValue(col, row, maxV);
+                }
+            }
+        }
+    }
 
     /**
      * apply kernel to input. NOTE, that because the image is composed of
@@ -913,6 +928,13 @@ public class ImageProcessor {
 
         applyKernel1D(input, kernel, false);
     }
+    
+    protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
+
+        applyKernel1D(input, kernel, true, minValue, maxValue);
+
+        applyKernel1D(input, kernel, false, minValue, maxValue);
+    }
 
     public void blur(GreyscaleImage input, float sigma) {
 
@@ -926,6 +948,11 @@ public class ImageProcessor {
         float[] kernel = Gaussian1D.getKernel(sigma);
 
         blur(input, kernel);
+    }
+    
+    public void blur(GreyscaleImage input, SIGMA sigma, int minValue, int maxValue) {
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        blur(input, kernel, minValue, maxValue);
     }
 
     /**
@@ -958,6 +985,88 @@ public class ImageProcessor {
                 double[] conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
                 output.setRGB(i, j, (int)conv[0], (int)conv[1], (int)conv[2]);
+            }
+        }
+
+        input.resetTo(output);
+    }
+    
+    /**
+     * blur the r, g, b vectors of image input by sigma.
+     * @param input
+     * @param sigma
+     */
+    public void blur(Image input, float sigma, int minValue, int maxValue) {
+
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        blur(input, kernel, minValue, maxValue);
+    }
+    
+    /**
+     * blur the r, g, b vectors of image input by sigma.
+     * @param input
+     * @param sigma
+     */
+    public void blur(Image input, float[] kernel, int minValue, int maxValue) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        Image output = input.copyImage();
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);
+                int r = (int)Math.round(conv[0]);
+                int g = (int)Math.round(conv[1]);
+                int b = (int)Math.round(conv[2]);
+                if (r < minValue) {
+                    r = minValue;
+                } else if (r > maxValue) {
+                    r = maxValue;
+                }
+                if (g < minValue) {
+                    g = minValue;
+                } else if (g > maxValue) {
+                    g = maxValue;
+                }
+                if (b < minValue) {
+                    b = minValue;
+                } else if (b > maxValue) {
+                    b = maxValue;
+                }
+                output.setRGB(i, j, r, g, b);
+            }
+        }
+
+        input.resetTo(output);
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                double[] conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, false);
+                int r = (int)Math.round(conv[0]);
+                int g = (int)Math.round(conv[1]);
+                int b = (int)Math.round(conv[2]);
+                if (r < minValue) {
+                    r = minValue;
+                } else if (r > maxValue) {
+                    r = maxValue;
+                }
+                if (g < minValue) {
+                    g = minValue;
+                } else if (g > maxValue) {
+                    g = maxValue;
+                }
+                if (b < minValue) {
+                    b = minValue;
+                } else if (b > maxValue) {
+                    b = maxValue;
+                }
+                output.setRGB(i, j, r, g, b);
             }
         }
 
@@ -1080,6 +1189,30 @@ public class ImageProcessor {
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, calcForX);
                 int g = (int)Math.round(conv);
+                output.setValue(i, j, g);
+            }
+        }
+
+        input.resetTo(output);
+    }
+    
+    public void applyKernel1D(GreyscaleImage input, float[] kernel,
+        boolean calcForX, int minValue, int maxValue) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        GreyscaleImage output = input.createWithDimensions();
+
+        for (int i = 0; i < input.getWidth(); i++) {
+            for (int j = 0; j < input.getHeight(); j++) {
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, calcForX);
+                int g = (int)Math.round(conv);
+                if (g < minValue) {
+                    g = minValue;
+                } else if (g > maxValue) {
+                    g = maxValue;
+                }
                 output.setValue(i, j, g);
             }
         }

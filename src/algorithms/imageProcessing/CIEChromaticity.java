@@ -278,6 +278,25 @@ public class CIEChromaticity {
     }
     
     /**
+     * convert rgb to CIE LAB.
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     * 
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] rgbToCIELAB(int r, int g, int b) {
+        
+        float[] a = rgbToCIEXYZ(r, g, b);
+        a = cieXYZToCIELAB(a);
+        return a;
+    }
+    
+    
+    /**
      * convert rgb to CIE XYZ (1931).
      * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
@@ -302,6 +321,151 @@ public class CIEChromaticity {
         float capZ = (0.01f * g + 0.99f * b)/0.17697f;
         
         return new float[]{capX, capY, capZ};
+    }
+    
+    /**
+     * convert CIE XYZ (1931) to CIE LAB.
+     * 
+     * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     * 
+     * @param cieXYZ
+     * @return 
+     */
+    public float[] cieXYZToCIELAB(float[] cieXYZ) {
+        
+        float Xn = 95.047f;
+        float Yn = 100.0f;
+        float Zn = 108.883f;
+        
+        float xDiv = cieXYZ[0]/Xn;
+        float yDiv = cieXYZ[1]/Yn;
+        float zDiv = cieXYZ[2]/Zn;
+        
+        double comp = Math.pow((6./29.), 3.);
+        
+        float fX = 0; 
+        float fY = 0;
+        float fZ = 0;
+        for (int i = 0; i < 3; ++i) {
+            double d;
+            if (i == 0) {
+                d = xDiv;
+            } else if (i == 1) {
+                d = yDiv;
+            } else {
+                d = zDiv;
+            }
+            double f;
+            if (d > comp) {
+                f = Math.pow(d, 1./3.);
+            } else {
+                f = ((1./3.)*(29./6.)*(29./6.)*d) + (4./29.);
+            }
+            if (i == 0) {
+                fX = (float)f;
+            } else if (i == 1) {
+                fY = (float)f;
+            } else {
+                fZ = (float)f;
+            }
+        }
+        
+        float ell = (116.f * fY) - 16.f;
+        float a = 500.f * (fX - fY);
+        float b = 200.f * (fY - fZ);
+        
+        return new float[]{ell, a, b};
+    }
+    
+    /**
+     * calculate the CIE76 delta E for 2 sets of CIE LAB.
+     * 
+     * uses https://en.wikipedia.org/wiki/Color_difference
+     * 
+     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3
+     * 
+     * @param cieLAB1
+     * @param cieLAB2
+     * @return deltaE 
+     */
+    public double calcDeltaECIE76(float[] cieLAB1, float[] cieLAB2) {
+        
+        double eAB = Math.sqrt(
+            ((cieLAB2[0] - cieLAB1[0])*(cieLAB2[0] - cieLAB1[0])) +
+            ((cieLAB2[1] - cieLAB1[1])*(cieLAB2[1] - cieLAB1[1])) +
+            ((cieLAB2[2] - cieLAB1[2])*(cieLAB2[2] - cieLAB1[2])));
+        
+        return eAB;
+    }
+    
+    /**
+     * calculate the CIE76 delta E for 2 sets of CIE LAB.
+     * 
+     * uses https://en.wikipedia.org/wiki/Color_difference
+     * 
+     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3
+     * 
+     * @param cieLAB1
+     * @param cieLAB2
+     * @return deltaE 
+     */
+    public double calcDeltaECIE94(float[] cieLAB1, float[] cieLAB2) {
+        
+        return calcDeltaECIE94(cieLAB1[0], cieLAB1[1], cieLAB1[2], cieLAB2[0],
+            cieLAB2[1], cieLAB2[2]);
+            
+    }
+
+    /**
+     * calculate the CIE76 delta E for 2 sets of CIE LAB.
+     * 
+     * uses https://en.wikipedia.org/wiki/Color_difference
+     * 
+     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3
+     * 
+     * @return deltaE 
+     */
+    public double calcDeltaECIE94(float ell1, float a1, float b1,
+        float ell2, float a2, float b2) {
+        
+        // use graphic arts or textiles approx for K's
+        boolean useGA = true;
+        double kL, K1, K2;
+        if (useGA) {
+            kL = 1;
+            K1 = 0.045;
+            K2 = 0.015;
+        } else {
+            kL = 2;
+            K1 = 0.048;
+            K2 = 0.014;
+        }
+        
+        float deltaEll = ell1 - ell2;
+        double deltaA = a1 - a2;
+        double deltaB = b1 - b2;
+        
+        double cA1 = Math.sqrt((a1*a1) + (b1*b1));
+        double cA2 = Math.sqrt((a2*a2) + (b2*b2));
+        double deltaCab = cA1 - cA2;
+        
+        double deltaHab = Math.sqrt((deltaA*deltaA) + (deltaB*deltaB) -
+            (deltaCab*deltaCab));
+        
+        double sL = 1;
+        double sC = 1 + (K1*cA1);
+        double sH = 1 + (K2*cA1);
+        
+        double t1 = deltaEll/(kL * sL);
+        t1 *= t1;
+        double t2 = deltaCab/sC;
+        t2 *= t2;
+        double t3 = deltaHab/sH;
+        t3 *= t3;
+        
+        double e94 = Math.sqrt(t1 + t2 + t3);
+        
+        return e94;
     }
 
     /**

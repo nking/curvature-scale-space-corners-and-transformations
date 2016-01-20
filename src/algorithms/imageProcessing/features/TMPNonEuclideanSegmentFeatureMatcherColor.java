@@ -99,23 +99,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         greenBinnedImg2 = imgBinned2.copyGreenToGreyscale();
         blueBinnedImg2 = imgBinned2.copyBlueToGreyscale();
         
-        /*
-        // once have the points later, might further filter w/ ciexy
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        //
-        //applyUsingCIEXYPolarThetaThenHistogram then reassign the colors?
-        //createGreyscale3
-        GreyscaleImage imgSeg1 = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(
-            imgBinned1.copyToImageExt());
-        GreyscaleImage imgSeg2 = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(
-            imgBinned2.copyToImageExt());
-        //ImageExt imgSeg1 = imgBinned1.copyToImageExt();
-        //ImageExt imgSeg2 = imgBinned2.copyToImageExt();
-        //imageSegmentation.applyUsingKMPP(redBinnedImg1, binFactor1);
-        MiscDebug.writeImage(imgSeg1, "ciexy_1");
-        MiscDebug.writeImage(imgSeg2, "ciexy_2");
-        */
-        
         GreyscaleImage gsImg1 = imgBinned1.copyToGreyscale();
         GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
         
@@ -128,10 +111,12 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     public boolean match() throws IOException, NoSuchAlgorithmException {
 
         List<CornerRegion> corners1 = extractCorners(redBinnedImg1,
-            greenBinnedImg1, blueBinnedImg1, binFactor1);
+            greenBinnedImg1, blueBinnedImg1, imgBinned1.copyToImageExt(),
+            binFactor1, "1");
         
         List<CornerRegion> corners2 = extractCorners(redBinnedImg2,
-            greenBinnedImg2, blueBinnedImg2, binFactor2);
+            greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(),
+            binFactor2, "2");
         
         boolean filterForLocalization = true;
         if (filterForLocalization) {
@@ -229,7 +214,8 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     }
 
     private List<CornerRegion> extractCorners(GreyscaleImage rImg,
-        GreyscaleImage gImg, GreyscaleImage bImg, int binFactor) {
+        GreyscaleImage gImg, GreyscaleImage bImg, ImageExt img,
+        int binFactor, String lbl) {
         
         int nApprox = 5000; //200
         
@@ -242,42 +228,15 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         pixels.addAll(pR);
         pixels.addAll(pG);
         pixels.addAll(pB);
+        
+        log.info("before segmentation filters nPts=" + pixels.size());
+        pixels = filterPointsBySegmentation0(rImg, gImg, bImg, pixels, lbl);
+        log.info("after wavelet segmentation filter nPts=" + pixels.size());
+        //pixels = filterPointsBySegmentation1(img, pixels, lbl);
+        //log.info("after ciexy segmentation filter nPts=" + pixels.size());
+        
+        List<CornerRegion> corners = convert(pixels);
                 
-        boolean use1D = false;
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        GreyscaleImage rSegImg = imageSegmentation.createGreyscale5(rImg, use1D);
-        GreyscaleImage gSegImg = imageSegmentation.createGreyscale5(gImg, use1D);
-        GreyscaleImage bSegImg = imageSegmentation.createGreyscale5(bImg, use1D);
-        
-        GreyscaleImage tmpSegImgForPrinting = rSegImg.copyImage();
-        
-        Set<PairInt> pixSet = new HashSet<PairInt>();
-        for (int i = 0; i < rSegImg.getWidth(); ++i) {
-            for (int j = 0; j < rSegImg.getHeight(); ++j) {
-                if (rSegImg.getValue(i, j) > 0) {
-                    pixSet.add(new PairInt(i, j));
-                } else if (gSegImg.getValue(i, j) > 0) {
-                    pixSet.add(new PairInt(i, j));
-                    tmpSegImgForPrinting.setValue(i, j, gSegImg.getValue(i, j));
-                } else if (bSegImg.getValue(i, j) > 0) {
-                    pixSet.add(new PairInt(i, j));
-                    tmpSegImgForPrinting.setValue(i, j, bSegImg.getValue(i, j));
-                }
-            }
-        }
-        
-        List<CornerRegion> corners = new ArrayList<CornerRegion>();
-                   
-        for (PairInt p : pixels) {
-            if (pixSet.contains(p)) {
-                CornerRegion cr = new CornerRegion(0, 1, 0);
-                cr.setFlagThatNeighborsHoldDummyValues();
-                cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
-                cr.setIndexWithinCurve(-1);
-                corners.add(cr);
-            }
-        }
-        
         if (settings.debug()) {
             try {
                 long ts = MiscDebug.getCurrentTimeFormatted();
@@ -285,8 +244,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                     "all_2ndderiv_" + settings.getDebugTag() + "_" + ts);
                 MiscDebug.writeImage(corners, bImg.copyToColorGreyscale(),
                     "corners_" + settings.getDebugTag() + "_" + ts);
-                MiscDebug.writeImage(tmpSegImgForPrinting, 
-                    "segmented_" + settings.getDebugTag() + "_" + ts);
             } catch (IOException ex) {
                 Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
                     log(Level.SEVERE, null, ex);
@@ -353,7 +310,131 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             corners.remove(idx);
         }
     }
+    
+    private Set<PairInt> filterPointsBySegmentation1(ImageExt img, 
+        Set<PairInt> pixels, String lbl) {
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        GreyscaleImage imgSeg1 = imageSegmentation.applyUsingCIEXYPolarThetaThenHistEq(img);       
+        MiscDebug.writeImage(imgSeg1, "ciexy_" +lbl + "_");
+        
+        int w = imgSeg1.getWidth();
+        int h = imgSeg1.getHeight();
+        
+        List<PairInt> pixels1 = new ArrayList<PairInt>();
+        List<Integer> diffs = new ArrayList<Integer>();
+        
+        int minDiffV = Integer.MAX_VALUE;
+        
+        for (PairInt p : pixels) {
+            int x = p.getX();
+            int y = p.getY();
+            int v = -1;
+            boolean skip = false;
+            for (int dx = -1; dx <= 1; ++dx) {
+                int x1 = x + dx;
+                if ((x1 < 0) || (x1 > (w - 1))) {
+                    skip = true;
+                    break;
+                }
+                for (int dy = -1; dy <= 1; ++dy) {
+                    int y1 = y + dy;
+                    if (x1 == x && y1 == y) {
+                        continue;
+                    }
+                    if ((y1 < 0) || (y1 > (h - 1))) {
+                        skip = true;
+                        break;
+                    }
+                    int v1 = imgSeg1.getValue(x1, y1);
+                    if (v == -1) {
+                        v = v1;
+                    } else if (v1 != v) {
+                        int diffV = Math.abs(v1 - v);
+                        pixels1.add(new PairInt(x, y));
+                        diffs.add(Integer.valueOf(diffV));
+                        if (diffV < minDiffV) {
+                            minDiffV = diffV;
+                        }
+                        skip = true;
+                        break;
+                    }
+                }
+                if (skip) {
+                    break;
+                }
+            }
+        }
+                        
+        Set<PairInt> pixels2 = new HashSet<PairInt>();
+        for (int i = 0; i < pixels1.size(); ++i) {
+            int diffV = diffs.get(i).intValue();
+            if (diffV > minDiffV) {
+                pixels2.add(pixels1.get(i));
+            }
+        }
+        
+        return pixels2;
+    }
+    
+    private List<CornerRegion> convert(Set<PairInt> points) {
+        
+        List<CornerRegion> corners = new ArrayList<CornerRegion>();
+        for (PairInt p : points) {
+            CornerRegion cr = new CornerRegion(0, 1, 0);
+            cr.setFlagThatNeighborsHoldDummyValues();
+            cr.set(0, Float.MIN_VALUE, p.getX(), p.getY());
+            cr.setIndexWithinCurve(-1);
+            corners.add(cr);
+        } 
+        return corners;
+    }
 
+    private Set<PairInt> filterPointsBySegmentation0(
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg,
+        Set<PairInt> pixels, String lbl) {
+        
+        boolean use1D = true;
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        GreyscaleImage rSegImg = imageSegmentation.createGreyscale5(rImg, use1D);
+        GreyscaleImage gSegImg = imageSegmentation.createGreyscale5(gImg, use1D);
+        GreyscaleImage bSegImg = imageSegmentation.createGreyscale5(bImg, use1D);
+        
+        GreyscaleImage tmpSegImgForPrinting = rSegImg.copyImage();
+        
+        Set<PairInt> pixSet = new HashSet<PairInt>();
+        for (int i = 0; i < rSegImg.getWidth(); ++i) {
+            for (int j = 0; j < rSegImg.getHeight(); ++j) {
+                if (rSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                } else if (gSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                    tmpSegImgForPrinting.setValue(i, j, gSegImg.getValue(i, j));
+                } else if (bSegImg.getValue(i, j) > 0) {
+                    pixSet.add(new PairInt(i, j));
+                    tmpSegImgForPrinting.setValue(i, j, bSegImg.getValue(i, j));
+                }
+            }
+        }
+        
+        if (settings.debug()) {
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.writeImage(tmpSegImgForPrinting, 
+                "segmented_" +lbl + "_" + settings.getDebugTag() + "_" + ts);
+        }
+        
+        Set<PairInt> pixels2 = new HashSet<PairInt>();
+                   
+        for (PairInt p : pixels) {
+            if (pixSet.contains(p)) {
+                pixels2.add(p);
+            }
+        }        
+        
+        return pixels2;
+    }
+    
     /**
      * @return the solutionStats
      */
@@ -374,4 +455,5 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     public List<PairInt> getSolutionMatched2() {
         return solutionMatched2;
     }
+
 }
