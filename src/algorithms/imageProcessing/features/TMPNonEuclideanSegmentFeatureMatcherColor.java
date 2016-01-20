@@ -49,8 +49,8 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     private final int binFactor1, binFactor2;
     
     // trying the color space O1, O2, O3
-    protected final IntensityClrFeatures o123FeaturesBinned1;    
-    protected final IntensityClrFeatures o123FeaturesBinned2;
+    protected final IntensityClrFeatures clrFeaturesBinned1;    
+    protected final IntensityClrFeatures clrFeaturesBinned2;
         
     private List<FeatureComparisonStat> solutionStats = null;
     
@@ -103,9 +103,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
         
         //(O1, O2, O3) = ( (R-G)/sqrt(2), (R+G+2B)/sqrt(2), (R+G+B)/sqrt(2) )
-        o123FeaturesBinned1 = new IntensityClrFeatures(gsImg1, 5, rotatedOffsets);
+        clrFeaturesBinned1 = new IntensityClrFeatures(gsImg1, 5, rotatedOffsets);
         
-        o123FeaturesBinned2 = new IntensityClrFeatures(gsImg2, 5, rotatedOffsets);
+        clrFeaturesBinned2 = new IntensityClrFeatures(gsImg2, 5, rotatedOffsets);
     }
 
     public boolean match() throws IOException, NoSuchAlgorithmException {
@@ -121,10 +121,10 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         boolean filterForLocalization = true;
         if (filterForLocalization) {
             filterForLocalization(redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
-                o123FeaturesBinned1, corners1);
+                clrFeaturesBinned1, corners1);
             log.info("filterForLocalization im2");
             filterForLocalization(redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
-                o123FeaturesBinned2, corners2);
+                clrFeaturesBinned2, corners2);
         }
         
         log.info("nPts after localization filter img1 = " + corners1.size());
@@ -149,7 +149,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
 
         boolean matched = matcher.matchCorners(
-            o123FeaturesBinned1, o123FeaturesBinned2, corners1, corners2, 
+            clrFeaturesBinned1, clrFeaturesBinned2, corners1, corners2, 
             redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
             redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
             binFactor1, binFactor2);
@@ -180,6 +180,23 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         stats = reviseStatsForFullImages(stats, binFactor1, binFactor2, rotatedOffsets);
 
         rb2j = reviseStatsForFullImages(rb2j, binFactor1, binFactor2, rotatedOffsets);
+        
+        if (settings.debug()) {
+            log.info("removed due to having close 2nd best:");
+            for (FeatureComparisonStat stat : rb2j) {
+//TMP debugging to find if gingerbread tie ever matches
+if ((Math.abs(stat.getImg1Point().getX() - 94) < 10) && 
+    (Math.abs(stat.getImg1Point().getY() - 149) < 10)) {
+    log.info(String.format("  **(%d,%d), (%d,%d)  %.1f  (%.1f)",
+        stat.getImg1Point().getX(), stat.getImg1Point().getY(),
+        stat.getImg2Point().getX(), stat.getImg2Point().getY(),
+        stat.getSumIntensitySqDiff(), stat.getImg2PointIntensityErr()));
+}
+                //log.info(
+                //    String.format("%s %s", stat.getImg1Point().toString(),
+                //    stat.getImg2Point().toString()));
+            }
+        }
 
         copyToInstanceVars(stats, rb2j);
                 
@@ -229,6 +246,17 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         pixels.addAll(pG);
         pixels.addAll(pB);
         
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        if (settings.debug()) {
+            try {
+                MiscDebug.writeImage(pixels, bImg.copyToColorGreyscale(),
+                    "all_2ndderiv_" + settings.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                    log(Level.SEVERE, null, ex);
+            }
+        }
+        
         log.info("before segmentation filters nPts=" + pixels.size());
         pixels = filterPointsBySegmentation0(rImg, gImg, bImg, pixels, lbl);
         log.info("after wavelet segmentation filter nPts=" + pixels.size());
@@ -239,9 +267,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 
         if (settings.debug()) {
             try {
-                long ts = MiscDebug.getCurrentTimeFormatted();
-                MiscDebug.writeImage(pixels, bImg.copyToColorGreyscale(),
-                    "all_2ndderiv_" + settings.getDebugTag() + "_" + ts);
                 MiscDebug.writeImage(corners, bImg.copyToColorGreyscale(),
                     "corners_" + settings.getDebugTag() + "_" + ts);
             } catch (IOException ex) {

@@ -1208,9 +1208,7 @@ public class IntensityClrFeatures {
         float vcB2 = b2[centralPixIdx2];
         
         CIEChromaticity cieC = new CIEChromaticity();
-        
-        double deltaEC = cieC.calcDeltaECIE94(vcL1, vcA1, vcB1, vcL2, vcA2, vcB2);
-        
+                
         int count = 0;
         //TODO: review the math for auto-correlation here since it is estimated from 2 points instead of 1
         double autoCorrel = 0;
@@ -1233,11 +1231,11 @@ public class IntensityClrFeatures {
             
             double deltaE = cieC.calcDeltaECIE94(vL1, vA1, vB1, vL2, vA2, vB2);
             
-            double diff = deltaE - deltaEC;
-        
-            autoCorrel += (diff * diff);
-            
             deltaESum += (deltaE * deltaE);
+            
+            double deltaEC = cieC.calcDeltaECIE94(vcL2, vcA2, vcB2, vL2, vA2, vB2);
+                    
+            autoCorrel += (deltaEC * deltaEC);            
             
             count++;
         }

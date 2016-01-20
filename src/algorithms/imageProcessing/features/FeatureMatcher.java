@@ -259,9 +259,8 @@ public class FeatureMatcher {
         FeatureComparisonStat stat_deltaE = IntensityClrFeatures.calculateStats(
             desc1_l, desc1_a, desc1_b, x1, y1, desc2_l, desc2_a, desc2_b, x2, y2);
         
-        if ((stat_deltaE.getSumIntensitySqDiff() >= stat_deltaE.getImg2PointIntensityErr()) 
-            || Float.isNaN(stat_deltaE.getSumIntensitySqDiff())
-            || Float.isNaN(stat_deltaE.getImg2PointIntensityErr())
+        if (Float.isNaN(stat_deltaE.getSumIntensitySqDiff()) || 
+            Float.isNaN(stat_deltaE.getImg2PointIntensityErr())
             ) {
             return null;
         }

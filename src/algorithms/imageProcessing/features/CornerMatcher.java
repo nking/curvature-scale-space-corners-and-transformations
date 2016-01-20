@@ -208,7 +208,7 @@ public class CornerMatcher<T extends CornerRegion> {
                     featureMatcher.findBestMatch(features1, features2, 
                         region1, region2, redImg1, greenImg1, blueImg1, 
                         redImg2, greenImg2, blueImg2);
-                                
+               
                 if ((compStat == null) ||
                     (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
                     ) {
@@ -219,9 +219,7 @@ public class CornerMatcher<T extends CornerRegion> {
                     >= best2nd.getSumIntensitySqDiff())) {
                     continue;
                 }
-                
-                log.info("   ===>");
-                
+                                
                 if (best == null) {
                     best = compStat;
                     bestIdx2 = j;
@@ -258,10 +256,10 @@ public class CornerMatcher<T extends CornerRegion> {
 
             if (best2nd == null) {
                 stats.add(best);
-                log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
-                        best.getImg1Point().getX(), best.getImg1Point().getY(),
-                        best.getImg2Point().getX(), best.getImg2Point().getY(),
-                        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+                //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                //        best.getImg1Point().getX(), best.getImg1Point().getY(),
+                //        best.getImg2Point().getX(), best.getImg2Point().getY(),
+                //        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
             } else {
                 
                 //TODO: the ratio threshold may need to be revised.
@@ -271,10 +269,10 @@ public class CornerMatcher<T extends CornerRegion> {
                 
                 if (ratio < 0.8) {
                     stats.add(best);
-                    log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
-                        best.getImg1Point().getX(), best.getImg1Point().getY(),
-                        best.getImg2Point().getX(), best.getImg2Point().getY(),
-                        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+                    //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                    //    best.getImg1Point().getX(), best.getImg1Point().getY(),
+                    //    best.getImg2Point().getX(), best.getImg2Point().getY(),
+                    //    best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
                 } else {
                     rejectedBy2ndBest.add(best);
                 }
