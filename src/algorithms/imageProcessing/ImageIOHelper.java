@@ -1876,6 +1876,22 @@ int z1 = 1;
         }
     }
     
+    public static <T extends CornerRegion> void 
+        addAlternatingColorCornerRegionListsToImage(
+        List<List<T>> regions, Image img, int xOffset, int yOffset, 
+            int nExtraForDot) {
+        
+        for (int i = 0; i < regions.size(); i++) {
+            
+            List<T> corners = regions.get(i);
+            
+            int[] c = getNextRGB(i);
+            
+            addCornerRegionsToImage(corners, img, xOffset, yOffset, 
+                nExtraForDot, c[0], c[1], c[2]);
+        }
+    }
+    
     public static void addCornerRegionsToImage(Collection<CornerRegion> regions,
         Image img, int xOffset, int yOffset, int nExtraForDot) {
 

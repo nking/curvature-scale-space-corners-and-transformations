@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
@@ -10,11 +11,11 @@ import java.util.logging.Logger;
 /**
  * create lists of singly matched points between 2 images.
  * It uses the criteria that matches are discarded if a point has a second
- * best match whose SSD is within 0.8*SSD of best match.
+ * best match whose SSD is within 0.8*SSD or 0.9*SSD of best match.
  * @author nichole
  */
 public class CornerMatcher<T extends CornerRegion> {
-    
+        
     private final Logger log = Logger.getLogger(this.getClass().getName());
 
     private List<FeatureComparisonStat> solutionStats = null;
@@ -278,6 +279,137 @@ public class CornerMatcher<T extends CornerRegion> {
                     rejectedBy2ndBest.add(best);
                 }
             }
+        }
+        
+        MiscStats.filterForDegeneracy(stats);
+                
+        assignInstanceResults(stats);
+        
+        return !stats.isEmpty();
+    }
+    
+    /**
+     * match corners using the color descriptors
+     * @param features1
+     * @param features2
+     * @param cornersList1
+     * @param cornersList2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @param binFactor1
+     * @param binFactor2
+     * @return 
+     */
+    @SuppressWarnings({"unchecked"})
+    public boolean matchCornersByBlobs(
+        final IntensityClrFeatures features1, final IntensityClrFeatures features2,
+        final List<List<T>> cornersList1,final List<List<T>> cornersList2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2) {
+
+        if (state != null) {
+            resetDefaults();
+        }
+        
+// Temporary debugging code        
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+log.info("blobs1:");
+for (int i = 0; i < cornersList1.size(); ++i) {
+    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList1.get(i));
+    log.info(String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+}
+log.info("blobs2:");
+for (int i = 0; i < cornersList2.size(); ++i) {
+    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList2.get(i));
+    log.info(String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+}
+       
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        for (int i = 0; i < cornersList1.size(); ++i) {
+            
+            List<T> corners1 = cornersList1.get(i);
+            
+            double bestCost = Double.MAX_VALUE;
+            double bestCostSSD = Double.MAX_VALUE;
+            int bestCostIdx2 = -1;
+            List<FeatureComparisonStat> bestStats = new ArrayList<FeatureComparisonStat>();
+            
+            for (int j = 0; j < cornersList2.size(); ++j) {
+
+                List<T> corners2 = cornersList2.get(j);
+
+                // find the best match for each corners1 point, 
+                // then filter for degenerate
+                // TODO: could consider consistent homology here, but that
+                // adds alot of computations.
+                
+                List<FeatureComparisonStat> bestList1 = new ArrayList<FeatureComparisonStat>();
+                
+                for (int ii = 0; ii < corners1.size(); ++ii) {
+                    
+                    T region1 = corners1.get(ii);
+            
+                    FeatureComparisonStat best1 = null;
+
+                    for (int jj = 0; jj < corners2.size(); ++jj) {
+
+                        T region2 = corners2.get(jj);
+
+                        FeatureComparisonStat compStat = 
+                            featureMatcher.findBestMatch(features1, features2, 
+                                region1, region2, redImg1, greenImg1, blueImg1, 
+                                redImg2, greenImg2, blueImg2);
+               
+                        if ((compStat == null) ||
+                            (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                            ) {
+                            continue;
+                        }
+                
+                        if (best1 == null) {
+                            best1 = compStat;
+                        } else if (compStat.getSumIntensitySqDiff() < best1.getSumIntensitySqDiff()) {
+                            best1 = compStat;
+                        }
+                    }
+                    if (best1 != null) {
+                        bestList1.add(best1);
+                    }
+                }
+                
+                MiscStats.filterForDegeneracy(bestList1);
+                
+                if (bestList1.isEmpty()) {
+                    continue;
+                }
+                
+                double cost1 = 1./(double)bestList1.size();
+                double cost2 = MiscStats.calculateCombinedIntensityStat(bestList1);
+                double normCost = cost1 * cost2;
+                
+                if (normCost < bestCost) {
+                    bestCost = normCost;
+                    bestCostSSD = cost2;
+                    bestStats = bestList1;
+                    bestCostIdx2 = j;
+                }
+            }
+            
+            if (bestStats.isEmpty()) {
+                continue;
+            }
+            
+            stats.addAll(bestStats);
         }
         
         MiscStats.filterForDegeneracy(stats);

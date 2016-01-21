@@ -45,6 +45,56 @@ public class BlobsAndPerimeters {
         return extractBlobsFromSegmentedImage(imgHelper, type, useBinned,
             filterOutImageBoundaryBlobs, filterOutZeroPixels);
     }
+    
+    public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
+        GreyscaleImage segImg, int smallestGroupLimit, int largestGroupLimit,
+        boolean filterOutImageBoundaryBlobs,
+        boolean filterOutZeroPixels, String debugTag) {
+     
+        List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
+        List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
+        
+        boolean use8Neighbors = false;
+
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
+
+        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
+            
+            Integer pixValue = entry.getKey();
+            
+            if (filterOutZeroPixels && (pixValue < 1)) {
+                continue;
+            }
+
+            HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(),
+                smallestGroupLimit, largestGroupLimit, use8Neighbors,
+                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs,
+                filterOutImageBoundaryBlobs, debugTag);
+        }
+        
+        removeRedundantBlobs(outputBlobs);
+
+        if (true) {
+            Image img0 = ImageIOHelper.convertImage(segImg);
+            int c = 0;
+            for (int i = 0; i < outputBlobs.size(); ++i) {
+                Set<PairInt> blobSet = outputBlobs.get(i);
+                int clr = ImageIOHelper.getNextColorRGB(c);
+                for (PairInt p : blobSet) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);
+                }
+                c++;
+            }
+
+            MiscDebug.writeImage(img0, "blobs_" + debugTag
+                + "_" + MiscDebug.getCurrentTimeFormatted());
+        }
+
+        return outputBlobs;
+    }
 
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type,
