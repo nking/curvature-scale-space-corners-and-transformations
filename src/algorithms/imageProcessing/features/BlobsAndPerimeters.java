@@ -46,6 +46,20 @@ public class BlobsAndPerimeters {
             filterOutImageBoundaryBlobs, filterOutZeroPixels);
     }
     
+    /**
+     * extract blobs from the segmented image.
+     * the runtime complexity is approx N_freq * O(N),
+     * where N_freq is the number of pixel values, that is pixels with 255, 254, etc.
+     * The O(N) term can be as high as O(N*8) if very connected... it's using
+     * a DFS traversal pattern.
+     * @param segImg
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param filterOutImageBoundaryBlobs
+     * @param filterOutZeroPixels
+     * @param debugTag
+     * @return 
+     */
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         GreyscaleImage segImg, int smallestGroupLimit, int largestGroupLimit,
         boolean filterOutImageBoundaryBlobs,
@@ -57,8 +71,13 @@ public class BlobsAndPerimeters {
         
         boolean use8Neighbors = false;
 
+        //TODO: some of the algorithms for segmentation have the frequency map
+        // as an itermediate data structure, so could consider making a sub-method
+        // of this method that accepts the frequency map instead of the segmented image.
+        
         Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(segImg);
 
+        //N_freq * O(N)
         for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {
             
             Integer pixValue = entry.getKey();
@@ -67,9 +86,10 @@ public class BlobsAndPerimeters {
                 continue;
             }
 
+            // runtime is approx O(N)
             HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(),
-                smallestGroupLimit, largestGroupLimit, use8Neighbors,
-                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs,
+                smallestGroupLimit, use8Neighbors,
+                outputBlobs, outputExcludedBoundaryBlobs,
                 filterOutImageBoundaryBlobs, debugTag);
         }
         
@@ -149,8 +169,8 @@ public class BlobsAndPerimeters {
             }
 
             HistogramHolder hist = defaultExtractBlobs(segImg, pixValue.intValue(),
-                smallestGroupLimit, largestGroupLimit, use8Neighbors,
-                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs,
+                smallestGroupLimit, use8Neighbors,
+                outputBlobs, outputExcludedBoundaryBlobs,
                 filterOutImageBoundaryBlobs, imgHelper.getDebugTag());
 
             histograms.add(hist);
@@ -555,6 +575,8 @@ if (imgHelper.isInDebugMode()) {
      * extract blobs using a dfs search to find the blobs within the image
      * (contiguous pixels with the given pixelValue) and filter those by
      * the given group size limits.
+     * runtime complexity is DFS, so O(|V| + |E|) is minimum of O(N) and max of 
+     * O(8*N) where N is the number of pixels.
      * @param segImg
      * @param pixelValue
      * @param smallestGroupLimit
@@ -569,9 +591,8 @@ if (imgHelper.isInDebugMode()) {
      * @param debugTag
      */
     private static HistogramHolder defaultExtractBlobs(GreyscaleImage segImg,
-        int pixelValue, int smallestGroupLimit, int largestGroupLimit,
+        int pixelValue, int smallestGroupLimit, 
         boolean use8Neighbors, List<Set<PairInt>> outputBlobs,
-        List<Set<PairInt>> outputExcludedBlobs,
         List<Set<PairInt>> outputExcludedBoundaryBlobs,
         boolean filterOutImageBoundaryBlobs, String debugTag) {
 
@@ -598,11 +619,7 @@ if (imgHelper.isInDebugMode()) {
                 outputExcludedBoundaryBlobs.add(points);
 
             } else {
-            // if (xy.getN() < largestGroupLimit) {
-                   outputBlobs.add(points);
-            // } else {
-            //     outputExcludedBlobs.add(points);
-            // }
+               outputBlobs.add(points);
             }
         }
 
@@ -730,8 +747,8 @@ if (imgHelper.isInDebugMode()) {
             Integer pixValue = entry.getKey();
 
             HistogramHolder hist = defaultExtractBlobs(img, pixValue.intValue(),
-                smallestGroupLimit, largestGroupLimit, use8Neighbors,
-                outputBlobs, outputExcludedBlobs, outputExcludedBoundaryBlobs,
+                smallestGroupLimit, use8Neighbors,
+                outputBlobs, outputExcludedBoundaryBlobs,
                 filterOutImageBoundaryBlobs, "");
 
             histograms.add(hist);
@@ -830,6 +847,8 @@ if (imgHelper.isInDebugMode()) {
      * given a list of blobs, extract their perimeters and order them in a
      * counter clockwise order (the order was set to CCW in early versions
      * of the contour matcher, so this is consistent with those).
+     * runtime complexity is approx n_blobs * O(N) where N is row_range * col_range,
+     * so is essentially less than O(N_image_pixels).
      * @param blobs
      * @param imageWidth
      * @param imageHeight
@@ -851,13 +870,16 @@ if (imgHelper.isInDebugMode()) {
             int imageMaxColumn = imageWidth - 1;
             int imageMaxRow = imageHeight - 1;
             int[] rowMinMax = new int[2];
+            // runtime complexity is approx O(N_blob)
             Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
                 blob, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);       
             if (!outputEmbeddedGapPoints.isEmpty()) {
+                //runtime complexity is < O(N) where N is ~ imageMaxColumn * rowRange
                 // update the perimeter for "filling in" embedded points
                 perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
                     rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
             }
+            //runtime complexity is approx O(N) where N is row_range * col_range
             Set<PairInt> borderPixels = perimeterFinder.getBorderPixels0(
                 rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
          

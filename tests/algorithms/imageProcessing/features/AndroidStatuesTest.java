@@ -239,8 +239,8 @@ public class AndroidStatuesTest extends TestCase {
         imageSegmentation.createContrastImages(img2.copyToImageExt());
         */
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        List<PairIntArray> bounds1 = imageSegmentation.extractBlobsFromLowRes(img1);
-        List<PairIntArray> bounds2 = imageSegmentation.extractBlobsFromLowRes(img2);
+        List<PairIntArray> bounds1 = imageSegmentation.extractBlobsFromLowRes(img1, true);
+        List<PairIntArray> bounds2 = imageSegmentation.extractBlobsFromLowRes(img2, true);
         
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();

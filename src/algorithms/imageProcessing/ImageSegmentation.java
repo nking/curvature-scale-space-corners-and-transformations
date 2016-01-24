@@ -273,6 +273,8 @@ public class ImageSegmentation {
      * then replaces a pixel if 5,6 or its neighbors have the same color,
      * then applies histogram equalization to stretch the values to range
      * 0 to 255.
+     * runtime complexity is about O(N) + O(N * lg_2(N)) though the later
+     * term has small constant multiples of it.
      * @param input
      * @param kColors the number of colors to bin the image by.  max allowed value
      * is 253.
@@ -300,14 +302,17 @@ public class ImageSegmentation {
 
             Image input2 = input.copyImage();
 
+            //O(N) + O(N * lg_2(N)) where N=n_pixels and k=kernel.length
             imageProcessor.blur(input2, 1/*(float)Math.sqrt(2)/2.f*/);
 
+            //O(N) + O(N * lg_2(N))
             img = applyUsingCIEXYPolarThetaThenHistogram(input2, kColors);
 
             minNeighborLimit = 6;
 
         } else {
 
+            //O(N) + O(N * lg_2(N))
             img = applyUsingCIEXYPolarThetaThenHistogram(input, kColors);
 
             minNeighborLimit = 5;
@@ -326,12 +331,18 @@ public class ImageSegmentation {
         int nIterMax = 100;
         int nIter = 0;
 
+        // change value of pixels largely surrounded by another value
+        
+        // runtime complexity is nIterations * O(N*8)
+        // number of iterations appears to be small multiple of minNeighborLimit
         while (!useBlur && (nIter < nIterMax) && (nChanged > 0)) {
 
-            log.fine("nIter=" + nIter + " nChanged=" + nChanged);
+            log.fine("***nIter=" + nIter + " nChanged=" + nChanged + 
+                " minNeighbotLimit=" + minNeighborLimit);
 
             nChanged = 0;
 
+            //O(N*8)
             for (int col = 0; col < w; col++) {
                 for (int row = 0; row < h; row++) {
 
@@ -534,7 +545,7 @@ public class ImageSegmentation {
      * converts each pixel's color into CIE XY polar theta,
      * then applies histogram mapping of kColors to remap the pixels to
      * values between 0 and 255.
-     *
+     * runtime complexity is O(N) + O(N * lg_2(N)).
      * @param input
      * @param kColors the number of color bins to use for the image segmentation.
      * The minimum allowed value is 2 and the maximum allowed value is 253.
@@ -607,6 +618,7 @@ public class ImageSegmentation {
 
         thetaValues = Arrays.copyOf(thetaValues, thetaCount);
 
+        // O(N * lg_2(N))
         createAndApplyHistMapping(output, pixThetaMap, thetaValues, kColors);
 
         return output;
@@ -759,6 +771,20 @@ public class ImageSegmentation {
         }
     }
 
+    /**
+     * for the given thetaValues, create a histogram of kColors bins and then
+     * apply the bins to points with those values in the output image.
+     * The values in the output image are populated from high value of
+     * roughly 254 down to kColors in lower pixel value.
+     * The range is approximate because some histograms have gaps for a color
+     * bin, so those are not mapped to the final image.
+     * 
+     * runtime complexity is O(N * lg_2(N)).
+     * @param output
+     * @param pixThetaMap
+     * @param thetaValues
+     * @param kColors 
+     */
     private void createAndApplyHistMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
         final int kColors) {
@@ -775,11 +801,13 @@ public class ImageSegmentation {
             maxValue, (256 - nReserved - 1), thetaValues,
             Errors.populateYErrorsBySqrt(thetaValues));
 
+        /*
         try {
             hist.plotHistogram("cie XY theta histogram", "cieXY_hist_"
                 + MiscDebug.getCurrentTimeFormatted());
         } catch (Exception e) {}
-
+        */
+        
         int nonZeroCount = 0;
         for (int i = 0; i < hist.getXHist().length; i++) {
             int c = hist.getYHist()[i];
@@ -3923,7 +3951,26 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         MiscDebug.writeImage(redDivContrastImg, "_red_div_contrast_" + ts);
     }
     
-    public List<PairIntArray> extractBlobsFromLowRes(ImageExt img) {
+    /**
+     * makes a lower resolution image and uses segmentation based upon 
+     * cie xy polar theta to find contiguous points of same value, then
+     * finds the perimeters of those points and orders them counter-clockwise
+     * into the resulting curves.  Note, the resulting curves should all be 
+     * closed and that can be tested with (edge instance of PairIntWithColor).
+     * Note also that straight line segments in the curves have been removed
+     * where simple to do so, so that the resulting polynomial can be better
+     * used with "point in polygon" tests.
+     * 
+     * runtime complexity is
+     * ~ O(N)
+     * + O(N_small) + O(N_small * lg_2(N_small)) where N_small is 75X75 pix^2
+     * + 16 * O(N_small)
+     * + (N_blobs * O(N_perimeter_pts * lg_2(N_perimeter_pts) which is much smaller than O(N_small * lg_2(N_small)))
+     * so total is O(N) + constant factor * O(N_small) + O(N_small * lg_2(N_small)).
+     * @param img
+     * @return 
+     */
+    public List<PairIntArray> extractBlobsFromLowRes(ImageExt img, boolean debug) {
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -3935,21 +3982,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageExt img2 = imageProcessor.binImage(img, binFactor);
         
+        // runtime complexity: ~ O(N_small) + O(N_small * lg_2(N_small)) where N_small is 75X75
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         GreyscaleImage segImg = imageSegmentation
             .applyUsingCIEXYPolarThetaThenHistEq(img2, 16, false);
         
-        MiscDebug.writeImage(segImg, "seg_cluster_" + MiscDebug.getCurrentTimeFormatted());
+        if (debug) {
+            MiscDebug.writeImage(segImg, "seg_cluster_" + MiscDebug.getCurrentTimeFormatted());
+        }
         
         int smallestGroupLimit = 30;
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = false;
-        String debugTag = "_";
+        String debugTag = debug ? "_" : "";
+        // runtime complexity is N_freq * O(N) where N_freq is at most 16 and
+        // the O(N) term may be as high as O(N*8) if highly connected.
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
             segImg, smallestGroupLimit, largestGroupLimit,
             filterOutImageBoundaryBlobs, filterOutZeroPixels, debugTag);
-                
+
+        // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
             blobs, segImg.getWidth(), segImg.getWidth());
         
@@ -3960,7 +4013,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float srchRadius = (float)Math.sqrt(2) * (float)binFactor;
         
         PerimeterFinder perimeterFinder = new PerimeterFinder();
-        
+  
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     
             Set<PairInt> blob = blobs.get(i);
@@ -3983,14 +4036,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             borderPixels.clear();
             borderPixels.addAll(tmp);
             
+            // approx O(N_perimeter), but has factors during searches that could be improved
             PairIntArray orderedPerimeter = perimeterFinder.orderThePerimeter(
                 borderPixels, blob, srchRadius);
-            
+  
             /*Image imgCp = img.copyImage();
             ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
             MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
             */
-            
+         
+            // runtime complexity is O(N_perimeter_pts * lg_2(N_perimeter_pts)
             // remove straight line segments except their endpoints to make simpler
             // polynomial for "point in polygon" tests
             makeStraightLinesHollow(orderedPerimeter, img.getWidth(), 
@@ -4004,30 +4059,41 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             perimetersList.add(orderedPerimeter);
         }
-                
+          
         return perimetersList;
     }
 
+    /**
+     * runtime complexity is approx O(N_perimeter_pts * lg_2(N_perimeter_pts))
+     * 
+     * @param orderedPerimeter
+     * @param width
+     * @param height
+     * @param srchRadius 
+     */
     private void makeStraightLinesHollow(PairIntArray orderedPerimeter, 
         int width, int height, float srchRadius) {
         
         HoughTransform ht = new HoughTransform();
         
+        //O(N_edge_pts), but includes transcendental operations
         Map<PairInt, Set<PairInt>> trPointsMap = ht.calculateLineGivenEdge(
             orderedPerimeter, width, height);
-        
+    
+        //O(N_edge_pts * lg_2(N_edge_pts))
         List<PairInt> outSortedKeys = ht.sortByVotes(trPointsMap);
-        
+    
         int thetaTol = 1;
         int radiusTol = (int) Math.ceil(srchRadius);
         
+        //runtime complexity is approx O(N_pix * lg_2(N_pix)).
         // === find indiv lines within the edge ====
         HoughTransform.HoughTransformLines htl
             = ht.createPixTRMapsFromSorted(outSortedKeys, trPointsMap, thetaTol, 
                 radiusTol);
-        
+    
         Map<PairInt, PairInt> pixToTRMap = htl.getPixelToPolarCoordMap();
-        
+    
         Set<PairInt> remove = new HashSet<PairInt>();
         for (Set<PairInt> line : htl.getSortedLineGroups()) {
             if (line.size() < 3) {

@@ -46,7 +46,7 @@ public class PerimeterFinder {
      * This returns an outline of the points attempting to correct for
      * concave portions of the hull, that is, it is roughly a concave hull
      * that includes embedded PairInts that are not in the set points.
-     *
+     * runtime complexity is approx O(N).
      * @param points
      * @param outputRowMinMax output populated as the min and max of rows are
      * determined.
@@ -810,6 +810,14 @@ public class PerimeterFinder {
         return allAreWithinExistingRange;
     }
 
+    /**
+     * runtime complexity is < O(N) where N is ~ imageMaxColumn * rowRange.
+     * 
+     * @param rowColRanges
+     * @param rowMinMax
+     * @param imageMaxColumn
+     * @param addedPoints 
+     */
     public void updateRowColRangesForAddedPoints(
         Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax,
         int imageMaxColumn, Collection<PairInt> addedPoints) {
@@ -953,7 +961,7 @@ public class PerimeterFinder {
      * find the pixels which are the borders of rowColRanges including concave
      * pixels, and including any pixels that are the image border pixels.
      * Note that rowColRanges has to represent a contiguous point set.
-     *
+     * runtime complexity is approx O(N) where N is row_range * col_range
      * @param rowColRanges the column bounds for each row of a contiguous
      * point set.
      * @param rowMinMax the minimum and maximum rows present in the contiguous
@@ -1123,6 +1131,7 @@ public class PerimeterFinder {
     /**
      * get a point set of the points not in column ranges for the region bounded
      * by min row, max row, and the minimum of columns and the maximum of columns.
+     * runtime complexity is approx O(N) where N is n_row_range * n_col_range.
      * @param rowColRanges
      * @param rowMinMax
      * @param colMinMax
@@ -1389,13 +1398,24 @@ public class PerimeterFinder {
          return output;
     }
 
+    /**
+     * runtime complexity is approx O(N) where N is row_range * col_range
+     * @param rowColRanges
+     * @param rowMinMax
+     * @param colMinMax
+     * @param imageMaxColumn
+     * @param imageMaxRow
+     * @return 
+     */
     public Set<PairInt> findNonMembersConnectedToBounds(
         Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax,
         int[] colMinMax, int imageMaxColumn, int imageMaxRow) {
 
+        //approx O(N) where N is row_range * col_range
         Set<PairInt> nonMembers = getVoidsInRectangularRegion(rowColRanges,
             rowMinMax, colMinMax, imageMaxColumn, imageMaxRow);
 
+        // approx O(N_non_members) 
         //Find the contiguous groups among nonMembers.
         DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();
         contigFinder.setMinimumNumberInCluster(1);
@@ -1867,6 +1887,7 @@ public class PerimeterFinder {
      * given the perimeter of points bounding the blob and an expected distance
      * of srchRadius between points, order the points in counter clockwise
      * manner (the CCW is consistent w/ earlier curve orderings in contour matcher).
+     * approx O(N_perimeter), but has factors during searches that could be improved
      * @param perimeter
      * @param blob
      * @param srchRadius expected distance between points in the perimeter.
@@ -1898,6 +1919,7 @@ public class PerimeterFinder {
         Map<Integer, List<Integer>> xSkeletonMap = makeXMap(xPoints, yPoints);
         Map<Integer, List<Integer>> ySkeletonMap = makeYMap(xPoints, yPoints);
 
+        // approx O(N_perimeter), but has some factors during searches that could be improved
         // dfs walk through points, adding the clockwise point
         PairIntArray orderedEdge = orderThePerimeter(perimeter, 
             xSkeletonMap, ySkeletonMap, srchRadius);
@@ -2181,10 +2203,6 @@ public class PerimeterFinder {
             
             orderedEdge.add(prev.getX(), prev.getY());
         }
-        
-        //TODO: could consider removing any points except endpoints in straight
-        // line segments (so that future point in polygon tests are against
-        // fewer points).
         
         return orderedEdge;
     }

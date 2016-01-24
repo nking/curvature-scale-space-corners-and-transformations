@@ -48,6 +48,8 @@ public class HoughTransform {
      * 
      * Note that if the edge has less than 3 points, an empty map is returned.
      * 
+     * runtime complexity is O(N_edge_pts), but includes transcendental operations.
+     * 
      * @param edge a curve defined by the points within
      * @param imageWidth
      * @param imageHeight
@@ -260,6 +262,12 @@ public class HoughTransform {
         
         return trLists;
     }
+    
+    /**
+     * runtime complexity is O(N * lg_2(N)).
+     * @param thetaRadiusPixMap
+     * @return 
+     */
     public List<PairInt> sortByVotes(Map<PairInt, Set<PairInt>> thetaRadiusPixMap) {
         
         int[] votes = new int[thetaRadiusPixMap.size()];
@@ -318,6 +326,14 @@ public class HoughTransform {
         }
     }
     
+    /**
+     * runtime complexity is approx O(N_pix * lg_2(N_pix)).
+     * @param sortedTRKeys
+     * @param thetaRadiusPixMap
+     * @param thetaTol
+     * @param radiusTol
+     * @return 
+     */
     public HoughTransformLines createPixTRMapsFromSorted(List<PairInt> sortedTRKeys,
         Map<PairInt, Set<PairInt>> thetaRadiusPixMap, 
         int thetaTol, int radiusTol) {
