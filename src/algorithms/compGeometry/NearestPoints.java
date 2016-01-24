@@ -116,7 +116,7 @@ public class NearestPoints {
         
         // O(lg2(N))
         int idx = Arrays.binarySearch(x, xCenter);
-                    
+     
         // if it's negative, (-(insertion point) - 1)
         if (idx < 0) {
             // idx = -*idx2 - 1
@@ -126,10 +126,12 @@ public class NearestPoints {
             idx = x.length - 1;
         }
         
+        double rSq = Math.sqrt(2) * radius * radius;
+        
         int startIdx = idx;
         for (int i = (idx - 1); i > -1; --i) {
             int diffX = Math.abs(x[i] - xCenter);
-            if (diffX > radius) {
+            if (diffX > rSq) {
                 break;
             }
             startIdx = i;
@@ -138,14 +140,12 @@ public class NearestPoints {
         int stopIdx = idx;
         for (int i = idx; i < x.length; ++i) {
             int diffX = Math.abs(x[i] - xCenter);
-            if (diffX > radius) {
+            if (diffX > rSq) {
                 break;
             }
             stopIdx = i;
         }
-       
-        double rSq = Math.sqrt(2) * radius * radius;
-        
+              
         // search for points within startIdx and stopIdx that are within radius
         for (int i = startIdx; i <= stopIdx; ++i) {
             int diffX = x[i] - xCenter;
@@ -159,4 +159,7 @@ public class NearestPoints {
         return resultIndexes;
     }
     
+    public PairInt getSmallestXY() {
+        return new PairInt(x[0], y[0]);
+    }
 }
