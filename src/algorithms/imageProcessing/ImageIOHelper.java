@@ -1480,32 +1480,20 @@ int z1 = 1;
     }
     
     public static void addAlternatingColorPointSetsToImage(
-        List<Set<PairInt>> pointSets, int xOffset, int yOffset, Image input) {
+        List<Set<PairInt>> pointSets, int xOffset, int yOffset, 
+        int nExtraForDot, Image input) throws IOException {
         
         if (pointSets == null || input == null) {
             return;
         }
-        
-        int clr = 0;
-        
+                
         for (int i = 0; i < pointSets.size(); i++) {
             
             Set<PairInt> points = pointSets.get(i);
             
-            int c = getNextColorRGB(clr);
+            int[] c = getNextRGB(i);
             
-            for (PairInt p : points) {
-                
-                int col = p.getX() + xOffset;
-                int row = p.getY() + yOffset;
-                
-                if ((col > -1) && (col < input.getWidth()) &&
-                    (row > -1) && (row < input.getHeight())) {
-                
-                    input.setRGB(col, row, c);
-                }
-            }
-            clr++;
+            addToImage(points, 0, 0, input, nExtraForDot, c[0], c[1], c[2]);
         }
     }
     

@@ -2111,4 +2111,41 @@ public class MiscMath {
         return num.toBigInteger();
     }
 
+    /**
+     * rscale a to values between vi and vf, inclusive
+     * @param a
+     * @param vi
+     * @param vf
+     * @return 
+     */
+    public static int[] rescale(double[] a, int vi, int vf) {
+        
+        double minV = Double.MAX_VALUE;
+        double maxV = Double.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            double v = a[i];
+            if (v < minV) {
+                minV = v;
+            }
+            if (v > maxV) {
+                maxV = v;
+            }
+        }
+        double range = maxV - minV;
+        
+        double scale = ((double)(vf - vi))/range;
+ 
+        int[] scaled = new int[a.length];
+        
+        for (int i = 0; i < a.length; ++i) {
+            
+            double v = (a[i] - minV) * scale;
+            
+            scaled[i] = (int)Math.round(v);
+        }
+        
+        return scaled;
+    }
+
 }

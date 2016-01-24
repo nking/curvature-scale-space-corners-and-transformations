@@ -321,12 +321,20 @@ MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 log.info("blobs1:");
 for (int i = 0; i < cornersList1.size(); ++i) {
     double[] xyCen = curveHelper.calculateXYCentroids0(cornersList1.get(i));
-    log.info(String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+    String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
+    if ((Math.abs(xyCen[0] - 68) < 15) && (Math.abs(xyCen[1] - 108) < 15)) {
+        str = "**" + str;
+    }
+    log.info(str);
 }
 log.info("blobs2:");
 for (int i = 0; i < cornersList2.size(); ++i) {
     double[] xyCen = curveHelper.calculateXYCentroids0(cornersList2.get(i));
-    log.info(String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1])));
+    String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
+    if ((Math.abs(xyCen[0] - 114) < 18) && (Math.abs(xyCen[1] - 118) < 15)) {
+        str = "**" + str;
+    }
+    log.info(str);
 }
        
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();

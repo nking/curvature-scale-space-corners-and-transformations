@@ -417,7 +417,7 @@ public class ImageProcessor {
     public GreyscaleImage computeTheta360_0(final GreyscaleImage gradientX,
         final GreyscaleImage gradientY) {
 
-        GreyscaleImage output = gradientX.createSignedWithDimensions();
+        GreyscaleImage output = gradientX.createFullRangeIntWithDimensions();
 
         for (int i = 0; i < gradientX.getWidth(); i++) {
             for (int j = 0; j < gradientX.getHeight(); j++) {

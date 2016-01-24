@@ -95,7 +95,7 @@ public class BlobsAndPerimeters {
 
         return outputBlobs;
     }
-
+   
     public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
         SegmentedImageHelper imgHelper, SegmentationType type,
         boolean useBinned, boolean filterOutImageBoundaryBlobs,
@@ -826,4 +826,35 @@ if (imgHelper.isInDebugMode()) {
         return bprs;
     }
 
+    public static List<Set<PairInt>> extractBlobPerimeterAsPoints(
+        List<Set<PairInt>> blobs, int imageWidth, int imageHeight) {
+                
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+                
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
+                
+        for (int i = 0; i < blobs.size(); ++i) {
+                        
+            Set<PairInt> blob = blobs.get(i);
+            
+            // --- extract the perimeters ---
+            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+            int imageMaxColumn = imageWidth - 1;
+            int imageMaxRow = imageHeight - 1;
+            int[] rowMinMax = new int[2];
+            Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+                blob, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);       
+            if (!outputEmbeddedGapPoints.isEmpty()) {
+                // update the perimeter for "filling in" embedded points
+                perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                    rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+            }
+            Set<PairInt> borderPixels = perimeterFinder.getBorderPixels0(
+                rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+         
+            output.add(borderPixels);
+        }
+                
+        return output;
+    }
 }

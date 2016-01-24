@@ -755,6 +755,22 @@ public class MiscMathTest extends TestCase {
             prevX = x;
             prevY = y;
         }
+    }
+    
+    public void testRescale() throws Exception {
+        /*
+        public static int[] rescale(double[] a, int vi, int vf) {
+        */
+        
+        double[] a = new double[]{2, 3, 4, 5};
+        int[] scaled = MiscMath.rescale(a, 0, 10);
+        
+        assertEquals(4, scaled.length);
+        
+        assertEquals(0, scaled[0]);
+        assertEquals(3, scaled[1]);
+        assertEquals(7, scaled[2]);
+        assertEquals(10, scaled[3]);
         
     }
 }

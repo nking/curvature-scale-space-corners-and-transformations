@@ -950,25 +950,8 @@ public class IntensityFeatures {
         if (descriptor == null) {
             return true;
         }
-        
-        int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
-        
-        float vc = descriptor.grey[descriptor.getCentralIndex()];
-        
-        SimpleMatrix m = new SimpleMatrix(nCellsAcross, nCellsAcross);
-        
-        int idx = 0;
-        for (int col = 0; col < nCellsAcross; ++col) {
-            for (int row = 0; row < nCellsAcross; ++row) {
-                float v = descriptor.grey[idx];
-                if (v == sentinel) {
-                    m.set(row, col, 0);
-                } else {
-                    m.set(row, col, v - vc);
-                }
-                idx++;
-            }
-        }
+                        
+        SimpleMatrix m = createAutoCorrelationMatrix(descriptor);
         
         double det = m.determinant();
         double trace = m.trace();
@@ -1137,4 +1120,37 @@ public class IntensityFeatures {
             }
         }
     }
+    
+    SimpleMatrix createAutoCorrelationMatrix(IntensityDescriptor desc) {
+        
+        if (desc == null) {
+            throw new IllegalArgumentException("desc cannot be null");
+        }
+        
+        GsIntensityDescriptor descriptor = (GsIntensityDescriptor)desc;
+     
+        float sentinel = GsIntensityDescriptor.sentinel;
+        
+        int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
+        
+        float vc = descriptor.grey[descriptor.getCentralIndex()];
+        
+        SimpleMatrix a = new SimpleMatrix(nCellsAcross, nCellsAcross);
+        
+        int idx = 0;
+        for (int col = 0; col < nCellsAcross; ++col) {
+            for (int row = 0; row < nCellsAcross; ++row) {
+                float v = descriptor.grey[idx];
+                if (v == sentinel) {
+                    a.set(row, col, 0);
+                } else {
+                    a.set(row, col, v - vc);
+                }
+                idx++;
+            }
+        }
+        
+        return a;
+    }
+
 }

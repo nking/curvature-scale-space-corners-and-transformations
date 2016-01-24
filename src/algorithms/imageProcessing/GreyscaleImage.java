@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
 
@@ -640,6 +641,30 @@ public class GreyscaleImage {
      * @return 
      */
     public int getValue(int col, int row) {
+        
+        if ((col < 0) || (col > (width - 1))) {
+            throw new IllegalArgumentException("col is out of bounds: col=" 
+                + col + " width=" + width);
+        }
+        if ((row < 0) || (row > (height - 1))) {
+            throw new IllegalArgumentException("row is out of bounds: row=" 
+                + row + " height=" + height);
+        }
+        
+        int idx = getInternalIndex(col, row);
+       
+        return getValue(idx);
+    }
+    
+    /**
+     * get the pixel value at image location col, row
+     * @param p pairint of x and y coordinates
+     * @return 
+     */
+    public int getValue(PairInt p) {
+        
+        int col = p.getX();
+        int row = p.getY();
         
         if ((col < 0) || (col > (width - 1))) {
             throw new IllegalArgumentException("col is out of bounds: col=" 

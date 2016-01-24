@@ -1,14 +1,16 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.compGeometry.NearestPoints;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.HistogramEqualizationForColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.SegmentationType;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -87,10 +89,12 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         imgBinned1 = imageProcessor.binImage(img1, binFactor1);
         imgBinned2 = imageProcessor.binImage(img2, binFactor2);
 
+        /*
         HistogramEqualizationForColor hEq = new HistogramEqualizationForColor(imgBinned1);
         hEq.applyFilter();
         hEq = new HistogramEqualizationForColor(imgBinned2);
         hEq.applyFilter();
+        */
 
         redBinnedImg1 = imgBinned1.copyRedToGreyscale();
         greenBinnedImg1 = imgBinned1.copyGreenToGreyscale();
@@ -103,7 +107,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         GreyscaleImage gsImg1 = imgBinned1.copyToGreyscale();
         GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
 
-        //(O1, O2, O3) = ( (R-G)/sqrt(2), (R+G+2B)/sqrt(2), (R+G+B)/sqrt(2) )
         clrFeaturesBinned1 = new IntensityClrFeatures(gsImg1, 5, rotatedOffsets);
 
         clrFeaturesBinned2 = new IntensityClrFeatures(gsImg2, 5, rotatedOffsets);
@@ -215,7 +218,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             extractCornersAndAssocWithBlobs(redBinnedImg2,
             greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(), "2");
 
-        boolean filterForLocalization = true;
+        boolean filterForLocalization = false;
         if (filterForLocalization) {
             filterListsForLocalization(redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
                 clrFeaturesBinned1, corners1List);
@@ -373,8 +376,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         return corners;
     }
 
-    private List<List<CornerRegion>> extractCornersAndAssocWithBlobs(GreyscaleImage rImg,
-        GreyscaleImage gImg, GreyscaleImage bImg, ImageExt img, String lbl) {
+    private List<List<CornerRegion>> extractCornersAndAssocWithBlobs(
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg, 
+        ImageExt img, String lbl) {
 
         Set<PairInt> pixels = extract2ndDerivPoints(rImg, gImg, bImg);
 
@@ -401,7 +405,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         smallestGroupLimit = 100;
         largestGroupLimit = 5000;
         */
-        int smallestGroupLimit = 15;
+        int smallestGroupLimit = 5;
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = true;
@@ -410,6 +414,12 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             BlobsAndPerimeters.extractBlobsFromSegmentedImage(segImg,
                 smallestGroupLimit, largestGroupLimit,
                 filterOutImageBoundaryBlobs, filterOutZeroPixels, lbl);
+        
+        // look at statistics of delta E for the blobs
+        //disconnectDifferentRegions(blobs, rImg, gImg, bImg);
+        
+        
+        joinAdjacentSimilarBlobs(blobs, rImg, gImg, bImg);
 
         List<Set<PairInt>> pixelSetList = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < blobs.size(); ++i) {
@@ -439,10 +449,15 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
         if (settings.debug()) {
             ImageExt imgCp = (ImageExt) img.copyImage();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
-                0, 0, imgCp);
-            MiscDebug.writeImage(imgCp, "_blob_corners_" + lbl + "_" + 
+            try {
+                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
+                    0, 0, 2, imgCp);
+                MiscDebug.writeImage(imgCp, "_blob_corners_" + lbl + "_" + 
                 settings.getDebugTag() + "_" + ts);
+            } catch (IOException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
+            }
+            
         }
 
         return output;
@@ -664,6 +679,72 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
      */
     public List<PairInt> getSolutionMatched2() {
         return solutionMatched2;
+    }
+
+    private void disconnectDifferentRegions(List<Set<PairInt>> blobs, 
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
+        
+        log.info("stats for delta E 1994 of blobs:");
+        CIEChromaticity cieC = new CIEChromaticity();
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (int i = 0; i < blobs.size(); ++i) {
+            Set<PairInt> blob = blobs.get(i);
+            List<PairInt> list = new ArrayList<PairInt>(blob);
+            List<Double> deltaEs = new ArrayList<Double>();
+            for (int i1 = 0; i1 < list.size(); ++i1) {
+                PairInt p1 = list.get(i1);
+                float[] lab1 = cieC.rgbToCIELAB(rImg.getValue(p1), 
+                    gImg.getValue(p1), bImg.getValue(p1));
+                for (int i2 = (i1 + 1); i2 < list.size(); ++i2) {
+                    PairInt p2 = list.get(i2);
+                    float[] lab2 = cieC.rgbToCIELAB(rImg.getValue(p2), 
+                        gImg.getValue(p2), bImg.getValue(p2));
+                    double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
+                    deltaEs.add(Double.valueOf(deltaE));
+                }
+            }
+            double[] avgAndStDev = MiscMath.getAvgAndStDev(deltaEs);
+            double[] xyCen = curveHelper.calculateXYCentroids(blob);
+            log.info(String.format("(%d,%d)  dE avg=%.1f stdev=%.1f", 
+                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]), 
+                (float)avgAndStDev[0], (float)avgAndStDev[1]));
+        }
+    }
+
+    private void joinAdjacentSimilarBlobs(List<Set<PairInt>> blobs, 
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
+        
+        // for highly textured regions like the tree leaves,
+        // deltaE_1994 is a high 50 w/ st.dev. of 30
+        // for uniform regions like smooth grass,
+        // deltaE_1994 is below the JND of 2.3 at ~0.2 w/ st.dev. of ~3
+     
+        int n = 0;
+        for (Set<PairInt> set : blobs) {
+            n += set.size();
+        }
+        
+        int[] blobIndexes = new int[n];
+        int[] x = new int[n];
+        int[] y = new int[n];
+        int count = 0;
+        for (int i = 0; i < blobs.size(); ++i) {
+            Set<PairInt> set = blobs.get(i);
+            for (PairInt p : set) {
+                blobIndexes[count] = i;
+                x[count] = p.getX();
+                y[count] = p.getY();
+                count++;
+            }
+        }
+                
+        //NearestPoints np = new NearestPoints(x, y);
+        //public Set<Integer> findNeighborIndexes(int xCenter, int yCenter, float radius)
+        /*
+        x[0]
+           x[1]  small deltaE and diff blob --> merge blobs
+        */
     }
 
 }

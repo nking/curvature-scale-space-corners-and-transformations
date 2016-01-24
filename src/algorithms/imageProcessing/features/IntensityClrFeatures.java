@@ -1011,38 +1011,17 @@ public class IntensityClrFeatures {
      * @return 
      */
     public boolean removeDueToLocalization(GreyscaleImage rImg, 
-        GreyscaleImage gImg, GreyscaleImage bImg,
-        int xCenter, int yCenter, int rotation) {
+        GreyscaleImage gImg, GreyscaleImage bImg, int xCenter, int yCenter, 
+        int rotation) {
         
-        IntensityDescriptor descriptor0 = extractIntensityO3(rImg, gImg, bImg, 
-            xCenter, yCenter, rotation);
+        IntensityDescriptor descriptor0 = extractIntensityLOfCIELAB(
+            rImg, gImg, bImg, xCenter, yCenter, rotation);
         
         if (descriptor0 == null) {
             return true;
         }
-        
-        GsIntensityDescriptor descriptor = (GsIntensityDescriptor)descriptor0;
-     
-        float sentinel = GsIntensityDescriptor.sentinel;
-        
-        int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
-        
-        float vc = descriptor.grey[descriptor.getCentralIndex()];
-        
-        SimpleMatrix m = new SimpleMatrix(nCellsAcross, nCellsAcross);
-        
-        int idx = 0;
-        for (int col = 0; col < nCellsAcross; ++col) {
-            for (int row = 0; row < nCellsAcross; ++row) {
-                float v = descriptor.grey[idx];
-                if (v == sentinel) {
-                    m.set(row, col, 0);
-                } else {
-                    m.set(row, col, v - vc);
-                }
-                idx++;
-            }
-        }
+             
+        SimpleMatrix m = createAutoCorrelationMatrix(descriptor0);
         
         double det = m.determinant();
         double trace = m.trace();
@@ -1052,6 +1031,38 @@ public class IntensityClrFeatures {
             return true;
         }
         return false;
+    }
+    
+    SimpleMatrix createAutoCorrelationMatrix(IntensityDescriptor desc) {
+        
+        if (desc == null) {
+            throw new IllegalArgumentException("desc cannot be null");
+        }
+        
+        GsIntensityDescriptor descriptor = (GsIntensityDescriptor)desc;
+     
+        float sentinel = GsIntensityDescriptor.sentinel;
+        
+        int nCellsAcross = (int)(Math.sqrt(descriptor.grey.length));
+        
+        float vc = descriptor.grey[descriptor.getCentralIndex()];
+        
+        SimpleMatrix a = new SimpleMatrix(nCellsAcross, nCellsAcross);
+        
+        int idx = 0;
+        for (int col = 0; col < nCellsAcross; ++col) {
+            for (int row = 0; row < nCellsAcross; ++row) {
+                float v = descriptor.grey[idx];
+                if (v == sentinel) {
+                    a.set(row, col, 0);
+                } else {
+                    a.set(row, col, v - vc);
+                }
+                idx++;
+            }
+        }
+        
+        return a;
     }
 
     private void calculateAndCacheCIELABForCells(GreyscaleImage redImg, 

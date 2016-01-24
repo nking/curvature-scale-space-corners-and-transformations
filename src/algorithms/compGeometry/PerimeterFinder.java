@@ -908,7 +908,7 @@ public class PerimeterFinder {
             }
         }
     }
-
+    
     /**
      * find the pixels which are the borders of rowColRanges including concave
      * pixels, but excluding any pixels that are the image border pixels.
@@ -927,8 +927,45 @@ public class PerimeterFinder {
     public Set<PairInt> getBorderPixels(Map<Integer, List<PairInt>> rowColRanges,
         int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
 
-        Set<PairInt> borderPixels = new HashSet<PairInt>();
+        Set<PairInt> borderPixels0 = getBorderPixels0(rowColRanges, rowMinMax, 
+            imageMaxColumn, imageMaxRow);
+        
+        //remove any pixels on image border.  TODO: review why this is useful to do
+        Set<PairInt> remove = new HashSet<PairInt>();
+        for (PairInt p : borderPixels0) {
+            if (p.getX() == 0 || p.getY() == 0 || p.getX() == imageMaxColumn ||
+                p.getY() == imageMaxRow) {
+                remove.add(p);
+            }
+        }
+        
+        for (PairInt p : remove) {
+            borderPixels0.remove(p);
+        }
+        
+        return borderPixels0;
+    }
 
+    /**
+     * find the pixels which are the borders of rowColRanges including concave
+     * pixels, and including any pixels that are the image border pixels.
+     * Note that rowColRanges has to represent a contiguous point set.
+     *
+     * @param rowColRanges the column bounds for each row of a contiguous
+     * point set.
+     * @param rowMinMax the minimum and maximum rows present in the contiguous
+     * point set.
+     * @param imageMaxColumn the maximum column in the image from which the
+     * point set was derived.
+     * @param imageMaxRow the maximum row in the image from which the point
+     * set was derived.
+     * @return
+     */
+    public Set<PairInt> getBorderPixels0(Map<Integer, List<PairInt>> rowColRanges,
+        int[] rowMinMax, int imageMaxColumn, int imageMaxRow) {
+
+        Set<PairInt> borderPixels = new HashSet<PairInt>();
+        
         if (rowColRanges.isEmpty()) {
             return borderPixels;
         }
@@ -1023,17 +1060,15 @@ public class PerimeterFinder {
             }
         }
 
-        // --- then add any pixels on the bounds if the bounds is not the
-        //     same as the image bounds
-
+        // --- then add any pixels on the bounds
         int[] rows;
-        if (rowMinMax[0] > 0) {
-            if (rowMinMax[1] < imageMaxRow) {
+        if (rowMinMax[0] >= 0) {
+            if (rowMinMax[1] <= imageMaxRow) {
                 rows = new int[]{rowMinMax[0], rowMinMax[1]};
             } else {
                 rows = new int[]{rowMinMax[0]};
             }
-        } else if (rowMinMax[1] < imageMaxRow) {
+        } else if (rowMinMax[1] <= imageMaxRow) {
             rows = new int[]{rowMinMax[1]};
         } else {
             rows = new int[]{};
@@ -1066,9 +1101,7 @@ public class PerimeterFinder {
 
             int firstX = colRanges.get(0).getX();
 
-            if ((colMinMax[0] > 0) && (firstX >= colMinMax[0])) {
-                borderPixels.add(new PairInt(firstX, row));
-            } else if ((colMinMax[0] == 0) && (firstX > colMinMax[0])) {
+            if ((colMinMax[0] >= 0) && (firstX >= colMinMax[0])) {
                 borderPixels.add(new PairInt(firstX, row));
             }
 
@@ -1076,9 +1109,7 @@ public class PerimeterFinder {
 
             int lastX = colRanges.get(n - 1).getY();
 
-            if ((colMinMax[1] < imageMaxColumn) && (lastX <= colMinMax[1])) {
-                borderPixels.add(new PairInt(lastX, row));
-            } else if ((colMinMax[1] == imageMaxColumn) && (lastX < colMinMax[1])) {
+            if ((colMinMax[1] <= imageMaxColumn) && (lastX <= colMinMax[1])) {
                 borderPixels.add(new PairInt(lastX, row));
             }
         }
