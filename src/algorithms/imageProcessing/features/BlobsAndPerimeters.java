@@ -826,6 +826,15 @@ if (imgHelper.isInDebugMode()) {
         return bprs;
     }
 
+    /**
+     * given a list of blobs, extract their perimeters and order them in a
+     * counter clockwise order (the order was set to CCW in early versions
+     * of the contour matcher, so this is consistent with those).
+     * @param blobs
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
     public static List<Set<PairInt>> extractBlobPerimeterAsPoints(
         List<Set<PairInt>> blobs, int imageWidth, int imageHeight) {
                 
@@ -857,4 +866,5 @@ if (imgHelper.isInDebugMode()) {
                 
         return output;
     }
+    
 }

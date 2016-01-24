@@ -2,13 +2,16 @@ package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.util.PathStep;
 import algorithms.misc.MiscMath;
 import algorithms.util.BitVectorRepresentation;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -1859,7 +1862,391 @@ public class PerimeterFinder {
         return border;
     }
     */
+    
+    /**
+     * given the perimeter of points bounding the blob and an expected distance
+     * of srchRadius between points, order the points in counter clockwise
+     * manner (the CCW is consistent w/ earlier curve orderings in contour matcher).
+     * @param perimeter
+     * @param blob
+     * @param srchRadius expected distance between points in the perimeter.
+     * For example, a densely populated blob would have a perimeter with 
+     * srchRadius of Math.sqrt(2) to include diagonals.
+     * @return 
+     */
+    public PairIntArray orderThePerimeter(Set<PairInt> perimeter, 
+        Set<PairInt> blob, float srchRadius) {
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        
+        Set<PairInt> skeleton = new HashSet<PairInt>(blob);
+                        
+        int[] minMaxXY = MiscMath.findMinMaxXY(skeleton);
+        lt.applyLineThinner(skeleton, minMaxXY[0], minMaxXY[1], minMaxXY[2],
+            minMaxXY[3]);
+        int[] xPoints = new int[skeleton.size()];
+        int[] yPoints = new int[skeleton.size()];
 
+        int count = 0;
+        for (PairInt p : skeleton) {
+            xPoints[count] = p.getX();
+            yPoints[count] = p.getY();
+            count++;
+        }
+            
+        // order skeleton by x and then y
+        Map<Integer, List<Integer>> xSkeletonMap = makeXMap(xPoints, yPoints);
+        Map<Integer, List<Integer>> ySkeletonMap = makeYMap(xPoints, yPoints);
+
+        // dfs walk through points, adding the clockwise point
+        PairIntArray orderedEdge = orderThePerimeter(perimeter, 
+            xSkeletonMap, ySkeletonMap, srchRadius);
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        boolean isAdjacent = curveHelper.isAdjacent(orderedEdge, 0, 
+            orderedEdge.getN() - 1);
+        
+        if (isAdjacent) {
+            PairIntArrayWithColor p = new PairIntArrayWithColor(orderedEdge);
+            p.setColor(1);
+            orderedEdge = p;
+        }
+            
+        return orderedEdge;
+    }
+    
+    private PairIntArray orderThePerimeter(Set<PairInt> perimeter, 
+        Map<Integer, List<Integer>> xSkeletonMap, 
+        Map<Integer, List<Integer>> ySkeletonMap, float srchRadius) {
+        
+        /*
+        TODO: need better data structures for finding nearest skeleton point
+        and need to improve NearestPoints.
+        TODO: the code below should be simplified if possible.
+        */
+        
+        int[] xPoints = new int[perimeter.size()];
+        int[] yPoints = new int[xPoints.length];
+        int count = 0;
+        for (PairInt p : perimeter) {
+            xPoints[count] = p.getX();
+            yPoints[count] = p.getY();
+            count++;
+        }
+        NearestPoints np = new NearestPoints(xPoints, yPoints);
+                
+        PairInt prev = np.getSmallestXY();
+
+        PairIntArray orderedEdge = new PairIntArray(perimeter.size());
+        
+        int n = perimeter.size();
+        
+        orderedEdge.add(prev.getX(), prev.getY());
+        
+        while (!perimeter.isEmpty()) {
+            
+            boolean rmvd = perimeter.remove(prev);
+            assert(rmvd == true);
+            
+            if (perimeter.isEmpty()) {
+                break;
+            }
+            
+            int x = prev.getX();
+            int y = prev.getY();
+         
+            Set<PairInt> neighborsC = np.findNeighbors(x, y, srchRadius);
+            Set<PairInt> neighbors = new HashSet<PairInt>();
+            for (PairInt p : neighborsC) {
+                if (perimeter.contains(p) && !p.equals(prev)) {
+                    neighbors.add(p);
+                }
+            }
+            
+            if (neighbors.isEmpty()) {
+                // last point may have been a spur so next point is a multiple
+                // of search radius away
+                int nIterMax = n;
+                int nIter = 0;
+                while (neighbors.isEmpty() && (nIter < nIterMax)) {
+                    neighborsC = np.findNeighbors(x, y, (nIter + 2)*srchRadius);
+                    for (PairInt p : neighborsC) {
+                        if (perimeter.contains(p) && !p.equals(prev)) {
+                            neighbors.add(p);
+                        }
+                    }
+                    nIter++;
+                }
+                if (neighbors.isEmpty()) {
+                    // some corners may have been removed so check whether
+                    // is adjacent to start point
+                    if (orderedEdge.getN() > 1) {
+                        int diffX = orderedEdge.getX(orderedEdge.getN() - 2) - x;
+                        int diffY = orderedEdge.getY(orderedEdge.getN() - 2) - y;
+                        if (Math.sqrt(diffX*diffX + diffY*diffY) < srchRadius) {
+                            break;
+                        }
+                    }
+                    if (perimeter.size() == 1) {
+                        log.info("remaining point in perimeters=" + perimeter.iterator().next());
+                    }
+                    String err = "1) no neighbors for point (" + x + "," + y + ").  "
+                        + " remaining number of points to add is "
+                        + (perimeter.size() - 1);
+                    err = err + "\norderedEdge=" + orderedEdge.toString();
+                    throw new IllegalStateException(err);
+                }
+            }
+             
+            if (neighbors.size() > 1) {
+                
+                // find the neighbor closest skeleton point then find the 
+                // neighbor closest to it in counter clockwise direction.
+                
+                List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
+                int ySkel1 = Integer.MAX_VALUE;
+                if (ys != null) {
+                    int minDistY2 = Integer.MAX_VALUE;
+                    for (Integer y0 : ys) {
+                        int distYSq = y0.intValue() - y;
+                        distYSq *= distYSq;
+                        if (distYSq < minDistY2) {
+                            minDistY2 = distYSq;
+                            ySkel1 = y0.intValue();
+                        }
+                    }
+                }
+                int xSkel1 = x;
+                List<Integer> xs = ySkeletonMap.get(Integer.valueOf(x));
+                int xSkel2 = Integer.MAX_VALUE;
+                if (xs != null) {
+                    int minDistX2 = Integer.MAX_VALUE;
+                    for (Integer x0 : xs) {
+                        int distXSq = x0.intValue() - x;
+                        distXSq *= distXSq;
+                        if (distXSq < minDistX2) {
+                            minDistX2 = distXSq;
+                            xSkel2 = x0.intValue();
+                        }
+                    }
+                }
+                int ySkel2 = y;
+                int xSkel, ySkel;
+                if ((((xSkel1 - x)*(xSkel1 - x)) + ((ySkel1 - y)*(ySkel1 - y)))
+                    < 
+                    (((xSkel2 - x)*(xSkel2 - x)) + ((ySkel2 - y)*(ySkel2 - y)))) {
+                    xSkel = xSkel1;
+                    ySkel = ySkel1;
+                } else {
+                    xSkel = xSkel2;
+                    ySkel = ySkel2;
+                }
+                
+                /*
+                can use the skeleton to determine orientation, and hence, the
+                point in neighbors which is counter clock wise to the current
+                point.
+                
+                   (xi, yi)
+                    /
+                 (x,y) --- (xSkel, ySkel)
+                    \
+                    (xi, yi)
+                     
+                */
+                
+                if ((x == xSkel) && (y == ySkel)) {
+                    // compare angles w/ previous to find the one which is most CCW
+                    int minDistSq = Integer.MAX_VALUE;
+                    PairInt pNext = null;
+                    double minDirection = Double.MIN_VALUE;// should be a (+) number
+                    for (PairInt p : neighbors) {
+                        int diffX = p.getX() - xSkel;
+                        int diffY = p.getY() - ySkel;
+                        int distSq = diffX * diffX + diffY * diffY;
+                        if (pNext == null) {
+                            pNext = p;
+                            minDistSq = distSq;
+                            continue;
+                        }
+                        double direction = LinesAndAngles.direction(x, y, 
+                            pNext.getX(), pNext.getY(), p.getX(), p.getY());
+                        if (direction == 0) {
+                            if (distSq < minDistSq) {
+                                minDistSq = distSq;
+                                pNext = p;
+                                minDirection = direction;
+                            } else if (distSq == minDistSq && (orderedEdge.getN() > 1)) {
+                                // use direction w.r.t. prev prev point
+                                double direction2 = LinesAndAngles.direction(
+                                    orderedEdge.getX(orderedEdge.getN() - 2),
+                                    orderedEdge.getY(orderedEdge.getN() - 2),
+                                    x, y, p.getX(), p.getY());
+                                if (direction2 <= 0) {
+                                    continue;
+                                }
+                                minDistSq = distSq;
+                                pNext = p;
+                                minDirection = direction;
+                            }
+                        } else if (direction > 0) {
+                            pNext = p;
+                            minDirection = direction;
+                            minDistSq = distSq;
+                        }
+                    }
+                    if (pNext == null) {
+                        // some corners may have been removed so check whether
+                        // is adjacent to start point
+                        if (orderedEdge.getN() > 1) {
+                            int diffX = orderedEdge.getX(orderedEdge.getN() - 2) - x;
+                            int diffY = orderedEdge.getY(orderedEdge.getN() - 2) - y;
+                            if (Math.sqrt(diffX*diffX + diffY*diffY) < srchRadius) {
+                                break;
+                            }
+                        }
+                        String err = "2) no neighbors for point (" + x + "," + y + ").  "
+                            + " remaining number of points to add is "
+                            + (perimeter.size() - 1);
+                        err = err + "\norderedEdge=" + orderedEdge.toString();
+                        throw new IllegalStateException(err);
+                    }
+                    prev = pNext;
+                } else {
+                    // use direction as given by cross product
+                    
+                    // only keep those with direction >= 0
+                    int minDistSq = Integer.MAX_VALUE;
+                    PairInt pNext = null;
+                    double minDirection = Double.MIN_VALUE;// should be a (+) number
+                    for (PairInt p : neighbors) {
+                        double direction = LinesAndAngles.direction(x, y, xSkel, 
+                            ySkel, p.getX(), p.getY());
+                        double direction2 = Double.MIN_VALUE;
+                        if (pNext != null) {
+                            direction2 = LinesAndAngles.direction(x, y,
+                                pNext.getX(), pNext.getY(), p.getX(), p.getY());
+                            if (direction2 < 0) {
+                                continue;
+                            }
+                        }
+                        if (direction < 0) {
+                            continue;
+                        }
+                        int diffX = p.getX() - xSkel;
+                        int diffY = p.getY() - ySkel;
+                        int distSq = diffX * diffX + diffY * diffY;
+                        if (pNext == null) {
+                            pNext = p;
+                            minDistSq = distSq;
+                            minDirection = direction;
+                            continue;
+                        }       
+                        if (direction > minDirection) {
+                            minDistSq = distSq;
+                            pNext = p;
+                            minDirection = direction;
+                        } else if (direction == minDirection || direction == 0) {
+                            if (direction2 <= 0) {
+                                continue;
+                            } else {
+                                minDistSq = distSq;
+                                pNext = p;
+                                minDirection = direction;
+                            }
+                        }
+                    }
+                    if (pNext == null) {
+                        // some corners may have been removed so check whether
+                        // is adjacent to start point
+                        if (orderedEdge.getN() > 1) {
+                            int diffX = orderedEdge.getX(orderedEdge.getN() - 2) - x;
+                            int diffY = orderedEdge.getY(orderedEdge.getN() - 2) - y;
+                            if (Math.sqrt(diffX*diffX + diffY*diffY) < srchRadius) {
+                                break;
+                            }
+                        }
+                        String err = "3) no neighbors for point (" + x + "," + y + ").  "
+                            + " remaining number of points to add is "
+                            + (perimeter.size() - 1);
+                        err = err + "\norderedEdge=" + orderedEdge.toString();
+                        throw new IllegalStateException(err);
+                    }
+                    prev = pNext;
+                }
+            } else {
+                prev = neighbors.iterator().next();
+            }
+            
+            orderedEdge.add(prev.getX(), prev.getY());
+        }
+        
+        //TODO: could consider removing any points except endpoints in straight
+        // line segments (so that future point in polygon tests are against
+        // fewer points).
+        
+        return orderedEdge;
+    }
+    
+    /**
+     * map w/ key = x and y = ascending ordered values for that x
+     * @param x
+     * @param y
+     * @return 
+     */
+    private Map<Integer, List<Integer>> makeXMap(int[] x, int[] y) {
+        
+        Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
+        for (int i = 0; i < x.length; ++i) {
+            Integer key = Integer.valueOf(x[i]);
+            List<Integer> list = map.get(key);
+            if (list == null) {
+                list = new ArrayList<Integer>();
+                map.put(key, list);
+            }
+            list.add(Integer.valueOf(y[i]));
+        }
+        
+        for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+            List<Integer> ys = entry.getValue();
+            if (ys.size() > 1) {
+                Collections.sort(ys);
+            }
+        }
+        
+        return map;
+    }
+    
+    /**
+     * map w/ key = y and x = ascending ordered values for that y
+     * @param x
+     * @param y
+     * @return 
+     */
+    private Map<Integer, List<Integer>> makeYMap(int[] x, int[] y) {
+        
+        Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
+        for (int i = 0; i < y.length; ++i) {
+            Integer key = Integer.valueOf(y[i]);
+            List<Integer> list = map.get(key);
+            if (list == null) {
+                list = new ArrayList<Integer>();
+                map.put(key, list);
+            }
+            list.add(Integer.valueOf(x[i]));
+        }
+        
+        for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
+            List<Integer> xs = entry.getValue();
+            if (xs.size() > 1) {
+                Collections.sort(xs);
+            }
+        }
+        
+        return map;
+    }
+    
     static class Gap {
 
         private final int row;
