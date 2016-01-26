@@ -25,6 +25,8 @@ public class PointInPolygon {
     /**
      * given a polygon (xPolygon, yPolygon) that has the same start and end
      * points, determine whether the point (xpt, ypt) is in the polygon.
+     * NOTE: this one needs more testing for points having same y and
+     * different x's as a polygon point.
      * @param xPt
      * @param yPt
      * @param xPolygon
@@ -54,13 +56,13 @@ public class PointInPolygon {
              not count the result twice).
             */
             int result = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
-        
+
             if (result == 0) {
                 continue;
             } else if (result == 2) {
                 return true;
             }
-            
+
             if (result == 3) {
                 if (possibleDoubleCount) {
                     // do not count this, but do reset flag
@@ -73,6 +75,9 @@ public class PointInPolygon {
             sumIntersectingRays++;
         }
         
+        if (sumIntersectingRays == 1 && possibleDoubleCount) {
+            return false;
+        }
         return ((sumIntersectingRays & 1) == 1);
     }
 

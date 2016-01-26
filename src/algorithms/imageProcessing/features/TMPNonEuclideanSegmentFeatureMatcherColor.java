@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.NearestPoints;
+import algorithms.compGeometry.PointInPolygon;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -12,11 +13,15 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -414,13 +419,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             BlobsAndPerimeters.extractBlobsFromSegmentedImage(segImg,
                 smallestGroupLimit, largestGroupLimit,
                 filterOutImageBoundaryBlobs, filterOutZeroPixels, lbl);
-        
-        // look at statistics of delta E for the blobs
-        //disconnectDifferentRegions(blobs, rImg, gImg, bImg);
-        
-        
-        joinAdjacentSimilarBlobs(blobs, rImg, gImg, bImg);
-
+       
         List<Set<PairInt>> pixelSetList = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < blobs.size(); ++i) {
             pixelSetList.add(new HashSet<PairInt>());
@@ -438,8 +437,44 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             }
         }
 
+        /*
+        TODO:
+        
+        improve the color matching with a dither of '1' and small number of rotation
+        dithers before this.
+        
+        the segmentation below is very rough and resolution dependent, so
+        is a quick look at hierarchical groupings of points.  probably needs
+        a pyramid approach to do this well.
+        */
+        
         log.info("after association with blobs nPts = " + nTot);
 
+        // join those grouped points into larger groups where possible
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        List<PairIntArray> largerBounds = imageSegmentation.extractBlobsFromLowRes(
+            img, true);
+        
+        if (settings.debug()) {
+            ImageExt imgCp = (ImageExt) img.copyImage();
+            ImageIOHelper.addAlternatingColorCurvesToImage(largerBounds, 
+                imgCp, 0, 0, 2);
+            MiscDebug.writeImage(imgCp, "_larger_bounds_" + lbl + "_" + 
+            settings.getDebugTag() + "_" + ts);
+            
+            imgCp = (ImageExt) img.copyImage();
+            try {
+                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
+                    0, 0, 2, imgCp);
+            } catch (IOException ex) {
+                Logger.getLogger(TMPNonEuclideanSegmentFeatureMatcherColor.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            MiscDebug.writeImage(imgCp, "_blob_corners_before_merge_" + lbl + "_" + 
+                settings.getDebugTag() + "_" + ts);
+        }
+        
+        mergeIfInSameBounds(pixelSetList, largerBounds);
+        
         List<List<CornerRegion>> output = new ArrayList<List<CornerRegion>>();
         for (int i = 0; i < pixelSetList.size(); ++i) {
             Set<PairInt> pixelSet = pixelSetList.get(i);
@@ -457,7 +492,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             } catch (IOException ex) {
                 Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
             }
-            
         }
 
         return output;
@@ -681,70 +715,150 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         return solutionMatched2;
     }
 
-    private void disconnectDifferentRegions(List<Set<PairInt>> blobs, 
-        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
+    /**
+     * merge the points in pixelSetList items if they are contained within
+     * the same item in largerBounds 
+     * runtime complexity at worst is n_polynomial_points_total * n_pixels_total.
+     * @param pixelSetList list of groups of points
+     * @param largerBounds list of polynomials defining larger bounds than the
+     * points within a single item of pixelSetList
+     */
+    private void mergeIfInSameBounds(List<Set<PairInt>> pixelSetList, 
+        List<PairIntArray> largerBounds) {
         
-        log.info("stats for delta E 1994 of blobs:");
-        CIEChromaticity cieC = new CIEChromaticity();
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+               
+        // format largerBounds for PointInPolygon
+        float[][] xPoly = new float[largerBounds.size()][];
+        float[][] yPoly = new float[largerBounds.size()][];
+        double[][] xyBoundsCentroids = new double[largerBounds.size()][2];
+        double[][] xyBoundsMinMaxXY = new double[largerBounds.size()][2];
+        for (int i = 0; i < largerBounds.size(); ++i) {
+            PairIntArray polynomial = largerBounds.get(i);
+            xPoly[i] = new float[polynomial.getN()];
+            yPoly[i] = new float[polynomial.getN()];
+            for (int j = 0; j < polynomial.getN(); ++j) {
+                xPoly[i][j] = polynomial.getX(j);
+                yPoly[i][j] = polynomial.getY(j);
+            }
+            xyBoundsCentroids[i] = curveHelper.calculateXYCentroids(xPoly[i], yPoly[i]);
+            double xMin = MiscMath.findMin(xPoly[i]);
+            double xMax = MiscMath.findMax(xPoly[i]);
+            double yMin = MiscMath.findMin(yPoly[i]);
+            double yMax = MiscMath.findMax(yPoly[i]);
+            xyBoundsMinMaxXY[i] = new double[]{xMin, xMax, yMin, yMax};
+        }
         
-        for (int i = 0; i < blobs.size(); ++i) {
-            Set<PairInt> blob = blobs.get(i);
-            List<PairInt> list = new ArrayList<PairInt>(blob);
-            List<Double> deltaEs = new ArrayList<Double>();
-            for (int i1 = 0; i1 < list.size(); ++i1) {
-                PairInt p1 = list.get(i1);
-                float[] lab1 = cieC.rgbToCIELAB(rImg.getValue(p1), 
-                    gImg.getValue(p1), bImg.getValue(p1));
-                for (int i2 = (i1 + 1); i2 < list.size(); ++i2) {
-                    PairInt p2 = list.get(i2);
-                    float[] lab2 = cieC.rgbToCIELAB(rImg.getValue(p2), 
-                        gImg.getValue(p2), bImg.getValue(p2));
-                    double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
-                    deltaEs.add(Double.valueOf(deltaE));
+        double[][] xyPixelsCentroid = new double[pixelSetList.size()][2];
+        for (int i = 0; i < pixelSetList.size(); ++i) {
+            xyPixelsCentroid[i] = curveHelper.calculateXYCentroids(pixelSetList.get(i));
+        }
+       
+        /*
+        find the pixelSets within bounds of each polynomial,
+        then iterate over results by srching for idx = (pixelSetList.size() - 1)
+        and ih the bounds and if present in more than one, only add it to the
+        one w/ closer centroid.
+        */
+        
+        List<Set<Integer>> foundSetsInBounds = new ArrayList<Set<Integer>>();
+        
+        PointInPolygon pInPoly = new PointInPolygon();
+                      
+        //runtime complexity at worst is n_polynomial_points_total*n_pixels_total
+        for (int i = 0; i < xPoly.length; ++i) {
+            
+            Set<Integer> merges = new HashSet<Integer>();
+            
+            // srch in pixelSetList for Sets that can be merged
+            for (int j = 0; j < pixelSetList.size(); ++j) {
+            
+                Set<PairInt> pointSet = pixelSetList.get(j);
+
+                for (PairInt p : pointSet) {
+                    if ((p.getX() < xyBoundsMinMaxXY[i][0]) || 
+                        (p.getX() > xyBoundsMinMaxXY[i][1]) || 
+                        (p.getY() < xyBoundsMinMaxXY[i][2]) || 
+                        (p.getY() > xyBoundsMinMaxXY[i][3])) {
+                        continue;
+                    }
+                    if (pInPoly.isInSimpleCurve(p.getX(), p.getY(), 
+                        xPoly[i], yPoly[i], xPoly[i].length)) {
+                        merges.add(Integer.valueOf(j));
+                        break;
+                    }
                 }
             }
-            double[] avgAndStDev = MiscMath.getAvgAndStDev(deltaEs);
-            double[] xyCen = curveHelper.calculateXYCentroids(blob);
-            log.info(String.format("(%d,%d)  dE avg=%.1f stdev=%.1f", 
-                (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]), 
-                (float)avgAndStDev[0], (float)avgAndStDev[1]));
-        }
-    }
-
-    private void joinAdjacentSimilarBlobs(List<Set<PairInt>> blobs, 
-        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
-        
-        // for highly textured regions like the tree leaves,
-        // deltaE_1994 is a high 50 w/ st.dev. of 30
-        // for uniform regions like smooth grass,
-        // deltaE_1994 is below the JND of 2.3 at ~0.2 w/ st.dev. of ~3
-     
-        int n = 0;
-        for (Set<PairInt> set : blobs) {
-            n += set.size();
-        }
-        
-        int[] blobIndexes = new int[n];
-        int[] x = new int[n];
-        int[] y = new int[n];
-        int count = 0;
-        for (int i = 0; i < blobs.size(); ++i) {
-            Set<PairInt> set = blobs.get(i);
-            for (PairInt p : set) {
-                blobIndexes[count] = i;
-                x[count] = p.getX();
-                y[count] = p.getY();
-                count++;
+            
+            if (merges.size() > 1) {
+                foundSetsInBounds.add(merges);
+            } else {
+                foundSetsInBounds.add(new HashSet<Integer>());
             }
         }
-                
-        //NearestPoints np = new NearestPoints(x, y);
-        //public Set<Integer> findNeighborIndexes(int xCenter, int yCenter, float radius)
-        /*
-        x[0]
-           x[1]  small deltaE and diff blob --> merge blobs
-        */
+        
+        for (int i = 0; i < pixelSetList.size(); ++i) {
+            
+            Integer srch = Integer.valueOf(i);
+            double[] xyPixCen = xyPixelsCentroid[i];
+            
+            // looking for i in each foundSetsInBounds, and if present in more
+            // than one, choose the one in which it is closest to centroid
+            // and remove it from other lists
+            
+            int minDistIdx = -1;
+            double minDist = Double.MAX_VALUE;
+            for (int j = 0; j < foundSetsInBounds.size(); ++j) {
+                Set<Integer> pixIndexes = foundSetsInBounds.get(j);
+                if (pixIndexes.contains(srch)) {
+                    double[] boundsXY = xyBoundsCentroids[j];
+                    double diffX = boundsXY[0] - xyPixCen[0];
+                    double diffY = boundsXY[1] - xyPixCen[1];
+                    double dist = (diffX*diffX + diffY*diffY);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        minDistIdx = j;
+                    }
+                }
+            }
+            if (minDistIdx > -1) {
+                for (int j = 0; j < foundSetsInBounds.size(); ++j) {
+                    if (j == minDistIdx) {
+                        continue;
+                    }
+                    Set<Integer> pixIndexes = foundSetsInBounds.get(j);
+                    if (pixIndexes.contains(srch)) {
+                        pixIndexes.remove(srch);
+                    }
+                }
+            }
+        }
+        
+        // now List<Set<Integer>> foundSetsInBounds contains unique members.
+        // can merge items, leving blanks, then removing the blanks
+        for (int i = 0; i < foundSetsInBounds.size(); ++i) {
+            Set<Integer> pixIndexes = foundSetsInBounds.get(i);
+            if (pixIndexes.size() < 2) {
+                continue;
+            }
+            List<Integer> sorted = new ArrayList<Integer>(pixIndexes);
+            Collections.sort(sorted);
+            Integer topIndex = sorted.get(0);
+            Set<PairInt> topPixSet = pixelSetList.get(topIndex.intValue());
+            for (int j = 1; j < sorted.size(); ++j) {
+                int idx = sorted.get(j).intValue();
+                Set<PairInt> pixSet = pixelSetList.get(idx);
+                topPixSet.addAll(pixSet);
+                pixSet.clear();;
+            }
+        }
+        
+        // remove empty sets
+        for (int i = (pixelSetList.size() - 1); i > -1; --i) {
+            Set<PairInt> pixSet = pixelSetList.get(i);
+            if (pixSet.isEmpty()) {
+                pixelSetList.remove(i);
+            }
+        }
     }
-
 }

@@ -3974,7 +3974,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         int w = img.getWidth();
         int h = img.getHeight();
-        float maxDimension = 75;
+        float maxDimension = 100;//75;
         
         int binFactor = (int) Math.ceil(Math.max((float)w/maxDimension, 
             (float)h/maxDimension));
@@ -4059,7 +4059,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             perimetersList.add(orderedPerimeter);
         }
-          
+        
+        /*
+        TODO: consider expanding the bounds to the nearest lines in the working
+        size image adaptive median lines
+        */
+        
         return perimetersList;
     }
 
