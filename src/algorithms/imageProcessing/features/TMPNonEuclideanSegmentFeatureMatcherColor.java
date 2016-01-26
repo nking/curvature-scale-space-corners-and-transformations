@@ -217,11 +217,11 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
         List<List<CornerRegion>> corners1List =
             extractCornersAndAssocWithBlobs(redBinnedImg1,
-            greenBinnedImg1, blueBinnedImg1, imgBinned1.copyToImageExt(), "1");
+            greenBinnedImg1, blueBinnedImg1, imgBinned1.copyToImageExt(), "1", clrFeaturesBinned1);
 
         List<List<CornerRegion>> corners2List =
             extractCornersAndAssocWithBlobs(redBinnedImg2,
-            greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(), "2");
+            greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(), "2", clrFeaturesBinned2);
 
         boolean filterForLocalization = false;
         if (filterForLocalization) {
@@ -248,7 +248,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 + "_" + ts);
         }
 
-        int dither = 1;
+        int dither = 0;
 
         CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
 
@@ -383,7 +383,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
     private List<List<CornerRegion>> extractCornersAndAssocWithBlobs(
         GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg, 
-        ImageExt img, String lbl) {
+        ImageExt img, String lbl, IntensityClrFeatures features) {
 
         Set<PairInt> pixels = extract2ndDerivPoints(rImg, gImg, bImg);
 
@@ -437,23 +437,12 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             }
         }
 
-        /*
-        TODO:
-        
-        improve the color matching with a dither of '1' and small number of rotation
-        dithers before this.
-        
-        the segmentation below is very rough and resolution dependent, so
-        is a quick look at hierarchical groupings of points.  probably needs
-        a pyramid approach to do this well.
-        */
-        
         log.info("after association with blobs nPts = " + nTot);
 
         // join those grouped points into larger groups where possible
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         List<PairIntArray> largerBounds = imageSegmentation.extractBlobsFromLowRes(
-            img, true);
+            img, settings.debug(), settings.getDebugTag(), features);
         
         if (settings.debug()) {
             ImageExt imgCp = (ImageExt) img.copyImage();
@@ -489,6 +478,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                     0, 0, 2, imgCp);
                 MiscDebug.writeImage(imgCp, "_blob_corners_" + lbl + "_" + 
                 settings.getDebugTag() + "_" + ts);
+                
             } catch (IOException ex) {
                 Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
             }

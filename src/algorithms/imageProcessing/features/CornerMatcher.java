@@ -206,7 +206,7 @@ public class CornerMatcher<T extends CornerRegion> {
                 T region2 = corners2.get(j);
 
                 FeatureComparisonStat compStat = 
-                    featureMatcher.findBestMatch(features1, features2, 
+                    featureMatcher.matchDescriptors(features1, features2, 
                         region1, region2, redImg1, greenImg1, blueImg1, 
                         redImg2, greenImg2, blueImg2);
                
@@ -315,7 +315,7 @@ public class CornerMatcher<T extends CornerRegion> {
         if (state != null) {
             resetDefaults();
         }
-        
+/*        
 // Temporary debugging code        
 MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 log.info("blobs1:");
@@ -336,7 +336,7 @@ for (int i = 0; i < cornersList2.size(); ++i) {
     }
     log.info(str);
 }
-       
+*/       
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
         
         rejectedBy2ndBest.clear();
@@ -374,7 +374,10 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                         T region2 = corners2.get(jj);
 
                         FeatureComparisonStat compStat = 
-                            featureMatcher.findBestMatch(features1, features2, 
+                            /*featureMatcher.findBestMatch(features1, features2, 
+                                region1, region2, redImg1, greenImg1, blueImg1, 
+                                redImg2, greenImg2, blueImg2, dither);*/
+                            featureMatcher.matchDescriptors(features1, features2, 
                                 region1, region2, redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
                

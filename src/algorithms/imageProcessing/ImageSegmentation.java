@@ -7,6 +7,9 @@ import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
+import algorithms.imageProcessing.features.CornerRegion;
+import algorithms.imageProcessing.features.IntensityClrFeatures;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -3970,7 +3973,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param img
      * @return 
      */
-    public List<PairIntArray> extractBlobsFromLowRes(ImageExt img, boolean debug) {
+    public List<PairIntArray> extractBlobsFromLowRes(ImageExt img, 
+        boolean debug, String debugTag, IntensityClrFeatures features) {
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -3995,7 +3999,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = false;
-        String debugTag = debug ? "_" : "";
         // runtime complexity is N_freq * O(N) where N_freq is at most 16 and
         // the O(N) term may be as high as O(N*8) if highly connected.
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
@@ -4064,6 +4067,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         TODO: consider expanding the bounds to the nearest lines in the working
         size image adaptive median lines
         */
+        
+        plotOrientation(features, blobs, perimetersList, img, debugTag);
         
         return perimetersList;
     }
@@ -4160,6 +4165,234 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (output.getN() > 0) {
             orderedPerimeter.swapContents(output);
         }            
+    }
+
+    private void plotOrientation(IntensityClrFeatures features, 
+        List<Set<PairInt>> blobs, List<PairIntArray> perimetersList, 
+        ImageExt img, String lbl) {
+        
+        /*
+        -- pass into method the features so can determine orientation,
+        -- then scale to current frame the skeleton points.
+        -- then for each point on the bounds, plot the orientation first
+           point in red/white and subsequent short line in red, then 
+           add a black/red/white dot for the segment endpoint pointing inward.
+        */
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+
+        ImageExt imgCp = img.copyToImageExt();
+        
+        // make skeleton for each blob for detailed perimeter "inward" directions
+        for (int i = 0; i < blobs.size(); ++i) {
+            
+            Set<PairInt> blob = blobs.get(i);
+            Set<PairInt> skeleton = new HashSet<PairInt>(blob);
+            
+            int[] minMaxXY = MiscMath.findMinMaxXY(skeleton);
+            lt.applyLineThinner(skeleton, minMaxXY[0], minMaxXY[1], minMaxXY[2],
+                minMaxXY[3]);
+            int[] xPoints = new int[skeleton.size()];
+            int[] yPoints = new int[skeleton.size()];
+
+            int count = 0;
+            for (PairInt p : skeleton) {
+                xPoints[count] = p.getX();
+                yPoints[count] = p.getY();
+                count++;
+            }
+            
+            double[] xyCen = curveHelper.calculateXYCentroids(blob);
+            
+            // order skeleton by x and then y
+            Map<Integer, List<Integer>> xSkeletonMap = PerimeterFinder.makeXMap(xPoints, yPoints);
+            Map<Integer, List<Integer>> ySkeletonMap = PerimeterFinder.makeYMap(xPoints, yPoints);
+            
+            PairIntArray perimeter = perimetersList.get(i);
+            
+            for (int ii = 0; ii < perimeter.getN(); ++ii) {
+               
+                int x = perimeter.getX(ii);
+                int y = perimeter.getY(ii);
+                
+                int rotD;
+                try {
+                    rotD = features.calculateOrientation(x, y);
+                } catch (CornerRegion.CornerRegionDegneracyException e) {
+                    continue;
+                }
+                
+                // find the closest skeleton point then find the
+                // neighbor closest to it in counter clockwise direction.
+
+                List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
+                int ySkel1 = Integer.MAX_VALUE;
+                if (ys != null) {
+                    int minDistY2 = Integer.MAX_VALUE;
+                    for (Integer y0 : ys) {
+                        int distYSq = y0.intValue() - y;
+                        distYSq *= distYSq;
+                        if (distYSq < minDistY2) {
+                            minDistY2 = distYSq;
+                            ySkel1 = y0.intValue();
+                        }
+                    }
+                }
+                int xSkel1 = x;
+                List<Integer> xs = ySkeletonMap.get(Integer.valueOf(x));
+                int xSkel2 = Integer.MAX_VALUE;
+                if (xs != null) {
+                    int minDistX2 = Integer.MAX_VALUE;
+                    for (Integer x0 : xs) {
+                        int distXSq = x0.intValue() - x;
+                        distXSq *= distXSq;
+                        if (distXSq < minDistX2) {
+                            minDistX2 = distXSq;
+                            xSkel2 = x0.intValue();
+                        }
+                    }
+                }
+                int ySkel2 = y;
+                int xSkel, ySkel;
+                if ((((xSkel1 - x)*(xSkel1 - x)) + ((ySkel1 - y)*(ySkel1 - y)))
+                    <
+                    (((xSkel2 - x)*(xSkel2 - x)) + ((ySkel2 - y)*(ySkel2 - y)))) {
+                    xSkel = xSkel1;
+                    ySkel = ySkel1;
+                } else {
+                    xSkel = xSkel2;
+                    ySkel = ySkel2;
+                }
+                
+                /*
+                          90
+                   135    |    45
+                          |
+                180 ---------------  0
+                          |
+                   225    |    315
+                         270                
+                */
+                // direction away from skeleton or centroid
+                int thetaOut;
+                if ((x != xSkel) || (y != ySkel)) {
+                    double theta = Math.atan2(y - ySkel, x - xSkel);
+                    // transform to 0 to 2*pi radians
+                    if (theta < 0) {
+                        theta += 2. * Math.PI;
+                    } 
+                    thetaOut = (int)Math.round(theta * 180./Math.PI);
+                } else {
+                    double theta = Math.atan2(y - xyCen[1], x - xyCen[0]);
+                    // transform to 0 to 2*pi radians
+                    if (theta < 0) {
+                        theta += 2. * Math.PI;
+                    } 
+                    thetaOut = (int)Math.round(theta * 180./Math.PI);
+                }
+                
+                log.info(String.format("rotation=%d  x,y=(%d,%d) skel=(%d,%d) centroid=(%d,%d) theta outward=%d",
+                    rotD, x, y, xSkel, ySkel, (int)Math.round(xyCen[0]),
+                    (int)Math.round(xyCen[1]), thetaOut));
+                
+                /*
+                if orientation and thetaOut are closer than the 180 opposite
+                configuration:
+                    draw a large white box with black center, then segment of 3 pixels
+                else
+                    draw 3 pixel segmen
+                */
+                boolean same = Math.abs(AngleUtil.getAngleDifference(rotD, thetaOut)) < 90;
+                if ((Math.abs(rotD - 90) < 20) || (Math.abs(rotD - 270) < 20)) {
+                    // use dy steps
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        int y2 = y + dy;
+                        if (y2 < 0 || y2 > (imgCp.getHeight() - 1)) {
+                            continue;
+                        }
+                        for (int dx = -1; dx <= 1; ++dx) {
+                            int x2 = x + dx;
+                            if (x2 < 0 || x2 > (imgCp.getWidth() - 1)) {
+                                continue;
+                            }
+                            imgCp.setRGB(x2, y2, 255, 255, 255);
+                        }
+                    }
+                    if (same){
+                        imgCp.setRGB(x, y, 0, 0, 0);
+                    } else {
+                        imgCp.setRGB(x, y, 255, 0, 0);
+                    }
+                    double slope = Math.tan(rotD);
+                    // write 2 more pixels in red
+                    //y1 - y0 = slope*(x1 - x0);  ---> (1./slope)*(y1-y0) + x0 = x1
+                    int dy;
+                    if (rotD <= 180) {
+                        dy = 1;
+                    } else {
+                        dy = -1;
+                    }
+                    int y1 = y + dy;
+                    double x1 = (1./slope)*((double)dy) + (double) x;
+                    imgCp.setRGB((int)Math.round(x1), y1, 255, 0, 0);
+                    y1 = y + 2*dy;
+                    x1 = (1./slope)*((double)2.*dy) + (double) x;
+                    imgCp.setRGB((int)Math.round(x1), y1, 255, 0, 0);
+                } else {
+                    // use dx steps
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        int y2 = y + dy;
+                        if (y2 < 0 || y2 > (imgCp.getHeight() - 1)) {
+                            continue;
+                        }
+                        for (int dx = -1; dx <= 1; ++dx) {
+                            int x2 = x + dx;
+                            if (x2 < 0 || x2 > (imgCp.getWidth() - 1)) {
+                                continue;
+                            }
+                            imgCp.setRGB(x2, y2, 255, 255, 255);
+                        }
+                    }
+                    if (same) {
+                        imgCp.setRGB(x, y, 0, 0, 0);
+                    } else {
+                        imgCp.setRGB(x, y, 255, 0, 0);
+                    }
+                    double slope = Math.tan(rotD);
+                    // write 2 more pixels in red
+                    //y1 - y0 = slope*(x1 - x0);
+                    int dx;
+                    if (rotD >= 90 && rotD <= 270) {
+                        dx = -1;
+                    } else {
+                        dx = 1;
+                    }
+                    int x1 = x + dx;
+                    double y1 = (slope * (double)dx) + (double)y;
+                    imgCp.setRGB(x1, (int)Math.round(y1), 255, 0, 0);
+                    x1 = x + 2 * dx;
+                    y1 = (slope * (double)2. * dx) + (double)y;
+                    imgCp.setRGB(x1, (int)Math.round(y1), 255, 0, 0);
+                }
+                /*
+                          90
+                   135    |    45
+                          |
+                180 ---------------  0
+                          |
+                   225    |    315
+                         270                
+                */
+            }
+            MiscDebug.writeImage(imgCp, "_orientation_" + lbl);
+            
+            // when !same, would compare half descriptor from the
+            // "bottom" half of the oriented descriptor.
+            int z = 1;
+        }
+        
     }
 
 }

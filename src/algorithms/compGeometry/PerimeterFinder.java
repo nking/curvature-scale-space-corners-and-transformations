@@ -2023,7 +2023,7 @@ public class PerimeterFinder {
              
             if (neighbors.size() > 1) {
                 
-                // find the neighbor closest skeleton point then find the 
+                // find the closest skeleton point then find the 
                 // neighbor closest to it in counter clockwise direction.
                 
                 List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
@@ -2213,7 +2213,7 @@ public class PerimeterFinder {
      * @param y
      * @return 
      */
-    private Map<Integer, List<Integer>> makeXMap(int[] x, int[] y) {
+    public static Map<Integer, List<Integer>> makeXMap(int[] x, int[] y) {
         
         Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
         for (int i = 0; i < x.length; ++i) {
@@ -2242,7 +2242,7 @@ public class PerimeterFinder {
      * @param y
      * @return 
      */
-    private Map<Integer, List<Integer>> makeYMap(int[] x, int[] y) {
+    public static Map<Integer, List<Integer>> makeYMap(int[] x, int[] y) {
         
         Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
         for (int i = 0; i < y.length; ++i) {

@@ -168,7 +168,21 @@ public class FeatureMatcher {
         return best;
     }
     
-    public FeatureComparisonStat findBestMatch(
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @return 
+     */
+    public FeatureComparisonStat matchDescriptors(
         IntensityClrFeatures features1, IntensityClrFeatures features2, 
         CornerRegion region1, CornerRegion region2, 
         GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
@@ -183,8 +197,43 @@ public class FeatureMatcher {
         int x2 = region2.getX()[kMaxIdx2];
         int y2 = region2.getY()[kMaxIdx2];
         
-        return findBestMatch(features1, features2, x1, y1, x2, y2, 
+        return matchDescriptors(features1, features2, x1, y1, x2, y2, 
             redImg1, greenImg1, blueImg1, redImg2, greenImg2, blueImg2);
+    }
+    
+    /**
+     * 
+     * @param features1
+     * @param features2
+     * @param region1
+     * @param region2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @return 
+     */
+    public FeatureComparisonStat findBestMatch(
+        IntensityClrFeatures features1, IntensityClrFeatures features2, 
+        CornerRegion region1, CornerRegion region2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int dither
+        ) {
+        
+        int kMaxIdx1 = region1.getKMaxIdx();
+        int x1 = region1.getX()[kMaxIdx1];
+        int y1 = region1.getY()[kMaxIdx1];
+
+        int kMaxIdx2 = region2.getKMaxIdx();
+        int x2 = region2.getX()[kMaxIdx2];
+        int y2 = region2.getY()[kMaxIdx2];
+        
+        return findBestMatch(features1, features2, x1, y1, x2, y2, 
+            redImg1, greenImg1, blueImg1, redImg2, greenImg2, blueImg2,
+            dither);
     }
   
     /**
@@ -203,7 +252,7 @@ public class FeatureMatcher {
      * @param blueImg2
      * @return 
      */
-    public FeatureComparisonStat findBestMatch(
+    public FeatureComparisonStat matchDescriptors(
         IntensityClrFeatures features1, IntensityClrFeatures features2,
         int x1, int y1, int x2, int y2,
         GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1,
@@ -269,6 +318,132 @@ public class FeatureMatcher {
         stat_deltaE.setImg2Point(new PairInt(x2, y2));
 
         return stat_deltaE;
+    }
+    
+    /**
+     * uses delta E 1994 based upon CIE LAB color space
+     * @param features1
+     * @param features2
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @return 
+     */
+    public FeatureComparisonStat findBestMatch(
+        IntensityClrFeatures features1, IntensityClrFeatures features2,
+        int x1, int y1, int x2, int y2,
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1,
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int dither
+        ) {
+
+        FeatureComparisonStat best = null;
+        
+        int rot2;
+        try {
+            rot2 = features2.calculateOrientation(x2, y2);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+        
+        IntensityDescriptor desc2_l = features2.extractIntensityLOfCIELAB(
+            redImg2, greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_l == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_a = features2.extractIntensityAOfCIELAB(
+            redImg2, greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_a == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_b = features2.extractIntensityBOfCIELAB(
+            redImg2, greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_b == null) {
+            return null;
+        }
+                
+        int[] rotations = new int[3];
+        
+        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+            if (!features1.isWithinXBounds(redImg1, x1d)) {
+                continue;
+            }
+            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                if (!features1.isWithinYBounds(redImg1, y1d)) {
+                    continue;
+                }
+                
+                int rot1;
+                try {
+                    rot1 = features1.calculateOrientation(x1d, y1d);
+                } catch (CornerRegionDegneracyException e) {
+                    continue;
+                }
+                // fetch rotation for this point (x1d, y1d) and try this
+                // rotation and -20, -10, +10 and +20
+                rotations[0] = rot1;
+                rotations[1] = rot1 - 10;
+                rotations[2] = rot1 + 10;
+                //rotations[3] = rot1 - 20;
+                //rotations[4] = rot1 + 20;
+        
+                for (int rotD1 : rotations) {
+                    
+                    if (rotD1 > 359) {
+                        rotD1 = rotD1 - 360;
+                    } else if (rotD1 < 0) {
+                        rotD1 += 360;
+                    }
+
+                    IntensityDescriptor desc1_l = features2.extractIntensityLOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1, rotD1);
+                    if (desc1_l == null) {
+                        continue;
+                    }
+                    IntensityDescriptor desc1_a = features2.extractIntensityAOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1, rotD1);
+                    if (desc1_a == null) {
+                        continue;
+                    }
+                    IntensityDescriptor desc1_b = features2.extractIntensityBOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1, rotD1);
+                    if (desc1_b == null) {
+                        continue;
+                    }
+
+                    FeatureComparisonStat stat = IntensityClrFeatures.calculateStats(
+                        desc1_l, desc1_a, desc1_b, x1d, y1d, desc2_l, desc2_a, desc2_b, x2, y2);
+
+                    if (Float.isNaN(stat.getSumIntensitySqDiff())
+                        || Float.isNaN(stat.getImg2PointIntensityErr())) {
+                        continue;
+                    }
+                    
+                    if (stat.getSumIntensitySqDiff() < stat.getImg2PointIntensityErr()) {                       
+                        if (best == null) {
+                            best = stat;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() > stat.getSumIntensitySqDiff()) {
+                                best = stat;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
     }
     
     public FeatureComparisonStat findBestMatchO123(
