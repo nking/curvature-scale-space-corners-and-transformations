@@ -218,23 +218,20 @@ public class BlobMedialAxes {
         // for now, deciding that the extra information in the skeleton maps 
         // doesn't harm the use of the structures.
         
+        Set<Integer> exclude = new HashSet<Integer>(removeIndexes);
+        
         int n2 = xyCentroids.length - removeIndexes.size();
         
-        int lastIdx = -1;
         double[][] xyCentroid2 = new double[n2][2];
         int count = 0;
-        for (int i = 0; i < removeIndexes.size(); ++i) {
+        for (int i = 0; i < xyCentroids.length; ++i) {
             
-            int rmIdx = removeIndexes.get(i).intValue();
-
-            int idx0 = lastIdx + 1;
-            
-            for (int j = idx0; j < rmIdx; ++j) {
-                xyCentroid2[count] = Arrays.copyOf(this.xyCentroids[j], 2);
-                lastIdx = j;
+            Integer index = Integer.valueOf(i);
+            if (!exclude.contains(index)) {
+                xyCentroid2[count] = Arrays.copyOf(this.xyCentroids[i], 2);
                 count++;
-            }            
-        }
+            }
+        }   
         
         this.xyCentroids = xyCentroid2;
     }

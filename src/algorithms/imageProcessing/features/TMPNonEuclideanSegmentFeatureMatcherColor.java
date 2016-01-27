@@ -830,6 +830,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         for (int i = 0; i < largerBounds.size(); ++i) {
             mergedPixelSetList.add(new HashSet<PairInt>());
         }
+        assert(mergedPixelSetList.size() == largerBounds.size());
         //any item in pixelSetList not in largerBounds 
         List<Set<PairInt>> outsideLargerBounds = new ArrayList<Set<PairInt>>();
                 
@@ -855,6 +856,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             }
             if (minDistIdx > -1) {
                 mergedPixelSetList.get(minDistIdx).addAll(pixelSetList.get(i));
+                assert(mergedPixelSetList.size() == largerBounds.size());
             } else {
                 if (!pixelSetList.get(i).isEmpty()) {
                     outsideLargerBounds.add(pixelSetList.get(i));
@@ -862,15 +864,17 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             }
         }
         
-        paused here
         /*
         TODO:
         add those outside largerBounds to closest point in a largerBounds
         can limit those by centroids within a radius first before finding 
         closest pair
-        */
         
+        outsideLargerBounds
+        */
         //assert(outsideLargerBounds.isEmpty());
+        
+        assert(mergedPixelSetList.size() == largerBounds.size());
         
         List<Integer> remove = new ArrayList<Integer>();
         for (int i = 0; i < mergedPixelSetList.size(); ++i) {
@@ -879,8 +883,17 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 remove.add(Integer.valueOf(i));
             }
         }
+        for (int i = (remove.size() - 1); i > -1; --i) {
+            int rmIdx = remove.get(i);
+            mergedPixelSetList.remove(rmIdx);
+        }
                 
         largerBoundingRegions.removeIndexes(remove);
+        
+        assert(mergedPixelSetList.size() == largerBounds.size());
+        
+        pixelSetList.clear();
+        pixelSetList.addAll(mergedPixelSetList);        
     }
     
 }

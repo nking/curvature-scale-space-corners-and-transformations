@@ -524,7 +524,15 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                                 keyPoint1, keyPoint2, 
                                 redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
-               
+                        /*
+                        FeatureComparisonStat compStat = 
+                            featureMatcher.matchDescriptors(
+                                features1, features2, 
+                                keyPoint1.getX(), keyPoint1.getY(), 
+                                keyPoint2.getX(), keyPoint2.getY(),
+                                redImg1, greenImg1, blueImg1, 
+                                redImg2, greenImg2, blueImg2);
+                        */
                         if ((compStat == null) ||
                             (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
                             ) {

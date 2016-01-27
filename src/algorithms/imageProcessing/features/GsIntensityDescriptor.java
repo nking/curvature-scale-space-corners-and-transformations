@@ -186,14 +186,14 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         int n = grey.length;
         int nDiv = n/nColumns;
         
-        int[] indexes = new int[n];
+        int[] indexes = new int[n/2];
         
         int startIdx = nColumns/2;
         
         int count = 0;
         for (int i = 0; i < nDiv; ++i) {
             int idx = startIdx + i*nDiv;
-            for (int j = 0; j < nColumns; ++j) {
+            for (int j = 0; j < nColumns/2; ++j) {
                 indexes[count] = idx + j;
                 count++;
             }
@@ -223,14 +223,14 @@ public class GsIntensityDescriptor implements IntensityDescriptor {
         int n = grey.length;
         int nDiv = n/nColumns;
         
-        int[] indexes = new int[n];
+        int[] indexes = new int[n/2];
         
         int startIdx = 0;
         
         int count = 0;
         for (int i = 0; i < nDiv; ++i) {
             int idx = startIdx + i*nDiv;
-            for (int j = 0; j < nColumns; ++j) {
+            for (int j = 0; j < nColumns/2; ++j) {
                 indexes[count] = idx + j;
                 count++;
             }

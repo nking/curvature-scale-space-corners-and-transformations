@@ -4080,7 +4080,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         BoundingRegions br = new BoundingRegions(perimetersList, bma);
         
-        plotOrientation(features, br, img, debugTag);
+        //plotOrientation(features, br, img, debugTag);
         
         return br;
     }
@@ -4104,14 +4104,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
          * update the internal datasets
          * @param removeIndexes an ascending list of unique indexes to remove
          */
-        public void removeIndexes(List<Integer> removeIndexes) {
+        public void removeIndexes(final List<Integer> removeIndexes) {
             
             for (int i = (removeIndexes.size() - 1); i > -1; --i) {
                 int rmIdx = removeIndexes.get(i);
-                removeIndexes.remove(rmIdx);
+                perimeterList.remove(rmIdx);
             }
             
             bma.removeIndexes(removeIndexes);
+            
         }
     }
 
@@ -4282,9 +4283,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     thetaOut = (int)Math.round(theta * 180./Math.PI);
                 }
                 
-                log.info(String.format("rotation=%d  x,y=(%d,%d) skel=(%d,%d) centroid=(%d,%d) theta outward=%d",
-                    rotD, x, y, xySkel.getX(), xySkel.getY(), (int)Math.round(xyCen[0]),
-                    (int)Math.round(xyCen[1]), thetaOut));
+                //log.info(String.format("rotation=%d  x,y=(%d,%d) skel=(%d,%d) centroid=(%d,%d) theta outward=%d",
+                //    rotD, x, y, xySkel.getX(), xySkel.getY(), (int)Math.round(xyCen[0]),
+                //    (int)Math.round(xyCen[1]), thetaOut));
                 
                 /*
                 if orientation and thetaOut are closer than the 180 opposite
