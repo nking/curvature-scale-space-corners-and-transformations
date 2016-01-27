@@ -3447,6 +3447,9 @@ public class ImageProcessor {
                 break;
             }
         }
+        
+        int w = gsImg.getWidth();
+        int h = gsImg.getHeight();
 
         Set<PairInt> pixels = new HashSet<PairInt>();
         for (int i = 0; i < gsImg.getNPixels(); ++i) {
@@ -3454,6 +3457,11 @@ public class ImageProcessor {
             if (v >= v1) {
                 int x = gsImg.getCol(i);
                 int y = gsImg.getRow(i);
+                
+                // avoid points on image boundaries
+                if (x == 0 || y == 0 || (x > (w - 1)) || (y > (h - 1))) {
+                    continue;
+                }
                 pixels.add(new PairInt(x, y));
             }
         }

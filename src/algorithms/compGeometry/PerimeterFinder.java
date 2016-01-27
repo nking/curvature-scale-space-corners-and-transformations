@@ -3,6 +3,7 @@ package algorithms.compGeometry;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
+import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.util.PathStep;
 import algorithms.misc.MiscMath;
 import algorithms.util.BitVectorRepresentation;
@@ -1896,33 +1897,12 @@ public class PerimeterFinder {
      * @return 
      */
     public PairIntArray orderThePerimeter(Set<PairInt> perimeter, 
-        Set<PairInt> blob, float srchRadius) {
+        Set<PairInt> blob, float srchRadius, BlobMedialAxes bma, int bmaIndex) {
         
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        
-        Set<PairInt> skeleton = new HashSet<PairInt>(blob);
-                        
-        int[] minMaxXY = MiscMath.findMinMaxXY(skeleton);
-        lt.applyLineThinner(skeleton, minMaxXY[0], minMaxXY[1], minMaxXY[2],
-            minMaxXY[3]);
-        int[] xPoints = new int[skeleton.size()];
-        int[] yPoints = new int[skeleton.size()];
-
-        int count = 0;
-        for (PairInt p : skeleton) {
-            xPoints[count] = p.getX();
-            yPoints[count] = p.getY();
-            count++;
-        }
-            
-        // order skeleton by x and then y
-        Map<Integer, List<Integer>> xSkeletonMap = makeXMap(xPoints, yPoints);
-        Map<Integer, List<Integer>> ySkeletonMap = makeYMap(xPoints, yPoints);
-
         // approx O(N_perimeter), but has some factors during searches that could be improved
         // dfs walk through points, adding the clockwise point
-        PairIntArray orderedEdge = orderThePerimeter(perimeter, 
-            xSkeletonMap, ySkeletonMap, srchRadius);
+        PairIntArray orderedEdge = orderThePerimeter(perimeter, srchRadius,
+            bma, bmaIndex);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -1939,8 +1919,7 @@ public class PerimeterFinder {
     }
     
     private PairIntArray orderThePerimeter(Set<PairInt> perimeter, 
-        Map<Integer, List<Integer>> xSkeletonMap, 
-        Map<Integer, List<Integer>> ySkeletonMap, float srchRadius) {
+        float srchRadius, BlobMedialAxes bma, int bmaIndex) {
         
         /*
         TODO: need better data structures for finding nearest skeleton point
@@ -2026,44 +2005,7 @@ public class PerimeterFinder {
                 // find the closest skeleton point then find the 
                 // neighbor closest to it in counter clockwise direction.
                 
-                List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
-                int ySkel1 = Integer.MAX_VALUE;
-                if (ys != null) {
-                    int minDistY2 = Integer.MAX_VALUE;
-                    for (Integer y0 : ys) {
-                        int distYSq = y0.intValue() - y;
-                        distYSq *= distYSq;
-                        if (distYSq < minDistY2) {
-                            minDistY2 = distYSq;
-                            ySkel1 = y0.intValue();
-                        }
-                    }
-                }
-                int xSkel1 = x;
-                List<Integer> xs = ySkeletonMap.get(Integer.valueOf(x));
-                int xSkel2 = Integer.MAX_VALUE;
-                if (xs != null) {
-                    int minDistX2 = Integer.MAX_VALUE;
-                    for (Integer x0 : xs) {
-                        int distXSq = x0.intValue() - x;
-                        distXSq *= distXSq;
-                        if (distXSq < minDistX2) {
-                            minDistX2 = distXSq;
-                            xSkel2 = x0.intValue();
-                        }
-                    }
-                }
-                int ySkel2 = y;
-                int xSkel, ySkel;
-                if ((((xSkel1 - x)*(xSkel1 - x)) + ((ySkel1 - y)*(ySkel1 - y)))
-                    < 
-                    (((xSkel2 - x)*(xSkel2 - x)) + ((ySkel2 - y)*(ySkel2 - y)))) {
-                    xSkel = xSkel1;
-                    ySkel = ySkel1;
-                } else {
-                    xSkel = xSkel2;
-                    ySkel = ySkel2;
-                }
+                PairInt xySkel = bma.findClosestPoint(bmaIndex, x, y);
                 
                 /*
                 can use the skeleton to determine orientation, and hence, the
@@ -2078,14 +2020,14 @@ public class PerimeterFinder {
                      
                 */
                 
-                if ((x == xSkel) && (y == ySkel)) {
+                if ((x == xySkel.getX()) && (y == xySkel.getY())) {
                     // compare angles w/ previous to find the one which is most CCW
                     int minDistSq = Integer.MAX_VALUE;
                     PairInt pNext = null;
                     double minDirection = Double.MIN_VALUE;// should be a (+) number
                     for (PairInt p : neighbors) {
-                        int diffX = p.getX() - xSkel;
-                        int diffY = p.getY() - ySkel;
+                        int diffX = p.getX() - xySkel.getX();
+                        int diffY = p.getY() - xySkel.getY();
                         int distSq = diffX * diffX + diffY * diffY;
                         if (pNext == null) {
                             pNext = p;
@@ -2143,8 +2085,8 @@ public class PerimeterFinder {
                     PairInt pNext = null;
                     double minDirection = Double.MIN_VALUE;// should be a (+) number
                     for (PairInt p : neighbors) {
-                        double direction = LinesAndAngles.direction(x, y, xSkel, 
-                            ySkel, p.getX(), p.getY());
+                        double direction = LinesAndAngles.direction(x, y, 
+                            xySkel.getX(), xySkel.getY(), p.getX(), p.getY());
                         double direction2 = Double.MIN_VALUE;
                         if (pNext != null) {
                             direction2 = LinesAndAngles.direction(x, y,
@@ -2156,8 +2098,8 @@ public class PerimeterFinder {
                         if (direction < 0) {
                             continue;
                         }
-                        int diffX = p.getX() - xSkel;
-                        int diffY = p.getY() - ySkel;
+                        int diffX = p.getX() - xySkel.getX();
+                        int diffY = p.getY() - xySkel.getY();
                         int distSq = diffX * diffX + diffY * diffY;
                         if (pNext == null) {
                             pNext = p;
@@ -2205,64 +2147,6 @@ public class PerimeterFinder {
         }
         
         return orderedEdge;
-    }
-    
-    /**
-     * map w/ key = x and y = ascending ordered values for that x
-     * @param x
-     * @param y
-     * @return 
-     */
-    public static Map<Integer, List<Integer>> makeXMap(int[] x, int[] y) {
-        
-        Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
-        for (int i = 0; i < x.length; ++i) {
-            Integer key = Integer.valueOf(x[i]);
-            List<Integer> list = map.get(key);
-            if (list == null) {
-                list = new ArrayList<Integer>();
-                map.put(key, list);
-            }
-            list.add(Integer.valueOf(y[i]));
-        }
-        
-        for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
-            List<Integer> ys = entry.getValue();
-            if (ys.size() > 1) {
-                Collections.sort(ys);
-            }
-        }
-        
-        return map;
-    }
-    
-    /**
-     * map w/ key = y and x = ascending ordered values for that y
-     * @param x
-     * @param y
-     * @return 
-     */
-    public static Map<Integer, List<Integer>> makeYMap(int[] x, int[] y) {
-        
-        Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>();
-        for (int i = 0; i < y.length; ++i) {
-            Integer key = Integer.valueOf(y[i]);
-            List<Integer> list = map.get(key);
-            if (list == null) {
-                list = new ArrayList<Integer>();
-                map.put(key, list);
-            }
-            list.add(Integer.valueOf(x[i]));
-        }
-        
-        for (Map.Entry<Integer, List<Integer>> entry : map.entrySet()) {
-            List<Integer> xs = entry.getValue();
-            if (xs.size() > 1) {
-                Collections.sort(xs);
-            }
-        }
-        
-        return map;
     }
     
     static class Gap {

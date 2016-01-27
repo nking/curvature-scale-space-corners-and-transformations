@@ -830,7 +830,9 @@ public class IntensityClrFeatures {
             }
         }
 
-        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
+        IntensityDescriptor desc = new GsIntensityDescriptor(output, 
+            centralPixelIndex, nCellsAcross);
+        
         return desc;
     }
     
@@ -1148,9 +1150,12 @@ public class IntensityClrFeatures {
         PairInt p = new PairInt(xCenter, yCenter);
         Integer rotationKey = Integer.valueOf(rotation);
         
-        IntensityDescriptor descL = new GsIntensityDescriptor(outputL, centralPixelIndex);
-        IntensityDescriptor descA = new GsIntensityDescriptor(outputA, centralPixelIndex);
-        IntensityDescriptor descB = new GsIntensityDescriptor(outputB, centralPixelIndex);
+        IntensityDescriptor descL = new GsIntensityDescriptor(outputL, 
+            centralPixelIndex, nCellsAcross);
+        IntensityDescriptor descA = new GsIntensityDescriptor(outputA, 
+            centralPixelIndex, nCellsAcross);
+        IntensityDescriptor descB = new GsIntensityDescriptor(outputB, 
+            centralPixelIndex, nCellsAcross);
         
         Map<Integer, IntensityDescriptor> dL = new HashMap<Integer, IntensityDescriptor>();
         dL.put(rotationKey, descL);
@@ -1264,4 +1269,122 @@ public class IntensityClrFeatures {
         return stat;
     }
     
+    public static FeatureComparisonStat calculateHalfStats(
+        IntensityDescriptor desc1_l, IntensityDescriptor desc1_a, 
+        IntensityDescriptor desc1_b, int x1, int y1, boolean useTop1, 
+        IntensityDescriptor desc2_l, IntensityDescriptor desc2_a, 
+        IntensityDescriptor desc2_b, int x2, int y2, boolean useTop2) {
+        
+        if (desc1_l == null) {
+            throw new IllegalArgumentException("desc1_l cannot be null");
+        }
+        if (desc1_a == null) {
+            throw new IllegalArgumentException("desc1_a cannot be null");
+        }
+        if (desc1_b == null) {
+            throw new IllegalArgumentException("desc1_b cannot be null");
+        }
+        if (desc2_l == null) {
+            throw new IllegalArgumentException("desc2_l cannot be null");
+        }
+        if (desc2_a == null) {
+            throw new IllegalArgumentException("desc2_a cannot be null");
+        }
+        if (desc2_b == null) {
+            throw new IllegalArgumentException("desc2_b cannot be null");
+        }
+        
+        int[] indexes1 = useTop1 ? 
+            ((GsIntensityDescriptor)desc1_l).getUpperHalfIndexes() :
+            ((GsIntensityDescriptor)desc1_l).getLowerHalfIndexes();
+        
+        int[] indexes2 = useTop2 ? 
+            ((GsIntensityDescriptor)desc2_l).getUpperHalfIndexes() :
+            ((GsIntensityDescriptor)desc2_l).getLowerHalfIndexes();
+        
+        if (indexes1.length != indexes2.length) {
+            throw new IllegalArgumentException(
+            "indexes1 and indexes2 must be same length");
+        }
+        
+        float[] l1 = ((GsIntensityDescriptor)desc1_l).grey;
+        float[] a1 = ((GsIntensityDescriptor)desc1_a).grey;
+        float[] b1 = ((GsIntensityDescriptor)desc1_b).grey;
+        
+        float[] l2 = ((GsIntensityDescriptor)desc2_l).grey;
+        float[] a2 = ((GsIntensityDescriptor)desc2_a).grey;
+        float[] b2 = ((GsIntensityDescriptor)desc2_b).grey;
+        
+        int n = l1.length;
+        int centralPixIdx1 = desc1_l.getCentralIndex();
+        int centralPixIdx2 = desc2_l.getCentralIndex();
+                
+        float vcL1 = l1[centralPixIdx1];
+        if (vcL1 == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        //float vcA1 = a1[centralPixIdx1];
+        //float vcB1 = b1[centralPixIdx1];
+        
+        float vcL2 = l2[centralPixIdx2];
+        if (vcL2 == sentinel) {
+            throw new IllegalStateException(
+            "ERROR: the central value for the array is somehow sentinel");
+        }
+        float vcA2 = a2[centralPixIdx2];
+        float vcB2 = b2[centralPixIdx2];
+        
+        assert(indexes1.length == indexes2.length);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+                
+        int count = 0;
+        //TODO: review the math for auto-correlation here since it is estimated from 2 points instead of 1
+        double autoCorrel = 0;
+        double deltaESum = 0;
+        
+        n = indexes1.length;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            int idx1 = indexes1[i];
+            int idx2 = indexes2[i];
+            
+            float vL1 = l1[idx1];
+            if (vL1 == sentinel) {
+                continue;
+            }
+            float vL2 = l2[idx2];
+            if (vL2 == sentinel) {
+                continue;
+            }
+            float vA1 = a1[idx1];
+            float vB1 = b1[idx1];
+            float vA2 = a2[idx2];
+            float vB2 = b2[idx2];
+            
+            double deltaE = cieC.calcDeltaECIE94(vL1, vA1, vB1, vL2, vA2, vB2);
+            
+            deltaESum += (deltaE * deltaE);
+            
+            double deltaEC = cieC.calcDeltaECIE94(vcL2, vcA2, vcB2, vL2, vA2, vB2);
+                    
+            autoCorrel += (deltaEC * deltaEC);            
+            
+            count++;
+        }
+        
+        autoCorrel /= (double)count;
+        
+        deltaESum /= (double)count;
+         
+        FeatureComparisonStat stat = new FeatureComparisonStat();
+        stat.setImg1Point(new PairInt(x1, y1));
+        stat.setImg2Point(new PairInt(x2, y2));
+        stat.setSumIntensitySqDiff((float)deltaESum);
+        stat.setImg2PointIntensityErr((float)autoCorrel);
+        
+        return stat;
+    }
 }

@@ -1,17 +1,14 @@
 package algorithms.compGeometry;
 
+import algorithms.misc.MiscMath;
+
 /**
  * test whether a point is within a polygon.
  *
- * follows http://rosettacode.org/wiki/Ray-casting_algorithm impl for Go that
+ * adapted from http://rosettacode.org/wiki/Ray-casting_algorithm impl for Go that
  * counts the number of times a ray intersects the edges of the polygon starting
- * from the point and going ANY fixed direction. This algorithm is sometimes
- * also known as the crossing number algorithm or the even-odd rule algorithm.
- * The implementation here is different, and includes logic for testing whether
- * the point is in the polygon lines too.
- * 
- * Many edits were made to handle cases such as point being same as a corner of
- * the polygon or being on the polygon line.
+ * from the point and extending to higher x.  This class also does a quick
+ * check for whether the point is in the line segment first.
  *
  * @author nichole
  */
@@ -25,154 +22,93 @@ public class PointInPolygon {
     /**
      * given a polygon (xPolygon, yPolygon) that has the same start and end
      * points, determine whether the point (xpt, ypt) is in the polygon.
-     * NOTE: this one needs more testing for points having same y and
-     * different x's as a polygon point.
+     * 
      * @param xPt
      * @param yPt
-     * @param xPolygon
-     * @param yPolygon
+     * @param xPolygon x values of a polygon in which each x should be smaller
+     * than Integer.MAX_VALUE so that cross products do not overflow int type.
+     * @param yPolygon y values of a polygon in which each y should be smaller
+     * than Integer.MAX_VALUE so that cross products do not overflow int type.
      * @param nPolygonPoints
-     * @return 
+     * @return whether (xPt, yPt) is on or within {xPolygon, yPolygon}
+     */
+    public boolean isInSimpleCurve(int xPt, int yPt, int[] xPolygon,
+        int[] yPolygon, int nPolygonPoints) {
+        
+        int xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;
+        
+        int sumIntersectingRays = 0;
+        
+        for (int i = 0; i < (nPolygonPoints - 1); i++) {
+            
+            int x2 = xPolygon[i];
+            int y2 = yPolygon[i];
+            int x3 = xPolygon[i + 1];
+            int y3 = yPolygon[i + 1];
+            
+            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {
+                return true;
+            } 
+            
+            boolean intersects =
+                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,
+                x2, y2, x3, y3);
+            
+            if (intersects) {
+                // avoid counting intersection with a vertex twice
+                if (yPt != y3) {
+                    sumIntersectingRays++;
+                }
+            }
+        }
+        
+        return ((sumIntersectingRays & 1) == 1);
+    }
+    
+    /**
+     * given a polygon (xPolygon, yPolygon) that has the same start and end
+     * points, determine whether the point (xpt, ypt) is in the polygon.
+     * 
+     * @param xPt
+     * @param yPt
+     * @param xPolygon x values of a polygon in which each x should be smaller
+     * than Integer.MAX_VALUE so that cross products do not overflow int type.
+     * @param yPolygon y values of a polygon in which each y should be smaller
+     * than Integer.MAX_VALUE so that cross products do not overflow int type.
+     * @param nPolygonPoints
+     * @return whether (xPt, yPt) is on or within {xPolygon, yPolygon}
      */
     public boolean isInSimpleCurve(float xPt, float yPt, float[] xPolygon,
         float[] yPolygon, int nPolygonPoints) {
         
+        float xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;
+        
         int sumIntersectingRays = 0;
         
-        boolean possibleDoubleCount = false;
-        
-        for (int i = 0; i < nPolygonPoints; i++) {
-
-            if ((i + 2) > nPolygonPoints) {
-                continue;
-            }
-
-            /*
-            returns 0 if does not intersect, returns 1 if it does intersect,
-             returns 2 if the point lies on a line directly (and in that
-             case, the invoker should not test further),
-             returns 3 for yPt being equal to one of the segments and xPt being
-             to the right of both segments (and in that case, the invoker should
-             not count the result twice).
-            */
-            int result = rayIntersects(xPt, yPt, xPolygon, yPolygon, i, i + 1);
-
-            if (result == 0) {
-                continue;
-            } else if (result == 2) {
+        for (int i = 0; i < (nPolygonPoints - 1); i++) {
+            
+            float x2 = xPolygon[i];
+            float y2 = yPolygon[i];
+            float x3 = xPolygon[i + 1];
+            float y3 = yPolygon[i + 1];
+            
+            if (LinesAndAngles.pointIsInLine(xPt, yPt, x2, y2, x3, y3)) {
                 return true;
             }
-
-            if (result == 3) {
-                if (possibleDoubleCount) {
-                    // do not count this, but do reset flag
-                    possibleDoubleCount = false;
-                    continue;
+            
+            boolean intersects =
+                LinesAndAngles.linesIntersect(xPt, yPt, xMax, yPt,
+                x2, y2, x3, y3);
+            
+            if (intersects) {
+                // avoid counting intersection with a vertex twice
+                if (yPt != y3) {
+                    sumIntersectingRays++;
                 }
-                possibleDoubleCount = true;                
             }
-          
-            sumIntersectingRays++;
         }
         
-        if (sumIntersectingRays == 1 && possibleDoubleCount) {
-            return false;
-        }
         return ((sumIntersectingRays & 1) == 1);
     }
-
-    /**
-     * pt intersects edge by projecting that the point will travel horizontally.
-     * returns 0 if does not intersect, returns 1 if it does intersect,
-     * returns 2 if the point lies on a line directly (and in that
-     * case, the invoker should not test further),
-     * returns 3 for yPt being equal to one of the segments and xPt being
-     * to the right of both segments (and in that case, the invoker should
-     * not count the result twice).
-     *
-     * @return
-     */
-    int rayIntersects(float xPt, float yPt, float[] xPolygon,
-        float[] yPolygon, int index1, int index2) {
-
-        float ax = xPolygon[index1];
-        float ay = yPolygon[index1];
-        float bx = xPolygon[index2];
-        float by = yPolygon[index2];
-        
-        if (ay >= by) {
-            float xtmp = ax;
-            float ytmp = ay;
-            ax = bx;
-            ay = by;
-            bx = xtmp;
-            by = ytmp;
-        }
-        
-        if ((xPt == ax) && (yPt == ay)) {
-            return 2;
-        }
-        if ((xPt == bx) && (yPt == by)) {
-            return 2;
-        }
-        
-        if ((yPt < ay) || (yPt > by)) {
-            return 0;
-        }
-        
-        // test for vertical a->b,  "is on line" and "right of line"
-        if (ax == bx) {
-            if (xPt == ax) {
-                if ((yPt > ay) && (yPt < by)) {
-                    return 2;
-                }
-                return 0;
-            } else if (xPt < ax) {
-                if ((yPt > ay) && (yPt < by)) {
-                    return 1;
-                }
-                return 0;
-            } else {
-                return 0;
-            }
-        }
-        
-        // since (xPt,yPt) is within y range ay:by
-        if ((xPt <= ax) && (xPt <= bx)) {
-            if ((yPt == by) || (yPt == ay)) {
-                // we don't want to count the point twice as "intersects"
-                return 3;
-            }
-            return 1;
-        }
-        if ((xPt > ax) && (xPt > bx)) {
-            return 0;
-        }
-        
-        // (xPt,yPt) is within y range ay:by  and bounded by ax and bx (but != ax nor bx)
-        
-        // test "is on line"
-        float slopeAB = (by - ay)/(bx - ax);
-        
-        float slopeAPt = (yPt - ay)/(xPt - ax);
-        
-        float slopePtB = (by - yPt)/(bx - xPt);
-        
-        // TODO: may need to widen eps to include 1 pixel rounding
-        if ((Math.abs(slopeAB - slopeAPt) < eps) && 
-            (Math.abs(slopeAB - slopePtB) < eps)) {
-            
-            return 2;
-        }
-        
-        if ((xPt > ax) && (bx > xPt)) {
-            float xLine = ax + ((yPt - ay)/slopeAB);
-            if (xPt < xLine) {
-                return 1;
-            }
-        }
-        
-        return 0;
-    }
-
+    
 }

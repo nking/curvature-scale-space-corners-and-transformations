@@ -6,6 +6,7 @@ import algorithms.imageProcessing.util.MiscStats;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -307,7 +308,7 @@ public class CornerMatcher<T extends CornerRegion> {
     @SuppressWarnings({"unchecked"})
     public boolean matchCornersByBlobs(
         final IntensityClrFeatures features1, final IntensityClrFeatures features2,
-        final List<List<T>> cornersList1,final List<List<T>> cornersList2, 
+        final List<List<T>> cornersList1, final List<List<T>> cornersList2, 
         GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
         GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
         int binFactor1, int binFactor2) {
@@ -379,6 +380,149 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                                 redImg2, greenImg2, blueImg2, dither);*/
                             featureMatcher.matchDescriptors(features1, features2, 
                                 region1, region2, redImg1, greenImg1, blueImg1, 
+                                redImg2, greenImg2, blueImg2);
+               
+                        if ((compStat == null) ||
+                            (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                            ) {
+                            continue;
+                        }
+                
+                        if (best1 == null) {
+                            best1 = compStat;
+                        } else if (compStat.getSumIntensitySqDiff() < best1.getSumIntensitySqDiff()) {
+                            best1 = compStat;
+                        }
+                    }
+                    if (best1 != null) {
+                        bestList1.add(best1);
+                    }
+                }
+                
+                MiscStats.filterForDegeneracy(bestList1);
+                
+                if (bestList1.isEmpty()) {
+                    continue;
+                }
+                
+                double cost1 = 1./(double)bestList1.size();
+                double cost2 = MiscStats.calculateCombinedIntensityStat(bestList1);
+                double normCost = cost1 * cost2;
+                
+                if (normCost < bestCost) {
+                    bestCost = normCost;
+                    bestCostSSD = cost2;
+                    bestStats = bestList1;
+                    bestCostIdx2 = j;
+                }
+            }
+            
+            if (bestStats.isEmpty()) {
+                continue;
+            }
+            
+            stats.addAll(bestStats);
+        }
+        
+        MiscStats.filterForDegeneracy(stats);
+                
+        assignInstanceResults(stats);
+        
+        return !stats.isEmpty();
+    }
+    
+    /**
+     * match corners using the color descriptors, but only the half of the 
+     * descriptors that is internal to its group's bounds.  The method is meant
+     * to explore avoiding the changing background behind objects that are 
+     * viewed from multiple perspectives or have moved in their reference frame.
+     * 
+     * @param features1
+     * @param features2
+     * @param keyPointsAndBounds1
+     * @param keyPointsAndBounds2
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @param binFactor1
+     * @param binFactor2
+     * @return 
+     */
+    @SuppressWarnings({"unchecked"})
+    public boolean matchCornersByBlobs(
+        final IntensityClrFeatures features1, final IntensityClrFeatures features2,
+        final KeyPointsAndBounds keyPointsAndBounds1, 
+        final KeyPointsAndBounds keyPointsAndBounds2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2) {
+
+        if (state != null) {
+            resetDefaults();
+        }
+/*        
+// Temporary debugging code        
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+log.info("blobs1:");
+for (int i = 0; i < cornersList1.size(); ++i) {
+    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList1.get(i));
+    String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
+    if ((Math.abs(xyCen[0] - 68) < 15) && (Math.abs(xyCen[1] - 108) < 15)) {
+        str = "**" + str;
+    }
+    log.info(str);
+}
+log.info("blobs2:");
+for (int i = 0; i < cornersList2.size(); ++i) {
+    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList2.get(i));
+    String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
+    if ((Math.abs(xyCen[0] - 114) < 18) && (Math.abs(xyCen[1] - 118) < 15)) {
+        str = "**" + str;
+    }
+    log.info(str);
+}
+*/       
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        for (int i = 0; i < keyPointsAndBounds1.getKeyPointGroups().size(); ++i) {
+            
+            Set<PairInt> keyPoints1 = keyPointsAndBounds1.getKeyPointGroups().get(i);
+            
+            double bestCost = Double.MAX_VALUE;
+            double bestCostSSD = Double.MAX_VALUE;
+            int bestCostIdx2 = -1;
+            List<FeatureComparisonStat> bestStats = new ArrayList<FeatureComparisonStat>();
+            
+            for (int j = 0; j < keyPointsAndBounds2.getKeyPointGroups().size(); ++j) {
+
+                Set<PairInt> keyPoints2 = keyPointsAndBounds2.getKeyPointGroups().get(j);
+
+                // find the best match for each corners1 point, 
+                // then filter for degenerate
+                // TODO: could consider consistent homology here, but that
+                // adds alot of computations.
+                
+                List<FeatureComparisonStat> bestList1 = new ArrayList<FeatureComparisonStat>();
+                
+                for (PairInt keyPoint1 : keyPoints1) {
+                                
+                    FeatureComparisonStat best1 = null;
+
+                    for (PairInt keyPoint2 : keyPoints2) {
+
+                        FeatureComparisonStat compStat = 
+                            featureMatcher.matchHalfDescriptors(
+                                features1, features2, 
+                                keyPointsAndBounds1, i, keyPointsAndBounds2, j,
+                                keyPoint1, keyPoint2, 
+                                redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
                
                         if ((compStat == null) ||

@@ -6,6 +6,7 @@ import algorithms.compGeometry.NearestPoints1D;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
+import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.IntensityClrFeatures;
@@ -3973,7 +3974,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param img
      * @return 
      */
-    public List<PairIntArray> extractBlobsFromLowRes(ImageExt img, 
+    public BoundingRegions extractBlobBoundsFromLowRes(ImageExt img, 
         boolean debug, String debugTag, IntensityClrFeatures features) {
         
         int w = img.getWidth();
@@ -3995,7 +3996,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(segImg, "seg_cluster_" + MiscDebug.getCurrentTimeFormatted());
         }
         
-        int smallestGroupLimit = 30;
+        int smallestGroupLimit = 15;
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = false;
@@ -4016,9 +4017,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float srchRadius = (float)Math.sqrt(2) * (float)binFactor;
         
         PerimeterFinder perimeterFinder = new PerimeterFinder();
-  
+        
+        // scale blobs and borderPixelSets back to current frame
         for (int i = 0; i < borderPixelSets.size(); ++i) {
-                                    
             Set<PairInt> blob = blobs.get(i);
             Set<PairInt> tmp = new HashSet<PairInt>();
             for (PairInt p : blob) {
@@ -4038,10 +4039,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             borderPixels.clear();
             borderPixels.addAll(tmp);
+        }
+        
+        BlobMedialAxes bma = new BlobMedialAxes(blobs);
+        
+        for (int i = 0; i < borderPixelSets.size(); ++i) {
+                                    
+            Set<PairInt> blob = blobs.get(i);
+            Set<PairInt> borderPixels = borderPixelSets.get(i);
             
             // approx O(N_perimeter), but has factors during searches that could be improved
             PairIntArray orderedPerimeter = perimeterFinder.orderThePerimeter(
-                borderPixels, blob, srchRadius);
+                borderPixels, blob, srchRadius,
+                bma, i);
   
             /*Image imgCp = img.copyImage();
             ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
@@ -4064,13 +4074,45 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         /*
-        TODO: consider expanding the bounds to the nearest lines in the working
-        size image adaptive median lines
+        TODO: consider expanding the bounds to the nearest smaller segmentation
+        as refinement of their rougher locations.
         */
         
-        plotOrientation(features, blobs, perimetersList, img, debugTag);
+        BoundingRegions br = new BoundingRegions(perimetersList, bma);
         
-        return perimetersList;
+        plotOrientation(features, br, img, debugTag);
+        
+        return br;
+    }
+    
+    public static class BoundingRegions {
+        private final List<PairIntArray> perimeterList;
+        private final BlobMedialAxes bma;
+        public BoundingRegions(List<PairIntArray> perimeters, BlobMedialAxes 
+            skeletons) {
+            this.perimeterList = perimeters;
+            this.bma = skeletons;
+        }
+        public List<PairIntArray> getPerimeterList() {
+            return perimeterList;
+        }
+        public BlobMedialAxes getBlobMedialAxes() {
+            return bma;
+        }
+
+        /**
+         * update the internal datasets
+         * @param removeIndexes an ascending list of unique indexes to remove
+         */
+        public void removeIndexes(List<Integer> removeIndexes) {
+            
+            for (int i = (removeIndexes.size() - 1); i > -1; --i) {
+                int rmIdx = removeIndexes.get(i);
+                removeIndexes.remove(rmIdx);
+            }
+            
+            bma.removeIndexes(removeIndexes);
+        }
     }
 
     /**
@@ -4167,49 +4209,32 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }            
     }
 
+    /**
+     * a quick look at the feature orientations and a knowledge of "inward"
+     * w.r.t. the encapsulating segmentation region.
+     * @param features
+     * @param blobs
+     * @param img
+     * @param lbl 
+     */
     private void plotOrientation(IntensityClrFeatures features, 
-        List<Set<PairInt>> blobs, List<PairIntArray> perimetersList, 
-        ImageExt img, String lbl) {
+        BoundingRegions boundingRegion, ImageExt img, String lbl) {
         
         /*
         -- pass into method the features so can determine orientation,
-        -- then scale to current frame the skeleton points.
         -- then for each point on the bounds, plot the orientation first
            point in red/white and subsequent short line in red, then 
            add a black/red/white dot for the segment endpoint pointing inward.
         */
         
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        List<PairIntArray> perimetersList = boundingRegion.getPerimeterList();
+        BlobMedialAxes bma = boundingRegion.getBlobMedialAxes();
         
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-
         ImageExt imgCp = img.copyToImageExt();
         
         // make skeleton for each blob for detailed perimeter "inward" directions
-        for (int i = 0; i < blobs.size(); ++i) {
-            
-            Set<PairInt> blob = blobs.get(i);
-            Set<PairInt> skeleton = new HashSet<PairInt>(blob);
-            
-            int[] minMaxXY = MiscMath.findMinMaxXY(skeleton);
-            lt.applyLineThinner(skeleton, minMaxXY[0], minMaxXY[1], minMaxXY[2],
-                minMaxXY[3]);
-            int[] xPoints = new int[skeleton.size()];
-            int[] yPoints = new int[skeleton.size()];
-
-            int count = 0;
-            for (PairInt p : skeleton) {
-                xPoints[count] = p.getX();
-                yPoints[count] = p.getY();
-                count++;
-            }
-            
-            double[] xyCen = curveHelper.calculateXYCentroids(blob);
-            
-            // order skeleton by x and then y
-            Map<Integer, List<Integer>> xSkeletonMap = PerimeterFinder.makeXMap(xPoints, yPoints);
-            Map<Integer, List<Integer>> ySkeletonMap = PerimeterFinder.makeYMap(xPoints, yPoints);
-            
+        for (int i = 0; i < perimetersList.size(); ++i) {
+                        
             PairIntArray perimeter = perimetersList.get(i);
             
             for (int ii = 0; ii < perimeter.getN(); ++ii) {
@@ -4226,46 +4251,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 // find the closest skeleton point then find the
                 // neighbor closest to it in counter clockwise direction.
-
-                List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
-                int ySkel1 = Integer.MAX_VALUE;
-                if (ys != null) {
-                    int minDistY2 = Integer.MAX_VALUE;
-                    for (Integer y0 : ys) {
-                        int distYSq = y0.intValue() - y;
-                        distYSq *= distYSq;
-                        if (distYSq < minDistY2) {
-                            minDistY2 = distYSq;
-                            ySkel1 = y0.intValue();
-                        }
-                    }
-                }
-                int xSkel1 = x;
-                List<Integer> xs = ySkeletonMap.get(Integer.valueOf(x));
-                int xSkel2 = Integer.MAX_VALUE;
-                if (xs != null) {
-                    int minDistX2 = Integer.MAX_VALUE;
-                    for (Integer x0 : xs) {
-                        int distXSq = x0.intValue() - x;
-                        distXSq *= distXSq;
-                        if (distXSq < minDistX2) {
-                            minDistX2 = distXSq;
-                            xSkel2 = x0.intValue();
-                        }
-                    }
-                }
-                int ySkel2 = y;
-                int xSkel, ySkel;
-                if ((((xSkel1 - x)*(xSkel1 - x)) + ((ySkel1 - y)*(ySkel1 - y)))
-                    <
-                    (((xSkel2 - x)*(xSkel2 - x)) + ((ySkel2 - y)*(ySkel2 - y)))) {
-                    xSkel = xSkel1;
-                    ySkel = ySkel1;
-                } else {
-                    xSkel = xSkel2;
-                    ySkel = ySkel2;
-                }
+                PairInt xySkel = bma.findClosestPoint(i, x, y);
                 
+                double[] xyCen = bma.getOriginalBlobXYCentroid(i);
+
                 /*
                           90
                    135    |    45
@@ -4277,8 +4266,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 */
                 // direction away from skeleton or centroid
                 int thetaOut;
-                if ((x != xSkel) || (y != ySkel)) {
-                    double theta = Math.atan2(y - ySkel, x - xSkel);
+                if ((x != xySkel.getX()) || (y != xySkel.getY())) {
+                    double theta = Math.atan2(y - xySkel.getY(), x - xySkel.getX());
                     // transform to 0 to 2*pi radians
                     if (theta < 0) {
                         theta += 2. * Math.PI;
@@ -4294,7 +4283,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
                 
                 log.info(String.format("rotation=%d  x,y=(%d,%d) skel=(%d,%d) centroid=(%d,%d) theta outward=%d",
-                    rotD, x, y, xSkel, ySkel, (int)Math.round(xyCen[0]),
+                    rotD, x, y, xySkel.getX(), xySkel.getY(), (int)Math.round(xyCen[0]),
                     (int)Math.round(xyCen[1]), thetaOut));
                 
                 /*
@@ -4336,9 +4325,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     int y1 = y + dy;
                     double x1 = (1./slope)*((double)dy) + (double) x;
+                    if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
+                        y1 > (imgCp.getHeight() - 1)) {
+                        continue;
+                    }
                     imgCp.setRGB((int)Math.round(x1), y1, 255, 0, 0);
                     y1 = y + 2*dy;
                     x1 = (1./slope)*((double)2.*dy) + (double) x;
+                    if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
+                        y1 > (imgCp.getHeight() - 1)) {
+                        continue;
+                    }
                     imgCp.setRGB((int)Math.round(x1), y1, 255, 0, 0);
                 } else {
                     // use dx steps
@@ -4371,9 +4368,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     int x1 = x + dx;
                     double y1 = (slope * (double)dx) + (double)y;
+                    if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
+                        y1 > (imgCp.getHeight() - 1)) {
+                        continue;
+                    }
                     imgCp.setRGB(x1, (int)Math.round(y1), 255, 0, 0);
                     x1 = x + 2 * dx;
                     y1 = (slope * (double)2. * dx) + (double)y;
+                    if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
+                        y1 > (imgCp.getHeight() - 1)) {
+                        continue;
+                    }
                     imgCp.setRGB(x1, (int)Math.round(y1), 255, 0, 0);
                 }
                 /*

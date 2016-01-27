@@ -83,4 +83,31 @@ public class LinesAndAnglesTest extends TestCase {
         
         assertTrue(direction < 0);
     }
+    
+    public void testPointIsInLine() throws Exception {
+        
+        boolean isInLine = LinesAndAngles.pointIsInLine(0, 5, 0, 0, 0, 10);
+        assertTrue(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(1, 5, 0, 0, 0, 10);
+        assertFalse(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(0.f, 5.f, 0.f, 0.f, 0.f, 10.f);
+        assertTrue(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(2, 2, 0, 0, 4, 4);
+        assertTrue(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(3, 0, 2, 0, 4, 0);
+        assertTrue(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(3, 1, 2, 0, 4, 0);
+        assertFalse(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(2, 0, 2, 0, 4, 0);
+        assertTrue(isInLine);
+        
+        isInLine = LinesAndAngles.pointIsInLine(4, 4, 0, 0, 4, 4);
+        assertTrue(isInLine);
+    }
 }

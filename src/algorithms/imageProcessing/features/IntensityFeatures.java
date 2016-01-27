@@ -607,7 +607,7 @@ public class IntensityFeatures {
         }
         
         IntensityDescriptor desc = new GsIntensityDescriptor(output, 
-            offsets.length >> 1);
+            offsets.length >> 1, (int)Math.sqrt(output.length));
         
         return desc;
     }
@@ -918,7 +918,9 @@ public class IntensityFeatures {
             }
         }
 
-        IntensityDescriptor desc = new GsIntensityDescriptor(output, centralPixelIndex);
+        IntensityDescriptor desc = new GsIntensityDescriptor(output, 
+            centralPixelIndex, nCellsAcross);
+        
         return desc;
     }
     

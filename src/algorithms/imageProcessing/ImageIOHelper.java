@@ -840,6 +840,31 @@ public class ImageIOHelper {
     }
     
     /**
+     * draw the edge over the image using the given rgb colors and the size
+     * of the dot beyond 1 pixel.
+     * 
+     * @param pointGroups
+     * @param input
+     * @param nExtraForDot
+     */
+    public static <T extends Collection<PairInt>> void addAlternatingColorCurvesToImage0(
+        List<T> pointGroups, Image input, int nExtraForDot) {
+        
+        if (pointGroups == null || input == null) {
+            return;
+        }
+        
+        for (int i = 0; i < pointGroups.size(); ++i) {
+            
+            int[] clr = getNextRGB(i);
+            
+            addCurveToImage(pointGroups.get(i), input, nExtraForDot,
+                clr[0], clr[1], clr[2]);
+        }
+        
+    }
+    
+    /**
      * draw lines from points at index i to index i+1 in the requested color
      * onto the input.
      * 
