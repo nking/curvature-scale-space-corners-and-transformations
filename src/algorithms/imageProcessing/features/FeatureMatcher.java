@@ -289,17 +289,17 @@ public class FeatureMatcher {
             return null;
         }
                 
-        IntensityDescriptor desc1_l = features2.extractIntensityLOfCIELAB(redImg1, 
+        IntensityDescriptor desc1_l = features1.extractIntensityLOfCIELAB(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_l == null) {
             return null;
         }
-        IntensityDescriptor desc1_a = features2.extractIntensityAOfCIELAB(redImg1, 
+        IntensityDescriptor desc1_a = features1.extractIntensityAOfCIELAB(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_a == null) {
             return null;
         }
-        IntensityDescriptor desc1_b = features2.extractIntensityBOfCIELAB(redImg1, 
+        IntensityDescriptor desc1_b = features1.extractIntensityBOfCIELAB(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_b == null) {
             return null;
@@ -489,17 +489,17 @@ public class FeatureMatcher {
             return null;
         }
                 
-        IntensityDescriptor desc1_o1 = features2.extractIntensityO1(redImg1, 
+        IntensityDescriptor desc1_o1 = features1.extractIntensityO1(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_o1 == null) {
             return null;
         }
-        IntensityDescriptor desc1_o2 = features2.extractIntensityO2(redImg1, 
+        IntensityDescriptor desc1_o2 = features1.extractIntensityO2(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_o2 == null) {
             return null;
         }
-        IntensityDescriptor desc1_o3 = features2.extractIntensityO1(redImg1, 
+        IntensityDescriptor desc1_o3 = features1.extractIntensityO1(redImg1, 
             greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_o3 == null) {
             return null;
@@ -1564,7 +1564,7 @@ public class FeatureMatcher {
         
         return revised;
     }
-
+    
     public FeatureComparisonStat matchHalfDescriptors(
         IntensityClrFeatures features1, IntensityClrFeatures features2, 
         KeyPointsAndBounds keyPointsAndBounds1, int bmaIndex1,
@@ -1574,42 +1574,62 @@ public class FeatureMatcher {
         GreyscaleImage blueImg1, GreyscaleImage redImg2, 
         GreyscaleImage greenImg2, GreyscaleImage blueImg2) {
         
+        int x1 = keyPoint1.getX();
+        int y1 = keyPoint1.getY();
+        int x2 = keyPoint2.getX();
+        int y2 = keyPoint2.getY();
+        
+        return matchHalfDescriptors(features1, features2, 
+            keyPointsAndBounds1, bmaIndex1, 
+            keyPointsAndBounds2, bmaIndex2, x1, y1, x2, y2, 
+            redImg1, greenImg1, blueImg1, redImg2, greenImg2, blueImg2);
+    }
+
+    public FeatureComparisonStat matchHalfDescriptors(
+        IntensityClrFeatures features1, IntensityClrFeatures features2, 
+        KeyPointsAndBounds keyPointsAndBounds1, int bmaIndex1,
+        KeyPointsAndBounds keyPointsAndBounds2, int bmaIndex2,
+        int x1, int y1, int x2, int y2, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1, 
+        GreyscaleImage blueImg1, GreyscaleImage redImg2, 
+        GreyscaleImage greenImg2, GreyscaleImage blueImg2) {
+        
         int rot1, rot2;
         try {
-            rot1 = features1.calculateOrientation(keyPoint1.getX(), keyPoint1.getY());
-            rot2 = features2.calculateOrientation(keyPoint2.getX(), keyPoint2.getY());
+            rot1 = features1.calculateOrientation(x1, y1);
+            rot2 = features2.calculateOrientation(x2, y2);
         } catch (CornerRegionDegneracyException e) {
             return null;
         }
                 
         IntensityDescriptor desc2_l = features2.extractIntensityLOfCIELAB(redImg2, 
-            greenImg2, blueImg2, keyPoint2.getX(), keyPoint2.getY(), rot2);
+            greenImg2, blueImg2, x2, y2, rot2);
         if (desc2_l == null) {
             return null;
         }
         IntensityDescriptor desc2_a = features2.extractIntensityAOfCIELAB(redImg2, 
-            greenImg2, blueImg2, keyPoint2.getX(), keyPoint2.getY(), rot2);
+            greenImg2, blueImg2, x2, y2, rot2);
         if (desc2_a == null) {
             return null;
         }
         IntensityDescriptor desc2_b = features2.extractIntensityBOfCIELAB(redImg2, 
-            greenImg2, blueImg2, keyPoint2.getX(), keyPoint2.getY(), rot2);
+            greenImg2, blueImg2, x2, y2, rot2);
         if (desc2_b == null) {
             return null;
         }
             
-        IntensityDescriptor desc1_l = features2.extractIntensityLOfCIELAB(redImg1, 
-            greenImg1, blueImg1, keyPoint1.getX(), keyPoint1.getY(), rot1);
+        IntensityDescriptor desc1_l = features1.extractIntensityLOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_l == null) {
             return null;
         }
-        IntensityDescriptor desc1_a = features2.extractIntensityAOfCIELAB(redImg1, 
-            greenImg1, blueImg1, keyPoint1.getX(), keyPoint1.getY(), rot1);
+        IntensityDescriptor desc1_a = features1.extractIntensityAOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_a == null) {
             return null;
         }
-        IntensityDescriptor desc1_b = features2.extractIntensityBOfCIELAB(redImg1, 
-            greenImg1, blueImg1, keyPoint1.getX(), keyPoint1.getY(), rot1);
+        IntensityDescriptor desc1_b = features1.extractIntensityBOfCIELAB(redImg1, 
+            greenImg1, blueImg1, x1, y1, rot1);
         if (desc1_b == null) {
             return null;
         }
@@ -1628,20 +1648,20 @@ public class FeatureMatcher {
         // is 180 from that direction.
         
         BlobMedialAxes bma1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes();
-        PairInt xySkel1 = bma1.findClosestPoint(bmaIndex1, keyPoint1.getX(), keyPoint1.getY());
+        PairInt xySkel1 = bma1.findClosestPoint(bmaIndex1, x1, y1);
         double[] xyCen1 = bma1.getOriginalBlobXYCentroid(bmaIndex1);
 
         // direction away from skeleton or centroid
         int thetaOut1;
-        if ((keyPoint1.getX() != xySkel1.getX()) || (keyPoint1.getY() != xySkel1.getY())) {
-            double theta = Math.atan2(keyPoint1.getY() - xySkel1.getY(), keyPoint1.getX() - xySkel1.getX());
+        if ((x1 != xySkel1.getX()) || (y1 != xySkel1.getY())) {
+            double theta = Math.atan2(y1 - xySkel1.getY(), x1 - xySkel1.getX());
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;
             } 
             thetaOut1 = (int)Math.round(theta * 180./Math.PI);
         } else {
-            double theta = Math.atan2(keyPoint1.getY() - xyCen1[1], keyPoint1.getX() - xyCen1[0]);
+            double theta = Math.atan2(y1 - xyCen1[1], x1 - xyCen1[0]);
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;
@@ -1650,20 +1670,20 @@ public class FeatureMatcher {
         }
 
         BlobMedialAxes bma2 = keyPointsAndBounds2.getBoundingRegions().getBlobMedialAxes();
-        PairInt xySkel2 = bma2.findClosestPoint(bmaIndex2, keyPoint2.getX(), keyPoint2.getY());
+        PairInt xySkel2 = bma2.findClosestPoint(bmaIndex2, x2, y2);
         double[] xyCen2 = bma2.getOriginalBlobXYCentroid(bmaIndex2);
 
         // direction away from skeleton or centroid
         int thetaOut2;
-        if ((keyPoint2.getX() != xySkel2.getX()) || (keyPoint2.getY() != xySkel2.getY())) {
-            double theta = Math.atan2(keyPoint2.getY() - xySkel2.getY(), keyPoint2.getX() - xySkel2.getX());
+        if ((x2 != xySkel2.getX()) || (y2 != xySkel2.getY())) {
+            double theta = Math.atan2(y2 - xySkel2.getY(), x2 - xySkel2.getX());
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;
             } 
             thetaOut2 = (int)Math.round(theta * 180./Math.PI);
         } else {
-            double theta = Math.atan2(keyPoint2.getY() - xyCen2[1], keyPoint2.getX() - xyCen2[0]);
+            double theta = Math.atan2(y2 - xyCen2[1], x2 - xyCen2[0]);
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;
@@ -1676,8 +1696,8 @@ public class FeatureMatcher {
         boolean useTop2 = Math.abs(AngleUtil.getAngleDifference(rot2, thetaOut2)) < 90;
                 
         FeatureComparisonStat stat_deltaE = IntensityClrFeatures.calculateHalfStats(
-            desc1_l, desc1_a, desc1_b, keyPoint1.getX(), keyPoint1.getY(), useTop1,
-            desc2_l, desc2_a, desc2_b, keyPoint2.getX(), keyPoint2.getY(), useTop2);
+            desc1_l, desc1_a, desc1_b, x1, y1, useTop1,
+            desc2_l, desc2_a, desc2_b, x2, y2, useTop2);
         
         if (Float.isNaN(stat_deltaE.getSumIntensitySqDiff()) || 
             Float.isNaN(stat_deltaE.getImg2PointIntensityErr())
