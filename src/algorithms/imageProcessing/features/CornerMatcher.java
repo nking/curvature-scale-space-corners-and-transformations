@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MiscStats;
@@ -485,6 +486,10 @@ for (int i = 0; i < cornersList2.size(); ++i) {
     log.info(str);
 }
 */       
+        double deltaELimit = 20;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
         List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
         
         rejectedBy2ndBest.clear();
@@ -495,15 +500,27 @@ for (int i = 0; i < cornersList2.size(); ++i) {
             
             Set<PairInt> keyPoints1 = keyPointsAndBounds1.getKeyPointGroups().get(i);
             
+            float[] lab1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes().getLABColors(i);
+            double[] xyCen1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            
             double bestCost = Double.MAX_VALUE;
             double bestCostSSD = Double.MAX_VALUE;
             int bestCostIdx2 = -1;
+            
             List<FeatureComparisonStat> bestStats = new ArrayList<FeatureComparisonStat>();
             
             for (int j = 0; j < keyPointsAndBounds2.getKeyPointGroups().size(); ++j) {
 
+                float[] lab2 = keyPointsAndBounds2.getBoundingRegions().getBlobMedialAxes().getLABColors(j);
+                                
+                double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
+                
+                if (deltaE > deltaELimit) {
+                    continue;
+                }
+                
                 Set<PairInt> keyPoints2 = keyPointsAndBounds2.getKeyPointGroups().get(j);
-
+                
                 // find the best match for each corners1 point, 
                 // then filter for degenerate
                 // TODO: could consider consistent homology here, but that
@@ -517,6 +534,7 @@ for (int i = 0; i < cornersList2.size(); ++i) {
 
                     for (PairInt keyPoint2 : keyPoints2) {
 
+                        /*
                         FeatureComparisonStat compStat = 
                             featureMatcher.matchHalfDescriptors(
                                 features1, features2, 
@@ -524,7 +542,8 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                                 keyPoint1, keyPoint2, 
                                 redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
-                        /*
+                        */
+                        
                         FeatureComparisonStat compStat = 
                             featureMatcher.matchDescriptors(
                                 features1, features2, 
@@ -532,7 +551,7 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                                 keyPoint2.getX(), keyPoint2.getY(),
                                 redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
-                        */
+                        
                         if ((compStat == null) ||
                             (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
                             ) {
@@ -573,6 +592,7 @@ for (int i = 0; i < cornersList2.size(); ++i) {
             }
             
             stats.addAll(bestStats);
+            
         }
         
         MiscStats.filterForDegeneracy(stats);

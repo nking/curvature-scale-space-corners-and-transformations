@@ -3987,6 +3987,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageExt img2 = imageProcessor.binImage(img, binFactor);
         
+        ImageExt img2Cp = img2.copyToImageExt();
+        
         // runtime complexity: ~ O(N_small) + O(N_small * lg_2(N_small)) where N_small is 75X75
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         GreyscaleImage segImg = imageSegmentation
@@ -4005,7 +4007,48 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
             segImg, smallestGroupLimit, largestGroupLimit,
             filterOutImageBoundaryBlobs, filterOutZeroPixels, debugTag);
-
+        
+        //--------- begin section to log colors to look at selecting matchable bounds by color ------
+        CIEChromaticity cieC = new CIEChromaticity();
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        List<Double> lAvg = new ArrayList<Double>();
+        List<Double> aAvg = new ArrayList<Double>();
+        List<Double> bAvg = new ArrayList<Double>();
+        
+        for (int i = 0; i < blobs.size(); ++i) {
+            double redSum = 0;
+            double greenSum = 0;
+            double blueSum = 0;
+            for (PairInt p : blobs.get(i)) {
+                int x = p.getX();
+                int y = p.getY();
+                int red = img2Cp.getR(x, y);
+                int green = img2Cp.getG(x, y);
+                int blue = img2Cp.getB(x, y);
+                redSum += red;
+                greenSum += green;
+                blueSum += blue;
+            }
+            double n = (double)blobs.get(i).size();
+            redSum /= n;
+            greenSum /= n;
+            blueSum /= n;
+            float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum), 
+                (int)Math.round(greenSum), (int)Math.round(blueSum));
+            
+            lAvg.add(Double.valueOf(avgLAB[0]));
+            aAvg.add(Double.valueOf(avgLAB[1]));
+            bAvg.add(Double.valueOf(avgLAB[2]));
+        
+            //double[] xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
+            //String str = String.format(
+            //    "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
+            //    i, (int)Math.round(xyCen[0])*binFactor, (int)Math.round(xyCen[1])*binFactor,
+            //    avgLAB[0], avgLAB[1], avgLAB[2], blobs.get(i).size());
+            //log.info(str);
+        }
+        
         // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
             blobs, segImg.getWidth(), segImg.getWidth());
@@ -4040,8 +4083,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             borderPixels.clear();
             borderPixels.addAll(tmp);
         }
-        
-        BlobMedialAxes bma = new BlobMedialAxes(blobs);
+                        
+        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg);
         
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     

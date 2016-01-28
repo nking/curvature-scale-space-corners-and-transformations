@@ -37,13 +37,22 @@ public class BlobMedialAxes {
     private List<Map<Integer, List<Integer>>> skeletonXMapList = null;
     private List<Map<Integer, List<Integer>>> skeletonYMapList = null;
     private double[][] xyCentroids = null;
+    private final List<Double> lColorList;
+    private final List<Double> aColorList;
+    private final List<Double> bColorList;
     
-    public BlobMedialAxes(final List<Set<PairInt>> blobs) {
+    public BlobMedialAxes(final List<Set<PairInt>> blobs, 
+        final List<Double> lClrList, final List<Double> aClrList,
+        final List<Double> bClrList) {
         
         int n = blobs.size();    
         xyCentroids = new double[n][2];
         skeletonXMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
         skeletonYMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
+        
+        this.lColorList = new ArrayList<Double>(lClrList);
+        this.aColorList = new ArrayList<Double>(aClrList);
+        this.bColorList = new ArrayList<Double>(bClrList);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -147,6 +156,26 @@ public class BlobMedialAxes {
     }
     
     /**
+     * get the LAB color space averaged colors for the points within the 
+     * bounds at index in lists.
+     * @param index
+     * @return 
+     */
+    public float[] getLABColors(int index) {
+        
+        if (index < 0 || index > (skeletonXMapList.size() - 1)) {
+            throw new IllegalArgumentException("index is out of bounds");
+        }
+        
+        float[] c = new float[3];
+        c[0] = lColorList.get(index).floatValue();
+        c[1] = aColorList.get(index).floatValue();
+        c[2] = bColorList.get(index).floatValue();
+        
+        return c;
+    }
+    
+    /**
      * map w/ key = x and y = ascending ordered values for that x
      * @param x
      * @param y
@@ -222,6 +251,10 @@ public class BlobMedialAxes {
         
         int n2 = xyCentroids.length - removeIndexes.size();
         
+        List<Double> ell = new ArrayList<Double>();
+        List<Double> a = new ArrayList<Double>();
+        List<Double> b = new ArrayList<Double>();
+        
         double[][] xyCentroid2 = new double[n2][2];
         int count = 0;
         for (int i = 0; i < xyCentroids.length; ++i) {
@@ -229,11 +262,23 @@ public class BlobMedialAxes {
             Integer index = Integer.valueOf(i);
             if (!exclude.contains(index)) {
                 xyCentroid2[count] = Arrays.copyOf(this.xyCentroids[i], 2);
+                ell.add(lColorList.get(i));
+                a.add(aColorList.get(i));
+                b.add(bColorList.get(i));
                 count++;
             }
         }   
         
         this.xyCentroids = xyCentroid2;
+        
+        this.lColorList.clear();
+        this.lColorList.addAll(ell);
+        
+        this.aColorList.clear();
+        this.aColorList.addAll(a);
+        
+        this.bColorList.clear();
+        this.bColorList.addAll(b);
     }
     
 }
