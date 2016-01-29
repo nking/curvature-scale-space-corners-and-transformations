@@ -159,8 +159,10 @@ public class RANSACEuclideanSolver {
                 double ratio = (double)bestFit.getInlierIndexes().size()
                     /(double)matchedLeftXY.getN();
                 
-                nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
-                    nSet, ratio);
+                if (ratio >= 0.0000001 && (ratio <= 1.0)) {
+                    nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
+                        nSet, ratio);
+                }
             }
         }
 

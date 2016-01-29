@@ -24,6 +24,9 @@ public class ImageExt extends Image {
     protected float[] saturation;
     protected float[] brightness;
     
+    //CIE LAB 1994
+    protected float[][] lab;
+    
     /**
      * luma is the y of yuv.
      */
@@ -72,6 +75,7 @@ public class ImageExt extends Image {
         
         this.extPopulated = new boolean[nPixels];
         
+        this.lab = new float[nPixels][];
     }
     
     /**
@@ -128,6 +132,13 @@ public class ImageExt extends Image {
         int idx = getInternalIndex(col, row);
        
         return getLuma(idx);
+    }
+    
+    public float[] getCIELAB(int col, int row) {
+        
+        int idx = getInternalIndex(col, row);
+        
+        return getCIELAB(idx);
     }
     
     public float getCIEX(int internalIndex) {
@@ -220,6 +231,24 @@ public class ImageExt extends Image {
         return luma[internalIndex];
     }
   
+    public float[] getCIELAB(int internalIndex) {
+                
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
+        if (lab[internalIndex] == null) {
+            int rPix = getR(internalIndex);
+            int gPix = getG(internalIndex);
+            int bPix = getB(internalIndex);
+            float[] cieLAB = cieC.rgbToCIELAB(rPix, gPix, bPix);
+            lab[internalIndex] = cieLAB;
+        }
+       
+        return lab[internalIndex];
+    }
+    
     protected void calculateColor(int idx) {
         
         if (extPopulated[idx]) {

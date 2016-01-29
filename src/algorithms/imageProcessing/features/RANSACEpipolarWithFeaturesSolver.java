@@ -1,6 +1,8 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.matching.ErrorType;
+import algorithms.imageProcessing.transform.EpipolarFeatureTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
@@ -18,7 +20,8 @@ import org.ejml.simple.SimpleMatrix;
  * given matched point lists, determine the best epipolar solution using a
  * 7-point epipolar calculation and random draws of 7 points from the
  * matched point lists under the assumption that some of the matched points
- * are not true (correct) matches.
+ * are not true (correct) matches. The evaluation of the solution uses
+ * features and either epipolar distances or Sampson's error distances.
  *
  * <pre>
  * useful reading:
@@ -29,7 +32,7 @@ import org.ejml.simple.SimpleMatrix;
  *
  * @author nichole
  */
-public class RANSACSolver {
+public class RANSACEpipolarWithFeaturesSolver {
 
     private boolean debug = true;
 
@@ -43,15 +46,32 @@ public class RANSACSolver {
      *
      * @param matchedLeftXY
      * @param matchedRightXY
+     * @param clrFeatures1
+     * @param clrFeatures2
+     * @param kpab1
+     * @param bmaIndex1
+     * @param kpab2
+     * @param bmaIndex2
+     * @param rImg1
+     * @param gImg1
+     * @param bImg1
+     * @param rImg2
+     * @param gImg2
+     * @param bImg2
      * @param outputLeftXY
      * @param outputRightXY
+     * @param useHalfDescriptors
      * @return
      * @throws NoSuchAlgorithmException
      */
-    public EpipolarTransformationFit calculateEpipolarProjection(
+    public EpipolarFeatureTransformationFit calculateEpipolarProjection(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY)
-        throws NoSuchAlgorithmException {
+        IntensityClrFeatures clrFeatures1, IntensityClrFeatures clrFeatures2,
+        KeyPointsAndBounds kpab1, int bmaIndex1, KeyPointsAndBounds kpab2, int bmaIndex2,
+        GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1, 
+        GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2, 
+        PairIntArray outputLeftXY, PairIntArray outputRightXY, 
+        boolean useHalfDescriptors) throws NoSuchAlgorithmException {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -75,7 +95,10 @@ public class RANSACSolver {
             spTransformer.rewriteInto3ColumnMatrix(matchedRightXY);
         
         return calculateEpipolarProjection(input1, input2,
-            outputLeftXY, outputRightXY);
+            clrFeatures1, clrFeatures2, 
+            kpab1, bmaIndex1, kpab2, bmaIndex2,
+            rImg1, gImg1, bImg1, rImg2, gImg2, bImg2,
+            outputLeftXY, outputRightXY, useHalfDescriptors);
     }
 
     /**
@@ -85,15 +108,32 @@ public class RANSACSolver {
      *
      * @param matchedLeftXY
      * @param matchedRightXY
+     * @param clrFeatures1
+     * @param clrFeatures2
+     * @param kpab1
+     * @param bmaIndex1
+     * @param kpab2
+     * @param bmaIndex2
+     * @param rImg1
+     * @param gImg1
+     * @param bImg1
+     * @param rImg2
+     * @param gImg2
+     * @param bImg2
      * @param outputLeftXY
      * @param outputRightXY
+     * @param useHalfDescriptors
      * @return
      * @throws NoSuchAlgorithmException
      */
-    public EpipolarTransformationFit calculateEpipolarProjection(
+    public EpipolarFeatureTransformationFit calculateEpipolarProjection(
         SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY)
-        throws NoSuchAlgorithmException {
+        IntensityClrFeatures clrFeatures1, IntensityClrFeatures clrFeatures2,
+        KeyPointsAndBounds kpab1, int bmaIndex1, KeyPointsAndBounds kpab2, int bmaIndex2,
+        GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1, 
+        GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2, 
+        PairIntArray outputLeftXY, PairIntArray outputRightXY,
+        boolean useHalfDescriptors) throws NoSuchAlgorithmException {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -141,10 +181,10 @@ public class RANSACSolver {
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);
 
-        int tolerance = 5;
+        int tolerance = 3;
 
         // consensus indexes
-        EpipolarTransformationFit bestFit = null;
+        EpipolarFeatureTransformationFit bestFit = null;
         
         RANSACAlgorithmIterations nEstimator = new RANSACAlgorithmIterations();
 
@@ -153,7 +193,8 @@ public class RANSACSolver {
         as in (http://phototour.cs.washington.edu/ModelingTheWorld_ijcv07.pdf)
         which uses 0.6% of the maximum image dimension.
         */
-        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 7, 0.5);
+        long nMaxIter = nEstimator.estimateNIterFor99PercentConfidence(nPoints, 
+            7, 0.25);
 
         if (nPoints == 7) {
             nMaxIter = 1;
@@ -166,7 +207,7 @@ public class RANSACSolver {
         SimpleMatrix sampleLeft = new SimpleMatrix(3, nSet);
         SimpleMatrix sampleRight = new SimpleMatrix(3, nSet);
         
-        while ((nIter < nMaxIter) && (nIter < 2000)) {
+        while ((nIter < nMaxIter) && (nIter < 10000)) {
             
             MiscMath.chooseRandomly(sr, selectedIndexes, nPoints);
 
@@ -198,19 +239,22 @@ public class RANSACSolver {
             }
 
             // use point dist to epipolar lines to estimate errors of sample
-            EpipolarTransformationFit fit = null;
+            EpipolarFeatureTransformationFit fit = null;
             
             for (SimpleMatrix fm : fms) {
-                EpipolarTransformationFit fitI = 
+                EpipolarFeatureTransformationFit fitI = 
                     spTransformer.calculateError(fm, matchedLeftXY, 
-                        matchedRightXY, errorType, tolerance);
+                        matchedRightXY, clrFeatures1, clrFeatures2,
+                        kpab1, bmaIndex1, kpab2, bmaIndex2,
+                        rImg1, gImg1, bImg1, rImg2, gImg2, bImg2,
+                        errorType, tolerance, useHalfDescriptors);
                 
                 if (fitI.isBetter(fit)) {
                     fit = fitI;
                 }
             }
             
-            if (fit == null) {
+            if (fit == null || fit.getInlierIndexes().isEmpty()) {
                 nIter++;
                 continue;
             }
@@ -256,7 +300,7 @@ public class RANSACSolver {
             count++;
         }
 
-        EpipolarTransformationFit consensusFit = null;
+        EpipolarFeatureTransformationFit consensusFit = null;
         
         if (inliersRightXY.numCols() == 7) {
             
@@ -265,28 +309,43 @@ public class RANSACSolver {
             if (fms == null || fms.isEmpty()) {
                 return null;
             }
-            EpipolarTransformationFit fit = null;
+            EpipolarFeatureTransformationFit fit = null;
             for (SimpleMatrix fm : fms) {
-                EpipolarTransformationFit fitI = 
+                EpipolarFeatureTransformationFit fitI = 
                     spTransformer.calculateError(fm, matchedLeftXY, 
-                        matchedRightXY, errorType, tolerance);
-                if (fitI.isBetter(fit)) {
+                        matchedRightXY, clrFeatures1, clrFeatures2,
+                        kpab1, bmaIndex1, kpab2, bmaIndex2,
+                        rImg1, gImg1, bImg1, rImg2, gImg2, bImg2,
+                        errorType, tolerance, useHalfDescriptors);
+                
+                if (fitI.isBetterByCost(fit)) {
                     fit = fitI;
                 }
             }
             consensusFit = fit;
             
-        } else {
+        } else if (inliersRightXY.numCols() > 7) {
             
             SimpleMatrix fm = 
                 spTransformer.calculateEpipolarProjection(
                 inliersLeftXY, inliersRightXY);
             
-            EpipolarTransformationFit fit = 
+            EpipolarFeatureTransformationFit fit = 
                 spTransformer.calculateError(fm, matchedLeftXY, 
-                    matchedRightXY, errorType, tolerance);
+                    matchedRightXY, clrFeatures1, clrFeatures2,
+                    kpab1, bmaIndex1, kpab2, bmaIndex2,
+                    rImg1, gImg1, bImg1, rImg2, gImg2, bImg2,
+                    errorType, tolerance, useHalfDescriptors);
             
             consensusFit = fit;
+            
+        } else {
+           
+            if (bestFit.getInlierIndexes().size() > 2) {
+                consensusFit = bestFit;
+            } else {
+                return null;
+            }
         }
         
         // write to output and convert the coordinate indexes to the original point indexes

@@ -160,7 +160,7 @@ public class RANSACAlgorithmIterations {
             throw new IllegalArgumentException(
             "expectedFractionTruePoints must be larger than 0 and less than 1");
         }
-        if (nPoints <= sampleSize) {
+        if (nPoints < sampleSize) {
             throw new IllegalArgumentException("nPoints must be larger than sampleSize");
         }
         
@@ -171,15 +171,17 @@ public class RANSACAlgorithmIterations {
         if (nTruePoints >= sampleSize) {        
             for (int i = 0; i < sampleSize; ++i) {
                 factor *= (nTruePoints - i)/(double)(nPoints - i);
-            }
+            }            
         } else {
             //know that the number is still smaller than (1./nPoints)^sampleSize.
             //For nTruePoints of 1, looks like (1./nPoints)*(1./(nPoints-sampleSize))^(sampleSize-1)
             for (int i = 0; i < (int)nTruePoints; ++i) {
                 factor *= (nTruePoints - i)/(double)(nPoints - i);
             }
-            int pow = (sampleSize - (int)nTruePoints);
-            factor *= Math.pow((1./(nPoints - sampleSize)), pow);
+            if (nPoints != sampleSize) {
+                int pow = (sampleSize - (int)nTruePoints);
+                factor *= Math.pow((1./(nPoints - sampleSize)), pow);
+            }
         }
         
         return factor;

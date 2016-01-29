@@ -40,9 +40,6 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
     protected final int binnedImageMaxDimension = 512;
 
-    protected List<FeatureComparisonStat> rejectedBy2ndBest =
-        new ArrayList<FeatureComparisonStat>();
-
     private final ImageExt img1;
     private final ImageExt img2;
     private final FeatureMatcherSettings settings;
@@ -57,14 +54,13 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     private final GreyscaleImage blueBinnedImg2;
     private final int binFactor1, binFactor2;
 
-    // trying the color space O1, O2, O3
     protected final IntensityClrFeatures clrFeaturesBinned1;
     protected final IntensityClrFeatures clrFeaturesBinned2;
 
-    private List<FeatureComparisonStat> solutionStats = null;
+    private List<List<FeatureComparisonStat>> solutionStats = null;
 
-    private List<PairInt> solutionMatched1 = null;
-    private List<PairInt> solutionMatched2 = null;
+    private List<List<PairInt>> solutionMatched1 = null;
+    private List<List<PairInt>> solutionMatched2 = null;
 
     /**
      *
@@ -120,146 +116,36 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
     public boolean match() throws IOException, NoSuchAlgorithmException {
 
-        boolean matchPtByPt = false;
+        /*boolean matchPtByPt = false;
         if (matchPtByPt) {
             return matchPtByPt();
-        } else {
+        } else {*/
             return matchBlobByBlob();
-        }
+        //}
     }
 
+    /*
     private boolean matchPtByPt() throws IOException, NoSuchAlgorithmException {
 
-        List<CornerRegion> corners1 = extractCorners(redBinnedImg1,
-            greenBinnedImg1, blueBinnedImg1, "1");
+        Set<PairInt> points1 = extractKeyPoints(redBinnedImg1,
+            greenBinnedImg1, blueBinnedImg1, clrFeaturesBinned1, "1");
 
-        List<CornerRegion> corners2 = extractCorners(redBinnedImg2,
-            greenBinnedImg2, blueBinnedImg2,  "2");
-
-        boolean filterForLocalization = true;
-        if (filterForLocalization) {
-            log.info("filterForLocalization im1");
-            filterForLocalization(redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
-                clrFeaturesBinned1, corners1);
-            log.info("filterForLocalization im2");
-            filterForLocalization(redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
-                clrFeaturesBinned2, corners2);
-        }
-
-        log.info("nPts after localization filter img1 = " + corners1.size());
-
-        log.info("nPts after localization filter img2 = " + corners2.size());
-
-        if (settings.debug()) {
-            try {
-                long ts = MiscDebug.getCurrentTimeFormatted();
-                MiscDebug.writeImage(corners1, imgBinned1.copyImage(),
-                    "corners_filtered_" + settings.getDebugTag() + "_1_" + ts);
-                MiscDebug.writeImage(corners2, imgBinned2.copyImage(),
-                    "corners_filtered_" + settings.getDebugTag() + "_2_" + ts);
-            } catch (IOException ex) {
-                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
-                    log(Level.SEVERE, null, ex);
-            }
-        }
-
-        int dither = 1;
-
-        CornerMatcher<CornerRegion> matcher = new CornerMatcher<CornerRegion>(dither);
-
-        boolean matched = matcher.matchCorners(
-            clrFeaturesBinned1, clrFeaturesBinned2, corners1, corners2,
-            redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
-            redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
-            binFactor1, binFactor2);
-
-        if (!matched) {
-            return false;
-        }
-
-        List<FeatureComparisonStat> stats = matcher.getSolutionStats();
-
-        log.info("nPts after SSD match (incl filter for 2nd best) = " + stats.size());
-
-        log.info("nPts in 2nd best rejection list = " + matcher.getRejectedBy2ndBest().size());
-
-        if (stats.isEmpty()) {
-            return false;
-        }
-
-        if (settings.debug()) {
-            long ts = MiscDebug.getCurrentTimeFormatted();
-            MiscDebug.plotImages(stats, blueBinnedImg1.copyImage(),
-                blueBinnedImg2.copyImage(), 2, "SSD_matched_" + settings.getDebugTag() + "_" + ts);
-        }
-
-        List<FeatureComparisonStat> rb2j =
-            new ArrayList<FeatureComparisonStat>(matcher.getRejectedBy2ndBest());
-
-        stats = reviseStatsForFullImages(stats, binFactor1, binFactor2, rotatedOffsets);
-
-        rb2j = reviseStatsForFullImages(rb2j, binFactor1, binFactor2, rotatedOffsets);
-
-        /*if (settings.debug()) {
-            log.info("removed due to having close 2nd best:");
-            for (FeatureComparisonStat stat : rb2j) {
-                log.info(
-                    String.format("%s %s", stat.getImg1Point().toString(),
-                    stat.getImg2Point().toString()));
-            }
-        }*/
-
-        copyToInstanceVars(stats, rb2j);
-
-        return true;
-    }
-
-    private boolean matchBlobByBlob() throws IOException, NoSuchAlgorithmException {
-
-        KeyPointsAndBounds keyPoints1 =
-            extractKeypointsAndAssocWithBlobs(redBinnedImg1,
-            greenBinnedImg1, blueBinnedImg1, imgBinned1.copyToImageExt(), "1", 
-            clrFeaturesBinned1);
-
-        KeyPointsAndBounds keyPoints2 =
-            extractKeypointsAndAssocWithBlobs(redBinnedImg2,
-            greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(), "2", 
-            clrFeaturesBinned2);
-
-        boolean filterForLocalization = false;
-        if (filterForLocalization) {
-            log.info("filterForLocalization im1");
-            filterListsForLocalization(redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
-                clrFeaturesBinned1, keyPoints1.getKeyPointGroups());
-            log.info("filterForLocalization im2");
-            filterListsForLocalization(redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
-                clrFeaturesBinned2, keyPoints2.getKeyPointGroups());
-        }
-
-        if (settings.debug()) {
-            long ts = MiscDebug.getCurrentTimeFormatted();
-
-            ImageExt imgCp1 = (ImageExt) imgBinned1.copyImage();
-            ImageIOHelper.<Set<PairInt>>addAlternatingColorCurvesToImage0(
-                keyPoints1.getKeyPointGroups(), imgCp1, 1);
-            MiscDebug.writeImage(imgCp1, "corners_1_" + settings.getDebugTag()
-                + "_" + ts);
-
-            ImageExt imgCp2 = (ImageExt) imgBinned2.copyImage();
-            ImageIOHelper.<Set<PairInt>>addAlternatingColorCurvesToImage0(
-                keyPoints2.getKeyPointGroups(), imgCp2, 1);
-            MiscDebug.writeImage(imgCp2, "corners_2_" + settings.getDebugTag()
-                + "_" + ts);
-        }
+        Set<PairInt> points2 = extractKeyPoints(redBinnedImg2,
+            greenBinnedImg2, blueBinnedImg2,  clrFeaturesBinned2, "2");
+        
+        List<PairInt> pointsList1 = new ArrayList<PairInt>(points1);
+        List<PairInt> pointsList2 = new ArrayList<PairInt>(points2);
 
         int dither = 0;
 
         CornerMatcher matcher = new CornerMatcher(dither);
 
-        boolean matched = matcher.matchCornersByBlobs(
-            clrFeaturesBinned1, clrFeaturesBinned2, keyPoints1, keyPoints2,
-            redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
-            redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
+        //TODO: consider using the ransac that includes features for evaluation
+                
+        boolean matched = matcher.matchPoints(
+            clrFeaturesBinned1, clrFeaturesBinned2, pointsList1, pointsList2,
+            imgBinned1, redBinnedImg1, greenBinnedImg1, blueBinnedImg1,
+            imgBinned2, redBinnedImg2, greenBinnedImg2, blueBinnedImg2,
             binFactor1, binFactor2);
 
         if (!matched) {
@@ -289,45 +175,85 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
         rb2j = reviseStatsForFullImages(rb2j, binFactor1, binFactor2, rotatedOffsets);
 
-        /*if (settings.debug()) {
-            log.info("removed due to having close 2nd best:");
-            for (FeatureComparisonStat stat : rb2j) {
-                log.info(
-                    String.format("%s %s", stat.getImg1Point().toString(),
-                    stat.getImg2Point().toString()));
-            }
-        }*/
-
         copyToInstanceVars(stats, rb2j);
 
         return true;
     }
+    */
 
-    public void copyToInstanceVars(List<FeatureComparisonStat> stats) {
+    private boolean matchBlobByBlob() throws IOException, NoSuchAlgorithmException {
 
-        this.solutionStats = new ArrayList<FeatureComparisonStat>();
-        this.solutionMatched1 = new ArrayList<PairInt>();
-        this.solutionMatched2 = new ArrayList<PairInt>();
+        KeyPointsAndBounds kpab1 =
+            extractKeypointsAndAssocWithBlobs(redBinnedImg1,
+            greenBinnedImg1, blueBinnedImg1, imgBinned1.copyToImageExt(), "1", 
+            clrFeaturesBinned1);
 
-        for (FeatureComparisonStat stat : stats) {
-            solutionStats.add(stat.copy());
-            solutionMatched1.add(stat.getImg1Point().copy());
-            solutionMatched2.add(stat.getImg2Point().copy());
+        KeyPointsAndBounds kpab2 =
+            extractKeypointsAndAssocWithBlobs(redBinnedImg2,
+            greenBinnedImg2, blueBinnedImg2, imgBinned2.copyToImageExt(), "2", 
+            clrFeaturesBinned2);
+
+        int dither = 0;
+        
+        /*
+        TODO: need to use the homology within a point group set while matching
+        to another point group set in order to get better solution.
+        
+        -- will compare each group in img1 to each group in img2
+           -- SSD match to make a matched points list.
+              -- plot and log this
+           -- ransac w/ epipolar and feaures evaluation to find inliers
+              -- plot and log this.
+                 are the inliers true matches?
+           -- possibly need another round or two of matching the points 
+              that are not inliers (now that the pool of matches is smaller)
+              -- then give those and the inliers back to the ransac algorithm
+                 to find inliers.
+                 -- is the solution improved?
+        */
+        
+        CornerMatcher matcher = new CornerMatcher(dither);
+        
+        boolean useBipartiteMatching = true;
+        
+        List<List<FeatureComparisonStat>> fcsList = matcher.matchCornersByBlobsAndRANSAC(
+            clrFeaturesBinned1, clrFeaturesBinned2, kpab1, kpab2, 
+            imgBinned1, redBinnedImg1, greenBinnedImg1, blueBinnedImg1, 
+            imgBinned2, redBinnedImg2, greenBinnedImg2, blueBinnedImg2, 
+            binFactor1, binFactor2, useBipartiteMatching);
+        
+        if (fcsList == null || fcsList.isEmpty()) {
+            return false;
         }
+        
+        fcsList = reviseStatsForFullImages(fcsList, binFactor1, binFactor2, rotatedOffsets);
+
+        copyToInstanceVars(fcsList);
+
+        return true;
     }
 
-    private void copyToInstanceVars(List<FeatureComparisonStat> stats,
-        List<FeatureComparisonStat> rejBy2ndBest) {
+    public void copyToInstanceVars(List<List<FeatureComparisonStat>> stats) {
 
-        copyToInstanceVars(stats);
+        this.solutionStats = new ArrayList<List<FeatureComparisonStat>>();
+        this.solutionMatched1 = new ArrayList<List<PairInt>>();
+        this.solutionMatched2 = new ArrayList<List<PairInt>>();
 
-        rejectedBy2ndBest.clear();
-
-        rejectedBy2ndBest.addAll(rejBy2ndBest);
-    }
-
-    public List<FeatureComparisonStat> getRejectedBy2ndBest() {
-        return rejectedBy2ndBest;
+        for (List<FeatureComparisonStat> list : stats) {
+        
+            List<FeatureComparisonStat> list2 = new ArrayList<FeatureComparisonStat>();
+            List<PairInt> m1 = new ArrayList<PairInt>();
+            List<PairInt> m2 = new ArrayList<PairInt>();
+            for (FeatureComparisonStat stat : list) {
+                list2.add(stat.copy());
+                m1.add(stat.getImg1Point().copy());
+                m2.add(stat.getImg2Point().copy());
+            }
+            
+            this.solutionStats.add(list2);
+            this.solutionMatched1.add(m1);
+            this.solutionMatched2.add(m2);
+        }
     }
 
     private Set<PairInt> extract2ndDerivPoints(GreyscaleImage rImg,
@@ -348,8 +274,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         return pixels;
     }
 
-    private List<CornerRegion> extractCorners(GreyscaleImage rImg,
-        GreyscaleImage gImg, GreyscaleImage bImg, String lbl) {
+    private Set<PairInt> extractKeyPoints(GreyscaleImage rImg,
+        GreyscaleImage gImg, GreyscaleImage bImg, IntensityClrFeatures features,
+        String lbl) {
 
         Set<PairInt> pixels = extract2ndDerivPoints(rImg, gImg, bImg);
 
@@ -363,26 +290,44 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                     log(Level.SEVERE, null, ex);
             }
         }
-
-        log.info("before segmentation filters nPts=" + pixels.size());
-        pixels = filterPointsBySegmentation0(rImg, gImg, bImg, pixels, lbl);
-        log.info("after wavelet segmentation filter nPts=" + pixels.size());
-        //pixels = filterPointsBySegmentation1(img, pixels, lbl);
-        //log.info("after ciexy segmentation filter nPts=" + pixels.size());
-
-        List<CornerRegion> corners = convert(pixels);
-
-        if (settings.debug()) {
-            try {
-                MiscDebug.writeImage(corners, bImg.copyToColorGreyscale(),
-                    "corners_" + settings.getDebugTag() + "_" + ts);
-            } catch (IOException ex) {
-                Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
-                    log(Level.SEVERE, null, ex);
+        
+        // this does not remove very many points because the 2nd deriv is already
+        // finding points with steep and changing intensity slopes
+        boolean filterForLocalization = false;
+        if (filterForLocalization) {
+            log.info("before filter for localizability nPts=" + pixels.size());
+            filterForLocalization0(rImg, gImg, bImg, features, pixels);
+            log.info("after filter for localizability nPts=" + pixels.size());
+            if (settings.debug()) {
+                try {
+                    MiscDebug.writeImage(pixels, rImg.copyToColorGreyscale(),
+                       "all_2ndderiv_filtered_local_" + lbl + "_" + settings.getDebugTag() + "_" + ts);
+                } catch (IOException ex) {
+                    Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                        log(Level.SEVERE, null, ex);
+                }
             }
         }
 
-        return corners;
+        boolean useWaveletFilter = false;
+        if (useWaveletFilter) {
+            log.info("before segmentation filters nPts=" + pixels.size());
+            pixels = filterPointsBySegmentation0(rImg, gImg, bImg, pixels, lbl);
+            log.info("after wavelet segmentation filter nPts=" + pixels.size());
+
+            if (settings.debug()) {
+                try {
+                    MiscDebug.writeImage(pixels, rImg.copyToColorGreyscale(),
+                        "filtered_wavelet_" + lbl + "_" + 
+                        settings.getDebugTag() + "_" + ts);
+                } catch (IOException ex) {
+                    Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                        log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+
+        return pixels;
     }
 
     private KeyPointsAndBounds extractKeypointsAndAssocWithBlobs(
@@ -401,48 +346,23 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                     log(Level.SEVERE, null, ex);
             }
         }
-
-        GreyscaleImage segImg = createCombinedSegmentation0(rImg, gImg, bImg);
-
-        if (settings.debug()) {
-            MiscDebug.writeImage(segImg,
-                "segmented_" + lbl + "_" + settings.getDebugTag() + "_" + ts);
-        }
-
-        /*
-        for unbinned:
-        smallestGroupLimit = 100;
-        largestGroupLimit = 5000;
-        */
-        int smallestGroupLimit = 5;
-        int largestGroupLimit = Integer.MAX_VALUE;
-        boolean filterOutImageBoundaryBlobs = false;
-        boolean filterOutZeroPixels = true;
-
-        List<Set<PairInt>> blobs =
-            BlobsAndPerimeters.extractBlobsFromSegmentedImage(segImg,
-                smallestGroupLimit, largestGroupLimit,
-                filterOutImageBoundaryBlobs, filterOutZeroPixels, lbl);
-       
-        List<Set<PairInt>> pixelSetList = new ArrayList<Set<PairInt>>();
-        for (int i = 0; i < blobs.size(); ++i) {
-            pixelSetList.add(new HashSet<PairInt>());
-        }
-
-        int nTot = 0;
-        for (PairInt p : pixels) {
-            for (int i = 0; i < blobs.size(); ++i) {
-                Set<PairInt> blob = blobs.get(i);
-                if (blob.contains(p)) {
-                    pixelSetList.get(i).add(p);
-                    nTot++;
-                    break;
+        
+        boolean filterForLocalization = true;
+        if (filterForLocalization) {
+            filterForLocalization0(rImg, gImg, bImg, features, pixels);
+            if (settings.debug()) {
+                try {
+                    MiscDebug.writeImage(pixels, bImg.copyToColorGreyscale(),
+                        "all_2ndderiv__filtered_local_" + lbl + "_" + settings.getDebugTag() + "_" + ts);
+                } catch (IOException ex) {
+                    Logger.getLogger(BlobPerimeterCornerHelper.class.getName()).
+                        log(Level.SEVERE, null, ex);
                 }
             }
+            log.info("number of points after localizability filter=" + 
+                pixels.size());
         }
-
-        log.info("after association with blobs nPts = " + nTot);
-
+        
         // join those grouped points into larger groups where possible
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         BoundingRegions largerBoundingRegion = imageSegmentation
@@ -456,21 +376,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 imgCp, 0, 0, 2);
             MiscDebug.writeImage(imgCp, "_larger_bounds_" + lbl + "_" + 
             settings.getDebugTag() + "_" + ts);
-            
-            imgCp = (ImageExt) img.copyImage();
-            try {
-                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
-                    0, 0, 2, imgCp);
-            } catch (IOException ex) {
-                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
-            }
-            MiscDebug.writeImage(imgCp, "_blob_corners_before_merge_" + lbl + "_" + 
-                settings.getDebugTag() + "_" + ts);
         }
         
-        // NOTE: this alters largerBoundingRegion indexes internally so that the
-        // indexes are complementary to indexes of pixelSetList
-        mergeIfInSameBounds(pixelSetList, largerBoundingRegion);
+        List<Set<PairInt>> pixelSetList = filterToBounds(pixels, largerBoundingRegion);
         
         KeyPointsAndBounds kpab = new KeyPointsAndBounds(pixelSetList, 
             largerBoundingRegion);
@@ -480,7 +388,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             try {
                 ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
                     0, 0, 2, imgCp);
-                MiscDebug.writeImage(imgCp, "_blob_corners_" + lbl + "_" + 
+                MiscDebug.writeImage(imgCp, "_points_in_larger_bounds_" + lbl + "_" + 
                 settings.getDebugTag() + "_" + ts);
                 
             } catch (IOException ex) {
@@ -488,11 +396,27 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             }
         }
 
+        // filter by atrous based sementation only for highly textured regions (high density and large area)
+        filterTexturedGroupsByWaveletSegmentation(kpab, rImg, gImg, bImg, lbl);
+        
+        if (settings.debug()) {
+            ImageExt imgCp = (ImageExt) img.copyImage();
+            try {
+                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
+                    0, 0, 2, imgCp);
+                MiscDebug.writeImage(imgCp, "_points_filtered_textures_" + lbl + "_" + 
+                settings.getDebugTag() + "_" + ts);
+                
+            } catch (IOException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
         return kpab;
     }
 
-    protected List<FeatureComparisonStat> reviseStatsForFullImages(
-        List<FeatureComparisonStat> stats, int prevBinFactor1,
+    protected List<List<FeatureComparisonStat>> reviseStatsForFullImages(
+        List<List<FeatureComparisonStat>> stats, int prevBinFactor1,
         int prevBinFactor2, RotatedOffsets rotatedOffsets) {
 
         log.info("refine stats for full image reference frames");
@@ -503,21 +427,28 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
 
         //TODO: when have a work clr descriptor, put the full size feature matching backing in
 
-        List<FeatureComparisonStat> revised = new ArrayList<FeatureComparisonStat>();
+        List<List<FeatureComparisonStat>> revised = new ArrayList<List<FeatureComparisonStat>>();
 
-        for (int i = 0; i < stats.size(); ++i) {
+        for (List<FeatureComparisonStat> list : stats) {
+            
+            List list2 = new ArrayList<FeatureComparisonStat>();
+            
+            for (int i = 0; i < list.size(); ++i) {
 
-            FeatureComparisonStat stat = stats.get(i);
+                FeatureComparisonStat stat = list.get(i).copy();
 
-            PairInt p1 = stat.getImg1Point();
-            p1.setX(p1.getX() * prevBinFactor1);
-            p1.setY(p1.getY() * prevBinFactor1);
+                PairInt p1 = stat.getImg1Point();
+                p1.setX(p1.getX() * prevBinFactor1);
+                p1.setY(p1.getY() * prevBinFactor1);
 
-            PairInt p2 = stat.getImg2Point();
-            p2.setX(p2.getX() * prevBinFactor2);
-            p2.setY(p2.getY() * prevBinFactor2);
+                PairInt p2 = stat.getImg2Point();
+                p2.setX(p2.getX() * prevBinFactor2);
+                p2.setY(p2.getY() * prevBinFactor2);
 
-            revised.add(stat);
+                list2.add(stat);
+            }
+            
+            revised.add(list2);
         }
 
         return revised;
@@ -713,28 +644,26 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
     /**
      * @return the solutionStats
      */
-    public List<FeatureComparisonStat> getSolutionStats() {
+    public List<List<FeatureComparisonStat>> getSolutionStats() {
         return solutionStats;
     }
 
     /**
      * @return the solutionMatched1
      */
-    public List<PairInt> getSolutionMatched1() {
+    public List<List<PairInt>> getSolutionMatched1() {
         return solutionMatched1;
     }
 
     /**
      * @return the solutionMatched2
      */
-    public List<PairInt> getSolutionMatched2() {
+    public List<List<PairInt>> getSolutionMatched2() {
         return solutionMatched2;
     }
 
     /**
-     * merge the points in pixelSetList items if they are contained within
-     * the same item in largerBounds 
-     * runtime complexity at worst is n_polynomial_points_total * n_pixels_total.
+     * 
      * @param pixelSetList list of groups of points
      * @param largerBoundingRegion a list of larger bounding regions that 
      * contains list of polynomials defining larger bounds than the
@@ -743,7 +672,7 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
      * to match the alterations in pixelSetList so that the structure can
      * afterwards be used to provide complementary information for pixelSetList.
      */
-    private void mergeIfInSameBounds(List<Set<PairInt>> pixelSetList, 
+    private List<Set<PairInt>> filterToBounds(Set<PairInt> pixels, 
         BoundingRegions largerBoundingRegions) {
         
         List<PairIntArray> largerBounds = largerBoundingRegions.getPerimeterList();
@@ -771,129 +700,149 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             xyBoundsMinMaxXY[i] = new double[]{xMin, xMax, yMin, yMax};
         }
         
-        double[][] xyPixelsCentroid = new double[pixelSetList.size()][2];
-        for (int i = 0; i < pixelSetList.size(); ++i) {
-            xyPixelsCentroid[i] = curveHelper.calculateXYCentroids(pixelSetList.get(i));
-        }
-       
-        /*
-        find the pixelSets within bounds of each polynomial,
-        then iterate over results by srching for idx = (pixelSetList.size() - 1)
-        and ih the bounds and if present in more than one, only add it to the
-        one w/ closer centroid.
-        */
-        
-        // for each polynomial, has a set of indexes from pixelSetList
-        List<Set<Integer>> foundSetsInBounds = new ArrayList<Set<Integer>>(xPoly.length);
-        // the reverse mappings of foundSetsInBounds
-        List<Set<Integer>> reverseSetsInBounds = new ArrayList<Set<Integer>>(pixelSetList.size());
-        for (int i = 0; i < pixelSetList.size(); ++i) {
-            reverseSetsInBounds.add(new HashSet<Integer>());
-        }
-        
         PointInPolygon pInPoly = new PointInPolygon();
-                      
-        //runtime complexity at worst is n_polynomial_points_total*n_pixels_total
-        for (int idxLgBounds = 0; idxLgBounds < xPoly.length; ++idxLgBounds) {
-            
-            Set<Integer> merges = new HashSet<Integer>();
-            
-            // srch in pixelSetList for Sets that can be merged
-            for (int j = 0; j < pixelSetList.size(); ++j) {
-            
-                Set<PairInt> pointSet = pixelSetList.get(j);
-
-                for (PairInt p : pointSet) {
-                    if ((p.getX() < xyBoundsMinMaxXY[idxLgBounds][0]) || 
-                        (p.getX() > xyBoundsMinMaxXY[idxLgBounds][1]) || 
-                        (p.getY() < xyBoundsMinMaxXY[idxLgBounds][2]) || 
-                        (p.getY() > xyBoundsMinMaxXY[idxLgBounds][3])) {
-                        continue;
-                    }
-                    if (pInPoly.isInSimpleCurve(p.getX(), p.getY(), 
-                        xPoly[idxLgBounds], yPoly[idxLgBounds], xPoly[idxLgBounds].length)) {
-                        merges.add(Integer.valueOf(j));
-                        break;
-                    }
-                }
-            }
-            
-            foundSetsInBounds.add(merges);
-            for (Integer pixelSetListIndex : merges) {
-                Set<Integer> polyIndexes = reverseSetsInBounds.get(pixelSetListIndex);
-                polyIndexes.add(Integer.valueOf(idxLgBounds));
-            }
-        }
         
-        //this has same indexes as largerBounds
-        List<Set<PairInt>> mergedPixelSetList = new ArrayList<Set<PairInt>>(largerBounds.size());
+        // points will be removed as added to output
+        Set<PairInt> points2 = new HashSet<PairInt>(pixels);
+        
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
+        
+        // worst case is O(N_largerBounds * N_pixels) if no pixels are placed in output
         for (int i = 0; i < largerBounds.size(); ++i) {
-            mergedPixelSetList.add(new HashSet<PairInt>());
-        }
-        assert(mergedPixelSetList.size() == largerBounds.size());
-        //any item in pixelSetList not in largerBounds 
-        List<Set<PairInt>> outsideLargerBounds = new ArrayList<Set<PairInt>>();
-                
-        for (int i = 0; i < pixelSetList.size(); ++i) {
                         
-            Set<Integer> polyIndexes = reverseSetsInBounds.get(i);
+            Set<PairInt> add = new HashSet<PairInt>();
             
-            double[] xyPixCen = xyPixelsCentroid[i];
-            
-            // find smallest distance from centroid among the polyIndexes
-            
-            int minDistIdx = -1;
-            double minDist = Double.MAX_VALUE;
-            for (Integer idxLgBounds : polyIndexes) {
-                double[] boundsXY = bma.getOriginalBlobXYCentroid(idxLgBounds.intValue());
-                double diffX = boundsXY[0] - xyPixCen[0];
-                double diffY = boundsXY[1] - xyPixCen[1];
-                double dist = (diffX*diffX + diffY*diffY);
-                if (dist < minDist) {
-                    minDist = dist;
-                    minDistIdx = idxLgBounds.intValue();
+            for (PairInt p : points2) {
+                if ((p.getX() < xyBoundsMinMaxXY[i][0])
+                    || (p.getX() > xyBoundsMinMaxXY[i][1])
+                    || (p.getY() < xyBoundsMinMaxXY[i][2])
+                    || (p.getY() > xyBoundsMinMaxXY[i][3])) {
+                    continue;
+                }
+                if (pInPoly.isInSimpleCurve(p.getX(), p.getY(),
+                    xPoly[i], yPoly[i], xPoly[i].length)) {
+                    add.add(p);
                 }
             }
-            if (minDistIdx > -1) {
-                mergedPixelSetList.get(minDistIdx).addAll(pixelSetList.get(i));
-                assert(mergedPixelSetList.size() == largerBounds.size());
-            } else {
-                if (!pixelSetList.get(i).isEmpty()) {
-                    outsideLargerBounds.add(pixelSetList.get(i));
-                }
-            }
+            
+            output.add(add);
+            
+            points2.removeAll(add);
         }
         
-        /*
-        TODO:
-        add those outside largerBounds to closest point in a largerBounds
-        can limit those by centroids within a radius first before finding 
-        closest pair
+        assert(output.size() == largerBounds.size());
         
-        outsideLargerBounds
-        */
-        //assert(outsideLargerBounds.isEmpty());
+        // anything remaining in points2 was not found within a largerBounds
         
-        assert(mergedPixelSetList.size() == largerBounds.size());
-        
+        //TODO: could consider ways to retain those in points2 if those are
+        // found to be points that are needed for better matches.
+                
         List<Integer> remove = new ArrayList<Integer>();
-        for (int i = 0; i < mergedPixelSetList.size(); ++i) {
-            Set<PairInt> set = mergedPixelSetList.get(i);
+        for (int i = 0; i < output.size(); ++i) {
+            Set<PairInt> set = output.get(i);
             if (set.isEmpty()) {
                 remove.add(Integer.valueOf(i));
             }
         }
         for (int i = (remove.size() - 1); i > -1; --i) {
             int rmIdx = remove.get(i);
-            mergedPixelSetList.remove(rmIdx);
+            output.remove(rmIdx);
         }
                 
         largerBoundingRegions.removeIndexes(remove);
         
-        assert(mergedPixelSetList.size() == largerBounds.size());
+        assert(output.size() == largerBounds.size());
         
-        pixelSetList.clear();
-        pixelSetList.addAll(mergedPixelSetList);        
+        return output;        
+    }
+
+    private void filterTexturedGroupsByWaveletSegmentation(
+        KeyPointsAndBounds keypointsAndBounds, 
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg,
+        String lbl) {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        List<Integer> highDensityLargeGroups = new ArrayList<Integer>();
+    
+        List<Set<PairInt>> keypoints = keypointsAndBounds.getKeyPointGroups();
+            
+        for (int i = 0; i < keypoints.size(); ++i) {
+            
+            Set<PairInt> group = keypoints.get(i);
+            
+            double n = group.size();
+            
+            double area = curveHelper.calculateArea(
+                keypointsAndBounds.getBoundingRegions().getPerimeterList().get(i));
+            
+            double areaFraction = Math.abs(area/(double)(rImg.getWidth() * rImg.getHeight()));
+            
+            double[] xyCen = keypointsAndBounds.getBoundingRegions()
+                .getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            
+            double numberDensity = Math.abs(n/area);
+            
+            log.info(String.format(
+               "[%d] (%d,%d)  n=%d  area=%.3f fraction of image=%.3f  density=%.3f",
+                i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]),
+                (int)n, (float)area, (float)areaFraction, (float)numberDensity));
+            
+            if ((areaFraction >= 0.04) && (numberDensity >= 0.09)) {
+                highDensityLargeGroups.add(Integer.valueOf(i));
+            }
+            
+        }
+        
+        if (highDensityLargeGroups.isEmpty()) {
+            return;
+        }
+        
+        // for items in highDensityLargeGroups, will reduce them to only those
+        // co-spatial with a segmentation point
+        
+        GreyscaleImage segImg = createCombinedSegmentation0(rImg, gImg, bImg);
+
+        if (settings.debug()) {
+            
+            long ts = System.currentTimeMillis();
+            
+            MiscDebug.writeImage(segImg,
+                "segmented_" + lbl + "_" + settings.getDebugTag() + "_" + ts);
+        }
+        
+        List<Integer> removeIndexes = new ArrayList<Integer>();
+         
+        for (Integer index : highDensityLargeGroups) {
+            
+            Set<PairInt> set = keypointsAndBounds.getKeyPointGroups().get(index.intValue());
+            
+            Set<PairInt> remove = new HashSet<PairInt>();
+            
+            for (PairInt p : set) {
+                int v = segImg.getValue(p.getX(), p.getY());
+                if (v < 1) {
+                    remove.add(p);
+                }
+            }
+            
+            set.removeAll(remove);
+            
+            if (set.isEmpty()) {
+                removeIndexes.add(index);
+            }
+        }
+        
+        for (int i = (removeIndexes.size() - 1); i > -1; --i) {
+            int rmIdx = removeIndexes.get(i);
+            keypointsAndBounds.getKeyPointGroups().remove(rmIdx);
+        }
+              
+        keypointsAndBounds.getBoundingRegions().removeIndexes(removeIndexes);
+        
+        assert(keypointsAndBounds.getKeyPointGroups().size() == 
+            keypointsAndBounds.getBoundingRegions().getPerimeterList().size());
+        
     }
     
 }

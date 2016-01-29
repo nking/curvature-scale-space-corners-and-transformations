@@ -45,4 +45,6 @@ public interface ITransformationFit {
     void setNMaxMatchable(long theNumberOfPossibleMatches);
     
     public boolean isBetter(ITransformationFit other);
+    
+    public boolean isBetterByCost(ITransformationFit other);
 }

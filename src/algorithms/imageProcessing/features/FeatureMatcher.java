@@ -314,9 +314,6 @@ public class FeatureMatcher {
             return null;
         }
         
-        stat_deltaE.setImg1Point(new PairInt(x1, y1));
-        stat_deltaE.setImg2Point(new PairInt(x2, y2));
-
         return stat_deltaE;
     }
     

@@ -1066,6 +1066,11 @@ public class IntensityClrFeatures {
         
         return a;
     }
+    
+    public int getDefaultFinalDescriptorSize() {
+        int nCellsAcross = getDefaultNCellsAcrossForExtract();
+        return nCellsAcross * nCellsAcross;
+    }
 
     private void calculateAndCacheCIELABForCells(GreyscaleImage redImg, 
         GreyscaleImage greenImg, GreyscaleImage blueImg, 
@@ -1226,7 +1231,6 @@ public class IntensityClrFeatures {
         CIEChromaticity cieC = new CIEChromaticity();
                 
         int count = 0;
-        //TODO: review the math for auto-correlation here since it is estimated from 2 points instead of 1
         double autoCorrel = 0;
         double deltaESum = 0;
         

@@ -9,6 +9,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.WaterShed;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -32,16 +33,16 @@ import static org.junit.Assert.*;
  * @author nichole
  */
 public class AndroidStatuesTest extends TestCase {
-    
+
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
+
     public AndroidStatuesTest() {
     }
-    
+
     public void test0() throws Exception {
-                
+
         String fileName1, fileName2;
-        
+
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
@@ -68,15 +69,15 @@ public class AndroidStatuesTest extends TestCase {
             runCorrespondenceList(fileName1, fileName2, settings, false);
         }
     }
-    
+
     public void estRot90() throws Exception {
-                
+
         String fileName1, fileName2;
-        
+
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
-                
+
         for (int i = 0; i < 5; ++i) {
             fileName1 = null;
             fileName2 = null;
@@ -99,42 +100,91 @@ public class AndroidStatuesTest extends TestCase {
             runCorrespondenceList(fileName1, fileName2, settings, true);
         }
     }
-    
-    private void runCorrespondenceList(String fileName1, String fileName2, 
+
+    private void runCorrespondenceList(String fileName1, String fileName2,
         FeatureMatcherSettings settings, boolean rotateBy90) throws Exception {
-        
+
         if (fileName1 == null) {
             return;
         }
-        
+
         int idx = fileName1.lastIndexOf(".");
         String fileName1Root = fileName1.substring(0, idx);
         idx = fileName2.lastIndexOf(".");
         String fileName2Root = fileName2.substring(0, idx);
-        
+
         settings.setDebugTag(fileName1Root);
-        
+
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-               
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         int w1 = img1.getWidth();
         int h1 = img1.getHeight();
         int w2 = img2.getWidth();
         int h2 = img2.getHeight();
+
+        /*
+        CannyEdgeFilter filter = new CannyEdgeFilter();
+        filter.doNotPerformHistogramEqualization();
+        filter.applyFilter(img1.copyToGreyscale());
+        EdgeFilterProducts ep1 = filter.getEdgeFilterProducts();
+        GreyscaleImage gXY1 = ep1.getGradientXY();
+        MiscDebug.writeImage(gXY1, "edges_1");
+        GreyscaleImage theta1 = imageProcessor.computeTheta360_0(ep1.getGradientX(), ep1.getGradientY());
+        MiscDebug.writeImage(theta1, "theta_1");
+        GreyscaleImage gXY1Cp = gXY1.copyImage();
+        MedianSmooth median = new MedianSmooth();
+        gXY1Cp = median.calculate(gXY1Cp, 2, 2);
+        MiscDebug.writeImage(gXY1Cp, "median_1");
+        gXY1Cp = median.calculate(gXY1Cp, 2, 2);
+        MiscDebug.writeImage(gXY1Cp, "median_1_2nd");
+        for (int i = 0; i < gXY1Cp.getNPixels(); ++i) {
+            int v = gXY1Cp.getValue(i);
+            gXY1Cp.setValue(i, 255 - v);
+        }
+        WaterShed ws = new WaterShed();
+        int[][] labelled1 = ws.createLabelledImage(gXY1Cp);
+        GreyscaleImage wsImg1 = new GreyscaleImage(gXY1Cp.getWidth(), gXY1Cp.getHeight(),
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int j = 0; j < gXY1Cp.getHeight(); ++j) {
+            for (int i = 0; i < gXY1Cp.getWidth(); ++i) {
+                int v = labelled1[i][j];
+                wsImg1.setValue(i, j, v);
+            }
+        }
+        MiscDebug.writeImage(wsImg1, "median_1_2nd_watershed");
+
+        gXY1Cp = gXY1.copyImage();
+        imageProcessor.applyAdaptiveMeanThresholding(gXY1Cp, 1);
+        MiscDebug.writeImage(gXY1Cp, "adaptive_mean_1");
+        ws = new WaterShed();
+        labelled1 = ws.createLabelledImage(gXY1Cp);
+        wsImg1 = new GreyscaleImage(gXY1Cp.getWidth(), gXY1Cp.getHeight(),
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int j = 0; j < gXY1Cp.getHeight(); ++j) {
+            for (int i = 0; i < gXY1Cp.getWidth(); ++i) {
+                int v = labelled1[i][j];
+                wsImg1.setValue(i, j, v);
+            }
+        }
+        MiscDebug.writeImage(wsImg1, "adaptive_means_watershed");
+        // gradient XY, then adaptive means, then watershed looks like a possible
+        // foundation for segmentation algorithm
+        */
         /*int maxDimension = 75;
-        
-        int binFactor1 = (int) Math.ceil(Math.max((float)w1/maxDimension, 
+
+        int binFactor1 = (int) Math.ceil(Math.max((float)w1/maxDimension,
             (float)h1/ maxDimension));
-        int binFactor2 = (int) Math.ceil(Math.max((float)w2/maxDimension, 
+        int binFactor2 = (int) Math.ceil(Math.max((float)w2/maxDimension,
             (float)h2/ maxDimension));
-        
+
         img1 = imageProcessor.binImage(img1, binFactor1);
         img2 = imageProcessor.binImage(img2, binFactor2);
-        
+
         CannyEdgeFilter filter = new CannyEdgeFilter();
         filter.doNotPerformHistogramEqualization();
         filter.applyFilter(img1.copyToGreyscale());
@@ -142,7 +192,7 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(ep1.getGradientXY(), "edges_1");
         GreyscaleImage theta1 = imageProcessor.computeTheta360_0(ep1.getGradientX(), ep1.getGradientY());
         MiscDebug.writeImage(theta1, "theta_1");
-        
+
         GreyscaleImage img1Cp = img1.copyToGreyscale();
         imageProcessor.applyAdaptiveMeanThresholding(img1Cp, 1);
         MiscDebug.writeImage(img1Cp, "adapt_mean_1");
@@ -172,7 +222,7 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(segImg1, "seg_cluster_1_");
         */
         /*clusters1 = imageSegmentation.
-            calculateUsingPolarCIEXYAndClustering(img1.copyToImageExt(), 
+            calculateUsingPolarCIEXYAndClustering(img1.copyToImageExt(),
                 2000, 2000, true);
         step1 = 255/clusters1.size();
         img1Cp = img1Cp.createWithDimensions();
@@ -187,15 +237,15 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img1Cp, "seg_cluster_1_high_" + clusters1.size());
         imageSegmentation.createContrastImages(img1.copyToImageExt());
         imageSegmentation.createContrastImages(img1.copyToImageExt());
-        
+
         filter = new CannyEdgeFilter();
         filter.doNotPerformHistogramEqualization();
         filter.applyFilter(img2.copyToGreyscale());
         EdgeFilterProducts ep2 = filter.getEdgeFilterProducts();
         MiscDebug.writeImage(ep2.getGradientXY(), "edges_2");
         GreyscaleImage theta2 = imageProcessor.computeTheta360_0(ep2.getGradientX(), ep2.getGradientY());
-        MiscDebug.writeImage(theta2, "theta_2");        
-        
+        MiscDebug.writeImage(theta2, "theta_2");
+
         GreyscaleImage img2Cp = img2.copyToGreyscale();
         imageProcessor.applyAdaptiveMeanThresholding(img2Cp, 1);
         MiscDebug.writeImage(img2Cp, "adapt_mean_2");
@@ -223,7 +273,7 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(segImg2, "seg_cluster_2_");
         */
         /*clusters2 = imageSegmentation.
-            calculateUsingPolarCIEXYAndClustering(img2.copyToImageExt(), 
+            calculateUsingPolarCIEXYAndClustering(img2.copyToImageExt(),
                 2000, 2000, true);
         step1 = 255/clusters2.size();
         img2Cp = img2Cp.createWithDimensions();
@@ -238,7 +288,7 @@ public class AndroidStatuesTest extends TestCase {
         MiscDebug.writeImage(img2Cp, "seg_cluster_2_high_" + clusters2.size());
         imageSegmentation.createContrastImages(img2.copyToImageExt());
         */
-        
+
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();
             params90.setRotationInDegrees(90);
@@ -249,7 +299,7 @@ public class AndroidStatuesTest extends TestCase {
             Transformer transformer = new Transformer();
             img1 = (ImageExt) transformer.applyTransformation(img1,
                 params90, img1.getHeight(), img1.getWidth());
-            
+
             /*
             venturi:
                 tx += -50
@@ -260,14 +310,14 @@ public class AndroidStatuesTest extends TestCase {
                 ty += -0
                 rot += 0
             */
-            
+
             /*
-            MatchedPointsTransformationCalculator tc = 
-                new MatchedPointsTransformationCalculator();        
-            
+            MatchedPointsTransformationCalculator tc =
+                new MatchedPointsTransformationCalculator();
+
             TransformationParameters revParams = tc.swapReferenceFrames(params90);
             transformer.transformToOrigin(0, 0, revParams);
-            revParams.setTranslationX(revParams.getTranslationX() + -74);            
+            revParams.setTranslationX(revParams.getTranslationX() + -74);
             revParams.setTranslationY(revParams.getTranslationY() + -0);
             revParams.setRotationInDegrees(revParams.getRotationInDegrees() - 0);
             log.info("revParams: " + revParams.toString());
@@ -277,24 +327,23 @@ public class AndroidStatuesTest extends TestCase {
                 revParams, img1RevTr.getHeight(), img1RevTr.getWidth());
             MiscDebug.writeImage(img1RevTr, "rot90_rev_trans");
             */
-            int z = 1;
         }
-        
+
         RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
-        
+
         log.info("fileName1Root=" + fileName1Root);
-        
-        EpipolarSolver solver = new EpipolarSolver(img1, img2, settings);
-        
-        EpipolarTransformationFit fit = solver.solve();
-        
-        assertNotNull(fit);
-        
-        //MiscDebug.writeImagesInAlternatingColor(img1, img2, stats, 
+
+        EpipolarColorSegmentedSolver solver = new EpipolarColorSegmentedSolver(img1, img2, settings);
+
+        boolean solved = solver.solve();
+
+        assertTrue(solved);
+
+        //MiscDebug.writeImagesInAlternatingColor(img1, img2, stats,
         //    fileName1Root + "_matched_non_euclid", 2);
 
     }
-    
+
      public static void main(String[] args) {
 
         try {
@@ -308,9 +357,9 @@ public class AndroidStatuesTest extends TestCase {
             fail(e.getMessage());
         }
     }
-     
+
     public void estColor() throws Exception {
-        
+
         //String fileName1 = "android_statues_02.jpg";
         //String fileName2 = "android_statues_04.jpg";
         String fileName1 = "android_statues_02_gingerbreadman.jpg";
@@ -319,12 +368,12 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1Root = fileName1.substring(0, idx);
         idx = fileName2.lastIndexOf(".");
         String fileName2Root = fileName2.substring(0, idx);
-                
+
         String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
         ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
         String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-       
+
         CIEChromaticity cieC = new CIEChromaticity();
         int binnedImageMaxDimension = 512;
         int binFactor1 = (int) Math.ceil(
@@ -352,20 +401,20 @@ public class AndroidStatuesTest extends TestCase {
         GreyscaleImage blueBinnedImg2 = imgBinned2.copyBlueToGreyscale();
         GreyscaleImage gsImg1 = imgBinned1.copyToGreyscale();
         GreyscaleImage gsImg2 = imgBinned2.copyToGreyscale();
-        IntensityClrFeatures clrFeaturesBinned1 = new IntensityClrFeatures(gsImg1.copyImage(), 
+        IntensityClrFeatures clrFeaturesBinned1 = new IntensityClrFeatures(gsImg1.copyImage(),
             5, rotatedOffsets);
-        IntensityClrFeatures clrFeaturesBinned2 = new IntensityClrFeatures(gsImg2.copyImage(), 
+        IntensityClrFeatures clrFeaturesBinned2 = new IntensityClrFeatures(gsImg2.copyImage(),
             5, rotatedOffsets);
         IntensityFeatures features1 = new IntensityFeatures(5, true, rotatedOffsets);
         IntensityFeatures features2 = new IntensityFeatures(5, true, rotatedOffsets);
-        
+
         /*
         looking at trace/determinant of autocorrelation
-        and eigenvalues of greyscale, autocorrelation, and lab colors for 
+        and eigenvalues of greyscale, autocorrelation, and lab colors for
         selected points in both images
-        
+
         statues subsets:
-        
+
         0 (64, 100) (96, 109)
         1 (67, 103) (103, 111)
         2 (68, 78)  (113, 86)
@@ -373,80 +422,80 @@ public class AndroidStatuesTest extends TestCase {
         4 (92, 108) (157, 118)
         5 (92, 111) (160, 122)   delta e = 28.9
         6 (69, 129) (108, 142)   delta e = 26.4
-        
+
         is the edelta for the gingerbread man's white stripes and shadows
         the same for shadow and higher illumination?
         */
         // single values of edelta
         List<PairInt> points1 = new ArrayList<PairInt>();
         List<PairInt> points2 = new ArrayList<PairInt>();
-        points1.add(new PairInt(64, 100)); points2.add(new PairInt(96, 109)); 
+        points1.add(new PairInt(64, 100)); points2.add(new PairInt(96, 109));
         points1.add(new PairInt(67, 103)); points2.add(new PairInt(103, 111));
-        points1.add(new PairInt(68, 78)); points2.add(new PairInt(113, 86)); 
-        points1.add(new PairInt(66, 49)); points2.add(new PairInt(106, 50)); 
-        points1.add(new PairInt(92, 108)); points2.add(new PairInt(157, 118)); 
-        points1.add(new PairInt(92, 111)); points2.add(new PairInt(160, 122)); 
+        points1.add(new PairInt(68, 78)); points2.add(new PairInt(113, 86));
+        points1.add(new PairInt(66, 49)); points2.add(new PairInt(106, 50));
+        points1.add(new PairInt(92, 108)); points2.add(new PairInt(157, 118));
+        points1.add(new PairInt(92, 111)); points2.add(new PairInt(160, 122));
         points1.add(new PairInt(69, 129)); points2.add(new PairInt(108, 142));
         // this one is too look at localizability:
         points1.add(new PairInt(46, 65)); points2.add(new PairInt(6, 4));
-        
+
         int n = points1.size();
         for (int i = 0; i < n; ++i) {
-            
+
             StringBuilder sb = new StringBuilder();
-                        
+
             PairInt p1 = points1.get(i);
             PairInt p2 = points2.get(i);
             sb.append(p1.toString()).append(p2.toString());
-            
+
             int r1 = redBinnedImg1.getValue(p1.getX(), p1.getY());
             int g1 = greenBinnedImg1.getValue(p1.getX(), p1.getY());
             int b1 = blueBinnedImg1.getValue(p1.getX(), p1.getY());
             int r2 = redBinnedImg2.getValue(p2.getX(), p2.getY());
             int g2 = greenBinnedImg2.getValue(p2.getX(), p2.getY());
             int b2 = blueBinnedImg2.getValue(p2.getX(), p2.getY());
-            
+
             float[] lab1 = cieC.rgbToCIELAB(r1, g1, b1);
             float[] lab2 = cieC.rgbToCIELAB(r2, g2, b2);
             float[] cieXY1 = cieC.rgbToCIEXYZ(r1, g1, b1);
             float[] cieXY2 = cieC.rgbToCIEXYZ(r2, g2, b2);
             double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
-            
+
             sb.append(String.format("  dE=%.1f", (float)deltaE));
-            
+
             int rot1 = clrFeaturesBinned1.calculateOrientation(p1.getX(), p1.getY());
             int rot2 = clrFeaturesBinned2.calculateOrientation(p2.getX(), p2.getY());
-            
+
             IntensityDescriptor desc_l1 = clrFeaturesBinned1.extractIntensityLOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(), 
+                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
                 rot1);
-            
+
             IntensityDescriptor desc_a1 = clrFeaturesBinned1.extractIntensityAOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(), 
+                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
                 rot1);
-            
+
             IntensityDescriptor desc_b1 = clrFeaturesBinned1.extractIntensityBOfCIELAB(
-                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(), 
+                redBinnedImg1, greenBinnedImg1, blueBinnedImg1, p1.getX(), p1.getY(),
                 rot1);
-            
+
             IntensityDescriptor desc_l2 = clrFeaturesBinned2.extractIntensityLOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(), 
+                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
                 rot2);
-            
+
             IntensityDescriptor desc_a2 = clrFeaturesBinned2.extractIntensityAOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(), 
+                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
                 rot2);
-            
+
             IntensityDescriptor desc_b2 = clrFeaturesBinned2.extractIntensityBOfCIELAB(
-                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(), 
+                redBinnedImg2, greenBinnedImg2, blueBinnedImg2, p2.getX(), p2.getY(),
                 rot2);
-            
-            IntensityDescriptor desc1 = features1.extractIntensity(gsImg1, 
+
+            IntensityDescriptor desc1 = features1.extractIntensity(gsImg1,
                 p1.getX(), p1.getY(), rot1);
-            
-            IntensityDescriptor desc2 = features2.extractIntensity(gsImg2, 
+
+            IntensityDescriptor desc2 = features2.extractIntensity(gsImg2,
                 p2.getX(), p2.getY(), rot2);
-            
+
             double det, trace;
             SimpleMatrix a_l1 = clrFeaturesBinned1.createAutoCorrelationMatrix(desc_l1);
             det = a_l1.determinant();
@@ -456,25 +505,25 @@ public class AndroidStatuesTest extends TestCase {
             det = a_l2.determinant();
             trace = a_l2.trace();
             sb.append(String.format("  L2_det(A)/trace=%.1f", (float)(det/trace)));
-            
+
             try {
                 sb.append("\n  eigen values:\n");
                 SimpleEVD eigen1 = a_l1.eig();
                 for (int j = 0; j < eigen1.getNumberOfEigenvalues(); ++j) {
                     Complex64F eigen = eigen1.getEigenvalue(j);
-                    sb.append(String.format("    [1] %d %.1f %.1f\n", j, 
+                    sb.append(String.format("    [1] %d %.1f %.1f\n", j,
                         (float)eigen.getReal(), (float)eigen.getMagnitude()));
                 }
                 sb.append("\n");
                 SimpleEVD eigen2 = a_l2.eig();
                 for (int j = 0; j < eigen2.getNumberOfEigenvalues(); ++j) {
                     Complex64F eigen = eigen2.getEigenvalue(j);
-                    sb.append(String.format("    [1] %d %.1f %.1f\n", j, 
+                    sb.append(String.format("    [1] %d %.1f %.1f\n", j,
                         (float)eigen.getReal(), (float)eigen.getMagnitude()));
                 }
             } catch (Throwable t) {
             }
-            
+
             if (desc1 != null && desc2 != null) {
                 SimpleMatrix gs_l1 = features1.createAutoCorrelationMatrix(desc1);
                 det = gs_l1.determinant();
@@ -484,7 +533,7 @@ public class AndroidStatuesTest extends TestCase {
                 det = gs_l2.determinant();
                 trace = gs_l2.trace();
                 sb.append(String.format("  Grey_det(A)/trace=%.1f", (float)(det/trace)));
-                
+
                 try {
                     sb.append("\n  eigen values:\n");
                     SimpleEVD eigen1 = gs_l1.eig();
@@ -502,9 +551,9 @@ public class AndroidStatuesTest extends TestCase {
                     }
                 } catch (Throwable t) {
                 }
-                
+
             }
-            
+
             log.info(sb.toString());
         }
      }

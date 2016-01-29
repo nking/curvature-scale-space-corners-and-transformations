@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
@@ -1228,14 +1229,17 @@ public class MiscDebug {
     }
     
     public static void writeImage(PairIntArray edge,
-        Image img, int nExtraDot, String suffix) throws IOException {
-        
-        ImageIOHelper.addCurveToImage(edge, img, nExtraDot, 255, 0, 0);
-        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        ImageIOHelper.writeOutputImage(
-            dirPath + "/" + suffix + ".png", img);
+        Image img, int nExtraDot, String suffix) {
+        try {
+            ImageIOHelper.addCurveToImage(edge, img, nExtraDot, 255, 0, 0);
+            
+            String dirPath = ResourceFinder.findDirectory("bin");
+            
+            ImageIOHelper.writeOutputImage(
+                dirPath + "/" + suffix + ".png", img);
+        } catch (IOException ex) {
+            Logger.getLogger(MiscDebug.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public static void print(CorrespondenceList cl) {
@@ -1340,6 +1344,60 @@ public class MiscDebug {
                     
                     if ((x2 > -1) && (x2 < w2) && (y2 > -1) && (y2 < h2)) {
                         img2Cp.setRGB(x2, y2, clr);
+                    }
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(img1Cp, imgSuffix + "_1");
+        MiscDebug.writeImage(img2Cp, imgSuffix + "_2");
+    }
+    
+    public static void writeImagesInAlternatingColor(Image img1, 
+        Image img2, PairIntArray pai1, PairIntArray pai2, String imgSuffix,
+        int nExtraForDot) {
+        
+        if (pai1.getN() != pai2.getN()) {
+            throw new IllegalArgumentException("pai1 and pai2 should be same size");
+        }
+                
+        Image img1Cp = img1.copyImage();
+        
+        Image img2Cp = img2.copyImage();
+        
+        int w1 = img1Cp.getWidth();
+        int h1 = img1Cp.getHeight();
+        
+        int w2 = img2Cp.getWidth();
+        int h2 = img2Cp.getHeight();
+        
+        int count = 0;
+        
+        for (int i = 0; i < pai1.getN(); ++i) {
+            
+            int x1 = pai1.getX(i);
+            int y1 = pai1.getY(i);
+            int x2 = pai2.getX(i);
+            int y2 = pai2.getY(i);
+            
+            int clr = getNextColorRGB(count);
+            count++;
+            
+            for (int dx = -1*nExtraForDot; dx <= nExtraForDot; ++dx) {
+                for (int dy = -1*nExtraForDot; dy <= nExtraForDot; ++dy) {
+            
+                    int x = x1 + dx;
+                    int y = y1 + dy;
+                    
+                    if ((x > -1) && (x < w1) && (y > -1) && (y < h1)) {
+                        img1Cp.setRGB(x, y, clr);
+                    }
+            
+                    x = x2 + dx;
+                    y = y2 + dy;
+                    
+                    if ((x > -1) && (x < w2) && (y > -1) && (y < h2)) {
+                        img2Cp.setRGB(x, y, clr);
                     }
                 }
             }

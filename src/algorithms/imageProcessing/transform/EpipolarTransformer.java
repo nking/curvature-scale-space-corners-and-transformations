@@ -1,6 +1,11 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.features.FeatureComparisonStat;
+import algorithms.imageProcessing.features.FeatureMatcher;
+import algorithms.imageProcessing.features.IntensityClrFeatures;
+import algorithms.imageProcessing.features.KeyPointsAndBounds;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.util.PairFloatArray;
 import algorithms.imageProcessing.util.MatrixUtil;
@@ -1147,6 +1152,137 @@ public class EpipolarTransformer {
         return e;
     }
 
+    private EpipolarFeatureTransformationFit calculateFeatureErrors(SimpleMatrix fm, 
+        SimpleMatrix x1, SimpleMatrix x2, 
+        IntensityClrFeatures features1, IntensityClrFeatures features2, 
+        KeyPointsAndBounds keyPointsAndBounds1, int bmaIndex1, 
+        KeyPointsAndBounds keyPointsAndBounds2, int bmaIndex2,
+        GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1, 
+        GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2, 
+        double tolerance, boolean useHalfDescriptors) {
+        
+        if (fm == null) {
+            throw new IllegalArgumentException("fm cannot be null");
+        }
+        if (x1 == null) {
+            throw new IllegalArgumentException("x1 cannot be null");
+        }
+        if (x2 == null) {
+            throw new IllegalArgumentException("x2 cannot be null");
+        }
+        if (fm.numRows() != 3 || fm.numCols() != 3) {
+            throw new IllegalArgumentException("fm should have 3 rows and 3 columns");
+        }
+        if (x1.numRows() != x2.numRows() || x1.numCols() != x2.numCols()) {
+            throw new IllegalArgumentException("x1 and x2 must be same sizes");
+        }
+        
+        FeatureMatcher matcher = new FeatureMatcher();
+        
+        List<Integer> outputInliers = new ArrayList<Integer>();
+        List<Double> outputDistances = new ArrayList<Double>();
+        List<FeatureComparisonStat> fcs = new ArrayList<FeatureComparisonStat>();
+        
+        int n = x1.numCols();
+        
+        for (int col = 0; col < n; ++col) {
+            int xPt1 = (int)Math.round(x1.get(0, col));
+            int yPt1 = (int)Math.round(x1.get(1, col));
+            int xPt2 = (int)Math.round(x2.get(0, col));
+            int yPt2 = (int)Math.round(x2.get(1, col));
+            
+            FeatureComparisonStat stat;
+            if (useHalfDescriptors) {
+                stat = matcher.matchHalfDescriptors(
+                    features1, features2,
+                    keyPointsAndBounds1, bmaIndex1, keyPointsAndBounds2, bmaIndex2,
+                    xPt1, yPt1, xPt2, yPt2,
+                    rImg1, gImg1, bImg1, rImg2, gImg2, bImg2);
+            } else {
+                stat = matcher.matchDescriptors(
+                    features1, features2, xPt1, yPt1, xPt2, yPt2,
+                    rImg1, gImg1, bImg1, rImg2, gImg2, bImg2);
+            }
+            
+            if (stat == null || 
+                (stat.getSumIntensitySqDiff() > stat.getImg2PointIntensityErr())) {
+                continue;
+            }
+            
+            outputDistances.add(Double.valueOf(stat.getSumIntensitySqDiff()));
+            outputInliers.add(Integer.valueOf(col));
+            fcs.add(stat);
+        }
+        
+        EpipolarFeatureTransformationFit fit = new EpipolarFeatureTransformationFit(
+            fm, outputInliers, fcs, ErrorType.SAMPSONS, outputDistances, tolerance);
+    
+        fit.setNMaxMatchable(x1.numCols());
+        
+        return fit;
+    }
+
+    private EpipolarFeatureTransformationFit combineErrors(EpipolarTransformationFit
+        distanceErrors, EpipolarFeatureTransformationFit featureErrors) {
+        
+        /*
+        in order to have the distance errors count as much as the SSD errors,
+        need to scale them up or SSD down by a factor.
+        
+        will use the descriptor size and the average of the maximum SSD that 
+        could be calculated and the minimum and make a factor for the
+        distances of SSDFactor/tolerance.
+        */
+        
+        // sum square diffs / size = (d0*d0) + (d3*d3).../n
+        double maxSSD = 255. * 255.;
+        
+        double distScaleFactor = (maxSSD/2.)/distanceErrors.getTolerance();
+        
+        Map<Integer, Double> indexSSDErrorsMap = new HashMap<Integer, Double>();
+        Map<Integer, FeatureComparisonStat> indexFeatureMap = 
+            new HashMap<Integer, FeatureComparisonStat>();
+        for (int i = 0; i < featureErrors.getInlierIndexes().size(); ++i) {
+            Integer index = featureErrors.getInlierIndexes().get(i);
+            indexSSDErrorsMap.put(index, featureErrors.getErrors().get(i));
+            indexFeatureMap.put(index,
+                featureErrors.getFeatureComparisonStats().get(i));
+        }
+        
+        List<Integer> outputInliers = new ArrayList<Integer>();
+        List<Double> outputDistances = new ArrayList<Double>();
+        List<FeatureComparisonStat> fcs = new ArrayList<FeatureComparisonStat>();
+        
+        for (int i = 0; i < distanceErrors.getInlierIndexes().size(); ++i) {
+            Integer index = distanceErrors.getInlierIndexes().get(i);
+            Double ssd = indexSSDErrorsMap.get(index);
+            if (ssd != null) {
+                
+                outputInliers.add(index);
+                
+                Double dist = distanceErrors.getErrors().get(i);
+                double cost = dist.doubleValue() * ssd.doubleValue();
+                outputDistances.add(Double.valueOf(cost));
+                
+                fcs.add(indexFeatureMap.get(index));
+            }
+        }
+        double costTerm2 = 1./(double)outputDistances.size();
+        for (int i = 0; i < outputDistances.size(); ++i) {
+            double err = outputDistances.get(i).doubleValue() * costTerm2 * costTerm2
+                * distScaleFactor;
+            outputDistances.set(i, Double.valueOf(err));
+        }
+        
+        EpipolarFeatureTransformationFit fit = new EpipolarFeatureTransformationFit(
+            distanceErrors.getFundamentalMatrix(),
+            outputInliers, fcs,
+            distanceErrors.getErrorType(), outputDistances, 
+            distanceErrors.getTolerance());
+            
+        return fit;
+    }
+
     public static class NormalizedXY {
 
         /**
@@ -1458,6 +1594,36 @@ public class EpipolarTransformer {
         }
     }
     
+    public EpipolarFeatureTransformationFit calculateError(SimpleMatrix fm,
+        SimpleMatrix x1, SimpleMatrix x2, 
+        IntensityClrFeatures features1, IntensityClrFeatures features2,
+        KeyPointsAndBounds kpab1, int bmaIndex1,
+        KeyPointsAndBounds kpab2, int bmaIndex2,
+        GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1,
+        GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2,
+        ErrorType errorType, double tolerance, boolean useHalfDescriptors) {
+         
+        EpipolarTransformationFit distanceErrors;
+        
+        if (errorType.equals(ErrorType.SAMPSONS)) {            
+            distanceErrors = calculateSampsonsError(fm, x1, x2, tolerance);
+        } else {
+            distanceErrors = calculateEpipolarDistanceError(fm, x1, x2, tolerance);
+        }
+        
+        EpipolarFeatureTransformationFit featureErrors = calculateFeatureErrors(
+            fm, x1, x2, features1, features2,
+            kpab1, bmaIndex1, kpab2, bmaIndex2,
+            rImg1, gImg1, bImg1, rImg2, gImg2, bImg2,
+            tolerance, useHalfDescriptors);
+        
+        EpipolarFeatureTransformationFit combinedFit = combineErrors(distanceErrors,
+            featureErrors);
+        combinedFit.setNMaxMatchable(x1.numCols());
+        
+        return combinedFit;
+    }
+    
     public EpipolarTransformationFit calculateSampsonsError(SimpleMatrix fm,
         SimpleMatrix x1, SimpleMatrix x2, double tolerance) {
         
@@ -1489,9 +1655,7 @@ public class EpipolarTransformer {
         
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
-        
-        //TODO: consider using the normalized matrixes and normalized tolerance during error calc too?
-        
+                
         SimpleMatrix fmT = fm.transpose();
                 
         int n = x1.numCols();
@@ -1588,9 +1752,7 @@ public class EpipolarTransformer {
         
         List<Integer> outputInliers = new ArrayList<Integer>();
         List<Double> outputDistances = new ArrayList<Double>();
-        
-        //TODO: consider using the normalized matrixes and normalized tolerance during error calc too?
-        
+                
         SimpleMatrix fmT = fm.transpose();
                 
         int n = x1.numCols();

@@ -1,13 +1,29 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.SubsetChooser;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.transform.EpipolarFeatureTransformationFit;
+import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -291,11 +307,324 @@ public class CornerMatcher<T extends CornerRegion> {
     }
     
     /**
+     * match corners using the color descriptors and using a 2nd best filter with
+     * threshold of 0.9.
+     * 
+     * @param features1
+     * @param features2
+     * @param keypoints1 
+     * @param keypoints2 
+     * @param img1
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param img2
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @param binFactor1
+     * @param binFactor2
+     * @return 
+     */
+    @SuppressWarnings({"unchecked"})
+    public boolean matchPoints(
+        final IntensityClrFeatures features1, final IntensityClrFeatures features2,
+        final Collection<PairInt> keypoints1, final Collection<PairInt> keypoints2, 
+        ImageExt img1, GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        ImageExt img2, GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2) {
+
+        if (state != null) {
+            resetDefaults();
+        }
+        double deltaELimit = 20;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        for (PairInt keypoint1 : keypoints1) {
+
+            FeatureComparisonStat bestStat = null;
+            PairInt bestSet2 = null;
+            FeatureComparisonStat bestStat_2nd = null;
+            PairInt bestSet2_2nd = null;
+            
+            float[] lab1 = img1.getCIELAB(keypoint1.getX(), keypoint1.getY());
+
+            for (PairInt keypoint2 : keypoints2) {
+                
+                float[] lab2 = img2.getCIELAB(keypoint2.getX(), keypoint2.getY());
+                
+                double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
+                
+                if (deltaE > deltaELimit) {
+                    continue;
+                }
+
+                FeatureComparisonStat compStat = 
+                    featureMatcher.matchDescriptors(features1, features2, 
+                        keypoint1.getX(), keypoint1.getY(), 
+                        keypoint2.getX(), keypoint2.getY(),
+                        redImg1, greenImg1, blueImg1, 
+                        redImg2, greenImg2, blueImg2);
+               
+                if ((compStat == null) ||
+                    (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                    ) {
+                    continue;
+                }
+                
+                if ((bestStat_2nd != null) && (compStat.getSumIntensitySqDiff() 
+                    >= bestStat_2nd.getSumIntensitySqDiff())) {
+                    continue;
+                }
+                              
+                if (bestStat == null) {
+                    bestStat = compStat;
+                    bestSet2 = keypoint2;
+                } else if (bestStat_2nd == null) {
+                    if (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        bestStat_2nd = bestStat;
+                        bestSet2_2nd = bestSet2;
+                        bestStat = compStat;
+                        bestSet2 = keypoint2;
+                    } else {
+                        bestStat_2nd = compStat;
+                        bestSet2_2nd = keypoint2;
+                    }
+                } else {
+                    // we know it's better than 2nd best
+                    if (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        bestStat_2nd = bestStat;
+                        bestSet2_2nd = bestSet2;
+                        bestStat = compStat;
+                        bestSet2 = keypoint2;
+                    } else {
+                        // replaces 2nd best
+                        bestStat_2nd = compStat;
+                        bestSet2_2nd = keypoint2;
+                    } 
+                }
+            }
+            
+            if (bestStat == null) {
+                continue;
+            }
+
+            if (bestStat_2nd == null) {
+                stats.add(bestStat);
+                //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                //        best.getImg1Point().getX(), best.getImg1Point().getY(),
+                //        best.getImg2Point().getX(), best.getImg2Point().getY(),
+                //        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+            } else {
+                
+                //TODO: the ratio threshold may need to be revised.
+                // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
+                
+                float ratio = bestStat.getSumIntensitySqDiff()/bestStat_2nd.getSumIntensitySqDiff();
+
+                //if (ratio < 0.8) {
+                if (ratio < 0.9) {
+                    stats.add(bestStat);
+                    //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                    //    best.getImg1Point().getX(), best.getImg1Point().getY(),
+                    //    best.getImg2Point().getX(), best.getImg2Point().getY(),
+                    //    best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+                } else {
+                    rejectedBy2ndBest.add(bestStat);
+                }
+            }
+        }
+        
+        MiscStats.filterForDegeneracy(stats);
+                
+        assignInstanceResults(stats);
+        
+        return !stats.isEmpty();
+    }
+    
+    /**
+     * match corners using the color descriptors and using a 2nd best filter with
+     * threshold of 0.9.
+     * 
+     * @param features1
+     * @param features2
+     * @param keyPointsAndBounds1
+     * @param bmaIndex1
+     * @param keyPointsAndBounds2
+     * @param bmaIndex2
+     * @param keypoints1 
+     * @param keypoints2 
+     * @param img1
+     * @param redImg1
+     * @param greenImg1
+     * @param blueImg1
+     * @param img2
+     * @param redImg2
+     * @param greenImg2
+     * @param blueImg2
+     * @param binFactor1
+     * @param binFactor2
+     * @param useHalfDescriptors
+     * @return 
+     */
+    @SuppressWarnings({"unchecked"})
+    public boolean matchPoints(
+        final IntensityClrFeatures features1, final IntensityClrFeatures features2,
+        KeyPointsAndBounds keyPointsAndBounds1, int bmaIndex1,
+        KeyPointsAndBounds keyPointsAndBounds2, int bmaIndex2,
+        final Collection<PairInt> keypoints1, final Collection<PairInt> keypoints2, 
+        ImageExt img1, GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        ImageExt img2, GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2, boolean useHalfDescriptors) {
+
+        if (state != null) {
+            resetDefaults();
+        }
+        
+        double deltaELimit = 20;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        
+        rejectedBy2ndBest.clear();
+        
+        FeatureMatcher featureMatcher = new FeatureMatcher();
+
+        for (PairInt keypoint1 : keypoints1) {
+
+            FeatureComparisonStat bestStat = null;
+            PairInt bestSet2 = null;
+            FeatureComparisonStat bestStat_2nd = null;
+            PairInt bestSet2_2nd = null;
+            
+            float[] lab1 = img1.getCIELAB(keypoint1.getX(), keypoint1.getY());
+
+            for (PairInt keypoint2 : keypoints2) {
+                
+                float[] lab2 = img2.getCIELAB(keypoint2.getX(), keypoint2.getY());
+                
+                double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
+                
+                if (deltaE > deltaELimit) {
+                    continue;
+                }
+
+                FeatureComparisonStat compStat;
+                
+                if (useHalfDescriptors) {
+                    
+                    compStat = featureMatcher.matchHalfDescriptors(
+                        features1, features2, 
+                        keyPointsAndBounds1, bmaIndex1,
+                        keyPointsAndBounds2, bmaIndex2,
+                        keypoint1.getX(), keypoint1.getY(), 
+                        keypoint2.getX(), keypoint2.getY(),
+                        redImg1, greenImg1, blueImg1, 
+                        redImg2, greenImg2, blueImg2);
+                
+                } else {
+                    
+                    compStat = featureMatcher.matchDescriptors(features1, 
+                        features2, keypoint1.getX(), keypoint1.getY(), 
+                        keypoint2.getX(), keypoint2.getY(),
+                        redImg1, greenImg1, blueImg1, 
+                        redImg2, greenImg2, blueImg2);
+                }
+               
+                if ((compStat == null) ||
+                    (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
+                    ) {
+                    continue;
+                }
+                
+                if ((bestStat_2nd != null) && (compStat.getSumIntensitySqDiff() 
+                    >= bestStat_2nd.getSumIntensitySqDiff())) {
+                    continue;
+                }
+                              
+                if (bestStat == null) {
+                    bestStat = compStat;
+                    bestSet2 = keypoint2;
+                } else if (bestStat_2nd == null) {
+                    if (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        bestStat_2nd = bestStat;
+                        bestSet2_2nd = bestSet2;
+                        bestStat = compStat;
+                        bestSet2 = keypoint2;
+                    } else {
+                        bestStat_2nd = compStat;
+                        bestSet2_2nd = keypoint2;
+                    }
+                } else {
+                    // we know it's better than 2nd best
+                    if (compStat.getSumIntensitySqDiff() < bestStat.getSumIntensitySqDiff()) {
+                        // first becomes second and this becomes first
+                        bestStat_2nd = bestStat;
+                        bestSet2_2nd = bestSet2;
+                        bestStat = compStat;
+                        bestSet2 = keypoint2;
+                    } else {
+                        // replaces 2nd best
+                        bestStat_2nd = compStat;
+                        bestSet2_2nd = keypoint2;
+                    } 
+                }
+            }
+            
+            if (bestStat == null) {
+                continue;
+            }
+
+            if (bestStat_2nd == null) {
+                stats.add(bestStat);
+                //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                //        best.getImg1Point().getX(), best.getImg1Point().getY(),
+                //        best.getImg2Point().getX(), best.getImg2Point().getY(),
+                //        best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+            } else {
+                
+                //TODO: the ratio threshold may need to be revised.
+                // see Mikolajczyk and Schmid 2005 and the Brown & Lowe paper
+                
+                float ratio = bestStat.getSumIntensitySqDiff()/bestStat_2nd.getSumIntensitySqDiff();
+
+                //if (ratio < 0.8) {
+                if (ratio < 0.9) {
+                    stats.add(bestStat);
+                    //log.info(String.format("==>(%d,%d), (%d,%d)  %.1f  (%.1f)",
+                    //    best.getImg1Point().getX(), best.getImg1Point().getY(),
+                    //    best.getImg2Point().getX(), best.getImg2Point().getY(),
+                    //    best.getSumIntensitySqDiff(), best.getImg2PointIntensityErr()));
+                } else {
+                    rejectedBy2ndBest.add(bestStat);
+                }
+            }
+        }
+        
+        MiscStats.filterForDegeneracy(stats);
+                
+        assignInstanceResults(stats);
+        
+        return !stats.isEmpty();
+    }
+    
+    /**
      * match corners using the color descriptors
      * @param features1
      * @param features2
-     * @param cornersList1
-     * @param cornersList2
+     * @param pointList1
+     * @param pointList2
      * @param redImg1
      * @param greenImg1
      * @param blueImg1
@@ -309,7 +638,7 @@ public class CornerMatcher<T extends CornerRegion> {
     @SuppressWarnings({"unchecked"})
     public boolean matchCornersByBlobs(
         final IntensityClrFeatures features1, final IntensityClrFeatures features2,
-        final List<List<T>> cornersList1, final List<List<T>> cornersList2, 
+        final List<List<PairInt>> pointList1, final List<List<PairInt>> pointList2, 
         GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
         GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
         int binFactor1, int binFactor2) {
@@ -345,18 +674,18 @@ for (int i = 0; i < cornersList2.size(); ++i) {
         
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
-        for (int i = 0; i < cornersList1.size(); ++i) {
+        for (int i = 0; i < pointList1.size(); ++i) {
             
-            List<T> corners1 = cornersList1.get(i);
+            List<PairInt> points1 = pointList1.get(i);
             
             double bestCost = Double.MAX_VALUE;
             double bestCostSSD = Double.MAX_VALUE;
             int bestCostIdx2 = -1;
             List<FeatureComparisonStat> bestStats = new ArrayList<FeatureComparisonStat>();
             
-            for (int j = 0; j < cornersList2.size(); ++j) {
+            for (int j = 0; j < pointList2.size(); ++j) {
 
-                List<T> corners2 = cornersList2.get(j);
+                List<PairInt> points2 = pointList2.get(j);
 
                 // find the best match for each corners1 point, 
                 // then filter for degenerate
@@ -365,22 +694,23 @@ for (int i = 0; i < cornersList2.size(); ++i) {
                 
                 List<FeatureComparisonStat> bestList1 = new ArrayList<FeatureComparisonStat>();
                 
-                for (int ii = 0; ii < corners1.size(); ++ii) {
+                for (int ii = 0; ii < points1.size(); ++ii) {
                     
-                    T region1 = corners1.get(ii);
+                    PairInt point1 = points1.get(ii);
             
                     FeatureComparisonStat best1 = null;
 
-                    for (int jj = 0; jj < corners2.size(); ++jj) {
+                    for (int jj = 0; jj < points2.size(); ++jj) {
 
-                        T region2 = corners2.get(jj);
+                        PairInt point2 = points2.get(jj);
 
                         FeatureComparisonStat compStat = 
                             /*featureMatcher.findBestMatch(features1, features2, 
                                 region1, region2, redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2, dither);*/
                             featureMatcher.matchDescriptors(features1, features2, 
-                                region1, region2, redImg1, greenImg1, blueImg1, 
+                                point1.getX(), point1.getY(), point2.getX(), point2.getY(),
+                                redImg1, greenImg1, blueImg1, 
                                 redImg2, greenImg2, blueImg2);
                
                         if ((compStat == null) ||
@@ -433,173 +763,283 @@ for (int i = 0; i < cornersList2.size(); ++i) {
     }
     
     /**
-     * match corners using the color descriptors, but only the half of the 
-     * descriptors that is internal to its group's bounds.  The method is meant
-     * to explore avoiding the changing background behind objects that are 
-     * viewed from multiple perspectives or have moved in their reference frame.
-     * 
+     * compare each group of points to another to get the best matching
+     * features w/o close 2nd bests, then feed those to RANSAC to return
+     * a subset of inliers.  Each group from set1 has a best match if any
+     * from set2.  If the flag useBipartiteMatching is true, and if one
+     * group in set2 is matched more than once to a group in set1, only
+     * the best will be kept.
      * @param features1
      * @param features2
-     * @param keyPointsAndBounds1
-     * @param keyPointsAndBounds2
+     * @param kpab1
+     * @param kpab2
+     * @param img1
      * @param redImg1
      * @param greenImg1
      * @param blueImg1
+     * @param img2
      * @param redImg2
      * @param greenImg2
      * @param blueImg2
      * @param binFactor1
      * @param binFactor2
+     * @param useBipartiteMatching
      * @return 
+     * @throws java.security.NoSuchAlgorithmException thrown when the algorithm
+     * for the SecureRandom instance is not found.
      */
     @SuppressWarnings({"unchecked"})
-    public boolean matchCornersByBlobs(
+    public List<List<FeatureComparisonStat>> matchCornersByBlobsAndRANSAC(
         final IntensityClrFeatures features1, final IntensityClrFeatures features2,
-        final KeyPointsAndBounds keyPointsAndBounds1, 
-        final KeyPointsAndBounds keyPointsAndBounds2, 
-        GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
-        GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
-        int binFactor1, int binFactor2) {
+        final KeyPointsAndBounds kpab1, final KeyPointsAndBounds kpab2, 
+        ImageExt img1, GreyscaleImage redImg1, GreyscaleImage greenImg1, GreyscaleImage blueImg1, 
+        ImageExt img2, GreyscaleImage redImg2, GreyscaleImage greenImg2, GreyscaleImage blueImg2,
+        int binFactor1, int binFactor2, boolean useBipartiteMatching) 
+        throws NoSuchAlgorithmException {
 
         if (state != null) {
             resetDefaults();
         }
-/*        
-// Temporary debugging code        
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-log.info("blobs1:");
-for (int i = 0; i < cornersList1.size(); ++i) {
-    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList1.get(i));
+/*
+int dbgIdx1 = -1;        
+log.info("groups1:");
+for (int i = 0; i < kpab1.getBoundingRegions().getPerimeterList().size(); ++i) {
+    double[] xyCen = kpab1.getBoundingRegions().getBlobMedialAxes().getOriginalBlobXYCentroid(i);
     String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
-    if ((Math.abs(xyCen[0] - 68) < 15) && (Math.abs(xyCen[1] - 108) < 15)) {
+    if ((Math.abs(xyCen[0] - 267) < 15) && (Math.abs(xyCen[1] - 79) < 15)) {
         str = "**" + str;
+        dbgIdx1 = i;
     }
     log.info(str);
 }
-log.info("blobs2:");
-for (int i = 0; i < cornersList2.size(); ++i) {
-    double[] xyCen = curveHelper.calculateXYCentroids0(cornersList2.get(i));
+int dbgIdx2 = -1;
+log.info("groups2:");
+for (int i = 0; i < kpab2.getBoundingRegions().getPerimeterList().size(); ++i) {
+    double[] xyCen = kpab2.getBoundingRegions().getBlobMedialAxes().getOriginalBlobXYCentroid(i);
     String str = String.format("[%d] (%d,%d)", i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));
-    if ((Math.abs(xyCen[0] - 114) < 18) && (Math.abs(xyCen[1] - 118) < 15)) {
+    if ((Math.abs(xyCen[0] - 318) < 15) && (Math.abs(xyCen[1] - 147) < 15)) {
         str = "**" + str;
+        dbgIdx2 = i;
     }
     log.info(str);
 }
-*/       
+*/
         double deltaELimit = 20;
         
         CIEChromaticity cieC = new CIEChromaticity();
         
-        List<FeatureComparisonStat> stats = new ArrayList<FeatureComparisonStat>();
+        List<Set<PairInt>> keypoints1 = kpab1.getKeyPointGroups();
         
-        rejectedBy2ndBest.clear();
+        List<Set<PairInt>> keypoints2 = kpab2.getKeyPointGroups();
         
+        List<List<FeatureComparisonStat>> output = new ArrayList<List<FeatureComparisonStat>>();
+        Map<Integer, Integer> outputIndexes = new HashMap<Integer, Integer>();
+                
         FeatureMatcher featureMatcher = new FeatureMatcher();
 
-        for (int i = 0; i < keyPointsAndBounds1.getKeyPointGroups().size(); ++i) {
+        for (int i = 0; i < keypoints1.size(); ++i) {
             
-            Set<PairInt> keyPoints1 = keyPointsAndBounds1.getKeyPointGroups().get(i);
+            Set<PairInt> points1 = keypoints1.get(i);
             
-            float[] lab1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes().getLABColors(i);
-            double[] xyCen1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            float[] lab1 = kpab1.getBoundingRegions().getBlobMedialAxes().getLABColors(i);
             
             double bestCost = Double.MAX_VALUE;
             double bestCostSSD = Double.MAX_VALUE;
             int bestCostIdx2 = -1;
+            List<FeatureComparisonStat> bestStats = null;
             
-            List<FeatureComparisonStat> bestStats = new ArrayList<FeatureComparisonStat>();
-            
-            for (int j = 0; j < keyPointsAndBounds2.getKeyPointGroups().size(); ++j) {
-
-                float[] lab2 = keyPointsAndBounds2.getBoundingRegions().getBlobMedialAxes().getLABColors(j);
-                                
+            for (int j = 0; j < keypoints2.size(); ++j) {
+                
+                float[] lab2 = kpab2.getBoundingRegions().getBlobMedialAxes().getLABColors(j);
+                
                 double deltaE = cieC.calcDeltaECIE94(lab1, lab2);
                 
                 if (deltaE > deltaELimit) {
                     continue;
                 }
                 
-                Set<PairInt> keyPoints2 = keyPointsAndBounds2.getKeyPointGroups().get(j);
+                Set<PairInt> points2 = keypoints2.get(j);
                 
-                // find the best match for each corners1 point, 
-                // then filter for degenerate
-                // TODO: could consider consistent homology here, but that
-                // adds alot of computations.
+                // for reuse and quick lookups
+                Map<PairInt, PairInt> inliers1To2 = new HashMap<PairInt, PairInt>();
+                Set<PairInt> inliers2 = new HashSet<PairInt>();
+                List<FeatureComparisonStat> latestStats = null;
                 
-                List<FeatureComparisonStat> bestList1 = new ArrayList<FeatureComparisonStat>();
-                
-                for (PairInt keyPoint1 : keyPoints1) {
-                                
-                    FeatureComparisonStat best1 = null;
+                resetDefaults();
 
-                    for (PairInt keyPoint2 : keyPoints2) {
-
-                        /*
-                        FeatureComparisonStat compStat = 
-                            featureMatcher.matchHalfDescriptors(
-                                features1, features2, 
-                                keyPointsAndBounds1, i, keyPointsAndBounds2, j,
-                                keyPoint1, keyPoint2, 
-                                redImg1, greenImg1, blueImg1, 
-                                redImg2, greenImg2, blueImg2);
-                        */
-                        
-                        FeatureComparisonStat compStat = 
-                            featureMatcher.matchDescriptors(
-                                features1, features2, 
-                                keyPoint1.getX(), keyPoint1.getY(), 
-                                keyPoint2.getX(), keyPoint2.getY(),
-                                redImg1, greenImg1, blueImg1, 
-                                redImg2, greenImg2, blueImg2);
-                        
-                        if ((compStat == null) ||
-                            (compStat.getSumIntensitySqDiff() > compStat.getImg2PointIntensityErr())
-                            ) {
-                            continue;
-                        }
+                boolean useHalfDescriptors = false;
                 
-                        if (best1 == null) {
-                            best1 = compStat;
-                        } else if (compStat.getSumIntensitySqDiff() < best1.getSumIntensitySqDiff()) {
-                            best1 = compStat;
-                        }
+                int nIter = 0;
+                int nMaxIter = 1;
+                while ((nIter == 0) || (nIter < nMaxIter)) {
+                   
+                    // construct matching list from best matches 
+                    Set<PairInt> set1 = new HashSet<PairInt>(points1);
+                    Set<PairInt> set2 = new HashSet<PairInt>(points2);
+                    set1.removeAll(inliers1To2.keySet());
+                    set2.removeAll(inliers2);
+                    
+                    boolean matched0 = matchPoints(features1, features2,
+                        kpab1, i, kpab2, j,
+                        set1, set2, img1, redImg1, greenImg1, blueImg1,
+                        img2, redImg2, greenImg2, blueImg2,
+                        binFactor1, binFactor2, useHalfDescriptors);
+                        
+                    if (!matched0) {
+                        break;
                     }
-                    if (best1 != null) {
-                        bestList1.add(best1);
+                    
+                    // input to ransac will use inliers1To2 and results from mathPoints
+                    PairIntArray left = new PairIntArray(this.matched1.size() + inliers1To2.size());
+                    PairIntArray right = new PairIntArray(this.matched1.size() + inliers1To2.size());
+                    for (int ii = 0; ii < this.matched1.size(); ++ii) {
+                        PairInt p1 = this.matched1.get(ii);
+                        left.add(p1.getX(), p1.getY());
+                        PairInt p2 = this.matched2.get(ii);
+                        right.add(p2.getX(), p2.getY());
                     }
+                    for (Entry<PairInt, PairInt> entry : inliers1To2.entrySet()) {
+                        PairInt p1 = entry.getKey();
+                        left.add(p1.getX(), p1.getY());
+                        PairInt p2 = entry.getValue();
+                        right.add(p2.getX(), p2.getY());
+                    }
+                    
+                    if (left.getN() < 7) {
+                        break;
+                    }
+                                        
+                    PairIntArray outputLeftXY = new PairIntArray();
+                    PairIntArray outputRightXY = new PairIntArray();
+                    
+                    RANSACEpipolarWithFeaturesSolver solver = new RANSACEpipolarWithFeaturesSolver();
+                    
+                    EpipolarFeatureTransformationFit fit = solver.calculateEpipolarProjection(
+                        left, right, features1, features2, 
+                        kpab1, i, kpab2, j, 
+                        redImg1, greenImg1, blueImg1,
+                        redImg2, greenImg2, blueImg2,
+                        outputLeftXY, outputRightXY, useHalfDescriptors);
+                    
+                    if (fit == null) {
+                        break;
+                    }
+                    
+                    if (outputLeftXY.getN() <= inliers2.size()) {
+                        break;
+                    }
+                    inliers1To2.clear();
+                    inliers2.clear();
+
+                    for (int ii = 0; ii < outputLeftXY.getN(); ++ii) {
+                        PairInt p1 = new PairInt(outputLeftXY.getX(ii), outputLeftXY.getY(ii));
+                        PairInt p2 = new PairInt(outputRightXY.getX(ii), outputRightXY.getY(ii));
+                        inliers1To2.put(p1, p2);
+                        inliers2.add(p2);
+                    }
+                    
+                    latestStats = new ArrayList<FeatureComparisonStat>(fit.getFeatureComparisonStats());
+                    
+                    nIter++;
                 }
                 
-                MiscStats.filterForDegeneracy(bestList1);
-                
-                if (bestList1.isEmpty()) {
+                if (inliers1To2.isEmpty() || latestStats.isEmpty()) {
                     continue;
                 }
                 
-                double cost1 = 1./(double)bestList1.size();
-                double cost2 = MiscStats.calculateCombinedIntensityStat(bestList1);
+                double cost1 = 1./(double)latestStats.size();
+                double cost2 = MiscStats.calculateCombinedIntensityStat(latestStats);
                 double normCost = cost1 * cost2;
                 
                 if (normCost < bestCost) {
                     bestCost = normCost;
                     bestCostSSD = cost2;
-                    bestStats = bestList1;
+                    bestStats = latestStats;
                     bestCostIdx2 = j;
                 }
             }
             
-            if (bestStats.isEmpty()) {
-                continue;
+            if (bestStats == null) {
+                output.add(new ArrayList<FeatureComparisonStat>());
+            } else {
+                output.add(bestStats);
+                outputIndexes.put(Integer.valueOf(i), Integer.valueOf(bestCostIdx2));
+
+                if (true) {
+                    MiscDebug.plotImages(bestStats, redImg1.copyImage(), 
+                        redImg2.copyImage(), 2, "_" + i + "_" + bestCostIdx2 + "_");
+                    int z = 1;
+                }
             }
-            
-            stats.addAll(bestStats);
-            
         }
         
-        MiscStats.filterForDegeneracy(stats);
-                
-        assignInstanceResults(stats);
+        resetDefaults();
         
-        return !stats.isEmpty();
+        if (useBipartiteMatching) {
+            filterForDegeneracy(output, outputIndexes);
+        }
+        
+        removeEmptyItems(output);
+        
+        return output;
+    }
+    
+    private void filterForDegeneracy(List<List<FeatureComparisonStat>> stats, 
+        Map<Integer, Integer> outputIndexes) {
+
+        // reverse mapping of outputIndexes
+        Map<Integer, List<Integer>> index2To1Map = new HashMap<Integer, List<Integer>>();
+        
+        for (Entry<Integer, Integer> entry : outputIndexes.entrySet()) {
+            Integer index1 = entry.getKey();
+            Integer index2 = entry.getValue();
+            
+            List<Integer> indexes1 = index2To1Map.get(index2);
+            if (indexes1 == null) {
+                indexes1 = new ArrayList<Integer>();
+                index2To1Map.put(index2, indexes1);
+            }
+            indexes1.add(index1);
+        }
+        
+        for (Entry<Integer, List<Integer>> entry : index2To1Map.entrySet()) {
+            
+            List<Integer> indexes1 = entry.getValue();
+            if (indexes1.size() < 2) {
+                continue;
+            }
+            Integer index2 = entry.getKey();
+            
+            double minCost = Double.MAX_VALUE;
+            int minCostIdx1 = -1;
+            for (Integer index1 : indexes1) {
+                int idx1 = index1.intValue();
+                double cost = MiscStats.calculateCombinedIntensityStat(
+                    stats.get(idx1));
+                if (cost < minCost) {
+                    minCost = cost;
+                    minCostIdx1 = idx1;
+                }
+            }
+            
+            for (Integer index1 : indexes1) {
+                int idx1 = index1.intValue();
+                if (idx1 == minCostIdx1) {
+                    continue;
+                }
+                stats.get(idx1).clear();
+            }
+        }
+        
+    }
+    
+    private void removeEmptyItems(List<List<FeatureComparisonStat>> output) {
+        
+        for (int i = (output.size() - 1); i > -1; --i) {
+            if (output.get(i).isEmpty()) {
+                output.remove(i);
+            }
+        }
     }
     
     private void assignInstanceResults(List<FeatureComparisonStat> stats) {

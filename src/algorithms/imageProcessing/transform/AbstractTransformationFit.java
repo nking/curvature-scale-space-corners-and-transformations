@@ -136,6 +136,61 @@ public abstract class AbstractTransformationFit implements ITransformationFit {
         // these are equivalent
         return false;
     }
+    
+    /*
+     * compare to other by the number of inliers, else if tie, compares
+     * mean of errors, else if tie, compares mean of standard deviation of mean
+     * of errors, else returns false.
+     * @param other
+     * @return
+     */
+    @Override
+    public boolean isBetterByCost(ITransformationFit other) {
+        
+        if (other == null || !(other instanceof ITransformationFit)) {
+            return true;
+        }
+        
+        if (this.inlierIndexes.size() > other.getInlierIndexes().size()) {
+            return true;
+        } else if (this.inlierIndexes.size() < other.getInlierIndexes().size()) {
+            return false;
+        }
+        
+        double sumError = 0;
+        for (Double error : errors) {
+            sumError += error.doubleValue();
+        }
+        
+        double sumErrorOther = 0;
+        for (Double error : other.getErrors()) {
+            sumErrorOther += error.doubleValue();
+        }
+        
+        if (sumError < sumErrorOther) {
+            return true;
+        } else if (sumError > sumErrorOther) {
+            return false;
+        }
+        
+        if (this.inlierIndexes.size() > other.getInlierIndexes().size()) {
+            return true;
+        } else if (this.inlierIndexes.size() < other.getInlierIndexes().size()) {
+            return false;
+        }
+        
+        calculateErrorStatistics();
+        
+        other.calculateErrorStatistics();
+        if (stDevFromMean < other.getStDevFromMean()) {
+            return true;
+        } else if (stDevFromMean > other.getStDevFromMean()) {
+            return false;
+        }
+        
+        // these are equivalent
+        return false;
+    }
 
     @Override
     public List<Integer> getInlierIndexes() {

@@ -2886,4 +2886,24 @@ public class MiscellaneousCurveHelper {
         return new double[]{gX, gY};
     }
 
+    public double calculateArea(PairIntArray closedCurve) {
+        
+        int n = closedCurve.getN();
+        
+        double sum = 0;
+        
+        for (int i = 0; i < (n - 1); ++i) {
+            
+            double t = 0.5 * (closedCurve.getY(i + 1) + closedCurve.getY(i)) *
+                (closedCurve.getX(i + 1) - closedCurve.getX(i));
+            
+            sum += t;
+        }
+        
+        sum += ((closedCurve.getY(0) + closedCurve.getY(n - 1)) *
+                (closedCurve.getX(0) - closedCurve.getX(n -1)));
+        
+        return sum;
+    }
+
 }

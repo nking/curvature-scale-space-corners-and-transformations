@@ -1522,8 +1522,8 @@ int z1 = 1;
         }
     }
     
-    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
-        int yOffsetToApply, Image input) {
+    public static <T extends Collection<PairInt>> void addToImage(
+        T points, int xOffsetToApply, int yOffsetToApply, Image input) {
         
         if (points == null || input == null) {
             return;
@@ -1547,7 +1547,8 @@ int z1 = 1;
         }
     }
     
-    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
+    public static <T extends Collection<PairInt>> void addToImage(
+        T points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int rClr, int gClr, int bClr) throws 
         IOException {
         
@@ -1571,7 +1572,8 @@ int z1 = 1;
         }
     }
     
-    public static void addToImage(Set<PairInt> points, int xOffsetToApply, 
+    public static <T extends Collection<PairInt>> void addToImage(
+        T points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int nExtraForDot,
         int rClr, int gClr, int bClr) throws 
         IOException {

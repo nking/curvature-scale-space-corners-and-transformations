@@ -2049,4 +2049,20 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         
         assertTrue(outputNeighbors.iterator().next().equals(new PairInt(2, 3)));
     }
+    
+    public void calculateArea() throws Exception {
+        
+        PairIntArray closedCurve = new PairIntArray(4);
+        closedCurve.add(2, 2);
+        closedCurve.add(4, 2);
+        closedCurve.add(4, 4);
+        closedCurve.add(2, 4);
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        double area = curveHelper.calculateArea(closedCurve);
+        
+        assertTrue(Math.abs(area - 4) < 0.1);
+    }
+    
 }
