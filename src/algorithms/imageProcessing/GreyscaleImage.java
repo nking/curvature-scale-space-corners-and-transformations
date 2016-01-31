@@ -156,6 +156,7 @@ public class GreyscaleImage {
         
         if (type.equals(Type.Bits32) || type.equals(Type.Bits64)) {
             
+            // 255 is a datum and that's 8 bits
             datumNBits = 8;
             
             minAllowed = 0;
@@ -168,9 +169,10 @@ public class GreyscaleImage {
             
         } else {//if (type.equals(Type.Bits32Signed) || type.equals(Type.Bits64Signed)) {
             
+            // 512 is a datum and that's 9 bits
             datumNBits = 9;
             
-            minAllowed = -255;
+            minAllowed = -256;
         }
         
         itemNDatum = wordSize/datumNBits;
@@ -210,7 +212,7 @@ public class GreyscaleImage {
         if (!type.equals(Type.Bits32FullRangeInt)) {
             value -= minAllowed;
         }
-        
+                
         if (is64Bit) {
             long mask = (1L << datumNBits) - 1L;
             long total = 0;
@@ -218,7 +220,8 @@ public class GreyscaleImage {
                 total += ((value & mask) << (long)(i * datumNBits));
             }
             Arrays.fill(aL, total);
-            
+        } else if (type.equals(Type.Bits32FullRangeInt)) {
+            Arrays.fill(a, value);
         } else {
             int mask = (1 << datumNBits) - 1;
             int total = 0;
@@ -226,9 +229,8 @@ public class GreyscaleImage {
                 total += ((value & mask) << (i * datumNBits));
             }
             Arrays.fill(a, total);
-            
         }
-        
+              
     }
     
     /**
@@ -244,43 +246,9 @@ public class GreyscaleImage {
                 "factor has to be a positive number");
         }
         
-        if (is64Bit) {
-            long mask = (1L << datumNBits) - 1L;
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                long total = aL[elementIdx];
-                long total2 = 0;
-                for (int i = 0; i < itemNDatum; i++) {
-                    long v = (total >> (long)(i * datumNBits)) & mask;
-                    if (type.equals(Type.Bits32FullRangeInt)) {
-                        v = (long)(v * factor);
-                    } else {
-                        v += minAllowed;
-                        v = (long)(v * factor);
-                        v -= minAllowed;
-                    }
-                    total2 += ((v & mask) << (long)(i * datumNBits));
-                }
-                aL[elementIdx] = total2;
-            }
-            
-        } else {
-            int mask = (1 << datumNBits) - 1;
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                int total = a[elementIdx];
-                int total2 = 0;
-                for (int i = 0; i < itemNDatum; i++) {
-                    int v = (total >> (i * datumNBits)) & mask;
-                    if (type.equals(Type.Bits32FullRangeInt)) {
-                        v = (int)(v * factor);
-                    } else {
-                        v += minAllowed;
-                        v = (int)(v * factor);
-                        v -= minAllowed;
-                    }
-                    total2 += ((v & mask) << (i * datumNBits));
-                }
-                a[elementIdx] = total2;
-            }
+        for (int i = 0; i < getNPixels(); ++i) {
+            int v = Math.round(getValue(i)*factor);
+            setValue(i, v);
         }
         
     }
@@ -296,44 +264,9 @@ public class GreyscaleImage {
                 "number has to be a positive number");
         }
         
-        if (is64Bit) {
-            long mask = (1L << datumNBits) - 1L;
-            long f = number;
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                long total = aL[elementIdx];
-                long total2 = 0;
-                for (int i = 0; i < itemNDatum; i++) {
-                    long v = (total >> (long)(i * datumNBits)) & mask;
-                    if (type.equals(Type.Bits32FullRangeInt)) {
-                        v = v / f;
-                    } else {
-                        v += minAllowed;
-                        v = v / f;
-                        v -= minAllowed;
-                    }
-                    total2 += ((v & mask) << (long)(i * datumNBits));
-                }
-                aL[elementIdx] = total2;
-            }
-            
-        } else {
-            int mask = (1 << datumNBits) - 1;
-            for (int elementIdx = 0; elementIdx < len; ++elementIdx) {
-                int total = a[elementIdx];
-                int total2 = 0;
-                for (int i = 0; i < itemNDatum; i++) {
-                    int v = (total >> (i * datumNBits)) & mask;
-                    if (type.equals(Type.Bits32FullRangeInt)) {
-                        v = v / number;
-                    } else {
-                        v += minAllowed;
-                        v = v / number;
-                        v -= minAllowed;
-                    }
-                    total2 += ((v & mask) << (i * datumNBits));
-                }
-                a[elementIdx] = total2;
-            }
+        for (int i = 0; i < getNPixels(); ++i) {
+            int v = getValue(i)/number;
+            setValue(i, v);
         }
     }
     

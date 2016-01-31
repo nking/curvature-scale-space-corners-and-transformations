@@ -142,6 +142,51 @@ public class GreyscaleImageTest extends TestCase {
                 assertEquals(v*f, img.getValue(i, j));
             }
         }
+        
+        v = 255;
+        img = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits64Signed);
+        img.fill(v);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                assertEquals(v, img.getValue(i, j));
+            }
+        }
+    }
+    
+    public void testFill4() {
+        int w = 10;
+        int h = 10;
+        int v = -50;
+        GreyscaleImage img = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        img.fill(v);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                assertEquals(v, img.getValue(i, j));
+            }
+        }
+        
+        int f = 2;
+        img.multiply(f);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                assertEquals(v*f, img.getValue(i, j));
+            }
+        }
+        
+        v = 255;
+        img = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        img.fill(v);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                assertEquals(v, img.getValue(i, j));
+            }
+        }
     }
     
     public void testImageType0() throws Exception {
