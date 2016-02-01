@@ -263,7 +263,7 @@ public class CIEChromaticity {
      * http://en.wikipedia.org/wiki/CIE_1931_color_space
      * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
      * 
-     * expects r, g, b in range 0 to 255, inclusive.
+     * expects r, g, b in range 0 to 1.0, inclusive.
      * @param r
      * @param g
      * @param b
@@ -336,7 +336,7 @@ public class CIEChromaticity {
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * 
-     * range of values (0,0,0) to (28.512 3.276 2.146)
+     * range of return values is (0,0,0) to (28.512 3.276 2.146)
      * @param r
      * @param g
      * @param b
@@ -397,7 +397,6 @@ public class CIEChromaticity {
      * 
      * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
      * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
-     * for r=255, g=255, b=255, CIEXY is (1440.922, 1440.922, 1440.922)
      * @param r
      * @param g
      * @param b
@@ -449,8 +448,8 @@ public class CIEChromaticity {
      * 
      * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * 
-     * for r,g,b=(0,0,0)       returns (-16.0, 0.0, 0.0)
-     * for r,g,b=(255,255,255) returns (-16.0, 0.0, 0.0)
+     * for r,g,b=(0,0,0)       returns (0, 0, 0)
+     * for r,g,b=(255,255,255) returns (28.51, 3.28, 2.15)
      * 
      * @param cieXYZ
      * @return 
