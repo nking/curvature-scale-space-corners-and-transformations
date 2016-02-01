@@ -3058,85 +3058,17 @@ public class ImageProcessor {
      */
     public List<Set<PairInt>> makeMaskFromAdaptiveMedian(GreyscaleImage input,
         int lowerLimitSize, String debugLabel) {
-        
-        GreyscaleImage guideImg = input.copyImage();
-        
+                
         applyAdaptiveMeanThresholding(input, 1);
-        applyAdaptiveMeanThresholding(guideImg, 2);
         
         if (debugLabel != null && !debugLabel.equals("")) {
             MiscDebug.writeImage(input, "_adaptive_median_" + debugLabel);
-            MiscDebug.writeImage(guideImg, "_adaptive_median2_" + debugLabel);
         }
         
         int w = input.getWidth();
         int h = input.getHeight();
         
-        int[] dxs0, dys0;
-        
-        /*GreyscaleImage tmpImg = input.copyImage();
-        
-        // the edges are 0's
-        // fill gaps of size 1 with a 0
-        int[] dxs0 = new int[]{ 0,  1,  1,  1};
-        int[] dys0 = new int[]{-1, -1,  0,  1};
-        int[] dxs1 = new int[]{ 0, -1, -1, -1};
-        int[] dys1 = new int[]{ 1,  1,  0, -1};
-                
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                int v = input.getValue(i, j);
-                // looking for pixels that are > 0 between edges that are 0's
-                if (v == 0) {
-                    continue;
-                }
-               
-                //5  4  3
-                //6     2
-                //7  0  1
-                //
-                //if these 0's exist, set center to zero:
-                //   0,4
-                //   1,5
-                //   2,6
-                //   3,7
-                
-                for (int k = 0; k < dxs0.length; ++k) {
-                    int x1 = i + dxs0[k];
-                    int y1 = j + dys0[k];
-                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
-                        continue;
-                    }
-                    int v1 = input.getValue(x1, y1);
-                    if (v1 != 0) {
-                        continue;
-                    }
-                    
-                    int x2 = i + dxs1[k];
-                    int y2 = j + dys1[k];
-                    if (x2 < 0 || (x2 > (w - 1)) || y2 < 0 || (y2 > (h - 1))) {
-                        continue;
-                    }
-                    int v2 = input.getValue(x2, y2);
-                    if (v2 != 0) {
-                        continue;
-                    }
-                    //the center pixel is a gap in an edge of 0's
-                    tmpImg.setValue(i, j, 0);
-                }
-            }
-        }
-        
-        // gather the pixels with values > 0 and find contiguous groups
-        Set<PairInt> nonZeroPixels = new HashSet<PairInt>();
-        for (int i = 0; i < tmpImg.getNPixels(); ++i) {
-            int v = tmpImg.getValue(i);
-            if (v > 0) {
-                nonZeroPixels.add(new PairInt(tmpImg.getCol(i), tmpImg.getRow(i)));
-            }
-        }
-        */
-        // --------
+        int[] dxs0, dys0;      
         dxs0 = Misc.dx8;
         dys0 = Misc.dy8;
         GreyscaleImage tmpImg2 = input.copyImage();
@@ -3159,16 +3091,13 @@ public class ImageProcessor {
                 }
             }
         }
-        Set<PairInt> points = new HashSet<PairInt>();
+        
         // invert image
         for (int i = 0; i < tmpImg2.getNPixels(); ++i) {
             int v = tmpImg2.getValue(i);
-            if (v == 0) {
-                points.add(new PairInt(tmpImg2.getCol(i), tmpImg2.getRow(i)));
-            }
             tmpImg2.setValue(i, 255 - v);
         }
-        
+                
         WaterShed ws = new WaterShed();
         int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
         if (debugLabel != null && !debugLabel.equals("")) {

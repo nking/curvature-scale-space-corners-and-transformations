@@ -171,6 +171,25 @@ public class ImageExt extends Image {
         return cieY[internalIndex];
     }
     
+    public float[] getCIEXY_(int internalIndex) {
+        
+        if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
+            throw new IllegalArgumentException(
+                "internalIndex is out of bounds:");
+        }
+        
+        int rPix = getR(internalIndex);
+        int gPix = getG(internalIndex);
+        int bPix = getB(internalIndex);
+
+        // TODO: revisit this... should be using the normalized r,g,b method
+        // possibly the same for the HSB and YUV...
+        // _rgbToXYChromaticity
+        float[] xy = cieC.rgbToXYChromaticity(rPix, gPix, bPix);
+        
+        return xy;
+    }
+    
     public float getHue(int internalIndex) {
                 
         if ((internalIndex < 0) || (internalIndex > (nPixels - 1))) {
@@ -259,6 +278,9 @@ public class ImageExt extends Image {
         int gPix = getG(idx);
         int bPix = getB(idx);
 
+        // TODO: revisit this... should be using the normalized r,g,b method
+        // possibly the same for the HSB and YUV...
+        // _rgbToXYChromaticity
         float[] xy = cieC.rgbToXYChromaticity(rPix, gPix, bPix);
         
         cieX[idx] = xy[0];

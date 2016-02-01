@@ -236,6 +236,59 @@ public class CIEChromaticity {
         return new float[]{x, y};
     }
     
+    /**
+     * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
+     * 
+     * useful for more information:
+     * http://www.efg2.com/Lab/Graphics/Colors/Chromaticity.htm
+     * http://en.wikipedia.org/wiki/CIE_1931_color_space
+     * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+     * 
+     * expects r, g, b in range 0 to 255, inclusive.
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] _rgbToXYChromaticity(int r, int g, int b) {
+        
+        return _rgbToXYChromaticity((float)r/255.f, (float)g/255.f, (float)b/255.f); 
+    }
+    
+    /**
+     * convert from CIE XYZ 1931, to CIE XY chromaticity 1931.
+     * 
+     * useful for more information:
+     * http://www.efg2.com/Lab/Graphics/Colors/Chromaticity.htm
+     * http://en.wikipedia.org/wiki/CIE_1931_color_space
+     * http://hyperphysics.phy-astr.gsu.edu/hbase/vision/cie.html
+     * 
+     * expects r, g, b in range 0 to 255, inclusive.
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] _rgbToXYChromaticity(float r, float g, float b) {
+        
+        if ((r == 0) && (g == 0) && (b == 0)) {
+            // not really defined on the diagram since chromaticity is color
+            // without intensity.  since all 0's is the lack of all color
+            // will return 0,0, but it's N/A
+            return new float[]{0, 0};
+        }
+        
+        float[] capXYZ = _rgbToCIEXYZ(r, g, b);
+        
+        float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];
+        
+        float x = capXYZ[0]/zz;
+        
+        float y = capXYZ[1]/zz;
+        
+        return new float[]{x, y};
+    }
+    
     // NOTE: not thread safe:
     private float[] cieXYTmpHolder = new float[3];
     /**
@@ -283,6 +336,7 @@ public class CIEChromaticity {
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * 
+     * range of values (0,0,0) to (28.512 3.276 2.146)
      * @param r
      * @param g
      * @param b
@@ -290,17 +344,23 @@ public class CIEChromaticity {
      */
     public float[] rgbToCIELAB(int r, int g, int b) {
         
-        float[] a = rgbToCIEXYZ(r, g, b);
+        //range of values is (0,0,0) to (5.65, 5.65, 5.65)
+        float[] a = _rgbToCIEXYZ(r, g, b);
+        
+        // range of values (0,0,0) to (28.512 3.276 2.146)
         a = cieXYZToCIELAB(a);
+        
         return a;
     }
-    
     
     /**
      * convert rgb to CIE XYZ (1931).
      * 
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * 
+     * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
+     * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
+     * for r=255, g=255, b=255, CIEXY is (1440.922, 1440.922, 1440.922)
      * @param r
      * @param g
      * @param b
@@ -312,8 +372,69 @@ public class CIEChromaticity {
             | X |       1     | 0.49     0.31      0.20     |   | R |
             | Y | = --------- | 0.17697  0.81240   0.01063  | * | G |
             | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
+        
+        0.436  0.385  0.143
+        0.222  0.7169 0.0606
+        0.0139 0.097  0.7139
         */
         
+        float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;
+        
+        float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;
+        
+        float capZ = (0.01f * g + 0.99f * b)/0.17697f;
+        
+        return new float[]{capX, capY, capZ};
+    }
+    
+    /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * normalizes the r,g,b values to lie between 0 and 1.0 assuming the
+     * arguments are given as a range 0 to 255.
+     * 
+     * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
+     * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
+     * for r=255, g=255, b=255, CIEXY is (1440.922, 1440.922, 1440.922)
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] _rgbToCIEXYZ(int r, int g, int b) {
+        
+        return _rgbToCIEXYZ((float)r/255.f, (float)g/255.f, (float)b/255.f);
+    }
+    
+    /**
+     * convert rgb to CIE XYZ (1931).
+     * 
+     * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
+     * 
+     * expects r,g,b values between 0 and 1, inclusive.
+     * 
+     * for r=0, g=0, b=0, CIEXY is (0, 0, 0).
+     * for r=1, g=1, b=1, CIEXY is (5.65, 5.65, 5.65)
+     * @param r
+     * @param g
+     * @param b
+     * @return 
+     */
+    public float[] _rgbToCIEXYZ(float r, float g, float b) {
+        
+        /*        
+            | X |       1     | 0.49     0.31      0.20     |   | R |
+            | Y | = --------- | 0.17697  0.81240   0.01063  | * | G |
+            | Z |    0.17697  | 0.00     0.01      0.99     |   | B |
+        
+        D50 matrix:
+        0.436  0.385  0.143
+        0.222  0.7169 0.0606
+        0.0139 0.097  0.7139
+        */
+                
         float capX = (0.49f * r +  0.31f * g + 0.20f * b)/0.17697f;
         
         float capY = (0.17697f * r +  0.81240f * g + 0.01063f * b)/0.17697f;
@@ -327,6 +448,9 @@ public class CIEChromaticity {
      * convert CIE XYZ (1931) to CIE LAB.
      * 
      * uses https://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
+     * 
+     * for r,g,b=(0,0,0)       returns (-16.0, 0.0, 0.0)
+     * for r,g,b=(255,255,255) returns (-16.0, 0.0, 0.0)
      * 
      * @param cieXYZ
      * @return 
@@ -421,7 +545,9 @@ public class CIEChromaticity {
      * 
      * uses https://en.wikipedia.org/wiki/Color_difference
      * 
-     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3
+     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
+     * 
+     * the range of resulting values is 0 through 28.78.
      * 
      * @return deltaE 
      */
@@ -449,8 +575,13 @@ public class CIEChromaticity {
         double cA2 = Math.sqrt((a2*a2) + (b2*b2));
         double deltaCab = cA1 - cA2;
         
-        double deltaHab = Math.sqrt((deltaA*deltaA) + (deltaB*deltaB) -
-            (deltaCab*deltaCab));
+        double aa = (deltaA*deltaA) + (deltaB*deltaB) - (deltaCab*deltaCab);
+        double deltaHab;
+        if (aa < 1E-10) {
+            deltaHab = 0;
+        } else {
+            deltaHab = Math.sqrt(aa);
+        }
         
         double sL = 1;
         double sC = 1 + (K1*cA1);

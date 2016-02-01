@@ -271,6 +271,12 @@ public class WaterShedForPoints extends AbstractWaterShed {
         return labeled;
     }
 
+    /**
+     * returns a customized DAG for the Watershed class to store the connections 
+     * between a pixel and it's lower intensity neighbors, ordered by steepness.
+     * @param lowerCompleteIm
+     * @return 
+     */
     protected CustomWatershedDAG createLowerIntensityDAG(
         Map<PairInt, Integer> lowerCompleteIm) {
 

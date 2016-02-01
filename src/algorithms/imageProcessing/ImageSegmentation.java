@@ -3447,8 +3447,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 ha += 360.;
             }
             hueAngleImg.setValue(i, (int)Math.round(ha));
+
+            //TODO: replace w/ cached method
+            float[] cieXY = input.getCIEXY_(i);
             
-            float cieXYAngle = (float)(Math.atan(input.getCIEY(i)/input.getCIEX(i)) * 180. / Math.PI);
+            float cieXYAngle = (float)(Math.atan(cieXY[1]/cieXY[0]) * 180. / Math.PI);
             if (cieXYAngle < 0) {
                 cieXYAngle += 360.;
             }
@@ -3498,7 +3501,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }*/
         
         //TODO: revise for minimum size of contiguous pixels.
-        // it should be dependent upon image resolution, that is psf, 
+        // it should be dependent upon image resolution, that is PSF and the focal distance of objects 
+        // (the number of beams, that is psf diameters, across the object), 
         // but the number of pixels as image size is all the information available.
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
         int lowerLimitSize;
