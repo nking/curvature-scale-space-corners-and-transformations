@@ -965,11 +965,11 @@ for (int i = 0; i < kpab2.getBoundingRegions().getPerimeterList().size(); ++i) {
                 output.add(bestStats);
                 outputIndexes.put(Integer.valueOf(i), Integer.valueOf(bestCostIdx2));
 
-                if (true) {
+                /*
                     MiscDebug.plotImages(bestStats, redImg1.copyImage(), 
                         redImg2.copyImage(), 2, "_" + i + "_" + bestCostIdx2 + "_");
                     int z = 1;
-                }
+                */
             }
         }
         

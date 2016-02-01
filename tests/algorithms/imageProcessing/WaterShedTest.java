@@ -592,7 +592,9 @@ public class WaterShedTest extends TestCase {
             //"books_illum3_v6_695x555.png");
             //"house.gif");
             //"brown_lowe_2003_image1.jpg");
-            "checkerboard_02.jpg");
+            //"checkerboard_02.jpg");
+            //"android_statues_04.jpg");
+            "android_statues_02.jpg");
             //"brown_lowe_2003_image2.jpg");
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
@@ -627,21 +629,11 @@ public class WaterShedTest extends TestCase {
              img0 = imageProcessor.binImage(img0, binFactor);
              imageProcessor.applyAdaptiveMeanThresholding(img0, 20/binFactor);
         */
-        /*
-        GreyscaleImage img0 =
-            //imageProcessor.createGreyscaleFromColorSegmentation(img, 4);//4,8 Venturi, books;  3 or alt for bl2003?
-            img.copyToGreyscale();
-        imageProcessor.applyUsingKMPP(img0, 2);
-
-        img0 = imageProcessor.binImage(img0, binFactor);
-
-        //venturi: 2 or larger, then line thinner.  binning is okay
-        imageProcessor.applyAdaptiveMeanThresholding(img0, 2);//2// 15 for bl2003
-
-        ImageIOHelper.writeOutputImage(bin + "/test_thresh.png", img0);
-        */
         
         GreyscaleImage img0 = img.copyToGreyscale();
+        ////imageProcessor.blur(img0, SIGMA.ZEROPOINTFIVE, 0, 255);
+        //imageProcessor.applyAdaptiveMeanThresholding(img0, 1);
+                
         int w = img0.getWidth();
         int h = img0.getHeight();
         for (int i = 0; i < img0.getNPixels(); ++i) {
@@ -652,7 +644,9 @@ public class WaterShedTest extends TestCase {
                 img0.setValue(i, 255/v);
             }
         }
-
+        
+        ImageIOHelper.writeOutputImage(bin + "/ws_input.png", img0);
+        
         WaterShed ws = new WaterShed();
 
         int[][] labelled2 = ws.createLabelledImage(img0);

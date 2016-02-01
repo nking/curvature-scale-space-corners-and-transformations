@@ -9,11 +9,15 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -3045,7 +3049,314 @@ public class ImageProcessor {
 
         System.gc();
     }
+    
+    /**
+     * expects input of values that are 0 or 255 and the edges are values of '0'.
+     * @param input
+     * @param lowerLimitSize
+     * @return 
+     */
+    public List<Set<PairInt>> makeMaskFromAdaptiveMedian(GreyscaleImage input,
+        int lowerLimitSize, String debugLabel) {
+        
+        GreyscaleImage guideImg = input.copyImage();
+        
+        applyAdaptiveMeanThresholding(input, 1);
+        applyAdaptiveMeanThresholding(guideImg, 2);
+        
+        if (debugLabel != null && !debugLabel.equals("")) {
+            MiscDebug.writeImage(input, "_adaptive_median_" + debugLabel);
+            MiscDebug.writeImage(guideImg, "_adaptive_median2_" + debugLabel);
+        }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int[] dxs0, dys0;
+        
+        /*GreyscaleImage tmpImg = input.copyImage();
+        
+        // the edges are 0's
+        // fill gaps of size 1 with a 0
+        int[] dxs0 = new int[]{ 0,  1,  1,  1};
+        int[] dys0 = new int[]{-1, -1,  0,  1};
+        int[] dxs1 = new int[]{ 0, -1, -1, -1};
+        int[] dys1 = new int[]{ 1,  1,  0, -1};
+                
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = input.getValue(i, j);
+                // looking for pixels that are > 0 between edges that are 0's
+                if (v == 0) {
+                    continue;
+                }
+               
+                //5  4  3
+                //6     2
+                //7  0  1
+                //
+                //if these 0's exist, set center to zero:
+                //   0,4
+                //   1,5
+                //   2,6
+                //   3,7
+                
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    int v1 = input.getValue(x1, y1);
+                    if (v1 != 0) {
+                        continue;
+                    }
+                    
+                    int x2 = i + dxs1[k];
+                    int y2 = j + dys1[k];
+                    if (x2 < 0 || (x2 > (w - 1)) || y2 < 0 || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    int v2 = input.getValue(x2, y2);
+                    if (v2 != 0) {
+                        continue;
+                    }
+                    //the center pixel is a gap in an edge of 0's
+                    tmpImg.setValue(i, j, 0);
+                }
+            }
+        }
+        
+        // gather the pixels with values > 0 and find contiguous groups
+        Set<PairInt> nonZeroPixels = new HashSet<PairInt>();
+        for (int i = 0; i < tmpImg.getNPixels(); ++i) {
+            int v = tmpImg.getValue(i);
+            if (v > 0) {
+                nonZeroPixels.add(new PairInt(tmpImg.getCol(i), tmpImg.getRow(i)));
+            }
+        }
+        */
+        // --------
+        dxs0 = Misc.dx8;
+        dys0 = Misc.dy8;
+        GreyscaleImage tmpImg2 = input.copyImage();
+        // fill in gaps of size 1 flooded the whole image. invert afterwards had same result.
+        // increase the 0's by 1 pixel then invert is interesting. 
+        // where there is a '0', make all neighbors a '0':
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = input.getValue(i, j);
+                if (v != 0) {
+                    continue;
+                }
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    tmpImg2.setValue(x1, y1, 0);
+                }
+            }
+        }
+        Set<PairInt> points = new HashSet<PairInt>();
+        // invert image
+        for (int i = 0; i < tmpImg2.getNPixels(); ++i) {
+            int v = tmpImg2.getValue(i);
+            if (v == 0) {
+                points.add(new PairInt(tmpImg2.getCol(i), tmpImg2.getRow(i)));
+            }
+            tmpImg2.setValue(i, 255 - v);
+        }
+        
+        WaterShed ws = new WaterShed();
+        int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
+        if (debugLabel != null && !debugLabel.equals("")) {
+            GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
+            for (int j = 0; j < h; ++j) {
+                for (int i = 0; i < w; ++i) {
+                    int v = labelled[i][j];
+                    wsImg.setValue(i, j, v);
+                }
+            }
+            MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
+        }
+        Map<Integer, Set<PairInt>> valuePixelsMap = new HashMap<Integer, Set<PairInt>>();
+        for (int i = 0; i < labelled.length; ++i) {
+            for (int j = 0; j < labelled[i].length; ++j) {
+                int v = labelled[i][j];
+                if (v < 1) {
+                    continue;
+                }
+                Integer key = Integer.valueOf(v);
+                Set<PairInt> set = valuePixelsMap.get(key);
+                if (set == null) {
+                    set = new HashSet<PairInt>();
+                    valuePixelsMap.put(key, set);
+                }
+                set.add(new PairInt(i, j));
+            }
+        }
+        List<Set<PairInt>> outputWSLists = new ArrayList<Set<PairInt>>();
+        for (Entry<Integer, Set<PairInt>> entry : valuePixelsMap.entrySet()) {
+            Set<PairInt> set = entry.getValue();
+            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(lowerLimitSize);
+            finder.findConnectedPointGroups(set, w, h);                
+            int nGroups = finder.getNumberOfGroups();
+            for (int i = 0; i < nGroups; ++i) {
+                Set<PairInt> group = finder.getXY(i);
+                Set<PairInt> set2 = new HashSet<PairInt>(group);
+                outputWSLists.add(set2);
+            }
+        }
+        if (debugLabel != null && !debugLabel.equals("")) {
+            Set<PairInt> maskPixels = new HashSet<PairInt>();
+            for (Set<PairInt> set : outputWSLists) {
+                maskPixels.addAll(set);
+            }
+            Image maskImg = new Image(w, h);
+            for (PairInt p : maskPixels) {
+                maskImg.setRGB(p.getX(), p.getY(), 255, 255, 0);
+            }
+            MiscDebug.writeImage(maskImg, "_mask_ws_" + debugLabel);
+        }
+        //-------
+        
+        List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
+        
+        /*DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(lowerLimitSize);
+        finder.findConnectedPointGroups(nonZeroPixels, w, h);
+                
+        int nGroups = finder.getNumberOfGroups();
 
+        for (int i = 0; i < nGroups; ++i) {
+            Set<PairInt> group = finder.getXY(i);
+            Set<PairInt> set2 = new HashSet<PairInt>(group);
+            outputLists.add(set2);
+        }*/
+        
+        return outputLists;
+    }
+    
+    /**
+     * an algorithm that takes as input an image array of values and for
+     * each unique values larger than 0, searches for connected components with a lowerLimitSize
+     * and returns those as lists of pixels.
+     * The runtime complexity is due to a DFS traversal so is dependent upon
+     * the connectivity, that is O(|V| + |E|).
+     * @param input
+     * @param lowerLimitSize, the minimum length of a connected component to
+     * keep and return as an item in the results list.
+     * @return 
+     */
+    public List<Set<PairInt>> extractConnectedComponents(int[][] input,
+        int lowerLimitSize) {
+        
+        Map<Integer, Set<PairInt>> valuePixelsMap = new HashMap<Integer, Set<PairInt>>();
+        
+        int w = input.length;
+        int h = Integer.MIN_VALUE;
+        for (int i = 0; i < input.length; ++i) {
+            for (int j = 0; j < input[i].length; ++j) {
+                int v = input[i][j];
+                if (v < 1) {
+                    continue;
+                }
+                Integer key = Integer.valueOf(v);
+                Set<PairInt> set = valuePixelsMap.get(key);
+                if (set == null) {
+                    set = new HashSet<PairInt>();
+                    valuePixelsMap.put(key, set);
+                }
+                set.add(new PairInt(i, j));
+                if (input[i].length > h) {
+                    h = input[i].length;
+                }
+            }
+        }
+        
+        List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
+        
+        for (Entry<Integer, Set<PairInt>> entry : valuePixelsMap.entrySet()) {
+            
+            Set<PairInt> set = entry.getValue();
+            
+            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(lowerLimitSize);
+            finder.findConnectedPointGroups(set, w, h);
+                
+            int nGroups = finder.getNumberOfGroups();
+
+            for (int i = 0; i < nGroups; ++i) {
+                Set<PairInt> group = finder.getXY(i);
+                Set<PairInt> set2 = new HashSet<PairInt>(group);
+                outputLists.add(set2);
+            }
+        }
+        
+        return outputLists;
+    }
+        
+    /**
+     * an algorithm to operate on the results of adaptive mean algorithm,
+     * that is, expecting the input is all 0 or positive numbers, and that 
+     * the 0's are the segments that are searched to filter out the connected 
+     * segments shorter than lowerLimitSize.
+     * @param img
+     * @param lowerLimitSize, the minimum length of a connected component to
+     * keep and return as an item in the results list.
+     * @param mask
+     * @return 
+     */
+    public List<Set<PairInt>> extractConnectedComponents(GreyscaleImage img,
+        int lowerLimitSize, Set<PairInt> mask, int edgeValue) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img canot be null");
+        }
+        if (mask == null) {
+            throw new IllegalArgumentException(
+            "mask can be empty, but cannot be null");
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+                
+        // for input being adaptive mean, most pixels are 255, and the edges are '0'
+        // so we are looking for the edges not in the mask.
+        Set<PairInt> pixels = new HashSet<PairInt>();
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                if (v != edgeValue) {
+                    continue;
+                }
+                PairInt p = new PairInt(i, j);
+                if (!mask.contains(p)) {
+                    pixels.add(p);
+                }
+            }
+        }
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(lowerLimitSize);
+        finder.findConnectedPointGroups(pixels, w, h);
+        
+        List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
+        
+        int nGroups = finder.getNumberOfGroups();
+        
+        for (int i = 0; i < nGroups; ++i) {
+            Set<PairInt> group = finder.getXY(i);
+            Set<PairInt> set = new HashSet<PairInt>(group);
+            outputLists.add(set);
+        }
+     
+        return outputLists;
+    }
+    
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel.  The calculation starts at 0 and the end

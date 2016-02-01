@@ -3161,6 +3161,128 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         return img;
     }
 
+    public GreyscaleImage createCombinedWaveletBased(Image img) {
+        return createCombinedWaveletBased(img.copyRedToGreyscale(), 
+            img.copyGreenToGreyscale(), img.copyBlueToGreyscale());
+    }
+    
+    public GreyscaleImage createCombinedWaveletBased2(Image img) {
+        return createCombinedWaveletBased2(img.copyRedToGreyscale(), 
+            img.copyGreenToGreyscale(), img.copyBlueToGreyscale());
+    }
+    
+    public GreyscaleImage createCombinedWaveletBased(
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
+
+        boolean use1D = true;
+        GreyscaleImage rSegImg = createGreyscale5(rImg, use1D);
+        GreyscaleImage gSegImg = createGreyscale5(gImg, use1D);
+        GreyscaleImage bSegImg = createGreyscale5(bImg, use1D);
+
+        GreyscaleImage combined = rSegImg.copyImage();
+        for (int i = 0; i < rSegImg.getWidth(); ++i) {
+            for (int j = 0; j < rSegImg.getHeight(); ++j) {
+                int g = gSegImg.getValue(i, j);
+                int b = bSegImg.getValue(i, j);
+                if (g > 0) {
+                    combined.setValue(i, j, g);
+                } else if (b > 0) {
+                    combined.setValue(i, j, b);
+                }
+            }
+        }
+        return combined;
+    }
+    
+    public GreyscaleImage createCombinedWaveletBased2(
+        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
+
+        ATrousWaveletTransform wt = new ATrousWaveletTransform();
+        
+        GreyscaleImage coarsestCoeffR = null;
+        GreyscaleImage coarsestCoeffG = null; 
+        GreyscaleImage coarsestCoeffB = null;
+
+        for (int i = 0; i < 3; ++i) {
+            GreyscaleImage input;
+            if (i == 0) {
+                input = rImg;
+            } else if (i == 1) {
+                input = gImg;
+            } else {
+                input = bImg;
+            }
+            List<GreyscaleImage> transformed = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> coeffs = new ArrayList<GreyscaleImage>();
+            wt.calculateWithB3SplineScalingFunction(input, transformed, coeffs);
+            if (i == 0) {
+                coarsestCoeffR = coeffs.get(coeffs.size() - 1);
+            } else if (i == 1) {
+                coarsestCoeffG = coeffs.get(coeffs.size() - 1);
+            } else {
+                coarsestCoeffB = coeffs.get(coeffs.size() - 1);
+            }
+        }
+        
+        //TODO: determine top limit by frequency distr?
+        int limit = 3;
+        
+        Stack<Integer> stack = new Stack<Integer>();
+        
+        GreyscaleImage coarsestCombined = coarsestCoeffB.createWithDimensions();
+        
+        for (int i = 0; i < coarsestCoeffR.getNPixels(); ++i) {
+            int r = coarsestCoeffR.getValue(i);
+            int g = coarsestCoeffG.getValue(i);
+            int b = coarsestCoeffB.getValue(i);
+            if (r > limit || g > limit || b > limit) {
+                coarsestCombined.setValue(i, 250);
+                stack.add(Integer.valueOf(i));
+            }
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        int w = coarsestCombined.getWidth();
+        int h = coarsestCombined.getHeight();
+        
+        int lowerLimit = 0;
+        while (limit > lowerLimit) {
+            // use the canny edge 2-layer approach to pick up neighboring pixels
+            // at or above a lower limit
+
+            Set<Integer> visited = new HashSet<Integer>();
+            limit--;
+            while (!stack.isEmpty()) {
+                Integer pixIndex = stack.pop();
+                if (visited.contains(pixIndex)) {
+                    continue;
+                }
+                int x = coarsestCombined.getCol(pixIndex.intValue());
+                int y = coarsestCombined.getRow(pixIndex.intValue());
+                for (int i = 0; i < dxs.length; ++i) {
+                    int x2 = x + dxs[i];
+                    int y2 = y + dys[i];
+                    if (x2 < 0 || y2 < 0 || x2 > (w - 1) || y2 > (h - 1)) {
+                        continue;
+                    }
+                    int r = coarsestCoeffR.getValue(x2, y2);
+                    int g = coarsestCoeffG.getValue(x2, y2);
+                    int b = coarsestCoeffB.getValue(x2, y2);
+                    if (r > limit || g > limit || b > limit) {
+                        coarsestCombined.setValue(i, 250);
+                        stack.add(Integer.valueOf(i));
+                    }
+                }
+                visited.add(pixIndex);
+            }
+        }
+        
+        
+        
+        return coarsestCombined;
+    }
+
     /**
      * segmentation algorithm using an a trous wavelet transform.
      *
@@ -3286,6 +3408,213 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
 MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return img;
+    }
+    
+    /**
+     * 
+     * @param input
+     * @param debugLabel if null, no debug output is made, else output uses debugLabel
+     * as suffix in file names
+     */
+    public void extractObjectEdges(ImageExt input, String debugLabel, 
+        int originalImageWidth, int originalImageHeight) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage o1 = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        GreyscaleImage o2 = o1.createFullRangeIntWithDimensions();
+        GreyscaleImage o3 = o1.createFullRangeIntWithDimensions();
+        GreyscaleImage aImg = o1.createFullRangeIntWithDimensions();
+        GreyscaleImage bImg = o1.createFullRangeIntWithDimensions();
+        GreyscaleImage hueAngleImg = o1.createFullRangeIntWithDimensions();
+        GreyscaleImage cieXYAngleImg = o1.createFullRangeIntWithDimensions();
+        
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            int r = input.getR(i);
+            int g = input.getG(i);
+            int b = input.getB(i);
+            float[] lab = input.getCIELAB(i);
+            o1.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
+            o2.setValue(i, (int)Math.round((double)(r + g - 2*b)/Math.sqrt(6)));
+            o3.setValue(i, (int)Math.round((double)(r + g + b)/Math.sqrt(2)));
+            aImg.setValue(i, (int)Math.round(lab[1]));
+            bImg.setValue(i, (int)Math.round(lab[2]));
+            
+            float ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
+            if (ha < 0) {
+                ha += 360.;
+            }
+            hueAngleImg.setValue(i, (int)Math.round(ha));
+            
+            float cieXYAngle = (float)(Math.atan(input.getCIEY(i)/input.getCIEX(i)) * 180. / Math.PI);
+            if (cieXYAngle < 0) {
+                cieXYAngle += 360.;
+            }
+            cieXYAngleImg.setValue(i, (int)Math.round(cieXYAngle));
+        }
+        
+        HistogramEqualization hEq = new HistogramEqualization(aImg);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(bImg);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(hueAngleImg);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(cieXYAngleImg);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(o1);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(o1);
+        hEq.applyFilter();
+        hEq = new HistogramEqualization(o3);
+        hEq.applyFilter();
+        if (debugLabel != null && !debugLabel.equals("")) {
+            MiscDebug.writeImage(o1, "_o1_" + debugLabel);
+            MiscDebug.writeImage(o2, "_o2_" + debugLabel);
+            MiscDebug.writeImage(o3, "_o3_" + debugLabel);
+            MiscDebug.writeImage(aImg, "_a_" + debugLabel);
+            MiscDebug.writeImage(bImg, "_b_" + debugLabel);
+            MiscDebug.writeImage(hueAngleImg, "_ha_" + debugLabel);
+            MiscDebug.writeImage(cieXYAngleImg, "_ciexya_" + debugLabel);
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        imageProcessor.applyAdaptiveMeanThresholding(o1, 1);
+        imageProcessor.applyAdaptiveMeanThresholding(o2, 1);
+        imageProcessor.applyAdaptiveMeanThresholding(o3, 1);
+        
+        if (debugLabel != null && !debugLabel.equals("")) {
+            MiscDebug.writeImage(o1, "_o1_adaptive_median_" + debugLabel);
+            MiscDebug.writeImage(o2, "_o2_adaptive_median_" + debugLabel);
+            MiscDebug.writeImage(o3, "_o3_adaptive_median_" + debugLabel);
+        }
+                
+        /*
+        imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
+        if (debugLabel != null && !debugLabel.equals("")) {
+            MiscDebug.writeImage(aImg, "_a_adaptive_median_" + debugLabel);
+        }*/
+        
+        //TODO: revise for minimum size of contiguous pixels.
+        // it should be dependent upon image resolution, that is psf, 
+        // but the number of pixels as image size is all the information available.
+        int minDimension = Math.min(originalImageWidth, originalImageHeight);
+        int lowerLimitSize;
+        if (minDimension > 900) {
+            lowerLimitSize = 300;
+        } else if (minDimension < 200) {
+            lowerLimitSize = 100;
+        } else {
+            lowerLimitSize = 200;
+        } 
+        
+        //List<Set<PairInt>> maskList = imageProcessor.extractConnectedComponents(
+        //    labelled, lowerLimitSize);
+        
+        List<Set<PairInt>> maskList = imageProcessor.makeMaskFromAdaptiveMedian(
+            aImg, lowerLimitSize, "_a_"+ debugLabel);
+        
+        GreyscaleImage gsImg = input.copyToGreyscale();
+        hEq = new HistogramEqualization(gsImg);
+        hEq.applyFilter();
+                
+        Set<PairInt> maskPixels = new HashSet<PairInt>();
+        for (Set<PairInt> set : maskList) {
+            maskPixels.addAll(set);
+        }
+        
+        if (debugLabel != null && !debugLabel.equals("")) {
+            Image maskImg = new Image(w, h);
+            for (PairInt p : maskPixels) {
+                maskImg.setRGB(p.getX(), p.getY(), 255, 255, 0);
+            }
+            MiscDebug.writeImage(maskImg, "_mask_" + debugLabel);
+        }
+        
+        int lowerLimitEdges = 3;
+        int edgeValue = 0;
+        
+        List<Set<PairInt>> o3Edges = 
+            imageProcessor.extractConnectedComponents(o3, lowerLimitEdges,
+            maskPixels, edgeValue);
+        
+        List<Set<PairInt>> o2Edges = 
+            imageProcessor.extractConnectedComponents(o2, lowerLimitEdges,
+            maskPixels, edgeValue);
+        
+        List<Set<PairInt>> o1Edges = 
+            imageProcessor.extractConnectedComponents(o1, lowerLimitEdges,
+            maskPixels, edgeValue);
+        
+        GreyscaleImage combined = o1.createWithDimensions();
+        combined.fill(255);
+        for (Set<PairInt> set : o1Edges) {
+            for (PairInt p : set) {
+                combined.setValue(p.getX(), p.getY(), 0);
+            }
+        }
+        for (Set<PairInt> set : o2Edges) {
+            for (PairInt p : set) {
+                combined.setValue(p.getX(), p.getY(), 0);
+            }
+        }
+        for (Set<PairInt> set : o3Edges) {
+            for (PairInt p : set) {
+                combined.setValue(p.getX(), p.getY(), 0);
+            }
+        }
+        for (Set<PairInt> set : maskList) {
+            for (PairInt p : set) {
+                combined.setValue(p.getX(), p.getY(), 126);
+            }
+        }
+        
+        if (debugLabel != null && !debugLabel.equals("")) {
+            
+            MiscDebug.writeImage(combined, "_o_combined_" + debugLabel);
+             
+            //createWithDimensions
+            o1 = o1.createFullRangeIntWithDimensions();
+            o2 = o1.createFullRangeIntWithDimensions();
+            o3 = o1.createFullRangeIntWithDimensions();
+            o1.fill(255);
+            o2.fill(255);
+            o3.fill(255);
+            for (Set<PairInt> set : o1Edges) {
+                for (PairInt p : set) {
+                    o1.setValue(p.getX(), p.getY(), 0);
+                }
+            }
+            for (Set<PairInt> set : o2Edges) {
+                for (PairInt p : set) {
+                    o2.setValue(p.getX(), p.getY(), 0);
+                }
+            }
+            for (Set<PairInt> set : o3Edges) {
+                for (PairInt p : set) {
+                    o3.setValue(p.getX(), p.getY(), 0);
+                }
+            }
+            for (Set<PairInt> set : maskList) {
+                for (PairInt p : set) {
+                    o1.setValue(p.getX(), p.getY(), 126);
+                    o2.setValue(p.getX(), p.getY(), 126);
+                    o3.setValue(p.getX(), p.getY(), 126);
+                }
+            }
+            
+            MiscDebug.writeImage(o1, "_o1_filtered_" + debugLabel);
+            MiscDebug.writeImage(o2, "_o2_filtered_" + debugLabel);
+            MiscDebug.writeImage(o3, "_o3_filtered_" + debugLabel);
+        }
+        
+        CannyEdgeFilter filter = new CannyEdgeFilter();
+        filter.doNotPerformHistogramEqualization();
+        filter.applyFilter(input.copyToGreyscale());
+        EdgeFilterProducts ep = filter.getEdgeFilterProducts();
+        MiscDebug.writeImage(ep.getGradientXY(), "_edges_" + debugLabel);
     }
 
     protected Map<PairInt, Float> createPolarCIEXYMap(ImageExt input,

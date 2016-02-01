@@ -582,35 +582,13 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         return corners;
     }
 
-    private GreyscaleImage createCombinedSegmentation0(
-        GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
-
-        boolean use1D = true;
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        GreyscaleImage rSegImg = imageSegmentation.createGreyscale5(rImg, use1D);
-        GreyscaleImage gSegImg = imageSegmentation.createGreyscale5(gImg, use1D);
-        GreyscaleImage bSegImg = imageSegmentation.createGreyscale5(bImg, use1D);
-
-        GreyscaleImage combined = rSegImg.copyImage();
-        for (int i = 0; i < rSegImg.getWidth(); ++i) {
-            for (int j = 0; j < rSegImg.getHeight(); ++j) {
-                int g = gSegImg.getValue(i, j);
-                int b = bSegImg.getValue(i, j);
-                if (g > 0) {
-                    combined.setValue(i, j, g);
-                } else if (b > 0) {
-                    combined.setValue(i, j, b);
-                }
-            }
-        }
-        return combined;
-    }
-
     private Set<PairInt> filterPointsBySegmentation0(
         GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg,
         Set<PairInt> pixels, String lbl) {
 
-        GreyscaleImage segImg = createCombinedSegmentation0(rImg, gImg, bImg);
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        GreyscaleImage segImg = imageSegmentation.createCombinedWaveletBased(rImg, gImg, bImg);
 
         if (settings.debug()) {
             long ts = MiscDebug.getCurrentTimeFormatted();
@@ -801,7 +779,9 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         // for items in highDensityLargeGroups, will reduce them to only those
         // co-spatial with a segmentation point
         
-        GreyscaleImage segImg = createCombinedSegmentation0(rImg, gImg, bImg);
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        GreyscaleImage segImg = imageSegmentation.createCombinedWaveletBased(rImg, gImg, bImg);
 
         if (settings.debug()) {
             
