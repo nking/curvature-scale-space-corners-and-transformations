@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.SegmentedCellMerger;
 import algorithms.imageProcessing.WaterShed;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -147,11 +148,23 @@ public class AndroidStatuesTest extends TestCase {
         //createTmpImages(img1Binned, "_1_binned");
         //createTmpImages(img2Binned, "_2_binned");
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        imageSegmentation.extractObjectEdges(img1Binned, "_" + fileName1Root + "_1_binned", 
+        /*imageSegmentation.extractObjectEdges(img1Binned, "_" + fileName1Root + "_1_binned", 
             img1.getWidth(), img1.getHeight());
         imageSegmentation.extractObjectEdges(img2Binned, "_" + fileName2Root + "_2_binned",
             img2.getWidth(), img2.getHeight());
+        */        
         
+        GreyscaleImage img1Ws = imageSegmentation.createAWatershed(img1Binned, 
+            "_" + fileName1Root + "_1_binned",
+            img1.getWidth(), img1.getHeight());
+                
+        SegmentedCellMerger scm = new SegmentedCellMerger(img1Binned, img1Ws,
+            0, "_" + fileName1Root + "_1_binned");
+        scm.merge();
+        
+if (true) {
+    System.exit(1);
+}
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();
             params90.setRotationInDegrees(90);
@@ -421,173 +434,4 @@ public class AndroidStatuesTest extends TestCase {
         }
      }
 
-    private void createTmpImages(ImageExt img1, String lbl) {
-        
-        // O1 is (R-G)/sqrt(2)
-        // O2 (R+G-2B)/sqrt(6)
-        // O3 (R+G+B)/sqrt(2)
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        GreyscaleImage rImg1 = img1.copyRedToGreyscale();
-        GreyscaleImage gImg1 = img1.copyGreenToGreyscale();
-        GreyscaleImage bImg1 = img1.copyBlueToGreyscale();
-        GreyscaleImage o1 = rImg1.createFullRangeIntWithDimensions();
-        GreyscaleImage o2 = rImg1.createFullRangeIntWithDimensions();
-        GreyscaleImage o3 = rImg1.createFullRangeIntWithDimensions();
-        GreyscaleImage lImg = rImg1.createFullRangeIntWithDimensions();
-        GreyscaleImage aImg = rImg1.createFullRangeIntWithDimensions();
-        GreyscaleImage bImg = rImg1.createFullRangeIntWithDimensions();
-        // finding mode of l, a, and b in order to make a deltaE image
-        float[] ls = new float[rImg1.getNPixels()];
-        float[] as = new float[rImg1.getNPixels()];
-        float[] bs = new float[rImg1.getNPixels()];
-        float[] hueAngle = new float[rImg1.getNPixels()];
-        float[] cieXYAngle = new float[rImg1.getNPixels()];
-        for (int i = 0; i < rImg1.getNPixels(); ++i) {
-            int r = rImg1.getValue(i);
-            int g = gImg1.getValue(i);
-            int b = bImg1.getValue(i);
-            o1.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
-            o2.setValue(i, (int)Math.round((double)(r + g - 2*b)/Math.sqrt(6)));
-            o3.setValue(i, (int)Math.round((double)(r + g + b)/Math.sqrt(2)));
-            float[] lab = cieC.rgbToCIELAB(r, g, b);
-            lImg.setValue(i, (int)Math.round(lab[0]));
-            aImg.setValue(i, (int)Math.round(lab[1]));
-            bImg.setValue(i, (int)Math.round(lab[2]));
-            ls[i] = lab[0];
-            as[i] = lab[1];
-            bs[i] = lab[2];
-            cieXYAngle[i] = (float)(Math.atan(img1.getCIEY(i)/img1.getCIEX(i)) * 180. / Math.PI);
-            if (cieXYAngle[i] < 0) {
-                cieXYAngle[i] += 360.;
-            }
-            hueAngle[i] = (float)(Math.atan(bs[i]/as[i]) * 180. / Math.PI);
-            if (hueAngle[i] < 0) {
-                hueAngle[i] += 360.;
-            }
-        }
-        HistogramEqualization hEq = new HistogramEqualization(o1);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(o2);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(o3);
-        hEq.applyFilter();
-        MiscDebug.writeImage(o1, "_o1_" + lbl);
-        MiscDebug.writeImage(o2, "_o2_" + lbl);
-        MiscDebug.writeImage(o3, "_o3_" + lbl);
-        
-        GreyscaleImage o3MinusO2 = rImg1.createFullRangeIntWithDimensions();
-        for (int i = 0; i < rImg1.getNPixels(); ++i) {
-            o3MinusO2.setValue(i, o3.getValue(i) - o2.getValue(i));
-        }
-        hEq = new HistogramEqualization(o3MinusO2);
-        hEq.applyFilter();
-        MiscDebug.writeImage(o3MinusO2, "_o3MinusO2" + lbl);
-        
-        Arrays.sort(ls);
-        Arrays.sort(as);
-        Arrays.sort(bs);
-        float medianL = ls[ls.length/2];
-        float medianA = as[ls.length/2];
-        float medianB = bs[ls.length/2];
-        GreyscaleImage deltaEImg = rImg1.createFullRangeIntWithDimensions();
-        for (int i = 0; i < rImg1.getNPixels(); ++i) {
-            float l1 = lImg.getValue(i);
-            float a1 = aImg.getValue(i);
-            float b1 = bImg.getValue(i);
-            double deltaE = cieC.calcDeltaECIE94(l1, a1, b1, medianL, medianA, 
-                medianB);
-            deltaEImg.setValue(i, (int)Math.round(deltaE));
-        }
-        
-        hEq = new HistogramEqualization(lImg);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(aImg);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(bImg);
-        hEq.applyFilter();
-        hEq = new HistogramEqualization(deltaEImg);
-        hEq.applyFilter();
-        
-        MiscDebug.writeImage(lImg, "_l_" + lbl);
-        MiscDebug.writeImage(aImg, "_a_" + lbl);
-        MiscDebug.writeImage(bImg, "_b_" + lbl);
-        MiscDebug.writeImage(bImg, "_deltaE_" + lbl);    
-        
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        GreyscaleImage segImg = imageSegmentation.createGreyscale5(bImg, true);
-        MiscDebug.writeImage(segImg, "_b_seg_" + lbl);
-                
-        WaterShed ws = new WaterShed();
-        int[][] labelled1 = ws.createLabelledImage(aImg.copyImage());
-        GreyscaleImage wsImg1 = new GreyscaleImage(aImg.getWidth(), aImg.getHeight(),
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        for (int j = 0; j < aImg.getHeight(); ++j) {
-            for (int i = 0; i < aImg.getWidth(); ++i) {
-                int v = labelled1[i][j];
-                wsImg1.setValue(i, j, v);
-            }
-        }
-        MiscDebug.writeImage(wsImg1, "_a_watershed_" + lbl);
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        GreyscaleImage aImgAM = aImg.copyImage();
-        imageProcessor.applyAdaptiveMeanThresholding(aImgAM, 1);
-        MiscDebug.writeImage(aImgAM, "_a_adaptive_median_" + lbl);
-        
-        GreyscaleImage bImgAM = bImg.copyImage();
-        imageProcessor.applyAdaptiveMeanThresholding(bImgAM, 1);
-        MiscDebug.writeImage(bImgAM, "_b_adaptive_median_" + lbl);
-        
-
-        ws = new WaterShed();
-        labelled1 = ws.createLabelledImage(o1.copyImage());
-        wsImg1 = new GreyscaleImage(o1.getWidth(), o1.getHeight(),
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        for (int j = 0; j < o1.getHeight(); ++j) {
-            for (int i = 0; i < o1.getWidth(); ++i) {
-                int v = labelled1[i][j];
-                wsImg1.setValue(i, j, v);
-            }
-        }
-        MiscDebug.writeImage(wsImg1, "_o1_watershed_" + lbl);
-
-        GreyscaleImage o1AM = o1.copyImage();
-        imageProcessor.applyAdaptiveMeanThresholding(o1AM, 1);
-        MiscDebug.writeImage(o1AM, "_o1_adaptive_median_" + lbl);
-        
-        
-        ws = new WaterShed();
-        labelled1 = ws.createLabelledImage(o2.copyImage());
-        wsImg1 = new GreyscaleImage(o2.getWidth(), o2.getHeight(),
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        for (int j = 0; j < o2.getHeight(); ++j) {
-            for (int i = 0; i < o2.getWidth(); ++i) {
-                int v = labelled1[i][j];
-                wsImg1.setValue(i, j, v);
-            }
-        }
-        MiscDebug.writeImage(wsImg1, "_o2_watershed_" + lbl);
-
-        GreyscaleImage o2AM = o2.copyImage();
-        imageProcessor.applyAdaptiveMeanThresholding(o2AM, 1);
-        MiscDebug.writeImage(o2AM, "_o2_adaptive_median_" + lbl);
-        
-         
-        ws = new WaterShed();
-        labelled1 = ws.createLabelledImage(o3.copyImage());
-        wsImg1 = new GreyscaleImage(o3.getWidth(), o3.getHeight(),
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        for (int j = 0; j < o3.getHeight(); ++j) {
-            for (int i = 0; i < o3.getWidth(); ++i) {
-                int v = labelled1[i][j];
-                wsImg1.setValue(i, j, v);
-            }
-        }
-        MiscDebug.writeImage(wsImg1, "_o3_watershed_" + lbl);
-
-        GreyscaleImage o3AM = o3.copyImage();
-        imageProcessor.applyAdaptiveMeanThresholding(o3AM, 1);
-        MiscDebug.writeImage(o3AM, "_o3_adaptive_median_" + lbl);
-    }
 }

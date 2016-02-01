@@ -3051,12 +3051,11 @@ public class ImageProcessor {
     }
     
     /**
-     * expects input of values that are 0 or 255 and the edges are values of '0'.
      * @param input
      * @param lowerLimitSize
      * @return 
      */
-    public List<Set<PairInt>> makeMaskFromAdaptiveMedian(GreyscaleImage input,
+    public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input,
         int lowerLimitSize, String debugLabel) {
                 
         applyAdaptiveMeanThresholding(input, 1);
@@ -3100,73 +3099,16 @@ public class ImageProcessor {
                 
         WaterShed ws = new WaterShed();
         int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
-        if (debugLabel != null && !debugLabel.equals("")) {
-            GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
-            for (int j = 0; j < h; ++j) {
-                for (int i = 0; i < w; ++i) {
-                    int v = labelled[i][j];
-                    wsImg.setValue(i, j, v);
-                }
-            }
-            MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
-        }
-        Map<Integer, Set<PairInt>> valuePixelsMap = new HashMap<Integer, Set<PairInt>>();
-        for (int i = 0; i < labelled.length; ++i) {
-            for (int j = 0; j < labelled[i].length; ++j) {
+        GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
                 int v = labelled[i][j];
-                if (v < 1) {
-                    continue;
-                }
-                Integer key = Integer.valueOf(v);
-                Set<PairInt> set = valuePixelsMap.get(key);
-                if (set == null) {
-                    set = new HashSet<PairInt>();
-                    valuePixelsMap.put(key, set);
-                }
-                set.add(new PairInt(i, j));
+                wsImg.setValue(i, j, v);
             }
         }
-        List<Set<PairInt>> outputWSLists = new ArrayList<Set<PairInt>>();
-        for (Entry<Integer, Set<PairInt>> entry : valuePixelsMap.entrySet()) {
-            Set<PairInt> set = entry.getValue();
-            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-            finder.setMinimumNumberInCluster(lowerLimitSize);
-            finder.findConnectedPointGroups(set, w, h);                
-            int nGroups = finder.getNumberOfGroups();
-            for (int i = 0; i < nGroups; ++i) {
-                Set<PairInt> group = finder.getXY(i);
-                Set<PairInt> set2 = new HashSet<PairInt>(group);
-                outputWSLists.add(set2);
-            }
-        }
-        if (debugLabel != null && !debugLabel.equals("")) {
-            Set<PairInt> maskPixels = new HashSet<PairInt>();
-            for (Set<PairInt> set : outputWSLists) {
-                maskPixels.addAll(set);
-            }
-            Image maskImg = new Image(w, h);
-            for (PairInt p : maskPixels) {
-                maskImg.setRGB(p.getX(), p.getY(), 255, 255, 0);
-            }
-            MiscDebug.writeImage(maskImg, "_mask_ws_" + debugLabel);
-        }
-        //-------
+        MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
         
-        List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
-        
-        /*DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-        finder.setMinimumNumberInCluster(lowerLimitSize);
-        finder.findConnectedPointGroups(nonZeroPixels, w, h);
-                
-        int nGroups = finder.getNumberOfGroups();
-
-        for (int i = 0; i < nGroups; ++i) {
-            Set<PairInt> group = finder.getXY(i);
-            Set<PairInt> set2 = new HashSet<PairInt>(group);
-            outputLists.add(set2);
-        }*/
-        
-        return outputLists;
+        return wsImg;
     }
     
     /**

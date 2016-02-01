@@ -95,24 +95,6 @@ public class BlobsAndPerimeters {
         
         removeRedundantBlobs(outputBlobs);
 
-        if (true) {
-            Image img0 = ImageIOHelper.convertImage(segImg);
-            int c = 0;
-            for (int i = 0; i < outputBlobs.size(); ++i) {
-                Set<PairInt> blobSet = outputBlobs.get(i);
-                int clr = ImageIOHelper.getNextColorRGB(c);
-                for (PairInt p : blobSet) {
-                    int x = p.getX();
-                    int y = p.getY();
-                    ImageIOHelper.addPointToImage(x, y, img0, 0, clr);
-                }
-                c++;
-            }
-
-            MiscDebug.writeImage(img0, "blobs_" + debugTag
-                + "_" + MiscDebug.getCurrentTimeFormatted());
-        }
-
         return outputBlobs;
     }
    

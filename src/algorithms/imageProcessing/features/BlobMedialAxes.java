@@ -89,6 +89,10 @@ public class BlobMedialAxes {
         }
     }
     
+    public int getNumberOfItems() {
+        return xyCentroids.length;
+    }
+    
     public PairInt findClosestPoint(int index, int x, int y) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {

@@ -3410,6 +3410,44 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return img;
     }
     
+    public GreyscaleImage createAWatershed(ImageExt input, String debugTag,
+        int originalImageWidth, int originalImageHeight) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        GreyscaleImage aImg = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            float[] lab = input.getCIELAB(i);
+            aImg.setValue(i, Math.round(lab[1]));
+        }
+        
+        HistogramEqualization hEq = new HistogramEqualization(aImg);
+        hEq.applyFilter();
+        
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(aImg, "_a_" + debugTag);
+        }
+                
+        int minDimension = Math.min(originalImageWidth, originalImageHeight);
+        int lowerLimitSize;
+        if (minDimension > 900) {
+            lowerLimitSize = 300;
+        } else if (minDimension < 200) {
+            lowerLimitSize = 100;
+        } else {
+            lowerLimitSize = 200;
+        } 
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg, 
+            lowerLimitSize, debugTag);
+            
+        return ws;
+    }
+    
     /**
      * 
      * @param input
@@ -3439,14 +3477,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             o1.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
             o2.setValue(i, (int)Math.round((double)(r + g - 2*b)/Math.sqrt(6)));
             o3.setValue(i, (int)Math.round((double)(r + g + b)/Math.sqrt(2)));
-            aImg.setValue(i, (int)Math.round(lab[1]));
-            bImg.setValue(i, (int)Math.round(lab[2]));
+            aImg.setValue(i, Math.round(lab[1]));
+            bImg.setValue(i, Math.round(lab[2]));
             
             float ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
             if (ha < 0) {
                 ha += 360.;
             }
-            hueAngleImg.setValue(i, (int)Math.round(ha));
+            hueAngleImg.setValue(i, Math.round(ha));
 
             //TODO: replace w/ cached method
             float[] cieXY = input.getCIEXY_(i);
@@ -3455,7 +3493,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             if (cieXYAngle < 0) {
                 cieXYAngle += 360.;
             }
-            cieXYAngleImg.setValue(i, (int)Math.round(cieXYAngle));
+            cieXYAngleImg.setValue(i, Math.round(cieXYAngle));
         }
         
         HistogramEqualization hEq = new HistogramEqualization(aImg);
@@ -3517,102 +3555,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //List<Set<PairInt>> maskList = imageProcessor.extractConnectedComponents(
         //    labelled, lowerLimitSize);
         
-        List<Set<PairInt>> maskList = imageProcessor.makeMaskFromAdaptiveMedian(
+        GreyscaleImage aWSImg = imageProcessor.makeWatershedFromAdaptiveMedian(
             aImg, lowerLimitSize, "_a_"+ debugLabel);
-        
-        GreyscaleImage gsImg = input.copyToGreyscale();
-        hEq = new HistogramEqualization(gsImg);
-        hEq.applyFilter();
-                
-        Set<PairInt> maskPixels = new HashSet<PairInt>();
-        for (Set<PairInt> set : maskList) {
-            maskPixels.addAll(set);
-        }
-        
-        if (debugLabel != null && !debugLabel.equals("")) {
-            Image maskImg = new Image(w, h);
-            for (PairInt p : maskPixels) {
-                maskImg.setRGB(p.getX(), p.getY(), 255, 255, 0);
-            }
-            MiscDebug.writeImage(maskImg, "_mask_" + debugLabel);
-        }
-        
-        int lowerLimitEdges = 3;
-        int edgeValue = 0;
-        
-        List<Set<PairInt>> o3Edges = 
-            imageProcessor.extractConnectedComponents(o3, lowerLimitEdges,
-            maskPixels, edgeValue);
-        
-        List<Set<PairInt>> o2Edges = 
-            imageProcessor.extractConnectedComponents(o2, lowerLimitEdges,
-            maskPixels, edgeValue);
-        
-        List<Set<PairInt>> o1Edges = 
-            imageProcessor.extractConnectedComponents(o1, lowerLimitEdges,
-            maskPixels, edgeValue);
-        
-        GreyscaleImage combined = o1.createWithDimensions();
-        combined.fill(255);
-        for (Set<PairInt> set : o1Edges) {
-            for (PairInt p : set) {
-                combined.setValue(p.getX(), p.getY(), 0);
-            }
-        }
-        for (Set<PairInt> set : o2Edges) {
-            for (PairInt p : set) {
-                combined.setValue(p.getX(), p.getY(), 0);
-            }
-        }
-        for (Set<PairInt> set : o3Edges) {
-            for (PairInt p : set) {
-                combined.setValue(p.getX(), p.getY(), 0);
-            }
-        }
-        for (Set<PairInt> set : maskList) {
-            for (PairInt p : set) {
-                combined.setValue(p.getX(), p.getY(), 126);
-            }
-        }
-        
-        if (debugLabel != null && !debugLabel.equals("")) {
-            
-            MiscDebug.writeImage(combined, "_o_combined_" + debugLabel);
-             
-            //createWithDimensions
-            o1 = o1.createFullRangeIntWithDimensions();
-            o2 = o1.createFullRangeIntWithDimensions();
-            o3 = o1.createFullRangeIntWithDimensions();
-            o1.fill(255);
-            o2.fill(255);
-            o3.fill(255);
-            for (Set<PairInt> set : o1Edges) {
-                for (PairInt p : set) {
-                    o1.setValue(p.getX(), p.getY(), 0);
-                }
-            }
-            for (Set<PairInt> set : o2Edges) {
-                for (PairInt p : set) {
-                    o2.setValue(p.getX(), p.getY(), 0);
-                }
-            }
-            for (Set<PairInt> set : o3Edges) {
-                for (PairInt p : set) {
-                    o3.setValue(p.getX(), p.getY(), 0);
-                }
-            }
-            for (Set<PairInt> set : maskList) {
-                for (PairInt p : set) {
-                    o1.setValue(p.getX(), p.getY(), 126);
-                    o2.setValue(p.getX(), p.getY(), 126);
-                    o3.setValue(p.getX(), p.getY(), 126);
-                }
-            }
-            
-            MiscDebug.writeImage(o1, "_o1_filtered_" + debugLabel);
-            MiscDebug.writeImage(o2, "_o2_filtered_" + debugLabel);
-            MiscDebug.writeImage(o3, "_o3_filtered_" + debugLabel);
-        }
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
         filter.doNotPerformHistogramEqualization();
@@ -4384,7 +4328,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
-            blobs, segImg.getWidth(), segImg.getWidth());
+            blobs, segImg.getWidth(), segImg.getHeight());
         
         assert(blobs.size() == borderPixelSets.size());
         
@@ -4500,7 +4444,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param height
      * @param srchRadius 
      */
-    private void makeStraightLinesHollow(PairIntArray orderedPerimeter, 
+    public void makeStraightLinesHollow(PairIntArray orderedPerimeter, 
         int width, int height, float srchRadius) {
         
         HoughTransform ht = new HoughTransform();
@@ -4708,7 +4652,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     imgCp.setRGB((int)Math.round(x1), y1, 255, 0, 0);
                     y1 = y + 2*dy;
-                    x1 = (1./slope)*((double)2.*dy) + (double) x;
+                    x1 = (1./slope)*(2.*dy) + (double) x;
                     if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
                         y1 > (imgCp.getHeight() - 1)) {
                         continue;
@@ -4751,7 +4695,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     imgCp.setRGB(x1, (int)Math.round(y1), 255, 0, 0);
                     x1 = x + 2 * dx;
-                    y1 = (slope * (double)2. * dx) + (double)y;
+                    y1 = (slope * 2. * dx) + (double)y;
                     if (x1 < 0 || x1 > (imgCp.getWidth() - 1) || y1 < 0 ||
                         y1 > (imgCp.getHeight() - 1)) {
                         continue;
