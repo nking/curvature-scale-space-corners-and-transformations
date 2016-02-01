@@ -182,10 +182,7 @@ public class ImageExt extends Image {
         int gPix = getG(internalIndex);
         int bPix = getB(internalIndex);
 
-        // TODO: revisit this... should be using the normalized r,g,b method
-        // possibly the same for the HSB and YUV...
-        // _rgbToXYChromaticity
-        float[] xy = cieC.rgbToXYChromaticity(rPix, gPix, bPix);
+        float[] xy = cieC._rgbToXYChromaticity(rPix, gPix, bPix);
         
         return xy;
     }
