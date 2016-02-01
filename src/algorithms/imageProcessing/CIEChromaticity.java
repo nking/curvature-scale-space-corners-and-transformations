@@ -229,6 +229,10 @@ public class CIEChromaticity {
         
         float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];
         
+        if (zz == 0.f) {
+            return new float[]{0, 0};
+        }
+        
         float x = capXYZ[0]/zz;
         
         float y = capXYZ[1]/zz;
@@ -281,6 +285,10 @@ public class CIEChromaticity {
         float[] capXYZ = _rgbToCIEXYZ(r, g, b);
         
         float zz = capXYZ[0] + capXYZ[1] + capXYZ[2];
+        
+        if (zz == 0.f) {
+            return new float[]{0, 0};
+        }
         
         float x = capXYZ[0]/zz;
         
