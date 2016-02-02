@@ -5,6 +5,15 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +21,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * class to encapsulate methods to make a rough skeletonization of a set of
@@ -32,7 +44,9 @@ import java.util.Set;
  * 
  * @author nichole
  */
-public class BlobMedialAxes {
+public class BlobMedialAxes implements Serializable {
+    
+    private static final long serialVersionUID = 987123L;
     
     private List<Map<Integer, List<Integer>>> skeletonXMapList = null;
     private List<Map<Integer, List<Integer>>> skeletonYMapList = null;
@@ -93,6 +107,14 @@ public class BlobMedialAxes {
         return xyCentroids.length;
     }
     
+    /**
+     * find the closest skeleton point (that is, the medial axis point) to
+     * the coordinates (x, y) in the blob at index.
+     * @param index
+     * @param x
+     * @param y
+     * @return 
+     */
     public PairInt findClosestPoint(int index, int x, int y) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {
@@ -107,7 +129,32 @@ public class BlobMedialAxes {
         Map<Integer, List<Integer>> ySkeletonMap) {
         
         List<Integer> ys = xSkeletonMap.get(Integer.valueOf(x));
-        int ySkel1 = Integer.MAX_VALUE;
+        List<Integer> xs = ySkeletonMap.get(Integer.valueOf(y));
+        
+        if (xs == null && ys == null) {
+            // TODO: need to replace w/ improved data structure.
+            // brute force search for closest.
+            int minDist = Integer.MAX_VALUE;
+            int xSkel3 = -1;
+            int ySkel3 = -1;
+            for (Entry<Integer, List<Integer>> entry : xSkeletonMap.entrySet()) {
+                Integer x0 = entry.getKey();
+                for (Integer y0 : entry.getValue()) {
+                    int diffX = x0.intValue() - x;
+                    int diffY = y0.intValue() - y;
+                    int distSq = (diffX * diffX + diffY * diffY);
+                    if (distSq < minDist) {
+                        minDist = distSq;
+                        xSkel3 = x0.intValue();
+                        ySkel3 = y0.intValue();
+                    }
+                }
+            }
+            return new PairInt(xSkel3, ySkel3);
+        }
+        
+        final Integer xSkel1 = Integer.valueOf(x);
+        Integer ySkel1 = null;
         if (ys != null) {
             int minDistY2 = Integer.MAX_VALUE;
             for (Integer y0 : ys) {
@@ -115,13 +162,13 @@ public class BlobMedialAxes {
                 distYSq *= distYSq;
                 if (distYSq < minDistY2) {
                     minDistY2 = distYSq;
-                    ySkel1 = y0.intValue();
+                    ySkel1 = y0;
                 }
             }
         }
-        int xSkel1 = x;
-        List<Integer> xs = ySkeletonMap.get(Integer.valueOf(x));
-        int xSkel2 = Integer.MAX_VALUE;
+        
+        Integer xSkel2 = null;
+        final Integer ySkel2 = Integer.valueOf(y);
         if (xs != null) {
             int minDistX2 = Integer.MAX_VALUE;
             for (Integer x0 : xs) {
@@ -129,23 +176,27 @@ public class BlobMedialAxes {
                 distXSq *= distXSq;
                 if (distXSq < minDistX2) {
                     minDistX2 = distXSq;
-                    xSkel2 = x0.intValue();
+                    xSkel2 = x0;
                 }
             }
         }
-        int ySkel2 = y;
-        int xSkel, ySkel;
-        if ((((xSkel1 - x)*(xSkel1 - x)) + ((ySkel1 - y)*(ySkel1 - y)))
-            <
-            (((xSkel2 - x)*(xSkel2 - x)) + ((ySkel2 - y)*(ySkel2 - y)))) {
-            xSkel = xSkel1;
-            ySkel = ySkel1;
-        } else {
-            xSkel = xSkel2;
-            ySkel = ySkel2;
+        
+        if (ySkel1 != null && xSkel2 != null) {
+            int diffX1 = xSkel1.intValue() - x;
+            int diffY1 = ySkel1.intValue() - y;
+            int diffX2 = xSkel2.intValue() - x;
+            int diffY2 = ySkel2.intValue() - y;
+            if (((diffX1 * diffX1) + (diffY1 * diffY1)) <
+                ((diffX2 * diffX2) + (diffY2 * diffY2))) {
+                return new PairInt(xSkel1, ySkel1);
+            } else {
+                return new PairInt(xSkel2, ySkel2);
+            }
+        } else if (ySkel1 != null) {
+            return new PairInt(xSkel1, ySkel1);
         }
         
-        return new PairInt(xSkel, ySkel);
+        return new PairInt(xSkel2, ySkel2);
     }
     
     public double[] getOriginalBlobXYCentroid(int index) {
@@ -283,6 +334,255 @@ public class BlobMedialAxes {
         
         this.bColorList.clear();
         this.bColorList.addAll(b);
+    }
+    
+    public void peristToFile(String filePath) throws IOException {
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(filePath);
+            peristToFile(fos);
+        } catch (IOException e) {
+            throw new IOException(e);
+        } finally {
+            if (fos != null) {
+                fos.close();
+            }
+        }
+    }
+    
+    public void peristToFile(FileOutputStream fos)throws IOException {
+        
+        ObjectOutputStream oos = null;
+        try {
+            oos = new ObjectOutputStream(fos);
+            writeObject(oos);
+            oos.flush();
+            fos.flush();
+        } catch (IOException e) {
+            throw new IOException(e);
+        } finally {
+            if (oos != null) {
+                oos.close();
+            }
+        }
+    }
+    
+    public BlobMedialAxes(BufferedInputStream fis) throws IOException {
+        
+        this.lColorList = new ArrayList<Double>();
+        this.aColorList = new ArrayList<Double>();
+        this.bColorList = new ArrayList<Double>();
+        
+        ObjectInputStream ois = null;
+        try {
+            ois = new ObjectInputStream(fis);
+            readObject(ois);
+        } catch (IOException e) {
+            throw new IOException(e);
+        } catch (ClassNotFoundException ex) {
+            throw new IOException(ex);
+        } finally {
+            if (ois != null) {
+                ois.close();
+            }
+        }
+    }
+    
+    public BlobMedialAxes(String filePath) throws IOException {
+        
+        this.lColorList = new ArrayList<Double>();
+        this.aColorList = new ArrayList<Double>();
+        this.bColorList = new ArrayList<Double>();
+        
+        FileInputStream fis = null;
+        ObjectInputStream ois = null;
+        try {
+            fis = new FileInputStream(filePath);
+            ois = new ObjectInputStream(fis);
+            readObject(ois);
+        } catch (IOException e) {
+            throw new IOException(e);
+        } catch (ClassNotFoundException ex) {
+            throw new IOException(ex);
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+            if (ois != null) {
+                ois.close();
+            }
+        }
+    }
+    
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        
+        int nMapX = (skeletonXMapList == null) ? 0 : skeletonXMapList.size();
+        int nMapY = (skeletonYMapList == null) ? 0 : skeletonYMapList.size();
+        int nXYC = (xyCentroids == null) ? 0 : xyCentroids.length;
+        int nColorList = lColorList.size();
+        
+        out.writeInt(nMapX);
+        out.writeInt(nMapY);
+        out.writeInt(nXYC);
+        out.writeInt(nColorList);
+        
+        writeSkeletonMap(out, skeletonXMapList);
+        writeSkeletonMap(out, skeletonYMapList);
+        writeCentroids(out, xyCentroids);
+        
+        writeDoubleList(out, lColorList);
+        writeDoubleList(out, aColorList);
+        writeDoubleList(out, bColorList);
+    }
+    
+    private void readObject(java.io.ObjectInputStream in) throws IOException, 
+        ClassNotFoundException {
+                
+        int nMapX = in.readInt();
+        int nMapY = in.readInt();
+        int nXYC = in.readInt();
+        int nColorList = in.readInt();
+        
+        this.skeletonXMapList = readSkeletonMap(in, nMapX);
+        this.skeletonYMapList = readSkeletonMap(in, nMapY);
+        this.xyCentroids = readCentroids(in, nXYC);
+        lColorList.clear();
+        aColorList.clear();
+        bColorList.clear();
+        
+        List<Double> a = readDoubleList(in, nColorList);
+        lColorList.addAll(a);
+        a = readDoubleList(in, nColorList);
+        aColorList.addAll(a);
+        a = readDoubleList(in, nColorList);
+        bColorList.addAll(a);
+    }
+  
+    private void writeSkeletonMap(java.io.ObjectOutputStream out,
+        List<Map<Integer, List<Integer>>> mapList) throws IOException {
+        
+        if (mapList != null) {
+            for (int i = 0; i < mapList.size(); ++i) {
+                
+                // write index i and map size
+                Map<Integer, List<Integer>> map = mapList.get(i);
+                out.writeInt(i);
+                out.writeInt(map.size());
+                
+                for (Entry<Integer, List<Integer>> entry : map.entrySet()) {
+                    
+                    // write key and list size then list items
+                    Integer key = entry.getKey();
+                    List<Integer> value = entry.getValue();
+                    
+                    out.writeInt(key);
+                    out.writeInt(value.size());
+                    
+                    for (Integer index : value) {
+                        out.writeInt(index.intValue());
+                    }
+                }
+            }
+        }
+    }
+    
+    private List<Map<Integer, List<Integer>>> readSkeletonMap(
+        java.io.ObjectInputStream in, int listSize) throws IOException {
+        
+        List<Map<Integer, List<Integer>>> mapsList = 
+            new ArrayList<Map<Integer, List<Integer>>>(listSize);
+        
+        if (listSize == 0) {
+            return mapsList;
+        }
+        
+        for (int i = 0; i < listSize; ++i) {
+            
+            // read index i and map size
+            int idx = in.readInt();
+            int mapSize = in.readInt(); 
+            
+            assert(idx == i);
+                        
+            Map<Integer, List<Integer>> map = new HashMap<Integer, List<Integer>>(mapSize);
+
+            for (int j = 0; j < mapSize; ++j) {
+                
+                // read each key, each value list size, then each value list item
+                int key = in.readInt();
+                int valueSize = in.readInt();
+                
+                List<Integer> values = new ArrayList<Integer>(valueSize);
+                map.put(Integer.valueOf(key), values);
+                
+                for (int k = 0; k < valueSize; ++k) {
+                    int value = in.readInt();
+                    values.add(Integer.valueOf(value));
+                }
+            }
+            
+            mapsList.add(map);
+        }
+        
+        assert(mapsList.size() == listSize);
+        
+        return mapsList;
+    }
+   
+    private void writeCentroids(ObjectOutputStream out, double[][] xyCen) 
+        throws IOException {
+        
+        if (xyCen == null) {
+            return;
+        }
+        
+        int n = xyCen.length;
+        
+        for (int i = 0; i < n; ++i) {
+            double x = xyCen[i][0];
+            double y = xyCen[i][1];
+            out.writeDouble(x);
+            out.writeDouble(y);
+        }
+        
+    }
+    
+    private double[][] readCentroids(java.io.ObjectInputStream in, int length) throws IOException {
+        
+        // write the length of the array
+        if (length == 0) {
+            return new double[0][2];
+        }
+        
+        double[][] xyCen = new double[length][2];
+        
+        for (int i = 0; i < length; ++i) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            xyCen[i] = new double[]{x, y};
+        }
+        
+        return xyCen;
+    }
+
+    private void writeDoubleList(ObjectOutputStream out, List<Double> list) throws IOException {
+                
+        for (Double d : list) {
+            out.writeDouble(d.doubleValue());
+        }
+    }
+    
+    private List<Double> readDoubleList(java.io.ObjectInputStream out, int listSize) 
+        throws IOException {
+
+        List<Double> list = new ArrayList<Double>(listSize);
+        
+        for (int i = 0; i < listSize; ++i) {
+            double d = out.readDouble();
+            list.add(Double.valueOf(d));
+        }
+        
+        return list;
     }
     
 }
