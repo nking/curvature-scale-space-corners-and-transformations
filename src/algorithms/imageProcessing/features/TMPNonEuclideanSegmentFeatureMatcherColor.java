@@ -756,14 +756,14 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
             
             double areaFraction = Math.abs(area/(double)(rImg.getWidth() * rImg.getHeight()));
             
-            double[] xyCen = keypointsAndBounds.getBoundingRegions()
+            PairInt xyCen = keypointsAndBounds.getBoundingRegions()
                 .getBlobMedialAxes().getOriginalBlobXYCentroid(i);
             
             double numberDensity = Math.abs(n/area);
             
             log.info(String.format(
                "[%d] (%d,%d)  n=%d  area=%.3f fraction of image=%.3f  density=%.3f",
-                i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]),
+                i, xyCen.getX(), xyCen.getY(),
                 (int)n, (float)area, (float)areaFraction, (float)numberDensity));
             
             if ((areaFraction >= 0.04) && (numberDensity >= 0.09)) {

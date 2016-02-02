@@ -1646,7 +1646,7 @@ public class FeatureMatcher {
         
         BlobMedialAxes bma1 = keyPointsAndBounds1.getBoundingRegions().getBlobMedialAxes();
         PairInt xySkel1 = bma1.findClosestPoint(bmaIndex1, x1, y1);
-        double[] xyCen1 = bma1.getOriginalBlobXYCentroid(bmaIndex1);
+        PairInt xyCen1 = bma1.getOriginalBlobXYCentroid(bmaIndex1);
 
         // direction away from skeleton or centroid
         int thetaOut1;
@@ -1658,7 +1658,7 @@ public class FeatureMatcher {
             } 
             thetaOut1 = (int)Math.round(theta * 180./Math.PI);
         } else {
-            double theta = Math.atan2(y1 - xyCen1[1], x1 - xyCen1[0]);
+            double theta = Math.atan2(y1 - xyCen1.getY(), x1 - xyCen1.getX());
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;
@@ -1668,7 +1668,7 @@ public class FeatureMatcher {
 
         BlobMedialAxes bma2 = keyPointsAndBounds2.getBoundingRegions().getBlobMedialAxes();
         PairInt xySkel2 = bma2.findClosestPoint(bmaIndex2, x2, y2);
-        double[] xyCen2 = bma2.getOriginalBlobXYCentroid(bmaIndex2);
+        PairInt xyCen2 = bma2.getOriginalBlobXYCentroid(bmaIndex2);
 
         // direction away from skeleton or centroid
         int thetaOut2;
@@ -1680,7 +1680,7 @@ public class FeatureMatcher {
             } 
             thetaOut2 = (int)Math.round(theta * 180./Math.PI);
         } else {
-            double theta = Math.atan2(y2 - xyCen2[1], x2 - xyCen2[0]);
+            double theta = Math.atan2(y2 - xyCen2.getY(), x2 - xyCen2.getX());
             // transform to 0 to 2*pi radians
             if (theta < 0) {
                 theta += 2. * Math.PI;

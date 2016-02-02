@@ -43,19 +43,19 @@ public class BlobMedialAxes implements Serializable {
     
     private static final long serialVersionUID = 987123L;
     
-    private List<Map<Integer, List<Integer>>> skeletonXMapList = null;
-    private List<Map<Integer, List<Integer>>> skeletonYMapList = null;
-    private double[][] xyCentroids = null;
-    private final List<Double> lColorList;
-    private final List<Double> aColorList;
-    private final List<Double> bColorList;
+    protected List<Map<Integer, List<Integer>>> skeletonXMapList = null;
+    protected List<Map<Integer, List<Integer>>> skeletonYMapList = null;
+    protected final List<PairInt> xyCentroids;
+    protected final List<Double> lColorList;
+    protected final List<Double> aColorList;
+    protected final List<Double> bColorList;
     
     public BlobMedialAxes(final List<Set<PairInt>> blobs, 
         final List<Double> lClrList, final List<Double> aClrList,
         final List<Double> bClrList) {
         
-        int n = blobs.size();    
-        xyCentroids = new double[n][2];
+        int n = blobs.size(); 
+        xyCentroids = new ArrayList<PairInt>(n);
         skeletonXMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
         skeletonYMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
         
@@ -92,14 +92,15 @@ public class BlobMedialAxes implements Serializable {
             Map<Integer, List<Integer>> xSkeletonMap = makeXMap(xPoints, yPoints);
             Map<Integer, List<Integer>> ySkeletonMap = makeYMap(xPoints, yPoints);
             
-            xyCentroids[i] = xyCen;
+            xyCentroids.add(new PairInt((int)Math.round(xyCen[0]),
+                (int)Math.round(xyCen[1])));
             skeletonXMapList.add(xSkeletonMap);
             skeletonYMapList.add(ySkeletonMap);
         }
     }
     
     public int getNumberOfItems() {
-        return xyCentroids.length;
+        return xyCentroids.size();
     }
     
     /**
@@ -194,15 +195,13 @@ public class BlobMedialAxes implements Serializable {
         return new PairInt(xSkel2, ySkel2);
     }
     
-    public double[] getOriginalBlobXYCentroid(int index) {
+    public PairInt getOriginalBlobXYCentroid(int index) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {
             throw new IllegalArgumentException("index is out of bounds");
         }
         
-        double[] c = Arrays.copyOf(xyCentroids[index], 2);
-        
-        return c;
+        return xyCentroids.get(index).copy();
     }
     
     /**
@@ -299,28 +298,26 @@ public class BlobMedialAxes implements Serializable {
         
         Set<Integer> exclude = new HashSet<Integer>(removeIndexes);
         
-        int n2 = xyCentroids.length - removeIndexes.size();
+        int n2 = xyCentroids.size() - removeIndexes.size();
         
         List<Double> ell = new ArrayList<Double>();
         List<Double> a = new ArrayList<Double>();
         List<Double> b = new ArrayList<Double>();
+        List<PairInt> xyCentroid2 = new ArrayList<PairInt>();
         
-        double[][] xyCentroid2 = new double[n2][2];
-        int count = 0;
-        for (int i = 0; i < xyCentroids.length; ++i) {
+        for (int i = 0; i < xyCentroids.size(); ++i) {
             
             Integer index = Integer.valueOf(i);
             if (!exclude.contains(index)) {
-                xyCentroid2[count] = Arrays.copyOf(this.xyCentroids[i], 2);
+                xyCentroid2.add(xyCentroids.get(i));
                 ell.add(lColorList.get(i));
                 a.add(aColorList.get(i));
                 b.add(bColorList.get(i));
-                count++;
             }
         }   
-        
-        this.xyCentroids = xyCentroid2;
-        
+        this.xyCentroids.clear();
+        this.xyCentroids.addAll(xyCentroid2);
+                
         this.lColorList.clear();
         this.lColorList.addAll(ell);
         
@@ -370,6 +367,7 @@ public class BlobMedialAxes implements Serializable {
         this.lColorList = new ArrayList<Double>();
         this.aColorList = new ArrayList<Double>();
         this.bColorList = new ArrayList<Double>();
+        this.xyCentroids = new ArrayList<PairInt>();
         
         readObject(ois);
     }
@@ -379,6 +377,7 @@ public class BlobMedialAxes implements Serializable {
         this.lColorList = new ArrayList<Double>();
         this.aColorList = new ArrayList<Double>();
         this.bColorList = new ArrayList<Double>();
+        this.xyCentroids = new ArrayList<PairInt>();
         
         FileInputStream fis = null;
         ObjectInputStream ois = null;
@@ -404,7 +403,7 @@ public class BlobMedialAxes implements Serializable {
         
         int nMapX = (skeletonXMapList == null) ? 0 : skeletonXMapList.size();
         int nMapY = (skeletonYMapList == null) ? 0 : skeletonYMapList.size();
-        int nXYC = (xyCentroids == null) ? 0 : xyCentroids.length;
+        int nXYC = (xyCentroids == null) ? 0 : xyCentroids.size();
         int nColorList = lColorList.size();
         
         out.writeInt(nMapX);
@@ -421,7 +420,7 @@ public class BlobMedialAxes implements Serializable {
         writeDoubleList(out, bColorList);
     }
     
-    private void readObject(java.io.ObjectInputStream in) throws IOException, 
+    protected void readObject(java.io.ObjectInputStream in) throws IOException, 
         ClassNotFoundException {
                 
         int nMapX = in.readInt();
@@ -431,7 +430,10 @@ public class BlobMedialAxes implements Serializable {
         
         this.skeletonXMapList = readSkeletonMap(in, nMapX);
         this.skeletonYMapList = readSkeletonMap(in, nMapY);
-        this.xyCentroids = readCentroids(in, nXYC);
+        
+        xyCentroids.clear();
+        xyCentroids.addAll(readCentroids(in, nXYC));
+        
         lColorList.clear();
         aColorList.clear();
         bColorList.clear();
@@ -515,37 +517,36 @@ public class BlobMedialAxes implements Serializable {
         return mapsList;
     }
    
-    private void writeCentroids(ObjectOutputStream out, double[][] xyCen) 
+    protected void writeCentroids(ObjectOutputStream out, List<PairInt> xyCen) 
         throws IOException {
         
         if (xyCen == null) {
             return;
         }
         
-        int n = xyCen.length;
+        int n = xyCen.size();
         
         for (int i = 0; i < n; ++i) {
-            double x = xyCen[i][0];
-            double y = xyCen[i][1];
-            out.writeDouble(x);
-            out.writeDouble(y);
+            PairInt p = xyCen.get(i);
+            out.writeInt(p.getX());
+            out.writeInt(p.getY());
         }
         
     }
     
-    private double[][] readCentroids(java.io.ObjectInputStream in, int length) throws IOException {
+    private List<PairInt> readCentroids(java.io.ObjectInputStream in, int length) throws IOException {
+        
+        List<PairInt> xyCen = new ArrayList<PairInt>();
         
         // write the length of the array
         if (length == 0) {
-            return new double[0][2];
+            return xyCen;
         }
-        
-        double[][] xyCen = new double[length][2];
-        
+                
         for (int i = 0; i < length; ++i) {
-            double x = in.readDouble();
-            double y = in.readDouble();
-            xyCen[i] = new double[]{x, y};
+            int x = in.readInt();
+            int y = in.readInt();
+            xyCen.add(new PairInt(x, y));
         }
         
         return xyCen;

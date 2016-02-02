@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -50,12 +51,27 @@ public class SegmentedCellMerger {
         
         BoundingRegions br = extractPerimetersAndBounds();
         
-        Map<PairInt, DisjointSet2Node<PairInt>> cellMap = createMergeMap(br);
+        Map<PairInt, DisjointSet2Node<PairInt>> cellMap = new HashMap<
+            PairInt, DisjointSet2Node<PairInt>>();
+        
+        Map<PairInt, Integer> cellIndexMap = new HashMap<PairInt, Integer>();
+            
+        createMergeMap(br, cellMap, cellIndexMap);
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        for (int i = 0; i < br.getPerimeterList().size(); ++i) {
+            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+        }
+        
         
         /*
         will use a DFS style visitor pattern w/ stack ordered to process smallest
         cells first.
         visit each cell and merge any similar neighbors.
+        
+        bounding regions have been ordered by descending size already, so can
+        populate the stack from 0 to n-1.
+        
         
         for deltaE, range of similar is 2.3 through 5.5 or ?  (max diff is 28.8).
         might need to use adjacent points instead of set averages.
@@ -67,14 +83,14 @@ public class SegmentedCellMerger {
         the hue angles are very strong indicators for the two examples just given.
         o2 is also and looks useful for the icecream and cupcake.
         but o2 for the gingerbread man's feet would merge with the grass while it's deltaEis 9.17
-        
-        
+       
         so need to look at the color spaces in detail to use more than deltaE for similarity...
         */
-        
+       
         /*
         consider a step to merge completely embedded with the encapsulating cell
         */
+        
     }
     
     private BoundingRegions extractPerimetersAndBounds() {
@@ -280,12 +296,11 @@ public class SegmentedCellMerger {
         return br;
     }
 
-    private Map<PairInt, DisjointSet2Node<PairInt>> createMergeMap(
-        BoundingRegions br) {
+    private void createMergeMap(BoundingRegions br, 
+        Map<PairInt, DisjointSet2Node<PairInt>> outputParentMap,
+        Map<PairInt, Integer> outputParentIndexMap) {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
-        Map<PairInt, DisjointSet2Node<PairInt>> parentMap = new
-            HashMap<PairInt, DisjointSet2Node<PairInt>>();
         
         // store the centroids in a disjoint set/forrest
         
@@ -295,18 +310,17 @@ public class SegmentedCellMerger {
         
         for (int i = 0; i < n; ++i) {
             
-            double[] xyCen = bma.getOriginalBlobXYCentroid(i);
+            PairInt xyCen = bma.getOriginalBlobXYCentroid(i);
             
-            PairInt p = new PairInt((int)Math.round(xyCen[0]),
-                (int)Math.round(xyCen[1]));
+            PairInt p = xyCen.copy();
             
             DisjointSet2Node<PairInt> pNode =
                 disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(p));
             
-            parentMap.put(p, pNode);
-        }
-        
-        return parentMap;
+            outputParentMap.put(p, pNode);
+            
+            outputParentIndexMap.put(p, Integer.valueOf(i));
+        }        
     }
     
 }

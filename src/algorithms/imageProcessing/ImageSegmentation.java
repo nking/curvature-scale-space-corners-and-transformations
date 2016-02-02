@@ -4574,7 +4574,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 // neighbor closest to it in counter clockwise direction.
                 PairInt xySkel = bma.findClosestPoint(i, x, y);
                 
-                double[] xyCen = bma.getOriginalBlobXYCentroid(i);
+                PairInt xyCen = bma.getOriginalBlobXYCentroid(i);
 
                 /*
                           90
@@ -4595,7 +4595,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     } 
                     thetaOut = (int)Math.round(theta * 180./Math.PI);
                 } else {
-                    double theta = Math.atan2(y - xyCen[1], x - xyCen[0]);
+                    double theta = Math.atan2(y - xyCen.getY(), x - xyCen.getX());
                     // transform to 0 to 2*pi radians
                     if (theta < 0) {
                         theta += 2. * Math.PI;

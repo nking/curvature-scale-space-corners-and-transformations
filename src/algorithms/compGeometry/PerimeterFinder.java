@@ -1926,7 +1926,7 @@ public class PerimeterFinder {
         return orderedEdge;
     }
     
-    private void persistForTest(Set<PairInt> perimeter, 
+    protected static void persistForTest(Set<PairInt> perimeter, 
         float srchRadius, BlobMedialAxes bma, int bmaIndex) {
         
         FileOutputStream fos = null;
@@ -1952,10 +1952,10 @@ public class PerimeterFinder {
             fos.flush();
             oos.flush();
             
-            log.info("wrote data: " + filePath0);
+            Logger.getLogger(PerimeterFinder.class.getName()).info("wrote data: " + filePath0);
             
         } catch(IOException e) {
-            log.severe(e.getMessage());
+            Logger.getLogger(PerimeterFinder.class.getName()).severe(e.getMessage());
         } finally {
             try {
                 if (fos != null) {

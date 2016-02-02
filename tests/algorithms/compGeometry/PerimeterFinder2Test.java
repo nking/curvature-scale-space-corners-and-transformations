@@ -28,7 +28,7 @@ public class PerimeterFinder2Test extends TestCase {
         int bmaIndex = ((Integer)objects[1]).intValue();
         Set<PairInt> perimeter = (Set<PairInt>)objects[2];
         BlobMedialAxes bma = (BlobMedialAxes)objects[3];
-      
+        
         int n = perimeter.size();
         
         PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
@@ -87,6 +87,7 @@ public class PerimeterFinder2Test extends TestCase {
         Set<PairInt> perimeter = (Set<PairInt>)objects[2];
         BlobMedialAxes bma = (BlobMedialAxes)objects[3];
       
+        
         int n = perimeter.size();
         
         PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
@@ -129,7 +130,7 @@ public class PerimeterFinder2Test extends TestCase {
         int bmaIndex = ((Integer)objects[1]).intValue();
         Set<PairInt> perimeter = (Set<PairInt>)objects[2];
         BlobMedialAxes bma = (BlobMedialAxes)objects[3];
-      
+          
         int n = perimeter.size();
         
         PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,

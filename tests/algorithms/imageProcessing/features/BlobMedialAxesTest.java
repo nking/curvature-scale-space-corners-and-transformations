@@ -60,13 +60,13 @@ public class BlobMedialAxesTest extends TestCase {
         assertEquals(11, p0.getX());
         assertEquals(10, p0.getY());
     
-        double[] xyCen = bma.getOriginalBlobXYCentroid(0);
-        assertTrue(Math.abs(xyCen[0] - 0.5) < 0.01);
-        assertTrue(Math.abs(xyCen[1] - 0.0) < 0.01);
+        PairInt xyCen = bma.getOriginalBlobXYCentroid(0);
+        assertTrue(Math.abs(xyCen.getX() - 0.5) < 0.6);
+        assertTrue(Math.abs(xyCen.getY() - 0.0) < 0.01);
         
         xyCen = bma.getOriginalBlobXYCentroid(1);
-        assertTrue(Math.abs(xyCen[0] - 10.5) < 0.01);
-        assertTrue(Math.abs(xyCen[1] - 10.0) < 0.01);
+        assertTrue(Math.abs(xyCen.getX() - 10.5) < 0.6);
+        assertTrue(Math.abs(xyCen.getY() - 10.0) < 0.01);
    
         float[] lab = bma.getLABColors(0);
         assertTrue(Math.abs(lab[0] - ls.get(0).doubleValue()) < 0.001);
@@ -96,12 +96,12 @@ public class BlobMedialAxesTest extends TestCase {
         assertEquals(0, p0.getY());
     
         xyCen = bma2.getOriginalBlobXYCentroid(0);
-        assertTrue(Math.abs(xyCen[0] - 0.5) < 0.01);
-        assertTrue(Math.abs(xyCen[1] - 0.0) < 0.01);
+        assertTrue(Math.abs(xyCen.getX() - 0.5) < 0.6);
+        assertTrue(Math.abs(xyCen.getY() - 0.0) < 0.01);
         
         xyCen = bma2.getOriginalBlobXYCentroid(1);
-        assertTrue(Math.abs(xyCen[0] - 10.5) < 0.01);
-        assertTrue(Math.abs(xyCen[1] - 10.0) < 0.01);
+        assertTrue(Math.abs(xyCen.getX() - 10.5) < 0.6);
+        assertTrue(Math.abs(xyCen.getY() - 10.0) < 0.01);
    
         lab = bma2.getLABColors(0);
         assertTrue(Math.abs(lab[0] - ls.get(0).doubleValue()) < 0.001);
@@ -125,8 +125,8 @@ public class BlobMedialAxesTest extends TestCase {
         assertEquals(0, p0.getY());
     
         xyCen = bma2.getOriginalBlobXYCentroid(0);
-        assertTrue(Math.abs(xyCen[0] - 10.5) < 0.01);
-        assertTrue(Math.abs(xyCen[1] - 10.0) < 0.01);
+        assertTrue(Math.abs(xyCen.getX() - 10.5) < 0.6);
+        assertTrue(Math.abs(xyCen.getY() - 10.0) < 0.01);
         
         lab = bma2.getLABColors(0);
         assertTrue(Math.abs(lab[0] - ls.get(1).doubleValue()) < 0.001);
