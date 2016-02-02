@@ -3053,6 +3053,7 @@ public class ImageProcessor {
     /**
      * @param input
      * @param lowerLimitSize
+     * @param debugLabel
      * @return 
      */
     public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input,
@@ -3072,7 +3073,7 @@ public class ImageProcessor {
         dys0 = Misc.dy8;
         GreyscaleImage tmpImg2 = input.copyImage();
         // fill in gaps of size 1 flooded the whole image. invert afterwards had same result.
-        // increase the 0's by 1 pixel then invert is interesting. 
+        // increase the 0's by 1 pixel then invert however, is interesting. 
         // where there is a '0', make all neighbors a '0':
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -3106,7 +3107,10 @@ public class ImageProcessor {
                 wsImg.setValue(i, j, v);
             }
         }
-        MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
+        
+        if (debugLabel != null && !debugLabel.isEmpty()) {
+            MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
+        }
         
         return wsImg;
     }

@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
@@ -84,7 +85,13 @@ public class SegmentedCellMerger {
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
         boolean filterOutZeroPixels = false;
-        // runtime complexity is N_freq * O(N) where N_freq is at most 16 and
+        
+        //TODO: this may need revision.  wanting to exclude processing for
+        // contiguous regions which are a large fraction of image.
+        // these are usually background.
+        
+        
+        // runtime complexity is N_freq * O(N) where N_freq is at most 256 and
         // the O(N) term may be as high as O(N*8) if highly connected.
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
             segImg, smallestGroupLimit, largestGroupLimit,
@@ -106,10 +113,35 @@ public class SegmentedCellMerger {
                 boundaryValueSets.add(blob);
             }
         }
+                
+        // --- sort by descending sizes the remaining blobs ---- 
+        int[] sizes = new int[blobs.size()];
+        int[] indexes = new int[sizes.length];
+        for (int i = 0; i < blobs.size(); ++i) {
+            sizes[i] = blobs.get(i).size();
+            indexes[i] = i;
+        }
+        
+        // removing any blobs which are larger than 0.2 percent of image size also
+        float nPixels = img.getNPixels();
+        
+        MultiArrayMergeSort.sortByDecr(sizes, indexes);
+        List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
+        
+        for (int i = 0; i < sizes.length; ++i) {
+            int idx = indexes[i];
+            Set<PairInt> blob = blobs.get(idx);
+            float frac = (float)blob.size()/nPixels;
+            if (frac < 0.2) {
+                tmp.add(blob);
+            }
+        }
+        blobs.clear();
+        blobs.addAll(tmp);
         
         //---- begin section to log colors to look at selecting matchable bounds by color ------
         CIEChromaticity cieC = new CIEChromaticity();
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        //MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         List<Double> lAvg = new ArrayList<Double>();
         List<Double> aAvg = new ArrayList<Double>();
@@ -190,8 +222,12 @@ public class SegmentedCellMerger {
                         }
                     }
                 }
-                assert(minDeltaEIdx > -1);
-                blobs.get(minDeltaEIdx).add(p);
+                
+                // some of the boundary value pixels are connected to large regions
+                // so are not always adjacent to a non-boundary value region.
+                if (minDeltaEIdx > -1) {
+                    blobs.get(minDeltaEIdx).add(p);
+                }
             }
         }
         

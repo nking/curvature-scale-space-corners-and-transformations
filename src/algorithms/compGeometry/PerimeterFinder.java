@@ -2127,7 +2127,7 @@ public class PerimeterFinder {
             if (orderedEdge.getN() == 1) {
                 // the first point already in orderedEdge is the smallest 
                 // x then y.
-                // if dist and direction are collinear, then the one w/ smallest y is correct
+                // if dist and direction are collinear, then the one w/ smallest y is correct <-- except when a point is below it...fix this
                 PairInt pNext = null;
                 double maxDirection = Double.MIN_VALUE;// should be <= 0
                 int minDistSq = Integer.MAX_VALUE;
@@ -2151,8 +2151,8 @@ public class PerimeterFinder {
                 }
                 
                 // while running tests, look at the other metrics too
-                Map<PairInt, Integer> distSqMap = new HashMap<PairInt, Integer>();
-                Map<PairInt, Integer> directionSkMap = new HashMap<PairInt, Integer>();
+                //Map<PairInt, Integer> distSqMap = new HashMap<PairInt, Integer>();
+                //Map<PairInt, Integer> directionSkMap = new HashMap<PairInt, Integer>();
                 for (PairInt p : neighbors) {
                     int diffX = p.getX() - xySkel.getX();
                     int diffY = p.getY() - xySkel.getY();
@@ -2161,8 +2161,8 @@ public class PerimeterFinder {
                     int directionSk = LinesAndAngles.direction(x, y,
                         p.getX(), p.getY(), xySkel.getX(), xySkel.getY());
 
-                    distSqMap.put(p, Integer.valueOf(distSq));
-                    directionSkMap.put(p, Integer.valueOf(directionSk));
+                    //distSqMap.put(p, Integer.valueOf(distSq));
+                    //directionSkMap.put(p, Integer.valueOf(directionSk));
                 }
                 
                 assert(pNext != null);
@@ -2171,9 +2171,9 @@ public class PerimeterFinder {
                 continue;
             }
             
-            Map<PairInt, Integer> distSqMap = new HashMap<PairInt, Integer>();
-            Map<PairInt, Integer> directionMap = new HashMap<PairInt, Integer>();
-            Map<PairInt, Integer> directionSkMap = new HashMap<PairInt, Integer>();
+            //Map<PairInt, Integer> distSqMap = new HashMap<PairInt, Integer>();
+            //Map<PairInt, Integer> directionMap = new HashMap<PairInt, Integer>();
+            //Map<PairInt, Integer> directionSkMap = new HashMap<PairInt, Integer>();
             int prevPrevX = orderedEdge.getX(orderedEdge.getN() - 2);
             int prevPrevY = orderedEdge.getY(orderedEdge.getN() - 2);
             PairInt pNext = null;
@@ -2189,9 +2189,9 @@ public class PerimeterFinder {
                 int directionSk = LinesAndAngles.direction(x, y, 
                     p.getX(), p.getY(), xySkel.getX(), xySkel.getY());
 
-                distSqMap.put(p, Integer.valueOf(distSq));
-                directionMap.put(p, Integer.valueOf(direction));
-                directionSkMap.put(p, Integer.valueOf(directionSk));
+                //distSqMap.put(p, Integer.valueOf(distSq));
+                //directionMap.put(p, Integer.valueOf(direction));
+                //directionSkMap.put(p, Integer.valueOf(directionSk));
                 
                 if ((x != xySkel.getX()) || (y != xySkel.getY())) {
                     // largest directionSkel
