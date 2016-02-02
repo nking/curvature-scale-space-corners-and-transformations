@@ -1,18 +1,15 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * class to encapsulate methods to make a rough skeletonization of a set of
@@ -355,9 +350,7 @@ public class BlobMedialAxes implements Serializable {
         ObjectOutputStream oos = null;
         try {
             oos = new ObjectOutputStream(fos);
-            writeObject(oos);
-            oos.flush();
-            fos.flush();
+            peristToFile(oos);
         } catch (IOException e) {
             throw new IOException(e);
         } finally {
@@ -367,25 +360,18 @@ public class BlobMedialAxes implements Serializable {
         }
     }
     
-    public BlobMedialAxes(BufferedInputStream fis) throws IOException {
+    public void peristToFile(ObjectOutputStream oos)throws IOException {
+        writeObject(oos);
+        oos.flush();
+    }
+    
+    public BlobMedialAxes(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         
         this.lColorList = new ArrayList<Double>();
         this.aColorList = new ArrayList<Double>();
         this.bColorList = new ArrayList<Double>();
         
-        ObjectInputStream ois = null;
-        try {
-            ois = new ObjectInputStream(fis);
-            readObject(ois);
-        } catch (IOException e) {
-            throw new IOException(e);
-        } catch (ClassNotFoundException ex) {
-            throw new IOException(ex);
-        } finally {
-            if (ois != null) {
-                ois.close();
-            }
-        }
+        readObject(ois);
     }
     
     public BlobMedialAxes(String filePath) throws IOException {

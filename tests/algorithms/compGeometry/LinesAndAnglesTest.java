@@ -56,11 +56,20 @@ public class LinesAndAnglesTest extends TestCase {
         
         /*
          * 
-         *           p2
-         *  p3      / 
-         *   \    /
-         *     p1
+         * 10                             p2
+         *  9
+         *  8                          /
+         *  7     p3
+         *  6      \
+         *  5                     /
+         *  4        \
+         *  3
+         *  2           \     /
+         *  1              p1
+         *  0
+         *   0  1  2  3  4  5  6  7  8  9  10
          * 
+         * direction of change from P1:P2 to P1:P3
          */
         
         float x2 = 10;
@@ -82,6 +91,110 @@ public class LinesAndAnglesTest extends TestCase {
         direction = LinesAndAngles.direction(x1, y1, x2, y2, x3, y3);
         
         assertTrue(direction < 0);
+
+    }
+    
+    public void testDirection_int() throws Exception {
+        
+        /*
+         * 
+         * 10                             
+         *  9
+         *  8                           
+         *  7        p3
+         *  6       
+         *  5                      
+         *  4     p1     
+         *  3
+         *  2                 
+         *  1              p2
+         *  0
+         *   0  1  2  3  4  5  6  7  8  9  10
+         * 
+         * direction of change from P1:P2 to P1:P3
+         */
+        
+        // CCW sweep of P1:P2 to P1:P3 gives negative number
+        int direction = LinesAndAngles.direction(
+            2, 4, 
+            5, 1, 
+            3, 7);
+        assertTrue(direction < 0);
+        
+        /*
+         * 
+         * 10                             
+         *  9
+         *  8                           
+         *  7        p3
+         *  6       
+         *  5                      
+         *  4     p1     
+         *  3
+         *  2                 
+         *  1     p2       
+         *  0
+         *   0  1  2  3  4  5  6  7  8  9  10
+         * 
+         * direction of change from P1:P2 to P1:P3
+         */
+        
+        // CCW sweep of P1:P2 to P1:P3 gives negative number
+        direction = LinesAndAngles.direction(
+            2, 4, 
+            2, 1, 
+            3, 7);
+        assertTrue(direction < 0);
+        
+        /*
+         * 
+         * 10                             
+         *  9
+         *  8                           
+         *  7        p3
+         *  6       
+         *  5                      
+         *  4     p1     
+         *  3
+         *  2  p2             
+         *  1         
+         *  0
+         *   0  1  2  3  4  5  6  7  8  9  10
+         * 
+         * direction of change from P1:P2 to P1:P3
+         */
+        
+        // CCW sweep of P1:P2 to P1:P3 gives negative number
+        direction = LinesAndAngles.direction(
+            2, 4, 
+            1, 2, 
+            3, 7);
+        assertTrue(direction > 0);
+        
+        /*
+         * 
+         * 10                             
+         *  9
+         *  8                           
+         *  7        p3
+         *  6       
+         *  5                    p1  
+         *  4            
+         *  3
+         *  2                 
+         *  1              p2
+         *  0
+         *   0  1  2  3  4  5  6  7  8  9  10
+         * 
+         * direction of change from P1:P2 to P1:P3
+         */
+        // CCW sweep of P1:P2 to P1:P3 gives positive number
+        direction = LinesAndAngles.direction(
+            7, 5, 
+            5, 1, 
+            3, 7);
+        assertTrue(direction > 0);
+       
     }
     
     public void testPointIsInLine() throws Exception {

@@ -185,7 +185,26 @@ public class LinesAndAngles {
         }
         return false;
     }
-    
+   
+    /**
+     * calculate the direction of change for the 2 vectors 
+     * P1:P2 to P1:P3  returns positive when direction is clockwise,
+     * else if zero the vectors are collinear, else if negative the
+     * direction is counterclockwise.
+     * 
+     *           p2
+     *  p3      / 
+     *   \    /
+     *     p1
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return 
+     */
     public static int direction(int x1, int y1, int x2, int y2, int x3, int y3) {
 
         int x31 = x3 - x1;
@@ -194,7 +213,9 @@ public class LinesAndAngles {
         int x21 = x2 - x1;
         int y21 = y2 - y1;
 
-        return crossProduct(x31, y31, x21, y21);
+        int cp = ((x31*y21) - (x21*y31));
+        
+        return cp;
     }
     
     /**
