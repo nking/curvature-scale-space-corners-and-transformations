@@ -64,13 +64,38 @@ public class BlobsAndPerimeters {
         GreyscaleImage segImg, int smallestGroupLimit, int largestGroupLimit,
         boolean filterOutImageBoundaryBlobs,
         boolean filterOutZeroPixels, String debugTag) {
+        
+        boolean use8Neighbors = false;
+        
+        return extractBlobsFromSegmentedImage(
+            segImg, smallestGroupLimit, largestGroupLimit,
+            filterOutImageBoundaryBlobs,
+            filterOutZeroPixels, use8Neighbors, debugTag);
+    }
+    
+    /**
+     * extract blobs from the segmented image.
+     * the runtime complexity is approx N_freq * O(N),
+     * where N_freq is the number of pixel values, that is pixels with 255, 254, etc.
+     * The O(N) term can be as high as O(N*8) if very connected... it's using
+     * a DFS traversal pattern.
+     * @param segImg
+     * @param smallestGroupLimit
+     * @param largestGroupLimit
+     * @param filterOutImageBoundaryBlobs
+     * @param filterOutZeroPixels
+     * @param debugTag
+     * @return 
+     */
+    public static List<Set<PairInt>> extractBlobsFromSegmentedImage(
+        GreyscaleImage segImg, int smallestGroupLimit, int largestGroupLimit,
+        boolean filterOutImageBoundaryBlobs,
+        boolean filterOutZeroPixels, boolean use8Neighbors, String debugTag) {
      
         List<Set<PairInt>> outputBlobs = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> outputExcludedBlobs = new ArrayList<Set<PairInt>>();
         List<Set<PairInt>> outputExcludedBoundaryBlobs = new ArrayList<Set<PairInt>>();
         
-        boolean use8Neighbors = false;
-
         //TODO: some of the algorithms for segmentation have the frequency map
         // as an itermediate data structure, so could consider making a sub-method
         // of this method that accepts the frequency map instead of the segmented image.
