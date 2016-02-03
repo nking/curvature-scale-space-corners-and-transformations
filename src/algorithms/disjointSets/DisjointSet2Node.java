@@ -8,13 +8,19 @@ package algorithms.disjointSets;
  */
 public class DisjointSet2Node<T> {
 
-    // the set member data to be held in a disjoint set
+    /**
+     * the set member data to be held in a disjoint set
+     */
     protected T member = null;
     
-    // pointer to the set representative
+    /**
+     * pointer to the set representative
+     */
     protected DisjointSet2Node<T> parent = null;
 
-    // upper bound of edges between this node and the longest path to it's descendants
+    /**
+    upper bound of edges between this node and the longest path to it's descendants
+    */
     protected int rank = 0;
 
     public DisjointSet2Node(T member) {
@@ -24,6 +30,10 @@ public class DisjointSet2Node<T> {
     public DisjointSet2Node() {
     }
    
+    /**
+     * get the member data
+     * @return 
+     */
     public T getMember() {
         return member;
     }
@@ -32,6 +42,10 @@ public class DisjointSet2Node<T> {
         this.member = member;
     }
 
+    /**
+     * get the set representative
+     * @return 
+     */
     public DisjointSet2Node<T> getParent() {
         return parent;
     }

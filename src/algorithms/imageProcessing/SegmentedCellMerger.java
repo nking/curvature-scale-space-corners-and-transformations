@@ -7,6 +7,7 @@ import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
+import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -48,7 +49,7 @@ public class SegmentedCellMerger {
     }
     
     public void merge() {
-        
+                
         BoundingRegions br = extractPerimetersAndBounds();
         
         Map<PairInt, DisjointSet2Node<PairInt>> cellMap = new HashMap<
@@ -58,11 +59,138 @@ public class SegmentedCellMerger {
             
         createMergeMap(br, cellMap, cellIndexMap);
         
+        List<PairIntArray> boundaries = new ArrayList<PairIntArray>();
+        
+        // this order results in visiting the smallest cells first
         Stack<PairInt> stack = new Stack<PairInt>();
         for (int i = 0; i < br.getPerimeterList().size(); ++i) {
+            
             PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            
+            if (cellIndexMap.containsKey(xyCen)) {
+                stack.add(xyCen);
+            } 
+            
+            boundaries.add(br.getPerimeterList().get(i).copy());
         }
         
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // boundaries gets merged too and altered to be union - intersection.
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        Map<PairInt, Set<PairInt>> visitedMap = new HashMap<PairInt, Set<PairInt>>();
+        
+        DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
+        
+        while (!stack.isEmpty()) {
+            
+            PairInt p = stack.pop();
+            
+            if (visited.contains(p)) {
+                continue;
+            }
+                        
+            DisjointSet2Node<PairInt> pParentNode = disjointSetHelper.findSet(cellMap.get(p));
+            
+            PairInt pParent = pParentNode.getMember();
+            
+            Integer pIndex = cellIndexMap.get(pParent);
+            
+            float[] labP = br.getBlobMedialAxes().getLABColors(pIndex.intValue());
+            
+            double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
+            if (hueAngleP < 0) {
+                hueAngleP += 360.;
+            }
+            
+            boolean didMerge = false;
+            
+            // perimeter points
+            PairIntArray p1Bounds = boundaries.get(pIndex.intValue());
+            for (int i = 0; i < p1Bounds.getN(); ++i) {
+                
+                int x = p1Bounds.getX(i);
+                int y = p1Bounds.getY(i);
+                
+                for (int k = 0; k < dxs.length; ++k) {
+                    
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    
+                    if (x2 < 0 || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    
+                    PairInt p2 = new PairInt(x2, y2);
+                    
+                    //find p2 in the original bounding regions data
+                    Integer p2Index = br.getPointIndexMap().get(p2);
+                    
+                    if (p2Index == null) {
+                        // might be in the large watersheds that do not get merged
+                        continue;
+                    }
+                    
+                    PairInt xyCen2 = br.getBlobMedialAxes()
+                        .getOriginalBlobXYCentroid(p2Index.intValue());
+                    
+                    // find the "representative" parent not of the cell
+                    DisjointSet2Node<PairInt> p2ParentNode = disjointSetHelper.findSet(cellMap.get(xyCen2));
+                    
+                    if (p2ParentNode.equals(pParentNode)) {
+                        continue;
+                    }
+                    
+                    PairInt p2Parent = p2ParentNode.getMember();
+                    
+                    if (hasBeenVisited(visitedMap, pParent, p2Parent)) {
+                        continue;
+                    }
+                                           
+                    p2Index = cellIndexMap.get(p2Parent);
+                    
+                    float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
+                
+                    double hueAngleP2 = Math.atan(labP2[2]/labP2[1]) * 180./Math.PI;
+                    if (hueAngleP2 < 0) {
+                        hueAngleP2 += 360.;
+                    }                            
+                
+                    double deltaE = cieC.calcDeltaECIE94(labP[0], labP[1], labP[2], 
+                        labP2[0], labP2[1], labP2[2]);
+
+                    float deltaHA = AngleUtil.getAngleDifference((float)hueAngleP, 
+                        (float)hueAngleP2);
+
+                    log.info(String.format("%s %s  deltaE=%.2f  dHA=%d",
+                        pParent.toString(), p2Parent.toString(), (float)deltaE,
+                        Math.round(deltaHA)));
+                    
+                    //-- if similar 
+                    //   -- alter the boundaries for index of pParent: union - intersection of points
+                    //      (intersection is found using point in polygon tests against other)
+                    //   -- merge the cells:
+                    //      DisjointSet2Node<PairInt> parent = 
+                    //          disjointSetHelper.union(parentMap.get(reprPoint),
+                    //          parentMap.get(qPoint));
+                    //   -- reset the boundaries to the edited for the new parent index
+                    //   -- set didMerge to tru
+                    
+                    addToVisited(visitedMap, pParent, p2Parent);
+                }
+            }
+           
+            if (didMerge) {
+                visited.add(p);
+            }
+        }
         
         /*
         will use a DFS style visitor pattern w/ stack ordered to process smallest
@@ -71,7 +199,6 @@ public class SegmentedCellMerger {
         
         bounding regions have been ordered by descending size already, so can
         populate the stack from 0 to n-1.
-        
         
         for deltaE, range of similar is 2.3 through 5.5 or ?  (max diff is 28.8).
         might need to use adjacent points instead of set averages.
@@ -188,10 +315,10 @@ public class SegmentedCellMerger {
             aAvg.add(Double.valueOf(avgLAB[1]));
             bAvg.add(Double.valueOf(avgLAB[2]));
         
-            /*double[] xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
+            /*PairInt xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
             String str = String.format(
                 "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
-                i, (int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]),
+                i, xyCen.getX(), xyCen.getY(),
                 avgLAB[0], avgLAB[1], avgLAB[2], blobs.get(i).size());
             log.info(str);*/
         }
@@ -212,7 +339,7 @@ public class SegmentedCellMerger {
                 int minDeltaEIdx = -1;
                 
                 // compare each point to colors in adjacent sets and choose closest.
-                // TODO: can improve this with a datastructure
+                // TODO: can improve this with another datastructure
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = p.getX() + dxs[k];
                     int y2 = p.getY() + dys[k];
@@ -247,6 +374,16 @@ public class SegmentedCellMerger {
             }
         }
         
+        // create a map for reverse look-ups later
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < blobs.size(); ++i) {
+            Integer key = Integer.valueOf(i);
+            Set<PairInt> blob = blobs.get(i);
+            for (PairInt p : blob) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        
         // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
             blobs, segImg.getWidth(), segImg.getHeight());
@@ -272,10 +409,11 @@ public class SegmentedCellMerger {
             PairIntArray orderedPerimeter = perimeterFinder.orderThePerimeter(
                 borderPixels, blob, srchRadius, bma, i);
   
-            Image imgCp = img.copyImage();
+            /*Image imgCp = img.copyImage();
             ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
             MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
-         
+            */
+            
             // runtime complexity is O(N_perimeter_pts * lg_2(N_perimeter_pts)
             // remove straight line segments except their endpoints to make simpler
             // polynomial for "point in polygon" tests
@@ -291,7 +429,8 @@ public class SegmentedCellMerger {
             perimetersList.add(orderedPerimeter);
         }
         
-        BoundingRegions br = new BoundingRegions(perimetersList, bma);
+        BoundingRegions br = new BoundingRegions(perimetersList, bma, 
+            pointIndexMap);
         
         return br;
     }
@@ -322,5 +461,34 @@ public class SegmentedCellMerger {
             outputParentIndexMap.put(p, Integer.valueOf(i));
         }        
     }
-    
+
+    private boolean hasBeenVisited(Map<PairInt, Set<PairInt>> visitedMap, 
+        PairInt pParent, PairInt p2Parent) {
+        
+        Set<PairInt> set = visitedMap.get(pParent);
+        if (set == null) {
+            return false;
+        }
+        
+        return set.contains(p2Parent);
+    }
+
+    private void addToVisited(Map<PairInt, Set<PairInt>> visitedMap, 
+        PairInt pParent, PairInt p2Parent) {
+        
+        Set<PairInt> set = visitedMap.get(pParent);
+        if (set == null) {
+            set = new HashSet<PairInt>();
+            visitedMap.put(pParent, set);
+        }
+        set.add(p2Parent);
+        
+        set = visitedMap.get(p2Parent);
+        if (set == null) {
+            set = new HashSet<PairInt>();
+            visitedMap.put(p2Parent, set);
+        }
+        set.add(pParent);
+    }
+
 }

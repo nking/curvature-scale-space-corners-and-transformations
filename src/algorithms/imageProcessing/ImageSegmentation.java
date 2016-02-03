@@ -4360,6 +4360,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             borderPixels.clear();
             borderPixels.addAll(tmp);
         }
+        
+        // create a map for reverse look-ups later
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < blobs.size(); ++i) {
+            Integer key = Integer.valueOf(i);
+            Set<PairInt> blob = blobs.get(i);
+            for (PairInt p : blob) {
+                pointIndexMap.put(p, key);
+            }
+        }
                         
         BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg);
         
@@ -4398,7 +4408,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         as refinement of their rougher locations.
         */
         
-        BoundingRegions br = new BoundingRegions(perimetersList, bma);
+        BoundingRegions br = new BoundingRegions(perimetersList, bma, pointIndexMap);
         
         //plotOrientation(features, br, img, debugTag);
         
@@ -4408,16 +4418,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
+        private final Map<PairInt, Integer> pointIndexMap;
         public BoundingRegions(List<PairIntArray> perimeters, BlobMedialAxes 
-            skeletons) {
+            skeletons, Map<PairInt, Integer> pointIndexMap) {
             this.perimeterList = perimeters;
             this.bma = skeletons;
+            this.pointIndexMap = pointIndexMap;
         }
         public List<PairIntArray> getPerimeterList() {
             return perimeterList;
         }
         public BlobMedialAxes getBlobMedialAxes() {
             return bma;
+        }
+        public Map<PairInt, Integer> getPointIndexMap() {
+            return pointIndexMap;
         }
 
         /**
@@ -4426,13 +4441,40 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
          */
         public void removeIndexes(final List<Integer> removeIndexes) {
             
+            /*
+            updating: Map<PairInt, Integer> pointIndexMap
+            convert to List<Set<PairInt>>
+            perform removal of indexes, 
+            then re-populate pointIndexMap
+            */
+            List<Set<PairInt>> indexPoints = new ArrayList<Set<PairInt>>();
+            for (int i = 0; i < perimeterList.size(); ++i) {
+                indexPoints.add(new HashSet<PairInt>());
+            }
+            for (Entry<PairInt, Integer> entry : pointIndexMap.entrySet()) {
+                PairInt p = entry.getKey();
+                int idx = entry.getValue().intValue();
+                indexPoints.get(idx).add(p);
+            }
+            for (int i = (removeIndexes.size() - 1); i > -1; --i) {
+                int rmIdx = removeIndexes.get(i);
+                indexPoints.remove(rmIdx);
+            }
+            pointIndexMap.clear();
+            for (int i = 0; i < indexPoints.size(); ++i) {
+                Integer key = Integer.valueOf(i);
+                Set<PairInt> points = indexPoints.get(i);
+                for (PairInt p : points) {
+                    pointIndexMap.put(p, key);
+                }
+            }
+            
             for (int i = (removeIndexes.size() - 1); i > -1; --i) {
                 int rmIdx = removeIndexes.get(i);
                 perimeterList.remove(rmIdx);
             }
             
-            bma.removeIndexes(removeIndexes);
-            
+            bma.removeIndexes(removeIndexes);           
         }
     }
 
