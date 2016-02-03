@@ -1,6 +1,15 @@
 package algorithms.compGeometry;
 
 import algorithms.misc.MiscMath;
+import algorithms.util.PairFloat;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * test whether a point is within a polygon.
@@ -37,6 +46,10 @@ public class PointInPolygon {
         
         int xMax = MiscMath.findMax(xPolygon, nPolygonPoints) + 1;
         
+        int n2 = 0;
+        int n3 = 0;
+        int n0 = 0;
+        
         int sumIntersectingRays = 0;
         
         for (int i = 0; i < (nPolygonPoints - 1); i++) {
@@ -59,10 +72,27 @@ public class PointInPolygon {
                 if (yPt != y3) {
                     sumIntersectingRays++;
                 }
+                
+                if (yPt == y2) {
+                    n2++;
+                } 
+                if (yPt == y3) {
+                    n3++;
+                }
+                if ((yPt != y2) && (yPt != y3)) {
+                    n0++;
+                }
             }
         }
         
-        return ((sumIntersectingRays & 1) == 1);
+        boolean odd = ((sumIntersectingRays & 1) == 1);
+        
+        // for complex concave and convex curves:
+        if (!odd && ((n0 & 1) == 0) && ((n2 & 1) == 1) && ((n3 & 1) == 1) ) {
+            odd = true;
+        }
+        
+        return odd;
     }
     
     /**
@@ -85,6 +115,10 @@ public class PointInPolygon {
         
         int sumIntersectingRays = 0;
         
+        int n2 = 0;
+        int n3 = 0;
+        int n0 = 0;
+                
         for (int i = 0; i < (nPolygonPoints - 1); i++) {
             
             float x2 = xPolygon[i];
@@ -105,10 +139,26 @@ public class PointInPolygon {
                 if (yPt != y3) {
                     sumIntersectingRays++;
                 }
+                
+                if (yPt == y2) {
+                    n2++;
+                } 
+                if (yPt == y3) {
+                    n3++;
+                }
+                if ((yPt != y2) && (yPt != y3)) {
+                    n0++;
+                }
             }
         }
+                
+        boolean odd = ((sumIntersectingRays & 1) == 1);
         
-        return ((sumIntersectingRays & 1) == 1);
+        if (!odd && ((n0 & 1) == 0) && ((n2 & 1) == 1) && ((n3 & 1) == 1) ) {
+            odd = true;
+        }
+        
+        return odd;
     }
     
 }
