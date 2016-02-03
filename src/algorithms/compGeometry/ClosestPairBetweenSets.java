@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * NOT READY FOR USE.
  * Find the closest pair of points between two sets of points by using divide and 
  * conquer to reduce the number of comparisons
  * 
@@ -18,6 +19,9 @@ import java.util.Set;
  * that add at most O(3*3) to the smallest of recursive steps.
  * 
  * NOTE: this class has not been thoroughly tested yet.
+ * 
+ * The case when set1 is completely embedded in set2 is not solved correctly,
+ * so need to revise this.
  * 
  * @author nichole
  */
@@ -294,7 +298,7 @@ public class ClosestPairBetweenSets {
     /**
      *
      */
-    public class ClosestPairInt {
+    public static class ClosestPairInt {
         PairIntWithIndex point0;
         PairIntWithIndex point1;
         int separationSq;
