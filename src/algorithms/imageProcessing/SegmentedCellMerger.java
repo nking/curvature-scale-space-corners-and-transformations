@@ -55,6 +55,10 @@ public class SegmentedCellMerger {
         this.debugTag = debugTag;
     }
     
+    public void setClassPairs(Map<PairInt, PairInt> similarClass, 
+        Map<PairInt, PairInt> differentClass, String outfileSuffix) {
+    }
+        
     public void merge() {
         
         /*                
@@ -64,16 +68,16 @@ public class SegmentedCellMerger {
            value being the node.
         
         a stack is populated with the centroids, so that they are popped in
-        order of smallest cells first.
+        order of smallest cells to largest.
         
         as each item is popped from the stack, the parent cell for that centroid
         is found.
         
            Then the adjacent cells are visited to compare colors and merge if similar.
-           -- the adjacency map is determined by the boundaries and the points
-               immediately next to the boundaries.
+           (the adjacency map is determined  by the boundaries and the points
+           immediately next to the boundaries).
         
-           -- once the adjacent cells are determined, each is visited.
+           -- each cell in the adjacent cells is visited.
               -- colors are compared and the similar cells are merged.
                  -- merging currently is done as union of the disjoint set forest.
                     then updating the maps for the merge and new parent.
@@ -117,6 +121,7 @@ public class SegmentedCellMerger {
             
             if (cellIndexMap.containsKey(xyCen)) {
                 stack.add(xyCen);
+                log.info(xyCen.toString());
             }            
         }
         
@@ -312,19 +317,42 @@ public class SegmentedCellMerger {
             the points in those sets.
         
         line 500 to end of its method are what is then needed here to rebuild the merged as
-        bounding regions. 
-        
-TODO:  consider encapsulating the maps in an extended disjoint helper
-        to make the union and findSet updates also handle updating the
-        maps.
-        
+        bounding regions.
         */
-                
-        for (Entry<PairInt, Set<PairInt>> entry : mergedMap.entrySet()) {
+           
+        // making a debug image before tuning color conditionals
+        Map<PairInt, Set<PairInt>> mergedPoints = new HashMap<PairInt, Set<PairInt>>();
+        for (Entry<PairInt, Integer> entry : br.getPointIndexMap().entrySet()) {
             
-            PairInt parentCentroid = entry.getKey();
+            PairInt p = entry.getKey();
             
-            Set<PairInt> mergedCentroids = entry.getValue();            
+            Integer cellIndex = entry.getValue();
+            PairInt cellCentroid = br.getBlobMedialAxes().getOriginalBlobXYCentroid(cellIndex.intValue());
+            DisjointSet2Node<PairInt> cellNode = cellMap.get(cellCentroid);            
+            DisjointSet2Node<PairInt> parentCellNode = disjointSetHelper.findSet(cellNode);  
+            
+            PairInt parentCellCentroid = parentCellNode.getMember();
+            
+            Set<PairInt> points = mergedPoints.get(parentCellCentroid);
+            if (points == null) {
+                points = new HashSet<PairInt>();
+                mergedPoints.put(parentCellCentroid, points);
+            }
+            points.add(p);
+        }
+        
+        GreyscaleImage imgCp = img.copyToGreyscale();
+        
+        if (mergedPoints.size() < 256) {
+            int delta = Math.round(256.f/(float)mergedPoints.size());
+            int level = 255;
+            for (Entry<PairInt, Set<PairInt>> entry : mergedPoints.entrySet()) {
+                for (PairInt p : entry.getValue()) {
+                    imgCp.setValue(p.getX(), p.getY(), level);
+                }
+                level -= delta;
+            }
+            MiscDebug.writeImage(imgCp, "_" + debugTag + "_merged_");
         }
         
         int z = 1;

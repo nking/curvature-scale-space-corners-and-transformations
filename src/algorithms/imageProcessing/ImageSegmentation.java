@@ -3419,15 +3419,82 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             GreyscaleImage.Type.Bits32FullRangeInt);
         
         for (int i = 0; i < input.getNPixels(); ++i) {
+            
             float[] lab = input.getCIELAB(i);
+            
             aImg.setValue(i, Math.round(lab[1]));
+            
         }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
         
         HistogramEqualization hEq = new HistogramEqualization(aImg);
         hEq.applyFilter();
+                
+        int minDimension = Math.min(originalImageWidth, originalImageHeight);
+        int lowerLimitSize;
+        if (minDimension > 900) {
+            lowerLimitSize = 300;
+        } else if (minDimension < 200) {
+            lowerLimitSize = 100;
+        } else {
+            lowerLimitSize = 200;
+        }
+       
+        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg, 
+            lowerLimitSize, debugTag);
+            
+        return ws;
+    }
+    
+    public GreyscaleImage createGreyscaleO1Watershed(ImageExt input, String debugTag,
+        int originalImageWidth, int originalImageHeight) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        GreyscaleImage o1Img = new GreyscaleImage(w, h, 
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        GreyscaleImage greyGradient = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        int maxGrey = Integer.MIN_VALUE;
+        for (int i = 0; i < input.getNPixels(); ++i) {
+            
+            int r = input.getR(i);
+            int g = input.getG(i);
+            o1Img.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
+            
+            int grey = Math.round(((float)input.getR(i) + (float)input.getG(i) + 
+                (float)input.getB(i))/3.f);
+            greyGradient.setValue(i, grey);
+            if (grey > maxGrey) {
+                maxGrey = grey;
+            }
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
+        }        
+        imageProcessor.lowIntensityFilter(greyGradient, 3.6E-4);//3.0E-4
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
+        }
+        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
+            int v = greyGradient.getValue(i);
+            greyGradient.setValue(i, maxGrey - v);
+        }
+        
+        HistogramEqualization hEq = new HistogramEqualization(o1Img);
+        hEq.applyFilter();
+        imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
         
         if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(aImg, "_a_" + debugTag);
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_adapt_med_" + debugTag);
+            MiscDebug.writeImage(o1Img, "_o1_adapt_med_" + debugTag);
         }
                 
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
@@ -3438,13 +3505,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             lowerLimitSize = 100;
         } else {
             lowerLimitSize = 200;
-        } 
+        }
         
-        ImageProcessor imageProcessor = new ImageProcessor();
+        // add the 0's from o1Img to greyGradient
+        for (int i = 0; i < o1Img.getNPixels(); ++i) {
+            if (o1Img.getValue(i) == 0) {
+                greyGradient.setValue(i, 0);
+            }
+        }
         
-        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg, 
-            lowerLimitSize, debugTag);
-            
+        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
+            greyGradient, lowerLimitSize, debugTag);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(ws, "_gradient_watershed_" + debugTag);
+        }
+        
         return ws;
     }
     
@@ -4413,6 +4488,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //plotOrientation(features, br, img, debugTag);
         
         return br;
+    }
+
+    private double countFreq(PairIntArray sortedFreqL) {
+        
+        long n = 0;
+        for (int i = 0; i < sortedFreqL.getN(); ++i) {
+            n += sortedFreqL.getY(i);
+        }
+        return n;
     }
     
     public static class BoundingRegions {

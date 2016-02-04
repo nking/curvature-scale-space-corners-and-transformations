@@ -13,6 +13,7 @@ import algorithms.misc.MiscDebug;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -931,6 +932,23 @@ public class ImageProcessor {
         applyKernel1D(input, kernel, true);
 
         applyKernel1D(input, kernel, false);
+    }
+    
+    /**
+     * apply a sigma=0.5 first derivative of Gaussian ([0.5, 0, -0.5], a.k.a. Sobel)
+     * @param input 
+     */
+    public GreyscaleImage createSmallFirstDerivGaussian(GreyscaleImage input) {
+        
+        float[] kernel = Gaussian1DFirstDeriv.getKernel(
+            SIGMA.ZEROPOINTFIVE);
+        
+        GreyscaleImage gX = input.copyImage();
+        GreyscaleImage gY = input.copyImage();
+        applyKernel1D(gX, kernel, true);
+        applyKernel1D(gY, kernel, false);
+        
+        return combineConvolvedImages(gX, gY);
     }
     
     protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
@@ -3705,5 +3723,29 @@ public class ImageProcessor {
         pixels.clear();
         pixels.addAll(output);
         
+    }
+
+    public void lowIntensityFilter(GreyscaleImage input, double lowThresholdFractionOfTotal) {
+        
+        int n = input.getNPixels();
+        
+        long nTotal = 0;
+        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(input);        
+        for (Integer count : freqMap.values()) {
+            nTotal += count.longValue();
+        }
+        
+        int thresh = (int)Math.round(lowThresholdFractionOfTotal * (double)nTotal);
+        
+        if (thresh == 0) {
+            return;
+        }
+        
+        for (int i = 0; i < n; ++i) {
+            int v = input.getValue(i);
+            if (v < thresh) {
+                input.setValue(i, 0);
+            }
+        }
     }
 }
