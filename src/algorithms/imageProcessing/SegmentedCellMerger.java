@@ -55,6 +55,13 @@ public class SegmentedCellMerger {
         this.debugTag = debugTag;
     }
     
+    /**
+     * set up pairs of centroids to write data to text file for classes 
+     * "similar" and "different".
+     * @param similarClass
+     * @param differentClass
+     * @param outfileSuffix 
+     */
     public void setClassPairs(Map<PairInt, PairInt> similarClass, 
         Map<PairInt, PairInt> differentClass, String outfileSuffix) {
     }
