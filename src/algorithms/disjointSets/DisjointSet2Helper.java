@@ -28,8 +28,8 @@ public class DisjointSet2Helper {
      * <pre>
      * find the set representative for the given node.  As a side effect,
      * also updates x and all of it's ancestors with the found result so that
-     * they directly point to the top most parent ans subsequent lookups are
-     * faster.
+     * they directly point to the top most parent and subsequent lookups are
+     * faster (this is path compression).
      * runtime complexity:
      *     the method uses iteration.  
      *     if we represent x_height as the number of nodes between x's tree 
@@ -46,7 +46,7 @@ public class DisjointSet2Helper {
      * @return
      */
     public <T> DisjointSet2Node<T> findSet(DisjointSet2Node<T> x) {
-        
+                
         // iterative
         if (!x.equals(x.getParent())) {
             
@@ -62,17 +62,15 @@ public class DisjointSet2Helper {
             for (DisjointSet2Node<T> node : update) {
                 node.setParent(parent);
             }
+  
         }
         
         return x.getParent();
     }
     
     /**
-      implement part of path compression:
-          for each node in the path from x to root, reassign the parent as the 
-          root.
-          (the path compression then becomes useful on the next findSet for any 
-          mode along the path).
+      assigns to x and y the same parent from both of their parents, choosing
+      the one with largest rank.
           
        Runtime complexity is O(1).
        
@@ -101,7 +99,7 @@ public class DisjointSet2Helper {
     }
     
     /**
-     * append the shorter list onto the end of the longer's list.
+     * append the shorter list onto the end of the longer list.
      * The amortized runtime complexity is O(1) due to the path compression
      * in findSet.
      * The method is also known as "union-find" because it uses findSet 

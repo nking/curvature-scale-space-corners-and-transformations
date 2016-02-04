@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
@@ -56,15 +57,11 @@ public class SegmentedCellMerger {
     
     public void merge() {
         
-        /*        
-        current steps (and changes to be made):
-        
+        /*                
         -- the centroid of each blob, that is bounded region, from the segmented
            image is used to create a DisjointSet2Node.
            each of these is placed in a map w/ key being the centroid and
            value being the node.
-        -- a map with key being centroid and value being cell bounds is made
-        -- a map with key being centroid and value being cell points is made
         
         a stack is populated with the centroids, so that they are popped in
         order of smallest cells first.
@@ -147,6 +144,8 @@ public class SegmentedCellMerger {
             if (visited.contains(p)) {
                 continue;
             }
+            
+            PairInt originalP = p.copy();
             
             DisjointSet2Node<PairInt> pNode = cellMap.get(p);
                         
@@ -234,6 +233,8 @@ public class SegmentedCellMerger {
 
                 if (parentOfMerge.equals(pParent)) {
                     
+                    // parent is still the main comparator
+                    
                     //mergedMap for key pParent gets values of p2Parent 
                     //and the p2Parent key gets removed
                     
@@ -254,10 +255,9 @@ public class SegmentedCellMerger {
                     
                 } else {
                     
-                    if (!p.equals(pParent)) {
-                        assert(!adjacencyMap.containsKey(p));
-                        assert(!mergedMap.containsKey(p));
-                    }
+                    // the new parent key has become a neighbor, so after the
+                    // merges, have to re-assign the local variables within
+                    // the upper block
                     
                     //mergedMap for key p2Parent gets values of pParent 
                     //and the pParent key gets removed
@@ -276,13 +276,27 @@ public class SegmentedCellMerger {
                     Set<PairInt> p2ParentAdjacencySet = adjacencyMap.get(p2Parent);
                     p2ParentAdjacencySet.addAll(pParentAdjacencySet);
                     p2ParentAdjacencySet.removeAll(p2ParentMergedSet);
+                    
+                    // --- reassign upper block variables to use new parent information ---
+                    p = p2;
+                    
+                    // NOTE: there's some inefficiency in that the visited check
+                    // is now bypassed, but the number of original neighbors is
+                    // small so the possible extra work should be idempotent.
+                    
+                    pNode = p2Node;
+                    pParentNode = p2ParentNode;
+                    pParent = p2Parent;
+                    pIndex = p2ParentIndex;
+                    labP = labP2;
+                    hueAngleP = hueAngleP2;
                 }
              
                 didMerge = true;                  
             }
            
             if (didMerge) {
-                visited.add(p);
+                visited.add(originalP);
             }
         }
                
@@ -305,6 +319,13 @@ TODO:  consider encapsulating the maps in an extended disjoint helper
         maps.
         
         */
+                
+        for (Entry<PairInt, Set<PairInt>> entry : mergedMap.entrySet()) {
+            
+            PairInt parentCentroid = entry.getKey();
+            
+            Set<PairInt> mergedCentroids = entry.getValue();            
+        }
         
         int z = 1;
     }
