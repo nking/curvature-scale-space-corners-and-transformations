@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
 import algorithms.imageProcessing.SegmentedCellMerger;
 import algorithms.imageProcessing.WaterShed;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
@@ -19,10 +20,15 @@ import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -55,8 +61,6 @@ public class AndroidStatuesTest extends TestCase {
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
                     fileName2 = "android_statues_04.jpg";
-                    //fileName1 = "campus_010.jpg";
-                    //fileName2 = "campus_011.jpg";
                     //fileName1 = "android_statues_02_gingerbreadman.jpg";
                     //fileName2 = "android_statues_04_gingerbreadman.jpg";
                     settings.setUseNormalizedFeatures(true);
@@ -128,14 +132,12 @@ public class AndroidStatuesTest extends TestCase {
         ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
 
         ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         int w1 = img1.getWidth();
         int h1 = img1.getHeight();
         int w2 = img2.getWidth();
         int h2 = img2.getHeight();
-        
-        //createTmpImages(img1, "_1");
-        //createTmpImages(img2, "_2");
         
         int maxDimension = 350;
         int binFactor1 = (int) Math.ceil(Math.max((float)w1/maxDimension,
@@ -145,22 +147,29 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
         ImageExt img2Binned = imageProcessor.binImage(img2, binFactor2);
-        //createTmpImages(img1Binned, "_1_binned");
-        //createTmpImages(img2Binned, "_2_binned");
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
-        /*imageSegmentation.extractObjectEdges(img1Binned, "_" + fileName1Root + "_1_binned", 
-            img1.getWidth(), img1.getHeight());
-        imageSegmentation.extractObjectEdges(img2Binned, "_" + fileName2Root + "_2_binned",
-            img2.getWidth(), img2.getHeight());
-        */        
-        
-        GreyscaleImage img1Ws = imageSegmentation.createAWatershed(img1Binned, 
-            "_" + fileName1Root + "_1_binned",
-            img1.getWidth(), img1.getHeight());
                 
+        Set<PairIntPair> similarClass = new HashSet<PairIntPair>();
+        Set<PairIntPair> differentClass = new HashSet<PairIntPair>();
+        
+        GreyscaleImage img1Ws = imageSegmentation.createGreyscaleO1Watershed(img1Binned, 
+            "_" + fileName1Root + "_1_binned", img1.getWidth(), img1.getHeight());
         SegmentedCellMerger scm = new SegmentedCellMerger(img1Binned, img1Ws,
             0, "_" + fileName1Root + "_1_binned");
+        populateClasses(similarClass, differentClass, fileName1Root);
+        scm.setClassPairs(similarClass, differentClass, fileName1Root);
         scm.merge();
+        
+        /*
+        GreyscaleImage img2Ws = imageSegmentation.createGreyscaleO1Watershed(img2Binned, 
+            "_" + fileName2Root + "_2_binned",
+            img2.getWidth(), img2.getHeight());
+        
+        SegmentedCellMerger scm = new SegmentedCellMerger(img2Binned, img2Ws,
+            0, "_" + fileName2Root + "_2_binned");
+        populateClasses(similarClass, differentClass, fileName2Root);
+        scm.setClassPairs(similarClass, differentClass, fileName2Root);
+        scm.merge();
+        */
         
 if (true) {
     System.exit(1);
@@ -432,6 +441,135 @@ if (true) {
 
             log.info(sb.toString());
         }
-     }
+    }
+
+    private void populateClasses(Set<PairIntPair> similarClass, 
+        Set<PairIntPair> differentClass, String fileNameRoot) {
+        
+        if (fileNameRoot.contains("android_statues_02")) {
+            
+            similarClass.add(new PairIntPair(278,133,285,135));
+            similarClass.add(new PairIntPair(285,135,290,131));
+            similarClass.add(new PairIntPair(290,131,289,125));
+            similarClass.add(new PairIntPair(289,125,282,120));
+            similarClass.add(new PairIntPair(282,120,276,123));
+            similarClass.add(new PairIntPair(278,133,276,123));
+            similarClass.add(new PairIntPair(278,112,282,120));
+            similarClass.add(new PairIntPair(267,110,278,112));
+            similarClass.add(new PairIntPair(267,110,269,119));
+            similarClass.add(new PairIntPair(267,110,273,103));
+            similarClass.add(new PairIntPair(267,110,257,112));
+            similarClass.add(new PairIntPair(273,103,273,96));
+            similarClass.add(new PairIntPair(267,110,262,120));
+            similarClass.add(new PairIntPair(262,96,273,96));
+            similarClass.add(new PairIntPair(269,89,273,96));
+            similarClass.add(new PairIntPair(269,89,271,80));
+            similarClass.add(new PairIntPair(269,89,275,86));
+            similarClass.add(new PairIntPair(275,86,278,91));
+            similarClass.add(new PairIntPair(278,91,282,87));
+            similarClass.add(new PairIntPair(275,86,282,87));
+            similarClass.add(new PairIntPair(269,89,271,80));
+            similarClass.add(new PairIntPair(271,80,275,86));
+            similarClass.add(new PairIntPair(262,79,271,80));
+            similarClass.add(new PairIntPair(262,79,269,71));
+            similarClass.add(new PairIntPair(282,87,290,75));
+            similarClass.add(new PairIntPair(290,75,288,66));
+            similarClass.add(new PairIntPair(288,66,280,67));
+            similarClass.add(new PairIntPair(265,63,269,71));
+            similarClass.add(new PairIntPair(265,63,260,65));
+            similarClass.add(new PairIntPair(269,71,272,56));
+            similarClass.add(new PairIntPair(260,54,272,56));
+            similarClass.add(new PairIntPair(272,56,276,46));
+            similarClass.add(new PairIntPair(276,46,276,40));
+            similarClass.add(new PairIntPair(261,41,264,35));
+            similarClass.add(new PairIntPair(70,82,84,93));
+            similarClass.add(new PairIntPair(59,169,86,171));
+            similarClass.add(new PairIntPair(84,140,72,137));
+            similarClass.add(new PairIntPair(72,137,61,132));
+            similarClass.add(new PairIntPair(44,123,61,132));
+            similarClass.add(new PairIntPair(51,39,62,28));
+            similarClass.add(new PairIntPair(31,71,51,39));
+            
+            differentClass.add(new PairIntPair(19,168,34,166));
+            differentClass.add(new PairIntPair(19,168,39,173));
+            differentClass.add(new PairIntPair(163,79,148,76));
+            differentClass.add(new PairIntPair(163,79,176,67));
+            differentClass.add(new PairIntPair(181,86,163,79));
+            differentClass.add(new PairIntPair(233,8,0,0));
+             
+        } else if (fileNameRoot.contains("android_statues_04")) {
+            
+            similarClass.add(new PairIntPair(105,143,137,145));
+            similarClass.add(new PairIntPair(125,130,105,143));
+            similarClass.add(new PairIntPair(125,130,137,145));
+            similarClass.add(new PairIntPair(117,125,105,143));
+            similarClass.add(new PairIntPair(117,125,125,130));
+            similarClass.add(new PairIntPair(117,125,114,115));
+            similarClass.add(new PairIntPair(114,115,125,130));
+            similarClass.add(new PairIntPair(128,114,131,119));
+            similarClass.add(new PairIntPair(128,114,114,115));
+            similarClass.add(new PairIntPair(131,119,125,130));
+            similarClass.add(new PairIntPair(98,128,103,130));
+            similarClass.add(new PairIntPair(98,128,93,127));
+            similarClass.add(new PairIntPair(92,120,83,121));
+            similarClass.add(new PairIntPair(92,120,93,127));
+            similarClass.add(new PairIntPair(93,127,83,121));
+            similarClass.add(new PairIntPair(144,116,144,128));
+            similarClass.add(new PairIntPair(144,116,136,125));
+            similarClass.add(new PairIntPair(144,128,137,145));
+            similarClass.add(new PairIntPair(190,105,206,119));
+            similarClass.add(new PairIntPair(240,107,223,103));
+            similarClass.add(new PairIntPair(240,107,225,134));
+            similarClass.add(new PairIntPair(240,107,259,105));
+            similarClass.add(new PairIntPair(240,107,253,133));
+            similarClass.add(new PairIntPair(11,52,15,60));
+            
+            differentClass.add(new PairIntPair(138,29,245,54));
+            differentClass.add(new PairIntPair(240,107,245,54));
+            differentClass.add(new PairIntPair(190,105,245,54));
+            differentClass.add(new PairIntPair(54,73,46,75));
+            
+        } else if (fileNameRoot.contains("android_statues_01")) {
+            
+            similarClass.add(new PairIntPair(121,68,117,63));
+            similarClass.add(new PairIntPair(121,68,113,67));
+            similarClass.add(new PairIntPair(117,63,113,67));
+            similarClass.add(new PairIntPair(114,82,120,82));
+            similarClass.add(new PairIntPair(120,82,123,78));
+            similarClass.add(new PairIntPair(121,68,128,76));
+            similarClass.add(new PairIntPair(166,68,170,65));
+            similarClass.add(new PairIntPair(166,68,160,81));
+            similarClass.add(new PairIntPair(179,78,160,81));
+            similarClass.add(new PairIntPair(178,87,160,81));
+            similarClass.add(new PairIntPair(302,111,302,120));
+            similarClass.add(new PairIntPair(302,111,310,120));
+            similarClass.add(new PairIntPair(45,50,49,45));
+            similarClass.add(new PairIntPair(93,27,101,26));
+            similarClass.add(new PairIntPair(202,69,212,69));
+                
+            differentClass.add(new PairIntPair(121,68,133,68));
+            differentClass.add(new PairIntPair(111,56,117,63));
+            differentClass.add(new PairIntPair(265,130,281,122));
+            differentClass.add(new PairIntPair(147,36,152,22));
+            differentClass.add(new PairIntPair(147,36,153,47));
+        
+        } else if (fileNameRoot.contains("android_statues_03")) {   
+            
+            similarClass.add(new PairIntPair(48,89,21,89));
+            similarClass.add(new PairIntPair(48,89,28,127));
+            similarClass.add(new PairIntPair(48,89,68,125));
+            similarClass.add(new PairIntPair(48,89,70,90));
+            similarClass.add(new PairIntPair(145,106,149,141));
+            similarClass.add(new PairIntPair(145,106,164,139));
+            similarClass.add(new PairIntPair(145,106,172,105));
+            similarClass.add(new PairIntPair(145,106,154,72));
+            similarClass.add(new PairIntPair(86,58,120,58));
+        
+            differentClass.add(new PairIntPair(48,89,65,106));
+            differentClass.add(new PairIntPair(48,89,94,84));
+            differentClass.add(new PairIntPair(172,105,182,90));
+        }
+        
+    }
 
 }

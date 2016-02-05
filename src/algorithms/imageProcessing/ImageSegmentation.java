@@ -3450,6 +3450,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public GreyscaleImage createGreyscaleO1Watershed(ImageExt input, String debugTag,
         int originalImageWidth, int originalImageHeight) {
         
+        /*
+        TODO: might consider an "outdoor mode" flag that adds in an additional
+        image good at picking up blue or red skylines.
+        roughly (b-r)/(b-g) followed by hist eq, followed by adapt med or
+        a color space band better adapted for that.
+        the edges would be added to the combined image before making a
+        watershed.
+        
+        Also, consider one day, finding or writing a model which
+        assumes a color of a light source and builds a color
+        model like CIE XY so that same color but different
+        level of illumination is seen at same polar angle from
+        center of color diagram.
+        */
+        
         int w = input.getWidth();
         int h = input.getHeight();
         
@@ -4367,6 +4382,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Double> lAvg = new ArrayList<Double>();
         List<Double> aAvg = new ArrayList<Double>();
         List<Double> bAvg = new ArrayList<Double>();
+        List<Double> o1Avg = new ArrayList<Double>();
+        List<Double> o2Avg = new ArrayList<Double>();
+        List<Double> o3Avg = new ArrayList<Double>();
         
         for (int i = 0; i < blobs.size(); ++i) {
             double redSum = 0;
@@ -4393,6 +4411,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             aAvg.add(Double.valueOf(avgLAB[1]));
             bAvg.add(Double.valueOf(avgLAB[2]));
         
+            o1Avg.add(Double.valueOf((redSum - greenSum)/Math.sqrt(2)));
+            o2Avg.add(Double.valueOf((redSum + greenSum - 2*blueSum)/Math.sqrt(6)));
+            o3Avg.add(Double.valueOf((redSum + greenSum + blueSum)/Math.sqrt(2)));
+            
             //double[] xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
             //String str = String.format(
             //    "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
@@ -4446,7 +4468,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
                         
-        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg);
+        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
+            o2Avg, o3Avg);
         
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     

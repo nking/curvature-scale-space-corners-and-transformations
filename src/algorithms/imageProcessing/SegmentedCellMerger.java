@@ -18,14 +18,21 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.PairIntPair;
+import algorithms.util.ResourceFinder;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -55,6 +62,11 @@ public class SegmentedCellMerger {
         this.debugTag = debugTag;
     }
     
+    private Set<PairIntPair> simClass = null;
+    private Set<PairIntPair> diffClass = null;
+    private String simFilePath = null;
+    private FileWriter simWriter = null;
+    
     /**
      * set up pairs of centroids to write data to text file for classes 
      * "similar" and "different".
@@ -62,11 +74,24 @@ public class SegmentedCellMerger {
      * @param differentClass
      * @param outfileSuffix 
      */
-    public void setClassPairs(Map<PairInt, PairInt> similarClass, 
-        Map<PairInt, PairInt> differentClass, String outfileSuffix) {
-    }
+    public void setClassPairs(Set<PairIntPair> similarClass, 
+        Set<PairIntPair> differentClass, String outfileSuffix) throws IOException {
         
+        simClass = similarClass;
+        diffClass = differentClass;
+        this.simFilePath = ResourceFinder.getAFilePathInTmpData("seg_color_"+ outfileSuffix + ".csv");
+    }
+    
     public void merge() {
+        
+        if (simFilePath != null) {
+            try {
+                File fl = new File(simFilePath);
+                simWriter = new FileWriter(fl);
+            } catch (IOException ex) {
+                Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         
         /*                
         -- the centroid of each blob, that is bounded region, from the segmented
@@ -128,7 +153,6 @@ public class SegmentedCellMerger {
             
             if (cellIndexMap.containsKey(xyCen)) {
                 stack.add(xyCen);
-                log.info(xyCen.toString());
             }            
         }
         
@@ -158,6 +182,7 @@ public class SegmentedCellMerger {
             }
             
             PairInt originalP = p.copy();
+            Integer originalPIndex = cellIndexMap.get(originalP);
             
             DisjointSet2Node<PairInt> pNode = cellMap.get(p);
                         
@@ -165,14 +190,23 @@ public class SegmentedCellMerger {
             
             PairInt pParent = pParentNode.getMember();
             
-            Integer pIndex = cellIndexMap.get(pParent);
-            
+            /*
+            Integer pIndex = cellIndexMap.get(pParent);            
             float[] labP = br.getBlobMedialAxes().getLABColors(pIndex.intValue());
-            
             double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
             if (hueAngleP < 0) {
                 hueAngleP += 360.;
             }
+            */
+            float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
+            double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
+            if (hueAngleP < 0) {
+                hueAngleP += 360.;
+            }
+
+            double o1P = br.getBlobMedialAxes().getO1(originalPIndex.intValue());
+            double o2P = br.getBlobMedialAxes().getO2(originalPIndex.intValue());
+            double o3P = br.getBlobMedialAxes().getO3(originalPIndex.intValue());
             
             boolean didMerge = false;
             
@@ -195,11 +229,13 @@ public class SegmentedCellMerger {
                 if (hasBeenVisited(visitedMap, pParent, p2Parent)) {
                     continue;
                 }
-                                           
+                                      
+                /*
                 Integer p2ParentIndex = cellIndexMap.get(p2Parent);
-                    
                 float[] labP2 = br.getBlobMedialAxes().getLABColors(p2ParentIndex.intValue());
-
+                */
+                Integer p2Index = cellIndexMap.get(p2);
+                float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
                 double hueAngleP2 = Math.atan(labP2[2]/labP2[1]) * 180./Math.PI;
                 if (hueAngleP2 < 0) {
                     hueAngleP2 += 360.;
@@ -210,8 +246,18 @@ public class SegmentedCellMerger {
 
                 float deltaHA = AngleUtil.getAngleDifference((float)hueAngleP, 
                     (float)hueAngleP2);
+                
+                double o1P2 = br.getBlobMedialAxes().getO1(p2Index.intValue());
+                double o2P2 = br.getBlobMedialAxes().getO2(p2Index.intValue());
+                double o3P2 = br.getBlobMedialAxes().getO3(p2Index.intValue());
 
+                double deltaO1 = o1P - o1P2;
+                double deltaO2 = o2P - o2P2;
+                double deltaO3 = o3P - o3P2;
+                
                 addToVisited(visitedMap, pParent, p2Parent);
+                
+writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, deltaO2, deltaO3);
                 
                 log.info(String.format("%s %s  deltaE=%.2f  dHA=%d",
                     pParent.toString(), p2Parent.toString(), (float)deltaE,
@@ -299,9 +345,9 @@ public class SegmentedCellMerger {
                     pNode = p2Node;
                     pParentNode = p2ParentNode;
                     pParent = p2Parent;
-                    pIndex = p2ParentIndex;
-                    labP = labP2;
-                    hueAngleP = hueAngleP2;
+                    //pIndex = p2ParentIndex;
+                    //labP = labP2;
+                    //hueAngleP = hueAngleP2;
                 }
              
                 didMerge = true;                  
@@ -360,6 +406,16 @@ public class SegmentedCellMerger {
                 level -= delta;
             }
             MiscDebug.writeImage(imgCp, "_" + debugTag + "_merged_");
+        }
+        
+        if (simWriter != null) {
+            try {
+                if (simWriter != null) {
+                    simWriter.close();
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         
         int z = 1;
@@ -436,6 +492,9 @@ public class SegmentedCellMerger {
         List<Double> lAvg = new ArrayList<Double>();
         List<Double> aAvg = new ArrayList<Double>();
         List<Double> bAvg = new ArrayList<Double>();
+        List<Double> o1Avg = new ArrayList<Double>();
+        List<Double> o2Avg = new ArrayList<Double>();
+        List<Double> o3Avg = new ArrayList<Double>();
         
         for (int i = 0; i < blobs.size(); ++i) {
             double redSum = 0;
@@ -461,7 +520,11 @@ public class SegmentedCellMerger {
             lAvg.add(Double.valueOf(avgLAB[0]));
             aAvg.add(Double.valueOf(avgLAB[1]));
             bAvg.add(Double.valueOf(avgLAB[2]));
-        
+            
+            o1Avg.add(Double.valueOf((redSum - greenSum)/Math.sqrt(2)));
+            o2Avg.add(Double.valueOf((redSum + greenSum - 2*blueSum)/Math.sqrt(6)));
+            o3Avg.add(Double.valueOf((redSum + greenSum + blueSum)/Math.sqrt(2)));
+           
             /*PairInt xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
             String str = String.format(
                 "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
@@ -545,7 +608,8 @@ public class SegmentedCellMerger {
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
-        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg);
+        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
+            o2Avg, o3Avg);
         
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     
@@ -717,4 +781,39 @@ public class SegmentedCellMerger {
         return mergeMap;
     }
 
+    private void writeToClassDataFile(PairInt originalP, PairInt p2, 
+        float[] labP, float[] labP2, double deltaE, float deltaHA,
+        double deltaO1, double deltaO2, double deltaO3) {
+        
+        PairIntPair p = new PairIntPair(originalP.getX(), originalP.getY(),
+            p2.getX(), p2.getY());
+        
+        if (!simClass.contains(p) && !diffClass.contains(p)) {
+            return;
+        }
+        
+        float deltaL = labP[0] - labP2[0];
+        
+        String str = String.format("%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
+            (float)deltaE, (float)Math.abs(deltaE), (float)deltaHA, (float)Math.abs(deltaHA),
+            (float)deltaL, (float)Math.abs(deltaL),
+            (float)deltaO1, (float)Math.abs(deltaO1),
+            (float)deltaO2, (float)Math.abs(deltaO2),
+            (float)deltaO3, (float)Math.abs(deltaO3)
+            );
+        
+        if (simClass.contains(p)) {
+            str = str + ",sim";
+        } else {
+            str = str + ",diff";
+        }
+        str = str + "\n";
+        try {
+            simWriter.write(str);
+            simWriter.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
 }

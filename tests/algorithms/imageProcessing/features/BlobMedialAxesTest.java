@@ -41,9 +41,19 @@ public class BlobMedialAxesTest extends TestCase {
         as.add(Double.valueOf(1.5));
         List<Double> bs = new ArrayList<Double>();
         bs.add(Double.valueOf(1.));
-        bs.add(Double.valueOf(0.5));        
+        bs.add(Double.valueOf(0.5)); 
         
-        BlobMedialAxes bma = new BlobMedialAxes(list, ls, as, bs);
+        List<Double> o1s = new ArrayList<Double>();
+        o1s.add(Double.valueOf(10.));
+        o1s.add(Double.valueOf(15.));
+        List<Double> o2s = new ArrayList<Double>();
+        o2s.add(Double.valueOf(10.));
+        o2s.add(Double.valueOf(15.));
+        List<Double> o3s = new ArrayList<Double>();
+        o3s.add(Double.valueOf(10.));
+        o3s.add(Double.valueOf(15.));
+        
+        BlobMedialAxes bma = new BlobMedialAxes(list, ls, as, bs, o1s, o2s, o3s);
         
         assertEquals(2, bma.getNumberOfItems());
         
