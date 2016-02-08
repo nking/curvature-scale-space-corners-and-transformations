@@ -3440,9 +3440,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         } else {
             lowerLimitSize = 200;
         }
+        
+        imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
        
-        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg, 
-            lowerLimitSize, debugTag);
+        GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg);
             
         return ws;
     }
@@ -3530,7 +3531,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
-            greyGradient, lowerLimitSize, debugTag);
+            greyGradient);
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(ws, "_gradient_watershed_" + debugTag);
         }
@@ -3645,8 +3646,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //List<Set<PairInt>> maskList = imageProcessor.extractConnectedComponents(
         //    labelled, lowerLimitSize);
         
+        imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
+        
         GreyscaleImage aWSImg = imageProcessor.makeWatershedFromAdaptiveMedian(
-            aImg, lowerLimitSize, "_a_"+ debugLabel);
+            aImg);
         
         CannyEdgeFilter filter = new CannyEdgeFilter();
         filter.doNotPerformHistogramEqualization();

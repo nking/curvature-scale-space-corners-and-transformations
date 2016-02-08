@@ -410,7 +410,7 @@ public class SegmentedCellMerger {
         GreyscaleImage imgCp = img.copyToGreyscale();
         
         if (mergedPoints.size() < 256) {
-            int delta = Math.round(256.f/(float)mergedPoints.size());
+            int delta = (int)Math.floor(256.f/(float)mergedPoints.size());
             int level = 255;
             for (Entry<PairInt, Set<PairInt>> entry : mergedPoints.entrySet()) {
                 for (PairInt p : entry.getValue()) {

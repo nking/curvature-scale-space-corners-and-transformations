@@ -3071,17 +3071,9 @@ public class ImageProcessor {
     /**
      * @param input
      * @param lowerLimitSize
-     * @param debugLabel
      * @return 
      */
-    public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input,
-        int lowerLimitSize, String debugLabel) {
-                
-        applyAdaptiveMeanThresholding(input, 1);
-        
-        if (debugLabel != null && !debugLabel.equals("")) {
-            MiscDebug.writeImage(input, "_adaptive_median_" + debugLabel);
-        }
+    public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input) {
         
         int w = input.getWidth();
         int h = input.getHeight();
@@ -3124,10 +3116,6 @@ public class ImageProcessor {
                 int v = labelled[i][j];
                 wsImg.setValue(i, j, v);
             }
-        }
-        
-        if (debugLabel != null && !debugLabel.isEmpty()) {
-            MiscDebug.writeImage(wsImg, "_watershed_" + debugLabel);
         }
         
         return wsImg;
