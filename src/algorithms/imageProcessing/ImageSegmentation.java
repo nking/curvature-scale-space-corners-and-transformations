@@ -3501,7 +3501,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
             int v = greyGradient.getValue(i);
-            greyGradient.setValue(i, maxGrey - v);
+            if (v > 0) {
+                greyGradient.setValue(i, 0);
+            } else {
+                greyGradient.setValue(i, 255);
+            }
+        }
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_inv" + debugTag);
         }
         
         HistogramEqualization hEq = new HistogramEqualization(o1Img);
