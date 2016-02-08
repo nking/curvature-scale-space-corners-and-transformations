@@ -11,6 +11,7 @@ import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -173,6 +175,10 @@ public class SegmentedCellMerger {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
+        //TODO: improving the adjacency matrix to write more points for LDA will
+        // improve this transformation
+        double[][] ldaMatrix = getLDASegmentationMatrix();
+               
         while (!stack.isEmpty()) {
             
             PairInt p = stack.pop();
@@ -199,10 +205,10 @@ public class SegmentedCellMerger {
             }
             */
             float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
-            double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
-            if (hueAngleP < 0) {
-                hueAngleP += 360.;
-            }
+            //double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
+            //if (hueAngleP < 0) {
+            //    hueAngleP += 360.;
+            //}
 
             double o1P = br.getBlobMedialAxes().getO1(originalPIndex.intValue());
             double o2P = br.getBlobMedialAxes().getO2(originalPIndex.intValue());
@@ -236,16 +242,16 @@ public class SegmentedCellMerger {
                 */
                 Integer p2Index = cellIndexMap.get(p2);
                 float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
-                double hueAngleP2 = Math.atan(labP2[2]/labP2[1]) * 180./Math.PI;
-                if (hueAngleP2 < 0) {
-                    hueAngleP2 += 360.;
-                }                            
+                //double hueAngleP2 = Math.atan(labP2[2]/labP2[1]) * 180./Math.PI;
+                //if (hueAngleP2 < 0) {
+                //    hueAngleP2 += 360.;
+                //}                            
 
                 double deltaE = cieC.calcDeltaECIE94(labP[0], labP[1], labP[2], 
                     labP2[0], labP2[1], labP2[2]);
 
-                float deltaHA = AngleUtil.getAngleDifference((float)hueAngleP, 
-                    (float)hueAngleP2);
+                //float deltaHA = AngleUtil.getAngleDifference((float)hueAngleP, 
+                //    (float)hueAngleP2);
                 
                 double o1P2 = br.getBlobMedialAxes().getO1(p2Index.intValue());
                 double o2P2 = br.getBlobMedialAxes().getO2(p2Index.intValue());
@@ -257,11 +263,17 @@ public class SegmentedCellMerger {
                 
                 addToVisited(visitedMap, pParent, p2Parent);
                 
-writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, deltaO2, deltaO3);
+                double[][] data = new double[4][1];
+                data[0][0] = Math.abs(deltaE);
+                data[1][0] = Math.abs(deltaO1);
+                data[2][0] = Math.abs(deltaO2);
+                data[3][0] = Math.abs(deltaO3);
                 
-                log.info(String.format("%s %s  deltaE=%.2f  dHA=%d",
-                    pParent.toString(), p2Parent.toString(), (float)deltaE,
-                    Math.round(deltaHA)));
+                double[][] transformed = MatrixUtil.dot(ldaMatrix, data);
+                double ldaX = transformed[0][0];
+                double ldaY = transformed[1][0];
+                
+//writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaO1, deltaO2, deltaO3);
                 
                 /*
                  for deltaE, range of similar is 2.3 through 5.5 or ?  (max diff is 28.8).
@@ -278,7 +290,8 @@ writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, delta
                  so need to look at the color spaces in detail to use more than deltaE for similarity...
                 */
 
-                if (Math.abs(deltaE) > 5 && Math.abs(deltaHA) > 5) {
+                //if (Math.abs(deltaE) > 6 && Math.abs(deltaHA) > 5) {
+                if (ldaY > 24.5 || ldaX < -50) {
                     continue;
                 }
                 
@@ -782,7 +795,7 @@ writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, delta
     }
 
     private void writeToClassDataFile(PairInt originalP, PairInt p2, 
-        float[] labP, float[] labP2, double deltaE, float deltaHA,
+        float[] labP, float[] labP2, double deltaE, 
         double deltaO1, double deltaO2, double deltaO3) {
         
         PairIntPair p = new PairIntPair(originalP.getX(), originalP.getY(),
@@ -794,8 +807,8 @@ writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, delta
         
         float deltaL = labP[0] - labP2[0];
         
-        String str = String.format("%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
-            (float)deltaE, (float)Math.abs(deltaE), (float)deltaHA, (float)Math.abs(deltaHA),
+        String str = String.format("%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
+            (float)deltaE, (float)Math.abs(deltaE),
             (float)deltaL, (float)Math.abs(deltaL),
             (float)deltaO1, (float)Math.abs(deltaO1),
             (float)deltaO2, (float)Math.abs(deltaO2),
@@ -816,4 +829,22 @@ writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaHA, deltaO1, delta
         }
     }
     
+    private double[][] getLDASegmentationMatrix() {
+     
+        double[][] m = new double[2][4];
+        for (int i = 0; i < 2; ++i) {
+            m[i] = new double[4];
+        }
+        
+        m[0][0] = 0.343;
+        m[1][0] = -0.482;
+        m[0][1] = -0.575;
+        m[1][1] = -0.381;
+        m[0][2] = -0.439;
+        m[1][2] = 0.771;
+        m[0][3] = -0.599;
+        m[1][3] = 0.166;
+        
+        return m;
+    }
 }

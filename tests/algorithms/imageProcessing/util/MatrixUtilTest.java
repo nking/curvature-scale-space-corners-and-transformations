@@ -473,6 +473,131 @@ public class MatrixUtilTest extends TestCase {
        
     }
     
+    public void testLDATrasformation() throws Exception {
+        
+        SimpleMatrix[] dataAndClasses = readSegmentationDataset();
+        SimpleMatrix classes = dataAndClasses[1].copy();
+        
+        int nClasses = 2;
+              
+        float minX = Float.MAX_VALUE;
+        float maxX = Float.MIN_VALUE;
+        float minY = Float.MAX_VALUE;
+        float maxY = Float.MIN_VALUE;
+        int[] countClasses = new int[nClasses];
+        
+        // --- to make a transformation usable on features not normalized:
+        SimpleMatrix w3 = MatrixUtil.createLDATransformation(
+            dataAndClasses[0], dataAndClasses[1]);
+        SimpleMatrix dataTransformed3 = new SimpleMatrix(MatrixUtil.dot(w3, 
+            dataAndClasses[0]));
+        
+        for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+            int k = (int)Math.round(classes.get(0, col));
+            countClasses[k]++;
+            float x = (float)dataTransformed3.get(0, col);
+            float y = (float)dataTransformed3.get(1, col);
+            if (x < minX) {
+                minX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
+        }
+        
+        PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter(minX, maxX, 
+            minY, maxY);
+        
+        for (int k = 0; k < nClasses; ++k) {
+            float[] xPoint = new float[countClasses[k]];
+            float[] yPoint = new float[countClasses[k]];
+            int count = 0;
+            for (int col = 0; col < dataTransformed3.numCols(); ++col) {
+                if ((int)Math.round(classes.get(0, col)) != k) {
+                    continue;
+                }
+                xPoint[count] = (float)dataTransformed3.get(0, col);
+                yPoint[count] = (float)dataTransformed3.get(1, col);
+                count++;
+            }
+            float[] xPoly = null;
+            float[] yPoly = null;
+            plotter2.addPlot(xPoint, yPoint, xPoly, yPoly, "class " + k);
+        }
+        String file2 = plotter2.writeFile2();
+        
+        log.info("transfrmation matrix = \n" + w3.toString());
+        
+        int z = 1;
+    }
+    
+    private SimpleMatrix[] readSegmentationDataset() throws Exception {
+        
+        BufferedReader bReader = null;
+        FileReader reader = null;
+        
+        String filePath = ResourceFinder.findFileInTestResources("segmentation_colors1.csv");
+        
+        try {
+            reader = new FileReader(new File(filePath));
+            
+            bReader = new BufferedReader(reader);
+            
+            SimpleMatrix data = new SimpleMatrix(4, 28);
+            SimpleMatrix classes = new SimpleMatrix(1, 28);
+            
+            String line = bReader.readLine();
+            line = bReader.readLine();
+            
+            int count = 0;
+            
+            while (line != null) {
+                
+                String[] items = line.split(",");
+                if (items.length != 5) {
+                    throw new IllegalStateException("expecting 5 items in a line");
+                }
+ 
+                for (int j = 0; j < 4; ++j) {
+                    data.set(j, count, Double.valueOf(items[j]));
+                }
+                
+                double classValue = 0;
+                if (items[4].equals("1")) {
+                    classValue = 0;
+                } else if (items[4].equals("2")) {
+                    classValue = 1;
+                }
+                
+                classes.set(count, classValue);
+                
+                line = bReader.readLine();
+                
+                count++;
+            }
+            
+            return new SimpleMatrix[]{data, classes};
+            
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        } finally {
+            if (reader == null) {
+                reader.close();
+            }
+            if (bReader == null) {
+                bReader.close();
+            }
+        }
+        
+        return null;
+    }
+    
     private SimpleMatrix[] readIrisDataset() throws Exception {
         
         BufferedReader bReader = null;

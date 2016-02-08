@@ -301,6 +301,48 @@ public class MatrixUtil {
         return m;
     }
     
+    /**
+     * apply dot operator to m1 and m2 which are formatted using same as 
+     * SimpleMatrix, that is [row][col].
+     * @param m1
+     * @param m2
+     * @return 
+     */
+    public static double[][] dot(double[][] m1, double[][] m2) {
+        
+        if (m1 == null) {
+            throw new IllegalArgumentException("m1 cannot be null");
+        }
+        if (m2 == null) {
+            throw new IllegalArgumentException("m2 cannot be null");
+        }
+        int cCols = m2[0].length;
+        int cRows = m1.length;
+        
+        if (m1[0].length != m2.length) {
+            throw new IllegalArgumentException(
+                "the number of columns in m1 != number of rows in m2");
+        }
+        
+        // m1 dot m2
+        double[][] m = new double[cRows][cCols];
+        for (int i = 0; i < cRows; i++) {
+            m[i] = new double[cCols];
+        }
+        
+        for (int colAdd = 0; colAdd < m2[0].length; colAdd++) {
+            for (int row = 0; row < m1.length; ++row) {
+                for (int col = 0; col < m1[0].length; col++) {
+                    double a = m1[row][col];
+                    double b = m2[col][colAdd];
+                    m[row][colAdd] += (a * b);
+                }
+            }
+        }
+
+        return m;
+    }
+    
     public static float[][] transpose(float[][] m) {
 
         if (m == null || m.length == 0) {
