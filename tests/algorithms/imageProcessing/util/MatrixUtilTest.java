@@ -371,15 +371,13 @@ public class MatrixUtilTest extends TestCase {
             if (y < minY) {
                 minY = y;
             }
-            if (x < maxX) {
+            if (x > maxX) {
                 maxX = x;
             }
             if (y > maxY) {
                 maxY = y;
             }
         }
-        maxX = 3;
-        maxY = 3;
         
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter(minX, maxX, 
             minY, maxY);
@@ -443,15 +441,13 @@ public class MatrixUtilTest extends TestCase {
             if (y < minY) {
                 minY = y;
             }
-            if (x < maxX) {
+            if (x > maxX) {
                 maxX = x;
             }
             if (y > maxY) {
                 maxY = y;
             }
         }
-        maxX = -1*minX;
-        maxY = -1*minY;
         
         PolygonAndPointPlotter plotter2 = new PolygonAndPointPlotter(minX, maxX, 
             minY, maxY);
