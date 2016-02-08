@@ -417,7 +417,7 @@ public class MatrixUtil {
      * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
      * 
      * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix.  
+     * the returned matrix (i.e., MatrixUtil.dot(w, data))
      * Note, X internally has been scaled to unit standard deviation.
      * @param data
      * @param classes
@@ -453,7 +453,7 @@ public class MatrixUtil {
      * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
      * 
      * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix.  
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
      * Note, X internally has been scaled to unit standard deviation.
      * @param normData  data scaled to mean of 0 and a standard deviation of 1
      * @param classes zero based transformed classes
