@@ -1,6 +1,16 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.misc.Complex;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 import org.ejml.simple.*;
 
 /**
@@ -401,6 +411,321 @@ public class MatrixUtil {
         return c;
     }
     
+    /**
+     * find best separation of classes given the data and return the
+     * transformation.
+     * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
+     * 
+     * To apply the results to a data matrix, use W.T.dot(X.T).T where W is
+     * the returned matrix.  
+     * Note, X internally has been scaled to unit standard deviation.
+     * @param data
+     * @param classes
+     * @return 
+     */
+    public static SimpleMatrix createLDATrasformation(SimpleMatrix data,
+        SimpleMatrix classes) {
+        
+        int n = data.numCols();
+        
+        if (classes.numCols() != n) {
+            throw new IllegalArgumentException(
+                "data and classes must have some number of data columns");
+        }
+                
+        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
+       
+        int nRows = normData.numRows();
+        
+        assert(nRows == data.numRows());
+        
+        // transforms from integer classes to zero based counting with delta of 1
+        // for example:  [1, 2, 5, ...] becomes [0, 1, 2, ...]
+        int nClasses = trasformToZeroBasedClasses(classes);
+        
+        SimpleMatrix w = createLDATrasformation2(normData, classes);
+        
+        return w;
+    }
+    
+    /**
+     * find best separation of classes given the already scaled data 
+     * and the zero based classes and return the
+     * transformation.
+     * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
+     * 
+     * To apply the results to a data matrix, use W.T.dot(X.T).T where W is
+     * the returned matrix.  
+     * @param normData matrix already scaled to unit standard deviation (mean = 0
+     * and standard deviation of the mean = 1).
+     * @param classes the classes of the matrix data written such that the
+     * classes are integers and the smallest value is 0 and the difference
+     * between values is one (for example, the zero based classes of
+     * [1, 2, 5] would be [0, 1, 2].
+     * @return 
+     */
+    public static SimpleMatrix createLDATrasformation2(SimpleMatrix normData,
+        SimpleMatrix classes) {
+        
+        int n = classes.numCols();
+        
+        if (classes.numCols() != n) {
+            throw new IllegalArgumentException(
+                "data and classes must have some number of data columns");
+        }
+        
+        //Logger log = Logger.getLogger(MatrixUtil.class.getName());
+               
+        int nRows = normData.numRows();
+        
+        int nClasses = classes.numCols();
+        
+        double[][] mean = new double[nClasses][nRows];
+        int[][] count = new int[nClasses][nRows];
+        for (int k = 0; k < nClasses; ++k) {
+            mean[k] = new double[nRows];
+            count[k] = new int[nRows];
+        }
+        for (int i = 0; i < n; ++i) {
+            int k = (int)Math.round(classes.get(0, i));
+            for (int j = 0; j < nRows; ++j) {
+                mean[k][j] += normData.get(j, i);
+                count[k][j]++;
+            }
+        }
+        
+        for (int k = 0; k < nClasses; ++k) {
+            for (int j = 0; j < nRows; ++j) {
+                mean[k][j] /= (double)count[k][j];
+            }
+            //log.info(String.format("mean vector class %d = %s", k, 
+            //    Arrays.toString(mean[k])));
+        }
+        
+        // ----- calculate the scatter within each class --------
+        double[][] scatWithinClass = new double[nRows][nRows];
+        for (int j = 0; j < nRows; ++j) {
+            scatWithinClass[j] = new double[nRows];
+        }
+            
+        for (int k = 0; k < nClasses; ++k) {
+            
+            double[][] scatWithinClassPerClass = new double[nRows][nRows];
+            for (int j = 0; j < nRows; ++j) {
+                scatWithinClassPerClass[j] = new double[nRows];
+            }
+             
+            for (int i = 0; i < n; ++i) {
+                if (((int)Math.round(classes.get(0, i))) != k) {
+                    continue;
+                }
+                double[] diff = new double[nRows];
+                for (int j = 0; j < nRows; ++j) {
+                    diff[j] = normData.get(j, i) - mean[k][j];
+                }
+                // calc (row-mv).dot((row-mv).T)
+                double[][] dTdotD = arrayTransposeDotArray(diff);
+                
+                // add to scatWithinClassPerClass
+                for (int j = 0; j < nRows; ++j) {
+                    for (int jj = 0; jj < nRows; ++jj) {
+                        scatWithinClassPerClass[j][jj] += dTdotD[j][jj];
+                    }
+                    //log.info(Arrays.toString(scatWithinClassPerClass[j]));
+                }
+            }
+            
+            // add scatWithinClassPerClass to scatWithinClass
+            for (int j = 0; j < nRows; ++j) {
+                for (int jj = 0; jj < nRows; ++jj) {
+                    scatWithinClass[j][jj] += scatWithinClassPerClass[j][jj];
+                }
+                //log.info(Arrays.toString(scatWithinClass[j]));
+            }
+        }
+        
+        double[] overallMean = new double[nRows];
+        for (int k = 0; k < nClasses; ++k) {
+            for (int j = 0; j < nRows; ++j) {
+                overallMean[j] += mean[k][j];
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            overallMean[j] /= (double)nClasses;
+        }
+        
+        // ------- calculate the between class scatter matrix -------
+        double[][] scatBetweenClass = new double[nRows][nRows];
+        for (int j = 0; j < nRows; ++j) {
+            scatBetweenClass[j] = new double[nRows];
+        }
+        
+        // mean is length nClasses by nRows
+        // overall_mean is length nRows
+        
+        double[] diff = new double[nRows];
+        
+        for (int k = 0; k < nClasses; ++k) {
+            
+            int countN = 0;
+            Arrays.fill(diff, 0);
+            for (int j = 0; j < nRows; ++j) {                                
+                diff[j] = mean[k][j] - overallMean[j];
+                countN += count[k][j];
+            }
+                       
+            // calc (mean_vec - overall_mean).dot((mean_vec - overall_mean).T)
+            double[][] dTdotD = arrayTransposeDotArray(diff);
+            
+            //S_B += n * (mean_vec - overall_mean).dot((mean_vec - overall_mean).T)
+            // add to scatBetweenClass
+            for (int j = 0; j < nRows; ++j) {
+                for (int jj = 0; jj < nRows; ++jj) {
+                    scatBetweenClass[j][jj] += (countN * dTdotD[j][jj]);
+                }
+                //log.info(Arrays.toString(scatBetweenClass[j]));
+            }
+        }
+        
+        //for (int j = 0; j < nRows; ++j) {
+        //    log.info(Arrays.toString(scatBetweenClass[j]));
+        //}
+        
+        // --- solve for the generalized eigenvalue, S_W^-1 * S_B ----
+        SimpleMatrix sw = new SimpleMatrix(scatWithinClass);
+        SimpleMatrix sb = new SimpleMatrix(scatBetweenClass);
+        
+        double[][] invSWDotSB = dot(sw.invert(), sb);
+        SimpleMatrix m = new SimpleMatrix(invSWDotSB);
+        SimpleEVD evd = m.eig();
+        
+        int nEigen = evd.getNumberOfEigenvalues();
+        
+        int[] indexes = new int[nEigen];
+        double[] eigenValues = new double[nEigen];
+        double[][] eigenVectors = new double[nEigen][nRows];
+        for (int i = 0; i < nEigen; ++i) {
+            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
+            SimpleMatrix ev = evd.getEigenVector(i);
+            eigenVectors[i] = new double[ev.numRows()];
+            for (int j = 0; j < ev.numRows(); ++j) {
+                eigenVectors[i][j] = ev.get(j, 0);
+            }
+            indexes[i] = i;
+            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
+            //log.info("eigenvector=" + evd.getEigenVector(i));
+        }
+        
+        // ----- sort by decreasing eigen value -----
+        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
+        
+        SimpleMatrix w = new SimpleMatrix(2, nRows);
+        for (int i = 0; i < 2; ++i) {
+            int index = indexes[i];
+            double[] eV = eigenVectors[index];
+            for (int col = 0; col < eV.length; ++col) {
+                w.set(i, col, eV[col]);
+            }
+        }
+        
+        //log.info("w=" + w);
+        
+        return w;
+    }
+    
+    /**
+     * calculate the dot product of a.transpose with a.  the result is in the
+     * format that SimpleMatrix uses, double[][] is [row][col].
+     * @param a
+     * @return 
+     */
+    public static double[][] arrayTransposeDotArray(double[] a) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length == 0) {
+            throw new IllegalArgumentException(
+                "a length must be > 0");
+        }
+        
+        int n = a.length;
+        
+        /*
+        a0    a0 a1 a2
+        a1
+        a2
+        */
+        
+        double[][] m = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            m[i] = new double[n];
+        }
+        
+        for (int row = 0; row < n; ++row) {
+            double v1 = a[row];
+            for (int col = 0; col < n; col++) {
+                double v2 = a[col];
+                m[row][col] = (v1 * v2);
+            }
+        }
+
+        return m;
+    }
+    
+    /**
+     * given a matrix with rows being features and columns being data, scale
+     * the data to a mean of zero and stdev of 1 for each feature.
+     * @param a
+     * @return 
+     */
+    public static SimpleMatrix scaleToUnitStandardDeviation(SimpleMatrix a) {
+        
+        int n = a.numCols();
+        int nRows = a.numRows();
+                
+        double[] mean = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                mean[j] += a.get(j, i);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            mean[j] /= (double)n;
+        }
+        
+        double[] diff = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                double d = a.get(j, i) - mean[j];
+                diff[j] += (d * d);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            diff[j] /= (double)n;//((double)n - 1.);
+        }
+        
+        double[] scaleFactors = new double[nRows];
+        for (int j = 0; j < nRows; ++j) {
+            scaleFactors[j] = Math.sqrt(1./diff[j]);
+        }
+        
+        /*
+        transformation for no rotation:  x*s - xc*s
+           (data - mean) * scaleFactor
+        */        
+        SimpleMatrix a2 = new SimpleMatrix(nRows, a.numCols());
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                double centered = a.get(j, i) - mean[j];
+                double v = centered * scaleFactors[j];
+                a2.set(j, i, v);
+            }
+        }
+        
+        return a2;
+    }
+    
     
     public static double[] extractRawPitchRollFromRotation(SimpleMatrix rotMatrix) {
         
@@ -465,5 +790,33 @@ public class MatrixUtil {
         }
         
         return sb.toString();
+    }
+
+    private static int trasformToZeroBasedClasses(SimpleMatrix classes) {
+        
+        Set<Integer> set = new HashSet<Integer>();        
+        
+        for (int i = 0; i < classes.numCols(); ++i) {
+            double v = classes.get(0, i);
+            set.add(Integer.valueOf((int)Math.round(v)));
+        }
+                
+        List<Integer> sorted = new ArrayList<Integer>(set);
+        Collections.sort(sorted);
+        
+        // make a map for O(1) look ups
+        Map<Integer, Integer> transformIndexMap = new HashMap<Integer, Integer>();
+        for (int i = 0; i < sorted.size(); ++i) {
+            transformIndexMap.put(sorted.get(i), Integer.valueOf(i));
+        }
+        
+        for (int i = 0; i < classes.numCols(); ++i) {
+            double v = classes.get(0, i);
+            int key = (int)Math.round(v);
+            int v2 = transformIndexMap.get(Integer.valueOf(key));
+            classes.set(0, i, v2);
+        }
+        
+        return set.size();
     }
 }

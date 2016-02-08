@@ -1,6 +1,14 @@
 package algorithms.imageProcessing.util;
 
+import algorithms.util.ResourceFinder;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.logging.Logger;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,20 +19,13 @@ import org.ejml.simple.*;
  *
  * @author nichole
  */
-public class MatrixUtilTest {
+public class MatrixUtilTest extends TestCase {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     public MatrixUtilTest() {
     }
     
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-    
-    @Test
     public void testDot() throws Exception {
        
         double[][] m1 = new double[2][3];
@@ -58,7 +59,6 @@ public class MatrixUtilTest {
         assertTrue(m[1][1] == 1000);
     }
     
-    @Test
     public void testMultiply() throws Exception {
 
         double[][] a = new double[2][3];
@@ -155,7 +155,6 @@ public class MatrixUtilTest {
         }
     }
 
-    @Test
     public void testAdd() throws Exception {
 
         double[] a = new double[]{1, 2, 3, 4};
@@ -168,7 +167,6 @@ public class MatrixUtilTest {
         assertTrue(Arrays.equals(expected, c));
     }
     
-    @Test
     public void testAdd2() throws Exception {
 
         float[] a = new float[]{1, 2, 3, 4};
@@ -181,7 +179,6 @@ public class MatrixUtilTest {
         assertTrue(Arrays.equals(expected, c));
     }
     
-    @Test
     public void testAdd3() throws Exception {
 
         int[] a = new int[]{1, 2, 3, 4};
@@ -194,7 +191,6 @@ public class MatrixUtilTest {
         assertTrue(Arrays.equals(expected, a));
     }
     
-    @Test
     public void testSubtract() throws Exception {
 
         float[] a = new float[]{100, 100, 100, 100};
@@ -207,7 +203,6 @@ public class MatrixUtilTest {
         assertTrue(Arrays.equals(expected, c));
     }
     
-    @Test
     public void testTranspose() throws Exception {
         
         /*
@@ -240,5 +235,143 @@ public class MatrixUtilTest {
             }
         }
         
+    }
+    
+    public void testScaleToUnitVariance() throws Exception {
+        
+        SimpleMatrix[] dataAndClasses = readIrisDataset();
+        
+        double v0 = dataAndClasses[0].get(0, 0);
+        double v1 = dataAndClasses[0].get(1, 0);
+        double v2 = dataAndClasses[0].get(2, 0);
+        double v3 = dataAndClasses[0].get(3, 0);
+        double[] expected = new double[]{5.1,3.5,1.4,0.2};
+        assertTrue(Math.abs(v0 - expected[0]) <  0.05*Math.abs(expected[0]));
+        assertTrue(Math.abs(v1 - expected[1]) <  0.05*Math.abs(expected[1]));
+        assertTrue(Math.abs(v2 - expected[2]) <  0.05*Math.abs(expected[2]));
+        assertTrue(Math.abs(v3 - expected[3]) <  0.05*Math.abs(expected[3]));
+        
+        SimpleMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(
+            dataAndClasses[0]);
+        
+        /*
+        assert first 4
+         [ -9.0068e-01   1.0321e+00  -1.3413e+00  -1.3130e+00]
+         [ -1.1430e+00  -1.2496e-01  -1.3413e+00  -1.3130e+00]
+         [ -1.3854e+00   3.3785e-01  -1.3981e+00  -1.3130e+00]
+         [ -1.5065e+00   1.0645e-01  -1.2844e+00  -1.3130e+00]
+         [ -1.0218e+00   1.2635e+00  -1.3413e+00  -1.3130e+00]        
+        */
+        v0 = normData.get(0, 0);
+        v1 = normData.get(1, 0);
+        v2 = normData.get(2, 0);
+        v3 = normData.get(3, 0);
+        expected = new double[]{-9.0068e-01, 1.0321e+00, -1.3413e+00, -1.3130e+00};
+        assertTrue(Math.abs(v0 - expected[0]) <  0.05*Math.abs(expected[0]));
+        assertTrue(Math.abs(v1 - expected[1]) <  0.05*Math.abs(expected[1]));
+        assertTrue(Math.abs(v2 - expected[2]) <  0.05*Math.abs(expected[2]));
+        assertTrue(Math.abs(v3 - expected[3]) <  0.05*Math.abs(expected[3]));
+        
+        // assert mean = 0
+        // assert var = 1
+        
+        int n = normData.numCols();
+        int nRows = normData.numRows();
+                
+        double[] mean = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                mean[j] += normData.get(j, i);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            mean[j] /= (double)n;
+            assertTrue(Math.abs(mean[j]) < 0.1);
+        }
+        
+        double[] stdev = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                double d = normData.get(j, i) - mean[j];
+                stdev[j] += (d * d);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            stdev[j] = Math.sqrt(stdev[j]/(double)(n - 1));
+            assertTrue(Math.abs(stdev[j] - 1.) < 0.1);
+        }
+        
+    }
+    
+    public void testCreateLDATrasformation() throws Exception {
+        
+        SimpleMatrix[] dataAndClasses = readIrisDataset();
+        
+        SimpleMatrix w = MatrixUtil.createLDATrasformation(dataAndClasses[0],
+            dataAndClasses[1]);
+    
+        
+        
+    }
+    
+    private SimpleMatrix[] readIrisDataset() throws Exception {
+        
+        BufferedReader bReader = null;
+        FileReader reader = null;
+        
+        String filePath = ResourceFinder.findFileInTestResources("iris.data");
+        
+        try {
+            reader = new FileReader(new File(filePath));
+            
+            bReader = new BufferedReader(reader);
+            
+            SimpleMatrix data = new SimpleMatrix(4, 150);
+            SimpleMatrix classes = new SimpleMatrix(1, 150);
+            
+            String line = bReader.readLine();
+            
+            int count = 0;
+            
+            while (line != null) {
+                
+                String[] items = line.split(",");
+                if (items.length != 5) {
+                    throw new IllegalStateException("expecting 5 items in a line");
+                }
+ 
+                for (int j = 0; j < 4; ++j) {
+                    data.set(j, count, Double.valueOf(items[j]));
+                }
+                
+                double classValue = 4;
+                if (items[4].equals("Iris-setosa")) {
+                    classValue = 1;
+                } else if (items[4].equals("Iris-versicolor")) {
+                    classValue = 2;
+                }
+                //Iris-virginica
+                
+                classes.set(count, classValue);
+                
+                line = bReader.readLine();
+                
+                count++;
+            }
+            
+            return new SimpleMatrix[]{data, classes};
+            
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        } finally {
+            if (reader == null) {
+                reader.close();
+            }
+            if (bReader == null) {
+                bReader.close();
+            }
+        }
+        
+        return null;
     }
 }
