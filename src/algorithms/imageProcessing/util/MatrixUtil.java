@@ -263,13 +263,13 @@ public class MatrixUtil {
         if (m2 == null) {
             throw new IllegalArgumentException("m2 cannot be null");
         }
+        int cCols = m2.numCols();
+        int cRows = m1.numRows();
+        
         if (m1.numCols() != m2.numRows()) {
             throw new IllegalArgumentException(
                 "the number of columns in m1 != number of rows in m2");
         }
-        
-        int cCols = m2.numCols();
-        int cRows = m1.numRows();
         
         // m1 dot m2
         double[][] m = new double[cRows][cCols];
@@ -416,14 +416,14 @@ public class MatrixUtil {
      * transformation.
      * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
      * 
-     * To apply the results to a data matrix, use W.T.dot(X.T).T where W is
+     * To apply the results to a data matrix, use y = W^T * X where W is
      * the returned matrix.  
      * Note, X internally has been scaled to unit standard deviation.
      * @param data
      * @param classes
      * @return 
      */
-    public static SimpleMatrix createLDATrasformation(SimpleMatrix data,
+    public static SimpleMatrix createLDATransformation(SimpleMatrix data,
         SimpleMatrix classes) {
         
         int n = data.numCols();
@@ -441,33 +441,28 @@ public class MatrixUtil {
         
         // transforms from integer classes to zero based counting with delta of 1
         // for example:  [1, 2, 5, ...] becomes [0, 1, 2, ...]
-        int nClasses = trasformToZeroBasedClasses(classes);
+        int nClasses = transformToZeroBasedClasses(classes);
         
-        SimpleMatrix w = createLDATrasformation2(normData, classes);
-        
-        return w;
+        return createLDATransformation2(normData, classes, nClasses);
     }
     
+    
     /**
-     * find best separation of classes given the already scaled data 
-     * and the zero based classes and return the
-     * transformation.
+     * find best separation of classes given the scaled data and zero 
+     * based classes return the transformation.
      * adapted from http://sebastianraschka.com/Articles/2014_python_lda.html
      * 
-     * To apply the results to a data matrix, use W.T.dot(X.T).T where W is
+     * To apply the results to a data matrix, use y = W^T * X where W is
      * the returned matrix.  
-     * @param normData matrix already scaled to unit standard deviation (mean = 0
-     * and standard deviation of the mean = 1).
-     * @param classes the classes of the matrix data written such that the
-     * classes are integers and the smallest value is 0 and the difference
-     * between values is one (for example, the zero based classes of
-     * [1, 2, 5] would be [0, 1, 2].
+     * Note, X internally has been scaled to unit standard deviation.
+     * @param normData  data scaled to mean of 0 and a standard deviation of 1
+     * @param classes zero based transformed classes
      * @return 
      */
-    public static SimpleMatrix createLDATrasformation2(SimpleMatrix normData,
-        SimpleMatrix classes) {
+    public static SimpleMatrix createLDATransformation2(SimpleMatrix normData,
+        SimpleMatrix classes, int nClasses) {
         
-        int n = classes.numCols();
+        int n = normData.numCols();
         
         if (classes.numCols() != n) {
             throw new IllegalArgumentException(
@@ -477,9 +472,7 @@ public class MatrixUtil {
         //Logger log = Logger.getLogger(MatrixUtil.class.getName());
                
         int nRows = normData.numRows();
-        
-        int nClasses = classes.numCols();
-        
+                        
         double[][] mean = new double[nClasses][nRows];
         int[][] count = new int[nClasses][nRows];
         for (int k = 0; k < nClasses; ++k) {
@@ -531,7 +524,7 @@ public class MatrixUtil {
                     for (int jj = 0; jj < nRows; ++jj) {
                         scatWithinClassPerClass[j][jj] += dTdotD[j][jj];
                     }
-                    //log.info(Arrays.toString(scatWithinClassPerClass[j]));
+                    //System.out.println(Arrays.toString(scatWithinClassPerClass[j]));
                 }
             }
             
@@ -540,7 +533,7 @@ public class MatrixUtil {
                 for (int jj = 0; jj < nRows; ++jj) {
                     scatWithinClass[j][jj] += scatWithinClassPerClass[j][jj];
                 }
-                //log.info(Arrays.toString(scatWithinClass[j]));
+                //System.out.println(Arrays.toString(scatWithinClass[j]));
             }
         }
         
@@ -583,12 +576,12 @@ public class MatrixUtil {
                 for (int jj = 0; jj < nRows; ++jj) {
                     scatBetweenClass[j][jj] += (countN * dTdotD[j][jj]);
                 }
-                //log.info(Arrays.toString(scatBetweenClass[j]));
+                //System.out.println(Arrays.toString(scatBetweenClass[j]));
             }
         }
         
         //for (int j = 0; j < nRows; ++j) {
-        //    log.info(Arrays.toString(scatBetweenClass[j]));
+        //    System.out.println(Arrays.toString(scatBetweenClass[j]));
         //}
         
         // --- solve for the generalized eigenvalue, S_W^-1 * S_B ----
@@ -792,7 +785,16 @@ public class MatrixUtil {
         return sb.toString();
     }
 
-    private static int trasformToZeroBasedClasses(SimpleMatrix classes) {
+   /**
+     * given a one dimensional matrix of integer class numbers, modify the
+     * matrix to start class number at zero and use intervals of value 1 and
+     * return the number of classes.
+     * For example, a matrix containing [1, 2, 5] would be transformed to
+     * [0, 1, 2] and return the value 3.
+     * @param classes
+     * @return 
+     */
+    public static int transformToZeroBasedClasses(SimpleMatrix classes) {
         
         Set<Integer> set = new HashSet<Integer>();        
         

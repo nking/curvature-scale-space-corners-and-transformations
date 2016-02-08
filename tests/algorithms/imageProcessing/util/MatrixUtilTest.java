@@ -306,10 +306,45 @@ public class MatrixUtilTest extends TestCase {
     public void testCreateLDATrasformation() throws Exception {
         
         SimpleMatrix[] dataAndClasses = readIrisDataset();
+        SimpleMatrix classes = dataAndClasses[1].copy();
         
-        SimpleMatrix w = MatrixUtil.createLDATrasformation(dataAndClasses[0],
+        SimpleMatrix w = MatrixUtil.createLDATransformation(dataAndClasses[0], 
             dataAndClasses[1]);
-    
+        
+        assertEquals(2, w.numRows());
+        assertEquals(4, w.numCols());
+        
+        assertTrue(Math.abs(w.get(0, 0) - 0.15) < 0.01);
+        assertTrue(Math.abs(w.get(0, 1) - 0.148) < 0.01);
+        assertTrue(Math.abs(w.get(0, 2) - -0.851) < 0.01);
+        assertTrue(Math.abs(w.get(0, 3) - -0.481) < 0.01);
+        
+        assertTrue(Math.abs(w.get(1, 0) - 0.010) < 0.01);
+        assertTrue(Math.abs(w.get(1, 1) - 0.327) < 0.01);
+        assertTrue(Math.abs(w.get(1, 2) - -0.575) < 0.01);
+        assertTrue(Math.abs(w.get(1, 3) - 0.750) < 0.01);
+        
+        
+        SimpleMatrix normData = MatrixUtil.scaleToUnitStandardDeviation(dataAndClasses[0]);
+                               
+        // transforms from integer classes to zero based counting with delta of 1
+        // for example:  [1, 2, 5, ...] becomes [0, 1, 2, ...]
+        int nClasses = MatrixUtil.transformToZeroBasedClasses(classes);
+        
+        SimpleMatrix w2 = MatrixUtil.createLDATransformation2(normData, classes, nClasses);
+        
+        assertEquals(2, w2.numRows());
+        assertEquals(4, w2.numCols());
+        
+        assertTrue(Math.abs(w2.get(0, 0) - 0.15) < 0.01);
+        assertTrue(Math.abs(w2.get(0, 1) - 0.148) < 0.01);
+        assertTrue(Math.abs(w2.get(0, 2) - -0.851) < 0.01);
+        assertTrue(Math.abs(w2.get(0, 3) - -0.481) < 0.01);
+        
+        assertTrue(Math.abs(w2.get(1, 0) - 0.010) < 0.01);
+        assertTrue(Math.abs(w2.get(1, 1) - 0.327) < 0.01);
+        assertTrue(Math.abs(w2.get(1, 2) - -0.575) < 0.01);
+        assertTrue(Math.abs(w2.get(1, 3) - 0.750) < 0.01);
         
         
     }
