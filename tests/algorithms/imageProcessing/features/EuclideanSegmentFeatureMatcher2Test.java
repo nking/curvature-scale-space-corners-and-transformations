@@ -21,6 +21,12 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
     public EuclideanSegmentFeatureMatcher2Test() {
     }
     
+    /*
+    NOTE: most of these tests have been commented out while improvements
+    are being made in feature matching.  The tests will be enabled in a
+    new form to test the refactored classes.
+    */
+    
     public void test0() throws Exception {
                 
         String fileName1, fileName2;
@@ -28,8 +34,9 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        settings.setToUse2ndDerivCorners();
       
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 2; ++i) {
             
             switch(i) {
                 case 0: {
@@ -67,7 +74,6 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }
@@ -82,8 +88,9 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        settings.setToUse2ndDerivCorners();
                 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 2; ++i) {
             fileName1 = null;
             fileName2 = null;
             switch(i) {
@@ -121,7 +128,6 @@ public class EuclideanSegmentFeatureMatcher2Test extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }

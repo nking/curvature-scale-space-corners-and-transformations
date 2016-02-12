@@ -366,6 +366,29 @@ public class MatrixUtil {
         return t;
     }
     
+    public static double[][] transpose(double[][] m) {
+
+        if (m == null || m.length == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        
+        int mRows = m.length;
+        int mCols = m[0].length;
+        
+        double[][] t = new double[mCols][];
+        for (int i = 0; i < mCols; i++) {
+            t[i] = new double[mRows];
+        }
+        
+        for (int i = 0; i < mRows; i++) {
+            for (int j = 0; j < mCols; j++) {
+                t[j][i] = m[i][j];
+            }
+        }
+        
+        return t;
+    }
+    
     public static Complex[][] transpose(Complex[][] m) {
 
         if (m == null || m.length == 0) {
@@ -496,7 +519,6 @@ public class MatrixUtil {
      * 
      * To apply the results to a data matrix, use y = W^T * X where W is
      * the returned matrix (i.e., MatrixUtil.dot(w, normData))
-     * Note, X internally has been scaled to unit standard deviation.
      * @param normData  data scaled to mean of 0 and a standard deviation of 1
      * @param classes zero based transformed classes
      * @return 
@@ -668,6 +690,278 @@ public class MatrixUtil {
         return w;
     }
     
+    private static EigenValuesAndVectors stepwiseKPCA(double[][] distsq, double gamma, 
+        int nComponents) {
+        
+        double[][] k = copy(distsq);
+        
+        int n = k.length;
+        
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < k[i].length; ++j) {
+                k[i][j] = Math.exp(-gamma * k[i][j]);
+            }
+        }
+        
+        double[][] oneN = new double[n][];
+        double[][] kNorm = new double[n][];
+        double v = 1./(double)n;
+        for (int i = 0; i < n; ++i) {
+            kNorm[i] = new double[n];
+            oneN[i] = new double[n];
+            Arrays.fill(oneN[i], v);
+        }
+        
+        //K_norm = K - one_n.dot(K) - K.dot(one_n) + one_n.dot(K).dot(one_n)
+        
+        double[][] t1 = dot(oneN, k);
+        double[][] t2 = dot(k, oneN);
+        double[][] t3 = dot(t1, oneN);
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < k[i].length; ++j) {
+                kNorm[i][j] = k[i][j] - t1[i][j] - t2[i][j] + t3[i][j];
+            }
+        }
+        
+        SimpleEVD evd = new SimpleMatrix(kNorm).eig();
+        
+        int nEigen = evd.getNumberOfEigenvalues();
+        
+        int[] indexes = new int[nEigen];
+        double[] eigenValues = new double[nEigen];
+        double[][] eigenVectors = new double[nEigen][2];
+        for (int i = 0; i < nEigen; ++i) {
+            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
+            SimpleMatrix ev = evd.getEigenVector(i);
+            eigenVectors[i] = new double[ev.numRows()];
+            for (int j = 0; j < ev.numRows(); ++j) {
+                eigenVectors[i][j] = ev.get(j, 0);
+            }
+            indexes[i] = i;
+            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
+            //log.info("eigenvector=" + evd.getEigenVector(i));
+        }
+        
+        // ----- sort by decreasing eigen value -----
+        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
+        
+        EigenValuesAndVectors eev = new EigenValuesAndVectors(nComponents);
+        
+        for (int i = 0; i < nComponents; ++i) {
+            int index = indexes[i];
+            double[] eV = eigenVectors[index];
+            eev.setEigenValueAndVector(i, eigenValues[index], eV);
+        }
+        
+        return eev;
+    }
+    
+    public static class EigenValuesAndVectors {
+        private final double[] eigenValues;
+        private final double[][] eigenVectors;
+        public EigenValuesAndVectors(int nComponents) {
+            eigenValues = new double[nComponents];
+            eigenVectors = new double[2][];
+        }
+        public void setEigenValueAndVector(int index, double value, double[] vector) {
+            eigenValues[index] = value;
+            eigenVectors[index] = Arrays.copyOf(vector, vector.length);
+        }
+        public double[] getEigenVector(int index) {
+            return eigenVectors[index];
+        }
+        public double getEigenValue(int index) {
+            return eigenValues[index];
+        }
+        public int getNumberOfComponents() {
+            return eigenValues.length;
+        }
+        public int getLengthOfVector() {
+            return eigenVectors[0].length;
+        }
+    }
+    
+    public static double[][] copy(double[][] a) {
+        
+        double[][] m = new double[a.length][];
+        
+        for (int i = 0; i < a.length; ++i) {
+            int n0 = a[i].length;
+            m[i] = new double[n0];
+            System.arraycopy(a[i], 0, m[i], 0, n0);
+        }
+        
+        return m;
+    }
+    
+    /**
+     * perform kernal pca upon given data using a gaussian radial basis
+     * kernel to find the best transformation that leads to 
+     * transformed points which maximize the variance along the new axes.
+     * To apply the results to a data matrix, use y = W^T * X where W is
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
+     * Note, X internally has been scaled to unit standard deviation.
+     * 
+     * adapted from
+     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
+     
+     * @param data
+     */
+    public static SimpleMatrix createRBFKernelPCATransformation(SimpleMatrix data) {
+        
+        int n = data.numCols();
+        int nRows = data.numRows();
+        
+        if (nRows != 2) {
+            throw new IllegalArgumentException("data.nRows must be 2");
+        }
+        
+        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
+        
+        return createRBFKernelPCATransformation2(normData);
+    }
+    
+    /**
+     * perform kernal pca upon given data using a gaussian radial basis
+     * kernel to find the best transformation that leads to 
+     * transformed points which maximize the variance along the new axes.
+     * To apply the results to a data matrix, use y = W^T * X where W is
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
+     * 
+     * adapted from
+     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
+     
+     * @param normData
+     */
+    public static SimpleMatrix createRBFKernelPCATransformation2(SimpleMatrix normData) {
+        
+        int n = normData.numCols();
+        int nRows = normData.numRows();
+        
+        if (nRows != 2) {
+            throw new IllegalArgumentException("data.nRows must be 2");
+        }
+        
+        double[][] distSq = new double[n][n];
+        for (int i = 0; i < n; ++i) {
+            distSq[i] = new double[n];            
+            for (int j = 0; j < i; ++j) {
+                distSq[i][j] = distSq[j][i];
+            }
+            double x1 = normData.get(0, i);
+            double y1 = normData.get(1, i);            
+            for (int j = (i + 1); j < n; ++j) {
+                double x2 = normData.get(0, j);
+                double y2 = normData.get(1, j);
+                double diffX = x1 - x2;
+                double diffY = y1 - y2;
+                distSq[i][j] = (diffX * diffX + diffY * diffY);
+            }
+        }
+        
+        EigenValuesAndVectors eev = stepwiseKPCA(distSq, 15, 2);
+                
+        SimpleMatrix w = new SimpleMatrix(eev.getNumberOfComponents(), 
+            eev.getLengthOfVector());
+        
+        for (int i = 0; i < eev.getNumberOfComponents(); ++i) {
+            double eigenValue = eev.getEigenValue(i);
+            double[] eV = eev.getEigenVector(i);
+            for (int col = 0; col < eV.length; ++col) {
+                double v = eV[col]/eigenValue;
+                w.set(i, col, v);
+            }
+        }
+        
+        return w;
+    }
+    
+    /**
+     * perform linear pca upon given data to find the best transformation that leads to 
+     * transformed points which maximize the variance along the new axes.
+     * 
+     * To apply the results to a data matrix, use y = W^T * X where W is
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
+     * Note, X internally has been scaled to unit standard deviation.
+     * 
+     * adapted from
+     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
+     * 
+     * @param data
+     */
+    public static SimpleMatrix createPCATransformation(SimpleMatrix data) {
+        
+        int n = data.numCols();
+                
+        // ----- calculate covariance matrix -------------
+        
+        SimpleMatrix normData = scaleToUnitStandardDeviation(data);
+       
+        return createPCATransformation2(normData);
+    }
+
+    /**
+     * perform linear pca upon given normalized data to find the best transformation that leads to 
+     * transformed points which maximize the variance along the new axes.
+     * To apply the results to a data matrix, use y = W^T * X where W is
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
+     * 
+     * adapted from
+     * http://sebastianraschka.com/Articles/2014_kernel_pca.html
+     * 
+     * @param normData
+     */
+    public static SimpleMatrix createPCATransformation2(SimpleMatrix normData) {
+        
+        int n = normData.numCols();
+                
+        // ----- calculate covariance matrix -------------
+        
+        int nRows = normData.numRows();
+                      
+        double[][] c = dot(normData, normData.transpose());
+        SimpleMatrix m = new SimpleMatrix(c.length, c[0].length);
+        for (int i = 0; i < c.length; ++i) {
+            for (int j = 0; j < c[i].length; ++j) {
+                m.set(i, j, c[i][j]/(double)n);
+            }
+        }
+        
+        SimpleEVD evd = m.eig();
+        
+        int nEigen = evd.getNumberOfEigenvalues();
+        
+        int[] indexes = new int[nEigen];
+        double[] eigenValues = new double[nEigen];
+        double[][] eigenVectors = new double[nEigen][nRows];
+        for (int i = 0; i < nEigen; ++i) {
+            eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
+            SimpleMatrix ev = evd.getEigenVector(i);
+            eigenVectors[i] = new double[ev.numRows()];
+            for (int j = 0; j < ev.numRows(); ++j) {
+                eigenVectors[i][j] = ev.get(j, 0);
+            }
+            indexes[i] = i;
+            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
+            //log.info("eigenvector=" + evd.getEigenVector(i));
+        }
+        
+        // ----- sort by decreasing eigen value -----
+        MultiArrayMergeSort.sortByDecr(eigenValues, indexes);
+        
+        SimpleMatrix w = new SimpleMatrix(2, nRows);
+        for (int i = 0; i < 2; ++i) {
+            int index = indexes[i];
+            double[] eV = eigenVectors[index];
+            for (int col = 0; col < eV.length; ++col) {
+                w.set(i, col, eV[col]);
+            }
+        }
+     
+        return w;
+    }
+    
     /**
      * calculate the dot product of a.transpose with a.  the result is in the
      * format that SimpleMatrix uses, double[][] is [row][col].
@@ -761,6 +1055,59 @@ public class MatrixUtil {
         return a2;
     }
     
+    /**
+     * given a matrix with rows being features and columns being data, scale
+     * the data to a mean of zero and stdev of 1 for each feature.
+     * @param a
+     * @return 
+     */
+    public static SimpleMatrix scaleToUnitStandardDeviation2(SimpleMatrix a) {
+        
+        int n = a.numCols();
+        int nRows = a.numRows();
+                
+        double[] mean = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                mean[j] += a.get(j, i);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            mean[j] /= (double)n;
+        }
+        
+        double[] diff = new double[nRows];
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                double d = a.get(j, i) - mean[j];
+                diff[j] += Math.abs(d);
+            }
+        }
+        for (int j = 0; j < nRows; ++j) {
+            diff[j] /= (double)n;
+        }
+        
+        double sqrtTwo = Math.sqrt(2.);
+        double[] scaleFactors = new double[nRows];
+        for (int j = 0; j < nRows; ++j) {
+            scaleFactors[j] = sqrtTwo/diff[j];
+        }
+        
+        /*
+        transformation for no rotation:  x*s - xc*s
+           (data - mean) * scaleFactor
+        */        
+        SimpleMatrix a2 = new SimpleMatrix(nRows, a.numCols());
+        for (int i = 0; i < n; ++i) {            
+            for (int j = 0; j < nRows; ++j) {
+                double centered = a.get(j, i) - mean[j];
+                double v = centered * scaleFactors[j];
+                a2.set(j, i, v);
+            }
+        }
+        
+        return a2;
+    }
     
     public static double[] extractRawPitchRollFromRotation(SimpleMatrix rotMatrix) {
         

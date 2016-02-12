@@ -28,6 +28,7 @@ public class EpipolarSolverTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        settings.setToUse2ndDerivCorners();
         
         for (int i = 0; i < 6; ++i) {
             switch(i) {
@@ -35,7 +36,6 @@ public class EpipolarSolverTest extends TestCase {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
                 case 1: {
@@ -66,7 +66,6 @@ public class EpipolarSolverTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }

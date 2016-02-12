@@ -18,6 +18,12 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
     
     private Logger log = Logger.getLogger(this.getClass().getName());
     
+    /*
+    NOTE: most of these tests have been commented out while improvements
+    are being made in feature matching.  The tests will be enabled in a
+    new form to test the refactored classes.
+    */
+    
     public EuclideanSegmentFeatureMatcherTest() {
     }
     
@@ -28,8 +34,9 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
-      
-        for (int i = 3; i < 5; ++i) {
+        settings.setToUse2ndDerivCorners();
+        
+        for (int i = 0; i < 2; ++i) {
             
             switch(i) {
                 case 0: {
@@ -66,7 +73,6 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }
@@ -74,13 +80,14 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
         }
     }
     
-    public void testRot90() throws Exception {
+    public void estRot90() throws Exception {
                 
         String fileName1, fileName2;
         
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        settings.setToUse2ndDerivCorners();
                 
         for (int i = 0; i < 3; ++i) {
             fileName1 = null;
@@ -120,7 +127,6 @@ public class EuclideanSegmentFeatureMatcherTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(false);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
             }
