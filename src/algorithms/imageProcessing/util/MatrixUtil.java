@@ -827,7 +827,10 @@ public class MatrixUtil {
      * kernel to find the best transformation that leads to 
      * transformed points which maximize the variance along the new axes.
      * To apply the results to a data matrix, use y = W^T * X where W is
-     * the returned matrix (i.e., MatrixUtil.dot(w, normData))
+     * the returned matrix (i.e., MatrixUtil.dot(w, normData)).
+     * 
+     * TODO: Note, it's using a fixed gamma of 15 instead of fitting for the best
+     * gamma, so should be corrected one day for real use.
      * 
      * adapted from
      * http://sebastianraschka.com/Articles/2014_kernel_pca.html
@@ -859,6 +862,8 @@ public class MatrixUtil {
                 distSq[i][j] = (diffX * diffX + diffY * diffY);
             }
         }
+        
+        //TODO: make a version that finds best gamma here
         
         EigenValuesAndVectors eev = stepwiseKPCA(distSq, 15, 2);
                 
