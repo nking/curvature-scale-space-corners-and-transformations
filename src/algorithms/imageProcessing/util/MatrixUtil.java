@@ -1084,7 +1084,7 @@ public class MatrixUtil {
             }
         }
         for (int j = 0; j < nRows; ++j) {
-            diff[j] /= (double)n;
+            diff[j] /= (double)(n - 1.);
         }
         
         double sqrtTwo = Math.sqrt(2.);
