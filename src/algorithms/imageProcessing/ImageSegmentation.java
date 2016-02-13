@@ -336,12 +336,12 @@ public class ImageSegmentation {
         int nIter = 0;
 
         // change value of pixels largely surrounded by another value
-        
+
         // runtime complexity is nIterations * O(N*8)
         // number of iterations appears to be small multiple of minNeighborLimit
         while (!useBlur && (nIter < nIterMax) && (nChanged > 0)) {
 
-            log.fine("***nIter=" + nIter + " nChanged=" + nChanged + 
+            log.fine("***nIter=" + nIter + " nChanged=" + nChanged +
                 " minNeighbotLimit=" + minNeighborLimit);
 
             nChanged = 0;
@@ -782,12 +782,12 @@ public class ImageSegmentation {
      * roughly 254 down to kColors in lower pixel value.
      * The range is approximate because some histograms have gaps for a color
      * bin, so those are not mapped to the final image.
-     * 
+     *
      * runtime complexity is O(N * lg_2(N)).
      * @param output
      * @param pixThetaMap
      * @param thetaValues
-     * @param kColors 
+     * @param kColors
      */
     private void createAndApplyHistMapping(GreyscaleImage output,
         Map<PairInt, Float> pixThetaMap, float[] thetaValues,
@@ -811,7 +811,7 @@ public class ImageSegmentation {
                 + MiscDebug.getCurrentTimeFormatted());
         } catch (Exception e) {}
         */
-        
+
         int nonZeroCount = 0;
         for (int i = 0; i < hist.getXHist().length; i++) {
             int c = hist.getYHist()[i];
@@ -1117,7 +1117,7 @@ public class ImageSegmentation {
 
         return groupList;
     }
-    
+
     /**
      * Calculates lists of black pixels, white pixels, grey pixels, and assigns
      * the remaining to the polar angle of CIEXY Lab color space, then creates a map of the
@@ -1153,7 +1153,7 @@ public class ImageSegmentation {
      */
     public List<Set<PairInt>> calculateUsingPolarCIEXYAndClustering(ImageExt input,
         boolean useBlur) {
-     
+
         return calculateUsingPolarCIEXYAndClustering(input, 2000., 2000, useBlur);
     }
 
@@ -1189,7 +1189,7 @@ public class ImageSegmentation {
      * @param input
      * @param thetaRange range to scale the values of cie xy polar theta values
      * to (the range affects the speed because dynamic programming is used).
-     * @param thetaFrequencyRange range to scale the values of frequencies of polar 
+     * @param thetaFrequencyRange range to scale the values of frequencies of polar
      * theta values to (the range affects the speed because dynamic programming is used).
      * @param useBlur apply a gaussian blur of sigma=1 before the method logic
      * @return
@@ -3162,15 +3162,15 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     public GreyscaleImage createCombinedWaveletBased(Image img) {
-        return createCombinedWaveletBased(img.copyRedToGreyscale(), 
+        return createCombinedWaveletBased(img.copyRedToGreyscale(),
             img.copyGreenToGreyscale(), img.copyBlueToGreyscale());
     }
-    
+
     public GreyscaleImage createCombinedWaveletBased2(Image img) {
-        return createCombinedWaveletBased2(img.copyRedToGreyscale(), 
+        return createCombinedWaveletBased2(img.copyRedToGreyscale(),
             img.copyGreenToGreyscale(), img.copyBlueToGreyscale());
     }
-    
+
     public GreyscaleImage createCombinedWaveletBased(
         GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
 
@@ -3193,14 +3193,14 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         }
         return combined;
     }
-    
+
     public GreyscaleImage createCombinedWaveletBased2(
         GreyscaleImage rImg, GreyscaleImage gImg, GreyscaleImage bImg) {
 
         ATrousWaveletTransform wt = new ATrousWaveletTransform();
-        
+
         GreyscaleImage coarsestCoeffR = null;
-        GreyscaleImage coarsestCoeffG = null; 
+        GreyscaleImage coarsestCoeffG = null;
         GreyscaleImage coarsestCoeffB = null;
 
         for (int i = 0; i < 3; ++i) {
@@ -3223,14 +3223,14 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 coarsestCoeffB = coeffs.get(coeffs.size() - 1);
             }
         }
-        
+
         //TODO: determine top limit by frequency distr?
         int limit = 3;
-        
+
         Stack<Integer> stack = new Stack<Integer>();
-        
+
         GreyscaleImage coarsestCombined = coarsestCoeffB.createWithDimensions();
-        
+
         for (int i = 0; i < coarsestCoeffR.getNPixels(); ++i) {
             int r = coarsestCoeffR.getValue(i);
             int g = coarsestCoeffG.getValue(i);
@@ -3240,12 +3240,12 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 stack.add(Integer.valueOf(i));
             }
         }
-        
+
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         int w = coarsestCombined.getWidth();
         int h = coarsestCombined.getHeight();
-        
+
         int lowerLimit = 0;
         while (limit > lowerLimit) {
             // use the canny edge 2-layer approach to pick up neighboring pixels
@@ -3277,9 +3277,9 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
                 visited.add(pixIndex);
             }
         }
-        
-        
-        
+
+
+
         return coarsestCombined;
     }
 
@@ -3294,7 +3294,7 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         boolean use1D = false;
         return createGreyscale5(input, use1D);
     }
-    
+
     /**
      * segmentation algorithm using an a trous wavelet transform.
      *
@@ -3324,7 +3324,7 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
         */
 
         GreyscaleImage coarsestCoeff = coeffs.get(coeffs.size() - 1);
-        
+
         int limit = use1D ? 2 : 1;
 
         for (int i = 0; i < coarsestCoeff.getNPixels(); ++i) {
@@ -3363,10 +3363,10 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
 
         return img;
     }
-    
+
     /**
      * segmentation algorithm using cieXY and rgb to make segmentation for
-     * the colors with CIE X or Y outside of the center region 
+     * the colors with CIE X or Y outside of the center region
      *
      * @param input
      * @return
@@ -3374,28 +3374,28 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
     public GreyscaleImage createGreyscale7(ImageExt input) {
 
         Map<PairInt, Integer> pixelThetaDegreesMap = populatePixelLists3(input);
-        
+
         // -- scale the valus to between 0 and 255 w/ wrap around --
-        
+
         int count = 0;
         float[] clrPolarCIEXY =new float[pixelThetaDegreesMap.size()];
         for (Entry<PairInt, Integer> entry : pixelThetaDegreesMap.entrySet()) {
             clrPolarCIEXY[count] = entry.getValue();
             count++;
         }
-        
+
         float binWidth = 20;
         HistogramHolder hist = Histogram.createSimpleHistogram(binWidth,
             clrPolarCIEXY, Errors.populateYErrorsBySqrt(clrPolarCIEXY));
         List<Integer> indexes = MiscMath.findStrongPeakIndexesDescSort(hist, 0.1f);
         int[] binCenters = createBinCenters360(hist, indexes);
-        
+
         List<Set<PairInt>> colorPixelGroups = assignToNearestPolarCIECluster(
             pixelThetaDegreesMap, binCenters);
-        
-        GreyscaleImage img = new GreyscaleImage(input.getWidth(), 
+
+        GreyscaleImage img = new GreyscaleImage(input.getWidth(),
             input.getHeight());
-        
+
         int gClr = 255;
         int s = 127/colorPixelGroups.size();
         for (Set<PairInt> set : colorPixelGroups) {
@@ -3404,33 +3404,33 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
             }
             gClr -= s;
         }
-        
+
 MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return img;
     }
-    
+
     public GreyscaleImage createAWatershed(ImageExt input, String debugTag,
         int originalImageWidth, int originalImageHeight) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        GreyscaleImage aImg = new GreyscaleImage(w, h, 
+        GreyscaleImage aImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
-        
+
         for (int i = 0; i < input.getNPixels(); ++i) {
-            
+
             float[] lab = input.getCIELAB(i);
-            
+
             aImg.setValue(i, Math.round(lab[1]));
-            
+
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         HistogramEqualization hEq = new HistogramEqualization(aImg);
         hEq.applyFilter();
-                
+
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
         int lowerLimitSize;
         if (minDimension > 900) {
@@ -3440,17 +3440,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         } else {
             lowerLimitSize = 200;
         }
-        
+
         imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
-       
+
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(aImg);
-            
+
         return ws;
     }
-    
+
     public GreyscaleImage createGreyscaleO1Watershed(ImageExt input, String debugTag,
         int originalImageWidth, int originalImageHeight) {
-        
+
         /*
         TODO: might consider an "outdoor mode" flag that adds in an additional
         image good at picking up blue or red skylines.
@@ -3458,47 +3458,52 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         a color space band better adapted for that.
         the edges would be added to the combined image before making a
         watershed.
-        
+
         Also, consider one day, finding or writing a model which
         assumes a color of a light source and builds a color
         model like CIE XY so that same color but different
         level of illumination is seen at same polar angle from
         center of color diagram.
         */
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
-        GreyscaleImage o1Img = new GreyscaleImage(w, h, 
+
+        GreyscaleImage o1Img = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
         GreyscaleImage greyGradient = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
-        
+
         int maxGrey = Integer.MIN_VALUE;
         for (int i = 0; i < input.getNPixels(); ++i) {
-            
+
             int r = input.getR(i);
             int g = input.getG(i);
             o1Img.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
-            
-            int grey = Math.round(((float)input.getR(i) + (float)input.getG(i) + 
+
+            int grey = Math.round(((float)input.getR(i) + (float)input.getG(i) +
                 (float)input.getB(i))/3.f);
             greyGradient.setValue(i, grey);
             if (grey > maxGrey) {
                 maxGrey = grey;
             }
         }
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
-        }        
-        imageProcessor.lowIntensityFilter(greyGradient, 3.6E-4);//3.0E-4
+        }
+        
+        imageProcessor.highPassIntensityFilter(greyGradient, 0.09);
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
+
+        // TODO: for images such as android_statues_01.jpg, need to remove noise
+        // from the greyGradient edges before the binary inverse
+
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
             int v = greyGradient.getValue(i);
             if (v > 0) {
@@ -3510,16 +3515,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_inv" + debugTag);
         }
-        
+
         HistogramEqualization hEq = new HistogramEqualization(o1Img);
         hEq.applyFilter();
         imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
-        
+
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_adapt_med_" + debugTag);
             MiscDebug.writeImage(o1Img, "_o1_adapt_med_" + debugTag);
         }
-                
+
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
         int lowerLimitSize;
         if (minDimension > 900) {
@@ -3529,36 +3534,36 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         } else {
             lowerLimitSize = 200;
         }
-        
+
         // add the 0's from o1Img to greyGradient
         for (int i = 0; i < o1Img.getNPixels(); ++i) {
             if (o1Img.getValue(i) == 0) {
                 greyGradient.setValue(i, 0);
             }
         }
-        
+
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
             greyGradient);
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(ws, "_gradient_watershed_" + debugTag);
         }
-        
+
         return ws;
     }
-    
+
     /**
-     * 
+     *
      * @param input
      * @param debugLabel if null, no debug output is made, else output uses debugLabel
      * as suffix in file names
      */
-    public void extractObjectEdges(ImageExt input, String debugLabel, 
+    public void extractObjectEdges(ImageExt input, String debugLabel,
         int originalImageWidth, int originalImageHeight) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
-        GreyscaleImage o1 = new GreyscaleImage(w, h, 
+
+        GreyscaleImage o1 = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
         GreyscaleImage o2 = o1.createFullRangeIntWithDimensions();
         GreyscaleImage o3 = o1.createFullRangeIntWithDimensions();
@@ -3566,7 +3571,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage bImg = o1.createFullRangeIntWithDimensions();
         GreyscaleImage hueAngleImg = o1.createFullRangeIntWithDimensions();
         GreyscaleImage cieXYAngleImg = o1.createFullRangeIntWithDimensions();
-        
+
         for (int i = 0; i < input.getNPixels(); ++i) {
             int r = input.getR(i);
             int g = input.getG(i);
@@ -3577,7 +3582,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             o3.setValue(i, (int)Math.round((double)(r + g + b)/Math.sqrt(2)));
             aImg.setValue(i, Math.round(lab[1]));
             bImg.setValue(i, Math.round(lab[2]));
-            
+
             float ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
             if (ha < 0) {
                 ha += 360.;
@@ -3586,14 +3591,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
             //TODO: replace w/ cached method
             float[] cieXY = input.getCIEXY_(i);
-            
+
             float cieXYAngle = (float)(Math.atan(cieXY[1]/cieXY[0]) * 180. / Math.PI);
             if (cieXYAngle < 0) {
                 cieXYAngle += 360.;
             }
             cieXYAngleImg.setValue(i, Math.round(cieXYAngle));
         }
-        
+
         HistogramEqualization hEq = new HistogramEqualization(aImg);
         hEq.applyFilter();
         hEq = new HistogramEqualization(bImg);
@@ -3619,26 +3624,26 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         imageProcessor.applyAdaptiveMeanThresholding(o1, 1);
         imageProcessor.applyAdaptiveMeanThresholding(o2, 1);
         imageProcessor.applyAdaptiveMeanThresholding(o3, 1);
-        
+
         if (debugLabel != null && !debugLabel.equals("")) {
             MiscDebug.writeImage(o1, "_o1_adaptive_median_" + debugLabel);
             MiscDebug.writeImage(o2, "_o2_adaptive_median_" + debugLabel);
             MiscDebug.writeImage(o3, "_o3_adaptive_median_" + debugLabel);
         }
-                
+
         /*
         imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
         if (debugLabel != null && !debugLabel.equals("")) {
             MiscDebug.writeImage(aImg, "_a_adaptive_median_" + debugLabel);
         }*/
-        
+
         //TODO: revise for minimum size of contiguous pixels.
-        // it should be dependent upon image resolution, that is PSF and the focal distance of objects 
-        // (the number of beams, that is psf diameters, across the object), 
+        // it should be dependent upon image resolution, that is PSF and the focal distance of objects
+        // (the number of beams, that is psf diameters, across the object),
         // but the number of pixels as image size is all the information available.
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
         int lowerLimitSize;
@@ -3648,16 +3653,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             lowerLimitSize = 100;
         } else {
             lowerLimitSize = 200;
-        } 
-        
+        }
+
         //List<Set<PairInt>> maskList = imageProcessor.extractConnectedComponents(
         //    labelled, lowerLimitSize);
-        
+
         imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
-        
+
         GreyscaleImage aWSImg = imageProcessor.makeWatershedFromAdaptiveMedian(
             aImg);
-        
+
         CannyEdgeFilter filter = new CannyEdgeFilter();
         filter.doNotPerformHistogramEqualization();
         filter.applyFilter(input.copyToGreyscale());
@@ -4163,7 +4168,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         CIEChromaticity cieC = new CIEChromaticity();
 
         Map<PairInt, Integer> pixelCIETheta = new HashMap<PairInt, Integer>();
-            
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
 
@@ -4173,18 +4178,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 float cieY = input.getCIEY(idx);
 
                 if (!cieC.isInLargeWhiteCenter(cieX, cieY) /*&& !veryGreen*/) {
-                    
+
                     double thetaRadians = cieC.calculateXYTheta(cieX, cieY);
-                    
+
                     double thetaDegrees = thetaRadians * 180./Math.PI;
-                    
+
                     int thetaDegreesInt = (int)Math.round(thetaDegrees);
 
                     pixelCIETheta.put(new PairInt(i, j), thetaDegreesInt);
                 }
             }
         }
-        
+
         return pixelCIETheta;
     }
 
@@ -4264,9 +4269,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return addToAssigned;
     }
-    
+
     public void createContrastImages(ImageExt input) {
-        
+
         int n = input.getNPixels();
         double[] luma = new double[n];
         for (int i = 0; i < n; ++i) {
@@ -4276,13 +4281,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             double lumaI = (0.256*r) - (-0.148*g) + (0.439*b);
             luma[i] = lumaI;
         }
-        
+
         // create contrast as (avgLuma - luma[i])/luma[i]
         GreyscaleImage lumaAvg = new GreyscaleImage(input.getWidth(), input.getHeight());
         for (int i = 0; i < n; ++i) {
             lumaAvg.setValue(i, (int)Math.round(luma[i]));
         }
-        
+
         // range of luma is 0 to 215.  adding 1 to avoid divide by zero
         double[] contrast = new double[n];
         MedianSmooth medSmooth = new MedianSmooth();
@@ -4297,10 +4302,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             contrast[i] = ((double)vAvg - vI)/vI;
         }
         int[] contrastInt = MiscMath.rescale(contrast, 0, 255);
-        
+
         double[] blueDivContrast = new double[n];
         double[] redDivContrast = new double[n];
-        
+
         for (int i = 0; i < n; ++i) {
             int r = input.getR(i);
             //int g = input.getG(i);
@@ -4309,39 +4314,39 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             blueDivContrast[i] = (double)b/c;
             redDivContrast[i] = (double)r/c;
         }
-        
+
         // rescale to be between 0 and 255
-        
+
         int[] blueDivContrastInt = MiscMath.rescale(blueDivContrast, 0, 255);
         int[] redDivContrastInt = MiscMath.rescale(redDivContrast, 0, 255);
-        
+
         GreyscaleImage contrastImg = new GreyscaleImage(input.getWidth(), input.getHeight());
         GreyscaleImage blueDivContrastImg = new GreyscaleImage(input.getWidth(), input.getHeight());
         GreyscaleImage redDivContrastImg = new GreyscaleImage(input.getWidth(), input.getHeight());
-        
+
         for (int i = 0; i < n; ++i) {
             contrastImg.setValue(i, contrastInt[i]);
             blueDivContrastImg.setValue(i, blueDivContrastInt[i]);
             redDivContrastImg.setValue(i, redDivContrastInt[i]);
         }
-        
+
         long ts = MiscDebug.getCurrentTimeFormatted();
-        
+
         MiscDebug.writeImage(contrastImg, "_contrast_" + ts);
         MiscDebug.writeImage(blueDivContrastImg, "_blue_div_contrast_" + ts);
         MiscDebug.writeImage(redDivContrastImg, "_red_div_contrast_" + ts);
     }
-    
+
     /**
-     * makes a lower resolution image and uses segmentation based upon 
+     * makes a lower resolution image and uses segmentation based upon
      * cie xy polar theta to find contiguous points of same value, then
      * finds the perimeters of those points and orders them counter-clockwise
-     * into the resulting curves.  Note, the resulting curves should all be 
+     * into the resulting curves.  Note, the resulting curves should all be
      * closed and that can be tested with (edge instance of PairIntWithColor).
      * Note also that straight line segments in the curves have been removed
      * where simple to do so, so that the resulting polynomial can be better
      * used with "point in polygon" tests.
-     * 
+     *
      * runtime complexity is
      * ~ O(N)
      * + O(N_small) + O(N_small * lg_2(N_small)) where N_small is 75X75 pix^2
@@ -4349,32 +4354,32 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * + (N_blobs * O(N_perimeter_pts * lg_2(N_perimeter_pts) which is much smaller than O(N_small * lg_2(N_small)))
      * so total is O(N) + constant factor * O(N_small) + O(N_small * lg_2(N_small)).
      * @param img
-     * @return 
+     * @return
      */
-    public BoundingRegions extractBlobBoundsFromLowRes(ImageExt img, 
+    public BoundingRegions extractBlobBoundsFromLowRes(ImageExt img,
         boolean debug, String debugTag, IntensityClrFeatures features) {
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
         float maxDimension = 100;//75;
-        
-        int binFactor = (int) Math.ceil(Math.max((float)w/maxDimension, 
+
+        int binFactor = (int) Math.ceil(Math.max((float)w/maxDimension,
             (float)h/maxDimension));
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
         ImageExt img2 = imageProcessor.binImage(img, binFactor);
-        
+
         ImageExt img2Cp = img2.copyToImageExt();
-        
+
         // runtime complexity: ~ O(N_small) + O(N_small * lg_2(N_small)) where N_small is 75X75
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         GreyscaleImage segImg = imageSegmentation
             .applyUsingCIEXYPolarThetaThenHistEq(img2, 16, false);
-        
+
         if (debug) {
             MiscDebug.writeImage(segImg, "seg_cluster_" + MiscDebug.getCurrentTimeFormatted());
         }
-        
+
         int smallestGroupLimit = 15;
         int largestGroupLimit = Integer.MAX_VALUE;
         boolean filterOutImageBoundaryBlobs = false;
@@ -4384,18 +4389,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
             segImg, smallestGroupLimit, largestGroupLimit,
             filterOutImageBoundaryBlobs, filterOutZeroPixels, debugTag);
-        
+
         //--------- begin section to log colors to look at selecting matchable bounds by color ------
         CIEChromaticity cieC = new CIEChromaticity();
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+
         List<Double> lAvg = new ArrayList<Double>();
         List<Double> aAvg = new ArrayList<Double>();
         List<Double> bAvg = new ArrayList<Double>();
         List<Double> o1Avg = new ArrayList<Double>();
         List<Double> o2Avg = new ArrayList<Double>();
         List<Double> o3Avg = new ArrayList<Double>();
-        
+
         for (int i = 0; i < blobs.size(); ++i) {
             double redSum = 0;
             double greenSum = 0;
@@ -4414,17 +4419,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             redSum /= n;
             greenSum /= n;
             blueSum /= n;
-            float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum), 
+            float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum),
                 (int)Math.round(greenSum), (int)Math.round(blueSum));
-            
+
             lAvg.add(Double.valueOf(avgLAB[0]));
             aAvg.add(Double.valueOf(avgLAB[1]));
             bAvg.add(Double.valueOf(avgLAB[2]));
-        
+
             o1Avg.add(Double.valueOf((redSum - greenSum)/Math.sqrt(2)));
             o2Avg.add(Double.valueOf((redSum + greenSum - 2*blueSum)/Math.sqrt(6)));
             o3Avg.add(Double.valueOf((redSum + greenSum + blueSum)/Math.sqrt(2)));
-            
+
             //double[] xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
             //String str = String.format(
             //    "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
@@ -4432,19 +4437,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             //    avgLAB[0], avgLAB[1], avgLAB[2], blobs.get(i).size());
             //log.info(str);
         }
-        
+
         // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
             blobs, segImg.getWidth(), segImg.getHeight());
-        
+
         assert(blobs.size() == borderPixelSets.size());
-        
+
         List<PairIntArray> perimetersList = new ArrayList<PairIntArray>();
-        
+
         float srchRadius = (float)Math.sqrt(2) * (float)binFactor;
-        
+
         PerimeterFinder perimeterFinder = new PerimeterFinder();
-        
+
         // scale blobs and borderPixelSets back to current frame
         for (int i = 0; i < borderPixelSets.size(); ++i) {
             Set<PairInt> blob = blobs.get(i);
@@ -4456,7 +4461,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             blob.clear();
             blob.addAll(tmp);
-            
+
             Set<PairInt> borderPixels = borderPixelSets.get(i);
             tmp = new HashSet<PairInt>();
             for (PairInt p : borderPixels) {
@@ -4467,7 +4472,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             borderPixels.clear();
             borderPixels.addAll(tmp);
         }
-        
+
         // create a map for reverse look-ups later
         Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < blobs.size(); ++i) {
@@ -4477,66 +4482,66 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-                        
+
         BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
             o2Avg, o3Avg);
-        
+
         for (int i = 0; i < borderPixelSets.size(); ++i) {
-                                    
+
             Set<PairInt> blob = blobs.get(i);
             Set<PairInt> borderPixels = borderPixelSets.get(i);
-            
+
             // approx O(N_perimeter), but has factors during searches that could be improved
             PairIntArray orderedPerimeter = perimeterFinder.orderThePerimeter(
                 borderPixels, blob, srchRadius,
                 bma, i);
-  
+
             /*Image imgCp = img.copyImage();
-            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
-            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
+            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);
+            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted());
             */
-         
+
             // runtime complexity is O(N_perimeter_pts * lg_2(N_perimeter_pts)
             // remove straight line segments except their endpoints to make simpler
             // polynomial for "point in polygon" tests
-            makeStraightLinesHollow(orderedPerimeter, img.getWidth(), 
+            makeStraightLinesHollow(orderedPerimeter, img.getWidth(),
                 img.getHeight(), srchRadius);
-        
+
             /*
             Image imgCp = img.copyImage();
-            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
-            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
+            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);
+            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted());
             */
-            
+
             perimetersList.add(orderedPerimeter);
         }
-        
+
         /*
         TODO: consider expanding the bounds to the nearest smaller segmentation
         as refinement of their rougher locations.
         */
-        
+
         BoundingRegions br = new BoundingRegions(perimetersList, bma, pointIndexMap);
-        
+
         //plotOrientation(features, br, img, debugTag);
-        
+
         return br;
     }
 
     private double countFreq(PairIntArray sortedFreqL) {
-        
+
         long n = 0;
         for (int i = 0; i < sortedFreqL.getN(); ++i) {
             n += sortedFreqL.getY(i);
         }
         return n;
     }
-    
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
         private final Map<PairInt, Integer> pointIndexMap;
-        public BoundingRegions(List<PairIntArray> perimeters, BlobMedialAxes 
+        public BoundingRegions(List<PairIntArray> perimeters, BlobMedialAxes
             skeletons, Map<PairInt, Integer> pointIndexMap) {
             this.perimeterList = perimeters;
             this.bma = skeletons;
@@ -4557,11 +4562,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
          * @param removeIndexes an ascending list of unique indexes to remove
          */
         public void removeIndexes(final List<Integer> removeIndexes) {
-            
+
             /*
             updating: Map<PairInt, Integer> pointIndexMap
             convert to List<Set<PairInt>>
-            perform removal of indexes, 
+            perform removal of indexes,
             then re-populate pointIndexMap
             */
             List<Set<PairInt>> indexPoints = new ArrayList<Set<PairInt>>();
@@ -4585,54 +4590,54 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     pointIndexMap.put(p, key);
                 }
             }
-            
+
             for (int i = (removeIndexes.size() - 1); i > -1; --i) {
                 int rmIdx = removeIndexes.get(i);
                 perimeterList.remove(rmIdx);
             }
-            
-            bma.removeIndexes(removeIndexes);           
+
+            bma.removeIndexes(removeIndexes);
         }
     }
 
     /**
      * runtime complexity is approx O(N_perimeter_pts * lg_2(N_perimeter_pts))
-     * 
+     *
      * @param orderedPerimeter
      * @param width
      * @param height
-     * @param srchRadius 
+     * @param srchRadius
      */
-    public void makeStraightLinesHollow(PairIntArray orderedPerimeter, 
+    public void makeStraightLinesHollow(PairIntArray orderedPerimeter,
         int width, int height, float srchRadius) {
-        
+
         HoughTransform ht = new HoughTransform();
-        
+
         //O(N_edge_pts), but includes transcendental operations
         Map<PairInt, Set<PairInt>> trPointsMap = ht.calculateLineGivenEdge(
             orderedPerimeter, width, height);
-    
+
         //O(N_edge_pts * lg_2(N_edge_pts))
         List<PairInt> outSortedKeys = ht.sortByVotes(trPointsMap);
-    
+
         int thetaTol = 1;
         int radiusTol = (int) Math.ceil(srchRadius);
-        
+
         //runtime complexity is approx O(N_pix * lg_2(N_pix)).
         // === find indiv lines within the edge ====
         HoughTransform.HoughTransformLines htl
-            = ht.createPixTRMapsFromSorted(outSortedKeys, trPointsMap, thetaTol, 
+            = ht.createPixTRMapsFromSorted(outSortedKeys, trPointsMap, thetaTol,
                 radiusTol);
-    
+
         Map<PairInt, PairInt> pixToTRMap = htl.getPixelToPolarCoordMap();
-    
+
         Set<PairInt> remove = new HashSet<PairInt>();
         for (Set<PairInt> line : htl.getSortedLineGroups()) {
             if (line.size() < 3) {
                 continue;
             }
             PairInt tr = pixToTRMap.get(line.iterator().next());
-            
+
             if ((Math.abs(tr.getX() - 180) < 20) || (Math.abs(tr.getX() - 0) < 20)
                 || (Math.abs(tr.getX() - 360) < 20)) {
                 // these are nearly vertical lines, so endpoints are min and max Y
@@ -4653,7 +4658,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         remove.add(p);
                     }
                 }
-                
+
             } else {
                 // endpoints are min and max X
                 int minX = Integer.MAX_VALUE;
@@ -4686,7 +4691,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         if (output.getN() > 0) {
             orderedPerimeter.swapContents(output);
-        }            
+        }
     }
 
     /**
@@ -4695,44 +4700,44 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param features
      * @param blobs
      * @param img
-     * @param lbl 
+     * @param lbl
      */
-    private void plotOrientation(IntensityClrFeatures features, 
+    private void plotOrientation(IntensityClrFeatures features,
         BoundingRegions boundingRegion, ImageExt img, String lbl) {
-        
+
         /*
         -- pass into method the features so can determine orientation,
         -- then for each point on the bounds, plot the orientation first
-           point in red/white and subsequent short line in red, then 
+           point in red/white and subsequent short line in red, then
            add a black/red/white dot for the segment endpoint pointing inward.
         */
-        
+
         List<PairIntArray> perimetersList = boundingRegion.getPerimeterList();
         BlobMedialAxes bma = boundingRegion.getBlobMedialAxes();
-        
+
         ImageExt imgCp = img.copyToImageExt();
-        
+
         // make skeleton for each blob for detailed perimeter "inward" directions
         for (int i = 0; i < perimetersList.size(); ++i) {
-                        
+
             PairIntArray perimeter = perimetersList.get(i);
-            
+
             for (int ii = 0; ii < perimeter.getN(); ++ii) {
-               
+
                 int x = perimeter.getX(ii);
                 int y = perimeter.getY(ii);
-                
+
                 int rotD;
                 try {
                     rotD = features.calculateOrientation(x, y);
                 } catch (CornerRegion.CornerRegionDegneracyException e) {
                     continue;
                 }
-                
+
                 // find the closest skeleton point then find the
                 // neighbor closest to it in counter clockwise direction.
                 PairInt xySkel = bma.findClosestPoint(i, x, y);
-                
+
                 PairInt xyCen = bma.getOriginalBlobXYCentroid(i);
 
                 /*
@@ -4742,7 +4747,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 180 ---------------  0
                           |
                    225    |    315
-                         270                
+                         270
                 */
                 // direction away from skeleton or centroid
                 int thetaOut;
@@ -4751,21 +4756,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     // transform to 0 to 2*pi radians
                     if (theta < 0) {
                         theta += 2. * Math.PI;
-                    } 
+                    }
                     thetaOut = (int)Math.round(theta * 180./Math.PI);
                 } else {
                     double theta = Math.atan2(y - xyCen.getY(), x - xyCen.getX());
                     // transform to 0 to 2*pi radians
                     if (theta < 0) {
                         theta += 2. * Math.PI;
-                    } 
+                    }
                     thetaOut = (int)Math.round(theta * 180./Math.PI);
                 }
-                
+
                 //log.info(String.format("rotation=%d  x,y=(%d,%d) skel=(%d,%d) centroid=(%d,%d) theta outward=%d",
                 //    rotD, x, y, xySkel.getX(), xySkel.getY(), (int)Math.round(xyCen[0]),
                 //    (int)Math.round(xyCen[1]), thetaOut));
-                
+
                 /*
                 if orientation and thetaOut are closer than the 180 opposite
                 configuration:
@@ -4868,16 +4873,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 180 ---------------  0
                           |
                    225    |    315
-                         270                
+                         270
                 */
             }
             MiscDebug.writeImage(imgCp, "_orientation_" + lbl);
-            
+
             // when !same, would compare half descriptor from the
             // "bottom" half of the oriented descriptor.
             int z = 1;
         }
-        
+
     }
 
 }

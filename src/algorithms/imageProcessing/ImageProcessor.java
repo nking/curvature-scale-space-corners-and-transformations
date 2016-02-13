@@ -3712,26 +3712,36 @@ public class ImageProcessor {
         pixels.addAll(output);
         
     }
-
-    public void lowIntensityFilter(GreyscaleImage input, double lowThresholdFractionOfTotal) {
+    
+    public void highPassIntensityFilter(GreyscaleImage input, double lowThresholdFractionOfTotal) {
         
         int n = input.getNPixels();
         
-        long nTotal = 0;
-        Map<Integer, Integer> freqMap = Histogram.createAFrequencyMap(input);        
-        for (Integer count : freqMap.values()) {
-            nTotal += count.longValue();
+        PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
+        double sum = 0;
+        for (int i = 0; i < sortedFreq.getN(); ++i) {
+            sum += sortedFreq.getY(i);
         }
         
-        int thresh = (int)Math.round(lowThresholdFractionOfTotal * (double)nTotal);
+        int thresh = (int)Math.round(lowThresholdFractionOfTotal * sum);
         
         if (thresh == 0) {
             return;
         }
         
+        double critValue = -1;
+        double sum2 = 0;
+        for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
+            sum2 += sortedFreq.getY(i);
+            if (sum2 > thresh) {
+                critValue = sortedFreq.getX(i);
+                break;
+            }
+        }
+        
         for (int i = 0; i < n; ++i) {
             int v = input.getValue(i);
-            if (v < thresh) {
+            if (v < critValue) {
                 input.setValue(i, 0);
             }
         }
