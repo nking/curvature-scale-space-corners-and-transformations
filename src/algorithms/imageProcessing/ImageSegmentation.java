@@ -3473,13 +3473,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             GreyscaleImage.Type.Bits32FullRangeInt);
         GreyscaleImage greyGradient = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage bGDiffImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
 
         int maxGrey = Integer.MIN_VALUE;
         for (int i = 0; i < input.getNPixels(); ++i) {
 
             int r = input.getR(i);
             int g = input.getG(i);
-            o1Img.setValue(i, (int)Math.round((double)(r - g)/Math.sqrt(2)));
+            o1Img.setValue(i, (r - g));
+            
+            bGDiffImg.setValue(i, (input.getB(i) - g));
 
             int grey = Math.round(((float)input.getR(i) + (float)input.getG(i) +
                 (float)input.getB(i))/3.f);
@@ -3523,42 +3528,28 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nHigh2++;
             }
         }
+        log.info(debugTag + " o1 nH2=" + ((float)nHigh2/(float)fractionZeros.size()));
         boolean useO1 = ((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
+        
+        
+        hEq = new HistogramEqualization(bGDiffImg);
+        hEq.applyFilter();
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bGDiffImg, "_b-g_" + debugTag);
+        }
+        bGDiffImg = expandBy1AndKeepContigZeros(bGDiffImg);  
+        imageProcessor.applyAdaptiveMeanThresholding(bGDiffImg, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bGDiffImg, "_b-g_adapt_med" + debugTag);
+        }
         
         boolean createLowInt = true;
         GreyscaleImage greyGradient2 = null;
         if (createLowInt) {
             greyGradient2 = greyGradient.copyImage();
             imageProcessor.highPassIntensityFilter(greyGradient2, 0.31);
-            GreyscaleImage tmpImg2 = greyGradient2.copyImage();
-            int[] dxs0, dys0;      
-            dxs0 = Misc.dx8;
-            dys0 = Misc.dy8;
-            for (int i = 0; i < w; ++i) {
-                for (int j = 0; j < h; ++j) {
-                    int v = greyGradient2.getValue(i, j);
-                    if (v == 0) {
-                        continue;
-                    }
-                    for (int k = 0; k < dxs0.length; ++k) {
-                        int x1 = i + dxs0[k];
-                        int y1 = j + dys0[k];
-                        if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
-                            continue;
-                        }
-                        tmpImg2.setValue(x1, y1, v);
-                    }
-                }
-            }
-            DFSContiguousValueFinder cf = new DFSContiguousValueFinder(tmpImg2);
-            cf.findGroups(0);
-            greyGradient2 = greyGradient2.createWithDimensions();
-            for (int i = 0; i < cf.getNumberOfGroups(); ++i) {
-                PairIntArray zeros = cf.getXY(i);
-                for (int j = 0; j < zeros.getN(); ++j) {
-                    greyGradient2.setValue(zeros.getX(j), zeros.getY(j), 255);
-                }
-            }
+            greyGradient2 = expandBy1AndKeepContigZeros(greyGradient2); 
+            
             greyGradient2 = imageProcessor.createSmallFirstDerivGaussian(greyGradient2);
             if (debugTag != null && !debugTag.equals("")) {
                 MiscDebug.writeImage(greyGradient2, "_grey_gradient_filtered_high_inv" + debugTag);
@@ -3598,8 +3589,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         // add the 0's from o1Img to greyGradient
         for (int i = 0; i < o1Img.getNPixels(); ++i) {
-            if ((useO1 && o1Img.getValue(i) == 0) || 
-                (createLowInt && greyGradient2.getValue(i) > 0)) {
+            if ((useO1 && o1Img.getValue(i) == 0) || (bGDiffImg.getValue(i) == 0)
+                || (createLowInt && greyGradient2.getValue(i) > 0)) {
                 greyGradient.setValue(i, 0);
             }
         }
@@ -4638,6 +4629,43 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return fractionZeros;
+    }
+
+    private GreyscaleImage expandBy1AndKeepContigZeros(GreyscaleImage img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        GreyscaleImage tmpImg2 = img.copyImage();
+        int[] dxs0, dys0;
+        dxs0 = Misc.dx8;
+        dys0 = Misc.dy8;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                if (v == 0) {
+                    continue;
+                }
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    tmpImg2.setValue(x1, y1, v);
+                }
+            }
+        }
+        DFSContiguousValueFinder cf = new DFSContiguousValueFinder(tmpImg2);
+        cf.findGroups(0);
+        tmpImg2 = img.createWithDimensions();
+        for (int i = 0; i < cf.getNumberOfGroups(); ++i) {
+            PairIntArray zeros = cf.getXY(i);
+            for (int j = 0; j < zeros.getN(); ++j) {
+                tmpImg2.setValue(zeros.getX(j), zeros.getY(j), 255);
+            }
+        }
+        return tmpImg2;
     }
 
     public static class BoundingRegions {
