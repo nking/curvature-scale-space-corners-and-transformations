@@ -56,7 +56,7 @@ public class AndroidStatuesTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
 //trees and grass contributing too many 2nd deriv pts.  does assoc w/ blobs retain enough remaining pts?
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 0; i < 2; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
