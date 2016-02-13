@@ -59,11 +59,16 @@ public class WaterShed extends AbstractWaterShed {
      * create a component labelled image with watershed pixels labelled as '0'.
      * runtime is quasi-linear.
      * @param img
-     * @return
+     * @return the labelled image.  Note that if all intensities in img are 
+     * the same, the method will return null.
      */
     public int[][] createLabelledImage(GreyscaleImage img) {
 
         int[][] lowerComplete = lower(img);
+        
+        if (lowerComplete == null) {
+            return null;
+        }
 
         int[][] labelled2 = unionFindWatershed(lowerComplete);
 
@@ -80,7 +85,8 @@ public class WaterShed extends AbstractWaterShed {
      * runtime complexity is O(N_pixels).
      *
      * @param img
-     * @return
+     * @return the lowered image.  Note that if all intensities are the same,
+     * the method will return null.
      */
     protected int[][] lower(GreyscaleImage img) {
 
@@ -384,6 +390,9 @@ public class WaterShed extends AbstractWaterShed {
      */
     protected int[][] unionFindWatershed(int[][] im) {
 
+        if (im == null) {
+            throw new IllegalStateException("im cannot be null");
+        }
         if ((distToLowerIntensityPixel == null) || (regionalMinima == null)) {
             throw new IllegalStateException("algorithm currently depends upon "
             + "previous use of the methods named lower");

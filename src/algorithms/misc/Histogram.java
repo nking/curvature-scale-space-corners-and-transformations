@@ -125,6 +125,26 @@ public class Histogram {
         return hist;
     }
     
+    public static HistogramHolder createSimpleHistogram(GreyscaleImage img,
+        float binWidth) {
+
+        float[] values = new float[img.getNPixels()];
+        int count = 0;
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int v = img.getValue(i, j);
+                values[count] = v;
+                count++;
+            }
+        }
+
+        float[] errors = Errors.populateYErrorsBySqrt(values);
+
+        HistogramHolder hist = createSimpleHistogram(binWidth, values, errors);
+
+        return hist;
+    }
+    
      public static HistogramHolder createHistogramAndRemovePreAndProceedingZeros(
          GreyscaleImage img) {
         

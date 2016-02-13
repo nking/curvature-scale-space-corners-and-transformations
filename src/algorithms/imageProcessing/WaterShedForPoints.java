@@ -64,12 +64,17 @@ public class WaterShedForPoints extends AbstractWaterShed {
      * runtime is quasi-linear.
      * @param img
      * @param points
-     * @return
+     * @return the labelled image points.  Note that if all intensities in img  
+     * are the same, the method will return null.
      */
     public Map<PairInt, Integer> createLabelledImage(GreyscaleImage img,
         Set<PairInt> points) {
 
         Map<PairInt, Integer> lowerComplete = lower(img, points);
+        
+        if (lowerComplete == null) {
+            return null;
+        }
 
         Map<PairInt, Integer> labelled2 = unionFindWatershed(lowerComplete);
 
@@ -99,7 +104,8 @@ public class WaterShedForPoints extends AbstractWaterShed {
      *
      * @param img
      * @param points
-     * @return
+     * @return the lowered image points.  Note that if all intensities are the 
+     * same, the method will return null.
      */
     Map<PairInt, Integer> lower(GreyscaleImage img, Set<PairInt> points) {
 

@@ -3495,14 +3495,82 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
         }
+        /*
+        PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(greyGradient);
+        double sum = 0;
+        double sum2 = 0;
+        for (int i = 0; i < sortedFreq.getN(); ++i) {
+            sum += sortedFreq.getY(i);
+            if (sortedFreq.getX(i) >= 7) {
+                sum2 += sortedFreq.getY(i);
+            }
+        }
+        double frac = sum2/sum;
+        */
         
-        imageProcessor.highPassIntensityFilter(greyGradient, 0.09);
+        HistogramEqualization hEq = new HistogramEqualization(o1Img);
+        hEq.applyFilter();
+        imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
+        
+        List<Float> fractionZeros = countFractionZeros(o1Img, 50, 50);
+        // edges are 0's, so when many fractions are near 0.5 or higher, 
+        // should not use this image
+        StringBuilder sb = new StringBuilder();
+        int nHigh2 = 0;
+        for (Float fracZ : fractionZeros) {
+            sb.append(fracZ.toString()).append(", ");
+            if (fracZ.floatValue() >= 0.2f) {
+                nHigh2++;
+            }
+        }
+        boolean useO1 = ((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
+        
+        boolean createLowInt = true;
+        GreyscaleImage greyGradient2 = null;
+        if (createLowInt) {
+            greyGradient2 = greyGradient.copyImage();
+            imageProcessor.highPassIntensityFilter(greyGradient2, 0.31);
+            GreyscaleImage tmpImg2 = greyGradient2.copyImage();
+            int[] dxs0, dys0;      
+            dxs0 = Misc.dx8;
+            dys0 = Misc.dy8;
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    int v = greyGradient2.getValue(i, j);
+                    if (v == 0) {
+                        continue;
+                    }
+                    for (int k = 0; k < dxs0.length; ++k) {
+                        int x1 = i + dxs0[k];
+                        int y1 = j + dys0[k];
+                        if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                            continue;
+                        }
+                        tmpImg2.setValue(x1, y1, v);
+                    }
+                }
+            }
+            DFSContiguousValueFinder cf = new DFSContiguousValueFinder(tmpImg2);
+            cf.findGroups(0);
+            greyGradient2 = greyGradient2.createWithDimensions();
+            for (int i = 0; i < cf.getNumberOfGroups(); ++i) {
+                PairIntArray zeros = cf.getXY(i);
+                for (int j = 0; j < zeros.getN(); ++j) {
+                    greyGradient2.setValue(zeros.getX(j), zeros.getY(j), 255);
+                }
+            }
+            greyGradient2 = imageProcessor.createSmallFirstDerivGaussian(greyGradient2);
+            if (debugTag != null && !debugTag.equals("")) {
+                MiscDebug.writeImage(greyGradient2, "_grey_gradient_filtered_high_inv" + debugTag);
+            }
+            
+            int z = 1;
+        }
+        
+        imageProcessor.highPassIntensityFilter(greyGradient, 0.09);//0.089
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
-
-        // TODO: for images such as android_statues_01.jpg, need to remove noise
-        // from the greyGradient edges before the binary inverse
 
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
             int v = greyGradient.getValue(i);
@@ -3512,19 +3580,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 greyGradient.setValue(i, 255);
             }
         }
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_inv" + debugTag);
-        }
-
-        HistogramEqualization hEq = new HistogramEqualization(o1Img);
-        hEq.applyFilter();
-        imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
 
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_adapt_med_" + debugTag);
             MiscDebug.writeImage(o1Img, "_o1_adapt_med_" + debugTag);
         }
-
+        
         int minDimension = Math.min(originalImageWidth, originalImageHeight);
         int lowerLimitSize;
         if (minDimension > 900) {
@@ -3537,7 +3598,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         // add the 0's from o1Img to greyGradient
         for (int i = 0; i < o1Img.getNPixels(); ++i) {
-            if (o1Img.getValue(i) == 0) {
+            if ((useO1 && o1Img.getValue(i) == 0) || 
+                (createLowInt && greyGradient2.getValue(i) > 0)) {
                 greyGradient.setValue(i, 0);
             }
         }
@@ -3545,6 +3607,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
             greyGradient);
         if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_combined_ws_input_" + debugTag);
             MiscDebug.writeImage(ws, "_gradient_watershed_" + debugTag);
         }
 
@@ -4535,6 +4598,46 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             n += sortedFreqL.getY(i);
         }
         return n;
+    }
+
+    private List<Float> countFractionZeros(GreyscaleImage img, 
+        int colCellSize, int rowCellSize) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        List<Float> fractionZeros = new ArrayList<Float>();
+            
+        int col = 0;
+        while (col < w) {
+            int row = 0;
+            while (row < h) {
+                //look at next 50x50 region
+                int nZ = 0;
+                int nNonZ = 0;
+                for (int i = col; i < (col + colCellSize); ++i) {
+                    if (i > (w - 1)) {
+                        break;
+                    }
+                    for (int j = row; j < (row + rowCellSize); ++j) {
+                        if (j > (h - 1)) {
+                            break;
+                        }
+                        int v = img.getValue(i, j);
+                        if (v == 0) {
+                            nZ++;
+                        } else {
+                            nNonZ++;
+                        }
+                    }
+                }
+                fractionZeros.add(Float.valueOf((float)nZ/(float)(nZ + nNonZ)));
+                row += 50;
+            }
+            col += 50;
+        }
+        
+        return fractionZeros;
     }
 
     public static class BoundingRegions {

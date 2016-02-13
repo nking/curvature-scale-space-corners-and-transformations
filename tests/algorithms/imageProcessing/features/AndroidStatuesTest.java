@@ -55,23 +55,209 @@ public class AndroidStatuesTest extends TestCase {
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
+        settings.setToUse2ndDerivCorners();;
 //trees and grass contributing too many 2nd deriv pts.  does assoc w/ blobs retain enough remaining pts?
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 30; ++i) {
             switch(i) {
+                /*
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
                     fileName2 = "android_statues_04.jpg";
                     //fileName1 = "android_statues_02_gingerbreadman.jpg";
                     //fileName2 = "android_statues_04_gingerbreadman.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
                     break;
                 }
                 default: {
                     fileName1 = "android_statues_01.jpg";
                     fileName2 = "android_statues_03.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
+                    break;
+                }*/
+                case 0: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    fileName2 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 1: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    fileName2 = "venturi_mountain_j6_0010.png";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 2: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    fileName2 = "books_illum3_v6_695x555.png";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 3: {
+                    fileName1 = "campus_010.jpg";
+                    fileName2 = "campus_011.jpg";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 4: {
+                    fileName1 = "merton_college_I_001.jpg";
+                    fileName2 = "merton_college_I_002.jpg";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 5: {
+                    fileName1 = "seattle.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 6: {
+                    fileName1 = "arches.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 7: {
+                    fileName1 = "stinson_beach.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 8: {
+                    fileName1 = "cloudy_san_jose.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 9: {
+                    fileName1 = "stonehenge.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 10: {
+                    fileName1 = "norwegian_mtn_range.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 11: {
+                    fileName1 = "halfdome.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 12: {
+                    fileName1 = "halfdome2.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 13: {
+                    fileName1 = "halfdome3.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 14: {
+                    fileName1 = "costa_rica.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 15: {
+                    fileName1 = "new-mexico-sunrise_w725_h490.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 16: {
+                    fileName1 = "arizona-sunrise-1342919937GHz.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 17: {
+                    fileName1 = "sky_with_rainbow.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 18: {
+                    fileName1 = "sky_with_rainbow2.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 19: {
+                    fileName1 = "patagonia_snowy_foreground.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 20: {
+                    fileName1 = "mt_rainier_snowy_field.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 21: {
+                    fileName1 = "klein_matterhorn_snowy_foreground.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 22: {
+                    fileName1 = "30.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 23: {
+                    fileName1 = "arches_sun_01.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 24: {
+                    fileName1 = "stlouis_arch.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 25: {
+                    fileName1 = "contrail.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 26: {
+                    fileName1 = "android_statues_01.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 27: {
+                    fileName1 = "android_statues_02.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 28: {
+                    fileName1 = "android_statues_03.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 29: {
+                    fileName1 = "android_statues_04.jpg";
+                    fileName2 = fileName1;
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    fileName2 = "checkerboard_02.jpg";
+                    settings.setUseNormalizedFeatures(true);
                     break;
                 }
             }

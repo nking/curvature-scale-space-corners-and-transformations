@@ -1660,6 +1660,12 @@ public class ImageProcessor {
         return new int[]{(int)Math.round(rSum), (int)Math.round(gSum),
             (int)Math.round(bSum)};
     }
+    
+    public void applyErosionFilter(GreyscaleImage img) {
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyFilter(img);
+    }
 
     public void applyInvert255(GreyscaleImage img) {
         // assumption that pixels lie in range 0 to 255
@@ -3070,7 +3076,6 @@ public class ImageProcessor {
     
     /**
      * @param input
-     * @param lowerLimitSize
      * @return 
      */
     public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input) {
@@ -3111,6 +3116,9 @@ public class ImageProcessor {
         WaterShed ws = new WaterShed();
         int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
         GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
+        if (labelled == null) {
+            return wsImg;
+        }
         for (int j = 0; j < h; ++j) {
             for (int i = 0; i < w; ++i) {
                 int v = labelled[i][j];
