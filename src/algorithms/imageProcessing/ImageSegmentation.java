@@ -3471,23 +3471,37 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         GreyscaleImage o1Img = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage bGImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage bRImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage labAImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage labBImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+
         GreyscaleImage greyGradient = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
         
-        GreyscaleImage bGDiffImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
         int maxGrey = Integer.MIN_VALUE;
         for (int i = 0; i < input.getNPixels(); ++i) {
 
             int r = input.getR(i);
             int g = input.getG(i);
+            int b = input.getB(i);
             o1Img.setValue(i, (r - g));
+            bGImg.setValue(i, b - g);
+            bRImg.setValue(i, b - r);
             
-            bGDiffImg.setValue(i, (input.getB(i) - g));
+            float[] lab = input.getCIELAB(i);            
+            labAImg.setValue(i, Math.round(lab[1]));
+            labBImg.setValue(i, Math.round(lab[2]));
 
-            int grey = Math.round(((float)input.getR(i) + (float)input.getG(i) +
-                (float)input.getB(i))/3.f);
+            int grey = Math.round(((float)(r + g + b))/3.f);
             greyGradient.setValue(i, grey);
             if (grey > maxGrey) {
                 maxGrey = grey;
@@ -3497,9 +3511,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         ImageProcessor imageProcessor = new ImageProcessor();
 
         greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
-        }
+        
         /*
         PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(greyGradient);
         double sum = 0;
@@ -3515,54 +3527,198 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         HistogramEqualization hEq = new HistogramEqualization(o1Img);
         hEq.applyFilter();
+        o1Img = expandBy1AndKeepContigZeros(o1Img);
         imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(o1Img, "_o1_adapt_med" + debugTag);
+        }
         
         List<Float> fractionZeros = countFractionZeros(o1Img, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher, 
         // should not use this image
         StringBuilder sb = new StringBuilder();
         int nHigh2 = 0;
+        int nHigh3 = 0;
+        int nHigh4 = 0;
         for (Float fracZ : fractionZeros) {
             sb.append(fracZ.toString()).append(", ");
             if (fracZ.floatValue() >= 0.2f) {
                 nHigh2++;
             }
+            if (fracZ.floatValue() >= 0.3f) {
+                nHigh3++;
+            }
+            if (fracZ.floatValue() >= 0.4f) {
+                nHigh4++;
+            }
         }
-        log.info(debugTag + " o1 nH2=" + ((float)nHigh2/(float)fractionZeros.size()));
+        
         boolean useO1 = ((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
+        log.info(debugTag + " o1 nH2=" + ((float)nHigh2/(float)fractionZeros.size())
+            + " nH3=" + ((float)nHigh3/(float)fractionZeros.size())
+            + " nH4=" + ((float)nHigh4/(float)fractionZeros.size())
+            //+ " useO1=" + useO1
+        );
         
+        // -----------
+        hEq = new HistogramEqualization(bGImg);
+        hEq.applyFilter();
+        bGImg = expandBy1AndKeepContigZeros(bGImg);  
+        imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bGImg, "_b-g_adapt_med" + debugTag);
+        }
+        List<Float> fractionZerosBG = countFractionZeros(bGImg, 50, 50);
+        // edges are 0's, so when many fractions are near 0.5 or higher, 
+        // should not use this image
+        sb = new StringBuilder();
+        int nHigh2BG = 0;
+        int nHigh3BG = 0;
+        int nHigh4BG = 0;
+        for (Float fracZ : fractionZerosBG) {
+            sb.append(fracZ.toString()).append(", ");
+            if (fracZ.floatValue() >= 0.2f) {
+                nHigh2BG++;
+            }
+            if (fracZ.floatValue() >= 0.3f) {
+                nHigh3BG++;
+            }
+            if (fracZ.floatValue() >= 0.4f) {
+                nHigh4BG++;
+            }
+        }
         
-        hEq = new HistogramEqualization(bGDiffImg);
+        boolean useBG = ((float)nHigh2BG/(float)fractionZerosBG.size()) < 0.2f;
+        log.info(debugTag + " B-G nH2=" + ((float)nHigh2BG/(float)fractionZerosBG.size())
+            + " nH3=" + ((float)nHigh3BG/(float)fractionZerosBG.size())
+            + " nH4=" + ((float)nHigh4BG/(float)fractionZerosBG.size())
+            + " useBG=" + useBG
+        );
+                
+        // -----------
+        hEq = new HistogramEqualization(bRImg);
+        hEq.applyFilter();
+        bRImg = expandBy1AndKeepContigZeros(bRImg);  
+        imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bRImg, "_b-r_adapt_med" + debugTag);
+        }
+        List<Float> fractionZerosBR = countFractionZeros(bRImg, 50, 50);
+        // edges are 0's, so when many fractions are near 0.5 or higher, 
+        // should not use this image
+        sb = new StringBuilder();
+        int nHigh2BR = 0;
+        int nHigh3BR = 0;
+        int nHigh4BR = 0;
+        for (Float fracZ : fractionZerosBR) {
+            sb.append(fracZ.toString()).append(", ");
+            if (fracZ.floatValue() >= 0.2f) {
+                nHigh2BR++;
+            }
+            if (fracZ.floatValue() >= 0.3f) {
+                nHigh3BR++;
+            }
+            if (fracZ.floatValue() >= 0.4f) {
+                nHigh4BR++;
+            }
+        }
+        
+        boolean useBR = ((float)nHigh2BR/(float)fractionZerosBR.size()) < 0.2f;
+        log.info(debugTag + " B-R nH2=" + ((float)nHigh2BR/(float)fractionZerosBR.size())
+            + " nH3=" + ((float)nHigh3BR/(float)fractionZerosBR.size())
+            + " nH4=" + ((float)nHigh4BR/(float)fractionZerosBR.size())
+            + " useBR=" + useBR
+        );
+        
+        // -------
+        hEq = new HistogramEqualization(labBImg);
+        hEq.applyFilter();
+        MedianSmooth smooth = new MedianSmooth();
+        labBImg = smooth.calculate(labBImg, 4, 4);
+        imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(labBImg, "_lab_b_adapt_med" + debugTag);
+        }
+        List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
+        // edges are 0's, so when many fractions are near 0.5 or higher, 
+        // should not use this image
+        sb = new StringBuilder();
+        int nHigh2B = 0;
+        int nHigh3B = 0;
+        int nHigh4B = 0;
+        for (Float fracZ : fractionZerosB) {
+            sb.append(fracZ.toString()).append(", ");
+            if (fracZ.floatValue() >= 0.2f) {
+                nHigh2B++;
+            }
+            if (fracZ.floatValue() >= 0.3f) {
+                nHigh3B++;
+            }
+            if (fracZ.floatValue() >= 0.4f) {
+                nHigh4B++;
+            }
+        }
+        boolean useB = ((float)nHigh2B/(float)fractionZerosB.size()) < 0.2f;
+        log.info(debugTag + " lab b nH2=" + ((float)nHigh2B/(float)fractionZerosB.size())
+            + " nH3=" + ((float)nHigh3B/(float)fractionZerosB.size())
+            + " nH4=" + ((float)nHigh4B/(float)fractionZerosB.size())
+            + " useB=" + useB
+        );
+                
+        // -------
+        /*hEq = new HistogramEqualization(aImg);
         hEq.applyFilter();
         if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(bGDiffImg, "_b-g_" + debugTag);
+            MiscDebug.writeImage(aImg, "_lab_a_" + debugTag);
         }
-        bGDiffImg = expandBy1AndKeepContigZeros(bGDiffImg);  
-        imageProcessor.applyAdaptiveMeanThresholding(bGDiffImg, 1);
+        MedianSmooth smooth = new MedianSmooth();
+        aImg = smooth.calculate(aImg, 4, 4);
         if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(bGDiffImg, "_b-g_adapt_med" + debugTag);
+            MiscDebug.writeImage(aImg, "_lab_a_smooth" + debugTag);
         }
+        imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(aImg, "_lab_a_adapt_med" + debugTag);
+        }
+        List<Float> fractionZerosA = countFractionZeros(aImg, 50, 50);
+        // edges are 0's, so when many fractions are near 0.5 or higher, 
+        // should not use this image
+        sb = new StringBuilder();
+        int nHigh2A = 0;
+        int nHigh3A = 0;
+        int nHigh4A = 0;
+        for (Float fracZ : fractionZerosA) {
+            sb.append(fracZ.toString()).append(", ");
+            if (fracZ.floatValue() >= 0.2f) {
+                nHigh2A++;
+            }
+            if (fracZ.floatValue() >= 0.3f) {
+                nHigh3A++;
+            }
+            if (fracZ.floatValue() >= 0.4f) {
+                nHigh4A++;
+            }
+        }
+        boolean useA = ((float)nHigh2A/(float)fractionZerosA.size()) < 0.2f;
+        log.info(debugTag + " lab a nH2=" + ((float)nHigh2A/(float)fractionZerosA.size())
+            + " nH3=" + ((float)nHigh3A/(float)fractionZerosA.size())
+            + " nH4=" + ((float)nHigh4A/(float)fractionZerosA.size())
+            + " useA=" + useA
+        );
+        */
+        /*
+        need to look at number of 0's in large cells across the image and
+        not use this image if there are a large number.
+        if do use the image, need to make one more set of changes:
+           expand the 0 pixels by 1 
+               then consider keeping contiguous non-0's of certain size
+               OR, consider inverting image and use line thinner
+        */
         
         boolean createLowInt = true;
-        GreyscaleImage greyGradient2 = null;
-        if (createLowInt) {
-            greyGradient2 = greyGradient.copyImage();
-            imageProcessor.highPassIntensityFilter(greyGradient2, 0.31);
-            greyGradient2 = expandBy1AndKeepContigZeros(greyGradient2); 
-            
-            greyGradient2 = imageProcessor.createSmallFirstDerivGaussian(greyGradient2);
-            if (debugTag != null && !debugTag.equals("")) {
-                MiscDebug.writeImage(greyGradient2, "_grey_gradient_filtered_high_inv" + debugTag);
-            }
-            
-            int z = 1;
-        }
+        GreyscaleImage greyGradient2 = greyGradient.copyImage();
         
         imageProcessor.highPassIntensityFilter(greyGradient, 0.09);//0.089
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
-        }
-
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
             int v = greyGradient.getValue(i);
             if (v > 0) {
@@ -3571,29 +3727,91 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 greyGradient.setValue(i, 255);
             }
         }
-
         if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_adapt_med_" + debugTag);
-            MiscDebug.writeImage(o1Img, "_o1_adapt_med_" + debugTag);
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
         
-        int minDimension = Math.min(originalImageWidth, originalImageHeight);
-        int lowerLimitSize;
-        if (minDimension > 900) {
-            lowerLimitSize = 300;
-        } else if (minDimension < 200) {
-            lowerLimitSize = 100;
-        } else {
-            lowerLimitSize = 200;
+        if (createLowInt) {
+            imageProcessor.highPassIntensityFilter(greyGradient2, 0.4);//0.31);
+            for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
+                if (greyGradient2.getValue(i) > 0) {
+                    greyGradient2.setValue(i, 255);
+                }
+            }
+            greyGradient2 = expandBy1(greyGradient2, 255);
+            imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
+            if (debugTag != null && !debugTag.equals("")) {
+                MiscDebug.writeImage(greyGradient2, "_greyGradient2_adapt_med" + debugTag);
+            }
+            List<Float> fractionZerosG = countFractionZeros(greyGradient2, 50, 50);
+            // edges are 0's, so when many fractions are near 0.5 or higher, 
+            // should not use this image
+            sb = new StringBuilder();
+            int nHigh2G = 0;
+            int nHigh3G = 0;
+            int nHigh4G = 0;
+            for (Float fracZ : fractionZerosG) {
+                sb.append(fracZ.toString()).append(", ");
+                if (fracZ.floatValue() >= 0.2f) {
+                    nHigh2G++;
+                }
+                if (fracZ.floatValue() >= 0.3f) {
+                    nHigh3G++;
+                }
+                if (fracZ.floatValue() >= 0.4f) {
+                    nHigh4G++;
+                }
+            }
+            float f2 = ((float) nHigh2G / (float) fractionZerosG.size()); 
+            float f3 = ((float) nHigh3G / (float) fractionZerosG.size());
+            float f4 = ((float) nHigh4G / (float) fractionZerosG.size());
+            createLowInt = f2 < 0.2f;
+            log.info(debugTag + " greyGradient2 nH2=" + f2  + " nH3=" + f3
+                + " nH4=" + f4 + " useG2=" + createLowInt
+            );
+            if ((f2 < 0.01) && (f3 < 0.01) && (f4 < 0.01)) {
+                // replace with greyGradient and further process
+                greyGradient2.resetTo(greyGradient);
+                greyGradient2 = expandBy1(greyGradient2, 0);
+                for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
+                    int v = greyGradient2.getValue(i);
+                    greyGradient2.setValue(i, 255-v);
+                }
+                imageProcessor.applyErosionFilter(greyGradient2);
+                for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
+                    int v = greyGradient2.getValue(i);
+                    if (v == 0) {
+                        greyGradient2.setValue(i, 255);
+                    } else {
+                        greyGradient2.setValue(i, 0);
+                    }
+                }
+                if (debugTag != null && !debugTag.equals("")) {
+                    MiscDebug.writeImage(greyGradient2, "_greyGradient2_editing" + debugTag);
+                }
+            }
         }
-
-        // add the 0's from o1Img to greyGradient
-        for (int i = 0; i < o1Img.getNPixels(); ++i) {
-            if ((useO1 && o1Img.getValue(i) == 0) || (bGDiffImg.getValue(i) == 0)
-                || (createLowInt && greyGradient2.getValue(i) > 0)) {
+        
+        greyGradient = new GreyscaleImage(w, h);
+        greyGradient.fill(255);
+        
+        MiscDebug.writeImage(greyGradient, "debug");
+         
+        // add the edges from images
+        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
+            if (
+                (useO1 && (o1Img.getValue(i) == 0)) ||
+                (useBG && (bGImg.getValue(i) == 0))
+                || (useBR && (bRImg.getValue(i) == 0))
+                || (createLowInt && (greyGradient2.getValue(i) == 0))
+                || (useB && (labBImg.getValue(i) == 0))
+                ) {
                 greyGradient.setValue(i, 0);
             }
         }
+        
+        log.info("useO1=" + useO1 + " useLabB=" + useB + " useBG=" + useBG
+            + " useBR=" + useBR + " useGreyGradient2=" + createLowInt);
 
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
             greyGradient);
@@ -4633,17 +4851,32 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
     private GreyscaleImage expandBy1AndKeepContigZeros(GreyscaleImage img) {
         
+        GreyscaleImage tmpImg2 = expandBy1(img, 255);
+        
+        DFSContiguousValueFinder cf = new DFSContiguousValueFinder(tmpImg2);
+        cf.findGroups(0);
+        tmpImg2 = img.createWithDimensions();
+        for (int i = 0; i < cf.getNumberOfGroups(); ++i) {
+            PairIntArray zeros = cf.getXY(i);
+            for (int j = 0; j < zeros.getN(); ++j) {
+                tmpImg2.setValue(zeros.getX(j), zeros.getY(j), 255);
+            }
+        }
+        return tmpImg2;
+    }
+    
+    private GreyscaleImage expandBy1(GreyscaleImage img, int value) {
+        
         int w = img.getWidth();
         int h = img.getHeight();
         
         GreyscaleImage tmpImg2 = img.copyImage();
-        int[] dxs0, dys0;
-        dxs0 = Misc.dx8;
-        dys0 = Misc.dy8;
+        int[] dxs0 = Misc.dx8;
+        int[] dys0 = Misc.dy8;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 int v = img.getValue(i, j);
-                if (v == 0) {
+                if (v != value) {
                     continue;
                 }
                 for (int k = 0; k < dxs0.length; ++k) {
@@ -4656,15 +4889,47 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
-        DFSContiguousValueFinder cf = new DFSContiguousValueFinder(tmpImg2);
-        cf.findGroups(0);
-        tmpImg2 = img.createWithDimensions();
-        for (int i = 0; i < cf.getNumberOfGroups(); ++i) {
-            PairIntArray zeros = cf.getXY(i);
-            for (int j = 0; j < zeros.getN(); ++j) {
-                tmpImg2.setValue(zeros.getX(j), zeros.getY(j), 255);
+        
+        return tmpImg2;
+    }
+    
+    GreyscaleImage shrinkBy1(GreyscaleImage img, int value) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int nonValue = (value == 0) ? 255 : 0;
+        
+        GreyscaleImage tmpImg2 = img.copyImage();
+        int[] dxs0 = Misc.dx8;
+        int[] dys0 = Misc.dy8;
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int v = img.getValue(i, j);
+                if (v != value) {
+                    continue;
+                }
+                int nN = 0;
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    int v2 = img.getValue(x1, y1);
+                    if (v2 == value) {
+                        nN++;
+                    }
+                }
+
+                if (nN == 8) {
+                    tmpImg2.setValue(i, j, value);
+                } else {
+                    tmpImg2.setValue(i, j, nonValue);
+                }
             }
         }
+
         return tmpImg2;
     }
 

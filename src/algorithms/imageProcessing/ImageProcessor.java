@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -3753,5 +3754,94 @@ public class ImageProcessor {
                 input.setValue(i, 0);
             }
         }
+    }
+    
+    public void applyHighPass2LayerFilter(GreyscaleImage input, double lowThresholdFractionOfTotal) {
+        
+        int n = input.getNPixels();
+        
+        PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
+        double sum = 0;
+        for (int i = 0; i < sortedFreq.getN(); ++i) {
+            sum += sortedFreq.getY(i);
+        }
+        
+        int thresh = (int)Math.round(lowThresholdFractionOfTotal * sum);
+                
+        if (thresh == 0) {
+            return;
+        }
+        
+        //0.15
+        int thresh0 = (int)Math.round(0.125 * sum);
+        
+        double critValue0 = -1;
+        double sum0 = 0;
+        for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
+            sum0 += sortedFreq.getY(i);
+            if (sum0 > thresh0) {
+                critValue0 = sortedFreq.getX(i);
+                break;
+            }
+        }
+        double critValue2 = -1;
+        double sum2 = 0;
+        for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
+            sum2 += sortedFreq.getY(i);
+            if (sum2 > thresh) {
+                critValue2 = sortedFreq.getX(i);
+                break;
+            }
+        }
+        
+        // create stack initialized with pixels >= crit value,
+        //   then add neighbors above lower crit value of 0
+        Stack<Integer> stack = new Stack<Integer>();
+        Set<Integer> visited = new HashSet<Integer>();
+        
+        for (int i = 0; i < n; ++i) {
+            int v = input.getValue(i);
+            if (v >= critValue2) {
+                stack.add(Integer.valueOf(i));
+            }
+        }
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+                
+        GreyscaleImage tmp = input.createWithDimensions();
+        
+        while (!stack.isEmpty()) {
+            Integer pixIndex = stack.pop();
+            if (visited.contains(pixIndex)) {
+                continue;
+            }
+            
+            int x = input.getCol(pixIndex.intValue());
+            int y = input.getRow(pixIndex.intValue());
+            
+            tmp.setValue(pixIndex.intValue(), 255);
+            
+            for (int i = 0; i < dxs.length; ++i) {
+                int x2 = x + dxs[i];
+                int y2 = y + dys[i];
+                if (x2 < 0 || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                    continue;
+                }
+                int v = input.getValue(x2, y2);
+                if (v > critValue0) {
+                    int pixIdx2 = input.getInternalIndex(x2, y2);
+                    tmp.setValue(pixIdx2, 255);
+                    stack.add(Integer.valueOf(pixIdx2));
+                }
+            }
+            
+            visited.add(pixIndex);
+        }
+       
+        input.resetTo(tmp);
     }
 }

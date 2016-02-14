@@ -10,13 +10,15 @@ import java.util.Arrays;
  * @author nichole
  */
 public class MedianSmooth {
-
+    
     /**
      * calculate a running median of a window of size xWindow, yWindow.
      * runtime complexity is
      *     n_rows * ((xWindow * yWindow) + ((n_cols)*lg2(xWindow * yWindow)))
      * so is roughly O(n_pixels * lg2(window area)) where n_pixels = n_rows * n_cols
      *
+     * NOTE: should only be used by a single thread.
+     * 
      * NOTE: the border points outside of the window retain their initial values.
      *
      * @param input
@@ -28,7 +30,7 @@ public class MedianSmooth {
         int yWindow) {
 
         if (input == null) {
-            throw new IllegalArgumentException("curveY cannot be null");
+            throw new IllegalArgumentException("input cannot be null");
         }
         if (input.getWidth() < xWindow) {
             throw new IllegalArgumentException(
@@ -57,6 +59,9 @@ public class MedianSmooth {
                     sVec.append(input.getValue(i, j));
                 }
             }
+            
+            assert(sVec.n == sVec.a.length);
+            assert(sVec.sorted);
 
             //O(k) + (N)*lg2(k)
             int median;
@@ -75,11 +80,17 @@ public class MedianSmooth {
 
                     for (int j = row; j < (row + yWindow); ++j) {
 
+                        assert(sVec.n == sVec.a.length);
+                        
                         // remove : O(log_2(k))
                         sVec.remove(input.getValue(i - xWindow + 1, j));
 
+                        assert(sVec.n == (sVec.a.length - 1));
+                        
                         // add : O(log_2(k)) + < O(k)
                         sVec.insertIntoOpenSlot(input.getValue(i + 1, j));
+                        
+                        assert(sVec.n == sVec.a.length);
                     }
                 }
             }
@@ -202,7 +213,7 @@ public class MedianSmooth {
      * adding when list is full.
      */
     static class SortedVector {
-
+        
         protected final int[] a;
 
         protected int n;
@@ -239,7 +250,7 @@ public class MedianSmooth {
 
             if (n == (a.length)) {
                 throw new IllegalArgumentException(
-                    "there must be an empty slot in order to append." +
+                    "0) there must be an empty slot in order to append." +
                     " remove and item then try insert again or construct larger list.");
             }
 
@@ -266,8 +277,9 @@ public class MedianSmooth {
         public void insertIntoOpenSlot(int value) {
 
             if (n != (a.length - 1)) {
-                throw new IllegalArgumentException(
-                "the method is meant to be used when there is only one avail slot");
+                String err = "1) the method is meant to be used only on a full list." 
+                + " a.length=" + a.length + " n=" + n;
+                throw new IllegalArgumentException(err);
             }
 
             if (!sorted) {
@@ -287,7 +299,7 @@ public class MedianSmooth {
                 Arrays.sort(a);
 
                 sorted = true;
-
+                
                 return;
             }
 
@@ -325,7 +337,7 @@ public class MedianSmooth {
 
             n++;
 
-            availSlot = -1;
+            availSlot = -1;            
         }
 
         /**
@@ -339,7 +351,8 @@ public class MedianSmooth {
 
             if (n != a.length) {
                 throw new IllegalArgumentException(
-                "the method is meant to be used only on a full list");
+                "2) the method is meant to be used only on a full list." 
+                + " a.length=" + a.length + " n=" + n);
             }
 
             int rmIdx = Arrays.binarySearch(a, value);
@@ -358,7 +371,7 @@ public class MedianSmooth {
                 a[availSlot] = a[availSlot + 1];
             }
 
-            n--;
+            n--;            
         }
 
         /**
@@ -371,7 +384,8 @@ public class MedianSmooth {
 
             if (n != a.length) {
                 throw new IllegalArgumentException(
-                "the method is meant to be used only on a full list");
+                "3) the method is meant to be used only on a full list." 
+                + " a.length=" + a.length + " n=" + n);
             }
 
             int midIdx = ((n & 1) == 1) ? n/2 : (n - 1)/2;
