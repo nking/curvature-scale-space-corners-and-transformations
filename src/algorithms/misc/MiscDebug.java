@@ -579,7 +579,7 @@ public class MiscDebug {
 
     public static void assertAllRowsPopulated(
         Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
-        int imageMaxColumn, int imageMaxRow) {
+        int imageMaxColumn) {
         
         for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
             

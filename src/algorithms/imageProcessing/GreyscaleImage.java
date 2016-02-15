@@ -791,27 +791,14 @@ public class GreyscaleImage {
         
         ImageExt img2 = new ImageExt(width, height, !is64Bit);
         
-        if (is64Bit) {
-            if (len == img2.len) {
-                System.arraycopy(aL, 0, img2.rL, 0, len);
-                System.arraycopy(aL, 0, img2.gL, 0, len);
-                System.arraycopy(aL, 0, img2.bL, 0, len);
-            } else {
-                for (int i = 0; i < nPixels; ++i) {
-                    int v = getValue(i);
-                    img2.setRGB(i, v, v, v);
-                }
-            }
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            System.arraycopy(a, 0, img2.r, 0, len);
+            System.arraycopy(a, 0, img2.g, 0, len);
+            System.arraycopy(a, 0, img2.b, 0, len);
         } else {
-            if (len == img2.len) {
-                System.arraycopy(a, 0, img2.r, 0, len);
-                System.arraycopy(a, 0, img2.g, 0, len);
-                System.arraycopy(a, 0, img2.b, 0, len);
-            } else {
-                for (int i = 0; i < nPixels; ++i) {
-                    int v = getValue(i);
-                    img2.setRGB(i, v, v, v);
-                }
+            for (int i = 0; i < nPixels; ++i) {
+                int v = getValue(i);
+                img2.setRGB(i, v, v, v);
             }
         }
         
@@ -822,30 +809,39 @@ public class GreyscaleImage {
         
         Image img2 = new Image(width, height, !is64Bit);
         
-        if (is64Bit) {
-            if (len == img2.len) {
-                System.arraycopy(aL, 0, img2.rL, 0, len);
-                System.arraycopy(aL, 0, img2.gL, 0, len);
-                System.arraycopy(aL, 0, img2.bL, 0, len);
-            } else {
-                for (int i = 0; i < nPixels; ++i) {
-                    int v = getValue(i);
-                    img2.setRGB(i, v, v, v);
-                }
-            }
+        if (type.equals(Type.Bits32FullRangeInt)) {
+            System.arraycopy(a, 0, img2.r, 0, len);
+            System.arraycopy(a, 0, img2.g, 0, len);
+            System.arraycopy(a, 0, img2.b, 0, len);
         } else {
-            if (len == img2.len) {
-                System.arraycopy(a, 0, img2.r, 0, len);
-                System.arraycopy(a, 0, img2.g, 0, len);
-                System.arraycopy(a, 0, img2.b, 0, len);
-            } else {
-                for (int i = 0; i < nPixels; ++i) {
-                    int v = getValue(i);
-                    img2.setRGB(i, v, v, v);
-                }
+            for (int i = 0; i < nPixels; ++i) {
+                int v = getValue(i);
+                img2.setRGB(i, v, v, v);
             }
         }
         
+        return img2;
+    }
+    
+    /**
+     * copy to an instance of Image and clip values below 0 to 0 and clip
+     * values above 255 to 255.
+     * @return 
+     */
+    public Image copyToColorGreyscaleWithClipping() {
+        
+        Image img2 = new Image(width, height, !is64Bit);
+        
+        for (int i = 0; i < nPixels; ++i) {
+            int v = getValue(i);
+            if (v < 0) { 
+                v = 0;
+            } else if (v > 255) {
+                v = 255;
+            }
+            img2.setRGB(i, v, v, v);
+        }
+
         return img2;
     }
     

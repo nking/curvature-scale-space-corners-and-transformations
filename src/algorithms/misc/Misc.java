@@ -384,4 +384,56 @@ public class Misc {
         
         return output;
     }
+    
+    public static int[][] populateNeighborOffsets(int radius) {
+        
+        int n0 = (2*((2*radius) + 1));  
+        int n1 = n0 - 4;  
+        int nTotal = n0 + n1;
+        
+        int[][] dxys = new int[2][];
+        
+        for (int i = 0; i < 2; ++i) {
+            dxys[i] = new int[nTotal]; 
+        }
+        
+        /*     -  -  -      radius = 1
+               -  @  -
+               -  -  - 
+        
+            #  #  #  #  #   radius = 2
+               -  -  -  #
+               -  @  -  #
+               -  -  -  #
+            #  #  #  #  #
+        */
+        
+        int count = 0;
+        // top
+        for (int i = -radius; i <= radius; ++i) {
+            dxys[0][count] = i;
+            dxys[1][count] = radius;
+            count++;
+        }
+        // right
+        for (int j = (radius - 1); j >= -radius; --j) {
+            dxys[0][count] = radius;
+            dxys[1][count] = j;
+            count++;
+        }
+        // bottom
+        for (int i = (radius - 1); i >= -radius; --i) {
+            dxys[0][count] = i;
+            dxys[1][count] = -radius;
+            count++;
+        }
+        // left
+        for (int j = (radius - 1); j > -radius; --j) {
+            dxys[0][count] = -radius;
+            dxys[1][count] = j;
+            count++;
+        }
+        
+        return dxys;
+    }
 }

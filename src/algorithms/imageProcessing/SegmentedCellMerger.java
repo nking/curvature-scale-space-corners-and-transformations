@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -447,8 +448,7 @@ public class SegmentedCellMerger {
         //TODO: this may need revision.  wanting to exclude processing for
         // contiguous regions which are a large fraction of image.
         // these are usually background.
-        
-        
+                
         // runtime complexity is N_freq * O(N) where N_freq is at most 256 and
         // the O(N) term may be as high as O(N*8) if highly connected.
         List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
@@ -546,70 +546,99 @@ public class SegmentedCellMerger {
             log.info(str);*/
         }
         
+        Map<PairInt, Integer> blobPointToListIndex = createBlobPointToListIndex(
+            blobs);
+        
+        Stack<PairInt> boundaryValueStack = new Stack<PairInt>();
+        for (int i = 0; i < boundaryValueSets.size(); ++i) {
+            for (PairInt p : boundaryValueSets.get(i)) {
+                boundaryValueStack.add(p);
+            }
+        }
+        Set<PairInt> debugBoundary = new HashSet<PairInt>();
+        
         // place points in boundaryValueSets, individually, into the 
         // adjacent sets they best match
+        
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
-        for (int i = 0; i < boundaryValueSets.size(); ++i) {
+        
+        int prevNRemaining = 0;
+        
+        int nIter = 0;
+        
+        while (true) {
             
-            Set<PairInt> bvSet = boundaryValueSets.get(i);
-            
-            for (PairInt p : bvSet) {
-                
+            while (!boundaryValueStack.isEmpty()) {
+
+                PairInt p = boundaryValueStack.pop();
+
                 float[] labP = img.getCIELAB(p.getX(), p.getY());
-                
+
                 double minDeltaE = Double.MAX_VALUE;
                 int minDeltaEIdx = -1;
-                
+
                 // compare each point to colors in adjacent sets and choose closest.
                 // TODO: can improve this with another datastructure
+
                 for (int k = 0; k < dxs.length; ++k) {
                     int x2 = p.getX() + dxs[k];
                     int y2 = p.getY() + dys[k];
                     PairInt p2 = new PairInt(x2, y2);
-                    
-                    for (int j = 0; j < blobs.size(); ++j) {
-                        Set<PairInt> blob = blobs.get(j);
-                        if (blob.contains(p2)) {
-                            Double ell = lAvg.get(j);
-                            Double ay = aAvg.get(j);
-                            Double bee = aAvg.get(j);
-                            double deltaE = cieC.calcDeltaECIE94(labP[0], 
-                                labP[1], labP[2], 
-                                ell.floatValue(), ay.floatValue(), bee.floatValue());
-                            if (deltaE < 0) {
-                                deltaE *= -1;
-                            }
-                            if (deltaE < minDeltaE) {
-                                minDeltaE = deltaE;
-                                minDeltaEIdx = j;
-                            }
-                            break;
-                        }
+
+                    Integer blobsIndex = blobPointToListIndex.get(p2);
+                    if (blobsIndex == null) {
+                        continue;
+                    }
+                    int j = blobsIndex.intValue();
+
+                    Double ell = lAvg.get(j);
+                    Double ay = aAvg.get(j);
+                    Double bee = aAvg.get(j);
+                    double deltaE = cieC.calcDeltaECIE94(labP[0], 
+                        labP[1], labP[2], 
+                        ell.floatValue(), ay.floatValue(), bee.floatValue());
+                    if (deltaE < 0) {
+                        deltaE *= -1;
+                    }
+                    if (deltaE < minDeltaE) {
+                        minDeltaE = deltaE;
+                        minDeltaEIdx = j;
                     }
                 }
-                
+
                 // some of the boundary value pixels are connected to large regions
                 // so are not always adjacent to a non-boundary value region.
                 if (minDeltaEIdx > -1) {
                     blobs.get(minDeltaEIdx).add(p);
+                    blobPointToListIndex.put(p, Integer.valueOf(minDeltaEIdx));
+                } else {
+                    debugBoundary.add(p);
                 }
             }
-        }
-        
-        // create a map for reverse look-ups later
-        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < blobs.size(); ++i) {
-            Integer key = Integer.valueOf(i);
-            Set<PairInt> blob = blobs.get(i);
-            for (PairInt p : blob) {
-                pointIndexMap.put(p, key);
+            
+            if (debugBoundary.isEmpty()) {
+                break;
             }
+
+            if (debugBoundary.size() == prevNRemaining) {
+                break;
+            }
+            
+            prevNRemaining = debugBoundary.size();
+            
+            boundaryValueStack.addAll(debugBoundary);
+            debugBoundary.clear();   
+            
+            nIter++;
         }
         
+        log.info("boundary value nIter=" + nIter);
+                        
         // less than O(N)
-        List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters.extractBlobPerimeterAsPoints(
-            blobs, segImg.getWidth(), segImg.getHeight());
+        List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters
+            .extractBlobPerimeterAsPoints(blobs, segImg.getWidth(), 
+            segImg.getHeight());
         
         assert(blobs.size() == borderPixelSets.size());
         
@@ -619,7 +648,7 @@ public class SegmentedCellMerger {
         
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        //ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
             o2Avg, o3Avg);
@@ -641,8 +670,8 @@ public class SegmentedCellMerger {
             // runtime complexity is O(N_perimeter_pts * lg_2(N_perimeter_pts)
             // remove straight line segments except their endpoints to make simpler
             // polynomial for "point in polygon" tests
-            imageSegmentation.makeStraightLinesHollow(orderedPerimeter, img.getWidth(), 
-                img.getHeight(), srchRadius);
+            //imageSegmentation.makeStraightLinesHollow(orderedPerimeter, img.getWidth(), 
+            //    img.getHeight(), srchRadius);
         
             /*
             Image imgCp = img.copyImage();
@@ -653,7 +682,8 @@ public class SegmentedCellMerger {
             perimetersList.add(orderedPerimeter);
         }
         
-        BoundingRegions br = new BoundingRegions(perimetersList, bma, pointIndexMap);
+        BoundingRegions br = new BoundingRegions(perimetersList, bma, 
+            blobPointToListIndex);
         
         return br;
     }
@@ -774,6 +804,8 @@ public class SegmentedCellMerger {
             }
         }
         
+        //debug(br, adjacencyMap);
+        
         return adjacencyMap;
     }
 
@@ -846,5 +878,102 @@ public class SegmentedCellMerger {
         m[1][3] = 0.166;
         
         return m;
+    }
+
+    private void debug(BoundingRegions br, Map<PairInt, Set<PairInt>> adjacencyMap) {
+        
+        Image imgCp = img.copyImage();
+        Image imgCp2 = imgCp.copyToGreyscale().copyToColorGreyscale();
+        
+        List<PairIntArray> boundaries = br.getPerimeterList();
+        
+        int n = br.getBlobMedialAxes().getNumberOfItems();
+        
+        int nExtraForDot = 0;
+        
+        for (int i = 0; i < n; ++i) {
+            
+            PairIntArray bounds = boundaries.get(i);
+            
+            int[] clr = ImageIOHelper.getNextRGB(i);
+          
+            //-- draw boundaries as a curve --
+            int nb = bounds.getN();
+            int[] xVertexes = new int[nb + 1];
+            int[] yVertexes = new int[nb + 1];
+            for (int j = 0; j < nb; ++j) {
+                xVertexes[j] = bounds.getX(j);
+                yVertexes[j] = bounds.getY(j);
+            }
+            xVertexes[nb] = bounds.getX(0);
+            yVertexes[nb] = bounds.getY(0);
+            ImageIOHelper.drawLinesInImage(xVertexes, yVertexes, imgCp,
+                nExtraForDot, clr[0], clr[1], clr[2]);
+        }
+        
+        nExtraForDot = 1;
+        
+        //for (int i = 0; i < n; ++i) {
+        for (int i = 1; i < 2; ++i) {
+            
+            PairIntArray bounds = boundaries.get(i);
+            
+            int[] clr = ImageIOHelper.getNextRGB(i);
+          
+            PairInt cenXY = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            
+            ImageIOHelper.addPointToImage(cenXY.getX(), cenXY.getY(), imgCp, 
+                0, clr[0], clr[1], clr[2]);
+            
+            /*
+            -- draw boundaries as a curve --
+            */
+            int nb = bounds.getN();
+            int[] xVertexes = new int[nb + 1];
+            int[] yVertexes = new int[nb + 1];
+            for (int j = 0; j < nb; ++j) {
+                xVertexes[j] = bounds.getX(j);
+                yVertexes[j] = bounds.getY(j);
+            }
+            xVertexes[nb] = bounds.getX(0);
+            yVertexes[nb] = bounds.getY(0);
+            ImageIOHelper.drawLinesInImage(xVertexes, yVertexes, imgCp,
+                nExtraForDot, clr[0], clr[1], clr[2]);
+            
+            ImageIOHelper.addPointToImage(cenXY.getX(), cenXY.getY(), imgCp2, 
+                nExtraForDot, clr[0], clr[1], clr[2]);
+            
+            Set<PairInt> adjacentCenXY = adjacencyMap.get(cenXY);
+            if (adjacentCenXY != null) {
+                for (PairInt cenXY2 : adjacentCenXY) {
+                    ImageIOHelper.addPointToImage(cenXY2.getX(), cenXY2.getY(), imgCp2, 
+                        nExtraForDot, clr[0], clr[1], clr[2]);
+                    ImageIOHelper.addPointToImage(cenXY2.getX(), cenXY2.getY(), imgCp, 
+                        0, clr[0], clr[1], clr[2]);
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(imgCp, "adj_0_" + debugTag);
+        MiscDebug.writeImage(imgCp2, "adj_1_" + debugTag);
+    }
+
+    private Map<PairInt, Integer> createBlobPointToListIndex(List<Set<PairInt>> 
+        blobs) {
+        
+        Map<PairInt, Integer> map = new HashMap<PairInt, Integer>();
+        
+        for (int i = 0; i < blobs.size(); ++i) {
+            
+            Set<PairInt> blob = blobs.get(i);
+            
+            Integer key = Integer.valueOf(i);
+            
+            for (PairInt p : blob) {
+                map.put(p, key);
+            }
+        }
+        
+        return map;
     }
 }

@@ -992,7 +992,7 @@ public class PerimeterFinder {
 
         if (debug) {
             algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
-                rowMinMax, imageMaxColumn, imageMaxRow);
+                rowMinMax, imageMaxColumn);
         }
 
         /*
@@ -1641,7 +1641,7 @@ public class PerimeterFinder {
 
         if (debug) {
             algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
-                rowMinMax, imageMaxColumn, imageMaxRow);
+                rowMinMax, imageMaxColumn);
         }
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
