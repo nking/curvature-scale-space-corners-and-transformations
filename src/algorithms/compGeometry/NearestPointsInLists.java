@@ -73,7 +73,7 @@ public class NearestPointsInLists {
                 Integer x = Integer.valueOf(p.getX());
                 Integer y = Integer.valueOf(p.getY());
                 
-                TreeSet ySet = xy.get(x);
+                TreeSet<Integer> ySet = xy.get(x);
                 if (ySet == null) {
                     ySet = new TreeSet<Integer>();
                     xy.put(x, ySet);
@@ -106,7 +106,7 @@ public class NearestPointsInLists {
         
         Integer yKey = Integer.valueOf(p.getY());
        
-        TreeSet ySet = xy.get(xKey);
+        TreeSet<Integer> ySet = xy.get(xKey);
         if (ySet == null) {
             ySet = new TreeSet<Integer>();
             xy.put(xKey, ySet);
