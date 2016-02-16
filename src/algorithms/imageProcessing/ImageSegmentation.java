@@ -3479,16 +3479,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage bRImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
-        GreyscaleImage labAImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
-        GreyscaleImage labBImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
         GreyscaleImage greyGradient = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
-        GreyscaleImage  hueAngleImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
         int maxGrey = Integer.MIN_VALUE;
@@ -3501,21 +3492,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             bGImg.setValue(i, b - g);
             bRImg.setValue(i, b - r);
 
-            float[] lab = input.getCIELAB(i);
-            labAImg.setValue(i, Math.round(lab[1]));
-            labBImg.setValue(i, Math.round(lab[2]));
-
             int grey = Math.round(((float)(r + g + b))/3.f);
             greyGradient.setValue(i, grey);
             if (grey > maxGrey) {
                 maxGrey = grey;
             }
-
-            float ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
-            if (ha < 0) {
-                ha += 360.;
-            }
-            hueAngleImg.setValue(i, Math.round(ha));
         }
 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -3640,91 +3621,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " useBR=" + useBR
         );
 
-        // -------
-        hEq = new HistogramEqualization(labBImg);
-        hEq.applyFilter();
-        MedianSmooth smooth = new MedianSmooth();
-        labBImg = smooth.calculate(labBImg, 4, 4);
-        imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labBImg, "_lab_b_adapt_med" + debugTag);
-        }
-        List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
-        // edges are 0's, so when many fractions are near 0.5 or higher,
-        // should not use this image
-        sb = new StringBuilder();
-        int nHigh2B = 0;
-        int nHigh3B = 0;
-        int nHigh4B = 0;
-        for (Float fracZ : fractionZerosB) {
-            sb.append(fracZ.toString()).append(", ");
-            if (fracZ.floatValue() >= 0.2f) {
-                nHigh2B++;
-            }
-            if (fracZ.floatValue() >= 0.3f) {
-                nHigh3B++;
-            }
-            if (fracZ.floatValue() >= 0.4f) {
-                nHigh4B++;
-            }
-        }
-        boolean useB = ((float)nHigh2B/(float)fractionZerosB.size()) < 0.2f;
-        log.info(debugTag + " lab b nH2=" + ((float)nHigh2B/(float)fractionZerosB.size())
-            + " nH3=" + ((float)nHigh3B/(float)fractionZerosB.size())
-            + " nH4=" + ((float)nHigh4B/(float)fractionZerosB.size())
-            + " useB=" + useB
-        );
-
-        // -------
-        /*hEq = new HistogramEqualization(aImg);
-        hEq.applyFilter();
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(aImg, "_lab_a_" + debugTag);
-        }
-        MedianSmooth smooth = new MedianSmooth();
-        aImg = smooth.calculate(aImg, 4, 4);
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(aImg, "_lab_a_smooth" + debugTag);
-        }
-        imageProcessor.applyAdaptiveMeanThresholding(aImg, 1);
-        if (debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(aImg, "_lab_a_adapt_med" + debugTag);
-        }
-        List<Float> fractionZerosA = countFractionZeros(aImg, 50, 50);
-        // edges are 0's, so when many fractions are near 0.5 or higher,
-        // should not use this image
-        sb = new StringBuilder();
-        int nHigh2A = 0;
-        int nHigh3A = 0;
-        int nHigh4A = 0;
-        for (Float fracZ : fractionZerosA) {
-            sb.append(fracZ.toString()).append(", ");
-            if (fracZ.floatValue() >= 0.2f) {
-                nHigh2A++;
-            }
-            if (fracZ.floatValue() >= 0.3f) {
-                nHigh3A++;
-            }
-            if (fracZ.floatValue() >= 0.4f) {
-                nHigh4A++;
-            }
-        }
-        boolean useA = ((float)nHigh2A/(float)fractionZerosA.size()) < 0.2f;
-        log.info(debugTag + " lab a nH2=" + ((float)nHigh2A/(float)fractionZerosA.size())
-            + " nH3=" + ((float)nHigh3A/(float)fractionZerosA.size())
-            + " nH4=" + ((float)nHigh4A/(float)fractionZerosA.size())
-            + " useA=" + useA
-        );
-        */
-        /*
-        need to look at number of 0's in large cells across the image and
-        not use this image if there are a large number.
-        if do use the image, need to make one more set of changes:
-           expand the 0 pixels by 1
-               then consider keeping contiguous non-0's of certain size
-               OR, consider inverting image and use line thinner
-        */
-
         boolean createLowInt = true;
         GreyscaleImage greyGradient2 = greyGradient.copyImage();
 
@@ -3835,14 +3731,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 (useBG && (bGImg.getValue(i) == 0))
                 || (useBR && (bRImg.getValue(i) == 0))
                 || (createLowInt && (greyGradient2.getValue(i) == 0))
-                || (useB && (labBImg.getValue(i) == 0))
                 ) {
                 greyGradient.setValue(i, 0);
             }
         }
 
-        log.info("useO1=" + useO1 + " useLabB=" + useB + " useBG=" + useBG
-            + " useBR=" + useBR + " useGreyGradient2=" + createLowInt);
+        log.info("useO1=" + useO1 + " useBG=" + useBG + " useBR=" + useBR + 
+            " useGreyGradient2=" + createLowInt);
 
         if (debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
@@ -3852,7 +3747,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
         }
 
-        // dfs for values 255, then average of them and set within hueAngleImg
+        // dfs for values 255, then average of them and set 
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(greyGradient);
         finder.setMinimumNumberInCluster(2);
         finder.findGroups(255);
@@ -3962,15 +3857,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             GreyscaleImage greyImg = input.copyToGreyscale();
             for (int i = 0; i < segmentedCellList2.size(); ++i) {
                 Set<PairInt> group = segmentedCellList2.get(i);
-                int avg = 0;
                 int greyAvg = 0;
                 for (PairInt p : group) {
                     int x = p.getX();
                     int y = p.getY();
-                    avg += hueAngleImg.getValue(x, y);
                     greyAvg += greyImg.getValue(x, y);
                 }
-                avg = Math.round((float)avg/(float)(group.size()));
                 greyAvg = Math.round((float)greyAvg/(float)(group.size()));
                 if (greyAvg > 255) {
                     greyAvg = 255;
@@ -3982,15 +3874,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
 
-            int vMax = hueAngleImg.getMax();
-            // invert image
-            for (int i = 0; i < hueAngleImg.getNPixels(); ++i) {
-                int v = hueAngleImg.getValue(i);
-                hueAngleImg.setValue(i, vMax - v);
-            }
-
-            MiscDebug.writeImage(hueAngleImg, "_ws_input_hueAngle" + debugTag);
-            MiscDebug.writeImage(greyImg, "_ws_input_grey" + debugTag);
+            MiscDebug.writeImage(greyImg, "_combined_final_grey" + debugTag);
         }
         
         return segmentedCellList2;
