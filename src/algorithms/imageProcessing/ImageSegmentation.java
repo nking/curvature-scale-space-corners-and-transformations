@@ -3807,19 +3807,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         Set<PairInt> zeros = createZerosSet(segmentedCellList, w, h);
         
         /*
-        TODO: for the points which are 0's in the greyGradient,
-           use 
-        NearestPointsInLists np = new NearestPointsInLists(nonZerosPointsList);
-        
-        and then for each point in 0's set
-            Map<Integer, PairInt> listPointMap = 
-                 findNeighbors(int xCenter, int yCenter, float radius)
-            where radius is 28, limited by max for deltaE if deltaE is used
-            for each returned,
-                calculate dist = xyDist + abs(deltaE)
-                and determine minDist
-            assign the 0 point to the list of the minimum distance 
-            and update the np
+        for the points which are 0's in the greyGradient,
+           finding the nearest points from segmented cells within a radius
+           of 28 or so, limited by max for deltaE.
+           for each returned,
+               calculate dist = xyDist + abs(deltaE)
+               and determine minDist
+           assign the 0 point to the list of the minimum distance 
+           and update the np
         */
         NearestPointsInLists np = new NearestPointsInLists(segmentedCellList);
         
@@ -3916,7 +3911,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
 
-            MiscDebug.writeImage(greyImg, "_ws_input_grey" + debugTag);
+            MiscDebug.writeImage(greyImg, "_final_edge_segmented_" + debugTag);
         }
         
         return segmentedCellList2;
