@@ -523,6 +523,7 @@ public class MatrixUtil {
      * @param classes zero based transformed classes
      * @return 
      */
+    @SuppressWarnings({"rawtypes"})
     public static SimpleMatrix createLDATransformation2(SimpleMatrix normData,
         SimpleMatrix classes, int nClasses) {
         
@@ -690,6 +691,7 @@ public class MatrixUtil {
         return w;
     }
     
+    @SuppressWarnings({"rawtypes"})
     private static EigenValuesAndVectors stepwiseKPCA(double[][] distsq, double gamma, 
         int nComponents) {
         
@@ -917,6 +919,7 @@ public class MatrixUtil {
      * 
      * @param normData
      */
+    @SuppressWarnings({"rawtypes"})
     public static SimpleMatrix createPCATransformation2(SimpleMatrix normData) {
         
         int n = normData.numCols();
@@ -1089,7 +1092,7 @@ public class MatrixUtil {
             }
         }
         for (int j = 0; j < nRows; ++j) {
-            diff[j] /= (double)(n - 1.);
+            diff[j] /= (n - 1.);
         }
         
         double sqrtTwo = Math.sqrt(2.);
