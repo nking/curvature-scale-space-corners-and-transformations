@@ -3813,6 +3813,44 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         log.info("useO1=" + useO1 + " useLabB=" + useB + " useBG=" + useBG
             + " useBR=" + useBR + " useGreyGradient2=" + createLowInt);
 
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
+        }
+        greyGradient = fillInGapsOf1(greyGradient, 0);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
+        }
+        
+        /*
+        TODO: 
+                
+        looks like here is where should revise the process.
+           can see that the contiguous regions of 255 are good cores for segmented cells.
+           the 0's are pixels from the adjacent non-0 segmented cell 
+               (which have been expanded into 0's).
+           
+           so the 0's need to be further processed to place them in the adjacent
+              segmented cells or kept in their own.
+        
+           if only needed greyscale, the watershed would be very fast.
+           To try the same using color instead, would use hue angle from CIELAB.
+           an input image to the watershed would be made.
+             -- the non-0s would all be assigned the average hue angle of the cell
+             -- the 0's however, would keep their individual pixel hue angle values.
+           then the watershed should place the 0's in the right cell by using
+           efficient distance transform combined with the intensity.
+        
+        */
+        
+        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
+            int v = greyGradient.getValue(i);
+            greyGradient.setValue(i, 255 - v);
+        }
+        imageProcessor.applyErosionFilter(greyGradient);
+        if (debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_combined_ws_input_p2_" + debugTag);
+        }
+        
         GreyscaleImage ws = imageProcessor.makeWatershedFromAdaptiveMedian(
             greyGradient);
         if (debugTag != null && !debugTag.equals("")) {
@@ -4886,6 +4924,67 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         continue;
                     }
                     tmpImg2.setValue(x1, y1, v);
+                }
+            }
+        }
+        
+        return tmpImg2;
+    }
+    
+    private GreyscaleImage fillInGapsOf1(GreyscaleImage img, int value) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        /*
+        0  1  2
+        7     3
+        6  5  4
+        fill in !value if these pairs are filled in:
+            0:3, 0:4, 0:5      
+            1:4, 1:5, 1:6
+            2:5, 2:6, 2:7
+            3:6, 3:7, 3:0
+            4:7
+        so a +1 and -1 in x or y and a +1 or -1 in y or x
+        */
+        int[] dxs0 = new int[]{-1, -1, -1,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1};
+        int[] dys0 = new int[]{+1, +1, +1,  1,  1,  1,  1,  1,  1,  0,  0,  0, -1};
+        int[] dxs1 = new int[]{1,  +1,  0,  1,  0, -1,  0, -1, -1, -1, -1, -1, -1};
+        int[] dys1 = new int[]{0,  -1, -1, -1, -1, -1, -1, -1,  0, -1,  0,  1,  0};
+        
+        GreyscaleImage tmpImg2 = img.copyImage();
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                
+                int v = img.getValue(i, j);
+                
+                if (v == value) {
+                    continue;
+                }
+                
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    int v1 = img.getValue(x1, y1);
+                    if (v1 != value) {
+                        continue;
+                    }
+                    int x2 = i + dxs1[k];
+                    int y2 = j + dys1[k];
+                    if (x2 < 0 || (x2 > (w - 1)) || y2 < 0 || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    int v2 = img.getValue(x2, y2);
+                    if (v2 != value) {
+                        continue;
+                    }
+                    tmpImg2.setValue(i, j, value);
+                    break;
                 }
             }
         }
