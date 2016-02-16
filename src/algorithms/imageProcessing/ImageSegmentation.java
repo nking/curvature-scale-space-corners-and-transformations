@@ -3449,8 +3449,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return ws;
     }
 
-    //TODO: rename this method. no longer using edge based watershed
-    public GreyscaleImage createGreyscaleO1Watershed(ImageExt input, String debugTag,
+    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input, String debugTag,
         int originalImageWidth, int originalImageHeight) {
 
         /*
@@ -3940,46 +3939,61 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        //TODO: run DFS on sets in addedTo indexes to separate groups with gaps
-                
-        GreyscaleImage greyImg = input.copyToGreyscale();
+        List<Set<PairInt>> segmentedCellList2 = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> group = segmentedCellList.get(i);
-            int avg = 0;
-            int greyAvg = 0;
-            for (PairInt p : group) {
-                int x = p.getX();
-                int y = p.getY();
-                avg += hueAngleImg.getValue(x, y);
-                greyAvg += greyImg.getValue(x, y);
+            Integer index = Integer.valueOf(i);
+            Set<PairInt> points = segmentedCellList.get(i);
+            if (!addedTo.contains(index)) {
+                segmentedCellList2.add(points);
+                continue;
             }
-            avg = Math.round((float)avg/(float)(group.size()));
-            greyAvg = Math.round((float)greyAvg/(float)(group.size()));
-            if (greyAvg > 255) {
-                greyAvg = 255;
-            }
-            for (PairInt p : group) {
-                int x = p.getX();
-                int y = p.getY();
-                greyImg.setValue(x, y, greyAvg);
+            DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+            finder2.setMinimumNumberInCluster(1);
+            finder2.findConnectedPointGroups(points, w, h);
+            for (int ii = 0; ii < finder2.getNumberOfGroups(); ++ii) {
+                Set<PairInt> group = finder2.getXY(ii);
+                segmentedCellList2.add(group);
             }
         }
         
-        int vMax = hueAngleImg.getMax();
-        //int vMaxGrey = greyGradient.getMax();
-        // invert image
-        for (int i = 0; i < hueAngleImg.getNPixels(); ++i) {
-            int v = hueAngleImg.getValue(i);
-            hueAngleImg.setValue(i, vMax - v);
-            //greyImg.setValue(i, vMaxGrey - greyImg.getValue(i));
-        }
-
+        segmentedCellList = null;
+                     
         if (debugTag != null && !debugTag.equals("")) {
+            GreyscaleImage greyImg = input.copyToGreyscale();
+            for (int i = 0; i < segmentedCellList2.size(); ++i) {
+                Set<PairInt> group = segmentedCellList2.get(i);
+                int avg = 0;
+                int greyAvg = 0;
+                for (PairInt p : group) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    avg += hueAngleImg.getValue(x, y);
+                    greyAvg += greyImg.getValue(x, y);
+                }
+                avg = Math.round((float)avg/(float)(group.size()));
+                greyAvg = Math.round((float)greyAvg/(float)(group.size()));
+                if (greyAvg > 255) {
+                    greyAvg = 255;
+                }
+                for (PairInt p : group) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    greyImg.setValue(x, y, greyAvg);
+                }
+            }
+
+            int vMax = hueAngleImg.getMax();
+            // invert image
+            for (int i = 0; i < hueAngleImg.getNPixels(); ++i) {
+                int v = hueAngleImg.getValue(i);
+                hueAngleImg.setValue(i, vMax - v);
+            }
+
             MiscDebug.writeImage(hueAngleImg, "_ws_input_hueAngle" + debugTag);
             MiscDebug.writeImage(greyImg, "_ws_input_grey" + debugTag);
         }
         
-        return greyImg;
+        return segmentedCellList2;
     }
 
     /**

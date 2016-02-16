@@ -47,11 +47,11 @@ public class SegmentedCellMerger {
     private final int boundaryValue;
     private final boolean hasBoundaryValue;
     private final ImageExt img;
-    private final GreyscaleImage segImg;
+    private final List<Set<PairInt>> segmentedCellList;
     private final String debugTag;
     private final Logger log = Logger.getLogger(this.getClass().getName());
     
-    public SegmentedCellMerger(ImageExt img, GreyscaleImage segImg, 
+    public SegmentedCellMerger(ImageExt img, List<Set<PairInt>> theSegmentedCellList, 
         int boundaryValue, String debugTag) {
         
         this.boundaryValue = boundaryValue;
@@ -60,8 +60,15 @@ public class SegmentedCellMerger {
         } else {
             hasBoundaryValue = false;
         }        
+        
         this.img = img;
-        this.segImg = segImg;
+        
+        this.segmentedCellList = new ArrayList<Set<PairInt>>(theSegmentedCellList.size());
+        for (Set<PairInt> set : theSegmentedCellList) {
+            Set<PairInt> set2 = new HashSet<PairInt>(set);
+            segmentedCellList.add(set2);
+        }
+        
         this.debugTag = debugTag;
     }
     
@@ -291,8 +298,11 @@ public class SegmentedCellMerger {
                  so need to look at the color spaces in detail to use more than deltaE for similarity...
                 */
 
+                //TODO: revising these vectors
+                
                 //if (Math.abs(deltaE) > 6 && Math.abs(deltaHA) > 5) {
-                if (ldaY > 24.5 || ldaX < -50) {
+                //if (ldaY > 24.5 || ldaX < -50) {
+                if (true) {
                     continue;
                 }
                 
@@ -436,67 +446,31 @@ public class SegmentedCellMerger {
     }
     
     private BoundingRegions extractPerimetersAndBounds() {
-        
-        List<Set<PairInt>> boundaryValueSets = new ArrayList<Set<PairInt>>();
-        
-        int smallestGroupLimit = 1;
-        int largestGroupLimit = Integer.MAX_VALUE;
-        boolean filterOutImageBoundaryBlobs = false;
-        boolean filterOutZeroPixels = false;
-        boolean use8Neighbors = true;
-        
-        //TODO: this may need revision.  wanting to exclude processing for
-        // contiguous regions which are a large fraction of image.
-        // these are usually background.
-                
-        // runtime complexity is N_freq * O(N) where N_freq is at most 256 and
-        // the O(N) term may be as high as O(N*8) if highly connected.
-        List<Set<PairInt>> blobs =  BlobsAndPerimeters.extractBlobsFromSegmentedImage(
-            segImg, smallestGroupLimit, largestGroupLimit,
-            filterOutImageBoundaryBlobs, filterOutZeroPixels, 
-            use8Neighbors, debugTag);
-        
-        // find the sets which are the boundary values
-        if (hasBoundaryValue) {
-            List<Integer> mv = new ArrayList<Integer>();
-            for (int i = 0; i < blobs.size(); ++i) {
-                Set<PairInt> blob = blobs.get(i);
-                PairInt p = blob.iterator().next();
-                if (segImg.getValue(p) == boundaryValue) {
-                    mv.add(Integer.valueOf(i));
-                }
-            }
-            for (int i = (mv.size() - 1); i > -1; --i) {
-                Integer mvIndex = mv.get(i);
-                Set<PairInt> blob = blobs.remove(mvIndex.intValue());
-                boundaryValueSets.add(blob);
-            }
-        }
-                
+                                
         // --- sort by descending sizes the remaining blobs ---- 
-        int[] sizes = new int[blobs.size()];
+        int[] sizes = new int[segmentedCellList.size()];
         int[] indexes = new int[sizes.length];
-        for (int i = 0; i < blobs.size(); ++i) {
-            sizes[i] = blobs.get(i).size();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            sizes[i] = segmentedCellList.get(i).size();
             indexes[i] = i;
         }
         
         // removing any blobs which are larger than 0.2 percent of image size also
-        float nPixels = img.getNPixels();
+        //float nPixels = img.getNPixels();
         
         MultiArrayMergeSort.sortByDecr(sizes, indexes);
         List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
         
         for (int i = 0; i < sizes.length; ++i) {
             int idx = indexes[i];
-            Set<PairInt> blob = blobs.get(idx);
-            float frac = (float)blob.size()/nPixels;
-            if (frac < 0.2) {
+            Set<PairInt> blob = segmentedCellList.get(idx);
+            //float frac = (float)blob.size()/nPixels;
+            //if (frac < 0.2) {
                 tmp.add(blob);
-            }
+            //}
         }
-        blobs.clear();
-        blobs.addAll(tmp);
+        segmentedCellList.clear();
+        segmentedCellList.addAll(tmp);
         
         //---- begin section to log colors to look at selecting matchable bounds by color ------
         CIEChromaticity cieC = new CIEChromaticity();
@@ -509,11 +483,11 @@ public class SegmentedCellMerger {
         List<Double> o2Avg = new ArrayList<Double>();
         List<Double> o3Avg = new ArrayList<Double>();
         
-        for (int i = 0; i < blobs.size(); ++i) {
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
             double redSum = 0;
             double greenSum = 0;
             double blueSum = 0;
-            for (PairInt p : blobs.get(i)) {
+            for (PairInt p : segmentedCellList.get(i)) {
                 int x = p.getX();
                 int y = p.getY();
                 int red = img.getR(x, y);
@@ -523,7 +497,7 @@ public class SegmentedCellMerger {
                 greenSum += green;
                 blueSum += blue;
             }
-            double n = (double)blobs.get(i).size();
+            double n = (double)segmentedCellList.get(i).size();
             redSum /= n;
             greenSum /= n;
             blueSum /= n;
@@ -547,100 +521,14 @@ public class SegmentedCellMerger {
         }
         
         Map<PairInt, Integer> blobPointToListIndex = createBlobPointToListIndex(
-            blobs);
-        
-        Stack<PairInt> boundaryValueStack = new Stack<PairInt>();
-        for (int i = 0; i < boundaryValueSets.size(); ++i) {
-            for (PairInt p : boundaryValueSets.get(i)) {
-                boundaryValueStack.add(p);
-            }
-        }
-        Set<PairInt> debugBoundary = new HashSet<PairInt>();
-        
-        // place points in boundaryValueSets, individually, into the 
-        // adjacent sets they best match
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        int prevNRemaining = 0;
-        
-        int nIter = 0;
-        
-        while (true) {
-            
-            while (!boundaryValueStack.isEmpty()) {
-
-                PairInt p = boundaryValueStack.pop();
-
-                float[] labP = img.getCIELAB(p.getX(), p.getY());
-
-                double minDeltaE = Double.MAX_VALUE;
-                int minDeltaEIdx = -1;
-
-                // compare each point to colors in adjacent sets and choose closest.
-                // TODO: can improve this with another datastructure
-
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = p.getX() + dxs[k];
-                    int y2 = p.getY() + dys[k];
-                    PairInt p2 = new PairInt(x2, y2);
-
-                    Integer blobsIndex = blobPointToListIndex.get(p2);
-                    if (blobsIndex == null) {
-                        continue;
-                    }
-                    int j = blobsIndex.intValue();
-
-                    Double ell = lAvg.get(j);
-                    Double ay = aAvg.get(j);
-                    Double bee = aAvg.get(j);
-                    double deltaE = cieC.calcDeltaECIE94(labP[0], 
-                        labP[1], labP[2], 
-                        ell.floatValue(), ay.floatValue(), bee.floatValue());
-                    if (deltaE < 0) {
-                        deltaE *= -1;
-                    }
-                    if (deltaE < minDeltaE) {
-                        minDeltaE = deltaE;
-                        minDeltaEIdx = j;
-                    }
-                }
-
-                // some of the boundary value pixels are connected to large regions
-                // so are not always adjacent to a non-boundary value region.
-                if (minDeltaEIdx > -1) {
-                    blobs.get(minDeltaEIdx).add(p);
-                    blobPointToListIndex.put(p, Integer.valueOf(minDeltaEIdx));
-                } else {
-                    debugBoundary.add(p);
-                }
-            }
-            
-            if (debugBoundary.isEmpty()) {
-                break;
-            }
-
-            if (debugBoundary.size() == prevNRemaining) {
-                break;
-            }
-            
-            prevNRemaining = debugBoundary.size();
-            
-            boundaryValueStack.addAll(debugBoundary);
-            debugBoundary.clear();   
-            
-            nIter++;
-        }
-        
-        log.info("boundary value nIter=" + nIter);
-                        
+            segmentedCellList);
+                                
         // less than O(N)
         List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters
-            .extractBlobPerimeterAsPoints(blobs, segImg.getWidth(), 
-            segImg.getHeight());
+            .extractBlobPerimeterAsPoints(segmentedCellList, img.getWidth(), 
+            img.getHeight());
         
-        assert(blobs.size() == borderPixelSets.size());
+        assert(segmentedCellList.size() == borderPixelSets.size());
         
         List<PairIntArray> perimetersList = new ArrayList<PairIntArray>();
         
@@ -650,12 +538,12 @@ public class SegmentedCellMerger {
         
         //ImageSegmentation imageSegmentation = new ImageSegmentation();
         
-        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
+        BlobMedialAxes bma = new BlobMedialAxes(segmentedCellList, lAvg, aAvg, bAvg, o1Avg,
             o2Avg, o3Avg);
         
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     
-            Set<PairInt> blob = blobs.get(i);
+            Set<PairInt> blob = segmentedCellList.get(i);
             Set<PairInt> borderPixels = borderPixelSets.get(i);
             
             // approx O(N_perimeter), but has factors during searches that could be improved
