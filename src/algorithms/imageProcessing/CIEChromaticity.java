@@ -536,6 +536,8 @@ public class CIEChromaticity {
      * 
      * the "Just noticeable difference", JND, begins at E_ab ~ 2.3
      * 
+     * the range of resulting values is 0 through 28.78.
+     * 
      * @param cieLAB1
      * @param cieLAB2
      * @return deltaE 

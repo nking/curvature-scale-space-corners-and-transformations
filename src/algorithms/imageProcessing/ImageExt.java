@@ -136,6 +136,15 @@ public class ImageExt extends Image {
     
     public float[] getCIELAB(int col, int row) {
         
+        if ((col < 0) || (col > (width - 1))) {
+            throw new IllegalArgumentException(
+                "col is out of bounds:");
+        }
+        if ((row < 0) || (row > (height - 1))) {
+            throw new IllegalArgumentException(
+                "row is out of bounds:");
+        }
+        
         int idx = getInternalIndex(col, row);
         
         return getCIELAB(idx);
