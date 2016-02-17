@@ -5074,9 +5074,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return nonPoints;
     }
     
-    //NOT READY FOR USE YET.
+    /**
+     * continues the segmentation by placing the unassigned pixels into adjacent
+     * cells if color is similar.  the process should probably be followed by
+     * segmented cell merger class.
+     * by L
+     * @param input
+     * @param segmentedCellList
+     * @param unassigned 
+     */
     private void placeUnassignedByGrowingCells(ImageExt input,
-        List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros) {
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned) {
 
         long t0 = System.currentTimeMillis();
         
@@ -5120,7 +5128,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 int y2 = y + dys[i];
                 
                 PairInt p2 = new PairInt(x2, y2);
-                if (!zeros.contains(p2)) {
+                if (!unassigned.contains(p2)) {
                     continue;
                 }
                 
@@ -5128,7 +5136,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
                 // jnd ~ 2.3
-                if (deltaE > 7) {
+                // 4 is good and can be continued w/ labelling
+                // 5 is fine if goal is finding objects
+                if (deltaE > 4) {
                     continue;
                 }
                 
@@ -5136,7 +5146,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 pointIndexMap.put(p2, listIndex);
                 
-                zeros.remove(p2);   
+                unassigned.remove(p2);   
                 
                 queue.add(p2);
             }
@@ -5146,7 +5156,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to place " + zeros.size() 
+        log.info(t1Sec + " sec to place " + unassigned.size() 
             + " points by growing cells");
     }
 
