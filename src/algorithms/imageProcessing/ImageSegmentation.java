@@ -26,6 +26,7 @@ import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -3471,6 +3472,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         int w = input.getWidth();
         int h = input.getHeight();
+        
+        long t0 = System.currentTimeMillis();
 
         GreyscaleImage o1Img = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
@@ -3497,6 +3500,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             bGImg.setValue(i, b - g);
             bRImg.setValue(i, b - r);
 
+            //TODO: could consider only calculating for nearly grey dark to bright)
+            // where it is most useful.
             float[] lab = input.getCIELAB(i);
             labBImg.setValue(i, Math.round(lab[2]));
 
@@ -3506,6 +3511,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 maxGrey = grey;
             }
         }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to create color images");
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
@@ -3524,6 +3533,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double frac = sum2/sum;
         */
 
+        t0 = System.currentTimeMillis();
+        
         HistogramEqualization hEq = new HistogramEqualization(o1Img);
         hEq.applyFilter();
         o1Img = expandBy1AndKeepContigZeros(o1Img);
@@ -3558,6 +3569,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nH4=" + ((float)nHigh4/(float)fractionZeros.size())
             //+ " useO1=" + useO1
         );
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make O1 edges");
+        t0 = System.currentTimeMillis();
 
         // -----------
         hEq = new HistogramEqualization(bGImg);
@@ -3593,7 +3608,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nH4=" + ((float)nHigh4BG/(float)fractionZerosBG.size())
             + " useBG=" + useBG
         );
-
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make B-G edges");
+        t0 = System.currentTimeMillis();
+        
         // -----------
         hEq = new HistogramEqualization(bRImg);
         hEq.applyFilter();
@@ -3628,6 +3647,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nH4=" + ((float)nHigh4BR/(float)fractionZerosBR.size())
             + " useBR=" + useBR
         );
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make B-R edges");
+        t0 = System.currentTimeMillis();
 
         // -------
         hEq = new HistogramEqualization(labBImg);
@@ -3663,6 +3686,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nH4=" + ((float)nHigh4B/(float)fractionZerosB.size())
             + " useB=" + useB
         );
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make lab B edges");
+        t0 = System.currentTimeMillis();
 
         boolean createLowInt = true;
         GreyscaleImage greyGradient2 = greyGradient.copyImage();
@@ -3704,8 +3731,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + " nH4=" + ((float)nHigh4Gradient/(float)fractionZerosGradient.size())
             + " useGradient=" + useGradient
         );
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make grey gradient edges");
 
         if (createLowInt) {
+            t0 = System.currentTimeMillis();
             imageProcessor.highPassIntensityFilter(greyGradient2, 0.4);//0.31);
             for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
                 if (greyGradient2.getValue(i) > 0) {
@@ -3764,6 +3795,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     MiscDebug.writeImage(greyGradient2, "_greyGradient2_editing" + debugTag);
                 }
             }
+            t1 = System.currentTimeMillis();
+            t1Sec = (t1 - t0)/1000;
+            log.info(t1Sec + " sec to make grey gradient2 edges");
         }
 
         //TODO: could use a compressed image representation of 0's and 1's for this:
@@ -3790,11 +3824,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
         }
+        
+        t0 = System.currentTimeMillis();
 
         // dfs for values 255, then average of them and set within hueAngleImg
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(greyGradient);
         finder.setMinimumNumberInCluster(2);
         finder.findGroups(255);
+        
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make sets of contiguous pixels");
+        t0 = System.currentTimeMillis();
         
         List<Set<PairInt>> segmentedCellList = new ArrayList<Set<PairInt>>();
         for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
@@ -3808,102 +3849,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         Set<PairInt> zeros = createZerosSet(segmentedCellList, w, h);
         
-        /*
-        for the points which are 0's in the greyGradient,
-           finding the nearest points from segmented cells within a radius
-           of 28 or so, limited by max for deltaE.
-           for each returned,
-               calculate dist = xyDist + abs(deltaE)
-               and determine minDist
-           assign the 0 point to the list of the minimum distance 
-           and update the np
-        */
-        NearestPointsInLists np = new NearestPointsInLists(segmentedCellList);
+        //placeUnassignedUsingNearest(input, segmentedCellList, zeros);
         
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        //NOTE useDistAndColor=true produces an effect that looks like painting
-        // a little outside of the lines
-        
-        boolean useDistAndColor = false;
-        double clrLimit = useDistAndColor ? 7 : 9;
-        float radius = 28.f;
-        
-        // since some of the results will not be contiguous, need to research
-        // the edited lists with dfs when finished to split set if there are gaps
-        Set<Integer> addedTo = new HashSet<Integer>();
-        for (PairInt p : zeros) {
-            
-            Map<Integer, PairInt> listPointMap = np.findNeighbors(p.getX(), 
-                p.getY(), radius);
-            
-            if (listPointMap.isEmpty()) {
-                continue;
-            }
-            
-            float[] lab0 = input.getCIELAB(p.getX(), p.getY());
-                        
-            double minDist = Double.MAX_VALUE;
-            Integer minDistIdx = null;
-            
-            for (Entry<Integer, PairInt> entry : listPointMap.entrySet()) {
-                
-                PairInt pClosest = entry.getValue();
-                
-                float[] lab1 = input.getCIELAB(pClosest.getX(), pClosest.getY());
-                
-                double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
-                
-                //the Just Noticeable Difference is ~2.3
-               
-                if (deltaE > clrLimit) {
-                    continue;
-                }
-                     
-                double dist = deltaE;
-                
-                if (useDistAndColor) {
-                    int diffX = p.getX() - pClosest.getX();
-                    int diffY = p.getY() - pClosest.getY();
-                    dist += Math.sqrt(diffX*diffX + diffY*diffY);
-                }
-                
-                if (dist < minDist) {
-                    minDist = dist;
-                    minDistIdx = entry.getKey();
-                }          
-            }
-            
-            if (minDistIdx != null) {
-                addedTo.add(minDistIdx);
-                segmentedCellList.get(minDistIdx.intValue()).add(p);
-                np.addPoint(p, minDistIdx);
-            }
-        }
-        
-        List<Set<PairInt>> segmentedCellList2 = new ArrayList<Set<PairInt>>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Integer index = Integer.valueOf(i);
-            Set<PairInt> points = segmentedCellList.get(i);
-            if (!addedTo.contains(index)) {
-                segmentedCellList2.add(points);
-                continue;
-            }
-            DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
-            finder2.setMinimumNumberInCluster(1);
-            finder2.findConnectedPointGroups(points, w, h);
-            for (int ii = 0; ii < finder2.getNumberOfGroups(); ++ii) {
-                Set<PairInt> group = finder2.getXY(ii);
-                segmentedCellList2.add(group);
-            }
-        }
-        
-        segmentedCellList = null;
-                     
+        placeUnassignedByGrowingCells(input, segmentedCellList, zeros);
+                             
         if (debugTag != null && !debugTag.equals("")) {
             GreyscaleImage greyImg = input.copyToGreyscale();
-            for (int i = 0; i < segmentedCellList2.size(); ++i) {
-                Set<PairInt> group = segmentedCellList2.get(i);
+            for (int i = 0; i < segmentedCellList.size(); ++i) {
+                Set<PairInt> group = segmentedCellList.get(i);
                 int greyAvg = 0;
                 for (PairInt p : group) {
                     int x = p.getX();
@@ -3924,7 +3877,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(greyImg, "_final_edge_segmented_" + debugTag);
         }
         
-        return segmentedCellList2;
+        return segmentedCellList;
     }
 
     /**
@@ -5119,6 +5072,191 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return nonPoints;
+    }
+    
+    //NOT READY FOR USE YET.
+    private void placeUnassignedByGrowingCells(ImageExt input,
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros) {
+
+        long t0 = System.currentTimeMillis();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>();
+        
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+            queue.addAll(set);
+        }
+                
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dx8;
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        while (!queue.isEmpty()) {
+            
+            PairInt p0 = queue.pop();
+            
+            if (visited.contains(p0)) {
+                continue;
+            }
+            
+            int x = p0.getX();
+            int y = p0.getY();
+            
+            Integer listIndex = pointIndexMap.get(p0);
+                        
+            float[] lab0 = input.getCIELAB(x, y);
+            
+            for (int i = 0; i < dxs.length; ++i) {
+                
+                int x2 = x + dxs[i];
+                int y2 = y + dys[i];
+                
+                PairInt p2 = new PairInt(x2, y2);
+                if (!zeros.contains(p2)) {
+                    continue;
+                }
+                
+                float[] lab2 = input.getCIELAB(x2, y2);
+                
+                double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
+                // jnd ~ 2.3
+                if (deltaE > 7) {
+                    continue;
+                }
+                
+                segmentedCellList.get(listIndex.intValue()).add(p2);
+                
+                pointIndexMap.put(p2, listIndex);
+                
+                zeros.remove(p2);   
+                
+                queue.add(p2);
+            }
+            
+            visited.add(p0);
+        }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to place " + zeros.size() 
+            + " points by growing cells");
+    }
+
+    private void placeUnassignedUsingNearest(ImageExt input,
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros) {
+        
+        /*
+        for the points which are 0's in the greyGradient,
+           finding the nearest points from segmented cells within a radius
+           of 28 or so, limited by max for deltaE.
+           for each returned,
+               calculate dist = xyDist + abs(deltaE)
+               and determine minDist
+           assign the 0 point to the list of the minimum distance 
+           and update the np
+        */
+                
+        long t0 = System.currentTimeMillis();
+        NearestPointsInLists np = new NearestPointsInLists(segmentedCellList);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        //NOTE useDistAndColor=true produces an effect that looks like painting
+        // a little outside of the lines
+        
+        boolean useDistAndColor = true;
+        double clrLimit = useDistAndColor ? 7 : 9;
+        float radius = 28.f;
+        
+        // since some of the results will not be contiguous, need to research
+        // the edited lists with dfs when finished to split set if there are gaps
+        Set<Integer> addedTo = new HashSet<Integer>();
+        for (PairInt p : zeros) {
+            
+            Map<Integer, PairInt> listPointMap = np.findNeighbors(p.getX(), 
+                p.getY(), radius);
+            
+            if (listPointMap.isEmpty()) {
+                continue;
+            }
+            
+            float[] lab0 = input.getCIELAB(p.getX(), p.getY());
+                        
+            double minDist = Double.MAX_VALUE;
+            Integer minDistIdx = null;
+            
+            for (Entry<Integer, PairInt> entry : listPointMap.entrySet()) {
+                
+                PairInt pClosest = entry.getValue();
+                
+                float[] lab1 = input.getCIELAB(pClosest.getX(), pClosest.getY());
+                
+                double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+                
+                //the Just Noticeable Difference is ~2.3
+               
+                if (deltaE > clrLimit) {
+                    continue;
+                }
+                     
+                double dist = deltaE;
+                
+                if (useDistAndColor) {
+                    int diffX = p.getX() - pClosest.getX();
+                    int diffY = p.getY() - pClosest.getY();
+                    dist += Math.sqrt(diffX*diffX + diffY*diffY);
+                }
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    minDistIdx = entry.getKey();
+                }          
+            }
+            
+            if (minDistIdx != null) {
+                addedTo.add(minDistIdx);
+                segmentedCellList.get(minDistIdx.intValue()).add(p);
+                np.addPoint(p, minDistIdx);
+            }
+        }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to place " + zeros.size() 
+            + " points in nearest cells by color");
+        t0 = System.currentTimeMillis();
+        
+        List<Set<PairInt>> segmentedCellList2 = new ArrayList<Set<PairInt>>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Integer index = Integer.valueOf(i);
+            Set<PairInt> points = segmentedCellList.get(i);
+            if (!addedTo.contains(index)) {
+                segmentedCellList2.add(points);
+                continue;
+            }
+            DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
+            finder2.setMinimumNumberInCluster(1);
+            finder2.findConnectedPointGroups(points, input.getWidth(), input.getHeight());
+            for (int ii = 0; ii < finder2.getNumberOfGroups(); ++ii) {
+                Set<PairInt> group = finder2.getXY(ii);
+                segmentedCellList2.add(group);
+            }
+        }
+        
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to refine clustered point sets");
+        
+        segmentedCellList.clear();        
+        segmentedCellList.addAll(segmentedCellList2);
     }
 
     public static class BoundingRegions {
