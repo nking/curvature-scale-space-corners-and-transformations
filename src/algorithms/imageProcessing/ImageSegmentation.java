@@ -3467,6 +3467,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         center of color diagram.
         */
 
+        boolean fineDebug = false;
+        
         int w = input.getWidth();
         int h = input.getHeight();
 
@@ -3526,7 +3528,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         o1Img = expandBy1AndKeepContigZeros(o1Img);
         imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(o1Img, "_o1_adapt_med" + debugTag);
         }
 
@@ -3562,7 +3564,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         bGImg = expandBy1AndKeepContigZeros(bGImg);
         imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(bGImg, "_b-g_adapt_med" + debugTag);
         }
         List<Float> fractionZerosBG = countFractionZeros(bGImg, 50, 50);
@@ -3597,7 +3599,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         bRImg = expandBy1AndKeepContigZeros(bRImg);
         imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(bRImg, "_b-r_adapt_med" + debugTag);
         }
         List<Float> fractionZerosBR = countFractionZeros(bRImg, 50, 50);
@@ -3633,7 +3635,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         MedianSmooth smooth = new MedianSmooth();
         labBImg = smooth.calculate(labBImg, 4, 4);
         imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(labBImg, "_lab_b_adapt_med" + debugTag);
         }
         List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
@@ -3674,7 +3676,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 greyGradient.setValue(i, 255);
             }
         }
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
         List<Float> fractionZerosGradient = countFractionZeros(greyGradient, 50, 50);
@@ -3712,7 +3714,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             greyGradient2 = expandBy1(greyGradient2, 255);
             imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
-            if (debugTag != null && !debugTag.equals("")) {
+            if (fineDebug && debugTag != null && !debugTag.equals("")) {
                 MiscDebug.writeImage(greyGradient2, "_greyGradient2_adapt_med" + debugTag);
             }
             List<Float> fractionZerosG = countFractionZeros(greyGradient2, 50, 50);
@@ -3758,7 +3760,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         greyGradient2.setValue(i, 0);
                     }
                 }
-                if (debugTag != null && !debugTag.equals("")) {
+                if (fineDebug && debugTag != null && !debugTag.equals("")) {
                     MiscDebug.writeImage(greyGradient2, "_greyGradient2_editing" + debugTag);
                 }
             }
@@ -3781,11 +3783,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         log.info("useO1=" + useO1 + " useLabB=" + useB + " useBG=" + useBG
             + " useBR=" + useBR + " useGreyGradient2=" + createLowInt);
 
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
         greyGradient = fillInGapsOf1(greyGradient, 0);
-        if (debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
         }
 
@@ -3824,8 +3826,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // a little outside of the lines
         
         boolean useDistAndColor = false;
-        double clrLimit = useDistAndColor ? 7 : 10;
-        float radius = useDistAndColor ? 28.f : 50;
+        double clrLimit = useDistAndColor ? 7 : 9;
+        float radius = 28.f;
         
         // since some of the results will not be contiguous, need to research
         // the edited lists with dfs when finished to split set if there are gaps
@@ -3857,19 +3859,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (deltaE > clrLimit) {
                     continue;
                 }
-                      
+                     
                 double dist = deltaE;
                 
                 if (useDistAndColor) {
                     int diffX = p.getX() - pClosest.getX();
                     int diffY = p.getY() - pClosest.getY();
                     dist += Math.sqrt(diffX*diffX + diffY*diffY);
-                }               
+                }
                 
                 if (dist < minDist) {
                     minDist = dist;
                     minDistIdx = entry.getKey();
-                }                
+                }          
             }
             
             if (minDistIdx != null) {
