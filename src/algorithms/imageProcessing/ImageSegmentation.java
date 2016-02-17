@@ -3820,7 +3820,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         CIEChromaticity cieC = new CIEChromaticity();
         
-        float radius = 28.f;
+        //NOTE useDistAndColor=true produces an effect that looks like painting
+        // a little outside of the lines
+        
+        boolean useDistAndColor = false;
+        double clrLimit = useDistAndColor ? 7 : 10;
+        float radius = useDistAndColor ? 28.f : 50;
         
         // since some of the results will not be contiguous, need to research
         // the edited lists with dfs when finished to split set if there are gaps
@@ -3835,7 +3840,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             
             float[] lab0 = input.getCIELAB(p.getX(), p.getY());
-            
+                        
             double minDist = Double.MAX_VALUE;
             Integer minDistIdx = null;
             
@@ -3848,15 +3853,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
                 
                 //the Just Noticeable Difference is ~2.3
-                
-                if (deltaE > 9) {
+               
+                if (deltaE > clrLimit) {
                     continue;
                 }
+                      
+                double dist = deltaE;
                 
-                int diffX = p.getX() - pClosest.getX();
-                int diffY = p.getY() - pClosest.getY();
-                
-                double dist = Math.sqrt(diffX*diffX + diffY*diffY) + deltaE;
+                if (useDistAndColor) {
+                    int diffX = p.getX() - pClosest.getX();
+                    int diffY = p.getY() - pClosest.getY();
+                    dist += Math.sqrt(diffX*diffX + diffY*diffY);
+                }               
                 
                 if (dist < minDist) {
                     minDist = dist;
