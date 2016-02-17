@@ -5095,7 +5095,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
                 
         int[] dxs = Misc.dx8;
-        int[] dys = Misc.dx8;
+        int[] dys = Misc.dy8;
         
         Set<PairInt> visited = new HashSet<PairInt>();
         
