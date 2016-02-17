@@ -22,6 +22,10 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,7 +61,8 @@ public class AndroidStatuesTest extends TestCase {
         settings.setStartWithBinnedImages(true);
         settings.setToUse2ndDerivCorners();;
 //trees and grass contributing too many 2nd deriv pts.  does assoc w/ blobs retain enough remaining pts?
-        for (int i = 0; i < 30; ++i) {
+        for (int i = 0; i < 32; ++i) {
+        //for (int i = 6; i < 7; ++i) {
             switch(i) {
                 /*
                 case 0: {
@@ -123,132 +128,138 @@ public class AndroidStatuesTest extends TestCase {
                     break;
                 }
                 case 8: {
+                    fileName2 = "brown_lowe_2003_image1.jpg";
+                    fileName1 = "brown_lowe_2003_image2.jpg";
+                    settings.setUseNormalizedFeatures(true);
+                    break;
+                }
+                case 9: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     fileName2 = "books_illum3_v6_695x555.png";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 9: {
+                case 10: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 10: {
+                case 11: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 11: {
+                case 12: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 12: {
+                case 13: {
                     fileName1 = "arches.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 13: {
+                case 14: {
                     fileName1 = "stinson_beach.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }                
-                case 14: {
+                case 15: {
                     fileName1 = "norwegian_mtn_range.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 15: {
+                case 16: {
                     fileName1 = "halfdome.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 16: {
+                case 17: {
                     fileName1 = "halfdome2.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 17: {
+                case 18: {
                     fileName1 = "halfdome3.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 18: {
+                case 19: {
                     fileName1 = "costa_rica.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 19: {
+                case 20: {
                     fileName1 = "new-mexico-sunrise_w725_h490.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 20: {
+                case 21: {
                     fileName1 = "arizona-sunrise-1342919937GHz.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 21: {
+                case 22: {
                     fileName1 = "sky_with_rainbow.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 22: {
+                case 23: {
                     fileName1 = "sky_with_rainbow2.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 23: {
+                case 24: {
                     fileName1 = "patagonia_snowy_foreground.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 24: {
+                case 25: {
                     fileName1 = "mt_rainier_snowy_field.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 25: {
+                case 26: {
                     fileName1 = "klein_matterhorn_snowy_foreground.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 26: {
+                case 27: {
                     fileName1 = "30.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 27: {
+                case 28: {
                     fileName1 = "arches_sun_01.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 28: {
+                case 29: {
                     fileName1 = "stlouis_arch.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 29: {
+                case 30: {
                     fileName1 = "contrail.jpg";
                     fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
@@ -337,25 +348,17 @@ public class AndroidStatuesTest extends TestCase {
         Set<PairIntPair> similarClass = new HashSet<PairIntPair>();
         Set<PairIntPair> differentClass = new HashSet<PairIntPair>();
         
-        GreyscaleImage img1Ws = imageSegmentation.createGreyscaleO1Watershed(img1Binned, 
+        List<Set<PairInt>> segmentedCellList = imageSegmentation.createColorEdgeSegmentation(img1Binned, 
             "_" + fileName1Root + "_1_binned", img1.getWidth(), img1.getHeight());
-        SegmentedCellMerger scm = new SegmentedCellMerger(img1Binned, img1Ws,
-            0, "_" + fileName1Root + "_1_binned");
-        populateClasses(similarClass, differentClass, fileName1Root);
-        scm.setClassPairs(similarClass, differentClass, fileName1Root);
-        scm.merge();
         
-        /*
-        GreyscaleImage img2Ws = imageSegmentation.createGreyscaleO1Watershed(img2Binned, 
-            "_" + fileName2Root + "_2_binned",
-            img2.getWidth(), img2.getHeight());
+        SegmentedCellMerger scm = new SegmentedCellMerger(img1Binned, segmentedCellList,
+            -1, "_" + fileName1Root + "_1_binned");
         
-        SegmentedCellMerger scm = new SegmentedCellMerger(img2Binned, img2Ws,
-            0, "_" + fileName2Root + "_2_binned");
-        populateClasses(similarClass, differentClass, fileName2Root);
-        scm.setClassPairs(similarClass, differentClass, fileName2Root);
+        //populateClasses(similarClass, differentClass, fileName1Root);
+        
+        //scm.setClassPairs(similarClass, differentClass, fileName1Root);
+        
         scm.merge();
-        */
         
 if (true) {
     return;
@@ -630,132 +633,58 @@ if (true) {
     }
 
     private void populateClasses(Set<PairIntPair> similarClass, 
-        Set<PairIntPair> differentClass, String fileNameRoot) {
+        Set<PairIntPair> differentClass, String fileNameRoot) throws IOException {
         
-        if (fileNameRoot.contains("android_statues_02")) {
+        BufferedReader bReader = null;
+        FileReader reader = null;
+        
+        String fileName = fileNameRoot + "_label_coords.csv";
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        try {
+            reader = new FileReader(new File(filePath));
             
-            similarClass.add(new PairIntPair(278,133,285,135));
-            similarClass.add(new PairIntPair(285,135,290,131));
-            similarClass.add(new PairIntPair(290,131,289,125));
-            similarClass.add(new PairIntPair(289,125,282,120));
-            similarClass.add(new PairIntPair(282,120,276,123));
-            similarClass.add(new PairIntPair(278,133,276,123));
-            similarClass.add(new PairIntPair(278,112,282,120));
-            similarClass.add(new PairIntPair(267,110,278,112));
-            similarClass.add(new PairIntPair(267,110,269,119));
-            similarClass.add(new PairIntPair(267,110,273,103));
-            similarClass.add(new PairIntPair(267,110,257,112));
-            similarClass.add(new PairIntPair(273,103,273,96));
-            similarClass.add(new PairIntPair(267,110,262,120));
-            similarClass.add(new PairIntPair(262,96,273,96));
-            similarClass.add(new PairIntPair(269,89,273,96));
-            similarClass.add(new PairIntPair(269,89,271,80));
-            similarClass.add(new PairIntPair(269,89,275,86));
-            similarClass.add(new PairIntPair(275,86,278,91));
-            similarClass.add(new PairIntPair(278,91,282,87));
-            similarClass.add(new PairIntPair(275,86,282,87));
-            similarClass.add(new PairIntPair(269,89,271,80));
-            similarClass.add(new PairIntPair(271,80,275,86));
-            similarClass.add(new PairIntPair(262,79,271,80));
-            similarClass.add(new PairIntPair(262,79,269,71));
-            similarClass.add(new PairIntPair(282,87,290,75));
-            similarClass.add(new PairIntPair(290,75,288,66));
-            similarClass.add(new PairIntPair(288,66,280,67));
-            similarClass.add(new PairIntPair(265,63,269,71));
-            similarClass.add(new PairIntPair(265,63,260,65));
-            similarClass.add(new PairIntPair(269,71,272,56));
-            similarClass.add(new PairIntPair(260,54,272,56));
-            similarClass.add(new PairIntPair(272,56,276,46));
-            similarClass.add(new PairIntPair(276,46,276,40));
-            similarClass.add(new PairIntPair(261,41,264,35));
-            similarClass.add(new PairIntPair(70,82,84,93));
-            similarClass.add(new PairIntPair(59,169,86,171));
-            similarClass.add(new PairIntPair(84,140,72,137));
-            similarClass.add(new PairIntPair(72,137,61,132));
-            similarClass.add(new PairIntPair(44,123,61,132));
-            similarClass.add(new PairIntPair(51,39,62,28));
-            similarClass.add(new PairIntPair(31,71,51,39));
+            bReader = new BufferedReader(reader);
             
-            differentClass.add(new PairIntPair(19,168,34,166));
-            differentClass.add(new PairIntPair(19,168,39,173));
-            differentClass.add(new PairIntPair(163,79,148,76));
-            differentClass.add(new PairIntPair(163,79,176,67));
-            differentClass.add(new PairIntPair(181,86,163,79));
-            differentClass.add(new PairIntPair(233,8,0,0));
-             
-        } else if (fileNameRoot.contains("android_statues_04")) {
-            
-            similarClass.add(new PairIntPair(105,143,137,145));
-            similarClass.add(new PairIntPair(125,130,105,143));
-            similarClass.add(new PairIntPair(125,130,137,145));
-            similarClass.add(new PairIntPair(117,125,105,143));
-            similarClass.add(new PairIntPair(117,125,125,130));
-            similarClass.add(new PairIntPair(117,125,114,115));
-            similarClass.add(new PairIntPair(114,115,125,130));
-            similarClass.add(new PairIntPair(128,114,131,119));
-            similarClass.add(new PairIntPair(128,114,114,115));
-            similarClass.add(new PairIntPair(131,119,125,130));
-            similarClass.add(new PairIntPair(98,128,103,130));
-            similarClass.add(new PairIntPair(98,128,93,127));
-            similarClass.add(new PairIntPair(92,120,83,121));
-            similarClass.add(new PairIntPair(92,120,93,127));
-            similarClass.add(new PairIntPair(93,127,83,121));
-            similarClass.add(new PairIntPair(144,116,144,128));
-            similarClass.add(new PairIntPair(144,116,136,125));
-            similarClass.add(new PairIntPair(144,128,137,145));
-            similarClass.add(new PairIntPair(190,105,206,119));
-            similarClass.add(new PairIntPair(240,107,223,103));
-            similarClass.add(new PairIntPair(240,107,225,134));
-            similarClass.add(new PairIntPair(240,107,259,105));
-            similarClass.add(new PairIntPair(240,107,253,133));
-            similarClass.add(new PairIntPair(11,52,15,60));
-            
-            differentClass.add(new PairIntPair(138,29,245,54));
-            differentClass.add(new PairIntPair(240,107,245,54));
-            differentClass.add(new PairIntPair(190,105,245,54));
-            differentClass.add(new PairIntPair(54,73,46,75));
-            
-        } else if (fileNameRoot.contains("android_statues_01")) {
-            
-            similarClass.add(new PairIntPair(121,68,117,63));
-            similarClass.add(new PairIntPair(121,68,113,67));
-            similarClass.add(new PairIntPair(117,63,113,67));
-            similarClass.add(new PairIntPair(114,82,120,82));
-            similarClass.add(new PairIntPair(120,82,123,78));
-            similarClass.add(new PairIntPair(121,68,128,76));
-            similarClass.add(new PairIntPair(166,68,170,65));
-            similarClass.add(new PairIntPair(166,68,160,81));
-            similarClass.add(new PairIntPair(179,78,160,81));
-            similarClass.add(new PairIntPair(178,87,160,81));
-            similarClass.add(new PairIntPair(302,111,302,120));
-            similarClass.add(new PairIntPair(302,111,310,120));
-            similarClass.add(new PairIntPair(45,50,49,45));
-            similarClass.add(new PairIntPair(93,27,101,26));
-            similarClass.add(new PairIntPair(202,69,212,69));
+            //read comment line and discard
+            String line = bReader.readLine();
+            line = bReader.readLine();
+                        
+            while (line != null) {
                 
-            differentClass.add(new PairIntPair(121,68,133,68));
-            differentClass.add(new PairIntPair(111,56,117,63));
-            differentClass.add(new PairIntPair(265,130,281,122));
-            differentClass.add(new PairIntPair(147,36,152,22));
-            differentClass.add(new PairIntPair(147,36,153,47));
-        
-        } else if (fileNameRoot.contains("android_statues_03")) {   
-            
-            similarClass.add(new PairIntPair(48,89,21,89));
-            similarClass.add(new PairIntPair(48,89,28,127));
-            similarClass.add(new PairIntPair(48,89,68,125));
-            similarClass.add(new PairIntPair(48,89,70,90));
-            similarClass.add(new PairIntPair(145,106,149,141));
-            similarClass.add(new PairIntPair(145,106,164,139));
-            similarClass.add(new PairIntPair(145,106,172,105));
-            similarClass.add(new PairIntPair(145,106,154,72));
-            similarClass.add(new PairIntPair(86,58,120,58));
-        
-            differentClass.add(new PairIntPair(48,89,65,106));
-            differentClass.add(new PairIntPair(48,89,94,84));
-            differentClass.add(new PairIntPair(172,105,182,90));
-        }
-        
+                String[] items = line.split(",");
+                if (items.length != 5) {
+                    throw new IllegalStateException("expecting 5 items in a line");
+                }
+ 
+                PairIntPair pp = new PairIntPair(
+                    Integer.valueOf(items[0]).intValue(),
+                    Integer.valueOf(items[1]).intValue(),
+                    Integer.valueOf(items[2]).intValue(),
+                    Integer.valueOf(items[3]).intValue());
+                
+                int classValue = Integer.valueOf(items[4]).intValue();
+                
+                if (classValue == 0) {
+                    similarClass.add(pp);
+                } else {
+                    differentClass.add(pp);
+                }
+                
+                line = bReader.readLine();                
+            }
+                        
+        } catch (IOException e) {
+            log.severe(e.getMessage());
+        } finally {
+            if (reader == null) {
+                reader.close();
+            }
+            if (bReader == null) {
+                bReader.close();
+            }
+        }        
     }
 
 }

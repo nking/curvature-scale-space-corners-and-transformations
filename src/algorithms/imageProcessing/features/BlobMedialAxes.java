@@ -47,30 +47,30 @@ public class BlobMedialAxes implements Serializable {
     protected List<Map<Integer, List<Integer>>> skeletonXMapList = null;
     protected List<Map<Integer, List<Integer>>> skeletonYMapList = null;
     protected final List<PairInt> xyCentroids;
-    protected final List<Double> lColorList;
-    protected final List<Double> aColorList;
+    protected final List<Double> labLColorList;
+    protected final List<Double> labAColorList;
+    protected final List<Double> labBColorList;
+    protected final List<Double> rColorList;
+    protected final List<Double> gColorList;
     protected final List<Double> bColorList;
-    protected final List<Double> o1ColorList;
-    protected final List<Double> o2ColorList;
-    protected final List<Double> o3ColorList;
     
     public BlobMedialAxes(final List<Set<PairInt>> blobs, 
-        final List<Double> lClrList, final List<Double> aClrList,
-        final List<Double> bClrList, final List<Double> o1ClrList,
-        final List<Double> o2ClrList, final List<Double> o3ClrList) {
+        final List<Double> labLClrList, final List<Double> labAClrList,
+        final List<Double> labBClrList, final List<Double> rClrList,
+        final List<Double> gClrList, final List<Double> bClrList) {
         
         int n = blobs.size(); 
         xyCentroids = new ArrayList<PairInt>(n);
         skeletonXMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
         skeletonYMapList = new ArrayList<Map<Integer, List<Integer>>>(n);
         
-        this.lColorList = new ArrayList<Double>(lClrList);
-        this.aColorList = new ArrayList<Double>(aClrList);
-        this.bColorList = new ArrayList<Double>(bClrList);
+        this.labLColorList = new ArrayList<Double>(labLClrList);
+        this.labAColorList = new ArrayList<Double>(labAClrList);
+        this.labBColorList = new ArrayList<Double>(labBClrList);
         
-        this.o1ColorList = new ArrayList<Double>(o1ClrList);
-        this.o2ColorList = new ArrayList<Double>(o2ClrList);
-        this.o3ColorList = new ArrayList<Double>(o3ClrList);
+        this.rColorList = new ArrayList<Double>(rClrList);
+        this.gColorList = new ArrayList<Double>(gClrList);
+        this.bColorList = new ArrayList<Double>(bClrList);
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -126,7 +126,8 @@ public class BlobMedialAxes implements Serializable {
             throw new IllegalArgumentException("index is out of bounds");
         }
         
-        return findClosestPoint(x, y, skeletonXMapList.get(index), skeletonYMapList.get(index));
+        return findClosestPoint(x, y, skeletonXMapList.get(index), 
+            skeletonYMapList.get(index));
     }
     
     protected PairInt findClosestPoint(int x, int y, 
@@ -226,53 +227,53 @@ public class BlobMedialAxes implements Serializable {
         }
         
         float[] c = new float[3];
-        c[0] = lColorList.get(index).floatValue();
-        c[1] = aColorList.get(index).floatValue();
-        c[2] = bColorList.get(index).floatValue();
+        c[0] = labLColorList.get(index).floatValue();
+        c[1] = labAColorList.get(index).floatValue();
+        c[2] = labBColorList.get(index).floatValue();
         
         return c;
     }
     
     /**
-     * get O1 opponent color
+     * get red color
      * @param index
      * @return 
      */
-    public double getO1(int index) {
+    public double getR(int index) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {
             throw new IllegalArgumentException("index is out of bounds");
         }
         
-        return o1ColorList.get(index);
+        return rColorList.get(index);
     }
     
     /**
-     * get O1 opponent color
+     * get green color
      * @param index
      * @return 
      */
-    public double getO2(int index) {
+    public double getG(int index) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {
             throw new IllegalArgumentException("index is out of bounds");
         }
         
-        return o2ColorList.get(index);
+        return gColorList.get(index);
     }
     
     /**
-     * get O3 opponent color
+     * get blue color
      * @param index
      * @return 
      */
-    public double getO3(int index) {
+    public double getB(int index) {
         
         if (index < 0 || index > (skeletonXMapList.size() - 1)) {
             throw new IllegalArgumentException("index is out of bounds");
         }
         
-        return o3ColorList.get(index);
+        return bColorList.get(index);
     }
     
     /**
@@ -351,8 +352,11 @@ public class BlobMedialAxes implements Serializable {
         
         int n2 = xyCentroids.size() - removeIndexes.size();
         
-        List<Double> ell = new ArrayList<Double>();
-        List<Double> a = new ArrayList<Double>();
+        List<Double> lLab = new ArrayList<Double>();
+        List<Double> aLab = new ArrayList<Double>();
+        List<Double> bLab = new ArrayList<Double>();
+        List<Double> r = new ArrayList<Double>();
+        List<Double> g = new ArrayList<Double>();
         List<Double> b = new ArrayList<Double>();
         List<PairInt> xyCentroid2 = new ArrayList<PairInt>();
         
@@ -361,19 +365,31 @@ public class BlobMedialAxes implements Serializable {
             Integer index = Integer.valueOf(i);
             if (!exclude.contains(index)) {
                 xyCentroid2.add(xyCentroids.get(i));
-                ell.add(lColorList.get(i));
-                a.add(aColorList.get(i));
+                lLab.add(labLColorList.get(i));
+                aLab.add(labAColorList.get(i));
+                bLab.add(labBColorList.get(i));
+                r.add(rColorList.get(i));
+                g.add(gColorList.get(i));
                 b.add(bColorList.get(i));
             }
         }   
         this.xyCentroids.clear();
         this.xyCentroids.addAll(xyCentroid2);
                 
-        this.lColorList.clear();
-        this.lColorList.addAll(ell);
+        this.labLColorList.clear();
+        this.labLColorList.addAll(lLab);
         
-        this.aColorList.clear();
-        this.aColorList.addAll(a);
+        this.labAColorList.clear();
+        this.labAColorList.addAll(aLab);
+        
+        this.labBColorList.clear();
+        this.labBColorList.addAll(bLab);
+        
+        this.rColorList.clear();
+        this.rColorList.addAll(r);
+        
+        this.gColorList.clear();
+        this.gColorList.addAll(g);
         
         this.bColorList.clear();
         this.bColorList.addAll(b);
@@ -415,12 +431,12 @@ public class BlobMedialAxes implements Serializable {
     
     public BlobMedialAxes(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         
-        this.lColorList = new ArrayList<Double>();
-        this.aColorList = new ArrayList<Double>();
+        this.labLColorList = new ArrayList<Double>();
+        this.labAColorList = new ArrayList<Double>();
+        this.labBColorList = new ArrayList<Double>();
+        this.rColorList = new ArrayList<Double>();
+        this.gColorList = new ArrayList<Double>();
         this.bColorList = new ArrayList<Double>();
-        this.o1ColorList = new ArrayList<Double>();
-        this.o2ColorList = new ArrayList<Double>();
-        this.o3ColorList = new ArrayList<Double>();
         this.xyCentroids = new ArrayList<PairInt>();
         
         readObject(ois);
@@ -428,12 +444,12 @@ public class BlobMedialAxes implements Serializable {
     
     public BlobMedialAxes(String filePath) throws IOException {
         
-        this.lColorList = new ArrayList<Double>();
-        this.aColorList = new ArrayList<Double>();
+        this.labLColorList = new ArrayList<Double>();
+        this.labAColorList = new ArrayList<Double>();
+        this.labBColorList = new ArrayList<Double>();
+        this.rColorList = new ArrayList<Double>();
+        this.gColorList = new ArrayList<Double>();
         this.bColorList = new ArrayList<Double>();
-        this.o1ColorList = new ArrayList<Double>();
-        this.o2ColorList = new ArrayList<Double>();
-        this.o3ColorList = new ArrayList<Double>();
         this.xyCentroids = new ArrayList<PairInt>();
         
         FileInputStream fis = null;
@@ -461,7 +477,7 @@ public class BlobMedialAxes implements Serializable {
         int nMapX = (skeletonXMapList == null) ? 0 : skeletonXMapList.size();
         int nMapY = (skeletonYMapList == null) ? 0 : skeletonYMapList.size();
         int nXYC = (xyCentroids == null) ? 0 : xyCentroids.size();
-        int nColorList = lColorList.size();
+        int nColorList = labLColorList.size();
         
         out.writeInt(nMapX);
         out.writeInt(nMapY);
@@ -472,15 +488,15 @@ public class BlobMedialAxes implements Serializable {
         writeSkeletonMap(out, skeletonYMapList);
         writeCentroids(out, xyCentroids);
         
-        writeDoubleList(out, lColorList);
-        writeDoubleList(out, aColorList);
+        writeDoubleList(out, labLColorList);
+        writeDoubleList(out, labAColorList);
+        writeDoubleList(out, labBColorList);
+        
+        out.writeInt(rColorList.size());
+        
+        writeDoubleList(out, rColorList);
+        writeDoubleList(out, gColorList);
         writeDoubleList(out, bColorList);
-        
-        out.writeInt(o1ColorList.size());
-        
-        writeDoubleList(out, o1ColorList);
-        writeDoubleList(out, o2ColorList);
-        writeDoubleList(out, o3ColorList);
     }
     
     protected void readObject(java.io.ObjectInputStream in) throws IOException, 
@@ -497,31 +513,31 @@ public class BlobMedialAxes implements Serializable {
         xyCentroids.clear();
         xyCentroids.addAll(readCentroids(in, nXYC));
         
-        lColorList.clear();
-        aColorList.clear();
-        bColorList.clear();
+        labLColorList.clear();
+        labAColorList.clear();
+        labBColorList.clear();
         
         List<Double> a = readDoubleList(in, nColorList);
-        lColorList.addAll(a);
+        labLColorList.addAll(a);
         a = readDoubleList(in, nColorList);
-        aColorList.addAll(a);
+        labAColorList.addAll(a);
         a = readDoubleList(in, nColorList);
-        bColorList.addAll(a);
+        labBColorList.addAll(a);
         
         try {
             
-            o1ColorList.clear();
-            o2ColorList.clear();
-            o3ColorList.clear();
+            rColorList.clear();
+            gColorList.clear();
+            bColorList.clear();
             
             int nOs = in.readInt();
 
             a = readDoubleList(in, nOs);
-            o1ColorList.addAll(a);
+            rColorList.addAll(a);
             a = readDoubleList(in, nOs);
-            o2ColorList.addAll(a);
+            gColorList.addAll(a);
             a = readDoubleList(in, nOs);
-            o3ColorList.addAll(a);
+            bColorList.addAll(a);
         } catch (EOFException e) {
             // some existing persisted files do not have the o1,o2,o3 colors
         }

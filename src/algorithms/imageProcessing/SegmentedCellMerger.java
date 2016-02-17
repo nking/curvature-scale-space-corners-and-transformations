@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.ClosestPairBetweenSets;
 import algorithms.compGeometry.ClosestPairBetweenSets.ClosestPairInt;
+import algorithms.compGeometry.NearestPointsInLists;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.disjointSets.DisjointSet2Helper;
@@ -147,13 +148,15 @@ public class SegmentedCellMerger {
             
         populateCellMaps(br, cellMap, cellIndexMap);
         
+//writeLabelFile(br, cellIndexMap);
+
         // key = cell centroid, value = set of adjacent cell centroids
         Map<PairInt, Set<PairInt>> adjacencyMap = createAdjacencyMap(br,
             img.getWidth(), img.getHeight());
         
         // key = cell centroid, value = set of cell centroids merged with this one
         Map<PairInt, Set<PairInt>> mergedMap = createMergeMap(br);
-        
+                
         
         // this order results in visiting the smallest cells first
         Stack<PairInt> stack = new Stack<PairInt>();
@@ -183,8 +186,7 @@ public class SegmentedCellMerger {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
-        //TODO: improving the adjacency matrix to write more points for LDA will
-        // improve this transformation
+        //TODO: improving this transformation
         double[][] ldaMatrix = getLDASegmentationMatrix();
                
         while (!stack.isEmpty()) {
@@ -204,23 +206,7 @@ public class SegmentedCellMerger {
             
             PairInt pParent = pParentNode.getMember();
             
-            /*
-            Integer pIndex = cellIndexMap.get(pParent);            
-            float[] labP = br.getBlobMedialAxes().getLABColors(pIndex.intValue());
-            double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
-            if (hueAngleP < 0) {
-                hueAngleP += 360.;
-            }
-            */
             float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
-            //double hueAngleP = Math.atan(labP[2]/labP[1]) * 180./Math.PI;
-            //if (hueAngleP < 0) {
-            //    hueAngleP += 360.;
-            //}
-
-            double o1P = br.getBlobMedialAxes().getO1(originalPIndex.intValue());
-            double o2P = br.getBlobMedialAxes().getO2(originalPIndex.intValue());
-            double o3P = br.getBlobMedialAxes().getO3(originalPIndex.intValue());
             
             boolean didMerge = false;
             
@@ -243,35 +229,16 @@ public class SegmentedCellMerger {
                 if (hasBeenVisited(visitedMap, pParent, p2Parent)) {
                     continue;
                 }
-                                      
-                /*
-                Integer p2ParentIndex = cellIndexMap.get(p2Parent);
-                float[] labP2 = br.getBlobMedialAxes().getLABColors(p2ParentIndex.intValue());
-                */
+                
                 Integer p2Index = cellIndexMap.get(p2);
                 float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
-                //double hueAngleP2 = Math.atan(labP2[2]/labP2[1]) * 180./Math.PI;
-                //if (hueAngleP2 < 0) {
-                //    hueAngleP2 += 360.;
-                //}                            
-
+                
                 double deltaE = cieC.calcDeltaECIE94(labP[0], labP[1], labP[2], 
                     labP2[0], labP2[1], labP2[2]);
-
-                //float deltaHA = AngleUtil.getAngleDifference((float)hueAngleP, 
-                //    (float)hueAngleP2);
-                
-                double o1P2 = br.getBlobMedialAxes().getO1(p2Index.intValue());
-                double o2P2 = br.getBlobMedialAxes().getO2(p2Index.intValue());
-                double o3P2 = br.getBlobMedialAxes().getO3(p2Index.intValue());
-
-                double deltaO1 = o1P - o1P2;
-                double deltaO2 = o2P - o2P2;
-                double deltaO3 = o3P - o3P2;
                 
                 addToVisited(visitedMap, pParent, p2Parent);
                 
-                double[][] data = new double[4][1];
+                /*double[][] data = new double[4][1];
                 data[0][0] = Math.abs(deltaE);
                 data[1][0] = Math.abs(deltaO1);
                 data[2][0] = Math.abs(deltaO2);
@@ -280,8 +247,7 @@ public class SegmentedCellMerger {
                 double[][] transformed = MatrixUtil.dot(ldaMatrix, data);
                 double ldaX = transformed[0][0];
                 double ldaY = transformed[1][0];
-                
-//writeToClassDataFile(originalP, p2, labP, labP2, deltaE, deltaO1, deltaO2, deltaO3);
+                */
                 
                 /*
                  for deltaE, range of similar is 2.3 through 5.5 or ?  (max diff is 28.8).
@@ -290,19 +256,12 @@ public class SegmentedCellMerger {
                  The gingerbread man and the background building have deltaE=5.7 and deltaL=3.64
                  Two cells of the gingerbread, similar in color, but different shade
                  have deltaE = 5.13 and deltaL=1.6
-        
-                 the hue angles are very strong indicators for the two examples just given.
-                 o2 is also and looks useful for the icecream and cupcake.
-                 but o2 for the gingerbread man's feet would merge with the grass while it's deltaEis 9.17
-       
-                 so need to look at the color spaces in detail to use more than deltaE for similarity...
                 */
 
                 //TODO: revising these vectors
                 
-                //if (Math.abs(deltaE) > 6 && Math.abs(deltaHA) > 5) {
+                if (Math.abs(deltaE) > 7) {
                 //if (ldaY > 24.5 || ldaX < -50) {
-                if (true) {
                     continue;
                 }
                 
@@ -440,9 +399,7 @@ public class SegmentedCellMerger {
             } catch (IOException ex) {
                 Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }
-        
-        int z = 1;
+        }        
     }
     
     private BoundingRegions extractPerimetersAndBounds() {
@@ -476,12 +433,12 @@ public class SegmentedCellMerger {
         CIEChromaticity cieC = new CIEChromaticity();
         //MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        List<Double> lAvg = new ArrayList<Double>();
-        List<Double> aAvg = new ArrayList<Double>();
+        List<Double> labLAvg = new ArrayList<Double>();
+        List<Double> labAAvg = new ArrayList<Double>();
+        List<Double> labBAvg = new ArrayList<Double>();
+        List<Double> rAvg = new ArrayList<Double>();
+        List<Double> gAvg = new ArrayList<Double>();
         List<Double> bAvg = new ArrayList<Double>();
-        List<Double> o1Avg = new ArrayList<Double>();
-        List<Double> o2Avg = new ArrayList<Double>();
-        List<Double> o3Avg = new ArrayList<Double>();
         
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             double redSum = 0;
@@ -504,13 +461,13 @@ public class SegmentedCellMerger {
             float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum), 
                 (int)Math.round(greenSum), (int)Math.round(blueSum));
             
-            lAvg.add(Double.valueOf(avgLAB[0]));
-            aAvg.add(Double.valueOf(avgLAB[1]));
-            bAvg.add(Double.valueOf(avgLAB[2]));
+            labLAvg.add(Double.valueOf(avgLAB[0]));
+            labAAvg.add(Double.valueOf(avgLAB[1]));
+            labBAvg.add(Double.valueOf(avgLAB[2]));
             
-            o1Avg.add(Double.valueOf((redSum - greenSum)/Math.sqrt(2)));
-            o2Avg.add(Double.valueOf((redSum + greenSum - 2*blueSum)/Math.sqrt(6)));
-            o3Avg.add(Double.valueOf((redSum + greenSum + blueSum)/Math.sqrt(2)));
+            rAvg.add(Double.valueOf(redSum));
+            gAvg.add(Double.valueOf(greenSum));
+            bAvg.add(Double.valueOf(blueSum));
            
             /*PairInt xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
             String str = String.format(
@@ -537,9 +494,9 @@ public class SegmentedCellMerger {
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
         //ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
-        BlobMedialAxes bma = new BlobMedialAxes(segmentedCellList, lAvg, aAvg, bAvg, o1Avg,
-            o2Avg, o3Avg);
+                
+        BlobMedialAxes bma = new BlobMedialAxes(segmentedCellList, labLAvg, labAAvg, labBAvg, 
+            rAvg, gAvg, bAvg);
         
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     
@@ -714,41 +671,6 @@ public class SegmentedCellMerger {
         return mergeMap;
     }
 
-    private void writeToClassDataFile(PairInt originalP, PairInt p2, 
-        float[] labP, float[] labP2, double deltaE, 
-        double deltaO1, double deltaO2, double deltaO3) {
-        
-        PairIntPair p = new PairIntPair(originalP.getX(), originalP.getY(),
-            p2.getX(), p2.getY());
-        
-        if (!simClass.contains(p) && !diffClass.contains(p)) {
-            return;
-        }
-        
-        float deltaL = labP[0] - labP2[0];
-        
-        String str = String.format("%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
-            (float)deltaE, (float)Math.abs(deltaE),
-            (float)deltaL, (float)Math.abs(deltaL),
-            (float)deltaO1, (float)Math.abs(deltaO1),
-            (float)deltaO2, (float)Math.abs(deltaO2),
-            (float)deltaO3, (float)Math.abs(deltaO3)
-            );
-        
-        if (simClass.contains(p)) {
-            str = str + ",sim";
-        } else {
-            str = str + ",diff";
-        }
-        str = str + "\n";
-        try {
-            simWriter.write(str);
-            simWriter.flush();
-        } catch (IOException ex) {
-            Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-    
     private double[][] getLDASegmentationMatrix() {
      
         double[][] m = new double[2][4];
@@ -864,4 +786,153 @@ public class SegmentedCellMerger {
         
         return map;
     }
+
+    private void writeLabelFile(BoundingRegions br, Map<PairInt, Integer> 
+        cellIndexMap) {
+        
+        List<Set<PairInt>> centroidList = new ArrayList<Set<PairInt>>();
+        for (int i = 0; i < br.getBlobMedialAxes().getNumberOfItems(); ++i) {
+            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            Set<PairInt> set = new HashSet<PairInt>();
+            set.add(xyCen);
+            centroidList.add(set);
+        }
+        
+        NearestPointsInLists np = new NearestPointsInLists(centroidList);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        float radius = 5.f;
+        
+        for (PairIntPair pp : simClass) {
+            
+            PairInt p0 = np.findClosest(pp.getX1(), pp.getY1(), radius);
+            
+            if (p0 == null) {
+                log.severe("revise coords.  could not find x=" + pp.getX1() + 
+                    ", y=" + pp.getY1());
+                continue;
+            }
+            
+            PairInt p1 = np.findClosest(pp.getX2(), pp.getY2(), radius);
+            
+            if (p1 == null) {
+                log.severe("revise coords.  could not find x=" + pp.getX2() + 
+                    ", y=" + pp.getY2());
+                continue;
+            }
+            
+            int list0Idx = cellIndexMap.get(p0).intValue();
+            
+            int list1Idx = cellIndexMap.get(p1).intValue();
+            
+            double r0 = br.getBlobMedialAxes().getR(list0Idx);
+            double g0 = br.getBlobMedialAxes().getG(list0Idx);
+            double b0 = br.getBlobMedialAxes().getB(list0Idx);
+            float[] lab0 = br.getBlobMedialAxes().getLABColors(list0Idx);
+            
+            double r1 = br.getBlobMedialAxes().getR(list1Idx);
+            double g1 = br.getBlobMedialAxes().getG(list1Idx);
+            double b1 = br.getBlobMedialAxes().getB(list1Idx);
+            float[] lab1 = br.getBlobMedialAxes().getLABColors(list1Idx);
+            
+            double absDeltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+            double absDeltaL = Math.abs(lab0[0] - lab1[0]);
+            double absDeltaBR = Math.abs((b0 - r0) - (b1 - r1));
+            double absDeltaBG = Math.abs((b0 - g0) - (b1 - g1));
+            
+            double absDeltaO1 = Math.abs((double)((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
+            double absDeltaO2 = Math.abs((double)((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
+            double absDeltaO3 = Math.abs((double)((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
+            
+            String str = String.format(
+                "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,sim\n",
+                (float)absDeltaE,
+                (float)absDeltaO1,
+                (float)absDeltaBR,
+                (float)absDeltaBG,
+                (float)absDeltaO2,
+                (float)absDeltaO3,
+                (float)absDeltaL
+                );
+            
+            try {
+                simWriter.write(str);
+            } catch (IOException ex) {
+                Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        try {
+            simWriter.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        for (PairIntPair pp : diffClass) {
+            
+            PairInt p0 = np.findClosest(pp.getX1(), pp.getY1(), radius);
+            
+            if (p0 == null) {
+                log.severe("revise coords.  could not find x=" + pp.getX1() + 
+                    ", y=" + pp.getY1());
+                continue;
+            }
+            
+            PairInt p1 = np.findClosest(pp.getX2(), pp.getY2(), radius);
+            
+            if (p1 == null) {
+                log.severe("revise coords.  could not find x=" + pp.getX2() + 
+                    ", y=" + pp.getY2());
+                continue;
+            }
+            
+            int list0Idx = cellIndexMap.get(p0).intValue();
+            
+            int list1Idx = cellIndexMap.get(p1).intValue();
+            
+            double r0 = br.getBlobMedialAxes().getR(list0Idx);
+            double g0 = br.getBlobMedialAxes().getG(list0Idx);
+            double b0 = br.getBlobMedialAxes().getB(list0Idx);
+            float[] lab0 = br.getBlobMedialAxes().getLABColors(list0Idx);
+            
+            double r1 = br.getBlobMedialAxes().getR(list1Idx);
+            double g1 = br.getBlobMedialAxes().getG(list1Idx);
+            double b1 = br.getBlobMedialAxes().getB(list1Idx);
+            float[] lab1 = br.getBlobMedialAxes().getLABColors(list1Idx);
+            
+            double absDeltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+            double absDeltaL = Math.abs(lab0[0] - lab1[0]);
+            double absDeltaBR = Math.abs((b0 - r0) - (b1 - r1));
+            double absDeltaBG = Math.abs((b0 - g0) - (b1 - g1));
+            
+            double absDeltaO1 = Math.abs((double)((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
+            double absDeltaO2 = Math.abs((double)((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
+            double absDeltaO3 = Math.abs((double)((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
+            
+            String str = String.format(
+                "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,diff\n",
+                (float)absDeltaE,
+                (float)absDeltaO1,
+                (float)absDeltaBR,
+                (float)absDeltaBG,
+                (float)absDeltaO2,
+                (float)absDeltaO3,
+                (float)absDeltaL
+                );
+            
+            try {
+                simWriter.write(str);
+            } catch (IOException ex) {
+                Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        try {
+            simWriter.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+        }       
+    }
+    
 }

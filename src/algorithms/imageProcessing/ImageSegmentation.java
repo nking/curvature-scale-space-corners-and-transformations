@@ -4721,14 +4721,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         //--------- begin section to log colors to look at selecting matchable bounds by color ------
         CIEChromaticity cieC = new CIEChromaticity();
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
 
-        List<Double> lAvg = new ArrayList<Double>();
-        List<Double> aAvg = new ArrayList<Double>();
+        List<Double> labLAvg = new ArrayList<Double>();
+        List<Double> labAAvg = new ArrayList<Double>();
+        List<Double> labBAvg = new ArrayList<Double>();
+        List<Double> rAvg = new ArrayList<Double>();
+        List<Double> gAvg = new ArrayList<Double>();
         List<Double> bAvg = new ArrayList<Double>();
-        List<Double> o1Avg = new ArrayList<Double>();
-        List<Double> o2Avg = new ArrayList<Double>();
-        List<Double> o3Avg = new ArrayList<Double>();
 
         for (int i = 0; i < blobs.size(); ++i) {
             double redSum = 0;
@@ -4751,20 +4750,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum),
                 (int)Math.round(greenSum), (int)Math.round(blueSum));
 
-            lAvg.add(Double.valueOf(avgLAB[0]));
-            aAvg.add(Double.valueOf(avgLAB[1]));
-            bAvg.add(Double.valueOf(avgLAB[2]));
+            labLAvg.add(Double.valueOf(avgLAB[0]));
+            labAAvg.add(Double.valueOf(avgLAB[1]));
+            labBAvg.add(Double.valueOf(avgLAB[2]));
 
-            o1Avg.add(Double.valueOf((redSum - greenSum)/Math.sqrt(2)));
-            o2Avg.add(Double.valueOf((redSum + greenSum - 2*blueSum)/Math.sqrt(6)));
-            o3Avg.add(Double.valueOf((redSum + greenSum + blueSum)/Math.sqrt(2)));
-
-            //double[] xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
-            //String str = String.format(
-            //    "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
-            //    i, (int)Math.round(xyCen[0])*binFactor, (int)Math.round(xyCen[1])*binFactor,
-            //    avgLAB[0], avgLAB[1], avgLAB[2], blobs.get(i).size());
-            //log.info(str);
+            rAvg.add(Double.valueOf(redSum));
+            gAvg.add(Double.valueOf(greenSum));
+            bAvg.add(Double.valueOf(blueSum));
         }
 
         // less than O(N)
@@ -4811,9 +4803,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-
-        BlobMedialAxes bma = new BlobMedialAxes(blobs, lAvg, aAvg, bAvg, o1Avg,
-            o2Avg, o3Avg);
+        
+        BlobMedialAxes bma = new BlobMedialAxes(blobs, labLAvg, labAAvg, labBAvg, 
+            rAvg, gAvg, bAvg);
 
         for (int i = 0; i < borderPixelSets.size(); ++i) {
 

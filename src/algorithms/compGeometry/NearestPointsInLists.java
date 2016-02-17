@@ -132,6 +132,36 @@ public class NearestPointsInLists {
      * @param radius
      * @return 
      */
+    public PairInt findClosest(int xCenter, int yCenter, float radius) {
+        
+        Map<Integer, PairInt> result = findNeighbors(xCenter, yCenter, radius);
+        
+        PairInt minDistP = null;
+        int minDistSq = Integer.MAX_VALUE;
+        
+        for (Entry<Integer, PairInt> entry : result.entrySet()) {
+            PairInt p = entry.getValue();
+            int diffX = p.getX() - xCenter;
+            int diffY = p.getY() - yCenter;
+            int distSq = (diffX*diffX) + (diffY*diffY);
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                minDistP = p;
+            }
+        }
+        
+        return minDistP;
+    }
+    
+    /**
+     * find points within radius of (xCenter, yCenter) in the contained points.
+     * runtime complexity is a little more than O(N*lg2(N)) and much less than
+     * O(N^2).
+     * @param xCenter
+     * @param yCenter
+     * @param radius
+     * @return 
+     */
     public Map<Integer, PairInt> findNeighbors(int xCenter, int yCenter, float radius) {
         
         Map<Integer, PairInt> result = new HashMap<Integer, PairInt>();
