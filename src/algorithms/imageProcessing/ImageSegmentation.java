@@ -3542,10 +3542,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         o1Img = expandBy1AndKeepContigZeros(o1Img);
         imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(o1Img, "_o1_adapt_med" + debugTag);
-        }
-
         List<Float> fractionZeros = countFractionZeros(o1Img, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3565,6 +3561,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nHigh4++;
             }
         }
+        
+        /*
+        NOTE: for images such as the mount rainier test image which is a snowy
+        field under a very white cloudy sky, the O1 adaptive median image
+        has edges find low contrast ridges very well.  The O1 edges
+        could be restored afterwards for special handling.
+        For the blue and white mountains under a blue and white sky in the
+        patagonia test image, the greyscale gradient seems to preserve the
+        mountain tops best.
+        For the halfdome2 test image with a blue and white mountain top under
+        a blue sky, and for the Venturi test images, the greygradient2 recovers 
+        the mountain tops.
+        */
 
         boolean useO1 = ((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
         log.info(debugTag + " o1 nH2=" + ((float)nHigh2/(float)fractionZeros.size())
@@ -3575,16 +3584,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make O1 edges");
+        if (fineDebug && useO1 && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(o1Img, "_o1_adapt_med" + debugTag);
+        }
         t0 = System.currentTimeMillis();
-
+ 
         // -----------
         hEq = new HistogramEqualization(bGImg);
         hEq.applyFilter();
         bGImg = expandBy1AndKeepContigZeros(bGImg);
         imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(bGImg, "_b-g_adapt_med" + debugTag);
-        }
         List<Float> fractionZerosBG = countFractionZeros(bGImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3614,6 +3623,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make B-G edges");
+        if (fineDebug && useBG && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bGImg, "_b-g_adapt_med" + debugTag);
+        }
         t0 = System.currentTimeMillis();
         
         // -----------
@@ -3621,9 +3633,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         bRImg = expandBy1AndKeepContigZeros(bRImg);
         imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(bRImg, "_b-r_adapt_med" + debugTag);
-        }
         List<Float> fractionZerosBR = countFractionZeros(bRImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3653,17 +3662,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make B-R edges");
+        if (fineDebug && useBR && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(bRImg, "_b-r_adapt_med" + debugTag);
+        }
         t0 = System.currentTimeMillis();
-
+        
         // -------
         hEq = new HistogramEqualization(labBImg);
         hEq.applyFilter();
         MedianSmooth smooth = new MedianSmooth();
         labBImg = smooth.calculate(labBImg, 4, 4);
         imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labBImg, "_lab_b_adapt_med" + debugTag);
-        }
         List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3692,8 +3701,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make lab B edges");
+        if (fineDebug && useB && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(labBImg, "_lab_b_adapt_med" + debugTag);
+        }
         t0 = System.currentTimeMillis();
-
+        
         boolean createLowInt = true;
         GreyscaleImage greyGradient2 = greyGradient.copyImage();
 
@@ -5145,7 +5157,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (!unassigned.contains(p2)) {
                     continue;
                 }
-                
+    
                 Colors colors0 = segmentedCellAvgLabColors.get(listIndex);
                 if (colors0 == null) {
                     colors0 = calculateAverageLAB(input, 
@@ -5153,12 +5165,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     segmentedCellAvgLabColors.put(listIndex, colors0);
                 }
                 float[] lab0 = colors0.getColors();
-                
+                    
                 assert(!pointIndexMap.containsKey(p2));
                 
                 float[] lab2 = input.getCIELAB(x2, y2);
                 
                 double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
+                               
                 // jnd ~ 2.3
                 // 4 is good and can be continued w/ labelling
                 // 5 is fine if goal is finding objects
@@ -5406,6 +5419,29 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float[] labAvg = new float[]{(float)labL, (float)labA, (float)labB};
         
         Colors c = new Colors(labAvg);
+        
+        return c;
+    }
+    
+    private Colors calculateAverageRGB(ImageExt input, Set<PairInt> points) {
+        
+        float r = 0;
+        float g = 0;
+        float b = 0;
+        
+        for (PairInt p : points) {
+            int idx = input.getInternalIndex(p.getX(), p.getY());
+            r += input.getR(idx);
+            g += input.getG(idx);
+            b += input.getB(idx);
+        }
+        r /= (float)points.size();
+        g /= (float)points.size();
+        b /= (float)points.size();
+        
+        float[] rgbAvg = new float[]{r, g, b};
+        
+        Colors c = new Colors(rgbAvg);
         
         return c;
     }

@@ -181,6 +181,8 @@ public class SegmentedCellMerger {
                 imgCp, 0);
             MiscDebug.writeImage(imgCp, debugTag + "_boundaries_" + ts);
         }
+        
+        int nBefore = mergedMap.size();
                 
         CIEChromaticity cieC = new CIEChromaticity();
         
@@ -343,7 +345,9 @@ public class SegmentedCellMerger {
                 visited.add(originalP);
             }
         }
-               
+        
+        log.info("size before=" + nBefore + " after=" + mergedMap.size());
+        
         /*
         here, have final results in 
             // key = cell centroid, value = set of adjacent cell centroids
@@ -358,7 +362,7 @@ public class SegmentedCellMerger {
         line 500 to end of its method are what is then needed here to rebuild the merged as
         bounding regions.
         */
-           
+                   
         // making a debug image before tuning color conditionals
         Map<PairInt, Set<PairInt>> mergedPoints = new HashMap<PairInt, Set<PairInt>>();
         for (Entry<PairInt, Integer> entry : br.getPointIndexMap().entrySet()) {
