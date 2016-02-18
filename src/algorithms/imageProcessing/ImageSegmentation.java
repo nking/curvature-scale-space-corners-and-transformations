@@ -5311,7 +5311,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Set<PairInt> gapPixels = finder.getXY(i);
             
             Set<Integer> indexes = new HashSet<Integer>();
-          
+                                  
             for (PairInt p : gapPixels) {
                 Integer listIndex = pointIndexMap.get(p);
                 if (listIndex == null) {
@@ -5320,8 +5320,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (!segmentedCellList.get(listIndex.intValue()).isEmpty()) {
                     indexes.add(listIndex);
                     assert(segmentedCellList.get(listIndex.intValue()).contains(p));
-                }
-                
+                }    
             }
             
             List<Integer> listIndexes = new ArrayList<Integer>();
@@ -5338,7 +5337,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (setA.isEmpty()) {
                     continue;
                 }
-
+                
                 for (int j1 = j0 + 1; j1 < listIndexes.size(); ++j1) {
 
                     Integer listIndex1 = listIndexes.get(j1);
@@ -5348,7 +5347,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     if (setB.isEmpty()) {
                         continue;
                     }
-
+                    
+                    if (!areAdjacent(setA, setB)) {
+                        continue;
+                    }
+                    
                     // compare colors
                     Colors colors0 = segmentedCellAvgLabColors.get(listIndex0);
                     if (colors0 == null) {
@@ -5365,18 +5368,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         colors1.getColors());
                     
                     if (deltaE <= deltaELimit) {
-
-    //TODO: making large assumption here that the gap pixels
-    // should all be in one group.  after looking at results,
-    // may need to assert when first comparing listIndexes
-    // that a contiguous path from setA to setB exists.     
-                        setA.addAll(gapPixels);
                         
                         setA.addAll(setB);
                         for (PairInt pB : setB) {
                             pointIndexMap.put(pB, listIndex0);
                         }
-                        setB.clear();
+                        setB.clear();                        
                     }
                 }
             }
@@ -5411,6 +5408,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         Colors c = new Colors(labAvg);
         
         return c;
+    }
+
+    private boolean areAdjacent(Set<PairInt> setA, Set<PairInt> setB) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (PairInt p : setA) {
+            for (int i = 0; i < dxs.length; ++i) {
+                int x2 = p.getX() + dxs[i];
+                int y2 = p.getY() + dys[i];
+                PairInt p2 = new PairInt(x2, y2);
+                if (setB.contains(p2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static class Colors {
