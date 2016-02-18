@@ -38,7 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.Stack;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -3820,7 +3823,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
-        greyGradient = fillInGapsOf1(greyGradient, 0);
+        
+        Set<PairInt> addedGaps = new HashSet<PairInt>();
+        greyGradient = fillInGapsOf1(greyGradient, addedGaps, 0);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
         }
@@ -3849,11 +3854,28 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         Set<PairInt> zeros = createZerosSet(segmentedCellList, w, h);
         
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+                
         //placeUnassignedUsingNearest(input, segmentedCellList, zeros);
         
-        placeUnassignedByGrowingCells(input, segmentedCellList, zeros);
-                             
+        
+        double deltaELimit = 3;
+                
+        placeUnassignedByGrowingCells(input, segmentedCellList, zeros,
+            pointIndexMap, deltaELimit);
+        
+        mergeSimilarCellsIfGapsConnect(input, segmentedCellList, addedGaps,
+            pointIndexMap, deltaELimit);
+                
         if (debugTag != null && !debugTag.equals("")) {
+            
             GreyscaleImage greyImg = input.copyToGreyscale();
             for (int i = 0; i < segmentedCellList.size(); ++i) {
                 Set<PairInt> group = segmentedCellList.get(i);
@@ -3873,7 +3895,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     greyImg.setValue(x, y, greyAvg);
                 }
             }
-
+            
             MiscDebug.writeImage(greyImg, "_final_edge_segmented_" + debugTag);
         }
         
@@ -4942,7 +4964,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return tmpImg2;
     }
 
-    private GreyscaleImage fillInGapsOf1(GreyscaleImage img, int value) {
+    private GreyscaleImage fillInGapsOf1(GreyscaleImage img, 
+        Set<PairInt> outputAddedGaps,int value) {
 
         int w = img.getWidth();
         int h = img.getHeight();
@@ -4995,6 +5018,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         continue;
                     }
                     tmpImg2.setValue(i, j, value);
+                    outputAddedGaps.add(new PairInt(i, j));
                     break;
                 }
             }
@@ -5076,7 +5100,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param unassigned 
      */
     private void placeUnassignedByGrowingCells(ImageExt input,
-        List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned) {
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned,
+        Map<PairInt, Integer> pointIndexMap, double deltaELimit) {
 
         long t0 = System.currentTimeMillis();
         
@@ -5084,16 +5109,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         ArrayDeque<PairInt> queue = new ArrayDeque<PairInt>();
         
-        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
             queue.addAll(set);
         }
-                
+        
+        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
+        
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
@@ -5111,8 +5133,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int y = p0.getY();
             
             Integer listIndex = pointIndexMap.get(p0);
-                        
-            float[] lab0 = input.getCIELAB(x, y);
+        
+            //float[] lab0 = input.getCIELAB(x, y);
             
             for (int i = 0; i < dxs.length; ++i) {
                 
@@ -5124,13 +5146,23 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     continue;
                 }
                 
+                Colors colors0 = segmentedCellAvgLabColors.get(listIndex);
+                if (colors0 == null) {
+                    colors0 = calculateAverageLAB(input, 
+                        segmentedCellList.get(listIndex.intValue()));
+                    segmentedCellAvgLabColors.put(listIndex, colors0);
+                }
+                float[] lab0 = colors0.getColors();
+                
+                assert(!pointIndexMap.containsKey(p2));
+                
                 float[] lab2 = input.getCIELAB(x2, y2);
                 
                 double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
                 // jnd ~ 2.3
                 // 4 is good and can be continued w/ labelling
                 // 5 is fine if goal is finding objects
-                if (deltaE > 4) {
+                if (deltaE > deltaELimit) {
                     continue;
                 }
                 
@@ -5259,6 +5291,136 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         segmentedCellList.clear();        
         segmentedCellList.addAll(segmentedCellList2);
+    }
+
+    private void mergeSimilarCellsIfGapsConnect(ImageExt input, 
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> addedGaps,
+        Map<PairInt, Integer> pointIndexMap, double deltaELimit) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
+        
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(2);
+        finder.findConnectedPointGroups(addedGaps, input.getWidth(), 
+            input.getHeight());
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            
+            Set<PairInt> gapPixels = finder.getXY(i);
+            
+            Set<Integer> indexes = new HashSet<Integer>();
+          
+            for (PairInt p : gapPixels) {
+                Integer listIndex = pointIndexMap.get(p);
+                if (listIndex == null) {
+                    continue;
+                }
+                if (!segmentedCellList.get(listIndex.intValue()).isEmpty()) {
+                    indexes.add(listIndex);
+                    assert(segmentedCellList.get(listIndex.intValue()).contains(p));
+                }
+                
+            }
+            
+            List<Integer> listIndexes = new ArrayList<Integer>();
+            listIndexes.addAll(indexes);
+            Collections.sort(listIndexes);
+                                     
+            // merge if colors are similar
+            for (int j0 = 0; j0 < listIndexes.size(); ++j0) {
+
+                Integer listIndex0 = listIndexes.get(j0);
+                
+                Set<PairInt> setA = segmentedCellList.get(listIndex0.intValue());
+                
+                if (setA.isEmpty()) {
+                    continue;
+                }
+
+                for (int j1 = j0 + 1; j1 < listIndexes.size(); ++j1) {
+
+                    Integer listIndex1 = listIndexes.get(j1);
+                    
+                    Set<PairInt> setB = segmentedCellList.get(listIndex1.intValue());
+                    
+                    if (setB.isEmpty()) {
+                        continue;
+                    }
+
+                    // compare colors
+                    Colors colors0 = segmentedCellAvgLabColors.get(listIndex0);
+                    if (colors0 == null) {
+                        colors0 = calculateAverageLAB(input, setA);
+                        segmentedCellAvgLabColors.put(listIndex0, colors0);
+                    }
+                    Colors colors1 = segmentedCellAvgLabColors.get(listIndex1);
+                    if (colors1 == null) {
+                        colors1 = calculateAverageLAB(input, setB);
+                        segmentedCellAvgLabColors.put(listIndex1, colors1);
+                    }
+
+                    double deltaE = cieC.calcDeltaECIE94(colors0.getColors(), 
+                        colors1.getColors());
+                    
+                    if (deltaE <= deltaELimit) {
+
+    //TODO: making large assumption here that the gap pixels
+    // should all be in one group.  after looking at results,
+    // may need to assert when first comparing listIndexes
+    // that a contiguous path from setA to setB exists.     
+                        setA.addAll(gapPixels);
+                        
+                        setA.addAll(setB);
+                        for (PairInt pB : setB) {
+                            pointIndexMap.put(pB, listIndex0);
+                        }
+                        setB.clear();
+                    }
+                }
+            }
+        }
+        
+        for (int i = (segmentedCellList.size() - 1); i > -1; --i) {
+            Set<PairInt> set0 = segmentedCellList.get(i);
+            if (set0.size() == 0) {
+                segmentedCellList.remove(i);
+            }
+        }
+    }
+
+    private Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
+        
+        double labA = 0;
+        double labB = 0;
+        double labL = 0;
+        
+        for (PairInt p : points) {
+            float[] lab = input.getCIELAB(p.getX(), p.getY());
+            labL += lab[0];
+            labA += lab[1];
+            labB += lab[2];
+        }
+        labL /= (double)points.size();
+        labA /= (double)points.size();
+        labB /= (double)points.size();
+        
+        float[] labAvg = new float[]{(float)labL, (float)labA, (float)labB};
+        
+        Colors c = new Colors(labAvg);
+        
+        return c;
+    }
+
+    public static class Colors {
+        private final float[] colors;
+        public Colors(float[] theColors) {
+            colors = theColors;
+        }
+        public float[] getColors() {
+            return colors;
+        }
     }
 
     public static class BoundingRegions {

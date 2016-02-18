@@ -25,6 +25,8 @@ import algorithms.util.ResourceFinder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +35,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
@@ -260,7 +263,7 @@ public class SegmentedCellMerger {
 
                 //TODO: revising these vectors
                 
-                if (Math.abs(deltaE) > 7) {
+                if (Math.abs(deltaE) > 2.3) {
                 //if (ldaY > 24.5 || ldaX < -50) {
                     continue;
                 }
@@ -377,19 +380,57 @@ public class SegmentedCellMerger {
             points.add(p);
         }
         
-        GreyscaleImage imgCp = img.copyToGreyscale();
+        Image imgCp = img.copyToGreyscale().copyToColorGreyscale();
         
-        if (mergedPoints.size() < 256) {
-            int delta = (int)Math.floor(256.f/(float)mergedPoints.size());
-            int level = 255;
-            for (Entry<PairInt, Set<PairInt>> entry : mergedPoints.entrySet()) {
-                for (PairInt p : entry.getValue()) {
-                    imgCp.setValue(p.getX(), p.getY(), level);
-                }
-                level -= delta;
-            }
-            MiscDebug.writeImage(imgCp, "_" + debugTag + "_merged_");
+        int nColors = mergedPoints.size();
+        log.info("mergedPoints.size() = " + nColors);
+        int delta = (int)Math.floor(256.f/(float)nColors);
+        Random sr = null;
+        long seed = System.currentTimeMillis();
+        try {
+            sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed(seed);
+        } catch (NoSuchAlgorithmException e) {
+            sr = new Random(seed);
         }
+       
+        Set<String> clrs = new HashSet<String>();
+        for (Entry<PairInt, Set<PairInt>> entry : mergedPoints.entrySet()) {
+            boolean alreadyChosen = true;
+            int rClr = -1;
+            int gClr = -1;
+            int bClr = -1;
+            while (alreadyChosen) {
+                rClr = sr.nextInt(nColors)*delta;
+                gClr = sr.nextInt(nColors)*delta;
+                bClr = sr.nextInt(nColors)*delta;
+                String str = "";
+                if (rClr < 10) {
+                    str = str + "00";
+                } else if (rClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(rClr);
+                if (gClr < 10) {
+                    str = str + "00";
+                } else if (gClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(bClr);
+                if (bClr < 10) {
+                    str = str + "00";
+                } else if (bClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(bClr);
+                alreadyChosen = clrs.contains(str);
+                clrs.add(str);
+            }
+            for (PairInt p : entry.getValue()) {
+                imgCp.setRGB(p.getX(), p.getY(), rClr, gClr, bClr);
+            }
+        }
+        MiscDebug.writeImage(imgCp, "_" + debugTag + "_merged_");
         
         if (simWriter != null) {
             try {
@@ -802,7 +843,7 @@ public class SegmentedCellMerger {
         
         CIEChromaticity cieC = new CIEChromaticity();
         
-        float radius = 5.f;
+        float radius = 15.f;
         
         for (PairIntPair pp : simClass) {
             

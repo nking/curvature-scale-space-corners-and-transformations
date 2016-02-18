@@ -1477,4 +1477,33 @@ public class MiscDebug {
         MiscDebug.writeImage(imgCp1, fileNameSuffix + "_1");
         MiscDebug.writeImage(imgCp2, fileNameSuffix + "_2");
     }
+    
+    public static void debugAssertContiguous(List<Set<PairInt>> segmentedCellList) {
+        
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            debugAssertContiguous(set);
+        }
+    }
+    
+    public static void debugAssertContiguous(Set<PairInt> set) {
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(set);
+        Set<Integer> xs = new HashSet<Integer>();
+        Set<Integer> ys = new HashSet<Integer>();
+        for (int k = minMaxXY[0]; k <= minMaxXY[1]; ++k) {
+            xs.add(Integer.valueOf(k));
+        }
+        for (int k = minMaxXY[2]; k <= minMaxXY[3]; ++k) {
+            ys.add(Integer.valueOf(k));
+        }
+        for (PairInt p : set) {
+            Integer x = Integer.valueOf(p.getX());
+            Integer y = Integer.valueOf(p.getY());
+            xs.remove(x);
+            ys.remove(y);
+        }
+        assert(xs.isEmpty());
+        assert(ys.isEmpty());
+    }
 }

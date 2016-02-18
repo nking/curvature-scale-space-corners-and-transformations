@@ -383,9 +383,11 @@ public class MedianSmooth {
          public int getMedian() {
 
             if (n != a.length) {
+                // NOTE: in the use above, this is never invoked unless the
+                // list a is full so this exception should never be thrown
                 throw new IllegalArgumentException(
-                "3) the method is meant to be used only on a full list." 
-                + " a.length=" + a.length + " n=" + n);
+                    "3) the method is meant to be used only on a full list." 
+                    + " a.length=" + a.length + " n=" + n);
             }
 
             int midIdx = ((n & 1) == 1) ? n/2 : (n - 1)/2;
