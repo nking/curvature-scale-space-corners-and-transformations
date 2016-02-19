@@ -13,7 +13,6 @@ import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -144,30 +143,33 @@ public class SegmentedCellMerger {
                 
         BoundingRegions br = extractPerimetersAndBounds();
         
-        final Map<PairInt, DisjointSet2Node<PairInt>> cellMap = 
-            new HashMap<PairInt, DisjointSet2Node<PairInt>>();
+        // key = pairintwihindex holding xy centroid and the original list index
+        final Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> cellMap = 
+            new HashMap<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>>();
         
-        final Map<PairInt, Integer> cellIndexMap = new HashMap<PairInt, Integer>();
-            
+        final Map<PairIntWithIndex, Integer> cellIndexMap = new HashMap<PairIntWithIndex, Integer>();
+                
         populateCellMaps(br, cellMap, cellIndexMap);
         
 //writeLabelFile(br, cellIndexMap);
 
         // key = cell centroid, value = set of adjacent cell centroids
-        Map<PairInt, Set<PairInt>> adjacencyMap = createAdjacencyMap(br,
-            img.getWidth(), img.getHeight());
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap 
+            = createAdjacencyMap(br, img.getWidth(), img.getHeight());
         
         // key = cell centroid, value = set of cell centroids merged with this one
-        Map<PairInt, Set<PairInt>> mergedMap = createMergeMap(br);
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedMap = createMergeMap(br);
         
         // this order results in visiting the smallest cells first
-        Stack<PairInt> stack = new Stack<PairInt>();
+        Stack<PairIntWithIndex> stack = new Stack<PairIntWithIndex>();
         for (int i = 0; i < br.getPerimeterList().size(); ++i) {
             
             PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
             
-            if (cellIndexMap.containsKey(xyCen)) {
-                stack.add(xyCen);
+            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
+            
+            if (cellIndexMap.containsKey(key)) {
+                stack.add(key);
             }            
         }
         
@@ -185,8 +187,9 @@ public class SegmentedCellMerger {
                 
         CIEChromaticity cieC = new CIEChromaticity();
         
-        Set<PairInt> visited = new HashSet<PairInt>();
-        Map<PairInt, Set<PairInt>> visitedMap = new HashMap<PairInt, Set<PairInt>>();
+        Set<PairIntWithIndex> visited = new HashSet<PairIntWithIndex>();
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> visitedMap 
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
@@ -195,40 +198,40 @@ public class SegmentedCellMerger {
           
         while (!stack.isEmpty()) {
             
-            PairInt p = stack.pop();
+            PairIntWithIndex p = stack.pop();
             
             if (visited.contains(p)) {
                 continue;
             }
             
-            PairInt originalP = p.copy();
+            PairIntWithIndex originalP = (PairIntWithIndex) p.copy();
             Integer originalPIndex = cellIndexMap.get(originalP);
             
-            DisjointSet2Node<PairInt> pNode = cellMap.get(p);
+            DisjointSet2Node<PairIntWithIndex> pNode = cellMap.get(p);
                         
-            DisjointSet2Node<PairInt> pParentNode = disjointSetHelper.findSet(pNode);
+            DisjointSet2Node<PairIntWithIndex> pParentNode = disjointSetHelper.findSet(pNode);
             
-            PairInt pParent = pParentNode.getMember();
+            PairIntWithIndex pParent = pParentNode.getMember();
             
             float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
             
             boolean didMerge = false;
             
-            List<PairInt> neighborKeys = new ArrayList<PairInt>(
+            List<PairIntWithIndex> neighborKeys = new ArrayList<PairIntWithIndex>(
                 adjacencyMap.get(pParent));
             
-            for (PairInt p2 : neighborKeys) {
+            for (PairIntWithIndex p2 : neighborKeys) {
                 
-                DisjointSet2Node<PairInt> p2Node = cellMap.get(p2);
+                DisjointSet2Node<PairIntWithIndex> p2Node = cellMap.get(p2);
                 
                 // find the "representative" parent node of the cell
-                DisjointSet2Node<PairInt> p2ParentNode = disjointSetHelper.findSet(p2Node);
+                DisjointSet2Node<PairIntWithIndex> p2ParentNode = disjointSetHelper.findSet(p2Node);
                     
                 if (p2ParentNode.equals(pParentNode)) {
                     continue;
                 }
                     
-                PairInt p2Parent = p2ParentNode.getMember();
+                PairIntWithIndex p2Parent = p2ParentNode.getMember();
                 
                 if (hasBeenVisited(visitedMap, pParent, p2Parent)) {
                     continue;
@@ -241,7 +244,7 @@ public class SegmentedCellMerger {
                     labP2[0], labP2[1], labP2[2]);
                 
                 addToVisited(visitedMap, pParent, p2Parent);
-                 
+                
                 /*double[][] data = new double[4][1];
                 data[0][0] = Math.abs(deltaE);
                 data[1][0] = Math.abs(deltaO1);
@@ -271,10 +274,10 @@ public class SegmentedCellMerger {
     
                 stack.add(p2Parent);
                 
-                DisjointSet2Node<PairInt> parentOfMergeNode = 
+                DisjointSet2Node<PairIntWithIndex> parentOfMergeNode = 
                     disjointSetHelper.union(pParentNode, p2ParentNode);
 
-                PairInt parentOfMerge = parentOfMergeNode.getMember();
+                PairIntWithIndex parentOfMerge = parentOfMergeNode.getMember();
 
                 if (parentOfMerge.equals(pParent)) {
                     
@@ -283,23 +286,23 @@ public class SegmentedCellMerger {
                     //mergedMap for key pParent gets values of p2Parent 
                     //and the p2Parent key gets removed
                     
-                    Set<PairInt> p2ParentMergedSet = mergedMap.get(p2Parent);
+                    Set<PairIntWithIndex> p2ParentMergedSet = mergedMap.get(p2Parent);
                     
-                    Set<PairInt> pParentMergedSet = mergedMap.get(pParent);
+                    Set<PairIntWithIndex> pParentMergedSet = mergedMap.get(pParent);
                     pParentMergedSet.addAll(p2ParentMergedSet);
                     
                     mergedMap.remove(p2Parent);
                     
                     // adjacencyMap for key pParent gets values of p2Parent, 
                     // and then subtracts all internal members from the final set
-                    Set<PairInt> p2ParentAdjacencySet = adjacencyMap.get(p2Parent);
+                    Set<PairIntWithIndex> p2ParentAdjacencySet = adjacencyMap.get(p2Parent);
                     
-                    Set<PairInt> pParentAdjacencySet = adjacencyMap.get(pParent);
+                    Set<PairIntWithIndex> pParentAdjacencySet = adjacencyMap.get(pParent);
                     pParentAdjacencySet.addAll(p2ParentAdjacencySet);
                     pParentAdjacencySet.removeAll(pParentMergedSet);
                     
                 } else {
-                    
+
                     // the new parent key has become a neighbor, so after the
                     // merges, have to re-assign the local variables within
                     // the upper block
@@ -307,21 +310,21 @@ public class SegmentedCellMerger {
                     //mergedMap for key p2Parent gets values of pParent 
                     //and the pParent key gets removed
                     
-                    Set<PairInt> pParentMergedSet = mergedMap.get(pParent);
+                    Set<PairIntWithIndex> pParentMergedSet = mergedMap.get(pParent);
                     
-                    Set<PairInt> p2ParentMergedSet = mergedMap.get(p2Parent);
+                    Set<PairIntWithIndex> p2ParentMergedSet = mergedMap.get(p2Parent);
                     p2ParentMergedSet.addAll(pParentMergedSet);
                     
                     mergedMap.remove(pParent);
                     
                     // adjacencyMap for key p2Parent gets values of pParent, 
                     // and then subtracts all internal members from the final set
-                    Set<PairInt> pParentAdjacencySet = adjacencyMap.get(pParent);
+                    Set<PairIntWithIndex> pParentAdjacencySet = adjacencyMap.get(pParent);
                     
-                    Set<PairInt> p2ParentAdjacencySet = adjacencyMap.get(p2Parent);
+                    Set<PairIntWithIndex> p2ParentAdjacencySet = adjacencyMap.get(p2Parent);
                     p2ParentAdjacencySet.addAll(pParentAdjacencySet);
                     p2ParentAdjacencySet.removeAll(p2ParentMergedSet);
-                    
+   
                     // --- reassign upper block variables to use new parent information ---
                     p = p2;
                     
@@ -362,21 +365,27 @@ public class SegmentedCellMerger {
         */
                    
         // making a debug image before tuning color conditionals
-        Map<PairInt, Set<PairInt>> mergedPoints = new HashMap<PairInt, Set<PairInt>>();
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedPoints 
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
         for (Entry<PairInt, Integer> entry : br.getPointIndexMap().entrySet()) {
             
-            PairInt p = entry.getKey();
-            
             Integer cellIndex = entry.getValue();
-            PairInt cellCentroid = br.getBlobMedialAxes().getOriginalBlobXYCentroid(cellIndex.intValue());
-            DisjointSet2Node<PairInt> cellNode = cellMap.get(cellCentroid);            
-            DisjointSet2Node<PairInt> parentCellNode = disjointSetHelper.findSet(cellNode);  
             
-            PairInt parentCellCentroid = parentCellNode.getMember();
+            PairIntWithIndex p = new PairIntWithIndex(entry.getKey(), 
+                cellIndex.intValue());
+                        
+            PairIntWithIndex cellCentroid = new PairIntWithIndex(
+                br.getBlobMedialAxes().getOriginalBlobXYCentroid(
+                cellIndex.intValue()), cellIndex.intValue());
             
-            Set<PairInt> points = mergedPoints.get(parentCellCentroid);
+            DisjointSet2Node<PairIntWithIndex> cellNode = cellMap.get(cellCentroid);            
+            DisjointSet2Node<PairIntWithIndex> parentCellNode = disjointSetHelper.findSet(cellNode);  
+            
+            PairIntWithIndex parentCellCentroid = parentCellNode.getMember();
+            
+            Set<PairIntWithIndex> points = mergedPoints.get(parentCellCentroid);
             if (points == null) {
-                points = new HashSet<PairInt>();
+                points = new HashSet<PairIntWithIndex>();
                 mergedPoints.put(parentCellCentroid, points);
             }
             points.add(p);
@@ -397,7 +406,9 @@ public class SegmentedCellMerger {
         }
        
         Set<String> clrs = new HashSet<String>();
-        for (Entry<PairInt, Set<PairInt>> entry : mergedPoints.entrySet()) {
+        for (Entry<PairIntWithIndex, Set<PairIntWithIndex>> entry 
+            : mergedPoints.entrySet()) {
+            
             boolean alreadyChosen = true;
             int rClr = -1;
             int gClr = -1;
@@ -428,7 +439,7 @@ public class SegmentedCellMerger {
                 alreadyChosen = clrs.contains(str);
                 clrs.add(str);
             }
-            for (PairInt p : entry.getValue()) {
+            for (PairIntWithIndex p : entry.getValue()) {
                 imgCp.setRGB(p.getX(), p.getY(), rClr, gClr, bClr);
             }
         }
@@ -583,8 +594,8 @@ public class SegmentedCellMerger {
     }
 
     private void populateCellMaps(BoundingRegions br, 
-        Map<PairInt, DisjointSet2Node<PairInt>> outputParentMap,
-        Map<PairInt, Integer> outputParentIndexMap) {
+        Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> outputParentMap,
+        Map<PairIntWithIndex, Integer> outputParentIndexMap) {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
@@ -598,28 +609,24 @@ public class SegmentedCellMerger {
             
             PairInt xyCen = bma.getOriginalBlobXYCentroid(i);
             
-            PairInt p = xyCen.copy();
+            PairIntWithIndex pai = new PairIntWithIndex(xyCen, i);
             
-            DisjointSet2Node<PairInt> pNode =
-                disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(p));
+            DisjointSet2Node<PairIntWithIndex> pNode =
+                disjointSetHelper.makeSet(new DisjointSet2Node<PairIntWithIndex>(pai));
             
-            if (outputParentMap.containsKey(p)) {
-                log.severe("Error: more than one cell has the same center");
-            }
+            outputParentMap.put(pai, pNode);
             
-            outputParentMap.put(p, pNode);
+            outputParentIndexMap.put(pai, Integer.valueOf(i));
             
-            outputParentIndexMap.put(p, Integer.valueOf(i));
-            
-            assert(pNode.getMember().equals(p));
+            assert(pNode.getMember().equals(pai));
             assert(pNode.getParent().equals(pNode));
         }        
     }
 
-    private boolean hasBeenVisited(Map<PairInt, Set<PairInt>> visitedMap, 
-        PairInt pParent, PairInt p2Parent) {
+    private boolean hasBeenVisited(Map<PairIntWithIndex, Set<PairIntWithIndex>> 
+        visitedMap, PairIntWithIndex pParent, PairIntWithIndex p2Parent) {
         
-        Set<PairInt> set = visitedMap.get(pParent);
+        Set<PairIntWithIndex> set = visitedMap.get(pParent);
         if (set == null) {
             return false;
         }
@@ -627,28 +634,29 @@ public class SegmentedCellMerger {
         return set.contains(p2Parent);
     }
 
-    private void addToVisited(Map<PairInt, Set<PairInt>> visitedMap, 
-        PairInt pParent, PairInt p2Parent) {
+    private void addToVisited(Map<PairIntWithIndex, Set<PairIntWithIndex>> 
+        visitedMap, PairIntWithIndex pParent, PairIntWithIndex p2Parent) {
         
-        Set<PairInt> set = visitedMap.get(pParent);
+        Set<PairIntWithIndex> set = visitedMap.get(pParent);
         if (set == null) {
-            set = new HashSet<PairInt>();
+            set = new HashSet<PairIntWithIndex>();
             visitedMap.put(pParent, set);
         }
         set.add(p2Parent);
         
         set = visitedMap.get(p2Parent);
         if (set == null) {
-            set = new HashSet<PairInt>();
+            set = new HashSet<PairIntWithIndex>();
             visitedMap.put(p2Parent, set);
         }
         set.add(pParent);
     }
 
-    private Map<PairInt, Set<PairInt>> createAdjacencyMap(BoundingRegions br,
-        int imageWidth, int imageHeight) {
+    private Map<PairIntWithIndex, Set<PairIntWithIndex>> 
+        createAdjacencyMap(BoundingRegions br, int imageWidth, int imageHeight) {
 
-        Map<PairInt, Set<PairInt>> adjacencyMap = new HashMap<PairInt, Set<PairInt>>();
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap 
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
         
         List<PairIntArray> boundaries = br.getPerimeterList();
         
@@ -657,9 +665,11 @@ public class SegmentedCellMerger {
         
         for (int i = 0; i < boundaries.size(); ++i) {
             
-            PairInt key = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
             
-            Set<PairInt> adjacencySet = new HashSet<PairInt>();
+            Set<PairIntWithIndex> adjacencySet = new HashSet<PairIntWithIndex>();
+            
+            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
             
             adjacencyMap.put(key, adjacencySet);
             
@@ -692,7 +702,10 @@ public class SegmentedCellMerger {
                     PairInt xyCen2 = br.getBlobMedialAxes()
                         .getOriginalBlobXYCentroid(p2Index.intValue());
                     
-                    adjacencySet.add(xyCen2);
+                    PairIntWithIndex pai2 = new PairIntWithIndex(xyCen2, 
+                        p2Index.intValue());
+                    
+                    adjacencySet.add(pai2);
                 }
             }
             
@@ -707,15 +720,18 @@ public class SegmentedCellMerger {
         return adjacencyMap;
     }
 
-    private Map<PairInt, Set<PairInt>> createMergeMap(BoundingRegions br) {
+    private Map<PairIntWithIndex, Set<PairIntWithIndex>> createMergeMap(BoundingRegions br) {
         
-        Map<PairInt, Set<PairInt>> mergeMap = new HashMap<PairInt, Set<PairInt>>();
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> mergeMap 
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
                         
         for (int i = 0; i < br.getPerimeterList().size(); ++i) {
             
-            PairInt key = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
+            
+            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
            
-            Set<PairInt> mergeSet = new HashSet<PairInt>();
+            Set<PairIntWithIndex> mergeSet = new HashSet<PairIntWithIndex>();
             mergeSet.add(key);
             
             mergeMap.put(key, mergeSet);
@@ -988,4 +1004,65 @@ public class SegmentedCellMerger {
         }       
     }
     
+    private static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
+        int pixIdx;
+        public PairIntWithIndex(int xPoint, int yPoint, int thePixIndex) {
+            super(xPoint, yPoint);
+            pixIdx = thePixIndex;
+        }
+        public PairIntWithIndex(algorithms.util.PairInt p, int thePixIndex) {
+            super(p.getX(), p.getY());
+            pixIdx = thePixIndex;
+        }
+        public int getPixIndex() {
+            return pixIdx;
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof PairIntWithIndex)) {
+                return false;
+            }
+            PairIntWithIndex other = (PairIntWithIndex) obj;
+            return (x == other.getX()) && (y == other.getY()) &&
+                (pixIdx == other.pixIdx);
+        }
+        @Override
+        public int hashCode() {
+            int hash = fnvHashCode(this.x, this.y, this.pixIdx);
+            return hash;
+        }
+        @Override
+        public com.climbwithyourfeet.clustering.util.PairInt copy() {
+            return new PairIntWithIndex(x, y, pixIdx);
+        }        
+        protected int fnvHashCode(int i0, int i1, int i2) {
+            /*
+             * hash = offset_basis
+             * for each octet_of_data to be hashed
+             *     hash = hash xor octet_of_data
+             *     hash = hash * FNV_prime
+             * return hash
+             *
+             * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+             */
+            int hash = 0;
+            int sum = fnv321aInit;
+            // xor the bottom with the current octet.
+            sum ^= i0;
+            // multiply by the 32 bit FNV magic prime mod 2^32
+            sum *= fnv32Prime;
+            sum ^= i1;
+            sum *= fnv32Prime;            
+            sum ^= i2;
+            sum *= fnv32Prime;
+            hash = sum;
+            return hash;
+        }
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder(super.toString());
+            sb.append(" pixIdx=").append(Integer.toString(pixIdx));
+            return sb.toString();
+        }
+    }
 }
