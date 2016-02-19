@@ -159,7 +159,6 @@ public class SegmentedCellMerger {
         
         // key = cell centroid, value = set of cell centroids merged with this one
         Map<PairInt, Set<PairInt>> mergedMap = createMergeMap(br);
-                
         
         // this order results in visiting the smallest cells first
         Stack<PairInt> stack = new Stack<PairInt>();
@@ -193,7 +192,7 @@ public class SegmentedCellMerger {
         
         //TODO: improving this transformation
         double[][] ldaMatrix = getLDASegmentationMatrix();
-               
+          
         while (!stack.isEmpty()) {
             
             PairInt p = stack.pop();
@@ -242,7 +241,7 @@ public class SegmentedCellMerger {
                     labP2[0], labP2[1], labP2[2]);
                 
                 addToVisited(visitedMap, pParent, p2Parent);
-                
+                 
                 /*double[][] data = new double[4][1];
                 data[0][0] = Math.abs(deltaE);
                 data[1][0] = Math.abs(deltaO1);
@@ -263,13 +262,13 @@ public class SegmentedCellMerger {
                  have deltaE = 5.13 and deltaL=1.6
                 */
 
-                //TODO: revising these vectors
-                
-                if (Math.abs(deltaE) > 2.3) {
+                //TODO: revise the LDA vectors
                 //if (ldaY > 24.5 || ldaX < -50) {
+
+                if (Math.abs(deltaE) > 2.3) {
                     continue;
                 }
-                
+    
                 stack.add(p2Parent);
                 
                 DisjointSet2Node<PairInt> parentOfMergeNode = 
@@ -333,9 +332,8 @@ public class SegmentedCellMerger {
                     pNode = p2Node;
                     pParentNode = p2ParentNode;
                     pParent = p2Parent;
+                    labP = labP2;
                     //pIndex = p2ParentIndex;
-                    //labP = labP2;
-                    //hueAngleP = hueAngleP2;
                 }
              
                 didMerge = true;                  
@@ -448,7 +446,9 @@ public class SegmentedCellMerger {
     }
     
     private BoundingRegions extractPerimetersAndBounds() {
-                                
+               
+        long t0 = System.currentTimeMillis();
+        
         // --- sort by descending sizes the remaining blobs ---- 
         int[] sizes = new int[segmentedCellList.size()];
         int[] indexes = new int[sizes.length];
@@ -539,10 +539,10 @@ public class SegmentedCellMerger {
         PerimeterFinder perimeterFinder = new PerimeterFinder();
         
         //ImageSegmentation imageSegmentation = new ImageSegmentation();
-                
+      
         BlobMedialAxes bma = new BlobMedialAxes(segmentedCellList, labLAvg, labAAvg, labBAvg, 
             rAvg, gAvg, bAvg);
-        
+                
         for (int i = 0; i < borderPixelSets.size(); ++i) {
                                     
             Set<PairInt> blob = segmentedCellList.get(i);
@@ -575,6 +575,10 @@ public class SegmentedCellMerger {
         BoundingRegions br = new BoundingRegions(perimetersList, bma, 
             blobPointToListIndex);
         
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to extract perimeter of cells");
+        
         return br;
     }
 
@@ -598,6 +602,10 @@ public class SegmentedCellMerger {
             
             DisjointSet2Node<PairInt> pNode =
                 disjointSetHelper.makeSet(new DisjointSet2Node<PairInt>(p));
+            
+            if (outputParentMap.containsKey(p)) {
+                log.severe("Error: more than one cell has the same center");
+            }
             
             outputParentMap.put(p, pNode);
             

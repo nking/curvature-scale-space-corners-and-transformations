@@ -3565,7 +3565,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         /*
         NOTE: for images such as the mount rainier test image which is a snowy
         field under a very white cloudy sky, the O1 adaptive median image
-        has edges find low contrast ridges very well.  The O1 edges
+        has edges which find the low contrast ridges.  The O1 edges
         could be restored afterwards for special handling.
         For the blue and white mountains under a blue and white sky in the
         patagonia test image, the greyscale gradient seems to preserve the
@@ -3878,14 +3878,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //placeUnassignedUsingNearest(input, segmentedCellList, zeros);
         
         
-        double deltaELimit = 3;
+        double deltaELimit = 2.3;
                 
         placeUnassignedByGrowingCells(input, segmentedCellList, zeros,
             pointIndexMap, deltaELimit);
         
         mergeSimilarCellsIfGapsConnect(input, segmentedCellList, addedGaps,
             pointIndexMap, deltaELimit);
-                
+          
         if (debugTag != null && !debugTag.equals("")) {
             
             GreyscaleImage greyImg = input.copyToGreyscale();
@@ -4770,9 +4770,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             for (PairInt p : blobs.get(i)) {
                 int x = p.getX();
                 int y = p.getY();
-                int red = img2Cp.getR(x, y);
-                int green = img2Cp.getG(x, y);
-                int blue = img2Cp.getB(x, y);
+                int red = img.getR(x, y);
+                int green = img.getG(x, y);
+                int blue = img.getB(x, y);
                 redSum += red;
                 greenSum += green;
                 blueSum += blue;
@@ -4840,7 +4840,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         BlobMedialAxes bma = new BlobMedialAxes(blobs, labLAvg, labAAvg, labBAvg, 
             rAvg, gAvg, bAvg);
-
+        
         for (int i = 0; i < borderPixelSets.size(); ++i) {
 
             Set<PairInt> blob = blobs.get(i);
@@ -5145,9 +5145,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int y = p0.getY();
             
             Integer listIndex = pointIndexMap.get(p0);
-        
-            //float[] lab0 = input.getCIELAB(x, y);
-            
+                    
             for (int i = 0; i < dxs.length; ++i) {
                 
                 int x2 = x + dxs[i];
@@ -5314,90 +5312,111 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
         
-        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-        finder.setMinimumNumberInCluster(2);
-        finder.findConnectedPointGroups(addedGaps, input.getWidth(), 
-            input.getHeight());
+        Set<PairInt> points = new HashSet<PairInt>(addedGaps);
         
-        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
-            
-            Set<PairInt> gapPixels = finder.getXY(i);
-            
-            Set<Integer> indexes = new HashSet<Integer>();
-                                  
-            for (PairInt p : gapPixels) {
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        long t0 = System.currentTimeMillis();
+        
+        int nChanges = 0;
+        int nIter = 0;
+        
+        while ((nIter == 0) || (nChanges > 0)) {
+            nChanges = 0;
+            Set<PairInt> rm = new HashSet<PairInt>();
+            for (PairInt p : points) {
                 Integer listIndex = pointIndexMap.get(p);
                 if (listIndex == null) {
                     continue;
                 }
-                if (!segmentedCellList.get(listIndex.intValue()).isEmpty()) {
-                    indexes.add(listIndex);
-                    assert(segmentedCellList.get(listIndex.intValue()).contains(p));
-                }    
-            }
-            
-            List<Integer> listIndexes = new ArrayList<Integer>();
-            listIndexes.addAll(indexes);
-            Collections.sort(listIndexes);
-                                     
-            // merge if colors are similar
-            for (int j0 = 0; j0 < listIndexes.size(); ++j0) {
-
-                Integer listIndex0 = listIndexes.get(j0);
-                
-                Set<PairInt> setA = segmentedCellList.get(listIndex0.intValue());
-                
+                Set<PairInt> setA = segmentedCellList.get(listIndex.intValue());
                 if (setA.isEmpty()) {
                     continue;
-                }
+                } 
+                assert(setA.contains(p));
                 
-                for (int j1 = j0 + 1; j1 < listIndexes.size(); ++j1) {
-
-                    Integer listIndex1 = listIndexes.get(j1);
+                boolean doNotRm = false;
+                
+                for (int i = 0; i < dxs.length; ++i) {
+                    int x2 = p.getX() + dxs[i];
+                    int y2 = p.getY() + dys[i];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!points.contains(p2)) {
+                        continue;
+                    }
+                    Integer listIndex2 = pointIndexMap.get(p2);
+                    if (listIndex2 == null) {
+                        continue;
+                    }
+                    if (listIndex.equals(listIndex2)) {
+                        continue;
+                    }
                     
-                    Set<PairInt> setB = segmentedCellList.get(listIndex1.intValue());
-                    
+                    Set<PairInt> setB = segmentedCellList.get(listIndex2.intValue());
                     if (setB.isEmpty()) {
                         continue;
-                    }
-                    
-                    if (!areAdjacent(setA, setB)) {
-                        continue;
-                    }
-                    
+                    } 
+                    assert(setB.contains(p2));
+
                     // compare colors
-                    Colors colors0 = segmentedCellAvgLabColors.get(listIndex0);
-                    if (colors0 == null) {
-                        colors0 = calculateAverageLAB(input, setA);
-                        segmentedCellAvgLabColors.put(listIndex0, colors0);
+                    Colors colorsA = segmentedCellAvgLabColors.get(listIndex);
+                    if (colorsA == null) {
+                        colorsA = calculateAverageLAB(input, setA);
+                        segmentedCellAvgLabColors.put(listIndex, colorsA);
                     }
-                    Colors colors1 = segmentedCellAvgLabColors.get(listIndex1);
-                    if (colors1 == null) {
-                        colors1 = calculateAverageLAB(input, setB);
-                        segmentedCellAvgLabColors.put(listIndex1, colors1);
+                    Colors colorsB = segmentedCellAvgLabColors.get(listIndex2);
+                    if (colorsB == null) {
+                        colorsB = calculateAverageLAB(input, setB);
+                        segmentedCellAvgLabColors.put(listIndex2, colorsB);
                     }
 
-                    double deltaE = cieC.calcDeltaECIE94(colors0.getColors(), 
-                        colors1.getColors());
+                    double deltaE = Math.abs(cieC.calcDeltaECIE94(colorsA.getColors(), 
+                        colorsB.getColors()));
                     
-                    if (deltaE <= deltaELimit) {
-                        
+                    if (deltaE > deltaELimit) {
+                        continue;
+                    }
+
+                    nChanges++;
+
+                    if (listIndex.intValue() < listIndex2.intValue()) {
                         setA.addAll(setB);
                         for (PairInt pB : setB) {
-                            pointIndexMap.put(pB, listIndex0);
+                            pointIndexMap.put(pB, listIndex);
                         }
-                        setB.clear();                        
+                        setB.clear();  
+                    } else {
+                        setB.addAll(setA);
+                        for (PairInt pA : setA) {
+                            pointIndexMap.put(pA, listIndex2);
+                        }
+                        setA.clear();
+                        doNotRm = true;
+                        break;
                     }
                 }
+                if (!doNotRm) {
+                    rm.add(p);
+                }
             }
+            points.removeAll(rm);
+            nIter++;
         }
         
+        int count = 0;
         for (int i = (segmentedCellList.size() - 1); i > -1; --i) {
             Set<PairInt> set0 = segmentedCellList.get(i);
             if (set0.size() == 0) {
                 segmentedCellList.remove(i);
+                count++;
             }
         }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, merged " + count + " adjacent similar cells "
+            + " nIter=" + nIter + " nGap=" + addedGaps.size());
     }
 
     private Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
