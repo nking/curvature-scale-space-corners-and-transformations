@@ -126,7 +126,8 @@ public class NearestPointsInLists {
     /**
      * find points within radius of (xCenter, yCenter) in the contained points.
      * runtime complexity is a little more than O(N*lg2(N)) and much less than
-     * O(N^2).
+     * O(N^2) and depends upon the radius and the number of unique x integers
+     * between xCenter +- radius, so is roughly O(N * radius * lg2(N)).
      * @param xCenter
      * @param yCenter
      * @param radius
@@ -156,7 +157,8 @@ public class NearestPointsInLists {
     /**
      * find points within radius of (xCenter, yCenter) in the contained points.
      * runtime complexity is a little more than O(N*lg2(N)) and much less than
-     * O(N^2).
+     * O(N^2) and depends upon the radius and the number of unique x integers
+     * between xCenter +- radius, so is roughly O(N * radius * lg2(N)).
      * @param xCenter
      * @param yCenter
      * @param radius

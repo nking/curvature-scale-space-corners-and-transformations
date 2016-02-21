@@ -862,7 +862,7 @@ public abstract class AbstractLineThinner implements ILineThinner {
         return false;
     }
     
-    public PairInt[][] createCoordinatePointsForEightNeighbors(
+    public static PairInt[][] createCoordinatePointsForEightNeighbors(
         int col, int row) {
         
         PairInt[][] set = new PairInt[3][];
@@ -1055,6 +1055,44 @@ public abstract class AbstractLineThinner implements ILineThinner {
         return false;
     }
     
+    /**
+     * return true if at least one pixel is found on the border of the images
+     * to have a zero value.
+     * @param input
+     * @return 
+     */
+    protected boolean hasAtLeastOneBorderPixelInv(GreyscaleImage input) {
+        
+        int lastCol = input.getWidth() - 1;
+        int lastRow = input.getHeight() - 1;
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, 0) == 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastCol; i++) {
+            if (input.getValue(i, lastRow) == 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(0, i) == 0) {
+                return true;
+            }
+        }
+        
+        for (int i = 0; i <= lastRow; i++) {
+            if (input.getValue(lastCol, i) == 0) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     protected GreyscaleImage addOnePixelBorders(GreyscaleImage input) {
         
         int w = input.getWidth();
@@ -1073,6 +1111,27 @@ public abstract class AbstractLineThinner implements ILineThinner {
         }
         
         return output;
+    }
+    
+    protected GreyscaleImage addOnePixelBordersInv(GreyscaleImage input) {
+        
+        GreyscaleImage img2 = addOnePixelBorders(input);
+        
+        int w2 = img2.getWidth();
+        int h2 = img2.getHeight();
+        
+        // set borders to '255'
+        for (int i = 0; i < img2.getWidth(); ++i) {
+            img2.setValue(i, 0, 255);
+            img2.setValue(i, h2 - 1, 255);
+        }
+        
+        for (int i = 0; i < img2.getHeight(); ++i) {
+            img2.setValue(0, i, 255);
+            img2.setValue(w2 - 1, i, 255);
+        }
+        
+        return img2;
     }
 
     protected GreyscaleImage removeOnePixelBorders(GreyscaleImage input) {

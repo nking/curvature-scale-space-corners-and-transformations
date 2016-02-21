@@ -1486,6 +1486,34 @@ public class ImageProcessor {
 
         return count;
     }
+    
+    protected int count8RegionNeighbors(GreyscaleImage input, int x, int y,
+        int edgeValue) {
+
+        int width = input.getWidth();
+        int height = input.getHeight();
+
+        int count = 0;
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                int v = input.getValue(c, r);
+                if (v == edgeValue) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
 
     protected int count8RegionNeighbors(Set<PairInt> points, PairInt point,
         int width, int height) {
@@ -1538,6 +1566,48 @@ public class ImageProcessor {
                 }
                 int v = input.getValue(c, r);
                 if (v > 0) {
+                    if (count > 0) {
+                        return -1;
+                    }
+                    xNeighbor = c;
+                    yNeighbor = r;
+                    count++;
+                }
+            }
+        }
+
+        if (count == 0) {
+            return -1;
+        }
+
+        int index = input.getIndex(xNeighbor, yNeighbor);
+
+        return index;
+    }
+    
+    protected int getIndexIfOnlyOneNeighbor(GreyscaleImage input, int x, int y,
+        int edgeValue) {
+
+        int width = input.getWidth();
+        int height = input.getHeight();
+
+        int count = 0;
+        int xNeighbor = -1;
+        int yNeighbor = -1;
+
+        for (int c = (x - 1); c <= (x + 1); c++) {
+            if ((c < 0) || (c > (width - 1))) {
+                continue;
+            }
+            for (int r = (y - 1); r <= (y + 1); r++) {
+                if ((r < 0) || (r > (height - 1))) {
+                    continue;
+                }
+                if ((c == x) && (r == y)) {
+                    continue;
+                }
+                int v = input.getValue(c, r);
+                if (v == edgeValue) {
                     if (count > 0) {
                         return -1;
                     }
@@ -1663,9 +1733,13 @@ public class ImageProcessor {
     }
     
     public void applyErosionFilter(GreyscaleImage img) {
-        
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyFilter(img);
+    }
+    
+    public void applyErosionFilterOnZeroes(GreyscaleImage img) {
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyFilterOnZeros(img);
     }
 
     public void applyInvert255(GreyscaleImage img) {

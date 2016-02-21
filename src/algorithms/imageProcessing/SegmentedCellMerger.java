@@ -97,6 +97,8 @@ public class SegmentedCellMerger {
     
     public void merge() {
         
+        long t0 = System.currentTimeMillis();
+        
         if (simFilePath != null) {
             try {
                 File fl = new File(simFilePath);
@@ -180,9 +182,9 @@ public class SegmentedCellMerger {
             ImageIOHelper.addAlternatingColorCurvesToImage(
                 boundaries.toArray(new PairIntArray[boundaries.size()]),
                 imgCp, 0);
-            MiscDebug.writeImage(imgCp, debugTag + "_boundaries_" + ts);
+            MiscDebug.writeImage(imgCp,  "_boundaries_" + debugTag + "_" + ts);
         }
-        
+
         int nBefore = mergedMap.size();
                 
         CIEChromaticity cieC = new CIEChromaticity();
@@ -193,8 +195,10 @@ public class SegmentedCellMerger {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
+        double deltaELimit = 2.3;
+        
         //TODO: improving this transformation
-        double[][] ldaMatrix = getLDASegmentationMatrix();
+        //double[][] ldaMatrix = getLDASegmentationMatrix();
           
         while (!stack.isEmpty()) {
             
@@ -240,7 +244,7 @@ public class SegmentedCellMerger {
                 Integer p2Index = cellIndexMap.get(p2);
                 float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
                 
-                double deltaE = cieC.calcDeltaECIE94(labP[0], labP[1], labP[2], 
+                double deltaE = cieC.calcDeltaECIE2000(labP[0], labP[1], labP[2], 
                     labP2[0], labP2[1], labP2[2]);
                 
                 addToVisited(visitedMap, pParent, p2Parent);
@@ -268,7 +272,7 @@ public class SegmentedCellMerger {
                 //TODO: revise the LDA vectors
                 //if (ldaY > 24.5 || ldaX < -50) {
 
-                if (Math.abs(deltaE) > 2.3) {
+                if (Math.abs(deltaE) > deltaELimit) {
                     continue;
                 }
     
@@ -391,11 +395,29 @@ public class SegmentedCellMerger {
             points.add(p);
         }
         
+        segmentedCellList.clear();
+        for (Entry<PairIntWithIndex, Set<PairIntWithIndex>> entry 
+            : mergedPoints.entrySet()) {
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (PairIntWithIndex p : entry.getValue()) {
+                set.add(new PairInt(p.getX(), p.getY()));
+            }
+            segmentedCellList.add(set);
+        }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to merge " + mergedPoints.size() + " cells");
+        
         Image imgCp = img.copyToGreyscale().copyToColorGreyscale();
         
         int nColors = mergedPoints.size();
-        log.info("mergedPoints.size() = " + nColors);
+        log.info("begin debug plot");
         int delta = (int)Math.floor(256.f/(float)nColors);
+        if (delta == 0) {
+            delta = 1;
+            nColors = 256;
+        }
         Random sr = null;
         long seed = System.currentTimeMillis();
         try {
@@ -437,13 +459,16 @@ public class SegmentedCellMerger {
                 }
                 str = str + Integer.toString(bClr);
                 alreadyChosen = clrs.contains(str);
+                if (delta == 1) {
+                    alreadyChosen = false;
+                }
                 clrs.add(str);
             }
             for (PairIntWithIndex p : entry.getValue()) {
                 imgCp.setRGB(p.getX(), p.getY(), rClr, gClr, bClr);
             }
         }
-        MiscDebug.writeImage(imgCp, "_" + debugTag + "_merged_");
+        MiscDebug.writeImage(imgCp, "_merged_" + debugTag);
         
         if (simWriter != null) {
             try {
@@ -454,6 +479,10 @@ public class SegmentedCellMerger {
                 Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
             }
         }        
+    }
+    
+    public List<Set<PairInt>> getSegmentedCellList() {
+        return segmentedCellList;
     }
     
     private BoundingRegions extractPerimetersAndBounds() {

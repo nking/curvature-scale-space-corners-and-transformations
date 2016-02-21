@@ -67,6 +67,50 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                 
     }
     
+    public void applyFilterOnZeros(GreyscaleImage input) {
+             
+        boolean hasABorderPixel = hasAtLeastOneBorderPixelInv(input);
+        
+        GreyscaleImage input2 = hasABorderPixel ? addOnePixelBordersInv(input) :
+            input;
+        
+        int w2 = input2.getWidth();
+        int h2 = input2.getHeight();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int col = 0; col < w2; col++) {
+            for (int row = 0; row < h2; row++) {
+                if (input2.getValue(col, row) == 0) {
+                    points.add(new PairInt(col, row));
+                }
+            }
+        }
+        applyLineThinner(points, 0, w2, 0, h2);
+        input2.fill(255);
+        for (PairInt p : points) {
+            input2.setValue(p.getX(), p.getY(), 0);
+        }
+
+        /*
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        if (edgeGuideImage != null) {
+            if (input2.getXRelativeOffset() == 1 && input2.getYRelativeOffset() == 1) {
+                GreyscaleImage gXY2 = addOnePixelBorders(edgeGuideImage);
+                pltc.setEdgeGuideImage(gXY2);
+            } else {
+                pltc.setEdgeGuideImage(edgeGuideImage);
+            }
+        }
+        pltc.correctForArtifacts(input2);
+        */
+        
+        GreyscaleImage input3 = hasABorderPixel ? removeOnePixelBorders(input2)
+            : input2;
+        
+        input.resetTo(input3);
+                
+    }
+    
     public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
         int minY, int maxY) {
         

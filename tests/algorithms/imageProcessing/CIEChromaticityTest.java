@@ -104,7 +104,7 @@ public class CIEChromaticityTest extends TestCase {
         float[] hsb = new float[3];
         Color.RGBtoHSB(pixR, pixG, pixB, hsb);
         float[] pixCIEXY = cieC.rgbToXYChromaticity(pixR, pixG, pixB);
-        log.info(String.format(
+        log.fine(String.format(
             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
             col, row, pixR, pixG, pixB,
             pixCIEXY[0], pixCIEXY[1],
@@ -118,7 +118,7 @@ public class CIEChromaticityTest extends TestCase {
         hsb = new float[3];
         Color.RGBtoHSB(pixR, pixG, pixB, hsb);
         pixCIEXY = cieC.rgbToXYChromaticity(pixR, pixG, pixB);
-        log.info(String.format(
+        log.fine(String.format(
             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
             col, row, pixR, pixG, pixB,
             pixCIEXY[0], pixCIEXY[1],
@@ -132,7 +132,7 @@ public class CIEChromaticityTest extends TestCase {
         hsb = new float[3];
         Color.RGBtoHSB(pixR, pixG, pixB, hsb);
         pixCIEXY = cieC.rgbToXYChromaticity(pixR, pixG, pixB);
-        log.info(String.format(
+        log.fine(String.format(
             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
             col, row, pixR, pixG, pixB,
             pixCIEXY[0], pixCIEXY[1],
@@ -146,7 +146,7 @@ public class CIEChromaticityTest extends TestCase {
         hsb = new float[3];
         Color.RGBtoHSB(pixR, pixG, pixB, hsb);
         pixCIEXY = cieC.rgbToXYChromaticity(pixR, pixG, pixB);
-        log.info(String.format(
+        log.fine(String.format(
             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
             col, row, pixR, pixG, pixB,
             pixCIEXY[0], pixCIEXY[1],
@@ -213,7 +213,7 @@ public class CIEChromaticityTest extends TestCase {
 
                         img1.setRGB(col, row, 0, 0, 255);
 
-                        log.info(String.format(
+                        log.fine(String.format(
                             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
                             col, row, pixR, pixG, pixB, 
                             pixCIEXY[0], pixCIEXY[1],
@@ -230,7 +230,7 @@ public class CIEChromaticityTest extends TestCase {
 
                         img1.setRGB(col, row, 0, 0, 255);
 
-                        log.info(String.format(
+                        log.fine(String.format(
                             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
                             col, row, pixR, pixG, pixB, 
                             pixCIEXY[0], pixCIEXY[1],
@@ -248,7 +248,7 @@ public class CIEChromaticityTest extends TestCase {
 
                         img1.setRGB(col, row, 0, 0, 255);
 
-                        log.info(String.format(
+                        log.fine(String.format(
                             "(%d,%d)  rgb=(%d,%d,%d) pixCIEXY=%f,%f  hsb=(%f,%f,%f)", 
                             col, row, pixR, pixG, pixB, 
                             pixCIEXY[0], pixCIEXY[1],
@@ -343,4 +343,30 @@ public class CIEChromaticityTest extends TestCase {
         ImageIOHelper.writeOutputImage(filePath2, img1);
         int z = 1;
     }
+    
+    public void testDeltaE2000() throws Exception {
+        
+        int r1, g1, b1, r2, g2, b3;
+        float[] lab1, lab2;
+        double deltaE;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        lab1 = cieC.rgbToCIELAB(0, 0, 0);
+        lab2 = cieC.rgbToCIELAB(0, 0, 0);
+        deltaE = cieC.calcDeltaECIE2000(lab1, lab2);
+        assertEquals(0., deltaE);
+        
+        lab1 = cieC.rgbToCIELAB(0, 0, 0);
+        lab2 = cieC.rgbToCIELAB(255, 255, 255);
+        deltaE = cieC.calcDeltaECIE2000(lab1, lab2);
+        assertTrue(Math.abs(deltaE - 28.) < 1.);
+        
+        lab1 = cieC.rgbToCIELAB(255, 255, 255);
+        lab2 = cieC.rgbToCIELAB(255, 255, 255);
+        deltaE = cieC.calcDeltaECIE2000(lab1, lab2);
+        assertEquals(0., deltaE);
+        
+    }
+    
 }

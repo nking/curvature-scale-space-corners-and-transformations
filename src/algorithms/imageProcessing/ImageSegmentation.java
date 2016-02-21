@@ -3471,7 +3471,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         center of color diagram.
         */
 
-        boolean fineDebug = false;
+        boolean fineDebug = true;
         
         int w = input.getWidth();
         int h = input.getHeight();
@@ -3522,7 +3522,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         ImageProcessor imageProcessor = new ImageProcessor();
 
         greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
-
+        
+        GreyscaleImage finalBoundary = createUncrossableEdges(input,
+            greyGradient.copyImage(), debugTag);
+        
         /*
         PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(greyGradient);
         double sum = 0;
@@ -3540,8 +3543,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         HistogramEqualization hEq = new HistogramEqualization(o1Img);
         hEq.applyFilter();
-        o1Img = expandBy1AndKeepContigZeros(o1Img);
+        CannyEdgeFilterLite cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.applyFilter(o1Img);
+        setAllNonZeroTo255(o1Img);
+        MedianSmooth s = new MedianSmooth();
+        o1Img = s.calculate(o1Img, 3, 3);
+        invertImage(o1Img);
+//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
         imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
+        
         List<Float> fractionZeros = countFractionZeros(o1Img, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3562,20 +3572,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        /*
-        NOTE: for images such as the mount rainier test image which is a snowy
-        field under a very white cloudy sky, the O1 adaptive median image
-        has edges which find the low contrast ridges.  The O1 edges
-        could be restored afterwards for special handling.
-        For the blue and white mountains under a blue and white sky in the
-        patagonia test image, the greyscale gradient seems to preserve the
-        mountain tops best.
-        For the halfdome2 test image with a blue and white mountain top under
-        a blue sky, and for the Venturi test images, the greygradient2 recovers 
-        the mountain tops.
-        */
-
-        boolean useO1 = ((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
+        boolean useO1 = true;//((float)nHigh2/(float)fractionZeros.size()) < 0.2f;
         log.info(debugTag + " o1 nH2=" + ((float)nHigh2/(float)fractionZeros.size())
             + " nH3=" + ((float)nHigh3/(float)fractionZeros.size())
             + " nH4=" + ((float)nHigh4/(float)fractionZeros.size())
@@ -3585,15 +3582,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make O1 edges");
         if (fineDebug && useO1 && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(o1Img, "_o1_adapt_med" + debugTag);
+            MiscDebug.writeImage(o1Img, "_o1_" + debugTag);
         }
         t0 = System.currentTimeMillis();
  
         // -----------
         hEq = new HistogramEqualization(bGImg);
         hEq.applyFilter();
-        bGImg = expandBy1AndKeepContigZeros(bGImg);
+        /*bGImg = expandBy1AndKeepContigZeros(bGImg);
+        imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);*/
+        cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.applyFilter(bGImg);
+        setAllNonZeroTo255(bGImg);
+        s = new MedianSmooth();
+        bGImg = s.calculate(bGImg, 3, 3);
+        invertImage(bGImg);
+//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
         imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
+        
         List<Float> fractionZerosBG = countFractionZeros(bGImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3614,7 +3620,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-        boolean useBG = ((float)nHigh2BG/(float)fractionZerosBG.size()) < 0.2f;
+        boolean useBG = true;//((float)nHigh2BG/(float)fractionZerosBG.size()) < 0.2f;
         log.info(debugTag + " B-G nH2=" + ((float)nHigh2BG/(float)fractionZerosBG.size())
             + " nH3=" + ((float)nHigh3BG/(float)fractionZerosBG.size())
             + " nH4=" + ((float)nHigh4BG/(float)fractionZerosBG.size())
@@ -3631,7 +3637,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // -----------
         hEq = new HistogramEqualization(bRImg);
         hEq.applyFilter();
-        bRImg = expandBy1AndKeepContigZeros(bRImg);
+        /*bRImg = expandBy1AndKeepContigZeros(bRImg);
+        imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);*/
+        cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.applyFilter(bRImg);
+        setAllNonZeroTo255(bRImg);
+        s = new MedianSmooth();
+        bRImg = s.calculate(bRImg, 3, 3);
+        invertImage(bRImg);
+//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
         imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
         List<Float> fractionZerosBR = countFractionZeros(bRImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
@@ -3653,7 +3667,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-        boolean useBR = ((float)nHigh2BR/(float)fractionZerosBR.size()) < 0.2f;
+        boolean useBR = true;//((float)nHigh2BR/(float)fractionZerosBR.size()) < 0.2f;
         log.info(debugTag + " B-R nH2=" + ((float)nHigh2BR/(float)fractionZerosBR.size())
             + " nH3=" + ((float)nHigh3BR/(float)fractionZerosBR.size())
             + " nH4=" + ((float)nHigh4BR/(float)fractionZerosBR.size())
@@ -3670,9 +3684,23 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // -------
         hEq = new HistogramEqualization(labBImg);
         hEq.applyFilter();
-        MedianSmooth smooth = new MedianSmooth();
-        labBImg = smooth.calculate(labBImg, 4, 4);
+        //MedianSmooth smooth = new MedianSmooth();
+        //labBImg = smooth.calculate(labBImg, 4, 4);
+        //imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
+        /*invertImage(labBImg);
+        labBImg = fillInGapsOf1(labBImg, new HashSet<PairInt>(), 0);
+        labBImg = shrinkBy1(labBImg, 0, 255);
         imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
+        */
+        cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.applyFilter(labBImg);
+        setAllNonZeroTo255(labBImg);
+        s = new MedianSmooth();
+        labBImg = s.calculate(labBImg, 3, 3);
+        invertImage(labBImg);
+//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
+        imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
+        
         List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3692,7 +3720,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nHigh4B++;
             }
         }
-        boolean useB = ((float)nHigh2B/(float)fractionZerosB.size()) < 0.2f;
+        boolean useB = true;//((float)nHigh2B/(float)fractionZerosB.size()) < 0.2f;
         log.info(debugTag + " lab b nH2=" + ((float)nHigh2B/(float)fractionZerosB.size())
             + " nH3=" + ((float)nHigh3B/(float)fractionZerosB.size())
             + " nH4=" + ((float)nHigh4B/(float)fractionZerosB.size())
@@ -3708,16 +3736,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         boolean createLowInt = true;
         GreyscaleImage greyGradient2 = greyGradient.copyImage();
-
+                
         imageProcessor.highPassIntensityFilter(greyGradient, 0.09);//0.089
-        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
-            int v = greyGradient.getValue(i);
-            if (v > 0) {
-                greyGradient.setValue(i, 0);
-            } else {
-                greyGradient.setValue(i, 255);
-            }
-        }
+        invertImage(greyGradient);
+        setAllNon255To0(greyGradient);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
@@ -3740,7 +3762,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nHigh4Gradient++;
             }
         }
-        boolean useGradient = ((float)nHigh2Gradient/(float)fractionZerosGradient.size()) < 0.2f;
+        boolean useGradient = true;//((float)nHigh2Gradient/(float)fractionZerosGradient.size()) < 0.2f;
         log.info(debugTag + " gradient nH2=" + ((float)nHigh2Gradient/(float)fractionZerosGradient.size())
             + " nH3=" + ((float)nHigh3Gradient/(float)fractionZerosGradient.size())
             + " nH4=" + ((float)nHigh4Gradient/(float)fractionZerosGradient.size())
@@ -3749,6 +3771,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make grey gradient edges");
+        
+        /*Set<PairInt> addedGaps0 = new HashSet<PairInt>();
+        greyGradient = fillInGapsOf1(greyGradient, addedGaps0, 0);
+        greyGradient = shrinkBy1(greyGradient, 0, 255);
+        // do not use adaptive mean here
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient, "_greyGradient_" + debugTag);
+        }*/
 
         if (createLowInt) {
             t0 = System.currentTimeMillis();
@@ -3758,8 +3788,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     greyGradient2.setValue(i, 255);
                 }
             }
-            greyGradient2 = expandBy1(greyGradient2, 255);
+            //greyGradient2 = expandBy1(greyGradient2, 255);
+            //imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
+        
+            Set<PairInt> addedGaps1 = new HashSet<PairInt>();
+            greyGradient2 = fillInGapsOf1(greyGradient2, addedGaps1, 0);
+            greyGradient2 = shrinkBy1(greyGradient2, 0, 255);
             imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
+        
             if (fineDebug && debugTag != null && !debugTag.equals("")) {
                 MiscDebug.writeImage(greyGradient2, "_greyGradient2_adapt_med" + debugTag);
             }
@@ -3836,15 +3872,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
         
-        Set<PairInt> addedGaps = new HashSet<PairInt>();
-        greyGradient = fillInGapsOf1(greyGradient, addedGaps, 0);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_combined_ws_input_p1_" + debugTag);
-        }
-        
         t0 = System.currentTimeMillis();
 
-        // dfs for values 255, then average of them and set within hueAngleImg
         DFSContiguousValueFinder finder = new DFSContiguousValueFinder(greyGradient);
         finder.setMinimumNumberInCluster(2);
         finder.findGroups(255);
@@ -3864,7 +3893,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             segmentedCellList.add(set);
         }
         
-        Set<PairInt> zeros = createZerosSet(segmentedCellList, w, h);
+        Set<PairInt> unassigned = createZerosSet(segmentedCellList, w, h);
+        
+        double deltaELimit = 2.3;
+        // for placing points that are near more than one boundary:
+        float radius = 3.f;
+        placeUnassignedUsingNearest(input, segmentedCellList, unassigned, 
+            deltaELimit, radius);
         
         Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -3874,20 +3909,29 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-                
-        //placeUnassignedUsingNearest(input, segmentedCellList, zeros);
         
-        
-        double deltaELimit = 2.3;
-                
-        placeUnassignedByGrowingCells(input, segmentedCellList, zeros,
+        deltaELimit = 2.3;
+        placeUnassignedByGrowingCells(input, segmentedCellList, unassigned,
             pointIndexMap, deltaELimit);
         
-        mergeSimilarCellsIfGapsConnect(input, segmentedCellList, addedGaps,
-            pointIndexMap, deltaELimit);
-          
+        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, deltaELimit);
+        
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        
+        deltaELimit = 2.3;
+        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, debugTag);
+        
         if (debugTag != null && !debugTag.equals("")) {
             
+            int count = 0;
             GreyscaleImage greyImg = input.copyToGreyscale();
             for (int i = 0; i < segmentedCellList.size(); ++i) {
                 Set<PairInt> group = segmentedCellList.get(i);
@@ -3897,6 +3941,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     int y = p.getY();
                     greyAvg += greyImg.getValue(x, y);
                 }
+                count += group.size();
                 greyAvg = Math.round((float)greyAvg/(float)(group.size()));
                 if (greyAvg > 255) {
                     greyAvg = 255;
@@ -3909,6 +3954,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             
             MiscDebug.writeImage(greyImg, "_final_edge_segmented_" + debugTag);
+            
+            log.info("pixels in cell lists=" + count + ", pixels in image=" 
+                + input.getNPixels());
         }
         
         return segmentedCellList;
@@ -3946,10 +3994,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             aImg.setValue(i, Math.round(lab[1]));
             bImg.setValue(i, Math.round(lab[2]));
 
-            float ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
-            if (ha < 0) {
-                ha += 360.;
+            float ha;
+            if (lab[1] == 0) {
+                ha = 0;
+            } else {
+                ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
+                if (ha < 0) {
+                    ha += 360.;
+                }
             }
+            
             hueAngleImg.setValue(i, Math.round(ha));
 
             //TODO: replace w/ cached method
@@ -5039,23 +5093,29 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return tmpImg2;
     }
 
-    GreyscaleImage shrinkBy1(GreyscaleImage img, int value) {
+    GreyscaleImage shrinkBy1(GreyscaleImage img, int edgeValue, int nonEdgeValue) {
 
         int w = img.getWidth();
         int h = img.getHeight();
+        
+        /*
+        any pixel with neighbors that are not edgeValue can be removed
+        */
 
-        int nonValue = (value == 0) ? 255 : 0;
-
+         PairInt[][] neighborCoordOffsets = 
+            AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+                0, 0);
+       
         GreyscaleImage tmpImg2 = img.copyImage();
         int[] dxs0 = Misc.dx8;
         int[] dys0 = Misc.dy8;
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 int v = img.getValue(i, j);
-                if (v != value) {
+                if (v != edgeValue) {
                     continue;
                 }
-                int nN = 0;
+                int nEmptyNeigbhors = 0;
                 for (int k = 0; k < dxs0.length; ++k) {
                     int x1 = i + dxs0[k];
                     int y1 = j + dys0[k];
@@ -5063,15 +5123,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         continue;
                     }
                     int v2 = img.getValue(x1, y1);
-                    if (v2 == value) {
-                        nN++;
+                    if (v2 != edgeValue) {
+                        nEmptyNeigbhors++;
                     }
                 }
 
-                if (nN == 8) {
-                    tmpImg2.setValue(i, j, value);
-                } else {
-                    tmpImg2.setValue(i, j, nonValue);
+                if (nEmptyNeigbhors > 0
+                    && !doesDisconnect(tmpImg2, neighborCoordOffsets, i, j,edgeValue)
+                    ) {
+                    tmpImg2.setValue(i, j, nonEdgeValue);
                 }
             }
         }
@@ -5194,9 +5254,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         log.info(t1Sec + " sec to place " + unassigned.size() 
             + " points by growing cells");
     }
-
+        
+    /**
+     * 
+     * @param input
+     * @param segmentedCellList
+     * @param zeros
+     * @param deltaELimit
+     * @param radius distance to search around a point for the nearest points
+     * within sets in segmentedCellList. The search runtime is roughly
+     * O(N * radius * lg2(N)) where N is the total number of points in 
+     * segmentedCellList, so keep radius as small as possible (and less than 10).
+     */
     private void placeUnassignedUsingNearest(ImageExt input,
-        List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros) {
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros,
+        double deltaELimit, float radius) {
         
         /*
         for the points which are 0's in the greyGradient,
@@ -5208,18 +5280,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
            assign the 0 point to the list of the minimum distance 
            and update the np
         */
+        
+        Set<PairInt> assignedZeros = new HashSet<PairInt>();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
                 
         long t0 = System.currentTimeMillis();
         NearestPointsInLists np = new NearestPointsInLists(segmentedCellList);
         
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        //NOTE useDistAndColor=true produces an effect that looks like painting
-        // a little outside of the lines
-        
         boolean useDistAndColor = true;
-        double clrLimit = useDistAndColor ? 7 : 9;
-        float radius = 28.f;
         
         // since some of the results will not be contiguous, need to research
         // the edited lists with dfs when finished to split set if there are gaps
@@ -5244,11 +5313,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 float[] lab1 = input.getCIELAB(pClosest.getX(), pClosest.getY());
                 
-                double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+                //double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+                double deltaE = Math.abs(cieC.calcDeltaECIE2000(lab0, lab1));
                 
                 //the Just Noticeable Difference is ~2.3
                
-                if (deltaE > clrLimit) {
+                if (deltaE > deltaELimit) {
                     continue;
                 }
                      
@@ -5270,8 +5340,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 addedTo.add(minDistIdx);
                 segmentedCellList.get(minDistIdx.intValue()).add(p);
                 np.addPoint(p, minDistIdx);
+                assignedZeros.add(p);
             }
         }
+        
+        zeros.removeAll(assignedZeros);
         
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
@@ -5302,121 +5375,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         segmentedCellList.clear();        
         segmentedCellList.addAll(segmentedCellList2);
-    }
-
-    private void mergeSimilarCellsIfGapsConnect(ImageExt input, 
-        List<Set<PairInt>> segmentedCellList, Set<PairInt> addedGaps,
-        Map<PairInt, Integer> pointIndexMap, double deltaELimit) {
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        
-        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
-        
-        Set<PairInt> points = new HashSet<PairInt>(addedGaps);
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        long t0 = System.currentTimeMillis();
-        
-        int nChanges = 0;
-        int nIter = 0;
-        
-        while ((nIter == 0) || (nChanges > 0)) {
-            nChanges = 0;
-            Set<PairInt> rm = new HashSet<PairInt>();
-            for (PairInt p : points) {
-                Integer listIndex = pointIndexMap.get(p);
-                if (listIndex == null) {
-                    continue;
-                }
-                Set<PairInt> setA = segmentedCellList.get(listIndex.intValue());
-                if (setA.isEmpty()) {
-                    continue;
-                } 
-                assert(setA.contains(p));
-                
-                boolean doNotRm = false;
-                
-                for (int i = 0; i < dxs.length; ++i) {
-                    int x2 = p.getX() + dxs[i];
-                    int y2 = p.getY() + dys[i];
-                    PairInt p2 = new PairInt(x2, y2);
-                    if (!points.contains(p2)) {
-                        continue;
-                    }
-                    Integer listIndex2 = pointIndexMap.get(p2);
-                    if (listIndex2 == null) {
-                        continue;
-                    }
-                    if (listIndex.equals(listIndex2)) {
-                        continue;
-                    }
-                    
-                    Set<PairInt> setB = segmentedCellList.get(listIndex2.intValue());
-                    if (setB.isEmpty()) {
-                        continue;
-                    } 
-                    assert(setB.contains(p2));
-
-                    // compare colors
-                    Colors colorsA = segmentedCellAvgLabColors.get(listIndex);
-                    if (colorsA == null) {
-                        colorsA = calculateAverageLAB(input, setA);
-                        segmentedCellAvgLabColors.put(listIndex, colorsA);
-                    }
-                    Colors colorsB = segmentedCellAvgLabColors.get(listIndex2);
-                    if (colorsB == null) {
-                        colorsB = calculateAverageLAB(input, setB);
-                        segmentedCellAvgLabColors.put(listIndex2, colorsB);
-                    }
-
-                    double deltaE = Math.abs(cieC.calcDeltaECIE94(colorsA.getColors(), 
-                        colorsB.getColors()));
-                    
-                    if (deltaE > deltaELimit) {
-                        continue;
-                    }
-
-                    nChanges++;
-
-                    if (listIndex.intValue() < listIndex2.intValue()) {
-                        setA.addAll(setB);
-                        for (PairInt pB : setB) {
-                            pointIndexMap.put(pB, listIndex);
-                        }
-                        setB.clear();  
-                    } else {
-                        setB.addAll(setA);
-                        for (PairInt pA : setA) {
-                            pointIndexMap.put(pA, listIndex2);
-                        }
-                        setA.clear();
-                        doNotRm = true;
-                        break;
-                    }
-                }
-                if (!doNotRm) {
-                    rm.add(p);
-                }
-            }
-            points.removeAll(rm);
-            nIter++;
-        }
-        
-        int count = 0;
-        for (int i = (segmentedCellList.size() - 1); i > -1; --i) {
-            Set<PairInt> set0 = segmentedCellList.get(i);
-            if (set0.size() == 0) {
-                segmentedCellList.remove(i);
-                count++;
-            }
-        }
-        
-        long t1 = System.currentTimeMillis();
-        long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec, merged " + count + " adjacent similar cells "
-            + " nIter=" + nIter + " nGap=" + addedGaps.size());
     }
 
     private Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
@@ -5481,6 +5439,229 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         return false;
+    }
+
+    private void invertImage(GreyscaleImage img) {
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            img.setValue(i, 255 - v);
+        }
+    }
+    private void setAllNonZeroTo255(GreyscaleImage img) {
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            if (v > 0) {
+                img.setValue(i, 255);
+            }
+        }
+    }
+    private void setAllNon255To0(GreyscaleImage img) {
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int v = img.getValue(i);
+            if (v < 255) {
+                img.setValue(i, 0);
+            }
+        }
+    }
+
+    private void mergeEmbeddedIfSimilar(ImageExt input, List<Set<PairInt>> 
+        segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
+        double deltaELimit) {
+        
+        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        long t0 = System.currentTimeMillis();
+        
+        /*
+        for each set:
+           for all points, if a neighbor is in an adjacent cell, store the 
+           cell numbers and if there is only one, then the
+           set is embedded (or adjacent).
+           merge if they are similar.
+        */
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int nIter = 0;
+        int nChanged = 0;
+        
+        while ((nIter == 0) || (nChanged > 0)) {
+            
+            nChanged = 0;
+            
+            for (int i = 0; i < segmentedCellList.size(); ++i) {
+                
+                Set<PairInt> set = segmentedCellList.get(i); 
+                
+                if (set.isEmpty()) {
+                    continue;
+                }
+                
+                Colors colors1 = segmentedCellAvgLabColors.get(Integer.valueOf(i));
+                if (colors1 == null) {
+                    colors1 = calculateAverageLAB(input, set);
+                    segmentedCellAvgLabColors.put(Integer.valueOf(i), colors1);
+                }
+                
+                Integer adjacentListIndex = null;
+                
+                boolean cannotMerge = false;
+                
+                for (PairInt p : set) {
+                    int x = p.getX();
+                    int y = p.getY();
+                
+                    for (int k = 0; k < dxs.length; ++k) {
+                        int x2 = x + dxs[k];
+                        int y2 = y + dys[k];
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (set.contains(p2)) {
+                            continue;
+                        }
+                        Integer listIndex2 = pointIndexMap.get(p2);
+                        if (listIndex2 == null) {
+                            continue;
+                        }
+                        if ((adjacentListIndex != null)
+                            && !adjacentListIndex.equals(listIndex2)) {
+                            cannotMerge = true;
+                            break;
+                        } else if (adjacentListIndex == null) {
+                            adjacentListIndex = listIndex2;
+                        }
+                    }
+                    if (cannotMerge) {
+                        break;
+                    }
+                }
+                if (cannotMerge || (adjacentListIndex == null)) {
+                    continue;
+                }
+            
+                Set<PairInt> set2 = segmentedCellList.get(adjacentListIndex.intValue());
+
+                Colors colors2 = segmentedCellAvgLabColors.get(adjacentListIndex);
+                if (colors2 == null) {
+                    colors2 = calculateAverageLAB(input, set2);
+                    segmentedCellAvgLabColors.put(adjacentListIndex, colors2);
+                }
+
+                //double deltaE = Math.abs(cieC.calcDeltaECIE94(colors1.getColors(), 
+                //    colors2.getColors()));
+
+                double deltaE = Math.abs(cieC.calcDeltaECIE2000(colors1.getColors(), 
+                    colors2.getColors()));                
+                    
+                if (deltaE > deltaELimit) {
+                    continue;
+                }
+                
+                nChanged++;
+                
+                /*choose to merge such that the set that keeps same index is 
+                   the set with the largest number of points so that the cached 
+                   color remains closer to representing the set's points without
+                   recalculating
+                */
+                
+                int n1 = set.size();
+                int n2 = set2.size();
+                
+                boolean merge2Into1 = true;
+                
+                if (n1 == n2) {
+                    if (i > adjacentListIndex.intValue()) {
+                        merge2Into1 = false;
+                    }
+                } else if (n1 < n2) {
+                    merge2Into1 = false;
+                }
+                
+                if (merge2Into1) {
+                    set.addAll(set2);
+                    for (PairInt p2 : set2) {
+                        pointIndexMap.put(p2, Integer.valueOf(i));
+                    }
+                    set2.clear();
+                } else {
+                    set2.addAll(set);
+                    for (PairInt p1 : set) {
+                        pointIndexMap.put(p1, adjacentListIndex);
+                    }
+                    set.clear();
+                    break;
+                }
+            }
+            
+            nIter++;
+        }
+        
+        int count = 0;
+        for (int i = (segmentedCellList.size() - 1); i > -1; --i) {
+            Set<PairInt> set0 = segmentedCellList.get(i);
+            if (set0.size() == 0) {
+                segmentedCellList.remove(i);
+                count++;
+            }
+        }
+        
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, merged " + count + " embedded similar cells "
+            + " nIter=" + nIter);
+    }
+    
+    private void mergeAdjacentIfSimilar(ImageExt input, List<Set<PairInt>> 
+        segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
+        double deltaELimit, String debugTag) {
+                
+        SegmentedCellMerger scm = new SegmentedCellMerger(input, 
+            segmentedCellList, -1, debugTag);
+        
+        scm.merge();
+        
+        segmentedCellList.clear();
+        segmentedCellList.addAll(scm.getSegmentedCellList());
+    }
+
+    private GreyscaleImage createUncrossableEdges(ImageExt img,
+        GreyscaleImage greyImg, String debugTag) {
+        
+        /*
+        TODO: persuing this further by using delta E 2000 instead of deltaE 1994.
+        then if that doesn't work, will try labelling and might apply
+        what is learned here.
+        */
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        imageProcessor.highPassIntensityFilter(greyImg, 0.1);//0.09
+        invertImage(greyImg);
+        setAllNon255To0(greyImg);
+        
+        MiscDebug.writeImage(greyImg, "_tmp_grey_cuts_0_" + debugTag);
+        MedianSmooth smooth = new MedianSmooth();
+        greyImg = smooth.calculate(greyImg, 4, 4);
+        greyImg = smooth.calculate(greyImg, 2, 2); 
+        MiscDebug.writeImage(greyImg, "_tmp_grey_cuts_1_" + debugTag);
+        greyImg = fillInGapsOf1(greyImg, new HashSet<PairInt>(), 0);
+        MiscDebug.writeImage(greyImg, "_tmp_grey_cuts_2_" + debugTag);
+        imageProcessor.applyAdaptiveMeanThresholding(greyImg, 1);
+        
+        MiscDebug.writeImage(greyImg, "_tmp_grey_cuts_3_" + debugTag);
+        
+        /*
+        s = new MedianSmooth();
+        bRImg = s.calculate(bRImg, 3, 3);
+        invertImage(bRImg);
+//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
+        imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
+        */
+        
+        return greyImg;
     }
 
     public static class Colors {
@@ -5841,4 +6022,128 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
     }
 
+    /**
+     * for the full 8 neighbor region, determine whether nulling the pixel
+     * at (col, row) would disconnect the remaining line.  Note that the
+     * boolean logic is embedded in the comments.  One should be able to
+     * combine the rules for multiple pixel tests to reduce the redundant
+     * comparisons for the regions in common.
+     * 
+     * Note, that row and col are expected to be at least 1 pixel distant
+     * from the image borders.
+     * 
+     * @param input
+     * @param col
+     * @param row
+     * @return 
+     */
+    protected boolean doesDisconnect(final GreyscaleImage input, 
+        PairInt[][] neighborCoords, int col, int row, int edgeValue) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        if (((col - 1) < 0) || ((row - 1) < 0) || ((col + 1) > (w - 1)) ||
+            ((row + 1) > (h - 1))) {
+            // general rule so that invoker doesn't disconnect a line that is
+            // connected to image boundaries
+            return true;
+        }
+        
+        /*
+        coordinates of the 8 neighbors as already created PairInts without 
+        bound checks.
+        indexes are found as +1 of the difference relative to center,
+        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
+        */
+       
+         /*
+            6  7  8      +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+        
+           -1  0   1
+            0  1   2
+               
+        disconnects:
+           -- if (6) && (8) && !(7) && (!(11) || !(16) || !(12))
+           -- if (6) && (12) && !(7) && (!(11) || !(16))
+           -- if (6) && (15) && !(11) && (!(16) || !(12) || !(7))
+           -- if (6) && (16) && !(7) && !(11)
+           -- if (6) && (17) && ( (!(7) || !(12)) && (!(11) || !(16)) )
+           -- if (7) && (15) && !(11) && (!(12) || !(16))
+           -- if (7) && (17) && !(12) && (!(11) || !(16))
+           -- if (7) && (16) && !(11) && !(12)
+           -- if (8) && (11) && !(7) && (!(12) || !(16))
+           -- if (8) && (17) && !(12) && (!(16) || !(11) || !(7))
+           -- if (8) && (16) && !(7) && !(12)
+           -- if (8) && (15) && ( (!(7) || !(11)) && (!(12) || !(16)) )
+           -- if (11) && (12) && !(7) && !(16)
+           -- if (11) && (17) && !(16) && (!(7) || !(12))           
+           -- if (12) && (15) && !(16) && (!(7) || !(11))
+           -- if (15) && (17) && !(16) && (!(11) || !(7) || !(12))
+        
+        does not disconnect
+           -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+        
+        then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
+        */
+                
+        boolean t6 = (input.getValue(neighborCoords[0][2].getX() + col, 
+            neighborCoords[0][2].getY() + row) == edgeValue);
+        boolean t7 = (input.getValue(neighborCoords[1][2].getX() + col, 
+            neighborCoords[1][2].getY() + row) == edgeValue);
+        boolean t8 = (input.getValue(neighborCoords[2][2].getX() + col, 
+            neighborCoords[2][2].getY() + row) == edgeValue);
+        boolean t11 = (input.getValue(neighborCoords[0][1].getX() + col, 
+            neighborCoords[0][1].getY() + row) == edgeValue);
+        boolean t12 = (input.getValue(neighborCoords[2][1].getX() + col, 
+            neighborCoords[2][1].getY() + row) == edgeValue);
+        boolean t15 = (input.getValue(neighborCoords[0][0].getX() + col, 
+            neighborCoords[0][0].getY() + row) == edgeValue);
+        boolean t16 = (input.getValue(neighborCoords[1][0].getX() + col, 
+            neighborCoords[1][0].getY() + row) == edgeValue);
+        boolean t17 = (input.getValue(neighborCoords[2][0].getX() + col, 
+            neighborCoords[2][0].getY() + row) == edgeValue);
+        
+        if ((Math.abs(col - 266) < 2) && (Math.abs(row - 84) < 2)) {
+            int z = 1;
+        }
+        
+       if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
+            return true;
+        } else if ((t6) && (t12) && !(t7) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t6) && (t15) && !(t11) && (!(t16) || !(t12) || !(t7))) {
+            return true;
+        } else if ((t6) && (t16) && !(t7) && !(t11)) {
+            return true;
+        } else if ((t6) && (t17) && ( (!(t7) || !(t12)) && (!(t11) || !(t16)) )) {
+            return true;
+        } else if ((t7) && (t15) && !(t11) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t7) && (t17) && !(t12) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t7) && (t16) && !(t11) && !(t12)) {
+            return true;
+        } else if ((t8) && (t11) && !(t7) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t8) && (t17) && !(t12) && (!(t16) || !(t11) || !(t7))) {
+            return true;
+        } else if ((t8) && (t16) && !(t7) && !(t12)) {
+            return true;
+        } else if ((t8) && (t15) && ( (!(t7) || !(t11)) && (!(t12) || !(t16)) )) {
+            return true;
+        } else if ((t11) && (t12) && !(t7) && !(t16)) {
+            return true;
+        } else if ((t11) && (t17) && !(t16) && (!(t7) || !(t12))) {
+            return true;
+        } else if ((t12) && (t15) && !(t16) && (!(t7) || !(t11))) {
+            return true;
+        } else if ((t15) && (t17) && !(t16) && (!(t11) || !(t7) || !(t12))) {
+            return true;
+        }
+        
+        return false;
+    }
 }
