@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +19,11 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
         
     protected boolean notValue = false;
         
+    /**
+     * uses the 4 neighbor region if true, else the 8-neighbor region
+     */
+    protected boolean use4Neighbors = true;
+    
     public DFSConnectedGroupsFinder() {
                 
     }
@@ -29,7 +35,11 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }
-  
+    
+    public void setToUse8Neighbors() {
+        use4Neighbors = false;
+    }
+    
     public void findConnectedPointGroups(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
                 
@@ -45,6 +55,16 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
             return;
         }
         
+        int[] dxs;
+        int[] dys;
+        if (use4Neighbors) {
+            dxs = Misc.dx4;
+            dys = Misc.dy4;
+        } else {
+            dxs = Misc.dx8;
+            dys = Misc.dy8;
+        }
+        
         Set<PairInt> visited = new HashSet<PairInt>();
         
         java.util.Stack<PairInt> stack = new java.util.Stack<PairInt>();
@@ -52,12 +72,14 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
         //O(N)
         stack.addAll(points);
                
-        visited.add(stack.peek());
-
         while (!stack.isEmpty()) {
 
             PairInt uPoint = stack.pop();
             
+            if (visited.contains(uPoint)) {
+                continue;
+            }
+
             int uX = uPoint.getX();
             int uY = uPoint.getY();
 
@@ -65,44 +87,38 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
             
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
-            for (int vX = (uX - 1); vX <= (uX + 1); vX++) {
-                if ((vX < 0) || (vX > (imageWidth - 1))) {
+            for (int i = 0; i < dxs.length; ++i) {
+                
+                int vX = uX + dxs[i];
+                int vY = uY + dys[i];
+            
+                if ((vX < 0) || (vX > (imageWidth - 1)) || (vY < 0) || 
+                    (vY > (imageHeight - 1))) {
                     continue;
                 }
-                
-                for (int vY = (uY - 1); vY <= (uY + 1); vY++) {
-                    if ((vY < 0) || (vY > (imageHeight - 1))) {
-                        continue;
-                    }
                     
-                    PairInt vPoint = new PairInt(vX, vY);
-                    
-                    if (vPoint.equals(uPoint)) {
-                        continue;
-                    }
-                    
-                    if (!points.contains(vPoint)) {
-                        continue;
-                    }
-                    
-                    if (visited.contains(vPoint)) {
-                        continue;
-                    }
-                    
-                    visited.add(vPoint);
-                    
-                    processPair(uPoint, vPoint);
-                
-                    stack.add(vPoint);
-                    
-                    foundANeighbor = true;
+                PairInt vPoint = new PairInt(vX, vY);
+
+                if (vPoint.equals(uPoint)) {
+                    continue;
                 }
+
+                if (!points.contains(vPoint)) {
+                    continue;
+                }
+
+                processPair(uPoint, vPoint);
+
+                stack.add(vPoint);
+
+                foundANeighbor = true;
             }
             
-            if (!foundANeighbor && (minimumNumberInCluster == 1)) {
-                
+            if (!foundANeighbor && (minimumNumberInCluster == 1)) {                
                 process(uPoint);
             }
+            
+            visited.add(uPoint);
         }
     }
   

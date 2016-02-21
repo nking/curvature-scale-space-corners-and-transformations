@@ -49,6 +49,8 @@ public class DFSContiguousValueFinder {
     
     protected final GreyscaleImage img;
     
+    protected final Set<PairInt> exclude;
+    
     /**
      * uses the 4 neighbor region if true, else the 8-neighbor region
      */
@@ -59,6 +61,18 @@ public class DFSContiguousValueFinder {
         this.img = input;
         
         this.log = Logger.getLogger(this.getClass().getName());
+        
+        this.exclude = new HashSet<PairInt>();
+    }
+    
+    public DFSContiguousValueFinder(final GreyscaleImage input, Set<PairInt>
+        mask) {
+        
+        this.img = input;
+        
+        this.log = Logger.getLogger(this.getClass().getName());
+        
+        this.exclude = new HashSet<PairInt>(mask);
     }
         
     public void setMinimumNumberInCluster(int n) {
@@ -139,16 +153,21 @@ public class DFSContiguousValueFinder {
         
         //O(N)
         for (int uIndex = (img.getNPixels() - 1); uIndex > -1; uIndex--) {
-            stack.add(Integer.valueOf(uIndex));
+            PairInt p = new PairInt(img.getCol(uIndex), img.getRow(uIndex));
+            if (!exclude.contains(p)) {
+                stack.add(Integer.valueOf(uIndex));
+            }
         }
-        
-        visited.add(stack.peek());
-        
+                
         while (!stack.isEmpty()) {
 
             int uIndex = stack.pop().intValue();
             
             Integer uKey = Integer.valueOf(uIndex);
+            
+            if (visited.contains(uKey)) {
+                continue;
+            }
             
             int uPixValue = img.getValue(uIndex);
             
@@ -173,16 +192,14 @@ public class DFSContiguousValueFinder {
                 if ((vX < 0) || (vX > (width - 1)) || (vY < 0) || (vY > (height - 1))) {
                     continue;
                 }
+                
+                if (exclude.contains(new PairInt(vX, vY))) {
+                    continue;
+                }
 
                 int vIndex = (vY * width) + vX;
 
                 Integer vKey = Integer.valueOf(vIndex);
-
-                if (visited.contains(vKey)) {
-                    continue;
-                }
-                 
-                visited.add(vKey);
 
                 int vPixValue = img.getValue(vIndex);
 
