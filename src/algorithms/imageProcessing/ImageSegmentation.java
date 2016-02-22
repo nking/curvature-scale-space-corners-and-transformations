@@ -3816,12 +3816,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     invertImage(greyGradient2);
                     greyGradient2 = s.calculate(greyGradient2, 1, 1);
                     invertImage(greyGradient2);
-                    //greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
+                    greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
                     imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
                 }
                 //nIter2++;
             //}
-            createLowInt = true;
             if (fineDebug && debugTag != null && !debugTag.equals("")) {
                 MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
             }
@@ -3857,7 +3856,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         for (int i = 0; i < finestGrey.getNPixels(); ++i) {
             if (
                 (useO1 && (o1Img.getValue(i) == 0))
-                || (createLowInt && (greyGradient2.getValue(i) == 0))
+                || (greyGradient2.getValue(i) == 0)
                 ) {
                 finestGrey.setValue(i, 0);
             }
@@ -3865,20 +3864,40 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //see if there are large sections of blue and grey and white and
         // neutral boundaries that can be extracted and masked from coarser mergings.
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_combined_fine_" + debugTag);
+            MiscDebug.writeImage(finestGrey, "_combined_fine_" + debugTag);
         }
+        
+        boolean useDeltaE2000 = true;
                 
         Set<PairInt> mask = new HashSet<PairInt>();
-        List<Set<PairInt>> segmentedCellList = findContiguousCells(255, 
+        List<Set<PairInt>> segmentedCellList0 = findContiguousCells(255, 
             finestGrey, mask);
                 
         double deltaELimit = 2.3; 
-        placeUnassignedAndMergeEmbedded(input, segmentedCellList, deltaELimit,
-            mask);
+        placeUnassignedAndMergeEmbedded(input, segmentedCellList0, deltaELimit,
+            mask, useDeltaE2000);
         
+        List<Set<PairInt>> maskList = new ArrayList<Set<PairInt>>();
         // ----- extract sets to use as a mask in next methods ----
-        extractSetsThatShouldNotBeMerged(input, segmentedCellList, mask);
+        extractSetsThatShouldNotBeMerged(input, segmentedCellList0, maskList);
+        for (int i = 0; i < maskList.size(); ++i) {
+            mask.addAll(maskList.get(i));
+        }
+    
+        Map<PairInt, Integer> pointIndexMap0 = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < maskList.size(); ++i) {
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : maskList.get(i)) {
+                pointIndexMap0.put(p, key);
+            }
+        }
+        deltaELimit = 4;
+        mergeAdjacentIfSimilar(input, maskList, pointIndexMap0, 
+            deltaELimit, useDeltaE2000, debugTag);
         
+        MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_mask_" + debugTag);
+
+        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
         
         //TODO: could use a compressed image representation of 0's and 1's for this:
         // add the edges from images
@@ -3906,11 +3925,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
                 
-        segmentedCellList = findContiguousCells(255, greyGradient, mask);
+        List<Set<PairInt>> segmentedCellList = findContiguousCells(255, greyGradient, mask);
                 
-        deltaELimit = 2.3; 
+        useDeltaE2000 = false;
+        deltaELimit = 2.3;
         placeUnassignedAndMergeEmbedded(input, segmentedCellList, deltaELimit,
-            mask);
+            mask, useDeltaE2000);
         
         Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -3921,38 +3941,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        deltaELimit = 2.3;
+        deltaELimit = 3;//2.3;
         mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, debugTag);
+            deltaELimit, useDeltaE2000, debugTag);
+        
+        segmentedCellList.addAll(maskList);
         
         if (debugTag != null && !debugTag.equals("")) {
+   
+            Image imgCp = input.copyImage();
             
-            int count = 0;
-            GreyscaleImage greyImg = input.copyToGreyscale();
-            for (int i = 0; i < segmentedCellList.size(); ++i) {
-                Set<PairInt> group = segmentedCellList.get(i);
-                int greyAvg = 0;
-                for (PairInt p : group) {
-                    int x = p.getX();
-                    int y = p.getY();
-                    greyAvg += greyImg.getValue(x, y);
-                }
-                count += group.size();
-                greyAvg = Math.round((float)greyAvg/(float)(group.size()));
-                if (greyAvg > 255) {
-                    greyAvg = 255;
-                }
-                for (PairInt p : group) {
-                    int x = p.getX();
-                    int y = p.getY();
-                    greyImg.setValue(x, y, greyAvg);
-                }
-            }
-            
-            MiscDebug.writeImage(greyImg, "_final_edge_segmented_" + debugTag);
-            
-            log.info("pixels in cell lists=" + count + ", pixels in image=" 
-                + input.getNPixels());
+            MiscDebug.writeAlternatingColor(imgCp, segmentedCellList,
+                "_merged_" + debugTag);
         }
         
         return segmentedCellList;
@@ -5219,7 +5219,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     private void placeUnassignedByGrowingCells(ImageExt input,
         List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned,
-        Map<PairInt, Integer> pointIndexMap, double deltaELimit) {
+        Map<PairInt, Integer> pointIndexMap, double deltaELimit, boolean useDeltaE2000) {
 
         long t0 = System.currentTimeMillis();
         
@@ -5274,7 +5274,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 float[] lab2 = input.getCIELAB(x2, y2);
                 
-                double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
+                double deltaE;
+                if (useDeltaE2000) {
+                    deltaE = Math.abs(cieC.calcDeltaECIE2000(lab0, lab2));
+                } else {
+                    deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab2));
+                }
                                
                 // jnd ~ 2.3
                 // 4 is good and can be continued w/ labelling
@@ -5314,7 +5319,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     private void placeUnassignedUsingNearest(ImageExt input,
         List<Set<PairInt>> segmentedCellList, Set<PairInt> zeros,
-        double deltaELimit, float radius) {
+        double deltaELimit, float radius, boolean useDeltaE2000) {
         
         /*
         for the points which are 0's in the greyGradient,
@@ -5359,8 +5364,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 float[] lab1 = input.getCIELAB(pClosest.getX(), pClosest.getY());
                 
-                //double deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
-                double deltaE = Math.abs(cieC.calcDeltaECIE2000(lab0, lab1));
+                double deltaE;
+                if (useDeltaE2000) {
+                    deltaE = Math.abs(cieC.calcDeltaECIE2000(lab0, lab1));
+                } else {
+                    deltaE = Math.abs(cieC.calcDeltaECIE94(lab0, lab1));
+                }
                 
                 //the Just Noticeable Difference is ~2.3
                
@@ -5421,6 +5430,32 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         segmentedCellList.clear();        
         segmentedCellList.addAll(segmentedCellList2);
+    }
+    
+    private float calculateAverageHueAngle(ImageExt input, Set<PairInt> points) {
+        
+        double labA = 0;
+        double labB = 0;
+        
+        for (PairInt p : points) {
+            float[] lab = input.getCIELAB(p.getX(), p.getY());
+            labA += lab[1];
+            labB += lab[2];
+        }
+        labA /= (double)points.size();
+        labB /= (double)points.size();
+        
+        float ha;
+        if (labA == 0) {
+            ha = 0;
+        } else {
+            ha = (float) (Math.atan(labB / labA) * 180. / Math.PI);
+            if (ha < 0) {
+                ha += 360.;
+            }
+        }
+        
+        return ha;
     }
 
     private Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
@@ -5512,7 +5547,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
     private void mergeEmbeddedIfSimilar(ImageExt input, List<Set<PairInt>> 
         segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
-        double deltaELimit) {
+        double deltaELimit, boolean useDeltaE2000) {
         
         Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
         
@@ -5595,11 +5630,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     segmentedCellAvgLabColors.put(adjacentListIndex, colors2);
                 }
 
-                //double deltaE = Math.abs(cieC.calcDeltaECIE94(colors1.getColors(), 
-                //    colors2.getColors()));
-
-                double deltaE = Math.abs(cieC.calcDeltaECIE2000(colors1.getColors(), 
-                    colors2.getColors()));                
+                double deltaE;
+                if (useDeltaE2000) {
+                    deltaE = Math.abs(cieC.calcDeltaECIE2000(colors1.getColors(), 
+                        colors2.getColors()));
+                } else {
+                    deltaE = Math.abs(cieC.calcDeltaECIE94(colors1.getColors(), 
+                        colors2.getColors()));
+                }               
                     
                 if (deltaE > deltaELimit) {
                     continue;
@@ -5662,10 +5700,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     
     private void mergeAdjacentIfSimilar(ImageExt input, List<Set<PairInt>> 
         segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
-        double deltaELimit, String debugTag) {
+        double deltaELimit, boolean useDeltaE2000, String debugTag) {
                 
         SegmentedCellMerger scm = new SegmentedCellMerger(input, 
-            segmentedCellList, -1, debugTag);
+            segmentedCellList, -1, useDeltaE2000, (float)deltaELimit, debugTag);
         
         scm.merge();
         
@@ -5734,7 +5772,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
     private void placeUnassignedAndMergeEmbedded(ImageExt input, 
         List<Set<PairInt>> segmentedCellList, double deltaELimit,
-        Set<PairInt> mask) {
+        Set<PairInt> mask, boolean useDeltaE2000) {
         
         int w = input.getWidth();
         int h = input.getHeight();
@@ -5744,7 +5782,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // for placing points that are near more than one boundary:
         float radius = 3.f;
         placeUnassignedUsingNearest(input, segmentedCellList, unassigned, 
-            deltaELimit, radius);
+            deltaELimit, radius, useDeltaE2000);
         
         Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -5755,17 +5793,60 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        deltaELimit = 2.3;
         placeUnassignedByGrowingCells(input, segmentedCellList, unassigned,
-            pointIndexMap, deltaELimit);
+            pointIndexMap, deltaELimit, useDeltaE2000);
         
-        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, deltaELimit);        
+        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, useDeltaE2000);        
     }
 
     private void extractSetsThatShouldNotBeMerged(ImageExt input, 
-        List<Set<PairInt>> segmentedCellList, Set<PairInt> mask) {
+        List<Set<PairInt>> segmentedCellList,
+        List<Set<PairInt>> outputMaskList) {
+                        
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            
+            Set<PairInt> set = segmentedCellList.get(i);
+            
+            Colors colors = calculateAverageRGB(input, set);
+            
+            if (isBlueOrGrey(colors.getColors())) {
+                /*
+                might need to widen this, but hue angle near 51 and near 275
+                seem to be one of the areas that deltaE2000 improves deltaE94,
+                grey and blueish...
+                */
+                //double hueAngle = calculateAverageHueAngle(input, set);
+                //if ((Math.abs(hueAngle - 51) < 25) 
+                //    || (Math.abs(hueAngle - 275) < 25)) {
+                    outputMaskList.add(new HashSet<PairInt>(set));
+                    set.clear();
+                //}
+            }
+        }
         
-        <> print out stats for regions near border of skyline in brown_lowe_2003_image1
+        int count = 0;
+        for (int i = (segmentedCellList.size() - 1); i > -1; --i) {
+            Set<PairInt> set0 = segmentedCellList.get(i);
+            if (set0.size() == 0) {
+                segmentedCellList.remove(i);
+                count++;
+            }
+        }
+    }
+
+    private boolean isBlueOrGrey(float[] rgb) {
+        
+        if ((rgb[0] < rgb[1]) && (rgb[1] < rgb[2])) {
+            return true;
+        }
+        
+        if ((Math.abs(rgb[0] - rgb[1]) < 15) && (Math.abs(rgb[0] - rgb[2]) < 15)
+            && (Math.abs(rgb[1] - rgb[2]) < 15)) {
+            return true;
+        }
+        
+        return false;
     }
 
     public static class Colors {

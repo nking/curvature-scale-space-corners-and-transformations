@@ -62,7 +62,7 @@ public class AndroidStatuesTest extends TestCase {
         settings.setToUse2ndDerivCorners();
 //trees and grass contributing too many 2nd deriv pts.  does assoc w/ blobs retain enough remaining pts?
         for (int i = 0; i < 32; ++i) {
-        //for (int i = 0; i < 9; ++i) {
+        //for (int i = 4; i < 32; ++i) {//6-11
             switch(i) {
                 /*
                 case 0: {

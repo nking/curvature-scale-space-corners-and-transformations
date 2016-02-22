@@ -24,12 +24,15 @@ import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
 import java.awt.Color;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1505,5 +1508,69 @@ public class MiscDebug {
         }
         assert(xs.isEmpty());
         assert(ys.isEmpty());
+    }
+    
+    public static void writeAlternatingColor(Image img, 
+        List<Set<PairInt>> setList, String fileNameSuffix) {
+                
+        int nColors = setList.size();
+        log.info("begin debug plot");
+        int delta = (int)Math.floor(256.f/(float)nColors);
+        if (delta == 0) {
+            delta = 1;
+            nColors = 256;
+        }
+        Random sr = null;
+        long seed = 1234567;//System.currentTimeMillis();
+        try {
+            sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed(seed);
+        } catch (NoSuchAlgorithmException e) {
+            sr = new Random(seed);
+        }
+       
+        Set<String> clrs = new HashSet<String>();
+        for (int i = 0; i < setList.size(); ++i) {
+            
+            boolean alreadyChosen = true;
+            int rClr = -1;
+            int gClr = -1;
+            int bClr = -1;
+            while (alreadyChosen) {
+                rClr = sr.nextInt(nColors)*delta;
+                gClr = sr.nextInt(nColors)*delta;
+                bClr = sr.nextInt(nColors)*delta;
+                String str = "";
+                if (rClr < 10) {
+                    str = str + "00";
+                } else if (rClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(rClr);
+                if (gClr < 10) {
+                    str = str + "00";
+                } else if (gClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(bClr);
+                if (bClr < 10) {
+                    str = str + "00";
+                } else if (bClr < 100) {
+                    str = str + "0";
+                }
+                str = str + Integer.toString(bClr);
+                alreadyChosen = clrs.contains(str);
+                if (delta == 1) {
+                    alreadyChosen = false;
+                }
+                clrs.add(str);
+            }
+            Set<PairInt> set = setList.get(i);
+            for (PairInt p : set) {
+                img.setRGB(p.getX(), p.getY(), rClr, gClr, bClr);
+            }
+        }
+        
+        MiscDebug.writeImage(img, fileNameSuffix);
     }
 }

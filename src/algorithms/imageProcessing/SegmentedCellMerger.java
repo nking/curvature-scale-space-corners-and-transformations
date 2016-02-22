@@ -52,17 +52,23 @@ public class SegmentedCellMerger {
     private final ImageExt img;
     private final List<Set<PairInt>> segmentedCellList;
     private final String debugTag;
+    private final boolean useDeltaE2000;
+    private final float deltaELimit;
+    
     private final Logger log = Logger.getLogger(this.getClass().getName());
     
     public SegmentedCellMerger(ImageExt img, List<Set<PairInt>> theSegmentedCellList, 
-        int boundaryValue, String debugTag) {
+        int boundaryValue, boolean useDeltaE2000, float deltaELimit, String debugTag) {
         
         this.boundaryValue = boundaryValue;
         if (boundaryValue > -1) {
             hasBoundaryValue = true;
         } else {
             hasBoundaryValue = false;
-        }        
+        } 
+        
+        this.useDeltaE2000 = useDeltaE2000;
+        this.deltaELimit = deltaELimit;
         
         this.img = img;
         
@@ -162,9 +168,9 @@ public class SegmentedCellMerger {
         // key = cell centroid, value = set of cell centroids merged with this one
         Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedMap = createMergeMap(br);
         
-        // this order results in visiting the smallest cells first
+        // this order results in visiting the larges cells first
         Stack<PairIntWithIndex> stack = new Stack<PairIntWithIndex>();
-        for (int i = 0; i < br.getPerimeterList().size(); ++i) {
+        for (int i = (br.getPerimeterList().size() - 1); i > -1; --i) {            
             
             PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
             
@@ -194,9 +200,7 @@ public class SegmentedCellMerger {
             = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
-        
-        double deltaELimit = 2.3;
-        
+                
         //TODO: improving this transformation
         //double[][] ldaMatrix = getLDASegmentationMatrix();
           
@@ -220,7 +224,7 @@ public class SegmentedCellMerger {
             float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
             
             boolean didMerge = false;
-            
+
             List<PairIntWithIndex> neighborKeys = new ArrayList<PairIntWithIndex>(
                 adjacencyMap.get(pParent));
             
@@ -244,11 +248,15 @@ public class SegmentedCellMerger {
                 Integer p2Index = cellIndexMap.get(p2);
                 float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
                 
-                double deltaE = cieC.calcDeltaECIE2000(labP[0], labP[1], labP[2], 
-                    labP2[0], labP2[1], labP2[2]);
+                double deltaE;
+                if (useDeltaE2000) {
+                    deltaE = Math.abs(cieC.calcDeltaECIE2000(labP, labP2));
+                } else {
+                    deltaE = Math.abs(cieC.calcDeltaECIE94(labP, labP2));
+                }
                 
                 addToVisited(visitedMap, pParent, p2Parent);
-                
+
                 /*double[][] data = new double[4][1];
                 data[0][0] = Math.abs(deltaE);
                 data[1][0] = Math.abs(deltaO1);
@@ -377,7 +385,7 @@ public class SegmentedCellMerger {
             
             PairIntWithIndex p = new PairIntWithIndex(entry.getKey(), 
                 cellIndex.intValue());
-                        
+        
             PairIntWithIndex cellCentroid = new PairIntWithIndex(
                 br.getBlobMedialAxes().getOriginalBlobXYCentroid(
                 cellIndex.intValue()), cellIndex.intValue());
@@ -395,6 +403,7 @@ public class SegmentedCellMerger {
             points.add(p);
         }
         
+        int count = 0;
         segmentedCellList.clear();
         for (Entry<PairIntWithIndex, Set<PairIntWithIndex>> entry 
             : mergedPoints.entrySet()) {
@@ -402,6 +411,7 @@ public class SegmentedCellMerger {
             for (PairIntWithIndex p : entry.getValue()) {
                 set.add(new PairInt(p.getX(), p.getY()));
             }
+            count += set.size();
             segmentedCellList.add(set);
         }
         
@@ -409,67 +419,9 @@ public class SegmentedCellMerger {
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to merge " + mergedPoints.size() + " cells");
         
-        Image imgCp = img.copyToGreyscale().copyToColorGreyscale();
-        
-        int nColors = mergedPoints.size();
-        log.info("begin debug plot");
-        int delta = (int)Math.floor(256.f/(float)nColors);
-        if (delta == 0) {
-            delta = 1;
-            nColors = 256;
-        }
-        Random sr = null;
-        long seed = System.currentTimeMillis();
-        try {
-            sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed(seed);
-        } catch (NoSuchAlgorithmException e) {
-            sr = new Random(seed);
-        }
-       
-        Set<String> clrs = new HashSet<String>();
-        for (Entry<PairIntWithIndex, Set<PairIntWithIndex>> entry 
-            : mergedPoints.entrySet()) {
+        log.info("pixels in cell lists=" + count + ", pixels in image=" 
+            + img.getNPixels());
             
-            boolean alreadyChosen = true;
-            int rClr = -1;
-            int gClr = -1;
-            int bClr = -1;
-            while (alreadyChosen) {
-                rClr = sr.nextInt(nColors)*delta;
-                gClr = sr.nextInt(nColors)*delta;
-                bClr = sr.nextInt(nColors)*delta;
-                String str = "";
-                if (rClr < 10) {
-                    str = str + "00";
-                } else if (rClr < 100) {
-                    str = str + "0";
-                }
-                str = str + Integer.toString(rClr);
-                if (gClr < 10) {
-                    str = str + "00";
-                } else if (gClr < 100) {
-                    str = str + "0";
-                }
-                str = str + Integer.toString(bClr);
-                if (bClr < 10) {
-                    str = str + "00";
-                } else if (bClr < 100) {
-                    str = str + "0";
-                }
-                str = str + Integer.toString(bClr);
-                alreadyChosen = clrs.contains(str);
-                if (delta == 1) {
-                    alreadyChosen = false;
-                }
-                clrs.add(str);
-            }
-            for (PairIntWithIndex p : entry.getValue()) {
-                imgCp.setRGB(p.getX(), p.getY(), rClr, gClr, bClr);
-            }
-        }
-        MiscDebug.writeImage(imgCp, "_merged_" + debugTag);
-        
         if (simWriter != null) {
             try {
                 if (simWriter != null) {
