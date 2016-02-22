@@ -3515,6 +3515,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
+        GreyscaleImage grCp = greyGradient.copyImage();
+        
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to create color images");
@@ -3523,9 +3525,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
         
-        GreyscaleImage finalBoundary = createUncrossableEdges(input,
-            greyGradient.copyImage(), debugTag);
-        
+        //GreyscaleImage finalBoundary = createUncrossableEdges(input,
+        //    greyGradient.copyImage(), debugTag);
+                
         /*
         PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(greyGradient);
         double sum = 0;
@@ -3763,20 +3765,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         if (createLowInt) {
             t0 = System.currentTimeMillis();
+            
             imageProcessor.highPassIntensityFilter(greyGradient2, 0.4);//0.31);
             for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
                 if (greyGradient2.getValue(i) > 0) {
                     greyGradient2.setValue(i, 255);
                 }
             }
-        
-            //greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
-            //greyGradient2 = shrinkBy1(greyGradient2, 0, 255);
-            //imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
-            
             invertImage(greyGradient2);
             setAllNon255To0(greyGradient2);
-        
+            
             int nIter2 = 0;
             float f2 = Float.MAX_VALUE;
             float f3 = Float.MAX_VALUE;
@@ -3880,10 +3878,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Set<PairInt>> maskList = new ArrayList<Set<PairInt>>();
         // ----- extract sets to use as a mask in next methods ----
         extractSetsThatShouldNotBeMerged(input, segmentedCellList0, maskList);
+        
+        placeUnassignedAndMergeEmbedded(input, maskList, deltaELimit,
+            new HashSet<PairInt>(), useDeltaE2000);
+    
         for (int i = 0; i < maskList.size(); ++i) {
             mask.addAll(maskList.get(i));
         }
-    
+       
         Map<PairInt, Integer> pointIndexMap0 = new HashMap<PairInt, Integer>();
         for (int i = 0; i < maskList.size(); ++i) {
             Integer key = Integer.valueOf(i);
@@ -3891,7 +3893,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap0.put(p, key);
             }
         }
-        deltaELimit = 4;
         mergeAdjacentIfSimilar(input, maskList, pointIndexMap0, 
             deltaELimit, useDeltaE2000, debugTag);
         
@@ -3941,7 +3942,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        deltaELimit = 3;//2.3;
+        deltaELimit = 2.3;
         mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);
         
@@ -5714,6 +5715,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     private GreyscaleImage createUncrossableEdges(ImageExt img,
         GreyscaleImage greyImg, String debugTag) {
         
+        GreyscaleImage greyImgC = greyImg.copyImage();
+        
         ImageProcessor imageProcessor = new ImageProcessor();
         
         imageProcessor.highPassIntensityFilter(greyImg, 0.3);//0.1
@@ -5739,6 +5742,33 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         */
         
         return greyImg;
+    }
+    
+    private GreyscaleImage createUncrossableEdges2(GreyscaleImage greyImg, String debugTag) {
+        
+        GreyscaleImage greyImgC2 = greyImg.copyImage();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+                
+        HistogramEqualization hEq = new HistogramEqualization(greyImgC2);
+        hEq.applyFilter();
+                
+        CannyEdgeFilterLite cannyfilter = new CannyEdgeFilterLite();
+        MedianSmooth s = new MedianSmooth();
+        cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.overrideHighThreshold(0.5f);
+        cannyfilter.applyFilter(greyImgC2);
+        setAllNonZeroTo255(greyImgC2);
+        MiscDebug.writeImage(greyImgC2, "_tmp_grey_cuts_21_" + debugTag);
+        greyImgC2 = fillInGapsOf1(greyImgC2, new HashSet<PairInt>(), 255);
+        MiscDebug.writeImage(greyImgC2, "_tmp_grey_cuts_22_" + debugTag);
+        greyImgC2 = s.calculate(greyImgC2, 3, 3);
+        invertImage(greyImgC2);
+        MiscDebug.writeImage(greyImgC2, "_tmp_grey_cuts_23_" + debugTag);
+        imageProcessor.applyAdaptiveMeanThresholding(greyImgC2, 1);
+        MiscDebug.writeImage(greyImgC2, "_tmp_grey_cuts_24_" + debugTag); 
+        
+        return greyImgC2;
     }
 
     private List<Set<PairInt>> findContiguousCells(int value, GreyscaleImage img,
@@ -5810,7 +5840,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             Colors colors = calculateAverageRGB(input, set);
             
-            if (isBlueOrGrey(colors.getColors())) {
+            if (isBrightBlueOrGrey(colors.getColors())) {
                 /*
                 might need to widen this, but hue angle near 51 and near 275
                 seem to be one of the areas that deltaE2000 improves deltaE94,
@@ -5835,14 +5865,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
-    private boolean isBlueOrGrey(float[] rgb) {
+    private boolean isBrightBlueOrGrey(float[] rgb) {
+        
+        if ((rgb[1] < 85) && (rgb[2] < 85)) {
+            return false;
+        }
         
         if ((rgb[0] < rgb[1]) && (rgb[1] < rgb[2])) {
             return true;
         }
         
-        if ((Math.abs(rgb[0] - rgb[1]) < 15) && (Math.abs(rgb[0] - rgb[2]) < 15)
-            && (Math.abs(rgb[1] - rgb[2]) < 15)) {
+        int limit = 10;
+        if ((Math.abs(rgb[0] - rgb[1]) < limit) && 
+            (Math.abs(rgb[0] - rgb[2]) < limit) &&
+            (Math.abs(rgb[1] - rgb[2]) < limit)) {
             return true;
         }
         

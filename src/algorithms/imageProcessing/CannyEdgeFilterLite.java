@@ -27,6 +27,8 @@ public class CannyEdgeFilterLite {
             
     protected GreyscaleImage gradientXY = null;
     
+    private boolean useDiffOfGauss = false;
+    
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
     // ErosionFilter
@@ -43,13 +45,28 @@ public class CannyEdgeFilterLite {
         lineThinnerClass = cls;
     }
     
+    public void setToUseDiffOfGauss() {
+        
+        //TODO: consider dilate before erosion
+        
+        this.useDiffOfGauss = true;        
+    }
+    
+    public void overrideHighThreshold(float thresh) {
+        highThreshold = thresh;
+    }
+    
     public void applyFilter(final GreyscaleImage input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
 
-        gradientXY = createGradient(input);
+        if (useDiffOfGauss) {
+            gradientXY = createDiffOfGaussians(input);
+        } else {
+            gradientXY = createGradient(input);
+        }
                         
         input.resetTo(gradientXY);
                         
@@ -409,7 +426,7 @@ public class CannyEdgeFilterLite {
         
         GreyscaleImage gX, gY, g;
         
-        ImageProcessor ImageProcessor = new ImageProcessor();
+        ImageProcessor imageProcessor = new ImageProcessor();
         
         gX = getGradientX1D(img);
 
@@ -419,11 +436,64 @@ public class CannyEdgeFilterLite {
 
         removeOnePixelSpanningBorders(gY);
 
-        g = ImageProcessor.combineConvolvedImages(gX, gY);
+        g = imageProcessor.combineConvolvedImages(gX, gY);
         
         return g;
     }
 
+    protected GreyscaleImage createDiffOfGaussians(final GreyscaleImage img) {
+        
+        GreyscaleImage gX, gY, g;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        gX = createGradientFromDiffOfGauss(img, true);
+
+        gY = createGradientFromDiffOfGauss(img, false);
+
+        removeOnePixelSpanningBorders(gX);
+            
+        removeOnePixelSpanningBorders(gY);
+            
+        g = imageProcessor.combineConvolvedImages(gX, gY);
+        
+        return g;
+    }
+    
+    private GreyscaleImage createGradientFromDiffOfGauss(
+        final GreyscaleImage img, boolean calculateForX) {
+        /*
+        what looks really good is computationally too long:
+            g1 is convolved by a kernel > 1000*g0 kernel which uses sigma=1
+        */
+        
+        /* 
+        for line drawings, use sigma1 = 0.42466090014400953f and sigma2 = 2*sigma1
+        */
+        
+        float resultOne = 0.42466090014400953f;
+        
+        float sigma = 1.f * resultOne;
+        
+        float[] kernel = Gaussian1D.getKernel(sigma);
+
+        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
+            
+        GreyscaleImage g0 = img.copyImage();
+        
+        GreyscaleImage g1 = img.copyImage();
+          
+        apply1DKernelToImage(g0, kernel, calculateForX);
+                
+        apply1DKernelToImage(g1, kernel2, calculateForX);
+       
+        ImageProcessor ImageProcessor = new ImageProcessor();
+        
+        GreyscaleImage g = ImageProcessor.subtractImages(g1, g0);
+        
+        return g;
+    }
+    
     private HistogramHolder createImageHistogram(final GreyscaleImage input) {
         
         float[] pixValues = new float[input.getNPixels()];
@@ -437,10 +507,6 @@ public class CannyEdgeFilterLite {
             0.0f, 256.f, 10, pixValues, simulatedErrors);
 
         return hist;
-    }
-
-    public GreyscaleImage getGradient() {
-        return gradientXY;
     }
 
 }
