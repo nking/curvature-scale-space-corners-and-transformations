@@ -3543,16 +3543,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         t0 = System.currentTimeMillis();
         
-        HistogramEqualization hEq = new HistogramEqualization(o1Img);
-        hEq.applyFilter();
-        CannyEdgeFilterLite cannyfilter = new CannyEdgeFilterLite();
-        cannyfilter.applyFilter(o1Img);
-        setAllNonZeroTo255(o1Img);
-        MedianSmooth s = new MedianSmooth();
-        o1Img = s.calculate(o1Img, 3, 3);
-        invertImage(o1Img);
-//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
-        imageProcessor.applyAdaptiveMeanThresholding(o1Img, 1);
+        convertToEdges01(o1Img);
         
         List<Float> fractionZeros = countFractionZeros(o1Img, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
@@ -3589,17 +3580,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t0 = System.currentTimeMillis();
  
         // -----------
-        hEq = new HistogramEqualization(bGImg);
-        hEq.applyFilter();
-        //bGImg = expandBy1AndKeepContigZeros(bGImg);
-        //imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
-        cannyfilter = new CannyEdgeFilterLite();
-        cannyfilter.applyFilter(bGImg);
-        setAllNonZeroTo255(bGImg);
-        bGImg = s.calculate(bGImg, 3, 3);
-        invertImage(bGImg);
-//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
-        imageProcessor.applyAdaptiveMeanThresholding(bGImg, 1);
+        convertToEdges01(bGImg);
         
         List<Float> fractionZerosBG = countFractionZeros(bGImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
@@ -3636,17 +3617,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t0 = System.currentTimeMillis();
         
         // -----------
-        hEq = new HistogramEqualization(bRImg);
-        hEq.applyFilter();
-        //bRImg = expandBy1AndKeepContigZeros(bRImg);
-        //imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
-        cannyfilter = new CannyEdgeFilterLite();
-        cannyfilter.applyFilter(bRImg);
-        setAllNonZeroTo255(bRImg);
-        bRImg = s.calculate(bRImg, 3, 3);
-        invertImage(bRImg);
-//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
-        imageProcessor.applyAdaptiveMeanThresholding(bRImg, 1);
+        convertToEdges01(bRImg);
         List<Float> fractionZerosBR = countFractionZeros(bRImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3682,16 +3653,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t0 = System.currentTimeMillis();
         
         // -------
-        hEq = new HistogramEqualization(labBImg);
-        hEq.applyFilter();
-        cannyfilter = new CannyEdgeFilterLite();
-        cannyfilter.applyFilter(labBImg);
-        setAllNonZeroTo255(labBImg);
-        labBImg = s.calculate(labBImg, 3, 3);
-        invertImage(labBImg);
-//NOTE: because the 0's are placed in algorithm below, consider not using adaptive mean here
-        imageProcessor.applyAdaptiveMeanThresholding(labBImg, 1);
-        
+        convertToEdges01(labBImg);
         List<Float> fractionZerosB = countFractionZeros(labBImg, 50, 50);
         // edges are 0's, so when many fractions are near 0.5 or higher,
         // should not use this image
@@ -3810,6 +3772,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 MiscDebug.writeImage(greyGradient2, "_greyGradient2_before_" + debugTag);
                 greyGradient2 = fillInCompleteGapsOf1(greyGradient2, new HashSet<PairInt>(), 255);
                 invertImage(greyGradient2);
+                MedianSmooth s = new MedianSmooth();
                 greyGradient2 = s.calculate(greyGradient2, 1, 1);
                 invertImage(greyGradient2);
                 greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
@@ -6370,4 +6333,19 @@ may find that need to use group colors instead of individual
         
         return false;
     }
+    
+    public void convertToEdges01(GreyscaleImage img) {
+        HistogramEqualization hEq = new HistogramEqualization(img);
+        hEq.applyFilter();
+        CannyEdgeFilterLite cannyfilter = new CannyEdgeFilterLite();
+        cannyfilter.applyFilter(img);
+        setAllNonZeroTo255(img);
+        MedianSmooth s = new MedianSmooth();
+        GreyscaleImage tmp2 = s.calculate(img, 3, 3);
+        invertImage(tmp2);
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyAdaptiveMeanThresholding(tmp2, 1);
+        img.resetTo(tmp2);
+    }
+
 }
