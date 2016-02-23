@@ -3731,6 +3731,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         imageProcessor.highPassIntensityFilter(greyGradient, 0.09);//0.089
         invertImage(greyGradient);
         setAllNon255To0(greyGradient);
+        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
         }
@@ -3779,69 +3780,43 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             float f2 = Float.MAX_VALUE;
             float f3 = Float.MAX_VALUE;
             float f4 = Float.MAX_VALUE;
-            //while (nIter2 < 2) {
-                List<Float> fractionZerosG = countFractionZeros(greyGradient2, 50, 50);
-                // edges are 0's, so when many fractions are near 0.5 or higher,
-                // should not use this image
-                sb = new StringBuilder();
-                int nHigh2G = 0;
-                int nHigh3G = 0;
-                int nHigh4G = 0;
-                for (Float fracZ : fractionZerosG) {
-                    sb.append(fracZ.toString()).append(", ");
-                    if (fracZ.floatValue() >= 0.2f) {
-                        nHigh2G++;
-                    }
-                    if (fracZ.floatValue() >= 0.3f) {
-                        nHigh3G++;
-                    }
-                    if (fracZ.floatValue() >= 0.4f) {
-                        nHigh4G++;
-                    }
+            List<Float> fractionZerosG = countFractionZeros(greyGradient2, 50, 50);
+            // edges are 0's, so when many fractions are near 0.5 or higher,
+            // should not use this image
+            sb = new StringBuilder();
+            int nHigh2G = 0;
+            int nHigh3G = 0;
+            int nHigh4G = 0;
+            for (Float fracZ : fractionZerosG) {
+                sb.append(fracZ.toString()).append(", ");
+                if (fracZ.floatValue() >= 0.2f) {
+                    nHigh2G++;
                 }
-                f2 = ((float) nHigh2G / (float) fractionZerosG.size());
-                f3 = ((float) nHigh3G / (float) fractionZerosG.size());
-                f4 = ((float) nHigh4G / (float) fractionZerosG.size());
-                createLowInt = f2 < 0.2f;
-                log.info(debugTag + " greyGradient2 nH2=" + f2  + " nH3=" + f3
-                    + " nH4=" + f4 + " useG2=" + createLowInt
-                );
-                if (createLowInt) {
-                    //break;
-                } else if (nIter2 == 0) {
-                    MiscDebug.writeImage(greyGradient2, "_greyGradient2_before_" + debugTag);
-                    greyGradient2 = fillInCompleteGapsOf1(greyGradient2, new HashSet<PairInt>(), 255);
-                    invertImage(greyGradient2);
-                    greyGradient2 = s.calculate(greyGradient2, 1, 1);
-                    invertImage(greyGradient2);
-                    greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
-                    imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);
+                if (fracZ.floatValue() >= 0.3f) {
+                    nHigh3G++;
                 }
-                //nIter2++;
-            //}
+                if (fracZ.floatValue() >= 0.4f) {
+                    nHigh4G++;
+                }
+            }
+            f2 = ((float) nHigh2G / (float) fractionZerosG.size());
+            f3 = ((float) nHigh3G / (float) fractionZerosG.size());
+            f4 = ((float) nHigh4G / (float) fractionZerosG.size());
+            createLowInt = f2 < 0.2f;
+            log.info(debugTag + " greyGradient2 nH2=" + f2  + " nH3=" + f3
+                + " nH4=" + f4 + " useG2=" + createLowInt
+            );
+            if (!createLowInt && (nIter2 == 0)) {
+                MiscDebug.writeImage(greyGradient2, "_greyGradient2_before_" + debugTag);
+                greyGradient2 = fillInCompleteGapsOf1(greyGradient2, new HashSet<PairInt>(), 255);
+                invertImage(greyGradient2);
+                greyGradient2 = s.calculate(greyGradient2, 1, 1);
+                invertImage(greyGradient2);
+                greyGradient2 = fillInGapsOf1(greyGradient2, new HashSet<PairInt>(), 0);
+                imageProcessor.applyAdaptiveMeanThresholding(greyGradient2, 1);                                
+            }
             if (fineDebug && debugTag != null && !debugTag.equals("")) {
                 MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
-            }
-            if (false && (f2 < 0.01) && (f3 < 0.01) && (f4 < 0.01)) {
-                // replace with greyGradient and further process
-                greyGradient2.resetTo(greyGradient);
-                greyGradient2 = expandBy1(greyGradient2, 0);
-                for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
-                    int v = greyGradient2.getValue(i);
-                    greyGradient2.setValue(i, 255-v);
-                }
-                imageProcessor.applyErosionFilter(greyGradient2);
-                for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
-                    int v = greyGradient2.getValue(i);
-                    if (v == 0) {
-                        greyGradient2.setValue(i, 255);
-                    } else {
-                        greyGradient2.setValue(i, 0);
-                    }
-                }
-                if (fineDebug && debugTag != null && !debugTag.equals("")) {
-                    MiscDebug.writeImage(greyGradient2, "_greyGradient2_editing" + debugTag);
-                }
             }
             
             t1 = System.currentTimeMillis();
@@ -3850,7 +3825,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         GreyscaleImage finestGrey = greyGradient.copyImage();
-        
+
         for (int i = 0; i < finestGrey.getNPixels(); ++i) {
             if (
                 (useO1 && (o1Img.getValue(i) == 0))
@@ -3859,6 +3834,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 finestGrey.setValue(i, 0);
             }
         }
+ 
         //see if there are large sections of blue and grey and white and
         // neutral boundaries that can be extracted and masked from coarser mergings.
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
@@ -3868,9 +3844,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         boolean useDeltaE2000 = true;
                 
         Set<PairInt> mask = new HashSet<PairInt>();
+        
+        // add dark pixels to mask so they do not get placed into the maskList
+        findDarkPixels(input, mask);
+        
         List<Set<PairInt>> segmentedCellList0 = findContiguousCells(255, 
             finestGrey, mask);
-                
+        
         double deltaELimit = 2.3; 
         placeUnassignedAndMergeEmbedded(input, segmentedCellList0, deltaELimit,
             mask, useDeltaE2000);
@@ -3881,7 +3861,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         placeUnassignedAndMergeEmbedded(input, maskList, deltaELimit,
             new HashSet<PairInt>(), useDeltaE2000);
-    
+
+        mask.clear();
         for (int i = 0; i < maskList.size(); ++i) {
             mask.addAll(maskList.get(i));
         }
@@ -5377,7 +5358,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (deltaE > deltaELimit) {
                     continue;
                 }
-                     
+
                 double dist = deltaE;
                 
                 if (useDistAndColor) {
@@ -5806,7 +5787,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         int w = input.getWidth();
         int h = input.getHeight();
-         
+        
+/*        
+need to add to method a check for illumination differences, delta L and
+use the checkerboard test to see results.  the large diff between black and 
+bright bright grey in brightness is still a small deltaE maybe, so need the
+deltaL too.
+may find that need to use group colors instead of individual
+*/
+        
         Set<PairInt> unassigned = createZerosSet(segmentedCellList, w, h, mask);
         
         // for placing points that are near more than one boundary:
@@ -5827,7 +5816,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             pointIndexMap, deltaELimit, useDeltaE2000);
         
         mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000);        
+            deltaELimit, useDeltaE2000);    
     }
 
     private void extractSetsThatShouldNotBeMerged(ImageExt input, 
@@ -5871,7 +5860,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             return false;
         }
         
-        if ((rgb[0] < rgb[1]) && (rgb[1] < rgb[2])) {
+        if (((rgb[0] < rgb[1]) || ((rgb[0] - rgb[1]) <= 5)) && (rgb[1] < rgb[2])) {
             return true;
         }
         
@@ -5883,6 +5872,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return false;
+    }
+
+    private void findDarkPixels(ImageExt img, Set<PairInt> mask) {
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            
+            int r = img.getR(i);
+            int g = img.getG(i);
+            int b = img.getB(i);
+        
+            if ((r < 85) && (g < 85) && (b < 85)) {
+                mask.add(new PairInt(img.getCol(i), img.getRow(i)));
+            }
+        }
     }
 
     public static class Colors {
