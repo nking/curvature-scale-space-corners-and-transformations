@@ -181,6 +181,8 @@ public class DFSContiguousValueFinder {
             
             int uY = uIndex/width;
             int uX = uIndex - (uY * width);
+            
+            boolean foundANeighbor = false;
 
             //(1 + frac)*O(N) where frac is the fraction added back to stack
             
@@ -214,6 +216,12 @@ public class DFSContiguousValueFinder {
                 // inserting back at the top of the stack assures that the 
                 // search continues next from an associated point
                 stack.add(vKey);
+                
+                foundANeighbor = true;
+            }
+            
+            if (!foundANeighbor && (minimumNumberInCluster == 1)) {                
+                process(uKey, false);
             }
             
             visited.add(uKey);

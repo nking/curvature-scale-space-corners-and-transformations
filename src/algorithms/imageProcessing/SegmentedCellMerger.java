@@ -422,15 +422,13 @@ public class SegmentedCellMerger {
         log.info("pixels in cell lists=" + count + ", pixels in image=" 
             + img.getNPixels());
             
-        if (simWriter != null) {
-            try {
-                if (simWriter != null) {
-                    simWriter.close();
-                }
-            } catch (IOException ex) {
-                Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+        try {
+            if (simWriter != null) {
+                simWriter.close();
             }
-        }        
+        } catch (IOException ex) {
+            Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public List<Set<PairInt>> getSegmentedCellList() {
