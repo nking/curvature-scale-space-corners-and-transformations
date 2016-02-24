@@ -151,7 +151,7 @@ public class SegmentedCellMerger {
                 
         BoundingRegions br = extractPerimetersAndBounds();
         
-        // key = pairintwihindex holding xy centroid and the original list index
+        // key = pairintwithindex holding xy centroid and the original list index
         final Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> cellMap = 
             new HashMap<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>>();
         
