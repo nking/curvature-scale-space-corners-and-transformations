@@ -3283,8 +3283,6 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-
-
         return coarsestCombined;
     }
 
@@ -3703,7 +3701,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         t0 = System.currentTimeMillis();
 
-        imageProcessor.highPassIntensityFilter(greyGradient2, 0.4);//0.31);
+        imageProcessor.highPassIntensityFilter(greyGradient2, 0.35);//0.31);
         for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
             if (greyGradient2.getValue(i) > 0) {
                 greyGradient2.setValue(i, 255);
@@ -3777,10 +3775,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             if (
                 (useO1 && (o1Img.getValue(i) == 0))
                 || (greyGradient2.getValue(i) == 0)
+                || (!createLowInt && useB && (labBImg.getValue(i) == 0))
                 ) {
                 finestGrey.setValue(i, 0);
             }
         }
+imageProcessor.applyAdaptiveMeanThresholding(finestGrey, 1);
  
         //see if there are large sections of blue and grey and white and
         // neutral boundaries that can be extracted and masked from coarser mergings.
@@ -6408,6 +6408,7 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_after_merged_mask
         
         DFSContiguousValueFinder cf = new DFSContiguousValueFinder(img);
         cf.setMinimumNumberInCluster(1);
+        cf.setToUse8Neighbors();
         cf.findGroups(nonEdgeValue);
         int n = cf.getNumberOfGroups();
         float[] sizes = new float[n];
