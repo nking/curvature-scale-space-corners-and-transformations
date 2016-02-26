@@ -56,6 +56,10 @@ public class CannyEdgeFilterLite {
         highThreshold = thresh;
     }
     
+    public void overrideLowThreshold(float thresh) {
+        lowThreshold = thresh;
+    }
+    
     public void applyFilter(final GreyscaleImage input) {
         
         if (input.getWidth() < 3 || input.getHeight() < 3) {
