@@ -618,9 +618,14 @@ public class CIEChromaticity {
      * http://www.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
      * Sharma, Wu, and Dalal 2004
      * 
-     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
+     * The implementation is adapted from
+     * https://github.com/wuchubuzai/OpenIMAJ/blob/master/image/image-processing/src/main/java/org/openimaj/image/analysis/colour/CIEDE2000.java
+     * which has copyright 2011, The University of Southampton and allows
+     * redistribution of source with or without modification.
      * 
-     * the range of resulting values is 
+     * Note that the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
+     * 
+     * The range of resulting values is 0 to 19.21. 
      * 
      * @return deltaE 
      */
@@ -632,118 +637,74 @@ public class CIEChromaticity {
     
     /**
      * calculate the delta E 2000 for 2 sets of CIE LAB, specifically, CIEDE2000.
-     * 
-     * uses https://en.wikipedia.org/wiki/Color_difference
+     * see https://en.wikipedia.org/wiki/Color_difference
      * and
      * http://www.ece.rochester.edu/~gsharma/ciede2000/ciede2000noteCRNA.pdf
      * Sharma, Wu, and Dalal 2004
      * 
-     * the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
+     * The implementation is adapted from
+     * https://github.com/wuchubuzai/OpenIMAJ/blob/master/image/image-processing/src/main/java/org/openimaj/image/analysis/colour/CIEDE2000.java
+     * which has copyright 2011, The University of Southampton and allows
+     * redistribution of source with or without modification.
      * 
-     * the range of resulting values is 0 to 27.59
+     * Note that the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
+     * 
+     * The range of resulting values is 0 to 19.21.
      * 
      * @return deltaE 
      */
-    public double calcDeltaECIE2000(float ell1, float a1, float b1,
-        float ell2, float a2, float b2) {
+    public double calcDeltaECIE2000(float L1, float a1, float b1,
+        float L2, float a2, float b2) {
         
-        double deltaEllPrime = ell2 - ell1;
+        double Lmean = (L1 + L2) / 2.0;
+		double C1 =  Math.sqrt(a1*a1 + b1*b1);
+		double C2 =  Math.sqrt(a2*a2 + b2*b2);
+		double Cmean = (C1 + C2) / 2.0;
+		
+        double pow7 = Math.pow(Cmean, 7);
+        double pow257 =  Math.pow(25, 7);
         
-        double ellBar = (ell1 + ell2)/2.;
-        
-        double c1 = Math.sqrt((a1*a1) + (b1*b1));
-        double c2 = Math.sqrt((a2*a2) + (b2*b2));
-        
-        double cBar = (c1 + c2)/2.;
-        
-        double cBarPow7 = Math.pow(cBar, 7.);
-        double pow257 = Math.pow(25, 7.);
-        double m = 1. - Math.sqrt(cBarPow7/(cBarPow7 + pow257));
-        double aPrime1 = a1 + ((a1/2.) * m);
-        double aPrime2 = a2 + ((a2/2.) * m);
-        
-        double cPrime1 = Math.sqrt(aPrime1*aPrime1 + b1*b1);
-        double cPrime2 = Math.sqrt(aPrime2*aPrime2 + b2*b2);
-        
-        double cPrimeBar = (cPrime1 + cPrime2)/2.;
-        double deltaCPrime = cPrime1 - cPrime2;
-        double cc = cPrime1 * cPrime2;
-        
-        double hPrime1;
-        if ((b1 == 0) || (aPrime1 == 0)) {
-            hPrime1 = 0;
-        } else {
-            hPrime1 = Math.atan2(b1, aPrime1) * 180./Math.PI;
-        }
-        
-        double hPrime2;
-        if ((b2 == 0) || (aPrime2 == 0)) {
-            hPrime2 = 0;
-        } else {
-            hPrime2 = Math.atan2(b2, aPrime2) * 180./Math.PI;
-        }
-        
-        double deltaHPrime = 0;
-        if (cc == 0) {
-            deltaHPrime = 0;
-        } else if (Math.abs(hPrime2 - hPrime1) <= 180.) {
-            deltaHPrime = hPrime2 - hPrime1;
-        } else if ((hPrime2 - hPrime1) > 180.) {
-            deltaHPrime = (hPrime2 - hPrime1) - 360;
-        } else if ((hPrime2 - hPrime1) < -180.) {
-            deltaHPrime = (hPrime2 - hPrime1) + 360;
-        }
-        
-        double deltaHPrimeCap = 2. * Math.sqrt(cc) * Math.sin(deltaHPrime/2.);
-        
-        double hPrimeBar = 0;
-        if (cc == 0) {
-            hPrimeBar = 0;
-        } else if (Math.abs(hPrime2 - hPrime1) <= 180.) {
-            hPrimeBar = (hPrime1 + hPrime2)/2.;
-        } else if ((Math.abs(hPrime2 - hPrime1) > 180.)) {
-            if ((hPrime1 + hPrime2) < 360) {
-                hPrimeBar = (hPrime1 + hPrime2 + 360.)/2.;
-            } else if ((hPrime1 + hPrime2) >= 360) {
-                hPrimeBar = (hPrime1 + hPrime2 - 360.)/2.;
-            }
-        }
-        
-        double t = 1. - (0.17 * Math.cos(hPrimeBar - 30.)) +
-            (0.24 * Math.cos(2. * hPrimeBar)) + 
-            (0.32 * Math.cos(3. * hPrimeBar + 6.)) -
-            (0.20 * Math.cos(4. * hPrimeBar - 63.));
-        
-        double pow2 = Math.pow((ellBar - 50), 2.);
-        double sL = 1. + ((0.0015 * pow2)/(Math.sqrt(20. + pow2)));
-        
-        double sC = 1. + (0.0045 * cPrimeBar);
-        
-        double sH = 1. + (0.015 * cPrimeBar * t);
-        
-        double cPrimeBarPow7 = Math.pow(cPrimeBar, 7.);
-        double deltaTheta = 30. * Math.exp(-1.*(Math.pow(((hPrimeBar - 275.)/25.), 2)));
-        double rC = 2. * Math.sqrt(cPrimeBarPow7/(cPrimeBarPow7 + pow257));
-        double rT = -rC * Math.sin(2 * deltaTheta);
-        
-        double kL = 1;
-        double kC = 1;
-        double kH = 1;
-        
-        double t1 = deltaEllPrime/(kL * sL);
-        t1 *= t1;
-        
-        double t2 = deltaCPrime/(kC * sC);
-        t2 *=t2;
-        
-        double t3 = deltaHPrimeCap/(kH * sH);
-        t3 *= t3;
-        
-        double t4 = rT * (deltaCPrime * deltaHPrimeCap)/(kC * sC * kH * sH);
-        
-        double e2000 = Math.sqrt(t1 + t2 + t3 + t4);
-        
-        return e2000;
+		double G =  (1. - Math.sqrt(pow7/(pow7 + pow257)))/2.;
+		double a1prime = a1 * (1. + G);
+		double a2prime = a2 * (1. + G);
+		
+		double C1prime =  Math.sqrt(a1prime*a1prime + b1*b1);
+		double C2prime =  Math.sqrt(a2prime*a2prime + b2*b2);
+		double Cmeanprime = (C1prime + C2prime) / 2;
+		
+		double h1prime =  Math.atan2(b1, a1prime) + 2*Math.PI * (Math.atan2(b1, a1prime)<0 ? 1 : 0);
+		double h2prime =  Math.atan2(b2, a2prime) + 2*Math.PI * (Math.atan2(b2, a2prime)<0 ? 1 : 0);
+		double Hmeanprime =  ((Math.abs(h1prime - h2prime) > Math.PI) ? (h1prime + h2prime + 2*Math.PI) / 2 : (h1prime + h2prime) / 2);
+		
+		double T =  1.0 - 0.17 * Math.cos(Hmeanprime - Math.PI/6.0) + 0.24 * Math.cos(2*Hmeanprime) 
+            + 0.32 * Math.cos(3*Hmeanprime + Math.PI/30) - 0.2 * Math.cos(4*Hmeanprime - 21*Math.PI/60);
+		
+		double deltahprime =  ((Math.abs(h1prime - h2prime) <= Math.PI) ? h2prime - h1prime : 
+            (h2prime <= h1prime) ? h2prime - h1prime + 2*Math.PI : h2prime - h1prime - 2*Math.PI);
+		
+		double deltaLprime = L2 - L1;
+		double deltaCprime = C2prime - C1prime;
+		double deltaHprime =  2.0 * Math.sqrt(C1prime*C2prime) * Math.sin(deltahprime / 2.0);
+		double SL =  1.0 + ( (0.015*(Lmean - 50)*(Lmean - 50)) / (Math.sqrt( 20 + (Lmean - 50)*(Lmean - 50) )) );
+		double SC =  1.0 + 0.045 * Cmeanprime;
+		double SH =  1.0 + 0.015 * Cmeanprime * T;
+		
+		double deltaTheta =  (30 * Math.PI / 180) * Math.exp(-((180/Math.PI*Hmeanprime-275)/25)*((180/Math.PI*Hmeanprime-275)/25));
+		double RC =  (2 * Math.sqrt(Math.pow(Cmeanprime, 7) / (Math.pow(Cmeanprime, 7) + Math.pow(25, 7))));
+		double RT =  (-RC * Math.sin(2 * deltaTheta));
+		
+		double KL = 1;
+		double KC = 1;
+		double KH = 1;
+		
+		double deltaE = Math.sqrt(
+				((deltaLprime/(KL*SL)) * (deltaLprime/(KL*SL))) +
+				((deltaCprime/(KC*SC)) * (deltaCprime/(KC*SC))) +
+				((deltaHprime/(KH*SH)) * (deltaHprime/(KH*SH))) +
+				(RT * (deltaCprime/(KC*SC)) * (deltaHprime/(KH*SH)))
+				);
+				
+		return deltaE;
     }
 
     /**

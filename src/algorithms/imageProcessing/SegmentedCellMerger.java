@@ -240,7 +240,7 @@ public class SegmentedCellMerger {
                 }
                     
                 PairIntWithIndex p2Parent = p2ParentNode.getMember();
-                
+
                 if (hasBeenVisited(visitedMap, pParent, p2Parent)) {
                     continue;
                 }
@@ -254,7 +254,7 @@ public class SegmentedCellMerger {
                 } else {
                     deltaE = Math.abs(cieC.calcDeltaECIE94(labP, labP2));
                 }
-                
+                               
                 addToVisited(visitedMap, pParent, p2Parent);
 
                 /*double[][] data = new double[4][1];
