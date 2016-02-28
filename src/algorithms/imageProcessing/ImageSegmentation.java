@@ -3581,6 +3581,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
         
+        //TODO: improve edges so that fewer cells need to be merged
+        
         return performSegmentationWithColorEdges(input, greyGradient, debugTag);
     }
 
@@ -6000,226 +6002,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     private List<Set<PairInt>> performSegmentationWithColorEdges(ImageExt input, 
         GreyscaleImage greyGradient, String debugTag) {
         
-        if (true) {
-            return performSegmentationWithColorEdges0(input, greyGradient, debugTag);
-        }
-        
-        Set<PairInt> mask = new HashSet<PairInt>();        
-        // add dark pixels to mask so they do not get placed into the maskList
-        findDarkPixels(input, mask);
-        
-        List<Set<PairInt>> segmentedCellList0 = findContiguousCells(255, 
-            greyGradient, mask);
-        
-MiscDebug.writeAlternatingColor(input.copyImage(), segmentedCellList0, "_pre_mask_0_" + debugTag);
-         
-        for (PairInt p : mask) {
-            greyGradient.setValue(p.getX(), p.getY(), 255);
-        }
-
-        boolean useDeltaE2000 = true;
-        double deltaELimit = 2.0;
-        float radius = 3.f;
-        placeUnassignedAndMergeEmbedded(input, segmentedCellList0, deltaELimit,
-            mask, useDeltaE2000, radius);
-        
-MiscDebug.writeAlternatingColor(input.copyImage(), segmentedCellList0, "_pre_mask_1_" + debugTag);
-    
-        List<Set<PairInt>> maskList = new ArrayList<Set<PairInt>>();
-        // ----- extract sets to use as a mask in next methods ----
-/*        extractSetsThatShouldNotBeMerged(input, segmentedCellList0, maskList);
-        
-        placeUnassignedAndMergeEmbedded(input, maskList, deltaELimit,
-            new HashSet<PairInt>(), useDeltaE2000, radius);
-
-        mask.clear();
-        for (int i = 0; i < maskList.size(); ++i) {
-            mask.addAll(maskList.get(i));
-        }
-        
-MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + debugTag);
-       
-        Map<PairInt, Integer> pointIndexMap0 = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < maskList.size(); ++i) {
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : maskList.get(i)) {
-                pointIndexMap0.put(p, key);
-            }
-        }
-        deltaELimit = 1.0;
-        mergeAdjacentIfSimilar(input, maskList, pointIndexMap0, 
-            deltaELimit, useDeltaE2000, debugTag);
-        
-        MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_mask_" + debugTag);
-*/
-        
-                
-        List<Set<PairInt>> segmentedCellList = findContiguousCells(255, greyGradient, mask);
-  /*      
-        useDeltaE2000 = false;
-        deltaELimit = 2.3;
-        radius = 3.f;
-        placeUnassignedAndMergeEmbedded(input, segmentedCellList, deltaELimit,
-            mask, useDeltaE2000, radius);
-
-        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        
-        deltaELimit = 2.3;
-        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000, debugTag);
-                
-        // ------- place unassigned w/ closest within a range ------
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_before_pre_merge_non_masked" + debugTag);
-        }
-        
-        useDeltaE2000 = false;
-        deltaELimit = 4.;
-        radius = 2.f;
-        Set<PairInt> unassigned = createZerosSet(segmentedCellList, w, h, mask);
-        placeUnassignedUsingNearest(input, segmentedCellList, unassigned, 
-            deltaELimit, radius, useDeltaE2000);
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000);
-
-        useDeltaE2000 = false;
-        deltaELimit = 3.;
-        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000, debugTag);      
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        reassignSmallestGroups(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_after_pre_merged_non_masked" + debugTag);
-        }
-
-        mask.clear();
-        for (Set<PairInt> set : segmentedCellList) {
-            mask.addAll(set);
-        }
-        useDeltaE2000 = false;
-        deltaELimit = 6.;//4
-        radius = 2.f;
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), maskList, 
-                "_before_merged_masked" + debugTag);
-        }
-        Set<PairInt> unassigned0 = createZerosSet(maskList, w, h, mask);
-        placeUnassignedUsingNearest(input, maskList, unassigned0, 
-            deltaELimit, radius, useDeltaE2000);
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < maskList.size(); ++i) {
-            Set<PairInt> set = maskList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        mergeEmbeddedIfSimilar(input, maskList, pointIndexMap, 
-            deltaELimit, useDeltaE2000);
-        
-        useDeltaE2000 = false;
-        deltaELimit = 1.0;
-        mergeAdjacentIfSimilar(input, maskList, pointIndexMap, 
-            deltaELimit, useDeltaE2000, debugTag);
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < maskList.size(); ++i) {
-            Set<PairInt> set = maskList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        useDeltaE2000 = true;
-        reassignSmallestGroups(input, maskList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), maskList, 
-                "_after_merged_masked" + debugTag);
-        }
-*/
-        segmentedCellList.addAll(maskList);
-/*        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        useDeltaE2000 = true;
-        deltaELimit = 2.3;
-        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000);
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        useDeltaE2000 = true;
-        assignedRemainingUnassigned(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-
-        useDeltaE2000 = true;
-        reassignSmallestGroups(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        */
-        
-        if (debugTag != null && !debugTag.equals("")) {
-   
-            Image imgCp = input.copyImage();
-            
-            MiscDebug.writeAlternatingColor(imgCp, segmentedCellList,
-                "_merged_" + debugTag);
-        }
-        
-        return segmentedCellList;
-    }
-
-    private List<Set<PairInt>> performSegmentationWithColorEdges0(ImageExt input, 
-        GreyscaleImage greyGradient, String debugTag) {
-        
         boolean fineDebug = true;
         
         int w = input.getWidth();
@@ -6240,15 +6022,16 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
         float radius;
         
         useDeltaE2000 = true;
-        deltaELimit = 1.0;//1.5
+        deltaELimit = 4;
         radius = 2.f;
+        //TODO: for a fixed radius of 2, can replace this next algorithm with offsets for faster impl
         Set<PairInt> unassigned = createZerosSet(segmentedCellList, w, h, mask);
         placeUnassignedUsingNearest(input, segmentedCellList, unassigned, 
             deltaELimit, radius, useDeltaE2000);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_0_" + debugTag);
+                segmentedCellList, "_tmp_0_" + debugTag);
         }
 
         Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6259,20 +6042,23 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
                 pointIndexMap.put(p, key);
             }
         }
+   
+        deltaELimit = 4.0;
         placeUnassignedByGrowingCells(input, segmentedCellList, unassigned,
             pointIndexMap, deltaELimit, useDeltaE2000);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_1_" + debugTag);
+                segmentedCellList, "_tmp_1_" + debugTag);
         }
         
+        deltaELimit = 10.0;//6.0
         mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_2_" + debugTag);
+                segmentedCellList, "_tmp_2_" + debugTag);
         }       
         
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6284,16 +6070,49 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
             }
         }
         
-        deltaELimit = 0.25;
+        deltaELimit = 0.5;//0.6
         mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);
-                
+        
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_3_" + debugTag);
+                segmentedCellList, "_tmp_3_" + debugTag);
         }
         
-        //NEXT: assign the unassigned more liberally
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        
+        deltaELimit = 10.0;//6.0
+        mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, useDeltaE2000);
+        
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(), 
+                segmentedCellList, "_tmp_4_" + debugTag);
+        } 
+                
+        deltaELimit = 10;
+        radius = 2.f;
+        unassigned = createZerosSet(segmentedCellList, w, h, mask);
+        if (unassigned.size() > 0) {
+            log.info("attempting to place " + unassigned.size() + " unassigned pixels");
+            placeUnassignedUsingNearest(input, segmentedCellList, unassigned, 
+                deltaELimit, radius, useDeltaE2000);
+        }
+        
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(), 
+                segmentedCellList, "_tmp_5_" + debugTag);
+        } 
+        
+        // find contiguous unassigned and add them to segmentedCellList
+        
 /*
         useDeltaE2000 = false;
         deltaELimit = 4.;
