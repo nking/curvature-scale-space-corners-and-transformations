@@ -179,8 +179,8 @@ public class DFSContiguousValueFinder {
                 continue;
             }
             
-            int uY = uIndex/width;
-            int uX = uIndex - (uY * width);
+            int uY = img.getRow(uIndex);
+            int uX = img.getCol(uIndex);
             
             boolean foundANeighbor = false;
 
@@ -199,7 +199,7 @@ public class DFSContiguousValueFinder {
                     continue;
                 }
 
-                int vIndex = (vY * width) + vX;
+                int vIndex = img.getIndex(vX, vY);
 
                 Integer vKey = Integer.valueOf(vIndex);
 

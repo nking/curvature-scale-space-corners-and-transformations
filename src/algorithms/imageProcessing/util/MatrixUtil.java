@@ -527,6 +527,7 @@ public class MatrixUtil {
     public static SimpleMatrix createLDATransformation2(SimpleMatrix normData,
         SimpleMatrix classes, int nClasses) {
         
+        // number of data of feature sets
         int n = normData.numCols();
         
         if (classes.numCols() != n) {
@@ -536,6 +537,7 @@ public class MatrixUtil {
         
         //Logger log = Logger.getLogger(MatrixUtil.class.getName());
                
+        // number of features:
         int nRows = normData.numRows();
                         
         double[][] mean = new double[nClasses][nRows];
@@ -663,15 +665,22 @@ public class MatrixUtil {
         double[] eigenValues = new double[nEigen];
         double[][] eigenVectors = new double[nEigen][nRows];
         for (int i = 0; i < nEigen; ++i) {
+            indexes[i] = i;
             eigenValues[i] = evd.getEigenvalue(i).getMagnitude();
             SimpleMatrix ev = evd.getEigenVector(i);
-            eigenVectors[i] = new double[ev.numRows()];
-            for (int j = 0; j < ev.numRows(); ++j) {
-                eigenVectors[i][j] = ev.get(j, 0);
+            // seems to be an NPE here occasionally
+            try {
+                int nr = ev.numRows();
+                eigenVectors[i] = new double[nr];
+                for (int j = 0; j < ev.numRows(); ++j) {
+                    eigenVectors[i][j] = ev.get(j, 0);
+                }
+                //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
+                //log.info("eigenvector=" + evd.getEigenVector(i));
+            } catch (NullPointerException npe) {
+                eigenValues[i] = Double.MIN_VALUE;
+                eigenVectors[i] = new double[nRows];
             }
-            indexes[i] = i;
-            //log.info("eigenvalue " + i + " = " + evd.getEigenvalue(i));
-            //log.info("eigenvector=" + evd.getEigenVector(i));
         }
         
         // ----- sort by decreasing eigen value -----

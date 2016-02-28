@@ -3471,9 +3471,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage bRImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
-        GreyscaleImage labBImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        
         GreyscaleImage labAImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
@@ -3490,9 +3487,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             bGImg.setValue(i, b - g);
             bRImg.setValue(i, b - r);
 
-            float[] lab = input.getCIELAB(i);
-            labBImg.setValue(i, Math.round(lab[2]));
-            
+            float[] lab = input.getCIELAB(i);            
             labAImg.setValue(i, Math.round(lab[1]));
 
             int grey = Math.round(((float)(r + g + b))/3.f);
@@ -3519,41 +3514,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(o1Img, "_o1_before_" + debugTag);
         }
-//removeSmallBubblesFromEdges(o1Img, 0, 255, "o1_" + debugTag);
+        removeSmallBubblesFromEdges(o1Img, 0, 255, "o1_" + debugTag);
         
-        int[] n234T = countFractionZeros(o1Img);
-        boolean useO1 = true;//((float)n234[0]/(float)n234T[3]) < 0.2f;
-        log.info(debugTag + " o1 nH2=" + ((float)n234T[0]/(float)n234T[3])
-            + " nH3=" + ((float)n234T[1]/(float)n234T[3])
-            + " nH4=" + ((float)n234T[2]/(float)n234T[3])
-            //+ " useO1=" + useO1
-        );
+        boolean useO1 = true;
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make O1 edges");
         if (fineDebug && useO1 && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(o1Img, "_o1_" + debugTag);
-        }
-        
-        // -------
-        t0 = System.currentTimeMillis();        
-        createEdges01(labBImg, "labB_" + debugTag);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labBImg, "_labB_before_" + debugTag);
-        }
-//removeSmallBubblesFromEdges(labBImg, 0, 255, "labB_" + debugTag);
-        n234T = countFractionZeros(labBImg);
-        boolean useB = true;//((float)n234[0]/(float)n234T[3]) < 0.2f;
-        log.info(debugTag + " labB nH2=" + ((float)n234T[0]/(float)n234T[3])
-            + " nH3=" + ((float)n234T[1]/(float)n234T[3])
-            + " nH4=" + ((float)n234T[2]/(float)n234T[3])
-            + " useB=" + useB
-        );
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make lab B edges");
-        if (fineDebug && useB && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labBImg, "_labB_" + debugTag);
         }
         
         // -------
@@ -3563,18 +3531,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(labAImg, "_labA_before_" + debugTag);
         }
-//removeSmallBubblesFromEdges(labAImg, 0, 255, "labA_" + debugTag);
-        n234T = countFractionZeros(labAImg);
-        boolean useA = true;//((float)n234[0]/(float)n234T[3]) < 0.2f;
-        log.info(debugTag + " labA nH2=" + ((float)n234T[0]/(float)n234T[3])
-            + " nH3=" + ((float)n234T[1]/(float)n234T[3])
-            + " nH4=" + ((float)n234T[2]/(float)n234T[3])
-            + " useA=" + useA
-        );
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make lab A edges");
-        if (fineDebug && useA && debugTag != null && !debugTag.equals("")) {
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(labAImg, "_labA_" + debugTag);
         }
         
@@ -3584,76 +3544,39 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         invertImage(greyGradient);
         setAllNon255To0(greyGradient);
         greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
+        removeIsolatedPixels(greyGradient, 0, 255, true);
+        imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_filtered_" + debugTag);
-            MiscDebug.writeImage(greyGradient, "_gradient_before_" + debugTag);
+            MiscDebug.writeImage(greyGradient, "_gradient_" + debugTag);
         }
-//removeSmallBubblesFromEdges(greyGradient, 0, 255, "gradient_" + debugTag);
-        MiscDebug.writeImage(greyGradient, "_gradient_after_" + debugTag);
-        n234T = countFractionZeros(greyGradient);
-        boolean useGradient = true;//((float)n234[0]/(float)n234T[3]) < 0.2f;
-        log.info(debugTag + " gradient nH2=" + ((float)n234T[0]/(float)n234T[3])
-            + " nH3=" + ((float)n234T[1]/(float)n234T[3])
-            + " nH4=" + ((float)n234T[2]/(float)n234T[3])
-            + " useGradient=" + useGradient
-        );
+      
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make grey gradient edges");
 
-        t0 = System.currentTimeMillis();
-
-        n234T = countFractionZeros(greyGradient2);
-        float f2g2 = ((float) n234T[0] / (float) n234T[3]);
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
-        }
-
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make grey gradient2 edges");
-        
-        GreyscaleImage finestGrey = greyGradient.copyImage();
-        
-        for (int i = 0; i < finestGrey.getNPixels(); ++i) {
-            if (
-                (useO1 && (o1Img.getValue(i) == 0))
-                || (greyGradient2.getValue(i) == 0)
-                || ((f2g2 >= 0.2) && useB && (labBImg.getValue(i) == 0))
-                ) {
-                finestGrey.setValue(i, 0);
-            }
-        }
-        imageProcessor.applyAdaptiveMeanThresholding(finestGrey, 1);
-        //removeSmallBubblesFromEdges(finestGrey, 0, 255, "gradient_" + debugTag);
-        
-        //see if there are large sections of blue and grey and white and
-        // neutral boundaries that can be extracted and masked from coarser mergings.
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(finestGrey, "_combined_fine_" + debugTag);
-        }        
-        
-        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
-        
-        //TODO: could use a compressed image representation of 0's and 1's for this:
-        // add the edges from images
+        // -------- combine greyGradient2 w/ grey gradient
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
-            if (
-                (useO1 && (o1Img.getValue(i) == 0))
-                || (finestGrey.getValue(i) == 0)
-                || ((f2g2 < 0.2) && (greyGradient2.getValue(i) == 0))
-                || (useB && (labBImg.getValue(i) == 0))
-                ) {
+            if (greyGradient2.getValue(i) == 0) {
                 greyGradient.setValue(i, 0);
             }
         }
         
-        log.info("useO1=" + useO1 + " useLabB=" + useB + " useGreyGradient2=" + true);
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
+            MiscDebug.writeImage(greyGradient, "_grey_gradient_combined_" + debugTag);
+        }
 
-        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
-        removeIsolatedPixels(greyGradient, 0, 255, true);
+        //TODO: could use a compressed image representation of 0's and 1's for this:
+        // add the edges from images
+        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
+            if ((useO1 && (o1Img.getValue(i) == 0))
+                || (labAImg.getValue(i) == 0)) {
+                greyGradient.setValue(i, 0);
+            }
+        }
         
+        // using adaptive loses detail.  definitely don't use more thinning here
+                        
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
         }
@@ -5844,27 +5767,37 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         HistogramEqualization histEq = new HistogramEqualization(combinedImg);
         histEq.applyFilter();
                 
-        int nPixHigh = 0;
-        int nPixEdges = 0;
-        for (int i = 0; i < combinedImg.getNPixels(); ++i) {
-            int v = combinedImg.getValue(i);
-            if (v < 201) {
-                nPixEdges++;
-                if (v > 135) {
-                    nPixHigh++;
-                }
-            }
-        }
-        
         GreyscaleImage combinedLowContrast = 
             edgesForLowContrastSmoothSkyColorDifferences(o1Img, bGImg, bRImg,
                 debugTag);
-        
-   MiscDebug.writeImage(combinedLowContrast, debugTag + "_combined_color_diff_low_contrast_");
-                
+               
+        float fraction = (float)findLargestContiguous(combinedLowContrast, 255)/
+            (float)combinedLowContrast.getNPixels();
+       
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        //thresh 200 or 127
+        int nLowContrast = 0;
+        for (int i = 0; i < combinedLowContrast.getNPixels(); ++i) {
+            int v0 = combinedLowContrast.getValue(i);
+            if (v0 == 0) {
+                ++nLowContrast;
+            }
+        }
+        
+        float f = combinedImg.getNPixels();
+        
+        float nLf = (float)nLowContrast/f;
+        
+        if ((nLf < 0.75) && (fraction > 0.16) && ((fraction < 0.8) || (nLf < 0.58))) {
+            imageProcessor.applyAdaptiveMeanThresholding(combinedLowContrast, 1);
+            combinedLowContrast = fillInGapsOf1(combinedLowContrast, 
+                new HashSet<PairInt>(), 0);
+//            MiscDebug.writeImage(combinedLowContrast, debugTag + "_combined_color_diff_low_contrast_");
+            return combinedLowContrast;
+        }
+        
+        // --- making a combined image from thresholded at 127 and at 200 -----
+        
         GreyscaleImage combinedImg127 = combinedImg.copyImage();
         for (int i = 0; i < combinedImg127.getNPixels(); ++i) {
             int v = combinedImg127.getValue(i);
@@ -5874,9 +5807,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 combinedImg127.setValue(i, 255);
             }
         }
+        combinedImg127 = fillInGapsOf1(combinedImg127, new HashSet<PairInt>(), 255);
         removeIsolatedPixels(combinedImg127, 255, 0);
         imageProcessor.applyAdaptiveMeanThresholding(combinedImg127, 1);
-        removeSmallBubblesFromEdges(combinedImg127, 0, 255, debugTag);//200, 100, debugTag);
+        removeSmallBubblesFromEdges(combinedImg127, 0, 255, debugTag);
         
         GreyscaleImage combinedImg200 = combinedImg.copyImage();
         for (int i = 0; i < combinedImg200.getNPixels(); ++i) {
@@ -5886,56 +5820,25 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             } else {
                 combinedImg200.setValue(i, 255);
             }
-        }
+        }       
+        combinedImg200 = fillInGapsOf1(combinedImg200, new HashSet<PairInt>(), 255);
         removeIsolatedPixels(combinedImg200, 255, 0);
         imageProcessor.applyAdaptiveMeanThresholding(combinedImg200, 1);
-        removeSmallBubblesFromEdges(combinedImg200, 0, 255, debugTag);//200, 100, debugTag);
-
-   MiscDebug.writeImage(combinedImg127, debugTag + "_combined_color_diff_thresh127_");
-   MiscDebug.writeImage(combinedImg200, debugTag + "_combined_color_diff_thresh200_");
+        removeSmallBubblesFromEdges(combinedImg200, 0, 255, debugTag);
         
-        int nLowContrast = 0;
-        int nInterLowAnd200 = 0;
-        int nInterLowAnd127 = 0;
-        for (int i = 0; i < combinedLowContrast.getNPixels(); ++i) {
-            int v0 = combinedLowContrast.getValue(i);
-            int v1 = combinedImg200.getValue(i);
-            int v2 = combinedImg127.getValue(i);
-            if (v0 == 0) {
-                ++nLowContrast;
-                if (v1 == 0) {
-                    ++nInterLowAnd200;
-                }
-                if (v2 == 0) {
-                    ++nInterLowAnd127;
-                }
+//MiscDebug.writeImage(combinedImg127, "_tmp_127_" + debugTag);
+//MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
+        
+        for (int i = 0; i < combinedImg127.getNPixels(); ++i) {
+            int v = combinedImg127.getValue(i);
+            if (v == 0) {
+                combinedImg200.setValue(i, 0);
             }
         }
-        log.info(debugTag + " nLow=" + nLowContrast 
-            + " nInter127=" + nInterLowAnd127 + " nInter200=" + nInterLowAnd200);
         
-        int n = combinedImg.getNPixels();
+//MiscDebug.writeImage(combinedImg200, "_tmp_combined_" + debugTag);
         
-        boolean t1 = nLowContrast < (n * 0.2f);
-        boolean t2 = nInterLowAnd127 > (nLowContrast/4.5);
-        boolean t3 = ((float)nInterLowAnd127/(float)nInterLowAnd200) < 4.5;
-        
-        boolean t4 = nInterLowAnd127 < ((float)n/300.);
-                
-        log.info("t1=" + t1 + " t2=" + t2 + " t3=" + t3 + " t4=" + t4 + " " +
-            ((float)nInterLowAnd127/(float)nInterLowAnd200));
-        
-        if (t1 && t3) {
-            log.info(debugTag + " returning low contrast");
-            return combinedLowContrast;
-        } else if (t4) { // number based on image ~ 300 x 300 and n127<200
-            log.info(debugTag + " returning thresh 127");
-            return combinedImg127;
-        } else {
-            log.info(debugTag + " returning thresh 200");
-            return combinedImg200;
-        }
-               
+        return combinedImg200;
     }
     
     private GreyscaleImage edgesForLowContrastSmoothSkyColorDifferences(GreyscaleImage o1Img, 
@@ -5976,10 +5879,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
+        /*
+        leaving the boundary pixels as thicker band of 0's allows them to be 
+        reassigned individiually, so try w/o adapt thresh thinning
+        */
+                
         removeIsolatedPixels(combinedImg, 255, 0);
-        imageProcessor.applyAdaptiveMeanThresholding(combinedImg, 1);
+        // if not using adaptive, need to invert
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.applyAdaptiveMeanThresholding(combinedImg, 1);
+        invertImage(combinedImg);
         removeSmallBubblesFromEdges(combinedImg, 0, 255, debugTag);//200, 100, debugTag);
         
         //MiscDebug.writeImage(combinedImg, debugTag + "_combined_low_contrast_color_diff_final");
@@ -6374,6 +6283,8 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
                 pointIndexMap.put(p, key);
             }
         }
+        
+        deltaELimit = 0.25;
         mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);
                 
@@ -6381,6 +6292,8 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_3_" + debugTag);
         }
+        
+        //NEXT: assign the unassigned more liberally
 /*
         useDeltaE2000 = false;
         deltaELimit = 4.;
@@ -6465,6 +6378,24 @@ MiscDebug.writeAlternatingColor(input.copyImage(), maskList, "_pre_mask_2_" + de
         }
         
         return segmentedCellList;
+    }
+
+    private int findLargestContiguous(GreyscaleImage img, int value) {
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
+        finder.setMinimumNumberInCluster(2);
+        finder.findGroups(value);
+        
+        int maxN = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            PairIntArray group = finder.getXY(i);
+            if (group.getN() > maxN) {
+                maxN = group.getN();
+            }
+        }
+        
+        return maxN;
     }
 
     public static class Colors {
