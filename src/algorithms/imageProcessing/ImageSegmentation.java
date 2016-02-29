@@ -3567,13 +3567,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         //TODO: could use a compressed image representation of 0's and 1's for this:
-        // add the edges from images
-        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
-            if ((useO1 && (o1Img.getValue(i) == 0))
-                || (labAImg.getValue(i) == 0)) {
-                greyGradient.setValue(i, 0);
-            }
-        }
+        
+        //- add O1 and labA edges if adjacent to existing edges in greyGradient 
+        addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img, labAImg}, 
+            0, 255);
+        
+        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
         
         // using adaptive loses detail.  definitely don't use more thinning here
                         
@@ -6215,6 +6214,92 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return maxN;
+    }
+
+    /**
+     * add to greyGradient, edges from addImages if the edges are adjacent
+     * to an edge in greyGradient.
+     * @param greyGradient
+     * @param addImages
+     * @param edgeValue
+     * @param nonEdgeValue 
+     */
+    private void addAdjacentEdges(GreyscaleImage greyGradient, 
+        GreyscaleImage[] addImages, int edgeValue, int nonEdgeValue) {
+
+        GreyscaleImage img = greyGradient.copyImage();
+        
+        int nImages = addImages.length;
+        
+        DFSContiguousValueFinder[] finders = new DFSContiguousValueFinder[nImages];
+        List<Map<PairInt, Integer>> pointListIndexes = new ArrayList<Map<PairInt, Integer>>();
+        
+        for (int i = 0; i < nImages; ++i) {
+            
+            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(addImages[i]);
+            finder.setMinimumNumberInCluster(1);
+         finder.setToUse8Neighbors();
+            finder.findGroups(edgeValue);
+            finders[i] = finder;
+            
+            Map<PairInt, Integer> pointIndexes = new HashMap<PairInt, Integer>();
+            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
+                PairIntArray group = finder.getXY(j);
+                Integer key = Integer.valueOf(j);
+                for (int ii = 0; ii < group.getN(); ++ii) {
+                    PairInt p = new PairInt(group.getX(ii), group.getY(ii));
+                    pointIndexes.put(p, key);
+                }
+            }
+            pointListIndexes.add(pointIndexes);
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                
+                int v = img.getValue(x, y);
+                if (v != edgeValue) {
+                    continue;
+                }
+                
+                for (int dx = -1; dx <= +1; ++dx) {
+                    int x2 = x + dx;
+                    if ((x2 < 0) || (x2 > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = -1; dy <= +1; ++dy) {
+                        int y2 = y + dy;
+                        if ((y2 < 0) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        PairInt p2 = new PairInt(x2, y2);
+                        
+                        // if p2 is in any of the point index lists,
+                        // add that edge to greyGradient and remove it from
+                        // the maps to make next traversal faster
+                        
+                        for (int ii = 0; ii < nImages; ++ii) {
+                            Map<PairInt, Integer> pointIndexes = pointListIndexes.get(ii);
+                            Integer listIndex = pointIndexes.get(p2);
+                            if (listIndex != null) {
+                                PairIntArray edge2 = finders[ii].getXY(listIndex.intValue());
+                                for (int jj = 0; jj < edge2.getN(); ++jj) {
+                                    greyGradient.setValue(edge2.getX(jj), 
+                                        edge2.getY(jj), edgeValue);
+                                }
+                                pointIndexes.remove(p2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static class Colors {
