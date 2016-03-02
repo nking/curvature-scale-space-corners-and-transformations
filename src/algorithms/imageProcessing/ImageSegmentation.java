@@ -3499,7 +3499,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         GreyscaleImage greyGradient2 = edgesForLowContrastSmoothSkyColorDifferences(
             input, o1Img, bGImg, bRImg, debugTag);
-        
+
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to create color images");
@@ -3525,7 +3525,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         // -------
-        // NOTE: if decide to use labA, it needs different steps to build better edges
         t0 = System.currentTimeMillis();        
         createEdges01(labAImg, "labA_" + debugTag);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
@@ -3567,7 +3566,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
  imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
+            MiscDebug.writeImage(greyGradient2, "_grey_gradient_0_" + debugTag);
             MiscDebug.writeImage(greyGradient, "_grey_gradient_combined_" + debugTag);
         }
 
@@ -3582,7 +3581,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // using adaptive loses detail.  definitely don't use more thinning here
                         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_combined_ws_input_p0_" + debugTag);
+            MiscDebug.writeImage(greyGradient, "_input_edges_" + debugTag);
         }
         
         //TODO: improve edges so that fewer cells need to be merged
@@ -5818,7 +5817,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }    
         invertImage(combinedImg);
         removeEdgesSmallerThanLimit(combinedImg, 0, 255, 2);
-MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
+
+        //MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
 
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
@@ -5938,7 +5938,7 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
             
             // edges are now 0's
                         
-            MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_3" + debugTag);
+            //MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_3" + debugTag);
 
             t1 = System.currentTimeMillis();
             t1Sec = (t1 - t0)/1000;
@@ -5960,7 +5960,7 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
         greyImg = fillInGapsOf1(greyImg, new HashSet<PairInt>(), 255);        
         invertImage(greyImg);
 
-        MiscDebug.writeImage(greyImg, "_tmp_greyImg_" + debugTag);
+        //MiscDebug.writeImage(greyImg, "_tmp_greyImg_" + debugTag);
 
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
@@ -5976,7 +5976,8 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
         
         t0 = System.currentTimeMillis();
                 
-        addAdjacentEdges(combinedImg, new GreyscaleImage[]{greyImg}, 0);
+        addAdjacentEdges0(combinedImg, new GreyscaleImage[]{greyImg}, 0);
+        //addAdjacentEdges(combinedImg, new GreyscaleImage[]{greyImg}, 0);
 
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
@@ -6040,7 +6041,7 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
         
         removeIsolatedPixels(img, pixValue, pixNullValue, true);
     }
-    
+
     private void removeIsolatedPixels(GreyscaleImage img, int pixValue,
         int pixNullValue, boolean use8Neighbors) {
         
@@ -6381,6 +6382,26 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private void addAdjacentEdges0(GreyscaleImage img, 
+        GreyscaleImage[] addImages, int edgeValue) {
+
+        int nImages = addImages.length;
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int ii = 0; ii < nImages; ++ii) {
+            GreyscaleImage img2 = addImages[ii];
+            for (int x = 0; x < w; ++x) {
+                for (int y = 0; y < h; ++y) {
+                    if (img2.getValue(x, y) == edgeValue) {
+                        img.setValue(x, y, edgeValue);
+                    } 
                 }
             }
         }
