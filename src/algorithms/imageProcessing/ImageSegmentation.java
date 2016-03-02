@@ -3497,9 +3497,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        GreyscaleImage greyGradient2 = exploreCombinedColorDifferences(o1Img, 
-            bGImg, bRImg, debugTag);
-                
+        GreyscaleImage greyGradient2 = edgesForLowContrastSmoothSkyColorDifferences(
+            input, o1Img, bGImg, bRImg, debugTag);
+        
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to create color images");
@@ -3546,6 +3546,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
         removeIsolatedPixels(greyGradient, 0, 255, true);
         imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
+        removeEdgesSmallerThanLimit(greyGradient, 0, 255, 2);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_gradient_" + debugTag);
         }
@@ -3554,12 +3555,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make grey gradient edges");
 
+        /*
         // -------- combine greyGradient2 w/ grey gradient
         for (int i = 0; i < greyGradient.getNPixels(); ++i) {
             if (greyGradient2.getValue(i) == 0) {
                 greyGradient.setValue(i, 0);
             }
         }
+        */
+        addAdjacentEdges(greyGradient, new GreyscaleImage[]{greyGradient2}, 0);
+ imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient2, "_greyGradient2_" + debugTag);
@@ -3569,8 +3574,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //TODO: could use a compressed image representation of 0's and 1's for this:
         
         //- add O1 and labA edges if adjacent to existing edges in greyGradient 
-        addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img, labAImg}, 
-            0, 255);
+        addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img, labAImg}, 0);
         
         greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
         
@@ -5745,18 +5749,22 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         log.info(" nAssigned=" + count + " nPixels=" + input.getNPixels());
     }
 
-    private GreyscaleImage exploreCombinedColorDifferences(GreyscaleImage o1Img, 
-        GreyscaleImage bGImg, GreyscaleImage bRImg, String debugTag) {
-        
+    private GreyscaleImage exploreCombinedColorDifferences(
+        GreyscaleImage o1Img, GreyscaleImage bGImg, GreyscaleImage bRImg, 
+        String debugTag) {
+                
         GreyscaleImage o1ImgCp = o1Img.copyImage();
         GreyscaleImage bGImgCp = bGImg.copyImage();
         GreyscaleImage bRImgCp = bRImg.copyImage();
         
         CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
         filter.applyFilter(o1ImgCp);
         filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
         filter.applyFilter(bGImgCp);
         filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
         filter.applyFilter(bRImgCp);
         
         GreyscaleImage combinedImg = o1Img.createWithDimensions();
@@ -5768,51 +5776,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         HistogramEqualization histEq = new HistogramEqualization(combinedImg);
         histEq.applyFilter();
                 
-        GreyscaleImage combinedLowContrast = 
-            edgesForLowContrastSmoothSkyColorDifferences(o1Img, bGImg, bRImg,
-                debugTag);
-               
-        float fraction = (float)findLargestContiguous(combinedLowContrast, 255)/
-            (float)combinedLowContrast.getNPixels();
-       
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        int nLowContrast = 0;
-        for (int i = 0; i < combinedLowContrast.getNPixels(); ++i) {
-            int v0 = combinedLowContrast.getValue(i);
-            if (v0 == 0) {
-                ++nLowContrast;
-            }
-        }
-        
-        float f = combinedImg.getNPixels();
-        
-        float nLf = (float)nLowContrast/f;
-        
-        if ((nLf < 0.75) && (fraction > 0.16) && ((fraction < 0.8) || (nLf < 0.58))) {
-            imageProcessor.applyAdaptiveMeanThresholding(combinedLowContrast, 1);
-            combinedLowContrast = fillInGapsOf1(combinedLowContrast, 
-                new HashSet<PairInt>(), 0);
-//            MiscDebug.writeImage(combinedLowContrast, debugTag + "_combined_color_diff_low_contrast_");
-            return combinedLowContrast;
-        }
+MiscDebug.writeImage(combinedImg, "_tmp_pre_thresh_" + debugTag);        
         
         // --- making a combined image from thresholded at 127 and at 200 -----
-        
-        GreyscaleImage combinedImg127 = combinedImg.copyImage();
-        for (int i = 0; i < combinedImg127.getNPixels(); ++i) {
-            int v = combinedImg127.getValue(i);
-            if (v < 128) {
-                combinedImg127.setValue(i, 0);
-            } else {
-                combinedImg127.setValue(i, 255);
-            }
-        }
-        combinedImg127 = fillInGapsOf1(combinedImg127, new HashSet<PairInt>(), 255);
-        removeIsolatedPixels(combinedImg127, 255, 0);
-        imageProcessor.applyAdaptiveMeanThresholding(combinedImg127, 1);
-        removeSmallBubblesFromEdges(combinedImg127, 0, 255, debugTag);
-        
+                
         GreyscaleImage combinedImg200 = combinedImg.copyImage();
         for (int i = 0; i < combinedImg200.getNPixels(); ++i) {
             int v = combinedImg200.getValue(i);
@@ -5824,24 +5791,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }       
         combinedImg200 = fillInGapsOf1(combinedImg200, new HashSet<PairInt>(), 255);
         removeIsolatedPixels(combinedImg200, 255, 0);
-        imageProcessor.applyAdaptiveMeanThresholding(combinedImg200, 1);
-        removeSmallBubblesFromEdges(combinedImg200, 0, 255, debugTag);
-        
-//MiscDebug.writeImage(combinedImg127, "_tmp_127_" + debugTag);
-//MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
-        
-        for (int i = 0; i < combinedImg127.getNPixels(); ++i) {
-            int v = combinedImg127.getValue(i);
-            if (v == 0) {
-                combinedImg200.setValue(i, 0);
-            }
-        }
-        
-//MiscDebug.writeImage(combinedImg200, "_tmp_combined_" + debugTag);
+MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
         
         return combinedImg200;
     }
     
+    /*
     private GreyscaleImage edgesForLowContrastSmoothSkyColorDifferences(GreyscaleImage o1Img, 
         GreyscaleImage bGImg, GreyscaleImage bRImg, String debugTag) {
         
@@ -5879,11 +5834,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 combinedImg.setValue(i, 255);
             }
         }
-        
-        /*
-        leaving the boundary pixels as thicker band of 0's allows them to be 
-        reassigned individiually, so try w/o adapt thresh thinning
-        */
                 
         removeIsolatedPixels(combinedImg, 255, 0);
         // if not using adaptive, need to invert
@@ -5894,6 +5844,211 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         //MiscDebug.writeImage(combinedImg, debugTag + "_combined_low_contrast_color_diff_final");
 
+        return combinedImg;
+    }
+    */
+    
+    private GreyscaleImage edgesForLowContrastSmoothSkyColorDifferences(
+        ImageExt img, GreyscaleImage o1Img, GreyscaleImage bGImg, 
+        GreyscaleImage bRImg, String debugTag) {
+        
+        long t0 = System.currentTimeMillis();
+        
+        GreyscaleImage o1ImgCp = o1Img.copyImage();
+        GreyscaleImage bGImgCp = bGImg.copyImage();
+        GreyscaleImage bRImgCp = bRImg.copyImage();
+        
+        GreyscaleImage greyImg = img.copyToGreyscale();
+        
+        CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
+        filter.overrideHighThreshold(0.5f);
+        filter.applyFilter(o1ImgCp);
+        filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
+        filter.overrideHighThreshold(0.5f);
+        filter.applyFilter(bGImgCp);
+        filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
+        filter.overrideHighThreshold(0.5f);
+        filter.applyFilter(bRImgCp);
+        
+        GreyscaleImage combinedImg = o1Img.createWithDimensions();
+        for (int i = 0; i < o1Img.getNPixels(); ++i) {
+            int v = o1ImgCp.getValue(i) + bGImgCp.getValue(i) + bRImgCp.getValue(i);
+            combinedImg.setValue(i, v);
+        }
+        for (int i = 0; i < combinedImg.getNPixels(); ++i) {
+            if (combinedImg.getValue(i) > 0) {
+                combinedImg.setValue(i, 255);
+            }
+        }
+        invertImage(combinedImg);
+        //TODO: remove this step if feasible:
+        removeEdgesSmallerThanLimit(combinedImg, 0, 255, 2);
+MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
+
+        long t1 = System.currentTimeMillis();
+        long t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, first combined color gradient image");
+
+        Set<PairInt> edgePoints = new HashSet<PairInt>();
+        for (int col = 0; col < combinedImg.getWidth(); ++col) {
+            for (int row = 0; row < combinedImg.getHeight(); ++row) {
+                if (combinedImg.getValue(col, row) == 0) {
+                    edgePoints.add(new PairInt(col, row));
+                }
+            }
+        }
+
+        t0 = System.currentTimeMillis();
+
+        DistanceTransform dt = new DistanceTransform();
+        int[][] dtTr = dt.applyMeijsterEtAl(edgePoints, combinedImg.getWidth(),
+            combinedImg.getHeight());
+
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, distance transform");
+
+        t0 = System.currentTimeMillis();
+        
+        float[] values = new float[combinedImg.getNPixels()];
+        int count = 0;
+        for (int col = 0; col < combinedImg.getWidth(); ++col) {
+            for (int row = 0; row < combinedImg.getHeight(); ++row) {
+                values[count] = dtTr[col][row];
+                count++;
+            }
+        }
+        
+        // if the histogram only has points at small x, then the spacings are
+        // small and the gradient image is probably saturated, so need to create
+        // the gradient with a threshold of 200 instead
+        
+        float max = 500.f;
+    
+        HistogramHolder hist = Histogram.createSimpleHistogram(0.f, max, 5.f,
+            values, Errors.populateYErrorsBySqrt(values));
+        /*
+        try {
+            for (int i = 0; i < hist.getYHistFloat().length; ++i) {
+                float v = (float)Math.log(hist.getYHistFloat()[i]);
+                hist.getYHistFloat()[i] = v;
+                hist.getYHist()[i] = Math.round(v);
+            }
+            hist.plotHistogram("edge dist transform", debugTag);
+        } catch (IOException e) {
+        }
+        */
+        
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, histogram created");
+        
+        int lastXIdx = MiscMath.findLastNonZeroIndex(hist);
+        float lastX = (lastXIdx > -1) ? hist.getXHist()[lastXIdx] : Float.MAX_VALUE;
+        
+        // ------- analyze the distance transform, and if too noisey,
+        //  create gradient image thresholded by value 200
+        int avgDim = (o1Img.getWidth() + o1Img.getHeight())/2;
+        double maxPossibleY = Math.log(o1Img.getNPixels());
+        boolean createThresh200 = false;
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(debugTag + " avgDim=" + avgDim + " maxPossibleY=" + maxPossibleY);
+        sb.append(" lastX=" + lastX);
+        if ((lastX < (avgDim/3)) || (avgDim <= 50)) {
+            // the comparison should be proportional to image size. wanting to
+            // see if points are clustered at small distances
+            createThresh200 = true;
+        } else {
+            // for a 300x300 image, looking at slope between x=50 and x=250
+            int y50 = MiscMath.findYforX(hist, 50);
+            if (y50 < 1) {
+                createThresh200 = true;
+            } else {
+                double deltaLogY = maxPossibleY - Math.log(y50);
+                if (deltaLogY > (0.55*maxPossibleY)) {
+                    createThresh200 = true;
+                } else {
+                    // look at the slope between 50 and 150.  if steep drop,
+                    // then create thresh 200
+                    int y150 = MiscMath.findYforX(hist, 150);
+                    if (y150 < 1) {
+                        createThresh200 = true;
+                    } else {
+                        double deltaLogY2 = Math.log(y50) - Math.log(y150);
+                        if (deltaLogY2 > (0.3*maxPossibleY)) {
+                            createThresh200 = true;
+                        }
+                        sb.append(" deltaLogY2=" + deltaLogY2 + " 0.3*max=" + 0.3*maxPossibleY);
+                    }
+                }                
+                sb.append(" deltaLogY=" + deltaLogY + " 0.55*max=" + 0.55*maxPossibleY);
+            }
+        }
+        sb.append(" createThresh200=" + createThresh200);
+        log.info(sb.toString());
+        
+        if (createThresh200) {
+            
+            t0 = System.currentTimeMillis();
+            
+            combinedImg = exploreCombinedColorDifferences(o1Img, bGImg, bRImg, 
+                debugTag); 
+            
+            invertImage(combinedImg);
+            
+            // edges are now 0's
+            
+            t1 = System.currentTimeMillis();
+            t1Sec = (t1 - t0)/1000;
+            log.info(t1Sec + " sec, thresh 200");
+        }
+
+        MiscDebug.writeImage(combinedImg, "_tmp_combined_color_diff_" + debugTag);
+
+        t0 = System.currentTimeMillis();
+        
+        filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
+        filter.overrideHighThreshold(3.5f);
+        filter.overrideLowThreshold(0.5f); //0.5
+        filter.applyFilter(greyImg);
+        for (int i = 0; i < greyImg.getNPixels(); ++i) {
+            if (greyImg.getValue(i) > 0) {
+                greyImg.setValue(i, 255);
+            }
+        }
+        greyImg = fillInGapsOf1(greyImg, new HashSet<PairInt>(), 255);
+        for (int i = 0; i < combinedImg.getNPixels(); ++i) {
+            if (combinedImg.getValue(i) == 255) {
+                greyImg.setValue(i, 0);
+            }
+        }
+        invertImage(greyImg);
+MiscDebug.writeImage(greyImg, "_tmp_grey_low_contrast_2" + debugTag);
+
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, grey_low_contrast");
+
+        //NOTE: this method needs to be improved.  if greyImg has many small contig regions, this takes along time to finish
+        //List<Set<PairInt>> perimeterLists = findPerimeters(greyImg, 255);
+        List<Set<PairInt>> perimeterLists = new ArrayList<Set<PairInt>>();
+        
+        t0 = System.currentTimeMillis();
+                
+        addAdjacentEdges0(combinedImg, new GreyscaleImage[]{greyImg}, 
+            perimeterLists, 0);
+        //addAdjacentEdges(combinedImg, new GreyscaleImage[]{greyImg}, 
+        //    perimeterLists, 0);
+
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, added adjacent edges from other images");
+        
         return combinedImg;
     }
 
@@ -6222,10 +6377,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param greyGradient
      * @param addImages
      * @param edgeValue
-     * @param nonEdgeValue 
      */
     private void addAdjacentEdges(GreyscaleImage greyGradient, 
-        GreyscaleImage[] addImages, int edgeValue, int nonEdgeValue) {
+        GreyscaleImage[] addImages, int edgeValue) {
 
         GreyscaleImage img = greyGradient.copyImage();
         
@@ -6253,9 +6407,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             pointListIndexes.add(pointIndexes);
         }
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -6300,6 +6451,224 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
+    }
+
+    /**
+     * add to greyGradient, edges from addImages if the edges are adjacent
+     * to an edge in greyGradient.
+     * @param greyGradient
+     * @param addImages
+     * @param perimeterLists lists of edges already extracted from an image
+     * @param edgeValue
+     */
+    private void addAdjacentEdges(GreyscaleImage greyGradient, 
+        GreyscaleImage[] addImages, List<Set<PairInt>> perimeterLists,
+        int edgeValue) {
+
+        GreyscaleImage img = greyGradient.copyImage();
+        
+        int nImages = addImages.length;
+        
+        DFSContiguousValueFinder[] finders = new DFSContiguousValueFinder[nImages];
+        List<Map<PairInt, Integer>> pointListIndexes = new ArrayList<Map<PairInt, Integer>>();
+        
+        for (int i = 0; i < nImages; ++i) {
+            
+            DFSContiguousValueFinder finder = new DFSContiguousValueFinder(addImages[i]);
+            finder.setMinimumNumberInCluster(1);
+         finder.setToUse8Neighbors();
+            finder.findGroups(edgeValue);
+            finders[i] = finder;
+            
+            Map<PairInt, Integer> pointIndexes = new HashMap<PairInt, Integer>();
+            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
+                PairIntArray group = finder.getXY(j);
+                Integer key = Integer.valueOf(j);
+                for (int ii = 0; ii < group.getN(); ++ii) {
+                    PairInt p = new PairInt(group.getX(ii), group.getY(ii));
+                    pointIndexes.put(p, key);
+                }
+            }
+            pointListIndexes.add(pointIndexes);
+        }
+        
+        Map<PairInt, Integer> pointListIndexes2 = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < perimeterLists.size(); ++i) {
+            Set<PairInt> set = perimeterLists.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointListIndexes2.put(p, key);
+            }
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                
+                int v = img.getValue(x, y);
+                if (v != edgeValue) {
+                    continue;
+                }
+                
+                for (int dx = -1; dx <= +1; ++dx) {
+                    int x2 = x + dx;
+                    if ((x2 < 0) || (x2 > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = -1; dy <= +1; ++dy) {
+                        int y2 = y + dy;
+                        if ((y2 < 0) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        PairInt p2 = new PairInt(x2, y2);
+                        
+                        // if p2 is in any of the point index lists,
+                        // add that edge to greyGradient and remove it from
+                        // the maps to make next traversal faster
+                                                
+                        for (int ii = 0; ii < nImages; ++ii) {
+                            Map<PairInt, Integer> pointIndexes = pointListIndexes.get(ii);
+                            Integer listIndex = pointIndexes.get(p2);
+                            if (listIndex != null) {
+                                PairIntArray edge2 = finders[ii].getXY(listIndex.intValue());
+                                for (int jj = 0; jj < edge2.getN(); ++jj) {
+                                    greyGradient.setValue(edge2.getX(jj), 
+                                        edge2.getY(jj), edgeValue);
+                                }
+                                pointIndexes.remove(p2);
+                            }
+                        }
+                        
+                        Integer listIndex = pointListIndexes2.get(p2);
+                        if (listIndex != null) {
+                            Set<PairInt> set = perimeterLists.get(listIndex.intValue());
+                            for (PairInt p3 : set) {
+                                greyGradient.setValue(p3.getX(), p3.getY(), edgeValue);
+                            }
+                            pointListIndexes2.remove(p2);
+                            set.clear();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * add to greyGradient, edges from addImages if the edges are adjacent
+     * to an edge in greyGradient.
+     * @param greyGradient
+     * @param addImages
+     * @param perimeterLists lists of edges already extracted from an image
+     * @param edgeValue
+     */
+    private void addAdjacentEdges0(GreyscaleImage greyGradient, 
+        GreyscaleImage[] addImages, List<Set<PairInt>> perimeterLists,
+        int edgeValue) {
+
+        GreyscaleImage img = greyGradient.copyImage();
+        
+        int nImages = addImages.length;
+        
+        Map<PairInt, Integer> pointListIndexes2 = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < perimeterLists.size(); ++i) {
+            Set<PairInt> set = perimeterLists.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointListIndexes2.put(p, key);
+            }
+        }
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                
+                int v = img.getValue(x, y);
+                if (v != edgeValue) {
+                    continue;
+                }
+                
+                for (int dx = -1; dx <= +1; ++dx) {
+                    int x2 = x + dx;
+                    if ((x2 < 0) || (x2 > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = -1; dy <= +1; ++dy) {
+                        int y2 = y + dy;
+                        if ((y2 < 0) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        PairInt p2 = new PairInt(x2, y2);
+                        
+                        // if p2 is in any of the point index lists,
+                        // add that edge to greyGradient and remove it from
+                        // the maps to make next traversal faster
+                                                
+                        for (int ii = 0; ii < nImages; ++ii) {
+                            GreyscaleImage img2 = addImages[ii];
+                            int v2 = img2.getValue(x2, y2);
+                            if (v2 == edgeValue) {
+                                greyGradient.setValue(x2, y2, edgeValue);
+                            }
+                        }
+                        
+                        Integer listIndex = pointListIndexes2.get(p2);
+                        if (listIndex != null) {
+                            Set<PairInt> set = perimeterLists.get(listIndex.intValue());
+                            for (PairInt p3 : set) {
+                                greyGradient.setValue(p3.getX(), p3.getY(), edgeValue);
+                            }
+                            pointListIndexes2.remove(p2);
+                            set.clear();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private List<Set<PairInt>> findPerimeters(GreyscaleImage greyImg, 
+        int edgeValue) {
+        
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        int imageMaxColumn = greyImg.getWidth() - 1;
+        int imageMaxRow = greyImg.getHeight() - 1;
+        int[] rowMinMax = new int[2];
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(greyImg);
+        finder.setMinimumNumberInCluster(1);
+        finder.setToUse8Neighbors();
+        finder.findGroups(edgeValue);
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            
+            PairIntArray edge = finder.getXY(i);
+            Set<PairInt> points = Misc.convert(edge);
+            
+            Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+                        
+            Map<Integer, List<PairInt>> rowColRanges = perimeterFinder.find(
+                points, rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        
+            if (!outputEmbeddedGapPoints.isEmpty()) {
+                // update the perimeter for "filling in" embedded points
+                perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                    rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+            }
+            
+            Set<PairInt> perimeterPoints = perimeterFinder.getBorderPixels0(
+                rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+            
+            output.add(perimeterPoints);
+        }
+        
+        return output;
     }
 
     public static class Colors {
@@ -6817,6 +7186,34 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int nonEdgeValue, String label) {
          
         removeSmallBubblesFromEdges(img, edgeValue, nonEdgeValue, -1, -1, label);
+    }
+    
+     /**
+     * 
+     * @param img
+     * @param edgeValue
+     * @param nonEdgeValue
+     * @param limit edges less than or equal to this size will be removed
+     */
+    public void removeEdgesSmallerThanLimit(GreyscaleImage img, int edgeValue,
+        int nonEdgeValue, int limit) {
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(img);
+        finder.setMinimumNumberInCluster(1);
+        finder.setToUse8Neighbors();
+        finder.findGroups(edgeValue);
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            PairIntArray edge = finder.getXY(i);
+            if (edge.getN() > limit) {
+                continue;
+            }
+            for (int j = 0; j < edge.getN(); ++j) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                img.setValue(x, y, nonEdgeValue);
+            }
+        }
     }
     
     /**

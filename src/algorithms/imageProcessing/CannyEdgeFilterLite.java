@@ -36,9 +36,15 @@ public class CannyEdgeFilterLite {
     
     protected boolean useOutdoorMode = false;
     
+    protected boolean overrideToUseSobel = false;
+    
     protected int[] shrinkToSize = null;
     
     public CannyEdgeFilterLite() {        
+    }
+    
+    public void setToUseSobel() {
+        this.overrideToUseSobel = true;
     }
        
     public void setLineThinnerClass(Class<? extends ILineThinner> cls) {
@@ -65,8 +71,12 @@ public class CannyEdgeFilterLite {
         if (input.getWidth() < 3 || input.getHeight() < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-
-        if (useDiffOfGauss) {
+        
+        if (overrideToUseSobel) {
+            gradientXY = input.copyImage();
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.applySobelKernel(gradientXY);
+        } else if (useDiffOfGauss) {
             gradientXY = createDiffOfGaussians(input);
         } else {
             gradientXY = createGradient(input);
@@ -115,6 +125,10 @@ public class CannyEdgeFilterLite {
         HistogramHolder imgHistogram = createImageHistogram(input);
         
         LowIntensityRemovalFilter filter2 = new LowIntensityRemovalFilter();
+        
+        if (lowThreshold != defaultLowThreshold) {
+            filter2.overrideLowThresholdFactor(lowThreshold);
+        }
         
         ImageStatistics stats = filter2.removeLowIntensityPixels(input,
             imgHistogram);

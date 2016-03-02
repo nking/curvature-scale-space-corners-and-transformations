@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1160,6 +1161,19 @@ public class MiscMath {
         }
         return firstNonZero;
     }
+    
+    public static int findLastNonZeroIndex(HistogramHolder h) {
+        int n = h.getXHist().length;
+        int idx = -1;
+        for (int i = (n - 1); i > -1; --i) {
+            int y = h.getYHist()[i];
+            if (y > 0) {
+                idx = i;
+                break;
+            }
+        }
+        return idx;
+    }
 
     /**
      * find the minima and maxima of x and y and return them as
@@ -2146,6 +2160,27 @@ public class MiscMath {
         }
         
         return scaled;
+    }
+
+    public static int findYforX(HistogramHolder hist, float xSrch) {
+        
+        // looking for closest x to xSrch, then returning the y
+        int idx = Arrays.binarySearch(hist.getXHist(), xSrch);
+                    
+        // if it's negative, (-(insertion point) - 1)
+        if (idx < 0) {
+            // idx = -*idx2 - 1
+            idx = -1*(idx + 1);
+        }
+        if (idx > (hist.getXHist().length - 1)) {
+            idx = hist.getXHist().length - 1;
+        }
+        
+        if (idx < 0) {
+            return -1;
+        }
+        
+        return hist.getYHist()[idx];
     }
 
 }
