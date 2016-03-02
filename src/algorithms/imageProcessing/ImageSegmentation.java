@@ -6021,22 +6021,20 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
                 greyImg.setValue(i, 255);
             }
         }
-        greyImg = fillInGapsOf1(greyImg, new HashSet<PairInt>(), 255);
-        for (int i = 0; i < combinedImg.getNPixels(); ++i) {
-            if (combinedImg.getValue(i) == 255) {
-                greyImg.setValue(i, 0);
-            }
-        }
+        greyImg = fillInGapsOf1(greyImg, new HashSet<PairInt>(), 255);        
         invertImage(greyImg);
-MiscDebug.writeImage(greyImg, "_tmp_grey_low_contrast_2" + debugTag);
 
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec, grey_low_contrast");
 
         //NOTE: this method needs to be improved.  if greyImg has many small contig regions, this takes along time to finish
-        //List<Set<PairInt>> perimeterLists = findPerimeters(greyImg, 255);
-        List<Set<PairInt>> perimeterLists = new ArrayList<Set<PairInt>>();
+        t0 = System.currentTimeMillis();
+        List<Set<PairInt>> perimeterLists = findPerimeters(greyImg, 255);
+        //List<Set<PairInt>> perimeterLists = new ArrayList<Set<PairInt>>();
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec, to find perimeters in greyImg");
         
         t0 = System.currentTimeMillis();
                 
