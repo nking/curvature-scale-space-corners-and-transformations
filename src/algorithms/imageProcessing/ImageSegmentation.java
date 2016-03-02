@@ -5854,11 +5854,14 @@ MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
         
         long t0 = System.currentTimeMillis();
         
+        GreyscaleImage greyImg = img.copyToGreyscale();
+        
+        GreyscaleImage combinedImg = greyImg.copyImage();
+        
+        /*
         GreyscaleImage o1ImgCp = o1Img.copyImage();
         GreyscaleImage bGImgCp = bGImg.copyImage();
         GreyscaleImage bRImgCp = bRImg.copyImage();
-        
-        GreyscaleImage greyImg = img.copyToGreyscale();
         
         CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
         filter.setToUseSobel();
@@ -5873,7 +5876,6 @@ MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
         filter.overrideHighThreshold(0.5f);
         filter.applyFilter(bRImgCp);
         
-        GreyscaleImage combinedImg = o1Img.createWithDimensions();
         for (int i = 0; i < o1Img.getNPixels(); ++i) {
             int v = o1ImgCp.getValue(i) + bGImgCp.getValue(i) + bRImgCp.getValue(i);
             combinedImg.setValue(i, v);
@@ -5883,6 +5885,16 @@ MiscDebug.writeImage(combinedImg200, "_tmp_200_" + debugTag);
                 combinedImg.setValue(i, 255);
             }
         }
+        */
+        CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+        filter.setToUseSobel();
+        filter.overrideHighThreshold(0.5f);
+        filter.applyFilter(combinedImg);
+        for (int i = 0; i < combinedImg.getNPixels(); ++i) {
+            if (combinedImg.getValue(i) > 0) {
+                combinedImg.setValue(i, 255);
+            }
+        }        
         invertImage(combinedImg);
         //TODO: remove this step if feasible:
         removeEdgesSmallerThanLimit(combinedImg, 0, 255, 2);
@@ -5969,7 +5981,8 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
                 createThresh200 = true;
             } else {
                 double deltaLogY = maxPossibleY - Math.log(y50);
-                if (deltaLogY > (0.55*maxPossibleY)) {
+                double f = deltaLogY/maxPossibleY;
+                if (f > 0.55) {
                     createThresh200 = true;
                 } else {
                     // look at the slope between 50 and 150.  if steep drop,
@@ -5979,13 +5992,16 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
                         createThresh200 = true;
                     } else {
                         double deltaLogY2 = Math.log(y50) - Math.log(y150);
-                        if (deltaLogY2 > (0.35*maxPossibleY)) {
+                        double f2 = deltaLogY2/maxPossibleY;
+                        if (f2 > 0.35) {
                             createThresh200 = true;
                         }
-                        sb.append(" deltaLogY2=" + deltaLogY2 + " 0.35*max=" + 0.3*maxPossibleY);
+                        sb.append(" deltaLogY2=" + deltaLogY2 + " 0.35*max=" 
+                            + 0.3*maxPossibleY + " f2=" + f2);
                     }
                 }                
-                sb.append(" deltaLogY=" + deltaLogY + " 0.55*max=" + 0.55*maxPossibleY);
+                sb.append(" deltaLogY=" + deltaLogY + " 0.55*max=" 
+                    + 0.55*maxPossibleY + " f=" + f);
             }
         }
         sb.append(" createThresh200=" + createThresh200);
