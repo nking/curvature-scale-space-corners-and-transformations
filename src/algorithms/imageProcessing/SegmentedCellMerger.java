@@ -889,9 +889,9 @@ public class SegmentedCellMerger {
             double absDeltaBR = Math.abs((b0 - r0) - (b1 - r1));
             double absDeltaBG = Math.abs((b0 - g0) - (b1 - g1));
             
-            double absDeltaO1 = Math.abs((double)((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
-            double absDeltaO2 = Math.abs((double)((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
-            double absDeltaO3 = Math.abs((double)((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
+            double absDeltaO1 = Math.abs(((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
+            double absDeltaO2 = Math.abs(((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
+            double absDeltaO3 = Math.abs(((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
             
             String str = String.format(
                 "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,sim\n",
@@ -954,9 +954,9 @@ public class SegmentedCellMerger {
             double absDeltaBR = Math.abs((b0 - r0) - (b1 - r1));
             double absDeltaBG = Math.abs((b0 - g0) - (b1 - g1));
             
-            double absDeltaO1 = Math.abs((double)((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
-            double absDeltaO2 = Math.abs((double)((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
-            double absDeltaO3 = Math.abs((double)((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
+            double absDeltaO1 = Math.abs(((r0 - g0) - (r1 - g1))/Math.sqrt(2.));
+            double absDeltaO2 = Math.abs(((r0 + g0 - 2*b0) - (r1 + g1 - 2*b1))/Math.sqrt(6.));
+            double absDeltaO3 = Math.abs(((r0 + g0 + b0) - (r1 + g1 + b1))/Math.sqrt(2.));
             
             String str = String.format(
                 "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,diff\n",
