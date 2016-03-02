@@ -5979,10 +5979,10 @@ MiscDebug.writeImage(combinedImg, "_tmp_color_low_contrast_2" + debugTag);
                         createThresh200 = true;
                     } else {
                         double deltaLogY2 = Math.log(y50) - Math.log(y150);
-                        if (deltaLogY2 > (0.3*maxPossibleY)) {
+                        if (deltaLogY2 > (0.35*maxPossibleY)) {
                             createThresh200 = true;
                         }
-                        sb.append(" deltaLogY2=" + deltaLogY2 + " 0.3*max=" + 0.3*maxPossibleY);
+                        sb.append(" deltaLogY2=" + deltaLogY2 + " 0.35*max=" + 0.3*maxPossibleY);
                     }
                 }                
                 sb.append(" deltaLogY=" + deltaLogY + " 0.55*max=" + 0.55*maxPossibleY);
