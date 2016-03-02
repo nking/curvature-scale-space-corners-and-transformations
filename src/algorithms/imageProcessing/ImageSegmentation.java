@@ -3465,12 +3465,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage o1Img = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
-        GreyscaleImage bGImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
-        GreyscaleImage bRImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
         GreyscaleImage labAImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
@@ -3484,8 +3478,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int g = input.getG(i);
             int b = input.getB(i);
             o1Img.setValue(i, (r - g));
-            bGImg.setValue(i, b - g);
-            bRImg.setValue(i, b - r);
 
             float[] lab = input.getCIELAB(i);            
             labAImg.setValue(i, Math.round(lab[1]));
@@ -3497,9 +3489,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        GreyscaleImage greyGradient2 = edgesForLowContrastSmoothSkyColorDifferences(
-            input, o1Img, bGImg, bRImg, debugTag);
-
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to create color images");
@@ -3530,6 +3519,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(labAImg, "_labA_before_" + debugTag);
         }
+        removeSmallBubblesFromEdges(labAImg, 0, 255, "labA_" + debugTag);
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make lab A edges");
@@ -3538,37 +3528,46 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         t0 = System.currentTimeMillis();
-               
-        imageProcessor.highPassIntensityFilter(greyGradient, 0.09);//0.089
-        invertImage(greyGradient);
-        setAllNon255To0(greyGradient);
-        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
-        removeIsolatedPixels(greyGradient, 0, 255, true);
-        imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
-        removeEdgesSmallerThanLimit(greyGradient, 0, 255, 2);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_gradient_" + debugTag);
+                       
+        // for test images like Merton college, need to use filterLimit > 0.15
+        float filterLimit = 0.15f;
+        int nIter = 0;
+        while (filterLimit < 0.35) {
+            GreyscaleImage greyGradient0 = greyGradient.copyImage();
+            imageProcessor.highPassIntensityFilter(greyGradient0, filterLimit);
+            invertImage(greyGradient0);
+            setAllNon255To0(greyGradient0);
+            greyGradient0 = fillInGapsOf1(greyGradient0, new HashSet<PairInt>(), 0);
+            removeIsolatedPixels(greyGradient0, 0, 255, true);
+            imageProcessor.applyAdaptiveMeanThresholding(greyGradient0, 1);
+            removeEdgesSmallerThanLimit(greyGradient0, 0, 255, 2);
+            if (fineDebug && debugTag != null && !debugTag.equals("")) {
+                MiscDebug.writeImage(greyGradient0, "_grey_gradient_" + nIter + "_" + debugTag);
+            }
+            
+            int nEdgePoints = 0;
+            for (int i = 0; i < greyGradient0.getNPixels(); ++i) {
+                if (greyGradient0.getValue(i) == 0) {
+                    ++nEdgePoints;
+                }
+            }
+            float fraction = (float)nEdgePoints/(float)greyGradient0.getNPixels();
+            
+            // merton has 0.00067 and needs larger filterLimit
+            if (fraction > 0.01) {
+                greyGradient = greyGradient0;
+                break;
+            }
+            filterLimit += 0.075f;
+            
+            ++nIter;
+            
+            log.info("nIter=" + nIter);
         }
-      
+        
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make grey gradient edges");
-
-        /*
-        // -------- combine greyGradient2 w/ grey gradient
-        for (int i = 0; i < greyGradient.getNPixels(); ++i) {
-            if (greyGradient2.getValue(i) == 0) {
-                greyGradient.setValue(i, 0);
-            }
-        }
-        */
-        addAdjacentEdges(greyGradient, new GreyscaleImage[]{greyGradient2}, 0);
- imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient2, "_grey_gradient_0_" + debugTag);
-            MiscDebug.writeImage(greyGradient, "_grey_gradient_combined_" + debugTag);
-        }
 
         //TODO: could use a compressed image representation of 0's and 1's for this:
         
