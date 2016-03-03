@@ -6326,7 +6326,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 0.5;
+        deltaELimit = 0.55;
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
         
