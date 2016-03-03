@@ -6157,7 +6157,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_2_" + debugTag);
         } 
+        
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        
+        assignedRemainingUnassigned(input, segmentedCellList, pointIndexMap,
+            useDeltaE2000, debugTag);
 
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(),
+                segmentedCellList, "_tmp_3_" + debugTag);
+        }
+        
 if (true) {
     return segmentedCellList;
 }
