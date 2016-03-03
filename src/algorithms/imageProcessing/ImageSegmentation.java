@@ -5671,8 +5671,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         int w = input.getWidth();
         int h = input.getHeight();
-
-        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
         
         CIEChromaticity cieC = new CIEChromaticity();
         
@@ -5680,6 +5678,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int[] dys = Misc.dy8;
         
         int count = 0;
+        
+        double deltaELimit = 8;
         
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -5706,24 +5706,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         continue;
                     }
                     
-                    Set<PairInt> set1 = segmentedCellList.get(listIndex1.intValue());
+                    float[] lab1 = input.getCIELAB(x1, y1);
                     
-                    Colors colors1 = segmentedCellAvgLabColors.get(listIndex1);
-                    if (colors1 == null) {
-                        colors1 = calculateAverageLAB(input, set1);
-                        segmentedCellAvgLabColors.put(listIndex1, colors1);
-                    }
-
                     double deltaE;
                     if (useDeltaE2000) {
-                        deltaE = Math.abs(cieC.calcDeltaECIE2000(lab,
-                            colors1.getColors()));
+                        // max value is ~19
+                        deltaE = Math.abs(cieC.calcDeltaECIE2000(lab, lab1));
                     } else {
-                        deltaE = Math.abs(cieC.calcDeltaECIE94(lab,
-                            colors1.getColors()));
+                        // max value is ~29
+                        deltaE = Math.abs(cieC.calcDeltaECIE94(lab, lab1));
                     }
                     
-                    if (deltaE < minDeltaE) {
+                    //double deltaL = Math.pow(Math.abs(lab[0] - lab1[0]), 2);
+                    //deltaE += deltaL;
+                    
+                    if ((deltaE < minDeltaE) && (deltaE < deltaELimit)) {
                         minDeltaE = deltaE;
                         minDeltaEIdx = listIndex1.intValue();
                     }
@@ -5737,15 +5734,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
+        Set<PairInt> unassigned = createZerosSet(segmentedCellList, w, h, 
+            new HashSet<PairInt>());
+        
+        int count2 = 0;
+        DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+        finder.setMinimumNumberInCluster(1);
+        finder.findConnectedPointGroups(unassigned, w, h);
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            Set<PairInt> group = finder.getXY(i);
+            count2 += group.size();
+            Integer index = Integer.valueOf(segmentedCellList.size());
+            for (PairInt p : group) {
+                pointIndexMap.put(p, index);
+            }
+            segmentedCellList.add(group);
+        }
+        
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec, assigned " + count + " unassigned points");
-        
-        count = 0;
-        for (Set<PairInt> set : segmentedCellList) {
-            count += set.size();
-        }
-        log.info(" nAssigned=" + count + " nPixels=" + input.getNPixels());
+        log.info(t1Sec + " sec, assigned " + count + " unassigned points" + 
+            " and added new groups for " + count2 + " points");        
     }
 
     private GreyscaleImage exploreCombinedColorDifferences(
@@ -6173,6 +6182,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_3_" + debugTag);
+        }
+        
+        deltaELimit = 0.5; 
+        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, useDeltaE2000, debugTag);  
+        
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(), 
+                segmentedCellList, "_tmp_4_" + debugTag);
         }
         
 if (true) {
