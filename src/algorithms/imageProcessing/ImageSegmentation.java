@@ -6282,9 +6282,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
-        //useDeltaE2000 = false;
         deltaELimit = 0.5; 
-        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
+        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
@@ -6309,30 +6308,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
         
-        deltaELimit = 0.5; 
-        mergeAdjacentIfSimilar(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000, debugTag);  
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_tmp_4_" + debugTag);
-        }
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        deltaELimit = 0.55;
+        deltaELimit = 0.55; 
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_tmp_5_" + debugTag);
+                segmentedCellList, "_tmp_4_" + debugTag);
         }
         
 if (true) {
