@@ -3918,4 +3918,61 @@ public class ImageProcessor {
        
         input.resetTo(tmp);
     }
+    
+    public static class Colors {
+        private final float[] colors;
+        public Colors(float[] theColors) {
+            colors = theColors;
+        }
+        public float[] getColors() {
+            return colors;
+        }
+    }
+
+    public Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
+        
+        double labA = 0;
+        double labB = 0;
+        double labL = 0;
+        
+        for (PairInt p : points) {
+            float[] lab = input.getCIELAB(p.getX(), p.getY());
+            labL += lab[0];
+            labA += lab[1];
+            labB += lab[2];
+        }
+        labL /= (double)points.size();
+        labA /= (double)points.size();
+        labB /= (double)points.size();
+        
+        float[] labAvg = new float[]{(float)labL, (float)labA, (float)labB};
+        
+        Colors c = new Colors(labAvg);
+        
+        return c;
+    }
+    
+    public Colors calculateAverageRGB(ImageExt input, Set<PairInt> points) {
+        
+        float r = 0;
+        float g = 0;
+        float b = 0;
+        
+        for (PairInt p : points) {
+            int idx = input.getInternalIndex(p.getX(), p.getY());
+            r += input.getR(idx);
+            g += input.getG(idx);
+            b += input.getB(idx);
+        }
+        r /= (float)points.size();
+        g /= (float)points.size();
+        b /= (float)points.size();
+        
+        float[] rgbAvg = new float[]{r, g, b};
+        
+        Colors c = new Colors(rgbAvg);
+        
+        return c;
+    }
+
 }

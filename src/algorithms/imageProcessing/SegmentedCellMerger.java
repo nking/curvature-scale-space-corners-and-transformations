@@ -8,6 +8,7 @@ import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.PointInPolygon;
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
+import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
@@ -47,8 +48,6 @@ import org.ejml.simple.SimpleMatrix;
  */
 public class SegmentedCellMerger {
  
-    private final int boundaryValue;
-    private final boolean hasBoundaryValue;
     private final ImageExt img;
     private final List<Set<PairInt>> segmentedCellList;
     private final String debugTag;
@@ -58,22 +57,26 @@ public class SegmentedCellMerger {
     private final Logger log = Logger.getLogger(this.getClass().getName());
     
     public SegmentedCellMerger(ImageExt img, List<Set<PairInt>> theSegmentedCellList, 
-        int boundaryValue, boolean useDeltaE2000, float deltaELimit, String debugTag) {
-        
-        this.boundaryValue = boundaryValue;
-        if (boundaryValue > -1) {
-            hasBoundaryValue = true;
-        } else {
-            hasBoundaryValue = false;
-        } 
+        boolean useDeltaE2000, float deltaELimit, String debugTag) {
         
         this.useDeltaE2000 = useDeltaE2000;
         this.deltaELimit = deltaELimit;
         
         this.img = img;
         
+        // sort theSegmentedCellList by size
+        int[] indexes = new int[theSegmentedCellList.size()];
+        int[] sizes = new int[indexes.length];
+        for (int i = 0; i < theSegmentedCellList.size(); ++i) {
+            indexes[i] = i;
+            sizes[i] = theSegmentedCellList.get(i).size();
+        }
+        MultiArrayMergeSort.sortByDecr(sizes, indexes);
+        
         this.segmentedCellList = new ArrayList<Set<PairInt>>(theSegmentedCellList.size());
-        for (Set<PairInt> set : theSegmentedCellList) {
+        for (int i = 0; i < theSegmentedCellList.size(); ++i) {
+            int idx = indexes[i];
+            Set<PairInt> set = theSegmentedCellList.get(idx);
             Set<PairInt> set2 = new HashSet<PairInt>(set);
             segmentedCellList.add(set2);
         }
@@ -149,47 +152,51 @@ public class SegmentedCellMerger {
                       adjacent cell set doesn't include internal members.
         */
                 
-        BoundingRegions br = extractPerimetersAndBounds();
-        
         // key = pairintwithindex holding xy centroid and the original list index
         final Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> cellMap = 
             new HashMap<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>>();
         
+        final Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        
         final Map<PairIntWithIndex, Integer> cellIndexMap = new HashMap<PairIntWithIndex, Integer>();
-                
-        populateCellMaps(br, cellMap, cellIndexMap);
+        
+        final Map<Integer, PairIntWithIndex> indexCellMap = new HashMap<Integer, PairIntWithIndex>();
+        
+        // cellMap is only initialized w/ the key's own centroid here
+        populateCellMaps(cellMap, indexCellMap, cellIndexMap, pointIndexMap);
         
 //writeLabelFile(br, cellIndexMap);
-
+        
         // key = cell centroid, value = set of adjacent cell centroids
-        Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap 
-            = createAdjacencyMap(br, img.getWidth(), img.getHeight());
+        final Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap 
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
         
+        populateAdjacencyMap(indexCellMap, pointIndexMap, adjacencyMap);
+
         // key = cell centroid, value = set of cell centroids merged with this one
-        Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedMap = createMergeMap(br);
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedMap = 
+            initializeMergeMap(cellIndexMap);
         
-        // this order results in visiting the larges cells first
+        Map<Integer, Colors> segmentedCellAvgLabColors 
+            = new HashMap<Integer, Colors>();
+        
+        // this order results in visiting the largest cells first
         Stack<PairIntWithIndex> stack = new Stack<PairIntWithIndex>();
-        for (int i = (br.getPerimeterList().size() - 1); i > -1; --i) {            
-            
-            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
-            
-            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
-            
+        for (int i = (segmentedCellList.size() - 1); i > -1; --i) {            
+            PairIntWithIndex key = indexCellMap.get(Integer.valueOf(i));
             if (cellIndexMap.containsKey(key)) {
                 stack.add(key);
             }            
         }
         
+        /*
         if (debugTag != null && !debugTag.equals("")) {
-            List<PairIntArray> boundaries = br.getPerimeterList();
-            long ts = MiscDebug.getCurrentTimeFormatted();
+            // should make a debug image of lines from key to each of values
+            long ts = MiscDebug.currentFormattedTime();
             ImageExt imgCp = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorCurvesToImage(
-                boundaries.toArray(new PairIntArray[boundaries.size()]),
-                imgCp, 0);
             MiscDebug.writeImage(imgCp,  "_boundaries_" + debugTag + "_" + ts);
         }
+        */
 
         int nBefore = mergedMap.size();
                 
@@ -201,6 +208,8 @@ public class SegmentedCellMerger {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
                 
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
         //TODO: improving this transformation
         //double[][] ldaMatrix = getLDASegmentationMatrix();
           
@@ -221,7 +230,13 @@ public class SegmentedCellMerger {
             
             PairIntWithIndex pParent = pParentNode.getMember();
             
-            float[] labP = br.getBlobMedialAxes().getLABColors(originalPIndex.intValue());
+            Colors colorsP = segmentedCellAvgLabColors.get(originalPIndex);
+            if (colorsP == null) {
+                colorsP = imageProcessor.calculateAverageLAB(img, 
+                    segmentedCellList.get(originalPIndex.intValue()));
+                segmentedCellAvgLabColors.put(originalPIndex, colorsP);
+            }
+            float[] labP = colorsP.getColors();
             
             boolean didMerge = false;
 
@@ -246,8 +261,15 @@ public class SegmentedCellMerger {
                 }
                 
                 Integer p2Index = cellIndexMap.get(p2);
-                float[] labP2 = br.getBlobMedialAxes().getLABColors(p2Index.intValue());
                 
+                Colors colors2 = segmentedCellAvgLabColors.get(p2Index);
+                if (colors2 == null) {
+                    colors2 = imageProcessor.calculateAverageLAB(img,
+                        segmentedCellList.get(p2Index.intValue()));
+                    segmentedCellAvgLabColors.put(p2Index, colorsP);
+                }
+                float[] labP2 = colors2.getColors();
+                                
                 double deltaE;
                 if (useDeltaE2000) {
                     deltaE = Math.abs(cieC.calcDeltaECIE2000(labP, labP2));
@@ -379,17 +401,16 @@ public class SegmentedCellMerger {
         // making a debug image before tuning color conditionals
         Map<PairIntWithIndex, Set<PairIntWithIndex>> mergedPoints 
             = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
-        for (Entry<PairInt, Integer> entry : br.getPointIndexMap().entrySet()) {
+        
+        for (Entry<PairInt, Integer> entry : pointIndexMap.entrySet()) {
             
             Integer cellIndex = entry.getValue();
             
             PairIntWithIndex p = new PairIntWithIndex(entry.getKey(), 
                 cellIndex.intValue());
-        
-            PairIntWithIndex cellCentroid = new PairIntWithIndex(
-                br.getBlobMedialAxes().getOriginalBlobXYCentroid(
-                cellIndex.intValue()), cellIndex.intValue());
             
+            PairIntWithIndex cellCentroid = indexCellMap.get(cellIndex);
+           
             DisjointSet2Node<PairIntWithIndex> cellNode = cellMap.get(cellCentroid);            
             DisjointSet2Node<PairIntWithIndex> parentCellNode = disjointSetHelper.findSet(cellNode);  
             
@@ -572,21 +593,27 @@ public class SegmentedCellMerger {
         return br;
     }
 
-    private void populateCellMaps(BoundingRegions br, 
+    private void populateCellMaps( 
         Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> outputParentMap,
-        Map<PairIntWithIndex, Integer> outputParentIndexMap) {
+        Map<Integer, PairIntWithIndex> outputIndexCellMap,
+        Map<PairIntWithIndex, Integer> outputParentIndexMap,
+        Map<PairInt, Integer> pointIndexMap) {
         
         DisjointSet2Helper disjointSetHelper = new DisjointSet2Helper();
         
-        // store the centroids in a disjoint set/forrest
+        // store the centroids in a disjoint set/forest
+        
+        int n = this.segmentedCellList.size();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         // init map
-        BlobMedialAxes bma = br.getBlobMedialAxes();
-        int n = bma.getNumberOfItems();
         
         for (int i = 0; i < n; ++i) {
             
-            PairInt xyCen = bma.getOriginalBlobXYCentroid(i);
+            Set<PairInt> set = segmentedCellList.get(i);
+                        
+            PairInt xyCen = curveHelper.calculateXYCentroids2(set);
             
             PairIntWithIndex pai = new PairIntWithIndex(xyCen, i);
             
@@ -595,11 +622,20 @@ public class SegmentedCellMerger {
             
             outputParentMap.put(pai, pNode);
             
-            outputParentIndexMap.put(pai, Integer.valueOf(i));
+            Integer index = Integer.valueOf(i);
+            
+            outputParentIndexMap.put(pai, index);
+            
+            outputIndexCellMap.put(index, pai);
             
             assert(pNode.getMember().equals(pai));
             assert(pNode.getParent().equals(pNode));
-        }        
+            
+            for (PairInt p : set) {
+                pointIndexMap.put(p, index);
+            }
+        }   
+        
     }
 
     private boolean hasBeenVisited(Map<PairIntWithIndex, Set<PairIntWithIndex>> 
@@ -631,84 +667,15 @@ public class SegmentedCellMerger {
         set.add(pParent);
     }
 
-    private Map<PairIntWithIndex, Set<PairIntWithIndex>> 
-        createAdjacencyMap(BoundingRegions br, int imageWidth, int imageHeight) {
-
-        Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap 
-            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
-        
-        List<PairIntArray> boundaries = br.getPerimeterList();
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        for (int i = 0; i < boundaries.size(); ++i) {
-            
-            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
-            
-            Set<PairIntWithIndex> adjacencySet = new HashSet<PairIntWithIndex>();
-            
-            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
-            
-            adjacencyMap.put(key, adjacencySet);
-            
-            PairIntArray boundary = boundaries.get(i);
-           
-            for (int j = 0; j < boundary.getN(); ++j) {
-                
-                int x = boundary.getX(j);
-                int y = boundary.getY(j);
-        
-                for (int k = 0; k < dxs.length; ++k) {
-                    
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    
-                    if (x2 < 0 || (x2 > (imageWidth - 1)) || (y2 < 0) || 
-                        (y2 > (imageHeight - 1))) {
-                        continue;
-                    }
-                    
-                    PairInt p2 = new PairInt(x2, y2);
-                    
-                    //find p2 in the original bounding regions data
-                    Integer p2Index = br.getPointIndexMap().get(p2);
-                    
-                    if (p2Index == null || (p2Index.intValue() == i)) {
-                        continue;
-                    }
-                    
-                    PairInt xyCen2 = br.getBlobMedialAxes()
-                        .getOriginalBlobXYCentroid(p2Index.intValue());
-                    
-                    PairIntWithIndex pai2 = new PairIntWithIndex(xyCen2, 
-                        p2Index.intValue());
-                    
-                    adjacencySet.add(pai2);
-                }
-            }
-            
-            if (adjacencySet.isEmpty()) {
-                // look at these one by one as debugging
-                int z = 1;
-            }
-        }
-        
-        //debug(br, adjacencyMap);
-        
-        return adjacencyMap;
-    }
-
-    private Map<PairIntWithIndex, Set<PairIntWithIndex>> createMergeMap(BoundingRegions br) {
+    private Map<PairIntWithIndex, Set<PairIntWithIndex>> initializeMergeMap(
+        Map<PairIntWithIndex, Integer> cellIndexMap) {
         
         Map<PairIntWithIndex, Set<PairIntWithIndex>> mergeMap 
-            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>();
+            = new HashMap<PairIntWithIndex, Set<PairIntWithIndex>>(cellIndexMap.size());
                         
-        for (int i = 0; i < br.getPerimeterList().size(); ++i) {
-            
-            PairInt xyCen = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
-            
-            PairIntWithIndex key = new PairIntWithIndex(xyCen, i);
+        for (Entry<PairIntWithIndex, Integer> entry : cellIndexMap.entrySet()) {
+                        
+            PairIntWithIndex key = entry.getKey();
            
             Set<PairIntWithIndex> mergeSet = new HashSet<PairIntWithIndex>();
             mergeSet.add(key);
@@ -981,6 +948,58 @@ public class SegmentedCellMerger {
         } catch (IOException ex) {
             Logger.getLogger(SegmentedCellMerger.class.getName()).log(Level.SEVERE, null, ex);
         }       
+    }
+
+    private void populateAdjacencyMap(Map<Integer, PairIntWithIndex> indexCellMap, 
+        Map<PairInt, Integer> pointIndexMap, 
+        Map<PairIntWithIndex, Set<PairIntWithIndex>> adjacencyMap) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int n = this.segmentedCellList.size();
+                        
+        for (int i = 0; i < n; ++i) {
+            
+            Set<PairInt> set = segmentedCellList.get(i);
+            
+            Integer index = Integer.valueOf(i);
+            
+            PairIntWithIndex xyCen = indexCellMap.get(index);
+            
+            Set<PairIntWithIndex> adjSet = adjacencyMap.get(xyCen);
+            if (adjSet == null) {
+                adjSet = new HashSet<PairIntWithIndex>();
+                adjacencyMap.put(xyCen, adjSet);
+            }
+            
+            // look for neighbors that are in other lists
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    Integer index2 = pointIndexMap.get(p2);
+                    if (index2 == null || index.equals(index2)) {
+                        continue;
+                    }
+                    
+                    PairIntWithIndex xyCen2 = indexCellMap.get(index2);
+                    assert(!xyCen.equals(xyCen2));
+            
+                    Set<PairIntWithIndex> adjSet2 = adjacencyMap.get(xyCen2);
+                    if (adjSet2 == null) {
+                        adjSet2 = new HashSet<PairIntWithIndex>();
+                        adjacencyMap.put(xyCen2, adjSet2);
+                    }
+                    
+                    adjSet.add(xyCen2);
+                    adjSet2.add(xyCen);
+                }
+            }
+        }
     }
     
     private static class PairIntWithIndex extends com.climbwithyourfeet.clustering.util.PairInt {
