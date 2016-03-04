@@ -1,46 +1,28 @@
 package algorithms.imageProcessing;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.ClosestPairBetweenSets;
-import algorithms.compGeometry.ClosestPairBetweenSets.ClosestPairInt;
 import algorithms.compGeometry.NearestPointsInLists;
-import algorithms.compGeometry.PerimeterFinder;
-import algorithms.compGeometry.PointInPolygon;
 import algorithms.disjointSets.DisjointSet2Helper;
 import algorithms.disjointSets.DisjointSet2Node;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
-import algorithms.imageProcessing.features.BlobMedialAxes;
-import algorithms.imageProcessing.features.BlobsAndPerimeters;
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -222,7 +204,7 @@ public class SegmentedCellMerger {
             }
             
             PairIntWithIndex originalP = (PairIntWithIndex) p.copy();
-            Integer originalPIndex = cellIndexMap.get(originalP);
+            //Integer originalPIndex = cellIndexMap.get(originalP);
             
             DisjointSet2Node<PairIntWithIndex> pNode = cellMap.get(p);
                         
@@ -230,11 +212,13 @@ public class SegmentedCellMerger {
             
             PairIntWithIndex pParent = pParentNode.getMember();
             
-            Colors colorsP = segmentedCellAvgLabColors.get(originalPIndex);
+            Integer parentIndex = cellIndexMap.get(pParent);
+            
+            Colors colorsP = segmentedCellAvgLabColors.get(parentIndex);
             if (colorsP == null) {
                 colorsP = imageProcessor.calculateAverageLAB(img, 
-                    segmentedCellList.get(originalPIndex.intValue()));
-                segmentedCellAvgLabColors.put(originalPIndex, colorsP);
+                    segmentedCellList.get(parentIndex.intValue()));
+                segmentedCellAvgLabColors.put(parentIndex, colorsP);
             }
             float[] labP = colorsP.getColors();
             
@@ -260,16 +244,18 @@ public class SegmentedCellMerger {
                     continue;
                 }
                 
-                Integer p2Index = cellIndexMap.get(p2);
+                //Integer p2Index = cellIndexMap.get(p2);
                 
-                Colors colors2 = segmentedCellAvgLabColors.get(p2Index);
+                Integer p2ParentIndex = cellIndexMap.get(p2Parent);
+                
+                Colors colors2 = segmentedCellAvgLabColors.get(p2ParentIndex);
                 if (colors2 == null) {
                     colors2 = imageProcessor.calculateAverageLAB(img,
-                        segmentedCellList.get(p2Index.intValue()));
-                    segmentedCellAvgLabColors.put(p2Index, colorsP);
+                        segmentedCellList.get(p2ParentIndex.intValue()));
+                    segmentedCellAvgLabColors.put(p2ParentIndex, colors2);
                 }
                 float[] labP2 = colors2.getColors();
-                                
+                               
                 double deltaE;
                 if (useDeltaE2000) {
                     deltaE = Math.abs(cieC.calcDeltaECIE2000(labP, labP2));
@@ -290,18 +276,6 @@ public class SegmentedCellMerger {
                 double ldaY = transformed[1][0];
                 */
                 
-                /*
-                 for deltaE, range of similar is 2.3 through 5.5 or ?  (max diff is 28.8).
-                 might need to use adjacent points instead of set averages.
-        
-                 The gingerbread man and the background building have deltaE=5.7 and deltaL=3.64
-                 Two cells of the gingerbread, similar in color, but different shade
-                 have deltaE = 5.13 and deltaL=1.6
-                */
-
-                //TODO: revise the LDA vectors
-                //if (ldaY > 24.5 || ldaX < -50) {
-
                 if (Math.abs(deltaE) > deltaELimit) {
                     continue;
                 }
@@ -364,11 +338,12 @@ public class SegmentedCellMerger {
                     
                     // NOTE: there's some inefficiency in that the visited check
                     // is now bypassed, but the number of original neighbors is
-                    // small so the possible extra work should be idempotent.
+                    // small.  the possible extra work should be idempotent.
                     
                     pNode = p2Node;
                     pParentNode = p2ParentNode;
                     pParent = p2Parent;
+                    parentIndex = p2ParentIndex;
                     labP = labP2;
                     //pIndex = p2ParentIndex;
                 }
@@ -406,9 +381,6 @@ public class SegmentedCellMerger {
             
             Integer cellIndex = entry.getValue();
             
-            PairIntWithIndex p = new PairIntWithIndex(entry.getKey(), 
-                cellIndex.intValue());
-            
             PairIntWithIndex cellCentroid = indexCellMap.get(cellIndex);
            
             DisjointSet2Node<PairIntWithIndex> cellNode = cellMap.get(cellCentroid);            
@@ -421,6 +393,9 @@ public class SegmentedCellMerger {
                 points = new HashSet<PairIntWithIndex>();
                 mergedPoints.put(parentCellCentroid, points);
             }
+            
+            PairIntWithIndex p = new PairIntWithIndex(entry.getKey(), 
+                cellIndex.intValue());
             points.add(p);
         }
         
@@ -438,7 +413,7 @@ public class SegmentedCellMerger {
         
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to merge " + mergedPoints.size() + " cells");
+        log.info(t1Sec + " sec to merge " + mergedPoints.size() + " cells in scm");
         
         log.info("pixels in cell lists=" + count + ", pixels in image=" 
             + img.getNPixels());
@@ -456,143 +431,6 @@ public class SegmentedCellMerger {
         return segmentedCellList;
     }
     
-    private BoundingRegions extractPerimetersAndBounds() {
-               
-        long t0 = System.currentTimeMillis();
-        
-        // --- sort by descending sizes the remaining blobs ---- 
-        int[] sizes = new int[segmentedCellList.size()];
-        int[] indexes = new int[sizes.length];
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            sizes[i] = segmentedCellList.get(i).size();
-            indexes[i] = i;
-        }
-        
-        // removing any blobs which are larger than 0.2 percent of image size also
-        //float nPixels = img.getNPixels();
-        
-        MultiArrayMergeSort.sortByDecr(sizes, indexes);
-        List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
-        
-        for (int i = 0; i < sizes.length; ++i) {
-            int idx = indexes[i];
-            Set<PairInt> blob = segmentedCellList.get(idx);
-            //float frac = (float)blob.size()/nPixels;
-            //if (frac < 0.2) {
-                tmp.add(blob);
-            //}
-        }
-        segmentedCellList.clear();
-        segmentedCellList.addAll(tmp);
-        
-        //---- begin section to log colors to look at selecting matchable bounds by color ------
-        CIEChromaticity cieC = new CIEChromaticity();
-        //MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        List<Double> labLAvg = new ArrayList<Double>();
-        List<Double> labAAvg = new ArrayList<Double>();
-        List<Double> labBAvg = new ArrayList<Double>();
-        List<Double> rAvg = new ArrayList<Double>();
-        List<Double> gAvg = new ArrayList<Double>();
-        List<Double> bAvg = new ArrayList<Double>();
-        
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            double redSum = 0;
-            double greenSum = 0;
-            double blueSum = 0;
-            for (PairInt p : segmentedCellList.get(i)) {
-                int x = p.getX();
-                int y = p.getY();
-                int red = img.getR(x, y);
-                int green = img.getG(x, y);
-                int blue = img.getB(x, y);
-                redSum += red;
-                greenSum += green;
-                blueSum += blue;
-            }
-            double n = (double)segmentedCellList.get(i).size();
-            redSum /= n;
-            greenSum /= n;
-            blueSum /= n;
-            float[] avgLAB = cieC.rgbToCIELAB((int)Math.round(redSum), 
-                (int)Math.round(greenSum), (int)Math.round(blueSum));
-            
-            labLAvg.add(Double.valueOf(avgLAB[0]));
-            labAAvg.add(Double.valueOf(avgLAB[1]));
-            labBAvg.add(Double.valueOf(avgLAB[2]));
-            
-            rAvg.add(Double.valueOf(redSum));
-            gAvg.add(Double.valueOf(greenSum));
-            bAvg.add(Double.valueOf(blueSum));
-           
-            /*PairInt xyCen = curveHelper.calculateXYCentroids(blobs.get(i));
-            String str = String.format(
-                "[%d] cen=(%d,%d) avgL=%.3f avgA=%.3f  avgB=%.3f  nPts=%d",
-                i, xyCen.getX(), xyCen.getY(),
-                avgLAB[0], avgLAB[1], avgLAB[2], blobs.get(i).size());
-            log.info(str);*/
-        }
-        
-        Map<PairInt, Integer> blobPointToListIndex = createBlobPointToListIndex(
-            segmentedCellList);
-                                
-        // less than O(N)
-        List<Set<PairInt>> borderPixelSets = BlobsAndPerimeters
-            .extractBlobPerimeterAsPoints(segmentedCellList, img.getWidth(), 
-            img.getHeight());
-        
-        assert(segmentedCellList.size() == borderPixelSets.size());
-        
-        List<PairIntArray> perimetersList = new ArrayList<PairIntArray>();
-        
-        float srchRadius = (float)Math.sqrt(2);
-        
-        PerimeterFinder perimeterFinder = new PerimeterFinder();
-        
-        //ImageSegmentation imageSegmentation = new ImageSegmentation();
-      
-        BlobMedialAxes bma = new BlobMedialAxes(segmentedCellList, labLAvg, labAAvg, labBAvg, 
-            rAvg, gAvg, bAvg);
-                
-        for (int i = 0; i < borderPixelSets.size(); ++i) {
-                                    
-            Set<PairInt> blob = segmentedCellList.get(i);
-            Set<PairInt> borderPixels = borderPixelSets.get(i);
-            
-            // approx O(N_perimeter), but has factors during searches that could be improved
-            PairIntArray orderedPerimeter = perimeterFinder.orderThePerimeter(
-                borderPixels, blob, srchRadius, bma, i);
-  
-            /*Image imgCp = img.copyImage();
-            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
-            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
-            */
-            
-            // runtime complexity is O(N_perimeter_pts * lg_2(N_perimeter_pts)
-            // remove straight line segments except their endpoints to make simpler
-            // polynomial for "point in polygon" tests
-            //imageSegmentation.makeStraightLinesHollow(orderedPerimeter, img.getWidth(), 
-            //    img.getHeight(), srchRadius);
-        
-            /*
-            Image imgCp = img.copyImage();
-            ImageIOHelper.addCurveToImage(orderedPerimeter, imgCp, 2, 255, 0, 0);                  
-            MiscDebug.writeImage(imgCp, "_" + i + "_" + MiscDebug.getCurrentTimeFormatted()); 
-            */
-            
-            perimetersList.add(orderedPerimeter);
-        }
-        
-        BoundingRegions br = new BoundingRegions(perimetersList, bma, 
-            blobPointToListIndex);
-        
-        long t1 = System.currentTimeMillis();
-        long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to extract perimeter of cells");
-        
-        return br;
-    }
-
     private void populateCellMaps( 
         Map<PairIntWithIndex, DisjointSet2Node<PairIntWithIndex>> outputParentMap,
         Map<Integer, PairIntWithIndex> outputIndexCellMap,
@@ -703,103 +541,6 @@ public class SegmentedCellMerger {
         m[1][3] = 0.166;
         
         return m;
-    }
-
-    private void debug(BoundingRegions br, Map<PairInt, Set<PairInt>> adjacencyMap) {
-        
-        Image imgCp = img.copyImage();
-        Image imgCp2 = imgCp.copyToGreyscale().copyToColorGreyscale();
-        
-        List<PairIntArray> boundaries = br.getPerimeterList();
-        
-        int n = br.getBlobMedialAxes().getNumberOfItems();
-        
-        int nExtraForDot = 0;
-        
-        for (int i = 0; i < n; ++i) {
-            
-            PairIntArray bounds = boundaries.get(i);
-            
-            int[] clr = ImageIOHelper.getNextRGB(i);
-          
-            //-- draw boundaries as a curve --
-            int nb = bounds.getN();
-            int[] xVertexes = new int[nb + 1];
-            int[] yVertexes = new int[nb + 1];
-            for (int j = 0; j < nb; ++j) {
-                xVertexes[j] = bounds.getX(j);
-                yVertexes[j] = bounds.getY(j);
-            }
-            xVertexes[nb] = bounds.getX(0);
-            yVertexes[nb] = bounds.getY(0);
-            ImageIOHelper.drawLinesInImage(xVertexes, yVertexes, imgCp,
-                nExtraForDot, clr[0], clr[1], clr[2]);
-        }
-        
-        nExtraForDot = 1;
-        
-        //for (int i = 0; i < n; ++i) {
-        for (int i = 1; i < 2; ++i) {
-            
-            PairIntArray bounds = boundaries.get(i);
-            
-            int[] clr = ImageIOHelper.getNextRGB(i);
-          
-            PairInt cenXY = br.getBlobMedialAxes().getOriginalBlobXYCentroid(i);
-            
-            ImageIOHelper.addPointToImage(cenXY.getX(), cenXY.getY(), imgCp, 
-                0, clr[0], clr[1], clr[2]);
-            
-            /*
-            -- draw boundaries as a curve --
-            */
-            int nb = bounds.getN();
-            int[] xVertexes = new int[nb + 1];
-            int[] yVertexes = new int[nb + 1];
-            for (int j = 0; j < nb; ++j) {
-                xVertexes[j] = bounds.getX(j);
-                yVertexes[j] = bounds.getY(j);
-            }
-            xVertexes[nb] = bounds.getX(0);
-            yVertexes[nb] = bounds.getY(0);
-            ImageIOHelper.drawLinesInImage(xVertexes, yVertexes, imgCp,
-                nExtraForDot, clr[0], clr[1], clr[2]);
-            
-            ImageIOHelper.addPointToImage(cenXY.getX(), cenXY.getY(), imgCp2, 
-                nExtraForDot, clr[0], clr[1], clr[2]);
-            
-            Set<PairInt> adjacentCenXY = adjacencyMap.get(cenXY);
-            if (adjacentCenXY != null) {
-                for (PairInt cenXY2 : adjacentCenXY) {
-                    ImageIOHelper.addPointToImage(cenXY2.getX(), cenXY2.getY(), imgCp2, 
-                        nExtraForDot, clr[0], clr[1], clr[2]);
-                    ImageIOHelper.addPointToImage(cenXY2.getX(), cenXY2.getY(), imgCp, 
-                        0, clr[0], clr[1], clr[2]);
-                }
-            }
-        }
-        
-        MiscDebug.writeImage(imgCp, "adj_0_" + debugTag);
-        MiscDebug.writeImage(imgCp2, "adj_1_" + debugTag);
-    }
-
-    private Map<PairInt, Integer> createBlobPointToListIndex(List<Set<PairInt>> 
-        blobs) {
-        
-        Map<PairInt, Integer> map = new HashMap<PairInt, Integer>();
-        
-        for (int i = 0; i < blobs.size(); ++i) {
-            
-            Set<PairInt> blob = blobs.get(i);
-            
-            Integer key = Integer.valueOf(i);
-            
-            for (PairInt p : blob) {
-                map.put(p, key);
-            }
-        }
-        
-        return map;
     }
 
     private void writeLabelFile(BoundingRegions br, Map<PairInt, Integer> 

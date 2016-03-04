@@ -6238,7 +6238,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_1_" + debugTag);
         }       
-        
+       
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6247,11 +6247,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        
         deltaELimit = 0.5; 
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
-        
+
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_2_" + debugTag);
