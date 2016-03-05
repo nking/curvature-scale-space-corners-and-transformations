@@ -5458,6 +5458,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     double[] mnStDevMode = MiscStats.calculateMeanStDevAndMode(
                         deltaEs, 0.25);
                     
+                    /*
+                    TODO: this inequality in doMerge suggests that this part of 
+                    a larger segmentation algorithm could be solved by an 
+                    integer programming layer of a not-so-deep neural network, 
+                    that is, converting min cost to integer programming.
+                    The other layer(s) would primarily be strict comparison to
+                    a deltaE limit to be optimized for merging or growing.
+                    Need to re-do the labelling needed for such an algorithm...
+                    */
+                    
                     boolean doMerge = (mnStDevMode[0] <= deltaELimit) ||
                         (
                         (Math.abs(mnStDevMode[1] - deltaELimit) < (0.4*deltaELimit))
@@ -6278,7 +6288,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 1.0;
+        deltaELimit = 0.5;
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
 
@@ -6304,33 +6314,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
         
-        /*
         deltaELimit = 0.5;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_tmp_5_" + debugTag);
+                segmentedCellList, "_tmp_4_" + debugTag);
         }
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        deltaELimit = 0.55; 
-        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
-            deltaELimit, useDeltaE2000, debugTag);  
-        
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_tmp_6_" + debugTag);
-        }
-        */
+       
 if (true) {
     return segmentedCellList;
 }
