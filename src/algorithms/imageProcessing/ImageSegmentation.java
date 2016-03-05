@@ -14,6 +14,7 @@ import algorithms.imageProcessing.features.BlobsAndPerimeters;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.features.IntensityClrFeatures;
 import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -5346,6 +5347,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         segmentedCellList.addAll(scm.getSegmentedCellList());
     }
     
+    /**
+     * a merge algorithm that looks at the colors of the adjacent pixels individually,
+     * then performs stats on all adjacent for two sets to determine if the
+     * edge is similar enough to merge.  This differs from the other method
+     * which uses the average color of all points in a cell and the difference
+     * between those to decide on merging.
+     * @param input
+     * @param segmentedCellList
+     * @param pointIndexMap
+     * @param deltaELimit
+     * @param useDeltaE2000
+     * @param debugTag 
+     */
     private void mergeAdjacentIfSimilar2(ImageExt input, List<Set<PairInt>> 
         segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
         double deltaELimit, boolean useDeltaE2000, String debugTag) {
@@ -5435,15 +5449,32 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
                 
                 for (Entry<Integer, List<Double>> entry : listIndexDeltaEMap.entrySet()) {
+                    
                     List<Double> deltaEs = entry.getValue();
-                    double meanDeltaE = 0;
-                    for (Double d : deltaEs) {
-                        meanDeltaE += d.doubleValue();
-                    }
-                    meanDeltaE /= (double)deltaEs.size();
-                    if (meanDeltaE > deltaELimit) {
+                    
+                    //TODO: consider changing the binSize from 0.25 to half deltaELimit
+                    
+                    // {mean, stdev of mean, mode}
+                    double[] mnStDevMode = MiscStats.calculateMeanStDevAndMode(
+                        deltaEs, 0.25);
+                    
+                    boolean doMerge = (mnStDevMode[0] <= deltaELimit) ||
+                        (
+                        (Math.abs(mnStDevMode[1] - deltaELimit) < (0.4*deltaELimit))
+                        && (mnStDevMode[0] > mnStDevMode[2]) && (mnStDevMode[0] > mnStDevMode[1])
+                        && (Math.abs(mnStDevMode[0] - deltaELimit) < (0.25*mnStDevMode[1]))
+                        && (Math.abs(mnStDevMode[2] - deltaELimit) < (0.25*mnStDevMode[1]))
+                        );
+                    
+                    if (!doMerge) {
                         continue;
                     }
+           
+                    /*
+                    if (mnStDevMode[0] > deltaELimit) {
+                        continue;
+                    }*/
+                    
                     ++count;
                     ++nChanged;
                     
@@ -6273,7 +6304,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
         
-        deltaELimit = 0.55; 
+        deltaELimit = 0.25; //0.55
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
         
@@ -6282,13 +6313,30 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
         
-        deltaELimit = 0.5; 
+        deltaELimit = 0.5;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_5_" + debugTag);
+        }
+        
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        deltaELimit = 0.55; 
+        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, useDeltaE2000, debugTag);  
+        
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(), 
+                segmentedCellList, "_tmp_6_" + debugTag);
         }
         
 if (true) {

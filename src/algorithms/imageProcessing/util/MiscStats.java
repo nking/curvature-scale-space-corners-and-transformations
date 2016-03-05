@@ -30,6 +30,61 @@ import java.util.logging.Logger;
  */
 public class MiscStats {
     
+    public static double[] calculateMeanStDevAndMode(List<Double> a, double binSize) {
+        
+        double n = (double)a.size();
+        double minValue = Double.MAX_VALUE;
+        double maxValue = Double.MIN_VALUE;
+        double mean = 0;
+        for (Double d : a) {
+            double dp = d.doubleValue();
+            mean += dp;
+            if (dp < minValue) {
+                minValue = dp;
+            }
+            if (dp > maxValue) {
+                maxValue = dp;
+            }
+        }
+        mean /= n;
+
+        double stDev = 0;
+        for (Double d : a) {
+            double diff = d.doubleValue() - mean;
+            stDev += (diff * diff);
+        }
+        stDev = Math.sqrt(stDev/(n - 1.));
+
+        // --- histogram for finding mode, given binSize ----
+        int nBins = (int)Math.ceil((maxValue - minValue)/binSize);
+        if (nBins == 0) {
+            nBins = 1;
+        }
+        double[] xHist = new double[nBins];
+        int[] yHist = new int[nBins];
+        for (int i = 0; i < nBins; i++) {
+            xHist[i] = minValue + ((double)i)*binSize + (binSize/2.);
+        }
+        for (int i = 0; i < a.size(); i++) {
+            int bin = (int)((a.get(i).doubleValue() - minValue)/binSize);
+            if ((bin > -1) && (bin < nBins)) {
+                yHist[bin]++;
+            }
+        }
+        double maxYHist = Double.MIN_VALUE;
+        int maxYIdx = -1;
+        for (int i = 0; i < yHist.length; ++i) {
+            int y = yHist[i];
+            if (y > maxYHist) {
+                maxYHist = y;
+                maxYIdx = i;
+            }
+        }
+        double mode = xHist[maxYIdx];
+        
+        return new double[]{mean, stDev, mode};
+    }
+    
     public static int[] filterForScaleAndRotation(
         List<TransformationParameters> paramsList, int shiftRotation) {
         

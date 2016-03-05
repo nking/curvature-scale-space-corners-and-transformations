@@ -63,7 +63,7 @@ public class SegmentedCellMerger {
             segmentedCellList.add(set2);
         }
         
-        this.debugTag = debugTag;
+        this.debugTag = (debugTag != null) ? debugTag : "";
     }
     
     private Set<PairIntPair> simClass = null;
@@ -366,11 +366,8 @@ public class SegmentedCellMerger {
             // key = cell centroid, value = set of cell centroids merged with this one
             Map<PairInt, Set<PairInt>> mergedMap
         
-        the cell indexes can then be gathered and then new blobs made from
+        the cell indexes can then be gathered and then new blobs cells made from
             the points in those sets.
-        
-        line 500 to end of its method are what is then needed here to rebuild the merged as
-        bounding regions.
         */
                    
         // making a debug image before tuning color conditionals
@@ -413,7 +410,8 @@ public class SegmentedCellMerger {
         
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to merge " + mergedPoints.size() + " cells in scm");
+        log.info(debugTag + " " + t1Sec + " sec to merge " + mergedPoints.size() 
+            + " cells in scm.  list size=" + segmentedCellList.size());
         
         log.info("pixels in cell lists=" + count + ", pixels in image=" 
             + img.getNPixels());
