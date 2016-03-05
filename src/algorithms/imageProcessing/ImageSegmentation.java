@@ -6278,7 +6278,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 0.5; 
+        deltaELimit = 1.0; //0.5
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
 
@@ -6304,7 +6304,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
         
-        deltaELimit = 0.25; //0.55
+        deltaELimit = 0.5; //0.5
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
         
@@ -6313,6 +6313,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
         
+        /*
         deltaELimit = 0.5;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
@@ -6338,7 +6339,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_6_" + debugTag);
         }
-        
+        */
 if (true) {
     return segmentedCellList;
 }
