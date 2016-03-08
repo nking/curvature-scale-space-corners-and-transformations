@@ -171,15 +171,6 @@ public class SegmentedCellMerger {
             }            
         }
         
-        /*
-        if (debugTag != null && !debugTag.equals("")) {
-            // should make a debug image of lines from key to each of values
-            long ts = MiscDebug.currentFormattedTime();
-            ImageExt imgCp = img.copyToImageExt();
-            MiscDebug.writeImage(imgCp,  "_boundaries_" + debugTag + "_" + ts);
-        }
-        */
-
         int nBefore = mergedMap.size();
                 
         CIEChromaticity cieC = new CIEChromaticity();
@@ -255,7 +246,7 @@ public class SegmentedCellMerger {
                     segmentedCellAvgLabColors.put(p2ParentIndex, colors2);
                 }
                 float[] labP2 = colors2.getColors();
-                               
+                           
                 double deltaE;
                 if (useDeltaE2000) {
                     deltaE = Math.abs(cieC.calcDeltaECIE2000(labP, labP2));

@@ -3952,6 +3952,30 @@ public class ImageProcessor {
         return c;
     }
     
+    public int calculateAverageHueAngle(ImageExt input, Set<PairInt> points) {
+        
+        double hueAngle = 0;
+        
+        for (PairInt p : points) {
+            
+            float[] lab = input.getCIELAB(p.getX(), p.getY());
+            
+            double ha;
+            if (lab[1] == 0) {
+                ha = 0;
+            } else {
+                ha = (Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
+                if (ha < 0) {
+                    ha += 360.;
+                }
+            }
+            hueAngle += ha;
+        }
+        hueAngle /= (double)points.size();
+        
+        return (int)Math.round(hueAngle);
+    }
+    
     public Colors calculateAverageRGB(ImageExt input, Set<PairInt> points) {
         
         float r = 0;

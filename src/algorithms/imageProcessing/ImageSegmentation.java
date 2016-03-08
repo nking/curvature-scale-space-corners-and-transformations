@@ -3455,7 +3455,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input, 
-        String debugTag, int originalImageWidth, int originalImageHeight) {
+        SegmentationMergeThreshold mt, String debugTag) {
 
         boolean fineDebug = true;
         
@@ -3584,10 +3584,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_input_edges_" + debugTag);
         }
-        
-        //TODO: improve edges so that fewer cells need to be merged
-        
-        return performSegmentationWithColorEdges(input, greyGradient, debugTag);
+                
+        return performSegmentationWithColorEdges(input, greyGradient, mt, debugTag);
     }
 
     /**
@@ -4888,16 +4886,37 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     
     /**
      * continues the segmentation by placing the unassigned pixels into adjacent
-     * cells if color is similar.  the process should probably be followed by
-     * segmented cell merger class.
-     * by L
+     * cells if color is similar to the average color of the cell.
      * @param input
      * @param segmentedCellList
      * @param unassigned 
+     * @param useAvgCellColor uses the average color of the cell if true, else
+     * uses the color of the adjacent pixel.
      */
     private void placeUnassignedByGrowingCells(ImageExt input,
         List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned,
-        Map<PairInt, Integer> pointIndexMap, double deltaELimit, boolean useDeltaE2000) {
+        Map<PairInt, Integer> pointIndexMap, double deltaELimit, 
+        boolean useDeltaE2000) {
+        
+        boolean useAvgCellColor = true;
+        
+        placeUnassignedByGrowingCells(input, segmentedCellList, unassigned,
+            pointIndexMap, deltaELimit, useDeltaE2000, useAvgCellColor);
+    }
+    
+    /**
+     * continues the segmentation by placing the unassigned pixels into adjacent
+     * cells if color is similar to the average color of the cell.
+     * @param input
+     * @param segmentedCellList
+     * @param unassigned 
+     * @param useAvgCellColor uses the average color of the cell if true, else
+     * uses the color of the adjacent pixel.
+     */
+    private void placeUnassignedByGrowingCells(ImageExt input,
+        List<Set<PairInt>> segmentedCellList, Set<PairInt> unassigned,
+        Map<PairInt, Integer> pointIndexMap, double deltaELimit, 
+        boolean useDeltaE2000, boolean useAvgCellColor) {
 
         long t0 = System.currentTimeMillis();
         
@@ -4912,7 +4931,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        Map<Integer, Colors> segmentedCellAvgLabColors = new HashMap<Integer, Colors>();
+        Map<Integer, Colors> segmentedCellAvgLabColors = useAvgCellColor ?
+            new HashMap<Integer, Colors>() : null;
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -4931,6 +4951,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int y = p0.getY();
             
             Integer listIndex = pointIndexMap.get(p0);
+            
+            float[] lab0 = null;
                     
             for (int i = 0; i < dxs.length; ++i) {
                 
@@ -4942,13 +4964,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     continue;
                 }
     
-                Colors colors0 = segmentedCellAvgLabColors.get(listIndex);
-                if (colors0 == null) {
-                    colors0 = imageProcessor.calculateAverageLAB(input, 
-                        segmentedCellList.get(listIndex.intValue()));
-                    segmentedCellAvgLabColors.put(listIndex, colors0);
+                if (lab0 == null) {
+                    if (useAvgCellColor) {
+                        Colors colors0 = segmentedCellAvgLabColors.get(listIndex);
+                        if (colors0 == null) {
+                            colors0 = imageProcessor.calculateAverageLAB(input, 
+                                segmentedCellList.get(listIndex.intValue()));
+                            segmentedCellAvgLabColors.put(listIndex, colors0);
+                        }
+                        lab0 = colors0.getColors();
+                    } else {
+                        lab0 = input.getCIELAB(x, y);
+                    }
                 }
-                float[] lab0 = colors0.getColors();
                     
                 assert(!pointIndexMap.containsKey(p2));
                 
@@ -5335,8 +5363,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
     
     private void mergeAdjacentIfSimilar(ImageExt input, List<Set<PairInt>> 
-        segmentedCellList,
-        double deltaELimit, boolean useDeltaE2000, String debugTag) {
+        segmentedCellList, double deltaELimit, boolean useDeltaE2000, 
+        String debugTag) {
         
         SegmentedCellMerger scm = new SegmentedCellMerger(input, 
             segmentedCellList, useDeltaE2000, (float)deltaELimit, debugTag);
@@ -5362,8 +5390,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     private void mergeAdjacentIfSimilar2(ImageExt input, List<Set<PairInt>> 
         segmentedCellList, Map<PairInt, Integer> pointIndexMap, 
-        double deltaELimit, boolean useDeltaE2000, String debugTag) {
-        
+        double deltaELimit, boolean useDeltaE2000, 
+        String debugTag) {
+       
         long t0 = System.currentTimeMillis();
         
         int w = input.getWidth();
@@ -5447,8 +5476,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         dEs.add(Double.valueOf(deltaE));
                     }
                 }
-                
+                                
                 for (Entry<Integer, List<Double>> entry : listIndexDeltaEMap.entrySet()) {
+                    
+                    Integer listIndex2 = entry.getKey();
                     
                     List<Double> deltaEs = entry.getValue();
                     
@@ -5488,7 +5519,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     ++count;
                     ++nChanged;
                     
-                    Integer listIndex2 = entry.getKey();
                     Set<PairInt> set2 = segmentedCellList.get(listIndex2.intValue());
                     set.addAll(set2);
                     for (PairInt p3 : set2) {
@@ -6226,10 +6256,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
     }
-
+    
     private List<Set<PairInt>> performSegmentationWithColorEdges(ImageExt input, 
-        GreyscaleImage greyGradient, String debugTag) {
-        
+        GreyscaleImage greyGradient, SegmentationMergeThreshold mt,
+        String debugTag) {
+                
         boolean fineDebug = true;
         
         int w = input.getWidth();
@@ -6249,6 +6280,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         Set<PairInt> unassigned;
         boolean useDeltaE2000;
         double deltaELimit;
+        boolean useAvgCellColor;
         
         unassigned = createZerosSet(segmentedCellList, w, h, mask);
         
@@ -6261,10 +6293,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         
+        useAvgCellColor = true;
         useDeltaE2000 = true;
         deltaELimit = 4; 
         placeUnassignedByGrowingCells(input, segmentedCellList, unassigned,
-            pointIndexMap, deltaELimit, useDeltaE2000);
+            pointIndexMap, deltaELimit, useDeltaE2000, useAvgCellColor);
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
@@ -6279,6 +6312,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_1_" + debugTag);
         }       
+        
+        if (mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
+            return segmentedCellList;
+        }
 
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -6322,24 +6359,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
-       
-if (true) {
-    return segmentedCellList;
-}
-
-/*                
-        deltaELimit = 10;
         
-        unassigned = createZerosSet(segmentedCellList, w, h, mask);
-        
-        useDeltaE2000 = false;
-        deltaELimit = 3.;
+        // ------ let this one overrun bounds
+        deltaELimit = 1.0;//2.0
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
-        
+
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_4_" + debugTag);
+                segmentedCellList, "_tmp_5_" + debugTag);
         }
         
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6350,12 +6378,22 @@ if (true) {
                 pointIndexMap.put(p, key);
             }
         }
-        reassignSmallestGroups(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        
+        deltaELimit = 0.5;
+        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
+            deltaELimit, useDeltaE2000, debugTag);  
+
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_5_" + debugTag);
+                segmentedCellList, "_tmp_6_" + debugTag);
+        }
+        
+        /*
+        this level of merging preserves boundaries to semi-low contrast,
+        that is, should not result in merging of snowy and rocky mountain tops
+        with bluish skies, and should not merge icecream with a tan background.
+         */
+        if (mt.equals(SegmentationMergeThreshold.DEFAULT)) {
+            return segmentedCellList;
         }
         
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6366,34 +6404,14 @@ if (true) {
                 pointIndexMap.put(p, key);
             }
         }
-        useDeltaE2000 = true;
-        assignedRemainingUnassigned(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-        
+        deltaELimit = 3.0;
+        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
+            deltaELimit, useDeltaE2000, debugTag); 
+
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(), 
-                segmentedCellList, "_6_" + debugTag);
-        }
-        
-        pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < segmentedCellList.size(); ++i) {
-            Set<PairInt> set = segmentedCellList.get(i);
-            Integer key = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, key);
-            }
-        }
-        useDeltaE2000 = true;
-        reassignSmallestGroups(input, segmentedCellList, pointIndexMap, 
-            useDeltaE2000, debugTag);
-*/        
-        if (debugTag != null && !debugTag.equals("")) {
-   
-            Image imgCp = input.copyImage();
-            
-            MiscDebug.writeAlternatingColor(imgCp, segmentedCellList,
-                "_merged_" + debugTag);
-        }
+                segmentedCellList, "_tmp_7_" + debugTag);
+        } 
         
         return segmentedCellList;
     }
@@ -6556,6 +6574,33 @@ if (true) {
         }
         
         return output;
+    }
+
+    private void plotHistograms(ImageExt input, 
+        List<Set<PairInt>> segmentedCellList, String debugTag) {
+        
+        int n = segmentedCellList.size();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        float[] values = new float[n];
+        
+        for (int i = 0; i < n; ++i) {
+            
+            float ha = imageProcessor.calculateAverageHueAngle(input, 
+                segmentedCellList.get(i));
+            
+            values[i] = ha;
+        }
+        
+        HistogramHolder hist = Histogram.createSimpleHistogram(0.f, 360.f, 361, 
+            values, Errors.populateYErrorsBySqrt(values));
+        
+        try {
+            hist.plotHistogram(debugTag, debugTag);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public static class BoundingRegions {

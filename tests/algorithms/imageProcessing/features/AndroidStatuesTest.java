@@ -11,6 +11,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
+import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.SegmentedCellMerger;
 import algorithms.imageProcessing.WaterShed;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
@@ -54,17 +55,195 @@ public class AndroidStatuesTest extends TestCase {
 
     public void test0() throws Exception {
 
+        String fileName1 = "";
+        SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
+
+        for (int i = 0; i < 33; ++i) {
+            mt = SegmentationMergeThreshold.DEFAULT;
+            switch(i) {
+                case 0: {
+                    fileName1 = "android_statues_01.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02.jpg";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03.jpg";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "android_statues_04.jpg";
+                    break;
+                }
+                case 4: {
+                    fileName1 = "seattle.jpg";
+                    break;
+                }
+                case 5: {
+                    fileName1 = "stonehenge.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 6: {
+                    fileName1 = "cloudy_san_jose.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 7: {
+                    fileName1 = "patagonia_snowy_foreground.jpg";
+                    break;
+                }
+                case 8: {
+                    fileName1 = "mt_rainier_snowy_field.jpg";
+                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
+                    break;
+                }
+                case 9: {
+                    fileName1 = "brown_lowe_2003_image1.jpg";
+                    break;
+                }
+                case 10: {
+                    fileName1 = "brown_lowe_2003_image2.jpg";
+                    break;
+                }
+                case 11: {
+                    fileName1 = "venturi_mountain_j6_0001.png";
+                    break;
+                }
+                case 12: {
+                    fileName1 = "campus_010.jpg";
+                    break;
+                }
+                case 13: {
+                    fileName1 = "merton_college_I_001.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 14: {
+                    fileName1 = "arches.jpg";
+                    break;
+                }
+                case 15: {
+                    fileName1 = "stinson_beach.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }                
+                case 16: {
+                    fileName1 = "norwegian_mtn_range.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 17: {
+                    fileName1 = "halfdome.jpg";
+                    break;
+                }
+                case 18: {
+                    fileName1 = "halfdome2.jpg";
+                    break;
+                }
+                case 19: {
+                    fileName1 = "halfdome3.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 20: {
+                    fileName1 = "costa_rica.jpg";
+                    break;
+                }
+                case 21: {
+                    fileName1 = "new-mexico-sunrise_w725_h490.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 22: {
+                    fileName1 = "arizona-sunrise-1342919937GHz.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 23: {
+                    fileName1 = "sky_with_rainbow.jpg";
+                    break;
+                }
+                case 24: {
+                    fileName1 = "sky_with_rainbow2.jpg";
+                    break;
+                }
+                case 25: {
+                    fileName1 = "books_illum3_v0_695x555.png";
+                    break;
+                }
+                case 26: {
+                    fileName1 = "books_illum3_v6_695x555.png";
+                    break;
+                }
+                case 27: {
+                    fileName1 = "klein_matterhorn_snowy_foreground.jpg";
+                    break;
+                }
+                case 28: {
+                    fileName1 = "30.jpg";
+                    break;
+                }
+                case 29: {
+                    fileName1 = "arches_sun_01.jpg";
+                    break;
+                }
+                case 30: {
+                    fileName1 = "stlouis_arch.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                case 31: {
+                    fileName1 = "contrail.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_01.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+            }
+            
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+            ImageSegmentation imageSegmentation = new ImageSegmentation();
+
+            int w1 = img1.getWidth();
+            int h1 = img1.getHeight();
+
+            int maxDimension = 350;
+            int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
+
+            List<Set<PairInt>> segmentedCellList
+                = imageSegmentation.createColorEdgeSegmentation(img1Binned,
+                    mt, "_" + fileName1Root + "_1_binned");
+
+            MiscDebug.writeAlternatingColor(img1Binned, 
+                segmentedCellList, "_final_" + fileName1Root);
+        }
+    }
+    
+    public void estMatching() throws Exception {
+
         String fileName1, fileName2;
 
         FeatureMatcherSettings settings = new FeatureMatcherSettings();
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
         settings.setToUse2ndDerivCorners();
-//trees and grass contributing too many 2nd deriv pts.  does assoc w/ blobs retain enough remaining pts?
-        for (int i = 0; i < 32; ++i) {
-        //for (int i = 2; i < 9; ++i) {
+        for (int i = 0; i < 7; ++i) {
             switch(i) {
-                /*
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
                     fileName2 = "android_statues_04.jpg";
@@ -73,194 +252,38 @@ public class AndroidStatuesTest extends TestCase {
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                default: {
+                case 1: {
                     fileName1 = "android_statues_01.jpg";
                     fileName2 = "android_statues_03.jpg";
                     settings.setUseNormalizedFeatures(true);
                     break;
-                }*/
-                case 0: {
-                    fileName1 = "android_statues_01.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 1: {
-                    fileName1 = "android_statues_02.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
                 }
                 case 2: {
-                    fileName1 = "android_statues_03.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 3: {
-                    fileName1 = "android_statues_04.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 4: {
-                    fileName1 = "seattle.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 5: {
-                    fileName1 = "stonehenge.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 6: {
-                    fileName1 = "cloudy_san_jose.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 7: {
-                    fileName1 = "patagonia_snowy_foreground.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 8: {
-                    fileName1 = "mt_rainier_snowy_field.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 9: {
                     fileName1 = "brown_lowe_2003_image1.jpg";
                     fileName2 = "brown_lowe_2003_image2.jpg";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 10: {
+                case 3: {
                     fileName2 = "brown_lowe_2003_image1.jpg";
                     fileName1 = "brown_lowe_2003_image2.jpg";
                     break;
                 }
-                case 11: {
+                case 4: {
                     fileName1 = "venturi_mountain_j6_0001.png";
                     fileName2 = "venturi_mountain_j6_0010.png";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 12: {
+                case 5: {
                     fileName1 = "campus_010.jpg";
                     fileName2 = "campus_011.jpg";
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
-                case 13: {
+                case 6: {
                     fileName1 = "merton_college_I_001.jpg";
                     fileName2 = "merton_college_I_002.jpg";
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 14: {
-                    fileName1 = "arches.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 15: {
-                    fileName1 = "stinson_beach.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }                
-                case 16: {
-                    fileName1 = "norwegian_mtn_range.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 17: {
-                    fileName1 = "halfdome.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 18: {
-                    fileName1 = "halfdome2.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 19: {
-                    fileName1 = "halfdome3.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 20: {
-                    fileName1 = "costa_rica.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 21: {
-                    fileName1 = "new-mexico-sunrise_w725_h490.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 22: {
-                    fileName1 = "arizona-sunrise-1342919937GHz.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 23: {
-                    fileName1 = "sky_with_rainbow.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 24: {
-                    fileName1 = "sky_with_rainbow2.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 25: {
-                    fileName1 = "books_illum3_v0_695x555.png";
-                    fileName2 = "books_illum3_v6_695x555.png";
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 26: {
-                    fileName1 = "klein_matterhorn_snowy_foreground.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 27: {
-                    fileName1 = "30.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 28: {
-                    fileName1 = "arches_sun_01.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 29: {
-                    fileName1 = "stlouis_arch.jpg";
-                    fileName2 = fileName1;
-                    settings.setUseNormalizedFeatures(true);
-                    break;
-                }
-                case 30: {
-                    fileName1 = "contrail.jpg";
-                    fileName2 = fileName1;
                     settings.setUseNormalizedFeatures(true);
                     break;
                 }
@@ -343,16 +366,7 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
         ImageExt img2Binned = imageProcessor.binImage(img2, binFactor2);
-                
-        Set<PairIntPair> similarClass = new HashSet<PairIntPair>();
-        Set<PairIntPair> differentClass = new HashSet<PairIntPair>();
-        
-        List<Set<PairInt>> segmentedCellList = imageSegmentation.createColorEdgeSegmentation(img1Binned, 
-            "_" + fileName1Root + "_1_binned", img1.getWidth(), img1.getHeight());
-        
-if (true) {
-    return;
-}
+         
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();
             params90.setRotationInDegrees(90);
@@ -363,17 +377,6 @@ if (true) {
             Transformer transformer = new Transformer();
             img1 = (ImageExt) transformer.applyTransformation(img1,
                 params90, img1.getHeight(), img1.getWidth());
-
-            /*
-            venturi:
-                tx += -50
-                ty += -1
-                rot += 0
-            books:
-                tx += -74 ---> total is 620 when rot=270
-                ty += -0
-                rot += 0
-            */
 
             /*
             MatchedPointsTransformationCalculator tc =
