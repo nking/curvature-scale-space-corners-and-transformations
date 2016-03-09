@@ -58,7 +58,7 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
-        for (int i = 0; i < 33; ++i) {
+        for (int i = 0; i < 37; ++i) {
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
                 case 0: {
@@ -113,96 +113,110 @@ public class AndroidStatuesTest extends TestCase {
                     break;
                 }
                 case 12: {
-                    fileName1 = "campus_010.jpg";
+                    fileName1 = "venturi_mountain_j6_0010.png";
                     break;
                 }
                 case 13: {
-                    fileName1 = "merton_college_I_001.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    fileName1 = "campus_010.jpg";
                     break;
                 }
                 case 14: {
-                    fileName1 = "arches.jpg";
+                    fileName1 = "campus_011.jpg";
                     break;
                 }
                 case 15: {
+                    fileName1 = "merton_college_I_001.jpg";
+                    break;
+                }
+                case 16: {
+                    fileName1 = "merton_college_I_002.jpg";
+                    break;
+                }
+                case 17: {
+                    fileName1 = "arches.jpg";
+                    break;
+                }
+                case 18: {
                     fileName1 = "stinson_beach.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }                
-                case 16: {
+                case 19: {
                     fileName1 = "norwegian_mtn_range.jpg";
                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 17: {
+                case 20: {
                     fileName1 = "halfdome.jpg";
                     break;
                 }
-                case 18: {
+                case 21: {
                     fileName1 = "halfdome2.jpg";
                     break;
                 }
-                case 19: {
+                case 22: {
                     fileName1 = "halfdome3.jpg";
                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 20: {
+                case 23: {
                     fileName1 = "costa_rica.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 21: {
+                case 24: {
                     fileName1 = "new-mexico-sunrise_w725_h490.jpg";
                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 22: {
+                case 25: {
                     fileName1 = "arizona-sunrise-1342919937GHz.jpg";
                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 23: {
+                case 26: {
                     fileName1 = "sky_with_rainbow.jpg";
                     break;
                 }
-                case 24: {
+                case 27: {
                     fileName1 = "sky_with_rainbow2.jpg";
                     break;
                 }
-                case 25: {
+                case 28: {
                     fileName1 = "books_illum3_v0_695x555.png";
                     break;
                 }
-                case 26: {
+                case 29: {
                     fileName1 = "books_illum3_v6_695x555.png";
                     break;
                 }
-                case 27: {
+                case 30: {
                     fileName1 = "klein_matterhorn_snowy_foreground.jpg";
                     break;
                 }
-                case 28: {
+                case 31: {
                     fileName1 = "30.jpg";
                     break;
                 }
-                case 29: {
+                case 32: {
                     fileName1 = "arches_sun_01.jpg";
                     break;
                 }
-                case 30: {
+                case 33: {
                     fileName1 = "stlouis_arch.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                case 31: {
+                case 34: {
                     fileName1 = "contrail.jpg";
                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
-                default: {
+                case 35: {
                     fileName1 = "checkerboard_01.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    break;
+                }
+                default: {
+                    fileName1 = "checkerboard_02.jpg";
                     break;
                 }
             }

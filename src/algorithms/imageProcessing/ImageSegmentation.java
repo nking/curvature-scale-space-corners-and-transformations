@@ -3532,11 +3532,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t0 = System.currentTimeMillis();
                        
         // for test images like Merton college, need to use filterLimit > 0.15
-        float filterLimit = 0.15f;
-        int nIter = 0;
-        while (filterLimit < 0.35) {
+        int idx = 0;
+        float[] filterLimit = new float[]{0.3f, 0.15f, 0.225f, 0.3f};
+        while (idx < 4) {
             GreyscaleImage greyGradient0 = greyGradient.copyImage();
-            imageProcessor.highPassIntensityFilter(greyGradient0, filterLimit);
+            imageProcessor.highPassIntensityFilter(greyGradient0, filterLimit[idx]);
             invertImage(greyGradient0);
             setAllNon255To0(greyGradient0);
             greyGradient0 = fillInGapsOf1(greyGradient0, new HashSet<PairInt>(), 0);
@@ -3544,7 +3544,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             imageProcessor.applyAdaptiveMeanThresholding(greyGradient0, 1);
             removeEdgesSmallerThanLimit(greyGradient0, 0, 255, 2);
             if (fineDebug && debugTag != null && !debugTag.equals("")) {
-                MiscDebug.writeImage(greyGradient0, "_grey_gradient_" + nIter + "_" + debugTag);
+                MiscDebug.writeImage(greyGradient0, "_grey_gradient_" + idx + "_" + debugTag);
             }
 
             int nEdgePoints = 0;
@@ -3555,16 +3555,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             float fraction = (float)nEdgePoints/(float)greyGradient0.getNPixels();
 
+            log.info(debugTag + " nIter=" + idx + " fraction=" + fraction);
+            
             // merton has 0.00067 and needs larger filterLimit
             if (fraction > 0.01) {
                 greyGradient = greyGradient0;
                 break;
             }
-            filterLimit += 0.075f;
-
-            ++nIter;
-
-            log.info("nIter=" + nIter);
+            ++idx;
         }
         
         t1 = System.currentTimeMillis();
@@ -6312,10 +6310,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_1_" + debugTag);
         }       
-        
-        if (mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
-            return segmentedCellList;
-        }
 
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -6325,7 +6319,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 0.5;
+        deltaELimit = 0.25;//0.5
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
 
@@ -6350,7 +6344,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
-        
+
         deltaELimit = 0.5;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
@@ -6360,7 +6354,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
         
-        // ------ let this one overrun bounds
+        if (mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
+            return segmentedCellList;
+        }
+        
         deltaELimit = 1.0;//2.0
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit, 
             useDeltaE2000, debugTag);  
@@ -6369,7 +6366,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(), 
                 segmentedCellList, "_tmp_5_" + debugTag);
         }
-        
+               
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6378,7 +6375,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 0.5;
+        deltaELimit = 0.3;//0.25;
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap, 
             deltaELimit, useDeltaE2000, debugTag);  
 
@@ -6391,7 +6388,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         this level of merging preserves boundaries to semi-low contrast,
         that is, should not result in merging of snowy and rocky mountain tops
         with bluish skies, and should not merge icecream with a tan background.
-         */
+        */
         if (mt.equals(SegmentationMergeThreshold.DEFAULT)) {
             return segmentedCellList;
         }
@@ -6404,7 +6401,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 3.0;
+        deltaELimit = 2.5;//X2.0;//1.75;//1,5 2.0
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag); 
 
