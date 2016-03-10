@@ -143,7 +143,7 @@ public class AndroidStatuesTest extends TestCase {
                 }                
                 case 19: {
                     fileName1 = "norwegian_mtn_range.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 20: {
@@ -161,7 +161,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 23: {
                     fileName1 = "costa_rica.jpg";
-                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 24: {
@@ -213,10 +213,12 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 35: {
                     fileName1 = "checkerboard_01.jpg";
+                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 default: {
                     fileName1 = "checkerboard_02.jpg";
+                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
             }
