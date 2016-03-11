@@ -5492,7 +5492,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 /*
                 TODO: this inequality in doMerge suggests that this part of
                 a larger segmentation algorithm could be solved by an
-                integer programming layer of a not-so-deep neural network,
+                integer programming layer of neural network,
                 that is, converting min cost to integer programming.
                 The other layer(s) would primarily be strict comparison to
                 a deltaE limit to be optimized for merging or growing.
@@ -6351,6 +6351,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         int n3 = segmentedCellList.size();
         float f23 = (float)n2/(float)n3;
+        log.info(debugTag + " n2-n3=" + (n2 - n3) + " n2/n3=" + f23);
         if (f23 > 1.45) {
             pointIndexMap = new HashMap<PairInt, Integer>();
             for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -6365,23 +6366,43 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 deltaELimit, useDeltaE2000, debugTag);
         }
 
-        log.info(debugTag + " n2-n3=" + (n2 - n3) + " n3/n2=" + f23);
-
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_3_" + debugTag);
         }
-
-        deltaELimit = 0.5;
+        
+        // -------------
+        List<Set<PairInt>> segmentedCellListCp = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : segmentedCellList) {
+            Set<PairInt> set2 = new HashSet<PairInt>();
+            for (PairInt p : set) {
+                set2.add(p);
+            }
+            segmentedCellListCp.add(set2);
+        }
+        
+        deltaELimit = 1.;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
             useDeltaE2000, debugTag);
 
         int n4 = segmentedCellList.size();
+        float f34 = (float)n3/(float)n4;
+        log.info(debugTag + " n3-n4=" + (n3 - n4) + " n3/n4=" + f34);
+        
+        if (f34 > 2.) {
+            log.info(debugTag + " redoing step 4 at lower threshold");
+            segmentedCellList = segmentedCellListCp;
+            deltaELimit = 0.5;
+            mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
+                useDeltaE2000, debugTag);
+        }
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
+        
+        // -----------
 
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -6402,7 +6423,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int n5 = segmentedCellList.size();
         
         // -----  fragile section that may need revision ----
-        List<Set<PairInt>> segmentedCellListCp = new ArrayList<Set<PairInt>>();
+        segmentedCellListCp = new ArrayList<Set<PairInt>>();
         for (Set<PairInt> set : segmentedCellList) {
             Set<PairInt> set2 = new HashSet<PairInt>();
             for (PairInt p : set) {
@@ -6418,8 +6439,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int n6 = segmentedCellList.size();
         float f56 = (float)n5/(float)n6;
         log.info(debugTag + " n5-n6=" + (n5 - n6) + " n5/n6=" + f56);
+        boolean lower = false;
         if (f56 < 1.6) {
             // redo w/ lower limit
+            lower = true;
             log.info(debugTag + " redoing step 6 w/ lower tolerance");
             segmentedCellList = segmentedCellListCp;
             deltaELimit = 0.5;
@@ -6446,7 +6469,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 0.25;//0.3;//0.25;
+        deltaELimit = lower ? 0.25 : 1.0;
+        if (!lower && (n6 < 100)) {
+            deltaELimit = 0.25;
+        }
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
@@ -6456,7 +6482,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         int n7 = segmentedCellList.size();
+        float f67 = (float)n6/(float)n7;
+        log.info(debugTag + " n6-n7=" + (n6 - n7) + " n6=" + n6 + " n6/n7=" + f67 + " lower=" + lower);
 
+        segmentedCellListCp = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : segmentedCellList) {
+            Set<PairInt> set2 = new HashSet<PairInt>();
+            for (PairInt p : set) {
+                set2.add(p);
+            }
+            segmentedCellListCp.add(set2);
+        }
+        
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6476,7 +6513,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int n8 = segmentedCellList.size();
         float f78 = (float)n7/(float)n8;
         log.info(debugTag + " n7-n8=" + (n7 - n8) + " n7/n8=" + f78);
-
+        
         /*
         this level of merging preserves boundaries to semi-low contrast,
         that is, should not result in merging of snowy and rocky mountain tops
@@ -6486,6 +6523,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             return segmentedCellList;
         }
 
+        segmentedCellListCp = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : segmentedCellList) {
+            Set<PairInt> set2 = new HashSet<PairInt>();
+            for (PairInt p : set) {
+                set2.add(p);
+            }
+            segmentedCellListCp.add(set2);
+        }
+        
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6494,10 +6540,29 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 2.5;//X2.0;//1.75;//1,5 2.0
+        deltaELimit = 2.5;
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
+        int n9 = segmentedCellList.size();
+        float f89 = (float)n8/(float)n9;
+        log.info(debugTag + " n8-n9=" + (n8 - n9) + " n8/n9=" + f89);
+        if (f89 > 3.5) {
+            // redo with smaller tolerance
+            segmentedCellList = segmentedCellListCp;
+            pointIndexMap = new HashMap<PairInt, Integer>();
+            for (int i = 0; i < segmentedCellList.size(); ++i) {
+                Set<PairInt> set = segmentedCellList.get(i);
+                Integer key = Integer.valueOf(i);
+                for (PairInt p : set) {
+                    pointIndexMap.put(p, key);
+                }
+            }
+            deltaELimit = 2.0;
+            mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
+                deltaELimit, useDeltaE2000, debugTag);
+        }
+        
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_9_" + debugTag);
