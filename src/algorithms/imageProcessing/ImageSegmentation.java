@@ -25,6 +25,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import java.io.IOException;
@@ -6421,39 +6422,43 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         int n5 = segmentedCellList.size();
-        
-        // -----  fragile section that may need revision ----
-        segmentedCellListCp = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : segmentedCellList) {
-            Set<PairInt> set2 = new HashSet<PairInt>();
+
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
             for (PairInt p : set) {
-                set2.add(p);
+                pointIndexMap.put(p, key);
             }
-            segmentedCellListCp.add(set2);
         }
 
-        deltaELimit = 1.0;//2.0
+        //1, 0.5, 0.75
+        deltaELimit = 0.5;
+         boolean lower = true;
+        if (!mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
+            
+            int[] n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+                pointIndexMap, debugTag);
+        
+            log.info(debugTag + " nDeltaE < 2 = " + n2Andn8[0] 
+                + " nDeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
+                (n2Andn8[1]/n2Andn8[0]));
+            
+            if (n2Andn8[0] > n2Andn8[1]) {
+                lower = false;
+                deltaELimit = 1;
+            } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
+                deltaELimit = 0.75;
+                lower = false;
+            }
+        }
+
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
             useDeltaE2000, debugTag);
 
         int n6 = segmentedCellList.size();
         float f56 = (float)n5/(float)n6;
         log.info(debugTag + " n5-n6=" + (n5 - n6) + " n5/n6=" + f56);
-        boolean lower = false;
-        if (f56 < 1.6) {
-            // redo w/ lower limit
-            lower = true;
-            log.info(debugTag + " redoing step 6 w/ lower tolerance");
-            segmentedCellList = segmentedCellListCp;
-            deltaELimit = 0.5;
-            mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
-                useDeltaE2000, debugTag);
-        } else if (f56 >= 1.7) {
-            log.info(debugTag + " continuing step 6 w/ higher tolerance");
-            deltaELimit = 1.75;
-            mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
-                useDeltaE2000, debugTag);
-        }
 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
@@ -6547,7 +6552,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int n9 = segmentedCellList.size();
         float f89 = (float)n8/(float)n9;
         log.info(debugTag + " n8-n9=" + (n8 - n9) + " n8/n9=" + f89);
-        if (f89 > 3.5) {
+        /*if (f89 > 3.5) {
             // redo with smaller tolerance
             segmentedCellList = segmentedCellListCp;
             pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6561,7 +6566,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             deltaELimit = 2.0;
             mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
                 deltaELimit, useDeltaE2000, debugTag);
-        }
+        }*/
         
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
@@ -6755,6 +6760,339 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             hist.plotHistogram(debugTag, debugTag);
         } catch (IOException ex) {
             Logger.getLogger(ImageSegmentation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private int[] getEdgeProperties(ImageExt input, 
+        List<Set<PairInt>> segmentedCellList, 
+        Map<PairInt, Integer> pointIndexMap, String debugTag) {
+        
+        /*
+        for adjacent segmented cells, determining these properties either on
+        a point by point basis of the adjacent points, or using the average of the
+        entire cell for adjacent cells:
+           -- deltaE
+           -- hueAngle1 vs hueAngle2
+           -- (360 - hueAngle1) vs hueAngle2
+           -- hueAngle1 vs (360 - hueAngle2)
+        */
+        List<Double> deltaE = new ArrayList<Double>();
+        List<Integer> hueAngle1 = new ArrayList<Integer>();
+        List<Integer> hueAngle2 = new ArrayList<Integer>();
+        
+        boolean useCellAverages = false;//true;
+        
+        if (useCellAverages) {
+            populateAdjacentCellAverages(input, segmentedCellList, pointIndexMap,
+                deltaE, hueAngle1, hueAngle2);
+        } else {
+            populateAdjacentCellPoints(input, segmentedCellList, pointIndexMap,
+                deltaE, hueAngle1, hueAngle2);
+        }
+        
+        int nDELT2 = 0;
+        int nDELT28 = 0;
+
+        //---------
+        int n = deltaE.size();
+        for (int i = 0; i < n; ++i) {
+            float x = deltaE.get(i).floatValue();
+            if (x <= 2.) {
+                nDELT2++;
+            } else if (x <= 8.) {
+                nDELT28++;
+            }
+        }
+        nDELT28 /= 3;
+        return new int[]{nDELT2, nDELT28};
+        /*
+        try { 
+            float[] xPolygon = null;
+            float[] yPolygon = null;
+            int n = deltaE.size();
+            float[] x = new float[n];
+            float[] y = new float[n];
+            for (int i = 0; i < n; ++i) {
+                x[i] = deltaE.get(i).floatValue();
+                y[i] = hueAngle1.get(i).floatValue();
+                if (x[i] <= 2.) {
+                    nDELT2++;
+                } else if (x[i] <= 8.) {
+                    nDELT28++;
+                }
+            }
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            float minX = MiscMath.findMin(x);
+            float maxX = MiscMath.findMax(x);
+            plotter.addPlot(minX, maxX, 0.f, 361.f, x, y,xPolygon, yPolygon, 
+                "dE vs ha1 ");
+            //------
+            plotter.writeFile(debugTag);
+            
+            log.info(debugTag + " nDeltaE < 2 = " + nDELT2 
+                + " nDeltaE > 2 and < 8 = " + nDELT28);
+        } catch (IOException ex) {
+            Logger.getLogger(ImageProcessor.class.getName()).log(Level.SEVERE,
+                null, ex);
+        }
+        */
+    }
+
+    private void populateAdjacentCellPoints(ImageExt input, 
+        List<Set<PairInt>> segmentedCellList, 
+        Map<PairInt, Integer> pointIndexMap, 
+        List<Double> deltaE, List<Integer> hueAngle1, List<Integer> hueAngle2) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+
+            Integer index = Integer.valueOf(i);
+
+            Set<PairInt> set = segmentedCellList.get(index.intValue());
+
+            // collecting bordering points
+            // storing all then averaging and comparing to deltaELimit
+            Map<Integer, List<Double>> listIndexDeltaEMap = new HashMap<Integer, List<Double>>();
+            Map<Integer, List<Integer>> listIndexHA1Map = new HashMap<Integer, List<Integer>>();
+            Map<Integer, List<Integer>> listIndexHA2Map = new HashMap<Integer, List<Integer>>();
+
+            for (PairInt p : set) {
+
+                int x = p.getX();
+                int y = p.getY();
+                Integer listIndex = pointIndexMap.get(p);
+                assert(listIndex.intValue() == index.intValue());
+
+                float[] lab = input.getCIELAB(x, y);
+
+                for (int k = 0; k < dxs.length; ++k) {
+
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+
+                    PairInt p2 = new PairInt(x2, y2);
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+
+                    Integer listIndex2 = pointIndexMap.get(p2);
+                    if (listIndex2 == null || listIndex.equals(listIndex2)) {
+                        continue;
+                    }
+
+                    float[] lab2 = input.getCIELAB(x2, y2);
+
+                    double dE = Math.abs(cieC.calcDeltaECIE2000(lab, lab2));
+                    
+                    List<Double> dEs = listIndexDeltaEMap.get(listIndex2);
+                    if (dEs == null) {
+                        dEs = new ArrayList<Double>();
+                        listIndexDeltaEMap.put(listIndex2, dEs);
+                    }
+                    dEs.add(Double.valueOf(dE));
+                    
+                    float ha1;
+                    if (lab[1] == 0) {
+                        ha1 = 0;
+                    } else {
+                        ha1 = (float) (Math.atan(lab[2] / lab[1]) * 180. / Math.PI);
+                        if (ha1 < 0) {
+                            ha1 += 360.;
+                        }
+                    }
+                    
+                    List<Integer> ha1s = listIndexHA1Map.get(listIndex2);
+                    if (ha1s == null) {
+                        ha1s = new ArrayList<Integer>();
+                        listIndexHA1Map.put(listIndex2, ha1s);
+                    }
+                    ha1s.add(Integer.valueOf(Math.round(ha1)));
+                    
+                    float ha2;
+                    if (lab2[1] == 0) {
+                        ha2 = 0;
+                    } else {
+                        ha2 = (float) (Math.atan(lab2[2] / lab2[1]) * 180. / Math.PI);
+                        if (ha2 < 0) {
+                            ha2 += 360.;
+                        }
+                    }
+                    
+                    List<Integer> ha2s = listIndexHA2Map.get(listIndex2);
+                    if (ha2s == null) {
+                        ha2s = new ArrayList<Integer>();
+                        listIndexHA2Map.put(listIndex2, ha2s);
+                    }
+                    ha2s.add(Integer.valueOf(Math.round(ha2)));
+                }
+            }
+
+            AngleUtil angleUtil = new AngleUtil();
+            
+            for (Entry<Integer, List<Double>> entry : listIndexDeltaEMap.entrySet()) {
+
+                Integer listIndex2 = entry.getKey();
+
+                List<Double> deltaEs = entry.getValue();
+
+                double sumDeltaE = 0;
+                for (int ii = 0; ii < deltaEs.size(); ++ii) {
+                    sumDeltaE += deltaEs.get(ii).doubleValue();
+                }
+                sumDeltaE /= (double)deltaEs.size();
+                
+                List<Integer> ha1s = listIndexHA1Map.get(listIndex2.intValue());
+                int[] hueAngles1 = new int[ha1s.size()];
+                List<Integer> ha2s = listIndexHA2Map.get(listIndex2.intValue());
+                int[] hueAngles2 = new int[ha2s.size()];
+                for (int ii = 0; ii < ha1s.size(); ++ii) {
+                    hueAngles1[ii] = ha1s.get(ii).intValue();
+                    hueAngles2[ii] = ha2s.get(ii).intValue();
+                }
+                
+                float avgHA1 = angleUtil.calculateAverageWithQuadrantCorrections(
+                    hueAngles1, hueAngles1.length - 1);
+                
+                float avgHA2 = angleUtil.calculateAverageWithQuadrantCorrections(
+                    hueAngles2, hueAngles2.length - 1);
+                
+                if (avgHA1 < 0) {
+                    avgHA1 += 360;
+                } else if (avgHA1 > 359) {
+                    avgHA1 -= 360;
+                }
+                if (avgHA2 < 0) {
+                    avgHA2 += 360;
+                } else if (avgHA2 > 359) {
+                    avgHA2 -= 360;
+                }
+                
+                deltaE.add(Double.valueOf(sumDeltaE));
+                hueAngle1.add(Integer.valueOf(Math.round(avgHA1)));
+                hueAngle2.add(Integer.valueOf(Math.round(avgHA2)));
+            }
+        }
+
+    }
+    
+    private void populateAdjacentCellAverages(ImageExt input, 
+        List<Set<PairInt>> segmentedCellList, 
+        Map<PairInt, Integer> pointIndexMap, 
+        List<Double> deltaE, List<Integer> hueAngle1, List<Integer> hueAngle2) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> addedPairIndexes = new HashSet<PairInt>();
+
+        Map<Integer, Colors> segmentedCellAvgLabColors 
+            = new HashMap<Integer, Colors>();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+         
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+
+            Integer index = Integer.valueOf(i);
+
+            Set<PairInt> set = segmentedCellList.get(index.intValue());
+            
+            Set<Integer> list2Indexes = new HashSet<Integer>();
+
+            for (PairInt p : set) {
+
+                int x = p.getX();
+                int y = p.getY();
+                Integer listIndex = pointIndexMap.get(p);
+                assert(listIndex.intValue() == index.intValue());
+
+                for (int k = 0; k < dxs.length; ++k) {
+
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+
+                    PairInt p2 = new PairInt(x2, y2);
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+
+                    Integer listIndex2 = pointIndexMap.get(p2);
+                    if (listIndex2 == null || listIndex.equals(listIndex2)) {
+                        continue;
+                    }
+
+                    list2Indexes.add(listIndex2);
+                }
+            }
+            
+            for (Integer index2 : list2Indexes) {
+                int idx1, idx2;
+                if (index.intValue() < index2.intValue()) {
+                    idx1 = index.intValue();
+                    idx2 = index2.intValue();
+                } else {
+                    idx2 = index.intValue();
+                    idx1 = index2.intValue();
+                }
+                PairInt p12 = new PairInt(idx1, idx2);
+                if (addedPairIndexes.contains(p12)) {
+                    continue;
+                }
+                addedPairIndexes.add(p12);
+                
+                Colors colors1 = segmentedCellAvgLabColors.get(Integer.valueOf(idx1));
+                if (colors1 == null) {
+                    colors1 = imageProcessor.calculateAverageLAB(input,
+                        segmentedCellList.get(idx1));
+                    segmentedCellAvgLabColors.put(Integer.valueOf(idx1), colors1);
+                }
+                float[] lab1 = colors1.getColors();
+                
+                Colors colors2 = segmentedCellAvgLabColors.get(Integer.valueOf(idx2));
+                if (colors2 == null) {
+                    colors2 = imageProcessor.calculateAverageLAB(input,
+                        segmentedCellList.get(idx2));
+                    segmentedCellAvgLabColors.put(Integer.valueOf(idx2), colors2);
+                }
+                float[] lab2 = colors2.getColors();
+                
+                double dE = Math.abs(cieC.calcDeltaECIE2000(lab1, lab2));
+                    
+                float ha1;
+                if (lab1[1] == 0) {
+                    ha1 = 0;
+                } else {
+                    ha1 = (float) (Math.atan(lab1[2] / lab1[1]) * 180. / Math.PI);
+                    if (ha1 < 0) {
+                        ha1 += 360.;
+                    }
+                }
+                
+                float ha2;
+                if (lab2[1] == 0) {
+                    ha2 = 0;
+                } else {
+                    ha2 = (float) (Math.atan(lab2[2] / lab2[1]) * 180. / Math.PI);
+                    if (ha2 < 0) {
+                        ha2 += 360.;
+                    }
+                }
+                
+                deltaE.add(Double.valueOf(dE));
+                hueAngle1.add(Integer.valueOf(Math.round(ha1)));
+                hueAngle2.add(Integer.valueOf(Math.round(ha2)));
+            }
         }
     }
 
