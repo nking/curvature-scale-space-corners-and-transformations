@@ -6342,6 +6342,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
+        
         deltaELimit = 0.25;
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
@@ -6432,25 +6433,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-        //1, 0.5, 0.75
         deltaELimit = 0.5;
-         boolean lower = true;
-        if (!mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
-            
-            int[] n2Andn8 = getEdgeProperties(input, segmentedCellList, 
-                pointIndexMap, debugTag);
-        
-            log.info(debugTag + " nDeltaE < 2 = " + n2Andn8[0] 
-                + " nDeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
-                (n2Andn8[1]/n2Andn8[0]));
-            
-            if (n2Andn8[0] > n2Andn8[1]) {
-                lower = false;
-                deltaELimit = 1;
-            } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
-                deltaELimit = 0.75;
-                lower = false;
-            }
+        boolean lower = true;            
+        int[] n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+            pointIndexMap, debugTag);
+
+        log.info(debugTag + " nDeltaE < 2 = " + n2Andn8[0] 
+            + " nDeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
+            (n2Andn8[1]/n2Andn8[0]));
+
+        if (n2Andn8[0] > n2Andn8[1]) {
+            lower = false;
+            deltaELimit = 1;
+        } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
+            deltaELimit = 0.75;
+            lower = false;
         }
 
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
@@ -6464,7 +6461,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_6_" + debugTag);
         }
-        // -----  end fragile section ----
 
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
@@ -6474,10 +6470,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = lower ? 0.25 : 1.0;
-        if (!lower && (n6 < 100)) {
-            deltaELimit = 0.25;
+        deltaELimit = 0.25;
+        if (!lower) {
+            
+            n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+                pointIndexMap, debugTag);
+        
+            log.info(debugTag + " n DeltaE < 2 = " + n2Andn8[0] 
+                + " n DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
+                (n2Andn8[1]/n2Andn8[0]));
+            
+            if (n2Andn8[0] > n2Andn8[1]) {
+                deltaELimit = 1.0;
+            } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
+                deltaELimit = 0.75;
+                lower = false;
+            }
         }
+        
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
