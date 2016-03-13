@@ -517,7 +517,7 @@
             <jvmarg value="-enableassertions" />
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
-            <test name="${test}" fork="yes" haltonfailure="yes">
+            <test name="${test}" fork="no" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
             

@@ -3503,6 +3503,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         t0 = System.currentTimeMillis();
 
         createEdges01(o1Img, "o1_" + debugTag);
+        //createEdges03(o1Img, "o1_" + debugTag);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(o1Img, "_o1_before_" + debugTag);
         }
@@ -3532,53 +3533,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         t0 = System.currentTimeMillis();
 
-        // for test images like Merton college, need to use filterLimit > 0.15
-        int idx = 0;
-        float[] filterLimit = new float[]{0.3f, 0.15f, 0.225f, 0.3f};
-        while (idx < 4) {
-            GreyscaleImage greyGradient0 = greyGradient.copyImage();
-            imageProcessor.highPassIntensityFilter(greyGradient0, filterLimit[idx]);
-            invertImage(greyGradient0);
-            setAllNon255To0(greyGradient0);
-            greyGradient0 = fillInGapsOf1(greyGradient0, new HashSet<PairInt>(), 0);
-            removeIsolatedPixels(greyGradient0, 0, 255, true);
-            imageProcessor.applyAdaptiveMeanThresholding(greyGradient0, 1);
-            removeEdgesSmallerThanLimit(greyGradient0, 0, 255, 2);
-            if (fineDebug && debugTag != null && !debugTag.equals("")) {
-                MiscDebug.writeImage(greyGradient0, "_grey_gradient_" + idx + "_" + debugTag);
-            }
-
-            int nEdgePoints = 0;
-            for (int i = 0; i < greyGradient0.getNPixels(); ++i) {
-                if (greyGradient0.getValue(i) == 0) {
-                    ++nEdgePoints;
-                }
-            }
-            float fraction = (float)nEdgePoints/(float)greyGradient0.getNPixels();
-
-            log.info(debugTag + " nIter=" + idx + " fraction=" + fraction);
-
-            // merton has 0.00067 and needs larger filterLimit
-            if (fraction > 0.01) {
-                greyGradient = greyGradient0;
-                break;
-            }
-            ++idx;
-        }
+        createEdges02(greyGradient, debugTag);
+        MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
 
         t1 = System.currentTimeMillis();
         t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to make grey gradient edges");
 
         //TODO: could use a compressed image representation of 0's and 1's for this:
+        
+        imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
 
         //- add O1 and labA edges if adjacent to existing edges in greyGradient
         addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img, labAImg}, 0);
-        //addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img}, 0);
 
         greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
-
-        // using adaptive loses detail here.  definitely don't use more thinning here
 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_input_edges_" + debugTag);
@@ -6268,7 +6237,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         int w = input.getWidth();
         int h = input.getHeight();
-
+        
         Set<PairInt> mask = new HashSet<PairInt>();
 
         List<Set<PairInt>> segmentedCellList = findContiguousCells(255,
@@ -6347,65 +6316,71 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(),
+                segmentedCellList, "_tmp_3_" + debugTag);
+        }
+        
         if (mt.equals(SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST)) {
             return segmentedCellList;
         }
 
         int n3 = segmentedCellList.size();
         float f23 = (float)n2/(float)n3;
-        log.info(debugTag + " n2-n3=" + (n2 - n3) + " n2/n3=" + f23);
-        if (f23 > 1.45) {
-            pointIndexMap = new HashMap<PairInt, Integer>();
-            for (int i = 0; i < segmentedCellList.size(); ++i) {
-                Set<PairInt> set = segmentedCellList.get(i);
-                Integer key = Integer.valueOf(i);
-                for (PairInt p : set) {
-                    pointIndexMap.put(p, key);
-                }
-            }
-            deltaELimit = 1.0;//0.5
-            mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
-                deltaELimit, useDeltaE2000, debugTag);
-        }
-
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_3_" + debugTag);
-        }
+        //log.info(debugTag + " n2-n3=" + (n2 - n3) + " n2/n3=" + f23);
         
-        // -------------
-        List<Set<PairInt>> segmentedCellListCp = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : segmentedCellList) {
-            Set<PairInt> set2 = new HashSet<PairInt>();
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
             for (PairInt p : set) {
-                set2.add(p);
+                pointIndexMap.put(p, key);
             }
-            segmentedCellListCp.add(set2);
         }
+        int[] n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+            pointIndexMap, debugTag);
+        float div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
+        log.info(debugTag + " n2DeltaE < 2 = " + n2Andn8[0] 
+            + " n2DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" + div + 
+            " n2-n3=" + (n2 - n3) + " n2/n3=" + f23);
         
-        deltaELimit = 1.;
-        mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
-            useDeltaE2000, debugTag);
-
-        int n4 = segmentedCellList.size();
-        float f34 = (float)n3/(float)n4;
-        log.info(debugTag + " n3-n4=" + (n3 - n4) + " n3/n4=" + f34);
-        
-        if (f34 > 2.) {
-            log.info(debugTag + " redoing step 4 at lower threshold");
-            segmentedCellList = segmentedCellListCp;
-            deltaELimit = 0.5;
-            mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
-                useDeltaE2000, debugTag);
+        deltaELimit = 0.25;
+        if ((n2Andn8[1] > 0) && ((n2Andn8[0]/n2Andn8[1]) > 3)) {
+            deltaELimit = 1;
         }
-        
+        mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
+            deltaELimit, useDeltaE2000, debugTag);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_4_" + debugTag);
         }
         
-        // -----------
+        // -------------
+        pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < segmentedCellList.size(); ++i) {
+            Set<PairInt> set = segmentedCellList.get(i);
+            Integer key = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, key);
+            }
+        }
+        n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+            pointIndexMap, debugTag);
+        div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
+        log.info(debugTag + " n4DeltaE < 2 = " + n2Andn8[0] 
+            + " n4DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +div);
+        
+        //TODO: may need a setting for moderate contrast and then set deltaELimit=0.5 here
+        deltaELimit = 1.;
+        mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
+            useDeltaE2000, debugTag);
 
+        if (fineDebug && debugTag != null && !debugTag.equals("")) {
+            MiscDebug.writeAlternatingColor(input.copyImage(),
+                segmentedCellList, "_tmp_5_" + debugTag);
+        }
+        
+        // -----------
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6419,7 +6394,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             deltaELimit, useDeltaE2000);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_5_" + debugTag);
+                segmentedCellList, "_tmp_6_" + debugTag);
         }
 
         int n5 = segmentedCellList.size();
@@ -6432,34 +6407,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-
-        deltaELimit = 0.5;
-        boolean lower = true;            
-        int[] n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+                    
+        n2Andn8 = getEdgeProperties(input, segmentedCellList, 
             pointIndexMap, debugTag);
-
-        log.info(debugTag + " nDeltaE < 2 = " + n2Andn8[0] 
-            + " nDeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
-            (n2Andn8[1]/n2Andn8[0]));
-
-        if (n2Andn8[0] > n2Andn8[1]) {
+        div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
+        log.info(debugTag + " n7DeltaE < 2 = " + n2Andn8[0] 
+            + " n7DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" + div);
+        deltaELimit = 0.5;
+        boolean lower = true;
+        if ((n2Andn8[0] > n2Andn8[1]) && (div <= 0.5)) {
             lower = false;
             deltaELimit = 1;
-        } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
-            deltaELimit = 0.75;
-            lower = false;
         }
 
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
             useDeltaE2000, debugTag);
 
         int n6 = segmentedCellList.size();
-        float f56 = (float)n5/(float)n6;
-        log.info(debugTag + " n5-n6=" + (n5 - n6) + " n5/n6=" + f56);
 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_6_" + debugTag);
+                segmentedCellList, "_tmp_7_" + debugTag);
         }
 
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6471,42 +6439,33 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         deltaELimit = 0.25;
-        if (!lower) {
+        /*
+        if ((n2Andn8[1] > 0) && ((n2Andn8[0]/n2Andn8[1]) > 3)) {
+            deltaELimit = 1.;
+        }
+        */
+        /*if (!lower) {
             
             n2Andn8 = getEdgeProperties(input, segmentedCellList, 
                 pointIndexMap, debugTag);
-        
-            log.info(debugTag + " n DeltaE < 2 = " + n2Andn8[0] 
-                + " n DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
-                (n2Andn8[1]/n2Andn8[0]));
+            div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
+            log.info(debugTag + " n8DeltaE < 2 = " + n2Andn8[0] 
+                + " n8DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" + div);
             
             if (n2Andn8[0] > n2Andn8[1]) {
-                deltaELimit = 1.0;
-            } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
-                deltaELimit = 0.75;
+                deltaELimit = 1.;
+            } else if (div < 3) {
+                deltaELimit = 1.; //0.75
                 lower = false;
             }
-        }
+        }*/
         
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_7_" + debugTag);
-        }
-
-        int n7 = segmentedCellList.size();
-        float f67 = (float)n6/(float)n7;
-        log.info(debugTag + " n6-n7=" + (n6 - n7) + " n6=" + n6 + " n6/n7=" + f67 + " lower=" + lower);
-
-        segmentedCellListCp = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : segmentedCellList) {
-            Set<PairInt> set2 = new HashSet<PairInt>();
-            for (PairInt p : set) {
-                set2.add(p);
-            }
-            segmentedCellListCp.add(set2);
+                segmentedCellList, "_tmp_8_" + debugTag);
         }
         
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6518,33 +6477,45 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
         deltaELimit = 5.0;//6.0
+        /*if (!lower) {
+            n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+                pointIndexMap, debugTag);
+        
+            log.info(debugTag + " n_DeltaE < 2 = " + n2Andn8[0] 
+                + " n_DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +
+                (n2Andn8[1]/n2Andn8[0]));
+            
+            if (n2Andn8[0] > n2Andn8[1]) {
+                deltaELimit = 6.0;
+            } else if ((n2Andn8[1]/n2Andn8[0]) < 3) {
+                deltaELimit = 6.0;
+            }
+        }*/      
         mergeEmbeddedIfSimilar(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_8_" + debugTag);
+                segmentedCellList, "_tmp_9_" + debugTag);
         }
 
-        int n8 = segmentedCellList.size();
-        float f78 = (float)n7/(float)n8;
-        log.info(debugTag + " n7-n8=" + (n7 - n8) + " n7/n8=" + f78);
-        
         /*
         this level of merging preserves boundaries to semi-low contrast,
         that is, should not result in merging of snowy and rocky mountain tops
         with bluish skies, and should not merge icecream with a tan background.
         */
         if (mt.equals(SegmentationMergeThreshold.DEFAULT)) {
-            return segmentedCellList;
-        }
-
-        segmentedCellListCp = new ArrayList<Set<PairInt>>();
-        for (Set<PairInt> set : segmentedCellList) {
-            Set<PairInt> set2 = new HashSet<PairInt>();
-            for (PairInt p : set) {
-                set2.add(p);
+            pointIndexMap = new HashMap<PairInt, Integer>();
+            for (int i = 0; i < segmentedCellList.size(); ++i) {
+                Set<PairInt> set = segmentedCellList.get(i);
+                Integer key = Integer.valueOf(i);
+                for (PairInt p : set) {
+                    pointIndexMap.put(p, key);
+                }
             }
-            segmentedCellListCp.add(set2);
+            deltaELimit = 0.5;//0.25
+            mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
+                deltaELimit, useDeltaE2000, debugTag);
+            return segmentedCellList;
         }
         
         pointIndexMap = new HashMap<PairInt, Integer>();
@@ -6555,32 +6526,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 pointIndexMap.put(p, key);
             }
         }
-        deltaELimit = 2.5;
+                    
+        n2Andn8 = getEdgeProperties(input, segmentedCellList, 
+            pointIndexMap, debugTag);
+        div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
+        log.info(debugTag + " n9DeltaE < 2 = " + n2Andn8[0] 
+            + " n9DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" + div);
+        
+        deltaELimit = 2.0;//2.5
         mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
             deltaELimit, useDeltaE2000, debugTag);
 
-        int n9 = segmentedCellList.size();
-        float f89 = (float)n8/(float)n9;
-        log.info(debugTag + " n8-n9=" + (n8 - n9) + " n8/n9=" + f89);
-        /*if (f89 > 3.5) {
-            // redo with smaller tolerance
-            segmentedCellList = segmentedCellListCp;
-            pointIndexMap = new HashMap<PairInt, Integer>();
-            for (int i = 0; i < segmentedCellList.size(); ++i) {
-                Set<PairInt> set = segmentedCellList.get(i);
-                Integer key = Integer.valueOf(i);
-                for (PairInt p : set) {
-                    pointIndexMap.put(p, key);
-                }
-            }
-            deltaELimit = 2.0;
-            mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
-                deltaELimit, useDeltaE2000, debugTag);
-        }*/
-        
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
-                segmentedCellList, "_tmp_9_" + debugTag);
+                segmentedCellList, "_tmp_10_" + debugTag);
         }
 
         return segmentedCellList;
@@ -7578,7 +7537,44 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return false;
     }
+    
+    /**
+     * given a greyscale image, makes edges (0's are edges and the background
+     * is 255).
+     * @param img
+     * @param debugTag 
+     */
+    public void createEdges02(GreyscaleImage img, String debugTag) {
+                
+        GreyscaleImage greyGradient2 = img.copyImage();
+        
+        CannyEdgeFilterLite fl = new CannyEdgeFilterLite();
+        // TODO: consider adding impl for adaptive edges
+        fl.setToUseSobel();
+        fl.applyFilter(greyGradient2);    
+        removeIsolatedPixels(greyGradient2, 0, 255, true);
+        removeIsolatedPixels(greyGradient2, 255, 0, true);
+        MedianSmooth s = new MedianSmooth();
+        GreyscaleImage tmp2 = s.calculate(greyGradient2, 2, 2);
+        greyGradient2 = tmp2;
+        for (int i = 0; i < greyGradient2.getNPixels(); ++i) {
+            int v = greyGradient2.getValue(i);
+            if (v > 1) {
+                img.setValue(i, 0);
+            } else {
+                img.setValue(i, 255);
+            }
+        }
+        removeEdgesSmallerThanLimit(img, 0, 255, 2);
+        //removeIsolatedPixels(img, 0, 255, true);
+    }
 
+    public void createEdges03(GreyscaleImage img, String debugTag) {
+        HistogramEqualization hEq = new HistogramEqualization(img);
+        hEq.applyFilter();
+        createEdges02(img, debugTag);
+    }
+    
     public void createEdges01(GreyscaleImage img, String debugTag) {
 
         ImageProcessor imageProcessor = new ImageProcessor();

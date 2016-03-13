@@ -58,7 +58,15 @@ public class AndroidStatuesTest extends TestCase {
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
+        //11, 12, 21, 30
+        //for (int i = 11; i < 13; ++i) {
         for (int i = 0; i < 37; ++i) {
+            
+            /*
+            if ( !( (i==8)||(i==12)||(i==21)||(i==30))) {
+                continue;
+            }
+            */
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
                 case 0: {
@@ -110,10 +118,12 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 11: {
                     fileName1 = "venturi_mountain_j6_0001.png";
+                    //mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 12: {
                     fileName1 = "venturi_mountain_j6_0010.png";
+                    //mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 13: {
@@ -152,6 +162,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 21: {
                     fileName1 = "halfdome2.jpg";
+                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 22: {
@@ -192,6 +203,7 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 30: {
                     fileName1 = "klein_matterhorn_snowy_foreground.jpg";
+                    mt = SegmentationMergeThreshold.EXTREMELY_LOW_CONTRAST;
                     break;
                 }
                 case 31: {
@@ -200,10 +212,12 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 32: {
                     fileName1 = "arches_sun_01.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 33: {
                     fileName1 = "stlouis_arch.jpg";
+                    mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 case 34: {
@@ -222,7 +236,7 @@ public class AndroidStatuesTest extends TestCase {
                     break;
                 }
             }
-            
+       
             int idx = fileName1.lastIndexOf(".");
             String fileName1Root = fileName1.substring(0, idx);
 
@@ -244,7 +258,7 @@ public class AndroidStatuesTest extends TestCase {
             List<Set<PairInt>> segmentedCellList
                 = imageSegmentation.createColorEdgeSegmentation(img1Binned,
                     mt, "_" + fileName1Root + "_1_binned");
-
+            
             MiscDebug.writeAlternatingColor(img1Binned, 
                 segmentedCellList, "_final_" + fileName1Root);
         }
