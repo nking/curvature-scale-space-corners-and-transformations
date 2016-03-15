@@ -882,4 +882,53 @@ public class HistogramTest extends TestCase {
         assertTrue(p2.getX(1) == 147);
         assertTrue(p2.getY(1) == 6);
     }
+    
+    public void testHistogramInt() throws Exception {
+        
+        GreyscaleImage img = new GreyscaleImage(16, 16);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            img.setValue(i, i);
+        }
+        int[] h = Histogram.createHistogram(img, 0, 255, 256);        
+        for (int i = 0; i < 256; ++i) {
+            assertEquals(1, h[i]);
+        }
+        
+        img = new GreyscaleImage(16, 16);
+        img.fill(255);
+        h = Histogram.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < 256; ++i) {
+            if (i == 255) {
+                assertEquals(256, h[i]);
+            } else {
+                assertEquals(0, h[i]);
+            }
+        }
+        
+        img = new GreyscaleImage(16, 16);
+        img.fill(0);
+        h = Histogram.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < 256; ++i) {
+            if (i == 0) {
+                assertEquals(256, h[i]);
+            } else {
+                assertEquals(0, h[i]);
+            }
+        }
+        
+        // set 2 pixel values up to 256, e.g. {0,0, 2,2, 4,4, ...} 
+        img = new GreyscaleImage(16, 16);
+        for (int i = 0; i < img.getNPixels(); i += 2) {
+            img.setValue(i, i);
+            img.setValue(i + 1, i);
+        }
+        h = Histogram.createHistogram(img, 0, 255, 256);
+        for (int i = 0; i < img.getNPixels(); i += 2) {
+            assertEquals(2, h[i]);
+        }
+        for (int i = 1; i < img.getNPixels(); i += 2) {
+            assertEquals(0, h[i]);
+        }
+        
+    }
 }

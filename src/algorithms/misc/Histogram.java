@@ -1342,4 +1342,38 @@ public class Histogram {
             
         return fwhm;
     }
+    
+    /**
+     * 
+     * @param img
+     * @param minBin first bin's pixel value, inclusive
+     * @param maxBin last bin's pixel value, inclusive.
+     * @param nBins
+     * @return 
+     */
+    public static int[] createHistogram(GreyscaleImage img, 
+        int minBin, int maxBin, int nBins) {
+        
+        int[] h = new int[nBins];
+        
+        // (255 - 0 + 1)/256
+        int binWidth = (maxBin - minBin + 1)/nBins;
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            
+            int v = img.getValue(i);
+            
+            int binNumber = (v - minBin)/binWidth;
+            
+            if (binNumber < 0 || binNumber > maxBin) {
+                int z = 1;
+            }
+            //assert(binNumber >= 0);
+            //assert(binNumber < maxBin);
+            
+            h[binNumber]++;
+        }
+        
+        return h;
+    }
 }
