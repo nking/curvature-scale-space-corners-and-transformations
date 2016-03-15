@@ -3796,7 +3796,7 @@ public class ImageProcessor {
         
     }
     
-    public void highPassIntensityFilter(GreyscaleImage input, 
+    public double determineLowerThreshold(GreyscaleImage input, 
         double lowThresholdFractionOfTotal) {
         
         int n = input.getNPixels();
@@ -3811,7 +3811,7 @@ public class ImageProcessor {
         int thresh = (int)Math.round(lowThresholdFractionOfTotal * sum);
         
         if (thresh == 0) {
-            return;
+            return 0;
         }
         
         double critValue = -1;
@@ -3819,10 +3819,20 @@ public class ImageProcessor {
         for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
             sum2 += sortedFreq.getY(i);
             if (sum2 > thresh) {
-                critValue = sortedFreq.getX(i);
-                break;
+                return sortedFreq.getX(i);
             }
         }
+        
+        return 0;
+    }
+    
+    public double highPassIntensityFilter(GreyscaleImage input, 
+        double lowThresholdFractionOfTotal) {
+        
+        int n = input.getNPixels();
+        
+        double critValue = determineLowerThreshold(input, 
+            lowThresholdFractionOfTotal);
         
         for (int i = 0; i < n; ++i) {
             int v = input.getValue(i);
@@ -3830,6 +3840,8 @@ public class ImageProcessor {
                 input.setValue(i, 0);
             }
         }
+        
+        return critValue;
     }
     
     public void twoLayerIntensityFilter(GreyscaleImage input, 

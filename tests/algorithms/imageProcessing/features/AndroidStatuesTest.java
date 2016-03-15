@@ -227,12 +227,12 @@ public class AndroidStatuesTest extends TestCase {
                 }
                 case 35: {
                     fileName1 = "checkerboard_01.jpg";
-                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
                 default: {
                     fileName1 = "checkerboard_02.jpg";
-                     mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
+                    //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
                 }
             }

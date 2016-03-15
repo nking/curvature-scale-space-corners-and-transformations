@@ -2161,6 +2161,41 @@ public class MiscMath {
         
         return scaled;
     }
+    
+    /**
+     * rscale a to values between vi and vf, inclusive
+     * @param a
+     * @param vi
+     * @param vf
+     * @return 
+     */
+    public static float[] rescale(float[] a, int vi, int vf) {
+        
+        float minV = Float.MAX_VALUE;
+        float maxV = Float.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            float v = a[i];
+            if (v < minV) {
+                minV = v;
+            }
+            if (v > maxV) {
+                maxV = v;
+            }
+        }
+        float range = maxV - minV;
+        
+        float scale = ((float)(vf - vi))/range;
+         
+        float[] scaled = new float[a.length];
+        
+        for (int i = 0; i < a.length; ++i) {
+                        
+            scaled[i] = (a[i] - minV) * scale;
+        }
+        
+        return scaled;
+    }
 
     public static int findYforX(HistogramHolder hist, float xSrch) {
         

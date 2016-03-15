@@ -3468,9 +3468,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         GreyscaleImage o1Img = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
-        GreyscaleImage labAImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
+        float[] labA = new float[w * h];
+        float[] labB = new float[w * h];
+        
         GreyscaleImage greyGradient = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
 
@@ -3483,7 +3483,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             o1Img.setValue(i, (r - g));
 
             float[] lab = input.getCIELAB(i);
-            labAImg.setValue(i, Math.round(lab[1]));
+            labA[i] = lab[1];
+            labB[i] = lab[2];
 
             int grey = Math.round(((float)(r + g + b))/3.f);
             greyGradient.setValue(i, grey);
@@ -3491,17 +3492,56 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 maxGrey = grey;
             }
         }
+        
+        GreyscaleImage labAImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        labA = MiscMath.rescale(labA, 0, 255);
+        for (int i = 0; i < labA.length; ++i) {
+            labAImg.setValue(i, (int)Math.round(labA[i]));
+        }
+        
+        GreyscaleImage labBImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        labB = MiscMath.rescale(labB, 0, 255);
+        for (int i = 0; i < labB.length; ++i) {
+            labBImg.setValue(i, (int)Math.round(labB[i]));
+        }
 
         long t1 = System.currentTimeMillis();
         long t1Sec = (t1 - t0)/1000;
         log.info(t1Sec + " sec to create color images");
 
         ImageProcessor imageProcessor = new ImageProcessor();
-
+        
+        /*
+        imageProcessor.blur(o1Img, SIGMA.ONE);
+        imageProcessor.blur(labAImg, SIGMA.ONE);
+        imageProcessor.blur(labBImg, SIGMA.ONE);
+        imageProcessor.blur(greyGradient, SIGMA.ONE);
+        */
+        
         greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
 
         t0 = System.currentTimeMillis();
 
+        createEdges02(greyGradient, debugTag);
+        MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
+
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make grey gradient edges");
+
+        t0 = System.currentTimeMillis();
+greyGradient = 
+exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
+        invertImage(greyGradient);
+        t1 = System.currentTimeMillis();
+        t1Sec = (t1 - t0)/1000;
+        log.info(t1Sec + " sec to make combined input image for segmentation");
+        
+        /*
+        t0 = System.currentTimeMillis();
+        
         createEdges01(o1Img, "o1_" + debugTag);
         //createEdges03(o1Img, "o1_" + debugTag);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
@@ -3518,6 +3558,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         // -------
+        
+        createEdges01(labBImg, "labB_" + debugTag);
+        
         t0 = System.currentTimeMillis();
         createEdges01(labAImg, "labA_" + debugTag);
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
@@ -3531,23 +3574,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(labAImg, "_labA_" + debugTag);
         }
 
-        t0 = System.currentTimeMillis();
-
-        createEdges02(greyGradient, debugTag);
-        MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
-
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make grey gradient edges");
-
         //TODO: could use a compressed image representation of 0's and 1's for this:
         
         imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
-
-        //- add O1 and labA edges if adjacent to existing edges in greyGradient
-        addAdjacentEdges(greyGradient, new GreyscaleImage[]{o1Img, labAImg}, 0);
-
+        
+        addAdjacentEdges(greyGradient, 0, new GreyscaleImage[]{o1Img, labAImg}, 0);
+        
         greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
+       */
 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeImage(greyGradient, "_input_edges_" + debugTag);
@@ -6566,14 +6600,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     /**
      * add to greyGradient, edges from addImages if the edges are adjacent
      * to an edge in greyGradient.
-     * @param greyGradient
+     * @param img
      * @param addImages
      * @param edgeValue
      */
-    private void addAdjacentEdges(GreyscaleImage greyGradient,
+    private void addAdjacentEdges(GreyscaleImage img, int imgEdgeValue,
         GreyscaleImage[] addImages, int edgeValue) {
 
-        GreyscaleImage img = greyGradient.copyImage();
+        GreyscaleImage imgCp = img.copyImage();
 
         int nImages = addImages.length;
 
@@ -6600,14 +6634,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             pointListIndexes.add(pointIndexes);
         }
 
-        int w = img.getWidth();
-        int h = img.getHeight();
+        int w = imgCp.getWidth();
+        int h = imgCp.getHeight();
 
         for (int x = 0; x < w; ++x) {
             for (int y = 0; y < h; ++y) {
-
-                int v = img.getValue(x, y);
-                if (v != edgeValue) {
+                
+                int v = imgCp.getValue(x, y);
+                if (v != imgEdgeValue) {
                     continue;
                 }
 
@@ -6633,8 +6667,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                             if (listIndex != null) {
                                 PairIntArray edge2 = finders[ii].getXY(listIndex.intValue());
                                 for (int jj = 0; jj < edge2.getN(); ++jj) {
-                                    greyGradient.setValue(edge2.getX(jj),
-                                        edge2.getY(jj), edgeValue);
+                                    img.setValue(edge2.getX(jj),
+                                        edge2.getY(jj), imgEdgeValue);
                                 }
                                 pointIndexes.remove(p2);
                             }
@@ -7062,6 +7096,287 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 hueAngle1.add(Integer.valueOf(Math.round(ha1)));
                 hueAngle2.add(Integer.valueOf(Math.round(ha2)));
             }
+        }
+    }
+
+    private GreyscaleImage exploreCombiningImages(GreyscaleImage o1Img, 
+        GreyscaleImage labAImg, GreyscaleImage labBImg, 
+        GreyscaleImage greyGradient, String debugTag) {
+        
+        //NOTE:  not keeping this as is... loses disconnected edges not in
+        //   the base of intesection2 or intersection3
+        
+        o1Img = o1Img.copyImage();
+        labAImg = labAImg.copyImage();
+        labBImg = labBImg.copyImage();
+        greyGradient = greyGradient.copyImage();
+        
+        // labA and labB have already been scaled.  greyGradient too, differently
+        HistogramEqualization hEq = new HistogramEqualization(o1Img);
+        hEq.applyFilter();
+      
+        CannyEdgeFilterLite cannyFilter = new CannyEdgeFilterLite();
+        cannyFilter.setToUseSobel();
+        cannyFilter.applyFilter(o1Img);
+        
+        cannyFilter = new CannyEdgeFilterLite();
+        cannyFilter.setToUseSobel();
+        cannyFilter.applyFilter(labAImg);
+        
+        cannyFilter = new CannyEdgeFilterLite();
+        cannyFilter.setToUseSobel();
+        cannyFilter.applyFilter(labBImg);
+        
+        
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.blur(o1Img, SIGMA.ONE);
+        //imageProcessor.blur(labAImg, SIGMA.ONE);
+        //imageProcessor.blur(labBImg, SIGMA.ONE);
+        
+        //MiscDebug.writeImage(o1Img, "_canny_o1_" + debugTag);
+        //MiscDebug.writeImage(labAImg, "_canny_labA_" + debugTag);
+        //MiscDebug.writeImage(labBImg, "_canny_labB_" + debugTag);
+        
+        int n = greyGradient.getNPixels();
+        int w = greyGradient.getWidth();
+        int h = greyGradient.getHeight();
+        
+        int n2 = 0;
+        int n4 = 0;
+        GreyscaleImage intersection4 = new GreyscaleImage(w, h);
+        for (int i = 0; i < n; ++i) {
+            if ((o1Img.getValue(i) == 0) || (labAImg.getValue(i) == 0) ||
+                (labBImg.getValue(i) == 0) || (greyGradient.getValue(i) == 255)) {
+                continue;
+            }
+            intersection4.setValue(i, 255);
+            n4++;
+        }
+        GreyscaleImage intersection2 = new GreyscaleImage(w, h);
+        for (int i = 0; i < n; ++i) {
+            if ((labAImg.getValue(i)== 0) || (greyGradient.getValue(i) == 255)) {
+                continue;
+            }
+            intersection2.setValue(i, 255);
+            n2++;
+        }
+        GreyscaleImage intersection3 = new GreyscaleImage(w, h);
+        for (int i = 0; i < n; ++i) {
+            if ((labAImg.getValue(i)== 0) || (labBImg.getValue(i)== 0)) {
+                continue;
+            }
+            intersection3.setValue(i, 255);
+            n2++;
+        }
+        int nI24 = 0;
+        for (int i = 0; i < n; ++i) {
+            if ((intersection2.getValue(i)== 0) || (intersection4.getValue(i) == 0)) {
+                continue;
+            }
+            nI24++;
+        }
+        
+        MiscDebug.writeImage(intersection4, "_intersection4_" + debugTag);
+        MiscDebug.writeImage(intersection3, "_intersection3_" + debugTag);
+        MiscDebug.writeImage(intersection2, "_intersection2_" + debugTag);
+        
+        intersection3 = fillInGapsOf1(intersection3, new HashSet<PairInt>(), 255);
+        MiscDebug.writeImage(intersection3, "_intersection3_ext" + debugTag);
+        
+        float n2F = (float)n2/(float)n;
+        float n4F = (float)n4/(float)n;
+        float n4F2 = (float)n4/(float)n2;
+        float nI24FI4 = (float)nI24/(float)n4;
+        float nI24FI2 = (float)nI24/(float)n2;
+        log.info(debugTag + " n2F=" + n2F + " n4F=" + n4F + " nFdivN2=" 
+            + n4F2 +" n=" + n);
+        
+        boolean choseInter4 = false;
+        GreyscaleImage baseImg;
+        if (n4F < 0.0075) {
+            baseImg = intersection2;
+        } else {
+            baseImg = intersection4;
+            choseInter4 = true;
+        }
+        MiscDebug.writeImage(baseImg, "_combined_pre_" + debugTag);
+
+        addAdjacent(baseImg, 255, greyGradient, 0);
+        
+        MiscDebug.writeImage(baseImg, "_combined_pre_2_" + debugTag);
+        
+        if (choseInter4) {
+            //setAllNonZeroTo255(labAImg);
+            //addAdjacent(intersection2, 255, labAImg, 255);
+            //MiscDebug.writeImage(intersection2, "_canny_labA_ext_" + debugTag);
+            
+            addAdjacent(baseImg, 255, intersection2, 255);
+            MiscDebug.writeImage(baseImg, "_combined_pre_3_" + debugTag);
+            addAdjacent(baseImg, 255, intersection3, 255);
+            MiscDebug.writeImage(baseImg, "_combined_pre_4_" + debugTag);
+            
+            //setAllNonZeroTo255(o1Img);
+            //addAdjacent(baseImg, 255, o1Img, 255);
+            
+            //MiscDebug.writeImage(baseImg, "_combined_pre_5_" + debugTag);
+            //baseImg = fillInGapsOf1(baseImg, new HashSet<PairInt>(), 255);
+        }
+                
+        /*
+        //ImageProcessor imageProcessor = new ImageProcessor();
+        
+        // build a stack from baseImg and then add connected from all 4 images
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i = 0; i < n; ++i) {
+            if (baseImg.getValue(i) == 255) {
+                stack.add(Integer.valueOf(i));
+            }
+        }
+        
+        Set<Integer> visited = new HashSet<Integer>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        while (!stack.isEmpty()) {
+            Integer pixIndex = stack.pop();
+            if (visited.contains(pixIndex)) {
+                continue;
+            }
+            int pixIdx = pixIndex.intValue();
+            int x = baseImg.getCol(pixIdx);
+            int y = baseImg.getRow(pixIdx);
+
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if ((x2 < 0) || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                    continue;
+                }
+                
+                int pixIdx2 = baseImg.getIndex(x2, y2);
+                if (baseImg.getValue(pixIdx2) == 255) {
+                    continue;
+                }
+                if (
+                    (o1Img.getValue(pixIdx2) > 0) || 
+                    (labAImg.getValue(pixIdx2) > 0) ||
+                    (labBImg.getValue(pixIdx2) > 0)) {
+                    stack.add(Integer.valueOf(pixIdx2));
+                    baseImg.setValue(pixIdx2, 255);
+                }
+            }
+            
+            visited.add(pixIndex);
+        }
+        */
+        //imageProcessor.applyAdaptiveMeanThresholding(baseImg, 1);
+        
+        //baseImg = fillInGapsOf1(baseImg, new HashSet<PairInt>(), 255);
+                
+        MiscDebug.writeImage(baseImg, "_combined_" + debugTag);
+        
+        return baseImg;
+                
+    }
+
+    /**
+     * add perimeters of largest contiguous non-edge values in addToImg to
+     * img.
+     * @param img
+     * @param edgeValue
+     * @param addToImage
+     * @param nonEdgeValue 
+     */
+    private void addLargestContiguous(GreyscaleImage img, int edgeValue, 
+        GreyscaleImage addToImg, int nonEdgeValue) {
+        
+        int nPix = addToImg.getNPixels();
+        int minSize = (int)Math.round(0.02 * nPix);
+        
+        DFSContiguousValueFinder finder = new DFSContiguousValueFinder(addToImg);
+        finder.findGroups(nonEdgeValue);
+        
+        Set<PairInt> contig = new HashSet<PairInt>();
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            PairIntArray group = finder.getXY(i);
+            if (group.getN() > minSize) {
+                for (int j = 0; j < group.getN(); ++j) {
+                    contig.add(new PairInt(group.getX(j), group.getY(j)));
+                }
+            }
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        int w = addToImg.getWidth();
+        int h = addToImg.getHeight();
+        
+        for (PairInt p : contig) {
+            int x = p.getX();
+            int y = p.getY();
+            // any neighbor that is not a non-edge value can be added to img
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if ((x2 < 0) || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                    continue;
+                }
+                if (addToImg.getValue(x2, y2) != nonEdgeValue) {
+                    img.setValue(x2, y2, edgeValue);
+                }
+            }
+        }
+    }
+
+    private void addAdjacent(GreyscaleImage img, int edgeValue, 
+        GreyscaleImage addToImg, int addToImgEdgeValue) {
+        
+        int n = img.getNPixels();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // build a stack from baseImg and then add connected from all 4 images
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int i = 0; i < n; ++i) {
+            if (img.getValue(i) == edgeValue) {
+                stack.add(Integer.valueOf(i));
+            }
+        }
+        
+        Set<Integer> visited = new HashSet<Integer>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        while (!stack.isEmpty()) {
+            Integer pixIndex = stack.pop();
+            if (visited.contains(pixIndex)) {
+                continue;
+            }
+            int pixIdx = pixIndex.intValue();
+            int x = img.getCol(pixIdx);
+            int y = img.getRow(pixIdx);
+
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if ((x2 < 0) || (x2 > (w - 1)) || (y2 < 0) || (y2 > (h - 1))) {
+                    continue;
+                }
+                
+                int pixIdx2 = img.getIndex(x2, y2);
+                if (img.getValue(pixIdx2) == edgeValue) {
+                    continue;
+                }
+                if (addToImg.getValue(pixIdx2) == addToImgEdgeValue) {
+                    stack.add(Integer.valueOf(pixIdx2));
+                    img.setValue(pixIdx2, edgeValue);
+                }
+            }
+            
+            visited.add(pixIndex);
         }
     }
 
@@ -7548,9 +7863,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
         GreyscaleImage greyGradient2 = img.copyImage();
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(greyGradient2, SIGMA.ONE);
+        
+//TODO: an adaptive gradient might help here
+        
         CannyEdgeFilterLite fl = new CannyEdgeFilterLite();
         // TODO: consider adding impl for adaptive edges
         fl.setToUseSobel();
+        //fl.overrideLowThreshold(0.6f);//0.9
         fl.applyFilter(greyGradient2);    
         removeIsolatedPixels(greyGradient2, 0, 255, true);
         removeIsolatedPixels(greyGradient2, 255, 0, true);
@@ -7582,10 +7903,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         hEq.applyFilter();
         CannyEdgeFilterLite cannyFilter = new CannyEdgeFilterLite();
         cannyFilter.applyFilter(img);
+        
+        //MiscDebug.writeImage(img, "_canny_" + debugTag);
+        
         setAllNonZeroTo255(img);
-
-        //MiscDebug.writeImage(img, "tmp_edges01_1_" + debugTag);
-
         removeIsolatedPixels(img, 0, 255, false);
         removeIsolatedPixels(img, 255, 0, true);
 
