@@ -1351,8 +1351,8 @@ public class Histogram {
      * @param nBins
      * @return 
      */
-    public static int[] createHistogram(GreyscaleImage img, 
-        int minBin, int maxBin, int nBins) {
+    public static int[] createHistogram(GreyscaleImage img, int minBin, 
+        int maxBin, int nBins) {
         
         int[] h = new int[nBins];
         
@@ -1365,9 +1365,6 @@ public class Histogram {
             
             int binNumber = (v - minBin)/binWidth;
             
-            if (binNumber < 0 || binNumber > maxBin) {
-                int z = 1;
-            }
             //assert(binNumber >= 0);
             //assert(binNumber < maxBin);
             
