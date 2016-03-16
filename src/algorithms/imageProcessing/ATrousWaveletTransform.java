@@ -142,8 +142,10 @@ public class ATrousWaveletTransform {
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
             outputCoeff.add(wJPlus1);
-            
             /*
+            int w = cJ.getWidth();
+            int h = cJ.getHeight();
+            
             double[][] eI = new double[jjMax*(j + 1)][];
             for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
                 float sigmaRJJ = 0.5f + jj;
@@ -156,22 +158,27 @@ public class ATrousWaveletTransform {
                     ws[jj] = exp;
                     sumW += exp;
                 }
+                double[] cIJJ = new double[cJ.getNPixels()];
+                for (int p = 0; p < cJ.getNPixels(); ++p) {
+                    cIJJ[p] = (ws[p]/sumW) * cJ.getValue(p);
+                }
                 eI[jj] = new double[cJ.getNPixels()];
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
-                    double cIJJ = (ws[p]/sumW) * cJ.getValue(p);
-                    double dIJJ = cIJJ - cJPlus1.getValue(p);
+                    double dIJJ = cIJJ[p] - cJPlus1.getValue(p);
                     
                     ++lastIdx;
                     if (lastIdx > (dxs.length - 1)) {
                         lastIdx = 0;
                     }
-                    double delC = estimateLocalNoise(cIJJ, p, dxs[lastIdx], dys[lastIdx]);
+                    
+                    double delC = estimateLocalNoise(cIJJ, p, dxs[lastIdx], 
+                        dys[lastIdx], w, h);
+                    
                     eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
                 }
                 // evaluate error image:  e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
             }
             */
-            
             /*
             estimate sigma per pixel:
                 compute multiple decompositions with different parameters and 
@@ -369,13 +376,55 @@ public class ATrousWaveletTransform {
        ("Efficient Multidimensional Sampling" by Kollig and Keller, 
        http://www.uni-kl.de/AG-Heinrich/EMS.pdf)
        suggests different sampling methods, so may change this in the future.
-     * @param cIJJ
-     * @param p
-     * @param i
-     * @param i0
+        
+       Note, the method has built into it the transformation from x, y into
+       single array index that is the same as used in GreyscaleImage,
+       so if that ever changes, this needs to change too
+       (TODO: refactor to remove such a vulnerability).
+      
+     
      * @return 
      */
-    private double estimateLocalNoise(double cIJJ, int pixIdx, int dx, int dy) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    private double estimateLocalNoise(double[] cIJJ, int pixIdx, int xOffset, 
+        int yOffset, int imgWidth, int imgHeight) {
+        
+        int x =  pixIdx/imgWidth;
+        int y = pixIdx - (x * imgWidth);
+        
+        int count = 0;
+        double diff = 0;
+        // iterate within window to find first pixel
+        for (int dx = -2; dx <= 2; ++dx) {
+            int x1 = x + dx;
+            if (x1 < 0 || x1 > (imgWidth - 1)) {
+                continue;
+            }
+            for (int dy = -2; dy <= 2; ++dy) {
+                int y1 = y + dy;
+                if (y1 < 0 || y1 > (imgHeight - 1)) {
+                    continue;
+                }
+                
+                int pixIdx1 = (y1 * imgWidth) + x1;
+                
+                int x2 = x1 + xOffset;
+                int y2 = y1 + yOffset;
+                if ((x2 < 0) || (x2 > (imgWidth - 1)) || (y2 < 0) ||
+                    (y2 > (imgHeight - 1))) {
+                    continue;
+                }
+                
+                int pixIdx2 = (y2 * imgWidth) + x2;
+                
+                diff += Math.abs(cIJJ[pixIdx1] - cIJJ[pixIdx2]);
+                
+                count++;
+            }
+        }
+        assert(count > 0);
+        
+        diff /= (double)count;
+        
+        return diff;
     }
 }
