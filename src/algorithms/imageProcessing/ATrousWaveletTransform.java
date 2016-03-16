@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -87,6 +88,137 @@ public class ATrousWaveletTransform {
             outputCoeff.add(wJPlus1);
         }
         
+    }
+    
+    /**
+     * The a trous algorithm is a fast implementation of a wavelet transform 
+     * with no downsampling.   It is non-orthogonal, has semi-linear runtime
+     * complexity, is invariant under translation, and the transform is 
+     * isotropic.
+     * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
+     * The scaling function used is the higher resolution choice, the 3rd order 
+     * B Spline function.
+     * Edge optimized factors have been included following
+     * "Edge-Optimized À-Trous Wavelets for Local Contrast Enhancement with 
+     * Robust Denoising" by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
+     * https://jo.dreggn.org/home/2011_atrous.pdf
+     * 
+     * @param input
+     * @param outputTransformed
+     * @param outputCoeff 
+     */
+    private void calculateForEdgeAvoiding(GreyscaleImage input,
+        List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+
+        B3SplineFunction scalingFunction = new B3SplineFunction();
+        
+        outputTransformed.add(input.copyToSignedImage());
+        
+        outputCoeff.add(input.createSignedWithDimensions());
+        
+        GreyscaleImage wSum = input.createFullRangeIntWithDimensions();
+        
+        List<GreyscaleImage> ws = new ArrayList<GreyscaleImage>();
+
+        for (int j = 0; j < nr; ++j) {
+            
+            GreyscaleImage cJ = outputTransformed.get(j);
+ 
+            GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);
+            
+            /*
+            GreyscaleImage w = exponential(cJ, cJPlus1, sigma);
+            ws.add(w);
+            wSum = wSum.add(w);
+            
+            estimate sigma per pixel:
+                compute multiple decompositions with different parameters and 
+                then choose optimal parameters for each pixel. 
+            The parameters to iterate over are sigma_r_j for jj=0 to jjmax.
+
+            For each jj we separate the current image into coarse c_j_jj and
+            detail d_j_jj (which is wJPlus1) using the current σ_r_jj 
+            as global edge weight. 
+            The resulting decomposition is used to evaluate an error image
+              e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
+            
+            The authors use a fixed  λ = 0.003 and jmax=4.
+            The error measure is evaluated using same window as used in b3 spline
+            function, using 25 samples on a regular grid with Cranley Patterson 
+            rotation [CP76] to decorrelate adjacent pixels.
+            
+            After all jj have been processed at scale j, we search for the
+            minimum error e_jj per pixel 
+            and determine the optimal edge weight σ_r_k with k = argmin_jj{e_jj}. 
+            In order to avoid too drastic changes in the edge weights, 
+            the per-pixel weights are smoothed once into a buffer z
+               z = σ_r_k ∗ h_0   (h_0 represents the b3 spline window function)
+            
+            Finally, the actual wavelet decomposition step takes place
+            as in Section 2.1, but taking the locally optimal parameters
+            σ_r from the blended buffer z at each pixel’s position.
+            We found jmax = 4 sufficient for all images in this paper,
+            and chose a simple linear sampling of the interval
+            [0,4∗(j+1)). 
+           
+            Synthesis is recombining the coarse base layer with the coefficient
+            (detail) layers that are potentially scaled and soft thresholded.
+            
+            BayesShrink [CYV00] is a soft thresholding method designed for a 
+            wide range of input signal priors, such as Laplacian and 
+            Gaussian distributions assuming additive iid Gaussian noise.
+            As a consistent and robust estimator for the noise standard
+            deviation, we use the median absolute deviation (MAD) over
+            all pixels at the finest level, and obtain
+                σ_n = median(|d0|) / 0.6745
+            Now we iterate for each wavelet scale, this time starting at
+            the coarsest level i = imax...0. Given the signal variance (σ_y_i)^2
+            the soft shrinkage threshold T is calculated as in [CYV00]
+            to minimize the risk of destroying the signal, by
+                T = ( (σ_n_i)^2 ) / sqrt( max{0, (σ_y_i)^2 - (σ_n_i)^2} )
+
+                with 
+                   (σ_y_i)^2 = (1/N) * summation over pixels of (d_i)^2 
+                and
+                    (σ_n_i)^2 = σ_n,i = σ_n / (2^i)
+            
+                With this threshold, shrinkage and contrast boost is applied
+                to the detail coefficients at the same time, by setting
+                    modified d_i = max{0,|di| −T} ·sign(di)
+                      and ci−1 = ci +β · modified d_i
+                where β is the contrast boost parameter. In case denoising is
+                not wanted, only the last step is relevant with modified d = d.
+
+            Our edge-optimized wavelet scheme tends to move as
+            much edge information to the coarser levels as possible, so
+            the detail coefficients even correspond more to the Gaussian
+            distribution than they would with usual wavelet transformation.
+            Also, the edge data will not be affected by thresholding
+            this way, resulting in a better PSNR of the denoised results.
+            */
+           
+            outputTransformed.add(cJPlus1);
+            
+            // c_(j,k) − c_(j+1,k)
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+        }
+        
+        /*
+        for (int i = i; i < nr; ++i) {
+            
+            GreyscaleImage w = ws.get(i);
+            
+            GreyscaleImage cJ = outputTransformed.get(i - 1);
+            
+            multiplyAndDivide(cJ, w, wSum);
+        }
+        */
     }
     
     /**

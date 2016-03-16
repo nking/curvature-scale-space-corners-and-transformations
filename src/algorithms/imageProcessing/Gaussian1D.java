@@ -173,7 +173,7 @@ public class Gaussian1D {
     
     protected static float[] getBinomialKernelSigmaZeroPointFive() {
         // 1 1, normalization = 1/2^1 = 0.5 ... replacing w/ 1  8  1
-        float a = 1.f/9.f;
+        float a = 1.f/10.f;
         return new float[]{a, 8*a, a};
     }
     

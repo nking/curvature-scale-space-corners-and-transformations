@@ -654,6 +654,9 @@ public class Image {
                     
                 int v = Math.round((r + g + b)/3.f);
                 
+                assert(v <= 255);
+                assert(v >= 0);
+                
                 out.setValue(i, j, v);
             }
         }

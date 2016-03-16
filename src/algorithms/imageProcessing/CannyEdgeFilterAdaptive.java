@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -28,6 +30,9 @@ import java.util.logging.Logger;
  */
 public class CannyEdgeFilterAdaptive {
               
+    /** the factor that the low threshold is below the high threshold in the 
+    2 layer filter.
+    */
     protected float factorBelowHighThreshold = 2.f;
            
     private EdgeFilterProducts filterProducts = null;
@@ -136,12 +141,12 @@ public class CannyEdgeFilterAdaptive {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             at.calculateWithB3SplineScalingFunction(input, outputTransformed, outputCoeff);
             GreyscaleImage smoothed = outputTransformed.get(
-                outputTransformed.size() - 1);
-                //1);
+                //outputTransformed.size() - 1);
+                1);
             input.resetTo(smoothed);
         }*/
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.blur(input, SIGMA.ONE);
+        imageProcessor.blur(input, SIGMA.ZEROPOINTFIVE);
         
         //(2) create gradient
         EdgeFilterProducts filterProducts;
