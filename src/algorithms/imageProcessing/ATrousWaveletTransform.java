@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -123,6 +124,10 @@ public class ATrousWaveletTransform {
         int jjMax = 4;
         double lambda = 0.003;
         
+        int lastIdx = -1;
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
         // ----- decomposition -----
         
         for (int j = 0; j < nr; ++j) {
@@ -155,8 +160,12 @@ public class ATrousWaveletTransform {
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
                     double cIJJ = (ws[p]/sumW) * cJ.getValue(p);
                     double dIJJ = cIJJ - cJPlus1.getValue(p);
-                    // del c_i_jj calculated w/ Cranley Patterson rotation
-                    double delC =
+                    
+                    ++lastIdx;
+                    if (lastIdx > (dxs.length - 1)) {
+                        lastIdx = 0;
+                    }
+                    double delC = estimatePixelNoise(cIJJ, p, dxs[lastIdx], dys[lastIdx]);
                     eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
                 }
                 // evaluate error image:  e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
@@ -324,4 +333,49 @@ public class ATrousWaveletTransform {
     
     see pg 37 of svn book
     */
+
+    /**
+     * Following
+     * Edge optimized factors have been included following
+     * "Edge-Optimized À-Trous Wavelets for Local Contrast Enhancement with 
+     * Robust Denoising" by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
+     * https://jo.dreggn.org/home/2011_atrous.pdf
+     * to estimate del c_i_jj as part of creating an error image.
+     * The authors calculate del c_i_jj using Cranley Patterson rotation 
+       sampling within the A Trous B3Spline window (which is 25 pixels).
+       
+       This looks a little like calculating auto-correlation, except not wanting 
+       the center pixel as the fixed first pixel of the difference.
+       
+       If del c_i_jj is meant to be a measure of pixel to pixel noise, would 
+       presumably want to select only differences between adjacent pixel pairs.
+       So the use of Cranley Patterson rotation must be in selecting the second
+       point using an offset chosen from the vector U of values.
+       That offset is applied uniformly to the set to help choose the 2nd point.
+       The universe of offsets U can only be the offsets to result in the 8
+       neighbor region.
+        
+       Not sure, but I think that is what the authors implemented.
+        
+       Given to this method are the center pixel index for the A Trous window
+       and the offsets as dx and dy chosen from the universe U of 8 neigbhor
+       offsets.
+        
+       For each pixel in the window, will determine its intensity difference 
+       from the pixel at the pixel that is it's coordinates plus the offsets.
+       The result returned will be the average of those.
+       
+       Note that another paper 
+       ("Efficient Multidimensional Sampling" by Kollig and Keller, 
+       http://www.uni-kl.de/AG-Heinrich/EMS.pdf)
+       suggests different sampling methods, so may change this in the future.
+     * @param cIJJ
+     * @param p
+     * @param i
+     * @param i0
+     * @return 
+     */
+    private double estimatePixelNoise(double cIJJ, int pixIdx, int dx, int dy) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
 }
