@@ -8,8 +8,6 @@ import java.util.Arrays;
  * into 2 classes and tries to minimize the variance within each class
  * (which subsequently maximizes the separation between classes).
  * 
- * https://en.wikipedia.org/wiki/Otsu%27s_method#cite_note-zhu2009fast-9
- * 
  * @author nichole
  */
 public class OtsuThresholding {
@@ -17,7 +15,11 @@ public class OtsuThresholding {
     /**
      * find the binary threshold assuming the image is filled with values 
      * between 0 and 255, inclusive.
-     * runtime complexity is O(N_pixels);
+     * 
+     * The implementation follows the one dimiensional code from wikiepedia
+     * at https://en.wikipedia.org/wiki/Otsu%27s_method#cite_note-zhu2009fast-9
+
+     * The runtime complexity is O(N_pixels).
      * 
      * @param img
      * @return 
@@ -33,7 +35,11 @@ public class OtsuThresholding {
     
     /**
      * find the binary threshold assuming the image is filled with values 
-     * between 0 and 255, inclusive.   runtime complexity is O(N_pixels);
+     * between 0 and 255, inclusive.   
+     * The implementation follows the one dimiensional code from wikiepedia
+     * at https://en.wikipedia.org/wiki/Otsu%27s_method#cite_note-zhu2009fast-9
+     * 
+     * The runtime complexity is O(N_pixels).
      * 
      * @param h histogram
      * @param nPix the original image's number of pixels
@@ -76,7 +82,7 @@ public class OtsuThresholding {
             mean1 = cumulativeSumHist / sumHist;
             mean2 = (totalCumulativeSumHist - cumulativeSumHist) / totalMinusSumHist;
             
-            //maximize inter-class variance
+            //maximize the difference the between the areas
             between = sumHist * totalMinusSumHist * Math.pow(mean1 - mean2, 2);
             if (between > max) {
                 threshold = i;
@@ -94,12 +100,44 @@ public class OtsuThresholding {
      * 
      * The current window for the neighborhood region is +- 1 pixels.
      * 
-     * The runtime complexity is approximately nLevels * O(N+pixels).
+     * The runtime complexity is approximately nLevels * O(N_pixels).
      * 
      * @param img
      * @param nLevels
      */
     public void applyMultiLevelThreshold256(GreyscaleImage img, int nLevels) {
+                 
+        int[] thresholds = calculateMultiLevelThreshold256(img, nLevels);
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            
+            int v = img.getValue(i);
+            
+            int thresh = thresholds[i];
+            
+            if (v > thresh) {
+                img.setValue(i, 255);
+            } else {
+                img.setValue(i, 0);
+            }
+        }
+    }
+    
+    /**
+     * apply an adaptive version of binary thresholding to the image img
+     * based upon nLevels of histograms created for the nLevels of
+     * neighborhood intensity bins for each pixel.
+     * 
+     * The current window for the neighborhood region is +- 1 pixels.
+     * 
+     * The runtime complexity is approximately nLevels * O(N_pixels).
+     * 
+     * returns an array of the thresholds indexed by pixel number.
+     * 
+     * @param img
+     * @param nLevels
+     */
+    public int[] calculateMultiLevelThreshold256(GreyscaleImage img, int nLevels) {
         
         int nPix = img.getNPixels();
         
@@ -152,18 +190,15 @@ public class OtsuThresholding {
             thresholds[i] = calculateBinaryThreshold256(h, nPix);
         }
         
+        int[] pixelThresholds = new int[nPix];
+        
         for (int i = 0; i < img.getNPixels(); ++i) {
             int vAvg = avgImg.getValue(i);
-            int binNumberVAvg = (vAvg - 0)/binWidthAvg;
-            
-            int v = img.getValue(i);
-            int thresh = thresholds[binNumberVAvg];
-            if (v > thresh) {
-                img.setValue(i, 255);
-            } else {
-                img.setValue(i, 0);
-            }
+            int binNumberVAvg = (vAvg - 0)/binWidthAvg;            
+            pixelThresholds[i] = thresholds[binNumberVAvg];
         }
+        
+        return pixelThresholds;
     }
     
 }

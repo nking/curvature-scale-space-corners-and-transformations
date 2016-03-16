@@ -56,7 +56,7 @@ public class OtsuThresholdingTest extends TestCase {
             String filePath = ResourceFinder.findFileInTestResources(fileName);
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             
-            GreyscaleImage gsImg0 = img.copyBlueToGreyscale();
+            GreyscaleImage gsImg0 = img.copyToGreyscale();
             GreyscaleImage gsImg = gsImg0.copyImage();
         
             OtsuThresholding thrshFinder = new OtsuThresholding();
@@ -75,8 +75,8 @@ public class OtsuThresholdingTest extends TestCase {
                 }
             }
             
-            MiscDebug.writeImage(gsImg0, "oneD_" + fileNameRoot);
-            MiscDebug.writeImage(gsImg, "twoD_" + fileNameRoot);
+            MiscDebug.writeImage(gsImg0, "_oneD_" + fileNameRoot);
+            MiscDebug.writeImage(gsImg, "_twoD_" + fileNameRoot);
         }
     }
     

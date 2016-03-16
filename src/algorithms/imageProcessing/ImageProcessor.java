@@ -420,6 +420,22 @@ public class ImageProcessor {
         return output;
     }
     
+    /**
+     * calculate theta, transforming values from -pi to pi to range 0 to 2*pi.
+     * <pre>
+     *           Y
+     *          90
+     *     135   |    +45
+     *           |
+     *   180------------ 0   X
+     *           |
+     *    225    |   315
+     *          270
+     * </pre>
+     * @param gradientX
+     * @param gradientY
+     * @return 
+     */
     public GreyscaleImage computeTheta360_0(final GreyscaleImage gradientX,
         final GreyscaleImage gradientY) {
 

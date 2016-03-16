@@ -748,6 +748,18 @@ public class ImageProcessorTest extends TestCase {
         assertTrue(Math.abs(rgb[1] - 200) < 0.1);
         assertTrue(Math.abs(rgb[2] - 50) < 0.1);
         
+        // ------
+        String fileName = "lab.gif";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        int idx = fileName.lastIndexOf(".");
+        String fileNameRoot = fileName.substring(0, idx);
+
+        GreyscaleImage gsImg = ImageIOHelper.readImage(filePath).copyToGreyscale();
+                
+        B3SplineFunction spline = new B3SplineFunction();
+        gsImg = spline.calculate(gsImg);
+        
+        MiscDebug.writeImage(gsImg, "_spline_interp_" + fileNameRoot);
     }
     
     public void testBiLinearInterpolation1() throws Exception {
