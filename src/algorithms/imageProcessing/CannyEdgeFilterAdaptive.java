@@ -1,6 +1,8 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -123,6 +125,19 @@ public class CannyEdgeFilterAdaptive {
         
         // (1) smooth image.  instead of gaussian, use bilateral filter when implemented
         // impl of http://people.csail.mit.edu/fredo/PUBLI/Siggraph2002/ in progress...
+        // the details are looking like atrous wavelet transform while reading
+        //    but need corrections for halo effects
+        /*{
+            // note: this is not the final answer
+            List<GreyscaleImage> outputTransformed = new ArrayList<GreyscaleImage>();
+            List<GreyscaleImage> outputCoeff = new ArrayList<GreyscaleImage>();
+            ATrousWaveletTransform at = new ATrousWaveletTransform();
+            at.calculateWithB3SplineScalingFunction(input, outputTransformed, outputCoeff);
+            GreyscaleImage smoothed = outputTransformed.get(
+                //outputTransformed.size() - 1);
+                1);
+            input.resetTo(smoothed);
+        }*/
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(input, SIGMA.ONE);
         
@@ -485,9 +500,9 @@ public class CannyEdgeFilterAdaptive {
 
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts) {
         
-        //TODO: this needs a correction to not null a pixel if it is in a 
-        //   junction (it would disconnect edges)
-        
+//TODO: this needs a correction to not null a pixel if it is in a 
+//   junction (it would disconnect edges)
+
         GreyscaleImage theta = filterProducts.getTheta();
         
         GreyscaleImage img = filterProducts.getGradientXY();
