@@ -107,7 +107,7 @@ public class ATrousWaveletTransform {
      * @param outputTransformed
      * @param outputCoeff 
      */
-    private void calculateForEdgeAvoiding(GreyscaleImage input,
+    private void calculateForEdgeOptimization(GreyscaleImage input,
         List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
@@ -120,36 +120,64 @@ public class ATrousWaveletTransform {
         
         outputCoeff.add(input.createSignedWithDimensions());
         
-        GreyscaleImage wSum = input.createFullRangeIntWithDimensions();
+        int jjMax = 4;
+        double lambda = 0.003;
         
-        List<GreyscaleImage> ws = new ArrayList<GreyscaleImage>();
-
+        // ----- decomposition -----
+        
         for (int j = 0; j < nr; ++j) {
             
             GreyscaleImage cJ = outputTransformed.get(j);
  
             GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);
             
-            /*
-            GreyscaleImage w = exponential(cJ, cJPlus1, sigma);
-            ws.add(w);
-            wSum = wSum.add(w);
+            outputTransformed.add(cJPlus1);
             
+            // c_(j,k) − c_(j+1,k)
+            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+            
+            /*
+            double[][] eI = new double[jjMax*(j + 1)][];
+            for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
+                float sigmaRJJ = 0.5f + jj;
+                double sumW = 0;
+                double[] ws = new double[wJPlus1.getNPixels()];
+                for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
+                    assert(wJPlus1.getValue(p) >= 0);
+                    double exp = Math.exp(
+                        (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigmaRJJ);
+                    ws[jj] = exp;
+                    sumW += exp;
+                }
+                eI[jj] = new double[cJ.getNPixels()];
+                for (int p = 0; p < cJ.getNPixels(); ++p) {
+                    double cIJJ = (ws[p]/sumW) * cJ.getValue(p);
+                    double dIJJ = cIJJ - cJPlus1.getValue(p);
+                    // del c_i_jj calculated w/ Cranley Patterson rotation
+                    double delC =
+                    eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
+                }
+                // evaluate error image:  e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
+            }
+            */
+            /*
             estimate sigma per pixel:
                 compute multiple decompositions with different parameters and 
                 then choose optimal parameters for each pixel. 
             The parameters to iterate over are sigma_r_j for jj=0 to jjmax.
 
             For each jj we separate the current image into coarse c_j_jj and
-            detail d_j_jj (which is wJPlus1) using the current σ_r_jj 
-            as global edge weight. 
+            detail using the current σ_r_jj as global edge weight. 
             The resulting decomposition is used to evaluate an error image
               e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
             
             The authors use a fixed  λ = 0.003 and jmax=4.
             The error measure is evaluated using same window as used in b3 spline
-            function, using 25 samples on a regular grid with Cranley Patterson 
-            rotation [CP76] to decorrelate adjacent pixels.
+            function, using 25 samples on a regular grid with 
+            Cranley Patterson rotation [CP76] 
+            to decorrelate adjacent pixels.
             
             After all jj have been processed at scale j, we search for the
             minimum error e_jj per pixel 
@@ -201,12 +229,6 @@ public class ATrousWaveletTransform {
             this way, resulting in a better PSNR of the denoised results.
             */
            
-            outputTransformed.add(cJPlus1);
-            
-            // c_(j,k) − c_(j+1,k)
-            GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
-            
-            outputCoeff.add(wJPlus1);
         }
         
         /*
