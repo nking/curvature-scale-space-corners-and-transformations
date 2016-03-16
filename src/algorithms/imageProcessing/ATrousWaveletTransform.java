@@ -165,12 +165,13 @@ public class ATrousWaveletTransform {
                     if (lastIdx > (dxs.length - 1)) {
                         lastIdx = 0;
                     }
-                    double delC = estimatePixelNoise(cIJJ, p, dxs[lastIdx], dys[lastIdx]);
+                    double delC = estimateLocalNoise(cIJJ, p, dxs[lastIdx], dys[lastIdx]);
                     eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
                 }
                 // evaluate error image:  e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
             }
             */
+            
             /*
             estimate sigma per pixel:
                 compute multiple decompositions with different parameters and 
@@ -336,7 +337,6 @@ public class ATrousWaveletTransform {
 
     /**
      * Following
-     * Edge optimized factors have been included following
      * "Edge-Optimized À-Trous Wavelets for Local Contrast Enhancement with 
      * Robust Denoising" by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
      * https://jo.dreggn.org/home/2011_atrous.pdf
@@ -347,7 +347,7 @@ public class ATrousWaveletTransform {
        This looks a little like calculating auto-correlation, except not wanting 
        the center pixel as the fixed first pixel of the difference.
        
-       If del c_i_jj is meant to be a measure of pixel to pixel noise, would 
+       If del c_i_jj is meant to be a measure of local image noise, would 
        presumably want to select only differences between adjacent pixel pairs.
        So the use of Cranley Patterson rotation must be in selecting the second
        point using an offset chosen from the vector U of values.
@@ -362,7 +362,7 @@ public class ATrousWaveletTransform {
        offsets.
         
        For each pixel in the window, will determine its intensity difference 
-       from the pixel at the pixel that is it's coordinates plus the offsets.
+       from the pixel and the pixel that is it's coordinates plus the offsets.
        The result returned will be the average of those.
        
        Note that another paper 
@@ -375,7 +375,7 @@ public class ATrousWaveletTransform {
      * @param i0
      * @return 
      */
-    private double estimatePixelNoise(double cIJJ, int pixIdx, int dx, int dy) {
+    private double estimateLocalNoise(double cIJJ, int pixIdx, int dx, int dy) {
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 }
