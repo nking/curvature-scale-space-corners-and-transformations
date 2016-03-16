@@ -4823,11 +4823,10 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         int h = img.getHeight();
 
         /*
-        any pixel with neighbors that are not edgeValue can be removed
-        */
-
-         PairInt[][] neighborCoordOffsets =
-            AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+         any pixel with neighbors that are not edgeValue can be removed
+         */
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
                 0, 0);
 
         GreyscaleImage tmpImg2 = img.copyImage();
@@ -4853,8 +4852,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 }
 
                 if (nEmptyNeigbhors > 0
-                    && !doesDisconnect(tmpImg2, neighborCoordOffsets, i, j,edgeValue)
-                    ) {
+                    && !doesDisconnect(tmpImg2, neighborCoordOffsets, i, j, edgeValue)) {
                     tmpImg2.setValue(i, j, nonEdgeValue);
                 }
             }
@@ -7743,7 +7741,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
      * @param row
      * @return
      */
-    protected boolean doesDisconnect(final GreyscaleImage input,
+    public static boolean doesDisconnect(final GreyscaleImage input,
         PairInt[][] neighborCoords, int col, int row, int edgeValue) {
 
         int w = input.getWidth();
@@ -7812,9 +7810,123 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         boolean t17 = (input.getValue(neighborCoords[2][0].getX() + col,
             neighborCoords[2][0].getY() + row) == edgeValue);
 
-        if ((Math.abs(col - 266) < 2) && (Math.abs(row - 84) < 2)) {
-            int z = 1;
+       if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
+            return true;
+        } else if ((t6) && (t12) && !(t7) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t6) && (t15) && !(t11) && (!(t16) || !(t12) || !(t7))) {
+            return true;
+        } else if ((t6) && (t16) && !(t7) && !(t11)) {
+            return true;
+        } else if ((t6) && (t17) && ( (!(t7) || !(t12)) && (!(t11) || !(t16)) )) {
+            return true;
+        } else if ((t7) && (t15) && !(t11) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t7) && (t17) && !(t12) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t7) && (t16) && !(t11) && !(t12)) {
+            return true;
+        } else if ((t8) && (t11) && !(t7) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t8) && (t17) && !(t12) && (!(t16) || !(t11) || !(t7))) {
+            return true;
+        } else if ((t8) && (t16) && !(t7) && !(t12)) {
+            return true;
+        } else if ((t8) && (t15) && ( (!(t7) || !(t11)) && (!(t12) || !(t16)) )) {
+            return true;
+        } else if ((t11) && (t12) && !(t7) && !(t16)) {
+            return true;
+        } else if ((t11) && (t17) && !(t16) && (!(t7) || !(t12))) {
+            return true;
+        } else if ((t12) && (t15) && !(t16) && (!(t7) || !(t11))) {
+            return true;
+        } else if ((t15) && (t17) && !(t16) && (!(t11) || !(t7) || !(t12))) {
+            return true;
         }
+
+        return false;
+    }
+    
+    /**
+     * look within the neighborhood of point (col, row) to see if there are 
+     * edges points to either side of the point that would be disconnected
+     * if this one were removed.   A non-edge point is defined as having value 0.
+     * 
+     * @param input
+     * @param neighborCoords
+     * @param col
+     * @param row
+     * @param edgeValue
+     * @return 
+     */
+    public static boolean doesDisconnect(final GreyscaleImage input,
+        PairInt[][] neighborCoords, int col, int row) {
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+
+        if (((col - 1) < 0) || ((row - 1) < 0) || ((col + 1) > (w - 1)) ||
+            ((row + 1) > (h - 1))) {
+            // general rule so that invoker doesn't disconnect a line that is
+            // connected to image boundaries
+            return true;
+        }
+
+        /*
+        coordinates of the 8 neighbors as already created PairInts without
+        bound checks.
+        indexes are found as +1 of the difference relative to center,
+        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
+        */
+
+         /*
+            6  7  8      +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+
+           -1  0   1
+            0  1   2
+
+        disconnects:
+           -- if (6) && (8) && !(7) && (!(11) || !(16) || !(12))
+           -- if (6) && (12) && !(7) && (!(11) || !(16))
+           -- if (6) && (15) && !(11) && (!(16) || !(12) || !(7))
+           -- if (6) && (16) && !(7) && !(11)
+           -- if (6) && (17) && ( (!(7) || !(12)) && (!(11) || !(16)) )
+           -- if (7) && (15) && !(11) && (!(12) || !(16))
+           -- if (7) && (17) && !(12) && (!(11) || !(16))
+           -- if (7) && (16) && !(11) && !(12)
+           -- if (8) && (11) && !(7) && (!(12) || !(16))
+           -- if (8) && (17) && !(12) && (!(16) || !(11) || !(7))
+           -- if (8) && (16) && !(7) && !(12)
+           -- if (8) && (15) && ( (!(7) || !(11)) && (!(12) || !(16)) )
+           -- if (11) && (12) && !(7) && !(16)
+           -- if (11) && (17) && !(16) && (!(7) || !(12))
+           -- if (12) && (15) && !(16) && (!(7) || !(11))
+           -- if (15) && (17) && !(16) && (!(11) || !(7) || !(12))
+
+        does not disconnect
+           -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+
+        then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
+        */
+
+        boolean t6 = (input.getValue(neighborCoords[0][2].getX() + col,
+            neighborCoords[0][2].getY() + row) > 0);
+        boolean t7 = (input.getValue(neighborCoords[1][2].getX() + col,
+            neighborCoords[1][2].getY() + row) > 0);
+        boolean t8 = (input.getValue(neighborCoords[2][2].getX() + col,
+            neighborCoords[2][2].getY() + row) > 0);
+        boolean t11 = (input.getValue(neighborCoords[0][1].getX() + col,
+            neighborCoords[0][1].getY() + row) > 0);
+        boolean t12 = (input.getValue(neighborCoords[2][1].getX() + col,
+            neighborCoords[2][1].getY() + row) > 0);
+        boolean t15 = (input.getValue(neighborCoords[0][0].getX() + col,
+            neighborCoords[0][0].getY() + row) > 0);
+        boolean t16 = (input.getValue(neighborCoords[1][0].getX() + col,
+            neighborCoords[1][0].getY() + row) > 0);
+        boolean t17 = (input.getValue(neighborCoords[2][0].getX() + col,
+            neighborCoords[2][0].getY() + row) > 0);
 
        if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
             return true;

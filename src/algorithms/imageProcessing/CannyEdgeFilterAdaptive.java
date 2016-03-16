@@ -1,26 +1,28 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * The CannyEdge filter is an algorithm to operate on an image to
  * replace objects with their edges.  
  * 
- * Following the general advice given in
+ * The class began by following the general advice given in
  * "Performance Analysis of Adaptive Canny Edge Detector 
  * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena.
- * 
- * -- instead of a Gaussian filter, uses a bilateral filter (not yet implemented)
+ * Their paper has the following qualities: 
+ *<pre>
+ * -- instead of a Gaussian filter, uses a bilateral filter
  * -- Otsu's method is used for adaptive threshold levels
- * -- this algorithm performs better on high quality images but does not find
- *    edges for low signal-to-noise images.
- * -- by default, a histogram equalization is performed/
+ * -- they note that their algorithm performs better on high quality images but 
+ *    does not find edges well in low signal-to-noise images.
+ * </pre>
+ * Instead of using a bilateral filter for smoothing, this class uses an edge 
+ * optimized ATrous wavelet transform.
  * 
- * Note: not yet ready for use.  It needs corrections in the non maximum suppression
- * and it needs an implementation of a bilateral filter.
+ * Note, by default, a histogram equalization is performed.
+ * 
+ * Note: not yet ready for use.  It needs an implementation of non gaussian smoothing.
  * 
  * @author nichole
  */
@@ -126,7 +128,7 @@ public class CannyEdgeFilterAdaptive {
         // (1) smooth image.  instead of gaussian, use bilateral filter when implemented
         // impl of http://people.csail.mit.edu/fredo/PUBLI/Siggraph2002/ in progress...
         // the details are looking like atrous wavelet transform while reading
-        //    but need corrections for halo effects
+        //    but need corrections for halo effects 
         /*{
             // note: this is not the final answer
             List<GreyscaleImage> outputTransformed = new ArrayList<GreyscaleImage>();
@@ -134,8 +136,8 @@ public class CannyEdgeFilterAdaptive {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             at.calculateWithB3SplineScalingFunction(input, outputTransformed, outputCoeff);
             GreyscaleImage smoothed = outputTransformed.get(
-                //outputTransformed.size() - 1);
-                1);
+                outputTransformed.size() - 1);
+                //1);
             input.resetTo(smoothed);
         }*/
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -500,9 +502,6 @@ public class CannyEdgeFilterAdaptive {
 
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts) {
         
-//TODO: this needs a correction to not null a pixel if it is in a 
-//   junction (it would disconnect edges)
-
         GreyscaleImage theta = filterProducts.getTheta();
         
         GreyscaleImage img = filterProducts.getGradientXY();
@@ -511,7 +510,7 @@ public class CannyEdgeFilterAdaptive {
         
         int w = img.getWidth();
         int h = img.getHeight();
-        
+                
         /*
          *           Y
          *          90
@@ -568,7 +567,10 @@ public class CannyEdgeFilterAdaptive {
             if ((v < v1) || (v < v2)) {
                 img.setValue(x, y, 0);
             }
-        }        
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        curveHelper.additionalThinning45DegreeEdges2(theta, img);
     }
     
 }

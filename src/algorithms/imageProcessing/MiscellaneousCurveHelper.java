@@ -226,6 +226,102 @@ public class MiscellaneousCurveHelper {
             }
         }
     }
+    
+    /**
+         *           Y
+         *          90
+         *     135   |    +45
+         *           |
+         *   180------------ 0   X
+         *           |
+         *    225    |   315
+         *          270
+         * 
+         *  -45    90    45          y/x
+                -  |  +
+            0 -----|----- 0
+                +  |  -
+            45    90    -45
+        
+     * @param angle360
+     * @return 
+     */
+    private int convert360To45RefFrame(int angle360) {
+        
+        if ((angle360 < 23) || (angle360 > 337)) {
+            return 0;
+        } else if ((angle360 > 157) && (angle360 < 203)) {
+            return 0;
+        } else  if (((angle360 > 22) && (angle360 < 68)) || 
+            ((angle360 > 202) && (angle360 < 248))) {
+            // in range of +45 or +225
+            return 45;
+        } else if (((angle360 > 67) && (angle360 < 113)) || 
+            ((angle360 > 247) && (angle360 < 293))) {
+            // in range of +90 or +270
+            return 90;
+        } else { //if (((t > 112) && (t < 158)) || ((t > 292) && (t < 338))) {
+            // in range of +135 or +315
+            return -45;
+        }
+    }
+    
+    /**
+     * thin a line that is the product in a canny edge detector, given
+     * a theta image which has values between 0 and 360.
+     * @param theta3602
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
+        GreyscaleImage theta3602, GreyscaleImage input) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+        for (int i = 1; i < (input.getWidth() - 1); i++) {
+            for (int j = 1; j < (input.getHeight() - 1); j++) {
+                
+                if (input.getValue(i, j) == 0) {
+                    continue;
+                }
+
+                int tG = convert360To45RefFrame(theta3602.getValue(i, j));
+
+                if ((tG == 45) || (tG == -45)) {
+
+                    int tH0 = convert360To45RefFrame(theta3602.getValue(i - 1, j));
+                    int tH1 = convert360To45RefFrame(theta3602.getValue(i + 1, j));
+                    int tV0 = convert360To45RefFrame(theta3602.getValue(i, j - 1));
+                    int tV1 = convert360To45RefFrame(theta3602.getValue(i, j + 1));
+
+                    int gH0 = input.getValue(i - 1, j);
+                    int gH1 = input.getValue(i + 1, j);
+                    int gV0 = input.getValue(i, j - 1);
+                    int gV1 = input.getValue(i, j + 1);
+
+                    if ((tH0 == tG) && (gH0 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    } else if ((tH1 == tG) && (gH1 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
      /**
      * this is a method to combine and prune adjacent lines, but

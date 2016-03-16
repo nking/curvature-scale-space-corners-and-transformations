@@ -140,4 +140,34 @@ public class ATrousWaveletTransform {
 
         return output;
     }
+    
+    /*
+    looking at
+    A Novel Edge-Aware A-Trous Filter For Single Image Dehazing `
+        Baojun Qi, Tao Wu, and Hangen He
+    2012 IEEE International Conference on Information Science and Technology
+        Wuhan, Hubei, China; March 23-25, 2012
+    
+    the input transformed images are found above as c_(j,k), c_(j+1,k), etc
+                                    (   | (c(j, k) - c(j + 1, k) | )
+        edge stopping function = exp( - -------------------------- )
+                                    (         (sigma_r)^2          )
+    
+        so this is using what the above refers to as the coefficients (retained
+        for use in reconstruction).
+    
+    the transformed image is multiplied by the edge stopping function divided
+        by the normalization.
+    
+    the normalization is needed too.
+    
+    looking for edge optimization which avoids exponentiation if possible.
+    https://jo.dreggn.org/home/2011_atrous.pdf
+    similar transform as implemented in above class plus
+    locally adaptive (per-pixel) edge-weights, improved
+    denoising using BayesShrink, and a fast and simple to implement
+    algorithm
+    
+    see pg 37 of svn book
+    */
 }
