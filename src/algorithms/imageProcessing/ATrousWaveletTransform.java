@@ -51,6 +51,22 @@ public class ATrousWaveletTransform {
      * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
        The scaling function used is the lower resolution choice, the triangle
        * function.
+       * 
+       * The method uses recursive convolution operations, including previous
+       * result to make next.
+       * Each convolution uses two passes of one dimensional binomial kernels,
+       * starting with the equivalent of sigma=sqrt(2)/2 = 0.707.
+       * For each step, the equivalent resulting sigma is from 
+       * sigma^2 = sigma_1^2 + sigma_2^2.
+       * 
+       * outputTransformed[1] = sigma=sqrt(2)/2 convolution
+       * outputTransformed[2] = sigma=1 convolution
+       * outputTransformed[3] = sqrt( (1)^2 + 1/2) = sqrt(1 + 1/2) convolution
+       * outputTransformed[4] = sqrt( 1 + 1/2 + 1/2) = sqrt(2)
+       * outputTransformed[5] = sqrt( 2 + 1/2)       = sqrt(2.5)
+       * outputTransformed[6] = sqrt( 2 + 1/2 + 1/2) = sqrt(3)
+       *  ...
+       * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -91,6 +107,23 @@ public class ATrousWaveletTransform {
      * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
      * The scaling function used is the higher resolution choice, the 3rd order 
      * B Spline function.
+     * 
+     * The method uses recursive convolution operations, including previous
+       * result to make next.
+       * Each convolution uses two passes of one dimensional binomial kernels,
+       * starting with the equivalent of sigma=1.
+       * For each step, the equivalent resulting sigma is from 
+       * sigma^2 = sigma_1^2 + sigma_2^2.
+       * 
+       * outputTransformed[1] = sigma = 1 convolution
+       * outputTransformed[2] = sqrt( (1)^2 + (1)^2 ) = sqrt(2) convolution
+       * outputTransformed[3] = sqrt( 2 + 1 ) = sqrt(3) convolution
+       * outputTransformed[4] = sqrt( 3 + 1 ) = sqrt(4) = 2 convolution
+       * outputTransformed[5] = sqrt( 4 + 1 ) = sqrt(5) convolution
+       * outputTransformed[6] = sqrt( 5 + 1 ) = sqrt(6) convolution
+       * ...
+       * outputTransformed[8] = sqrt( 8 + 1 ) = sqrt(9) = 3 convolution
+       * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 

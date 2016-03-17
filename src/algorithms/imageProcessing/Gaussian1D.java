@@ -349,6 +349,8 @@ public class Gaussian1D {
     sigma=8                    has n=256. if convolved w/ self => sigma=8*sqrt(2)
     sigma=8*sqrt               has n=512. if convolved w/ self => sigma=16
  
+    The resulting sigma is obtained with sigma^2 = sigma_1^2 + sigma_2^2
+    
   also, the sigma=3 chain, used in ECSS:
     sigma=3/2           has n=9.   if convolved w/ self => 3*sqrt(2)/2
     sigma=3*sqrt(2)/2   has n=18.  if convolved w/ self => sigma=3
