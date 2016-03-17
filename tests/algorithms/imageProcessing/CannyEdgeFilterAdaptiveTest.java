@@ -27,6 +27,7 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         testFiles.add("lena.jpg");
         testFiles.add("android_statues_01.jpg");
         testFiles.add("android_statues_04.jpg");
+        testFiles.add("checkerboard_01.jpg");
         
         for (String fileName : testFiles) {
                         
@@ -43,7 +44,9 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
 
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
             //filter.setToNotUseNonMaximumSuppression();
-            //filter.overrideDefaultNumberOfLevels(8);
+            //filter.setToPerformHistogramEqualization();
+            //filter.override2LayerFactorBelowHighThreshold(10.f);
+            //filter.overrideDefaultNumberOfLevels(16);
             filter.applyFilter(gsImg);
             
             for (int i = 0; i < gsImg.getNPixels(); ++i) {

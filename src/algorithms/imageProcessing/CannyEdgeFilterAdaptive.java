@@ -22,7 +22,23 @@ import java.util.logging.Logger;
  * </pre>
  * This class uses 2 one dimensional binomial filters for smoothing.
  * 
- * Note, by default, a histogram equalization is performed.
+ * <pre>
+ * Usage:
+ * Note, by default, a histogram equalization is not performed.
+ * By default, the number of levels is 1.
+ * To use the filter adaptive mode, use filter.overrideDefaultNumberOfLevels
+ * and a number 16 of higher is recommended.
+ * 
+ * To see a difference in the adaptive approach, run this class on the test
+ * image susan-in.gif using filter.overrideDefaultNumberOfLevels(16) 
+ * 
+ * To adjust the filter to remove lower intensity edges, use
+ * filter.setOtsuScaleFactor.  The default factor is 0.45 
+ * (determined w/ a checkerboard image).
+ * For the Lena test image for example, one might prefer only the brightest
+ * edges, so use a higher setting than the default.
+ * </pre>
+ * Not ready for use yet... may improve the line thinning...
  * 
  * @author nichole
  */
@@ -35,7 +51,7 @@ public class CannyEdgeFilterAdaptive {
            
     private EdgeFilterProducts filterProducts = null;
     
-    private boolean performHistEq = true;
+    private boolean performHistEq = false;
     
     private boolean performNonMaxSuppr = true;
     
@@ -59,7 +75,7 @@ public class CannyEdgeFilterAdaptive {
     */
     private boolean useDiffOfGauss = false;
         
-    private float otsuScaleFactor = 1.0f;
+    private float otsuScaleFactor = 0.45f;//0.4f;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -73,14 +89,16 @@ public class CannyEdgeFilterAdaptive {
         this.useDiffOfGauss = true;        
     }
     
-    public void setToNotPerformHistogramEqualization() {
-        performHistEq = false;
+    /**
+     * applies a histogram equalization before any processing in order to rescale
+     * the data to use the entire range of 0 to 255.
+     */
+    public void setToPerformHistogramEqualization() {
+        performHistEq = true;
     }
     
     /**
-     * by default this is near 1, but for a natural camera image and for
-     * disabling the histogram equalization, a setting of 0.3 may be a
-     * better choice.  use this with caution!
+     * by default this is 0.45.
      */
     public void setOtsuScaleFactor(float factor) {
         otsuScaleFactor = factor;
@@ -501,6 +519,15 @@ public class CannyEdgeFilterAdaptive {
     }
 
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts) {
+        
+        /*
+        TODO:
+        in order to reduce effects of double lines due to blurring before and 
+        during edge creation,
+        may want to copy the gradient image, then apply nms to the gradient,
+        then correct for double lines and then replace lost junctions using
+        the copied gradient image for a reference.
+        */
         
         GreyscaleImage theta = filterProducts.getTheta();
         

@@ -51,7 +51,7 @@ public class ATrousWaveletTransform {
      * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
        The scaling function used is the lower resolution choice, the triangle
        * function.
-       * 
+       * <pre>
        * The method uses recursive convolution operations, including previous
        * result to make next.
        * Each convolution uses two passes of one dimensional binomial kernels,
@@ -66,7 +66,7 @@ public class ATrousWaveletTransform {
        * outputTransformed[5] = sqrt( 2 + 1/2)       = sqrt(2.5)
        * outputTransformed[6] = sqrt( 2 + 1/2 + 1/2) = sqrt(3)
        *  ...
-       * 
+       * </pre>
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
@@ -107,7 +107,7 @@ public class ATrousWaveletTransform {
      * Implemented from pseudocode in http://www.multiresolution.com/svbook.pdf
      * The scaling function used is the higher resolution choice, the 3rd order 
      * B Spline function.
-     * 
+     * <pre>
      * The method uses recursive convolution operations, including previous
        * result to make next.
        * Each convolution uses two passes of one dimensional binomial kernels,
@@ -123,7 +123,7 @@ public class ATrousWaveletTransform {
        * outputTransformed[6] = sqrt( 5 + 1 ) = sqrt(6) convolution
        * ...
        * outputTransformed[8] = sqrt( 8 + 1 ) = sqrt(9) = 3 convolution
-       * 
+       * </pre>
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
