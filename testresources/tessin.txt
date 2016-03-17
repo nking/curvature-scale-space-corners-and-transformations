@@ -1,0 +1,6 @@
+image from website https://jo.dreggn.org/home/lgm2014/talk.svg#2_0
+
+it's the website of one of the author's of the paper
+"Edge-Optimized À-Trous Wavelets for Local Contrast
+Enhancement with Robust Denoising"
+by Hanika, Dammertz, and Lensch
