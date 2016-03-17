@@ -20,8 +20,9 @@ public class ATrousWaveletTransformTest extends TestCase {
     public void test() throws Exception {
         
         Set<String> testFiles = new HashSet<String>();
-        testFiles.add("blox.gif");
-        /*testFiles.add("house.gif");
+        testFiles.add("tessin.jpg");
+        /*testFiles.add("blox.gif");
+        testFiles.add("house.gif");
         testFiles.add("lab.gif");
         testFiles.add("africa2.png");
         testFiles.add("susan-in.gif");
@@ -42,13 +43,16 @@ public class ATrousWaveletTransformTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             
             GreyscaleImage gsImg = img.copyToGreyscale();
+            GreyscaleImage gsImgCp = img.copyToGreyscale();
 
             List<GreyscaleImage> outputTransformed = new ArrayList<GreyscaleImage>();
             List<GreyscaleImage> outputCoeff = new ArrayList<GreyscaleImage>();
             
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             
-            at.calculateWithB3SplineScalingFunction(gsImg, outputTransformed, outputCoeff);
+            //at.calculateWithB3SplineScalingFunction(gsImg, outputTransformed, outputCoeff);
+            
+            at.calculateForEdgeOptimization(gsImg, outputTransformed, outputCoeff);
             
             //at.calculateWithB3SplineScalingFunction2(gsImg, outputTransformed, outputCoeff);
             
@@ -60,6 +64,16 @@ public class ATrousWaveletTransformTest extends TestCase {
             for (int i = 0; i < outputCoeff.size(); ++i) {
                 MiscDebug.writeImage(outputCoeff.get(i), fileNameRoot + "_coeff_" + i + "_");
             }
+            
+            
+            GreyscaleImage r = at.reconstruct(
+                outputTransformed.get(outputTransformed.size() - 1), outputCoeff);
+            
+            MiscDebug.writeImage(r, fileNameRoot + "_reconstructed");
+            
+            r = r.subtract(gsImgCp);
+            
+            MiscDebug.writeImage(r, fileNameRoot + "_recon_resid");
         }
         
     }

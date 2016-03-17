@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,11 +107,14 @@ public class ATrousWaveletTransform {
      * Robust Denoising" by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
      * https://jo.dreggn.org/home/2011_atrous.pdf
      * 
+     *  Not Ready For Use.
+     * 
+     * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
      */
-    private void calculateForEdgeOptimization(GreyscaleImage input,
+    void calculateForEdgeOptimization(GreyscaleImage input,
         List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
@@ -122,7 +126,7 @@ public class ATrousWaveletTransform {
         outputTransformed.add(input.copyToSignedImage());
         
         outputCoeff.add(input.createSignedWithDimensions());
-        
+                
         int jjMax = 4;
         double lambda = 0.003;
         
@@ -141,6 +145,11 @@ public class ATrousWaveletTransform {
             // c_(j,k) − c_(j+1,k)
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
+//NOTE: the recombined synthesized) image looks correct, but the
+// detail images (in outputCoeff) do not resemble the figure in 
+// the author's paper,
+// so the impl here is not correct yet.
+            
             // range of sigma?
             double maxD = wJPlus1.getMax();
             double minD = wJPlus1.getMin();
@@ -149,7 +158,7 @@ public class ATrousWaveletTransform {
             double deltaSigma = maxSigma/(jjMax*(j + 1.));
             // or a linear value: sigmaRJJ = 0.5 + jj;
             
-            // ------ alter wJPlus1 after calculating edge optimization ------
+            // -- alter cJPlus1 and wJPlus1 with edge optimization weights -----
                       
             int w = cJ.getWidth();
             int h = cJ.getHeight();
@@ -157,18 +166,18 @@ public class ATrousWaveletTransform {
             double[][] eI = new double[jjMax*(j + 1)][];
             for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
                 double sigmaRJJ = deltaSigma*(1 + jj);
-                //double sum0 = 0;
+                //double sigmaRJJ = 0.5 + jj;
+                double sum0 = 0;
                 double sumW = 0;
                 double[] ws = new double[wJPlus1.getNPixels()]; 
                 for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
                     double d = wJPlus1.getValue(p);
                     double m = (d*d)/sigmaRJJ;
-                    //if using -m instead of +m, range of exp is 0 to 1
-                    //   for small j, d range might be -40:40 and for largest j, d range -4:4
-                    //   so a range of sigma from ~1 to 4*jj will result in exp ~ 0 for large d and ~0.4 for min d
+                    //range of exp is 0 to 1
                     double exp = Math.exp(-m);
-                    ws[p] = exp;
-                    sumW += exp;
+                    ws[p] = exp;                   
+                    sum0 += cJPlus1.getValue(p);
+                    sumW += (exp * cJPlus1.getValue(p));
                 }
                
                 {
@@ -178,11 +187,11 @@ System.out.println("j=" + j + " *minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
 + " 1Qw=" +  cp[(int)(1.*(cp.length - 1)/4.)] + " 2Qw=" +  cp[(int)(3.*(cp.length - 1)/4.)]
 + " 3QW=" + cp[(int)(3.*(cp.length - 1)/4.)]);
                 } 
-// NOTE: normalization is wrong, so remove it to see residuals temporarily
-sumW = 1;                
+                
                 // normalize ws
+                double f0 = (sum0/sumW);
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
-                    ws[p] /= sumW;
+                    ws[p] *= f0;
                 }
                 
                 eI[jj] = new double[cJ.getNPixels()];
@@ -231,6 +240,7 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
             
             // use the sigmas and weighting function to alter cJPlus1 and recalc wJPlus1
             double sumW = 0;
+            double sum0 = 0;
             double[] ws = new double[wJPlus1.getNPixels()];
             for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
                 double sigma = sigmas[p];
@@ -239,21 +249,25 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
                 double m = (d*d)/sigma;
                 double exp = Math.exp(-m);
                 ws[p] = exp;
-                sumW += exp;
+                sum0 += cJPlus1.getValue(p);
+                sumW += (exp * cJPlus1.getValue(p));
             }
- // NOTE: normalization is wrong, so remove it to see residuals temporarily
- // also, may need to modify cJPlus1 instance before storing in output list
- sumW = 1;
+            double f0 = (sum0/sumW);
+            
             for (int p = 0; p < cJ.getNPixels(); ++p) {
-                double f = ws[p] / sumW;
-                double cIJJPlus1 = f * cJPlus1.getValue(p);
-                double dIJJ = cJ.getValue(p) - cIJJPlus1;
-                wJPlus1.setValue(p, (int)Math.round(dIJJ));
+                double f = ws[p] * f0;
+                int cIJJPlus1 = (int)Math.round(f * cJPlus1.getValue(p));
+                if (cIJJPlus1 > 255) {
+                    System.err.println("larger than 255.  factor=" + f);
+                    cIJJPlus1 = 255;
+                }
+                cJPlus1.setValue(p, cIJJPlus1);
             }
             
-                                    
+            wJPlus1 = cJ.subtract(cJPlus1);
+                             
             outputTransformed.add(cJPlus1);
-            
+                        
             outputCoeff.add(wJPlus1);
             
             /*
@@ -325,16 +339,6 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
            
         }
         
-        /*
-        for (int i = i; i < nr; ++i) {
-            
-            GreyscaleImage w = ws.get(i);
-            
-            GreyscaleImage cJ = outputTransformed.get(i - 1);
-            
-            multiplyAndDivide(cJ, w, wSum);
-        }
-        */
     }
     
     /**
