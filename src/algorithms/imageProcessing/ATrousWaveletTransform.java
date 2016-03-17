@@ -140,7 +140,7 @@ public class ATrousWaveletTransform {
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
             // ------ alter wJPlus1 after calculating edge optimization ------
-            /*            
+            /*          
             int w = cJ.getWidth();
             int h = cJ.getHeight();
             
@@ -148,31 +148,38 @@ public class ATrousWaveletTransform {
             for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
                 float sigmaRJJ = 0.5f + jj;
                 double sumW = 0;
-                double[] ws = new double[wJPlus1.getNPixels()];
+                double[] ws = new double[wJPlus1.getNPixels()]; 
                 for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
-                    assert(wJPlus1.getValue(p) >= 0);
-                    double exp = Math.exp(
-                        (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigmaRJJ);
+                    double d = wJPlus1.getValue(p);
+                    double m = (d*d)/sigmaRJJ;
+                    //if using -m instead of +m, range of exp is 0 to 1
+                    //   for small j, d range might be -40:40 and for largest j, d range -4:4
+                    //   so a range of sigma from ~1 to 4*jj will be ~ 0 for large d and ~0.4 for min d
+                    double exp = Math.exp(-m);
                     ws[p] = exp;
                     sumW += exp;
                 }
-                double[] cIJJ = new double[cJ.getNPixels()];
+                
+                // normalize ws
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
-                    cIJJ[p] = (ws[p]/sumW) * cJ.getValue(p);
+                    ws[p] /= sumW;
                 }
+                
                 eI[jj] = new double[cJ.getNPixels()];
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
-                    double dIJJ = cIJJ[p] - cJPlus1.getValue(p);
+                    
+                    double dIJJ = (ws[p] * cJ.getValue(p)) - cJPlus1.getValue(p);
                     
                     ++lastIdx;
                     if (lastIdx > (dxs.length - 1)) {
                         lastIdx = 0;
                     }
+
+                    // NOTE: assuming authors intend gC to describe the unmodified cJ
+                    double gC = estimateLocalNoise(cJ, p, dxs[lastIdx], 
+                        dys[lastIdx]);
                     
-                    double delC = estimateLocalNoise(cIJJ, p, dxs[lastIdx], 
-                        dys[lastIdx], w, h);
-                    
-                    eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
+                    eI[jj][p] = (dIJJ * dIJJ) + (lambda * gC);
                 }
             }
             double[] sigmas = new double[cJ.getNPixels()];
@@ -199,6 +206,7 @@ public class ATrousWaveletTransform {
             double[] ws = new double[wJPlus1.getNPixels()];
             for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
                 double sigma = sigmas[p];
+                assert(sigma > 0.0);
                 double exp = Math.exp(
                     (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigma);
                 ws[p] = exp;
@@ -210,7 +218,7 @@ public class ATrousWaveletTransform {
                 wJPlus1.setValue(p, (int)Math.round(dIJJ));
             }
             */
-                        
+                                    
             outputTransformed.add(cJPlus1);
             
             outputCoeff.add(wJPlus1);
@@ -384,13 +392,13 @@ public class ATrousWaveletTransform {
      * Robust Denoising" by Johannes Hanika, Holger Dammertz, and Hendrik Lensch
      * https://jo.dreggn.org/home/2011_atrous.pdf
      * to estimate del c_i_jj as part of creating an error image.
-     * The authors calculate del c_i_jj using Cranley Patterson rotation 
+     * The authors calculate gradient c_i_jj using Cranley Patterson rotation 
        sampling within the A Trous B3Spline window (which is 25 pixels).
        
        This looks a little like calculating auto-correlation, except not wanting 
        the center pixel as the fixed first pixel of the difference.
        
-       If del c_i_jj is meant to be a measure of local image noise, would 
+       If gradient c_i_jj is meant to be a measure of local image noise, would 
        presumably want to select only differences between adjacent pixel pairs.
        So the use of Cranley Patterson rotation must be in selecting the second
        point using an offset chosen from the vector U of values.
@@ -413,46 +421,39 @@ public class ATrousWaveletTransform {
        http://www.uni-kl.de/AG-Heinrich/EMS.pdf)
        suggests different sampling methods, so may change this in the future.
         
-       Note, the method has built into it the transformation from x, y into
-       single array index that is the same as used in GreyscaleImage,
-       so if that ever changes, this needs to change too
-       (TODO: refactor to remove such a vulnerability).
-      
-     
      * @return 
      */
-    private double estimateLocalNoise(double[] cIJJ, int pixIdx, int xOffset, 
-        int yOffset, int imgWidth, int imgHeight) {
+    private double estimateLocalNoise(GreyscaleImage img, int pixIdx, int xOffset, 
+        int yOffset) {
         
-        int x =  pixIdx/imgWidth;
-        int y = pixIdx - (x * imgWidth);
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        int x = img.getCol(pixIdx);
+        int y = img.getRow(pixIdx);
         
         int count = 0;
         double diff = 0;
         // iterate within window to find first pixel
         for (int dx = -2; dx <= 2; ++dx) {
             int x1 = x + dx;
-            if (x1 < 0 || x1 > (imgWidth - 1)) {
+            if (x1 < 0 || x1 > (w - 1)) {
                 continue;
             }
             for (int dy = -2; dy <= 2; ++dy) {
                 int y1 = y + dy;
-                if (y1 < 0 || y1 > (imgHeight - 1)) {
+                if (y1 < 0 || y1 > (h - 1)) {
                     continue;
                 }
-                
-                int pixIdx1 = (y1 * imgWidth) + x1;
-                
+                                
                 int x2 = x1 + xOffset;
                 int y2 = y1 + yOffset;
-                if ((x2 < 0) || (x2 > (imgWidth - 1)) || (y2 < 0) ||
-                    (y2 > (imgHeight - 1))) {
+                if ((x2 < 0) || (x2 > (w - 1)) || (y2 < 0) ||
+                    (y2 > (h - 1))) {
                     continue;
                 }
-                
-                int pixIdx2 = (y2 * imgWidth) + x2;
-                
-                diff += Math.abs(cIJJ[pixIdx1] - cIJJ[pixIdx2]);
+                                
+                diff += Math.abs(img.getValue(x1, y1) - img.getValue(x2, y2));
                 
                 count++;
             }
