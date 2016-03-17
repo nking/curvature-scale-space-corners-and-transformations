@@ -14,6 +14,36 @@ import java.util.List;
 public class ATrousWaveletTransform {
 
     /**
+    Uses the first step of an A Trous wavelet transform, which is two 1D 
+    convolutions of a binomial kernel for sigma=1.
+    * @param input
+     * @return 
+    */
+    public GreyscaleImage smoothToSigmaOne(GreyscaleImage input) {
+        
+        B3SplineFunction scalingFunction = new B3SplineFunction();
+        
+        GreyscaleImage smoothed = scalingFunction.calculate(input);
+        
+        return smoothed;
+    }
+    
+    /**
+    Uses the first step of an A Trous wavelet transform, which is two 1D 
+    convolutions of a binomial kernel for sigma=0.707 (=sqrt(2)/2).
+     * @param input
+     * @return 
+    */
+    public GreyscaleImage smoothToSigmaZeroPointSevenOne(GreyscaleImage input) {
+        
+        TriangleFunction scalingFunction = new TriangleFunction();
+        
+        GreyscaleImage smoothed = scalingFunction.calculateNextLevel(input, 0);
+        
+        return smoothed;
+    }
+        
+    /**
      * The a trous algorithm is a fast implementation of a wavelet transform 
      * with no downsampling.   It is non-orthogonal, semi-linear runtime
      * complexity, is invariant under translation, and the transform is 

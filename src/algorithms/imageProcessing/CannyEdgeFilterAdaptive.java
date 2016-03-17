@@ -11,7 +11,8 @@ import java.util.logging.Logger;
  * 
  * The class began by following the general advice given in
  * "Performance Analysis of Adaptive Canny Edge Detector 
- * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena.
+ * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena, but made some
+ * modifications.
  * Their paper has the following qualities: 
  *<pre>
  * -- instead of a Gaussian filter, uses a bilateral filter
@@ -19,12 +20,9 @@ import java.util.logging.Logger;
  * -- they note that their algorithm performs better on high quality images but 
  *    does not find edges well in low signal-to-noise images.
  * </pre>
- * Instead of using a bilateral filter for smoothing, this class uses an edge 
- * optimized ATrous wavelet transform.
+ * This class uses 2 one dimensional binomial filters for smoothing.
  * 
  * Note, by default, a histogram equalization is performed.
- * 
- * Note: not yet ready for use.  It needs an implementation of non gaussian smoothing.
  * 
  * @author nichole
  */
@@ -130,23 +128,20 @@ public class CannyEdgeFilterAdaptive {
             hEq.applyFilter();
         }
         
-        // (1) smooth image.  instead of gaussian, use bilateral filter when implemented
-        // impl of http://people.csail.mit.edu/fredo/PUBLI/Siggraph2002/ in progress...
-        // the details are looking like atrous wavelet transform while reading
-        //    but need corrections for halo effects 
-        /*{
-            // note: this is not the final answer
-            List<GreyscaleImage> outputTransformed = new ArrayList<GreyscaleImage>();
-            List<GreyscaleImage> outputCoeff = new ArrayList<GreyscaleImage>();
+        // (1) smooth image using separable binomial filters
+        SIGMA sigma = SIGMA.ONE;
+        if (sigma.equals(SIGMA.ONE)) {
             ATrousWaveletTransform at = new ATrousWaveletTransform();
-            at.calculateWithB3SplineScalingFunction(input, outputTransformed, outputCoeff);
-            GreyscaleImage smoothed = outputTransformed.get(
-                //outputTransformed.size() - 1);
-                1);
+            GreyscaleImage smoothed = at.smoothToSigmaOne(input);
             input.resetTo(smoothed);
-        }*/
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.blur(input, SIGMA.ZEROPOINTFIVE);
+        } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
+            ATrousWaveletTransform at = new ATrousWaveletTransform();
+            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+            input.resetTo(smoothed);
+        } else {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.blur(input, sigma, 0, 255);
+        }
         
         //(2) create gradient
         EdgeFilterProducts filterProducts;
