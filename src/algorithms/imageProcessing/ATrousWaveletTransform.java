@@ -135,14 +135,12 @@ public class ATrousWaveletTransform {
             GreyscaleImage cJ = outputTransformed.get(j);
  
             GreyscaleImage cJPlus1 = scalingFunction.calculate(cJ);
-            
-            outputTransformed.add(cJPlus1);
-            
+                        
             // c_(j,k) − c_(j+1,k)
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
-            outputCoeff.add(wJPlus1);
-            /*
+            // ------ alter wJPlus1 after calculating edge optimization ------
+            /*            
             int w = cJ.getWidth();
             int h = cJ.getHeight();
             
@@ -155,7 +153,7 @@ public class ATrousWaveletTransform {
                     assert(wJPlus1.getValue(p) >= 0);
                     double exp = Math.exp(
                         (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigmaRJJ);
-                    ws[jj] = exp;
+                    ws[p] = exp;
                     sumW += exp;
                 }
                 double[] cIJJ = new double[cJ.getNPixels()];
@@ -176,9 +174,47 @@ public class ATrousWaveletTransform {
                     
                     eI[jj][p] = (dIJJ * dIJJ) + (lambda * delC);
                 }
-                // evaluate error image:  e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
+            }
+            double[] sigmas = new double[cJ.getNPixels()];
+            
+            // for each pixel p, find the minimum in eI and store it's sigma.
+            // then use a B3Spline on the sigma image to result in the sigmas
+            // to be used per pixel on cJ and then calculate 
+            for (int p = 0; p < cJ.getNPixels(); ++p) {
+                double minE = Double.MAX_VALUE;
+                int minEJJIdx = -1;
+                for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
+                    double e = eI[jj][p];
+                    if (e < minE) {
+                        minE = e;
+                        minEJJIdx = jj;
+                    }
+                }
+                sigmas[p] = 0.5f + minEJJIdx;
+            }
+            sigmas = scalingFunction.calculate(sigmas, w, h);
+            
+            // use the sigmas and weighting function to alter cJPlus1 and recalc wJPlus1
+            double sumW = 0;
+            double[] ws = new double[wJPlus1.getNPixels()];
+            for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
+                double sigma = sigmas[p];
+                double exp = Math.exp(
+                    (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigma);
+                ws[p] = exp;
+                sumW += exp;
+            }
+            for (int p = 0; p < cJ.getNPixels(); ++p) {
+                double cIJJ = (ws[p]/sumW) * cJ.getValue(p);
+                double dIJJ = cIJJ - cJPlus1.getValue(p);
+                wJPlus1.setValue(p, (int)Math.round(dIJJ));
             }
             */
+                        
+            outputTransformed.add(cJPlus1);
+            
+            outputCoeff.add(wJPlus1);
+            
             /*
             estimate sigma per pixel:
                 compute multiple decompositions with different parameters and 
@@ -188,7 +224,7 @@ public class ATrousWaveletTransform {
             For each jj we separate the current image into coarse c_j_jj and
             detail using the current σ_r_jj as global edge weight. 
             The resulting decomposition is used to evaluate an error image
-              e_jj = d_j_jj squared?  + λ · || ∇c_j_jj ||
+              e_jj = d_j_jj squared  + λ · || ∇c_j_jj ||
             
             The authors use a fixed  λ = 0.003 and jmax=4.
             The error measure is evaluated using same window as used in b3 spline

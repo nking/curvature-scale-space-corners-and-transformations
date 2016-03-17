@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.util.Arrays;
+
 /**
  * @author nichole
  */
@@ -382,6 +384,137 @@ public class B3SplineFunction {
                 int v = interpolate2D(col, row, img);
 
                 output.setValue(col, row, v);
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * <pre>
+     * An interpolation function for B-Spline, 3rd order.
+     * The implementation follows pseudocode in
+     * http://www.multiresolution.com/svbook.pdf
+     *
+     * The runtime complexity is O(N_pixels) and internally uses 2 1-D operations.
+     *
+     * Handling boundaries:
+     * "mirror" :      c(k + N) = c(N −k)
+     * "periodicity" : (c(k + N) = c(N))
+     * "continuity"  : (c(k + N) = c(k))
+     * </pre>
+     * 
+     * Note that the method depends upon logic for transforming pixel coordinates
+     * x and y into single array indexes that is present in GreyscaleImage,
+     * so if that ever changes, the same changes need to be made here.
+     * (TODO: refactor for pixel coordinate transformation).
+     * 
+     * @param input
+     * @param imgWidth
+     * @param imgHeight
+     * @return
+    */
+    public double[] calculate(double[] input, int imgWidth, int imgHeight) {
+        
+        int w = imgWidth;
+        int h = imgHeight;
+        
+        double[] output = Arrays.copyOf(input, input.length);
+
+        // use separability, that is 1D operation on columns, then rows
+
+        for (int row = 0; row < h; ++row) {
+            for (int col = 0; col < w; ++col) {
+
+                // choosing "continuity" for boundary corrections
+
+                int vSum = 0;
+                for (int dx = -2; dx <= 2; ++dx) {
+
+                    int xi = col + dx;
+                    if ((xi < 0) || (xi > (w - 1))) {
+                        xi = col;
+                    }
+                    
+                    int pixIdx = (row * imgWidth) + xi;
+
+                    double v = input[pixIdx];
+
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+                    switch (dx) {
+                        // -2 and +2
+                        case -1:
+                        case 1:
+                            v *= 4;
+                            break;
+                        case 0:
+                            v *= 6;
+                            break;
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+                    vSum += v;
+                }
+
+                vSum /= 16.;
+
+                int pixIdx = (row * imgWidth) + col;
+                
+                output[pixIdx] = vSum;
+            }
+        }
+
+        double[] input2 = Arrays.copyOf(output, output.length);
+
+        for (int col = 0; col < w; ++col) {
+            for (int row = 0; row < h; ++row) {
+
+                // choosing "continuity" for boundary corrections
+
+                int vSum = 0;
+                for (int dy = -2; dy <= 2; ++dy) {
+
+                    int yi = row + dy;
+                    if ((yi < 0) || (yi > (h - 1))) {
+                        yi = row;
+                    }
+
+                    int pixIdx = (yi * imgWidth) + col;
+
+                    double v = input2[pixIdx];
+                    
+                    /*
+                     (1/12)*(|x−2|^3 − 4*|x−1|^3 + 6*|x|^3 − 4*|x+1|^3 + |x+2|^3)
+                     1/16, 1/4, 3/8, 1/4, 1/16
+                     1/16*(1, 4, 6, 4, 1)
+                     */
+                    switch (dy) {
+                        // -2 and +2
+                        case -1:
+                        case 1:
+                            v *= 4;
+                            break;
+                        case 0:
+                            v *= 6;
+                            break;
+                        // case -2 and +2 are factor 1
+                        default:
+                            break;
+                    }
+
+                    vSum += v;
+                }
+
+                vSum /= 16.;
+
+                int pixIdx = (row * imgWidth) + col;
+                output[pixIdx] = vSum;
             }
         }
 

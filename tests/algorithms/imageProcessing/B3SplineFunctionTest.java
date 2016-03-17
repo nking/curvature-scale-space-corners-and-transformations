@@ -64,6 +64,59 @@ public class B3SplineFunctionTest extends TestCase {
         assertEquals(10, interp);
     }
     
+    public void testCalculate() {
+        
+        int d = 10;
+        
+        int n = d*d;
+        
+        double[] input = new double[n];
+        
+        for (int x = 0; x < d; ++x) {
+            for (int y = 0; y < d; ++y) {
+                int pixIdx = (y * d) + x;
+                input[pixIdx] = y*256;
+            }
+        }
+        
+        /*
+        input:
+        0  0  0  0  0  0  0  0  0  0 
+        1  1  1  1  1  1  1  1  1  1
+        2  2  2  2  2  2  2  2  2  2
+        3  3  3  3 *3* 3  3  3  3  3
+        4  4  4  4  4  4  4  4  4  4
+        5  5  5  5  5  5  5  5  5  5
+        ...
+        
+        window:    
+         (1/256) *   |   1    4   3*2    4    1 |
+                     |   4   16   3*8   16    4 |
+                     | 3*2  3*8   9*4  3*8  3*2 |
+                     |   4   16   3*8   16    4 |
+                     |   1    4   3*2    4    1 |
+
+        for x=4, y=3  widow before mult is:
+           1  1  1  1  1
+           2  2  2  2  2
+           3  3 *3* 3  3
+           4  4  4  4  4
+           5  5  5  5  5        
+        */
+        
+        int expectedSum = (1 + 4 + (3*2) + 4 + 1) + 2*(4 + 16 + (3*8) + 16 + 4)
+            + 3*(3*2 + 3*8 + 9*4 + 3*8 + 3*2) + 4*(4 + 16 + (3*8) + 16 + 4)
+            + 5*(1 + 4 + (3*2) + 4 + 1);
+        
+        B3SplineFunction instance = new B3SplineFunction();
+        
+        double[] output = instance.calculate(input, d, d);
+        
+        int pixIdx = (3 * d) + 4;
+        
+        assertTrue(Math.abs(output[pixIdx] - expectedSum) < 0.0000001);
+    }
+    
     public void test1D2D() throws Exception {
         
         // demonstrates that the two 1-D operations produce similar, but not
