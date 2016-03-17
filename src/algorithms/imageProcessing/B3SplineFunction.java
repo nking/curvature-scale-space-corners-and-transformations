@@ -428,7 +428,7 @@ public class B3SplineFunction {
 
                 // choosing "continuity" for boundary corrections
 
-                int vSum = 0;
+                double vSum = 0;
                 for (int dx = -2; dx <= 2; ++dx) {
 
                     int xi = col + dx;
@@ -477,7 +477,7 @@ public class B3SplineFunction {
 
                 // choosing "continuity" for boundary corrections
 
-                int vSum = 0;
+                double vSum = 0;
                 for (int dy = -2; dy <= 2; ++dy) {
 
                     int yi = row + dy;
