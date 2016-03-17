@@ -20,10 +20,9 @@ public class ATrousWaveletTransformTest extends TestCase {
     public void test() throws Exception {
         
         Set<String> testFiles = new HashSet<String>();
-        testFiles.add("tessin.jpg");
-        /*testFiles.add("blox.gif");
+        testFiles.add("blox.gif");
         testFiles.add("house.gif");
-        testFiles.add("lab.gif");
+        /*testFiles.add("lab.gif");
         testFiles.add("africa2.png");
         testFiles.add("susan-in.gif");
         testFiles.add("valve_gaussian.png");
@@ -50,10 +49,10 @@ public class ATrousWaveletTransformTest extends TestCase {
             
             ATrousWaveletTransform at = new ATrousWaveletTransform();
             
-            //at.calculateWithB3SplineScalingFunction(gsImg, outputTransformed, outputCoeff);
+            at.calculateWithB3SplineScalingFunction(gsImg, outputTransformed, outputCoeff);
             
-            at.calculateForEdgeOptimization(gsImg, outputTransformed, outputCoeff);
-            
+            //at.calculateForEdgeOptimization(gsImg, outputTransformed, outputCoeff);
+                        
             //at.calculateWithB3SplineScalingFunction2(gsImg, outputTransformed, outputCoeff);
             
             //at.calculateWithTriangleScalingFunction(gsImg, outputTransformed, outputCoeff);
@@ -74,6 +73,7 @@ public class ATrousWaveletTransformTest extends TestCase {
             r = r.subtract(gsImgCp);
             
             MiscDebug.writeImage(r, fileNameRoot + "_recon_resid");
+            
         }
         
     }

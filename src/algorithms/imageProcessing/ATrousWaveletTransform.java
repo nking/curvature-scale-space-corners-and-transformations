@@ -109,12 +109,11 @@ public class ATrousWaveletTransform {
      * 
      *  Not Ready For Use.
      * 
-     * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 
      */
-    void calculateForEdgeOptimization(GreyscaleImage input,
+     private void calculateForEdgeOptimization(GreyscaleImage input,
         List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
@@ -145,37 +144,37 @@ public class ATrousWaveletTransform {
             // c_(j,k) − c_(j+1,k)
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
-//NOTE: the recombined synthesized) image looks correct, but the
+//NOTE: the recombined (synthesized) image looks correct, but the
 // detail images (in outputCoeff) do not resemble the figure in 
-// the author's paper,
-// so the impl here is not correct yet.
-            
-            // range of sigma?
-            double maxD = wJPlus1.getMax();
-            double minD = wJPlus1.getMin();
-            maxD = Math.max(Math.abs(minD), maxD);
-            double maxSigma = (maxD*maxD)/50.;
-            double deltaSigma = maxSigma/(jjMax*(j + 1.));
-            // or a linear value: sigmaRJJ = 0.5 + jj;
+// the authors' paper (unless the authors are plotting the unmodified 
+// coefficient image).   
+// the negative exponential diminishes the edges
+// but a positive exponential, even when sigma is scaled for the range of
+// data in wJPlus1 so that it doesn't overflow the range, only enhances the
+// pixels that are already bright pixels in the coefficient image, so the
+// step seems expensive (exponential transcendantal function) compared to 
+// thresholding those same pixels.
+//
+// the authors' goals may already be met by the use of the A Trous wavelet and
+// the b3 spline scaling function already.
             
             // -- alter cJPlus1 and wJPlus1 with edge optimization weights -----
-                      
+          
             int w = cJ.getWidth();
             int h = cJ.getHeight();
             
             double[][] eI = new double[jjMax*(j + 1)][];
             for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
-                double sigmaRJJ = deltaSigma*(1 + jj);
-                //double sigmaRJJ = 0.5 + jj;
+                double sigmaRJJ = 0.5 + jj;
                 double sum0 = 0;
                 double sumW = 0;
                 double[] ws = new double[wJPlus1.getNPixels()]; 
                 for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
                     double d = wJPlus1.getValue(p);
                     double m = (d*d)/sigmaRJJ;
-                    //range of exp is 0 to 1
+                    //range of exp is 0 to 1 if use -m instead
                     double exp = Math.exp(-m);
-                    ws[p] = exp;                   
+                    ws[p] = exp;
                     sum0 += cJPlus1.getValue(p);
                     sumW += (exp * cJPlus1.getValue(p));
                 }
@@ -234,7 +233,7 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
                         minEJJIdx = jj;
                     }
                 }
-                sigmas[p] = deltaSigma * (1 + minEJJIdx);
+                sigmas[p] =  0.5 + minEJJIdx;
             }
             sigmas = scalingFunction.calculate(sigmas, w, h);
             
@@ -253,7 +252,6 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
                 sumW += (exp * cJPlus1.getValue(p));
             }
             double f0 = (sum0/sumW);
-            
             for (int p = 0; p < cJ.getNPixels(); ++p) {
                 double f = ws[p] * f0;
                 int cIJJPlus1 = (int)Math.round(f * cJPlus1.getValue(p));
@@ -261,6 +259,7 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
                     System.err.println("larger than 255.  factor=" + f);
                     cIJJPlus1 = 255;
                 }
+                
                 cJPlus1.setValue(p, cIJJPlus1);
             }
             
@@ -340,7 +339,7 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
         }
         
     }
-    
+   
     /**
      * same as calculateWithB3SplineScalingFunction except that it uses a 2-D
      * scaling function and the runtime is 2.5 times longer.
