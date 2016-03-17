@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
+import algorithms.misc.MiscMath;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -139,14 +141,23 @@ public class ATrousWaveletTransform {
             // c_(j,k) − c_(j+1,k)
             GreyscaleImage wJPlus1 = cJ.subtract(cJPlus1);
             
+            // range of sigma?
+            double maxD = wJPlus1.getMax();
+            double minD = wJPlus1.getMin();
+            maxD = Math.max(Math.abs(minD), maxD);
+            double maxSigma = (maxD*maxD)/50.;
+            double deltaSigma = maxSigma/(jjMax*(j + 1.));
+            // or a linear value: sigmaRJJ = 0.5 + jj;
+            
             // ------ alter wJPlus1 after calculating edge optimization ------
-            /*          
+                      
             int w = cJ.getWidth();
             int h = cJ.getHeight();
             
             double[][] eI = new double[jjMax*(j + 1)][];
             for (int jj = 0; jj < jjMax*(j + 1); ++jj) {
-                float sigmaRJJ = 0.5f + jj;
+                double sigmaRJJ = deltaSigma*(1 + jj);
+                //double sum0 = 0;
                 double sumW = 0;
                 double[] ws = new double[wJPlus1.getNPixels()]; 
                 for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
@@ -154,21 +165,39 @@ public class ATrousWaveletTransform {
                     double m = (d*d)/sigmaRJJ;
                     //if using -m instead of +m, range of exp is 0 to 1
                     //   for small j, d range might be -40:40 and for largest j, d range -4:4
-                    //   so a range of sigma from ~1 to 4*jj will be ~ 0 for large d and ~0.4 for min d
+                    //   so a range of sigma from ~1 to 4*jj will result in exp ~ 0 for large d and ~0.4 for min d
                     double exp = Math.exp(-m);
                     ws[p] = exp;
                     sumW += exp;
                 }
-                
+               
+                {
+double[] cp = Arrays.copyOf(ws, ws.length);
+Arrays.sort(cp);
+System.out.println("j=" + j + " *minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
++ " 1Qw=" +  cp[(int)(1.*(cp.length - 1)/4.)] + " 2Qw=" +  cp[(int)(3.*(cp.length - 1)/4.)]
++ " 3QW=" + cp[(int)(3.*(cp.length - 1)/4.)]);
+                } 
+// NOTE: normalization is wrong, so remove it to see residuals temporarily
+sumW = 1;                
                 // normalize ws
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
                     ws[p] /= sumW;
                 }
                 
                 eI[jj] = new double[cJ.getNPixels()];
+ 
+                {
+double[] cp = Arrays.copyOf(ws, ws.length);
+Arrays.sort(cp);
+System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
++ " 1Qw=" +  cp[(int)(1.*(cp.length - 1)/4.)] + " 2Qw=" +  cp[(int)(3.*(cp.length - 1)/4.)]
++ " 3QW=" + cp[(int)(3.*(cp.length - 1)/4.)]);
+                }
+ 
                 for (int p = 0; p < cJ.getNPixels(); ++p) {
-                    
-                    double dIJJ = (ws[p] * cJ.getValue(p)) - cJPlus1.getValue(p);
+                                        
+                    double dIJJ = cJ.getValue(p) - (ws[p] * cJPlus1.getValue(p));
                     
                     ++lastIdx;
                     if (lastIdx > (dxs.length - 1)) {
@@ -176,8 +205,7 @@ public class ATrousWaveletTransform {
                     }
 
                     // NOTE: assuming authors intend gC to describe the unmodified cJ
-                    double gC = estimateLocalNoise(cJ, p, dxs[lastIdx], 
-                        dys[lastIdx]);
+                    double gC = estimateLocalNoise(cJ, p, dxs[lastIdx], dys[lastIdx]);
                     
                     eI[jj][p] = (dIJJ * dIJJ) + (lambda * gC);
                 }
@@ -186,7 +214,7 @@ public class ATrousWaveletTransform {
             
             // for each pixel p, find the minimum in eI and store it's sigma.
             // then use a B3Spline on the sigma image to result in the sigmas
-            // to be used per pixel on cJ and then calculate 
+            // to be used per pixel on cJ and then calculate the detail image again
             for (int p = 0; p < cJ.getNPixels(); ++p) {
                 double minE = Double.MAX_VALUE;
                 int minEJJIdx = -1;
@@ -197,7 +225,7 @@ public class ATrousWaveletTransform {
                         minEJJIdx = jj;
                     }
                 }
-                sigmas[p] = 0.5f + minEJJIdx;
+                sigmas[p] = deltaSigma * (1 + minEJJIdx);
             }
             sigmas = scalingFunction.calculate(sigmas, w, h);
             
@@ -207,17 +235,22 @@ public class ATrousWaveletTransform {
             for (int p = 0; p < wJPlus1.getNPixels(); ++p) {
                 double sigma = sigmas[p];
                 assert(sigma > 0.0);
-                double exp = Math.exp(
-                    (wJPlus1.getValue(p) * wJPlus1.getValue(p))/sigma);
+                double d = wJPlus1.getValue(p);
+                double m = (d*d)/sigma;
+                double exp = Math.exp(-m);
                 ws[p] = exp;
                 sumW += exp;
             }
+ // NOTE: normalization is wrong, so remove it to see residuals temporarily
+ // also, may need to modify cJPlus1 instance before storing in output list
+ sumW = 1;
             for (int p = 0; p < cJ.getNPixels(); ++p) {
-                double cIJJ = (ws[p]/sumW) * cJ.getValue(p);
-                double dIJJ = cIJJ - cJPlus1.getValue(p);
+                double f = ws[p] / sumW;
+                double cIJJPlus1 = f * cJPlus1.getValue(p);
+                double dIJJ = cJ.getValue(p) - cIJJPlus1;
                 wJPlus1.setValue(p, (int)Math.round(dIJJ));
             }
-            */
+            
                                     
             outputTransformed.add(cJPlus1);
             
