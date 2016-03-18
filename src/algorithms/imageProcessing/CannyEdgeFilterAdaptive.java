@@ -1,9 +1,11 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
-import java.util.ArrayList;
-import java.util.List;
+import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
+import java.util.HashSet;
+import algorithms.util.PairInt;
+import java.util.Set;
 
 /**
  * The CannyEdge filter is an algorithm to operate on an image to
@@ -11,8 +13,8 @@ import java.util.logging.Logger;
  * 
  * The class began by following the general advice given in
  * "Performance Analysis of Adaptive Canny Edge Detector 
- * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena, but made some
- * modifications.
+ * Using Bilateral Filter" by Rashmi, Kumar, Jaiswal, and Saxena, 
+ * but made modifications afterwards.
  * Their paper has the following qualities: 
  *<pre>
  * -- instead of a Gaussian filter, uses a bilateral filter
@@ -25,8 +27,9 @@ import java.util.logging.Logger;
  * <pre>
  * Usage:
  * Note, by default, a histogram equalization is not performed.
- * By default, the number of levels is 1.
- * To use the filter adaptive mode, use filter.overrideDefaultNumberOfLevels
+ * By default, the number of neighbor histogram levels is 1 in the 
+ * adaptive thresholding.
+ * To use the filter in adaptive mode, use filter.overrideDefaultNumberOfLevels
  * and a number 16 of higher is recommended.
  * 
  * To see a difference in the adaptive approach, run this class on the test
@@ -37,8 +40,16 @@ import java.util.logging.Logger;
  * (determined w/ a checkerboard image).
  * For the Lena test image for example, one might prefer only the brightest
  * edges, so use a higher setting than the default.
+ * 
+ * Only partially implemented is an option for operating on images that
+ * are line drawings.
+ * The ability to choose a difference of small gaussians to make the gradient
+ * is useful in that case.  The smoothing option will be turned off for it automatically.
+ * For now, using difference of gaussian is not 
+ * recommended and will be replaced with a setting for "line drawings".
  * </pre>
- * Not ready for use yet... may improve the line thinning...
+ * Not ready for use yet... may improve the line thinning, and need to 
+ * finish the "line drawing" mode.
  * 
  * @author nichole
  */
@@ -55,6 +66,20 @@ public class CannyEdgeFilterAdaptive {
     
     private boolean performNonMaxSuppr = true;
     
+    private boolean debug = false;
+    
+    /**
+     * the sigma from the blur combined with the sigma present in the gradient
+     * are present in this variable by the end of processing.
+     * The variable is used to interpret resolution of theta angles, for example.
+     * The sigmas are combined using: sigma^2 = sigma_1^2 + sigma_2^2.
+     * The FWHM of a gaussian is approx 2.35 * sigma.
+     * (HWZI is about 5 * sigma, by the way).
+     * So, for the default use of the filter, a sigma of 1 combined with sqrt(1)/2
+     * results in a minimum resolution of 3 pixels, hence about 19 degrees.
+     */
+    private double approxProcessedSigma = 0;
+    
     /**
      * default number of levels used in the histogram used to find the
      * high threshold in the 2 - layer thresholding.  it's the number
@@ -69,11 +94,7 @@ public class CannyEdgeFilterAdaptive {
     
     private boolean useAdaptive2Layer = true;
 
-    /*
-    for gradient, default is sobel kernel, but can override to use a small
-    difference of gaussian.
-    */
-    private boolean useDiffOfGauss = false;
+    private boolean lineDrawingMode = false;
         
     private float otsuScaleFactor = 0.45f;//0.4f;
     
@@ -82,11 +103,12 @@ public class CannyEdgeFilterAdaptive {
     public CannyEdgeFilterAdaptive() {        
     }
     
-    public void setToUseDiffOfGauss() {
-        
-        //TODO: consider dilate before erosion
-        
-        this.useDiffOfGauss = true;        
+    public void setToDebug() {
+        debug = true;
+    }
+    
+    public void setToUseLineDrawingMode() {
+        lineDrawingMode = true;      
     }
     
     /**
@@ -147,36 +169,86 @@ public class CannyEdgeFilterAdaptive {
         }
         
         // (1) smooth image using separable binomial filters
-        SIGMA sigma = SIGMA.ONE;
-        if (sigma.equals(SIGMA.ONE)) {
-            ATrousWaveletTransform at = new ATrousWaveletTransform();
-            GreyscaleImage smoothed = at.smoothToSigmaOne(input);
-            input.resetTo(smoothed);
-        } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
-            ATrousWaveletTransform at = new ATrousWaveletTransform();
-            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
-            input.resetTo(smoothed);
-        } else {
-            ImageProcessor imageProcessor = new ImageProcessor();
-            imageProcessor.blur(input, sigma, 0, 255);
+        if (!lineDrawingMode) {
+            SIGMA sigma = SIGMA.ONE;
+            if (sigma.equals(SIGMA.ONE)) {
+                ATrousWaveletTransform at = new ATrousWaveletTransform();
+                GreyscaleImage smoothed = at.smoothToSigmaOne(input);
+                input.resetTo(smoothed);
+                approxProcessedSigma = 1;
+            } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
+                ATrousWaveletTransform at = new ATrousWaveletTransform();
+                GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+                input.resetTo(smoothed);
+                approxProcessedSigma = Math.sqrt(2.)/2.;
+            } else {
+                ImageProcessor imageProcessor = new ImageProcessor();
+                imageProcessor.blur(input, sigma, 0, 255);
+                approxProcessedSigma = SIGMA.getValue(sigma);
+            }
         }
         
         //(2) create gradient
         EdgeFilterProducts filterProducts;
-        if (useDiffOfGauss) {
+        if (lineDrawingMode) {
+            // uses a difference of 2 binomial filters of very small sizes
             filterProducts = createDiffOfGaussians(input);
+            approxProcessedSigma = Math.sqrt(
+                approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
         } else {
+            // uses a binomial filter for a first derivative gradient, sobel.
             filterProducts = createGradient(input);
+            
+            approxProcessedSigma = Math.sqrt(
+                approxProcessedSigma*approxProcessedSigma + (1./4.));
         }
+        
+//MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
+            
             applyNonMaximumSuppression(filterProducts);
+            
+            // trying a pattern of running the remaining steps w/o nms to make
+            // a mask for theta first.
+            // this produces a gradient mask of very thick edges.
+            // then will edit the theta image for the values that are 
+            // significant in the mask and have theta values near horizontal or 
+            // vertical.  Because those gradientXs or gradientYs are below 
+            // resolution (which is 2.35 * approxProcessedSigma) they are all 
+            // orthogonal to their real values.
+            
+            // nms should be improved after that change.
+            
+            // for the junctions that get removed during nms, will make one
+            // more pre-step to using nms.
+            // will use hough transforms to find lines and hence junctions
+            // of lines at least and explore other means to 
+            // add junctions to a set of points that should not be removed
+            // during nms.
+            
+            /*GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
+            
+            apply2LayerFilter(filterProducts);
+            
+            GreyscaleImage theta = filterProducts.getTheta().copyImage();
+            
+            GreyscaleImage gXYMask = filterProducts.getGradientXY();
+            
+            // correct theta values below resolution
+            // note that any real horizontal lines get value 180 to leave 0's as is.
+            correctThetaBelowResolution(theta, gXYMask, 
+                filterProducts.getGradientX(), filterProducts.getGradientY(),
+                approxProcessedSigma);
+            
+            exploreHoughTransforms(gXY0, filterProducts.getGradientXY(), theta);
+            */
         }
-        
+                
         //(4) adaptive 2 layer filter                        
         apply2LayerFilter(filterProducts);
-
+                
         input.resetTo(filterProducts.getGradientXY());
         
         // is this necessary?
@@ -451,6 +523,20 @@ public class CannyEdgeFilterAdaptive {
         // the theta is in range 0 to 360
         theta = imageProcessor.computeTheta360_0(gX, gY);
         
+        if (debug) {
+            // when replace the aspect library, put these renders in the 
+            //   equivalent replaceet
+            long ts = MiscDebug.getCurrentTimeFormatted();
+            MiscDebug.writeImage(theta, "_theta_" + ts);
+            MiscDebug.writeImage(gX, "_gX_" + ts);
+            MiscDebug.writeImage(gY, "_gY_" + ts);
+            
+            int x = 123; int y = 184;
+            System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
+                + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
+                theta.getValue(x, y));
+        }
+        
         EdgeFilterProducts efp = new EdgeFilterProducts();
         efp.setGradientX(gX);
         efp.setGradientY(gY);
@@ -460,6 +546,13 @@ public class CannyEdgeFilterAdaptive {
         return efp;
     }
 
+    /**
+     * note, uses small gaussian, so should only be used when very little or
+     * no smoothing has occurred (line drawings, for example might be best
+     * handled with this and no smoothing).
+     * @param img
+     * @return 
+     */
     protected EdgeFilterProducts createDiffOfGaussians(final GreyscaleImage img) {
         
         GreyscaleImage gX, gY, g, theta;
@@ -528,11 +621,11 @@ public class CannyEdgeFilterAdaptive {
         then correct for double lines and then replace lost junctions using
         the copied gradient image for a reference.
         */
-        
+                
         GreyscaleImage theta = filterProducts.getTheta();
         
         GreyscaleImage img = filterProducts.getGradientXY();
-        
+                   
         int n = img.getNPixels();
         
         int w = img.getWidth();
@@ -594,10 +687,29 @@ public class CannyEdgeFilterAdaptive {
             if ((v < v1) || (v < v2)) {
                 img.setValue(x, y, 0);
             }
+            
         }
-        
+                
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         curveHelper.additionalThinning45DegreeEdges2(theta, img);
     }
-    
+
+    private void exploreHoughTransforms(GreyscaleImage gXY0,
+        GreyscaleImage gradientXYMask, GreyscaleImage theta) {
+        
+        int n = theta.getNPixels();
+        int w = theta.getWidth();
+        int h = theta.getHeight();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = 0; i < n; ++i) {
+            if (gradientXYMask.getValue(i) > 0) {
+                points.add(new PairInt(theta.getCol(i), theta.getRow(i)));
+            }
+        }
+        
+        // not finished
+    }
+
 }

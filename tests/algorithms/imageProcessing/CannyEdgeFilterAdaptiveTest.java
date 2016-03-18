@@ -19,25 +19,26 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         
         Set<String> testFiles = new HashSet<String>();
         testFiles.add("blox.gif");
-        testFiles.add("house.gif");
-        testFiles.add("lab.gif");
+        //testFiles.add("two_circles_color.png");
+        //testFiles.add("house.gif");
+        /*testFiles.add("lab.gif");
         testFiles.add("africa2.png");
         testFiles.add("susan-in.gif");
         testFiles.add("valve_gaussian.png");
         testFiles.add("lena.jpg");
         testFiles.add("android_statues_01.jpg");
         testFiles.add("android_statues_04.jpg");
-        testFiles.add("checkerboard_01.jpg");
+        testFiles.add("checkerboard_01.jpg");*/
         
         for (String fileName : testFiles) {
-                        
+            
             String filePath = ResourceFinder.findFileInTestResources(fileName);
             
             int idx = fileName.lastIndexOf(".");
             String fileNameRoot = fileName.substring(0, idx);
             
             log.info("fileName=" + fileName);
-                        
+          
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             
             GreyscaleImage gsImg = img.copyToGreyscale();
@@ -45,8 +46,10 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
             //filter.setToNotUseNonMaximumSuppression();
             //filter.setToPerformHistogramEqualization();
+            //filter.setOtsuScaleFactor(0.2f);
             //filter.override2LayerFactorBelowHighThreshold(10.f);
             //filter.overrideDefaultNumberOfLevels(16);
+            filter.setToDebug();
             filter.applyFilter(gsImg);
             
             for (int i = 0; i < gsImg.getNPixels(); ++i) {

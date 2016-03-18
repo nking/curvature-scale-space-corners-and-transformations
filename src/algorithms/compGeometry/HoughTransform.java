@@ -3,6 +3,7 @@ package algorithms.compGeometry;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.features.IntensityFeatures;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
@@ -261,6 +262,75 @@ public class HoughTransform {
         }
         
         return trLists;
+    }
+    
+    /**
+     * given the theta values and a set of point coordinates, returns a map
+     * of the angle and distance from the image origin.
+     * For example, a horizontal line in the theta image has value 90.
+     * The distance of the horizontal line from the origin is it's y value
+     * (y * sin theta).
+     * 
+     * @param points
+     * @param theta360
+     * @return 
+     */
+    public Map<PairInt, PairInt> calculatehHoughTransforms(
+        Set<PairInt> points, GreyscaleImage theta360) {
+        
+        // theta is 0 to 360
+        Map<Integer, Double> cosineMap = Misc.getCosineThetaMapForTwoPI();
+        Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
+                        
+        Map<PairInt, PairInt> pointTRMap = new HashMap<PairInt, PairInt>();
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                
+        for (PairInt p : points) {
+        
+            int x = p.getX();
+            int y = p.getY();
+            int t = theta360.getValue(x, y);
+           
+            Integer theta = Integer.valueOf(t);
+
+            double ct = cosineMap.get(theta).doubleValue();
+            double st = sineMap.get(theta).doubleValue();
+
+            double r = (x * ct) + (y * st);
+
+            if (r < 0) {
+                r *= -1;
+            }
+
+            PairInt pTR = new PairInt(t, (int) Math.round(r));
+
+            pointTRMap.put(p, pTR);
+        }
+        
+        return pointTRMap;
+    }
+    
+    /**
+     * given the theta values and a set of point coordinates, 
+     * finds contiguous groups of points with the same theta and distance
+     * from origin and returns them as lists of contiguous sets of such
+     * points.
+     * 
+     * should be able to find where the lines connect too as unassigned 
+     * adjacent points to the line sets that have values in between
+     * two lines... that will be another method
+     * 
+     * not yet implemented.
+     * 
+     * @param points
+     * @param theta360
+     * @return 
+     */
+    public List<Set<PairInt>> findContiguousLines(Set<PairInt> points, 
+        GreyscaleImage theta360) {
+        
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     /**
