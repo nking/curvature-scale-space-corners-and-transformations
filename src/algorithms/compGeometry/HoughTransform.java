@@ -4,7 +4,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.features.IntensityFeatures;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
@@ -17,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * a class for Hough transforms of simple geometric shapes.  currently a line
@@ -329,6 +326,14 @@ public class HoughTransform {
      */
     public List<Set<PairInt>> findContiguousLines(Set<PairInt> points, 
         GreyscaleImage theta360) {
+        
+        Map<PairInt, PairInt> pointTRMap = calculatehHoughTransforms(
+            points, theta360);
+        
+        DFSSimilarThetaRadiusGroupsFinder finder = 
+            new DFSSimilarThetaRadiusGroupsFinder();
+        
+        
         
         throw new UnsupportedOperationException("not yet implemented");
     }

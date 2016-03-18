@@ -1,10 +1,12 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.HoughTransform;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -189,7 +191,6 @@ public class CannyEdgeFilterAdaptive {
         }
         
         //(2) create gradient
-        EdgeFilterProducts filterProducts;
         if (lineDrawingMode) {
             // uses a difference of 2 binomial filters of very small sizes
             filterProducts = createDiffOfGaussians(input);
@@ -207,7 +208,7 @@ public class CannyEdgeFilterAdaptive {
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
-            
+                        
             applyNonMaximumSuppression(filterProducts);
             
             // trying a pattern of running the remaining steps w/o nms to make
@@ -228,7 +229,8 @@ public class CannyEdgeFilterAdaptive {
             // add junctions to a set of points that should not be removed
             // during nms.
             
-            /*GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
+            /*
+            GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
             
             apply2LayerFilter(filterProducts);
             
@@ -236,14 +238,31 @@ public class CannyEdgeFilterAdaptive {
             
             GreyscaleImage gXYMask = filterProducts.getGradientXY();
             
+            
             // correct theta values below resolution
             // note that any real horizontal lines get value 180 to leave 0's as is.
             correctThetaBelowResolution(theta, gXYMask, 
                 filterProducts.getGradientX(), filterProducts.getGradientY(),
                 approxProcessedSigma);
             
-            exploreHoughTransforms(gXY0, filterProducts.getGradientXY(), theta);
+            MiscDebug.writeImage(theta, "_theta_AFTER_");
+            
+            int n = gXY0.getNPixels();
+            
+            for (int i = 0; i < n; ++i) {
+                if (gXYMask.getValue(i) == 0) {
+                    gXY0.setValue(i, 0);
+                }
+            }
+            
+            filterProducts.getGradientXY().resetTo(gXY0);
+            
+            exploreHoughTransforms(filterProducts.getGradientXY(), theta);
+            
+            applyNonMaximumSuppression(filterProducts);
             */
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_NMS_");
+                        
         }
                 
         //(4) adaptive 2 layer filter                        
@@ -525,13 +544,13 @@ public class CannyEdgeFilterAdaptive {
         
         if (debug) {
             // when replace the aspect library, put these renders in the 
-            //   equivalent replaceet
+            //   equivalent replacement
             long ts = MiscDebug.getCurrentTimeFormatted();
             MiscDebug.writeImage(theta, "_theta_" + ts);
             MiscDebug.writeImage(gX, "_gX_" + ts);
             MiscDebug.writeImage(gY, "_gY_" + ts);
             
-            int x = 123; int y = 184;
+            int x = 37; int y = 163;
             System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
                 + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
                 theta.getValue(x, y));
@@ -613,15 +632,9 @@ public class CannyEdgeFilterAdaptive {
 
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts) {
         
-        /*
-        TODO:
-        in order to reduce effects of double lines due to blurring before and 
-        during edge creation,
-        may want to copy the gradient image, then apply nms to the gradient,
-        then correct for double lines and then replace lost junctions using
-        the copied gradient image for a reference.
-        */
-                
+        int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
+        int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
+        
         GreyscaleImage theta = filterProducts.getTheta();
         
         GreyscaleImage img = filterProducts.getGradientXY();
@@ -630,7 +643,7 @@ public class CannyEdgeFilterAdaptive {
         
         int w = img.getWidth();
         int h = img.getHeight();
-                
+        
         /*
          *           Y
          *          90
@@ -641,61 +654,86 @@ public class CannyEdgeFilterAdaptive {
          *    225    |   315
          *          270
         */
-        for (int i = 0; i < n; ++i) {
+        for (int x = 1; x < (w - 1); ++x) {
+            for (int y = 1; y < (h - 1); ++y) {
             
-            int x = theta.getCol(i);
-            int y = theta.getRow(i);
-            if ((x == 0) || (y == 0) || (x == (w - 1)) || (y == (h - 1))) {
-                continue;
-            }
-            
-            int t = theta.getValue(i);
-         
-            int compDx1, compDy1, compDx2, compDy2;
+                int pixIdx = theta.getInternalIndex(x, y);
+           
+                int t = theta.getValue(pixIdx);
 
-            if ((t < 23) || (t > 337) || ((t > 157) && (t < 203))) {
-                // in range of +0 or +180
-                compDx1 = 1;
-                compDy1 = 0;
-                compDx2 = -1;
-                compDy2 = 0;
-            } else if (((t > 22) && (t < 68)) || ((t > 202) && (t < 248))) {
-                // in range of +45 or +225
-                compDx1 = 1;
-                compDy1 = 1;
-                compDx2 = -1;
-                compDy2 = -1;
-            } else if (((t > 67) && (t < 113)) || ((t > 247) && (t < 293))) {
-                // in range of +90 or +270
-                compDx1 = 1;
-                compDy1 = 1;
-                compDx2 = -1;
-                compDy2 = -1;
-            } else { //if (((t > 112) && (t < 158)) || ((t > 292) && (t < 338))) {
-                // in range of +135 or +315
-                compDx1 = -1;
-                compDy1 = 1;
-                compDx2 = 1;
-                compDy2 = -1;
-            }
-            
-            int v = img.getValue(x, y);
-            
-            int v1 = img.getValue(x + compDx1, y + compDy1);
-            int v2 = img.getValue(x + compDx2, y + compDy2);
-            
-            if ((v < v1) || (v < v2)) {
-                img.setValue(x, y, 0);
-            }
-            
-        }
+                int compDx1, compDy1, compDx2, compDy2;
                 
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        curveHelper.additionalThinning45DegreeEdges2(theta, img);
-    }
+                // angles within minResolvableAngle of horizontal or vertical
+                // are orthogonal to the pattern present for other pixels
+                
+                if ((Math.abs(t - 0) < minResolvableAngle) || 
+                    (Math.abs(180 - t) < minResolvableAngle) || 
+                    (Math.abs(360 - t) < minResolvableAngle)) {
+                    // measured 0 or 180, but should be 90 or 270
+                    compDx1 = 1;
+                    compDy1 = 0;
+                    compDx2 = -1;
+                    compDy2 = 0;
+                } else if ((Math.abs(90 - t) < minResolvableAngle) ||
+                    (Math.abs(270 - t) < minResolvableAngle) ) {
+                    // measured 90 or 270, but should be 0 or 180
+                    compDx1 = 0;
+                    compDy1 = 1;
+                    compDx2 = 0;
+                    compDy2 = -1;
+                } else if ((Math.abs(t - 90) < 22.5) || 
+                    (Math.abs(270 - t) < 22.5)) {
+                    // is within 45 degree cone centered at 90 or 270
+                    compDx1 = 0;
+                    compDy1 = 1;
+                    compDx2 = 0;
+                    compDy2 = -1;
+                } else if ((Math.abs(t - 0) < 22.5) ||
+                    (Math.abs(180 - t) < 22.5) | (Math.abs(360 - t) < 22.5)) {
+                    // is within 45 degree cone centered at 0 or 180
+                    compDx1 = -1;
+                    compDy1 = 0;
+                    compDx2 = 1;
+                    compDy2 = 0;
+                } else if ((Math.abs(t - 45) < 22.5) || 
+                    (Math.abs(225 - t) < 22.5)) {
+                    // is within 45 degree cone centered at 45 or 225
+                    compDx1 = 1; 
+                    compDy1 = 1;
+                    compDx2 = -1;
+                    compDy2 = -1;
+                } else if ((Math.abs(t - 135) < 22.5) || 
+                    (Math.abs(315 - t) < 22.5)) {
+                    // is within 45 degree cone centered at 135 or 315
+                    compDx1 = -1; 
+                    compDy1 = 1;
+                    compDx2 = 1;
+                    compDy2 = -1;
+                } else {
+                    throw new IllegalStateException("Error in algorithm bounds: " 
+                        +  " t=" + t);
+                }
 
-    private void exploreHoughTransforms(GreyscaleImage gXY0,
-        GreyscaleImage gradientXYMask, GreyscaleImage theta) {
+                int v = img.getValue(x, y);
+            
+                int v1 = img.getValue(x + compDx1, y + compDy1);
+                int v2 = img.getValue(x + compDx2, y + compDy2);
+            
+                if ((v < v1) || (v < v2)) {
+                   img.setValue(x, y, 0);
+               }
+            }
+        }
+           
+        // because minResolvableAngle for default settings is smaller than 45/2., 
+        // the resolution correction is usually not necessary, but does no
+        // harm to include it 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        curveHelper.additionalThinning45DegreeEdges2(theta, img, minResolvableAngle);
+    }
+    
+    private void exploreHoughTransforms(GreyscaleImage gradientXYMasked, 
+        GreyscaleImage theta) {
         
         int n = theta.getNPixels();
         int w = theta.getWidth();
@@ -704,12 +742,92 @@ public class CannyEdgeFilterAdaptive {
         Set<PairInt> points = new HashSet<PairInt>();
         
         for (int i = 0; i < n; ++i) {
-            if (gradientXYMask.getValue(i) > 0) {
+            if (gradientXYMasked.getValue(i) > 0) {
                 points.add(new PairInt(theta.getCol(i), theta.getRow(i)));
             }
         }
         
+        HoughTransform ht = new HoughTransform();
+        List<Set<PairInt>> lines = ht.findContiguousLines(points, theta);
+        
         // not finished
+    }
+
+    private void correctThetaBelowResolution(GreyscaleImage theta, 
+        GreyscaleImage gXYMask, GreyscaleImage gradientX, 
+        GreyscaleImage gradientY, double theApproxProcessedSigma) {
+        
+        int minResolution = (int)Math.ceil(2.35 * theApproxProcessedSigma);
+        int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
+        
+        int n = theta.getNPixels();
+        int w = theta.getWidth();
+        int h = theta.getHeight();
+        
+        int mr = (int)Math.ceil(this.approxProcessedSigma * 2.35);
+        Image tmp = new Image(theta.getWidth(), theta.getHeight());
+        for (int i = 0; i < n; ++i) {
+            
+            if (gXYMask.getValue(i) == 0) {
+                continue;
+            }
+            
+            int t = theta.getValue(i);
+
+            if (
+                (Math.abs(t - 0) < minResolvableAngle) || 
+                (Math.abs(180 - t) < minResolvableAngle) ||
+                (Math.abs(360 - t) < minResolvableAngle) ||
+                (Math.abs(90 - t) < minResolvableAngle) ||
+                (Math.abs(270 - t) < minResolvableAngle) ) {
+                
+                if ((Math.abs(filterProducts.getGradientX().getValue(i)) <= mr) || 
+                    (Math.abs(filterProducts.getGradientY().getValue(i)) <= mr)) {
+                    
+                    tmp.setRGB(i, 255, 0, 0);
+                    
+                    System.out.println("   orthogonal? (" + theta.getCol(i) + "," +
+                        theta.getRow(i) + ") t=" + t);
+                    
+                } else {
+                    
+                    System.out.println("** orthogonal? (" + theta.getCol(i) + "," +
+                        theta.getRow(i) + ") t=" + t);
+
+                    tmp.setRGB(i, 0, 255, 0);
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(tmp, "_gXY_BELOW_RESOLUTION_");
+        
+        for (int i = 0; i < n; ++i) {
+            
+            if (gXYMask.getValue(i) == 0) {
+                continue;
+            }
+            
+            int t = theta.getValue(i);
+            
+            if (
+                (Math.abs(t - 0) < minResolvableAngle) || 
+                (Math.abs(180 - t) < minResolvableAngle) ||
+                (Math.abs(360 - t) < minResolvableAngle) ||
+                (Math.abs(90 - t) < minResolvableAngle) ||
+                (Math.abs(270 - t) < minResolvableAngle) ) {
+                
+                int t1 = t - 90;
+                int t2 = t + 90;
+                if (t1 > minResolvableAngle) {
+                    theta.setValue(i, t1);
+                } else if (t2 < (360 - minResolvableAngle)) {
+                    theta.setValue(i, t2);
+                } else {
+                    throw new IllegalStateException("Error in algorithm.  theta="
+                        + t);
+                }
+            }            
+        }
     }
 
 }

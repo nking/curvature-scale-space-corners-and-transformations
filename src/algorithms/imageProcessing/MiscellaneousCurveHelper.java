@@ -322,6 +322,122 @@ public class MiscellaneousCurveHelper {
             }
         }
     }
+    
+    /**
+     * thin a line that is the product in a canny edge detector, given
+     * a theta image which has values between 0 and 360.
+     * @param theta3602
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
+        GreyscaleImage theta3602, GreyscaleImage input, double minResolvableAngle) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+        for (int i = 1; i < (input.getWidth() - 1); i++) {
+            for (int j = 1; j < (input.getHeight() - 1); j++) {
+                
+                if (input.getValue(i, j) == 0) {
+                    continue;
+                }
+                
+                int t = theta3602.getValue(i, j);
+                
+                if ((Math.abs(t - 0) < minResolvableAngle) || 
+                    (Math.abs(180 - t) < minResolvableAngle) || 
+                    (Math.abs(360 - t) < minResolvableAngle)) {
+                    // measured 0 or 180, but should be 90 or 270
+                    t = 90;
+                } else if ((Math.abs(90 - t) < minResolvableAngle) ||
+                    (Math.abs(270 - t) < minResolvableAngle) ) {
+                    // measured 90 or 270, but should be 0 or 180
+                    t = 180;
+                }
+
+                int tG = convert360To45RefFrame(t);
+
+                if ((tG == 45) || (tG == -45)) {
+
+                    int tH0 = theta3602.getValue(i - 1, j);
+                    int tH1 = theta3602.getValue(i + 1, j);
+                    int tV0 = theta3602.getValue(i, j - 1);
+                    int tV1 = theta3602.getValue(i, j + 1);
+                    
+                    if ((Math.abs(tH0 - 0) < minResolvableAngle)
+                        || (Math.abs(180 - tH0) < minResolvableAngle)
+                        || (Math.abs(360 - tH0) < minResolvableAngle)) {
+                        // measured 0 or 180, but should be 90 or 270
+                        tH0 = 90;
+                    } else if ((Math.abs(90 - tH0) < minResolvableAngle)
+                        || (Math.abs(270 - tH0) < minResolvableAngle)) {
+                        // measured 90 or 270, but should be 0 or 180
+                        tH0 = 180;
+                    }
+                    if ((Math.abs(tH1 - 0) < minResolvableAngle)
+                        || (Math.abs(180 - tH1) < minResolvableAngle)
+                        || (Math.abs(360 - tH1) < minResolvableAngle)) {
+                        // measured 0 or 180, but should be 90 or 270
+                        tH1 = 90;
+                    } else if ((Math.abs(90 - tH1) < minResolvableAngle)
+                        || (Math.abs(270 - tH1) < minResolvableAngle)) {
+                        // measured 90 or 270, but should be 0 or 180
+                        tH1 = 180;
+                    }
+                    if ((Math.abs(tV0 - 0) < minResolvableAngle)
+                        || (Math.abs(180 - tV0) < minResolvableAngle)
+                        || (Math.abs(360 - tV0) < minResolvableAngle)) {
+                        // measured 0 or 180, but should be 90 or 270
+                        tV0 = 90;
+                    } else if ((Math.abs(90 - tV0) < minResolvableAngle)
+                        || (Math.abs(270 - tV0) < minResolvableAngle)) {
+                        // measured 90 or 270, but should be 0 or 180
+                        tV0 = 180;
+                    }
+                    if ((Math.abs(tV1 - 0) < minResolvableAngle)
+                        || (Math.abs(180 - tV1) < minResolvableAngle)
+                        || (Math.abs(360 - tV1) < minResolvableAngle)) {
+                        // measured 0 or 180, but should be 90 or 270
+                        tV1 = 90;
+                    } else if ((Math.abs(90 - tV1) < minResolvableAngle)
+                        || (Math.abs(270 - tV1) < minResolvableAngle)) {
+                        // measured 90 or 270, but should be 0 or 180
+                        tV1 = 180;
+                    }
+                    
+                    tH0 = convert360To45RefFrame(tH0);
+                    tH1 = convert360To45RefFrame(tH1);
+                    tV0 = convert360To45RefFrame(tV0);
+                    tV1 = convert360To45RefFrame(tV1);
+                    
+                    int gH0 = input.getValue(i - 1, j);
+                    int gH1 = input.getValue(i + 1, j);
+                    int gV0 = input.getValue(i, j - 1);
+                    int gV1 = input.getValue(i, j + 1);
+
+                    if ((tH0 == tG) && (gH0 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    } else if ((tH1 == tG) && (gH1 > 0)) {
+                        if ((tV0 == tG) && (gV0 > 0)) {
+                            input.setValue(i, j, 0);
+                        } else if ((tV1 == tG) && (gV1 > 0)) {
+                            input.setValue(i, j, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
      /**
      * this is a method to combine and prune adjacent lines, but

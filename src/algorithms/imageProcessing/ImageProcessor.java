@@ -421,7 +421,23 @@ public class ImageProcessor {
     }
     
     /**
-     * calculate theta, transforming values from -pi to pi to range 0 to 2*pi.
+     * calculate theta, transforming values from -pi to pi to range 0 to 360.
+     * Note that the value of theta for pixel with gradientX or gradientY 
+     * smaller than the resolution of the data (FWHM of PSF) is actually
+     * orthogonal to it's real value, so those need to be interpreted
+     * differently.
+     * To calculate the minimum resolvable angle, combine the sigmas in
+     * quadrature for all stages used to create the gradients.
+     * For example, a blur using sigma=1 followed by a gradient using
+     * sigma sqrt(1)/2 results in a sigma of
+     * sqrt( (1*1) + (sqrt(1)/2)*(sqrt(1)/2) ).  The FWHM of the combined
+     * operations is then approx 2.35 * sigma, so that's 3 pixels.
+     * The minimum resolvable angle is then math.atan2(1, 3)*180./Math.PI is 
+     * 18.4 degrees for this example, so any theta within 19 degrees of 
+     * horizontal or vertical where there is signal in the image, has to be 
+     * corrected by 90 degrees.
+     * Such correction isn't made here to allow the method to be used without
+     * such knowledge.
      * <pre>
      *           Y
      *          90
