@@ -487,6 +487,7 @@ public class CannyEdgeFilterAdaptive {
                     0, 0);
 
             for (PairIntWithIndex p : removedDisconnecting) {
+                
                 if (ImageSegmentation.doesDisconnect(gradientXY,
                     neighborCoordOffsets, p.getX(), p.getY())) {
 
@@ -500,6 +501,15 @@ public class CannyEdgeFilterAdaptive {
                     }
 
                     if (p.getPixIndex() > tLow) {
+                        
+                        /*
+                        TODO:
+                        check that at least one of the disconnected edges is a straight
+                        vertical or horizontal line.
+                        goal is to avoid filling in diagonal lines that were
+                        thinned
+                        */
+                        
                         gradientXY.setValue(x, y, 255);                    
                     }
                 }
