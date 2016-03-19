@@ -19,16 +19,16 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         
         Set<String> testFiles = new HashSet<String>();
         testFiles.add("blox.gif");
-        //testFiles.add("two_circles_color.png");
-        //testFiles.add("house.gif");
-        /*testFiles.add("lab.gif");
+        testFiles.add("two_circles_color.png");
+        testFiles.add("house.gif");
+        testFiles.add("lab.gif");
         testFiles.add("africa2.png");
         testFiles.add("susan-in.gif");
         testFiles.add("valve_gaussian.png");
         testFiles.add("lena.jpg");
         testFiles.add("android_statues_01.jpg");
         testFiles.add("android_statues_04.jpg");
-        testFiles.add("checkerboard_01.jpg");*/
+        testFiles.add("checkerboard_01.jpg");
         
         for (String fileName : testFiles) {
             
@@ -49,6 +49,9 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             //filter.setOtsuScaleFactor(0.2f);
             //filter.override2LayerFactorBelowHighThreshold(10.f);
             //filter.overrideDefaultNumberOfLevels(16);
+            if (fileName.contains("africa")) {
+                filter.setToUseLineDrawingMode();
+            }
             filter.setToDebug();
             filter.applyFilter(gsImg);
             

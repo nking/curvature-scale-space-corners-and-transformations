@@ -43,15 +43,15 @@ import java.util.Set;
  * For the Lena test image for example, one might prefer only the brightest
  * edges, so use a higher setting than the default.
  * 
- * Only partially implemented is an option for operating on images that
- * are line drawings.
- * The ability to choose a difference of small gaussians to make the gradient
- * is useful in that case.  The smoothing option will be turned off for it automatically.
- * For now, using difference of gaussian is not 
- * recommended and will be replaced with a setting for "line drawings".
+ * The "line drawing mode" is present as a convenience method to process images
+ * that are somewhat thin line drawings for the case when the user needs
+ * the theta image for example.  If only the edges are needed, it would be faster
+ * for the user to use 
+ *     ImageProcessor.applyAdaptiveMeanThresholding(mask, 1);
+ *     followed by
+ *     ZhangSuenLineThinner.applyFilter(filterProducts.getGradientXY());
  * </pre>
- * Not ready for use yet... may improve the line thinning, and need to 
- * finish the "line drawing" mode.
+ * Not ready for use yet...
  * 
  * @author nichole
  */
@@ -170,41 +170,75 @@ public class CannyEdgeFilterAdaptive {
             hEq.applyFilter();
         }
         
-        // (1) smooth image using separable binomial filters
-        if (!lineDrawingMode) {
-            SIGMA sigma = SIGMA.ONE;
-            if (sigma.equals(SIGMA.ONE)) {
-                ATrousWaveletTransform at = new ATrousWaveletTransform();
-                GreyscaleImage smoothed = at.smoothToSigmaOne(input);
-                input.resetTo(smoothed);
-                approxProcessedSigma = 1;
-            } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
-                ATrousWaveletTransform at = new ATrousWaveletTransform();
-                GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
-                input.resetTo(smoothed);
-                approxProcessedSigma = Math.sqrt(2.)/2.;
-            } else {
-                ImageProcessor imageProcessor = new ImageProcessor();
-                imageProcessor.blur(input, sigma, 0, 255);
-                approxProcessedSigma = SIGMA.getValue(sigma);
-            }
-        }
-        
-        //(2) create gradient
         if (lineDrawingMode) {
-            // uses a difference of 2 binomial filters of very small sizes
+            otsuScaleFactor = 1.0f;
+            apply2LayerFilter(input);
+            if (debug) {
+                MiscDebug.writeImage(input, "_after_2_layer_");
+            }
+            GreyscaleImage mask = input.copyImage();
+            for (int i = 0; i < input.getNPixels(); ++i) {
+                int v = mask.getValue(i);
+                mask.setValue(i, 255 - v);
+            }                
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.applyAdaptiveMeanThresholding(mask, 1);
+            for (int i = 0; i < mask.getNPixels(); ++i) {
+                int v = mask.getValue(i);
+                if (v == 255) {
+                    input.setValue(i, 0);
+                }
+                mask.setValue(i, 255 - v);
+            }
+            if (debug) {
+                MiscDebug.writeImage(input, "_adapt_masked_");
+            }
+            
             filterProducts = createDiffOfGaussians(input);
             approxProcessedSigma = Math.sqrt(
                 approxProcessedSigma*approxProcessedSigma + (0.678*0.678));
-        } else {
-            // uses a binomial filter for a first derivative gradient, sobel.
-            filterProducts = createGradient(input);
             
-            approxProcessedSigma = Math.sqrt(
-                approxProcessedSigma*approxProcessedSigma + (1./4.));
+            if (debug) {
+                MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_");
+                MiscDebug.writeImage(filterProducts.getTheta(), "_theta_");
+            }
+            
+            filterProducts.getGradientXY().resetTo(mask);
+            
+            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+            lt.applyFilter(filterProducts.getGradientXY());
+            
+            input.resetTo(filterProducts.getGradientXY());
+            
+            return;
         }
         
-//MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
+        // (1) smooth image using separable binomial filters
+        SIGMA sigma = SIGMA.ONE;
+        if (sigma.equals(SIGMA.ONE)) {
+            ATrousWaveletTransform at = new ATrousWaveletTransform();
+            GreyscaleImage smoothed = at.smoothToSigmaOne(input);
+            input.resetTo(smoothed);
+            approxProcessedSigma = 1;
+        } else if (sigma.equals(SIGMA.ZEROPOINTSEVENONE)) {
+            ATrousWaveletTransform at = new ATrousWaveletTransform();
+            GreyscaleImage smoothed = at.smoothToSigmaZeroPointSevenOne(input);
+            input.resetTo(smoothed);
+            approxProcessedSigma = Math.sqrt(2.)/2.;
+        } else {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.blur(input, sigma, 0, 255);
+            approxProcessedSigma = SIGMA.getValue(sigma);
+        }
+        
+        //(2) create gradient
+        // uses a binomial filter for a first derivative gradient, sobel.
+        filterProducts = createGradient(input);
+
+        approxProcessedSigma = Math.sqrt(
+            approxProcessedSigma*approxProcessedSigma + (1./4.));
+        
+MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
@@ -266,7 +300,7 @@ public class CannyEdgeFilterAdaptive {
         }
                 
         //(4) adaptive 2 layer filter                        
-        apply2LayerFilter(filterProducts);
+        apply2LayerFilter(filterProducts.getGradientXY());
                 
         input.resetTo(filterProducts.getGradientXY());
         
@@ -303,12 +337,11 @@ public class CannyEdgeFilterAdaptive {
        The threshold is determined adaptively using Otsu's multilevel threshold
         calculation.
     */
-    protected void apply2LayerFilter(final EdgeFilterProducts edgeProducts) {
+    protected void apply2LayerFilter(final GreyscaleImage gradientXY) {
         
-        GreyscaleImage input = edgeProducts.getGradientXY();
-        int n = input.getNPixels();
-        int w = input.getWidth();
-        int h = input.getHeight();
+        int n = gradientXY.getNPixels();
+        int w = gradientXY.getWidth();
+        int h = gradientXY.getHeight();
         
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
@@ -320,7 +353,7 @@ public class CannyEdgeFilterAdaptive {
         
         int[] pixelThresholds = null;
         if (useAdaptive2Layer && (nLevels > 1)) {
-            pixelThresholds = ot.calculateMultiLevelThreshold256(input, nLevels);
+            pixelThresholds = ot.calculateMultiLevelThreshold256(gradientXY, nLevels);
         }
         
         int[] dxs = Misc.dx8;
@@ -360,13 +393,13 @@ public class CannyEdgeFilterAdaptive {
         float tHigh = 0;
         float tLow = 0;
         if (!useAdaptive2Layer || (nLevels == 1)) {
-            tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(input);
+            tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(gradientXY);
             tLow = tHigh/factorBelowHighThreshold;
         }
         
-        GreyscaleImage img2 = input.createWithDimensions();
+        GreyscaleImage img2 = gradientXY.createWithDimensions();
         
-        for (int i = 0; i < input.getNPixels(); ++i) {
+        for (int i = 0; i < gradientXY.getNPixels(); ++i) {
             
             if (useAdaptive2Layer && (nLevels > 1)) {
                 
@@ -375,7 +408,7 @@ public class CannyEdgeFilterAdaptive {
                 tLow = tHigh/factorBelowHighThreshold;
             }
             
-            int v = input.getValue(i);
+            int v = gradientXY.getValue(i);
             
             if (v < tLow) {
                 continue;
@@ -384,8 +417,8 @@ public class CannyEdgeFilterAdaptive {
                 continue;
             }
             
-            int x = input.getCol(i);
-            int y = input.getRow(i);
+            int x = gradientXY.getCol(i);
+            int y = gradientXY.getRow(i);
             
             boolean foundHigh = false;
             boolean foundMid = false;
@@ -396,7 +429,7 @@ public class CannyEdgeFilterAdaptive {
                 if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
                     continue;
                 }
-                int v2 = input.getValue(x2, y2);
+                int v2 = gradientXY.getValue(x2, y2);
                 if (v2 > tHigh) {
                     foundHigh = true;
                     break;
@@ -425,7 +458,7 @@ public class CannyEdgeFilterAdaptive {
                     if (x2 == x && y2 == y) {
                         continue;
                     }
-                    int v2 = input.getValue(x2, y2);
+                    int v2 = gradientXY.getValue(x2, y2);
                     if (v2 > tHigh) {
                         img2.setValue(i, v);
                         foundHigh = true;
@@ -438,7 +471,7 @@ public class CannyEdgeFilterAdaptive {
             }
         }
 
-        input.resetTo(img2);
+        gradientXY.resetTo(img2);
     }
     
     /**
@@ -549,11 +582,11 @@ public class CannyEdgeFilterAdaptive {
             MiscDebug.writeImage(theta, "_theta_" + ts);
             MiscDebug.writeImage(gX, "_gX_" + ts);
             MiscDebug.writeImage(gY, "_gY_" + ts);
-            
+            /*
             int x = 37; int y = 163;
             System.out.println("(" + x + ", " + y + ") math.atan2(" + gY.getValue(x, y)
                 + "," + gX.getValue(x, y) + ")*180./math.pi=" + 
-                theta.getValue(x, y));
+                theta.getValue(x, y));*/
         }
         
         EdgeFilterProducts efp = new EdgeFilterProducts();
