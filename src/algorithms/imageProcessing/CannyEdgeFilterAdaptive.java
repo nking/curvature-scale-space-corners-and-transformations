@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.HoughTransform;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
@@ -75,6 +76,8 @@ public class CannyEdgeFilterAdaptive {
     
     private boolean debug = false;
     
+    private boolean restoreJunctions = false;
+    
     /**
      * the sigma from the blur combined with the sigma present in the gradient
      * are present in this variable by the end of processing.
@@ -112,6 +115,15 @@ public class CannyEdgeFilterAdaptive {
     
     public void setToDebug() {
         debug = true;
+    }
+    
+    /**
+     * to enable more complete contours, use this to restore pixels that were
+     * removed during non-maximum suppression that disconnected edges and
+     * have values above the low threshold of the 2 layer adaptive filter.
+     */
+    public void setToRestoreJunctions() {
+        restoreJunctions = true;
     }
     
     public void setToUseLineDrawingMode() {
@@ -177,7 +189,7 @@ public class CannyEdgeFilterAdaptive {
         
         if (lineDrawingMode) {
             otsuScaleFactor = 1.0f;
-            apply2LayerFilter(input);
+            apply2LayerFilter(input, new HashSet<PairIntWithIndex>());
             if (debug) {
                 MiscDebug.writeImage(input, "_after_2_layer_");
             }
@@ -243,14 +255,16 @@ public class CannyEdgeFilterAdaptive {
         approxProcessedSigma = Math.sqrt(
             approxProcessedSigma*approxProcessedSigma + (1./4.));
         
-MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
+        //MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
+        
+        Set<PairIntWithIndex> removedDisconnecting = new HashSet<PairIntWithIndex>();
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
                         
             GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
              
-            applyNonMaximumSuppression(filterProducts);
+            applyNonMaximumSuppression(filterProducts, removedDisconnecting);
             
             // TODO:
             // the non-maximum suppression (nms) sometimes removes the ends
@@ -266,7 +280,7 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
             // edges, OR, consider post processing to reduce those.
             
             // to find the junctions, will explore hough transforms.
-            
+            /*
             GreyscaleImage gXY = filterProducts.getGradientXY();
                         
             apply2LayerFilter(gXY);
@@ -286,20 +300,21 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
             //MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_NMS_");
             
             //return;
+            */
         }
                 
         //(4) adaptive 2 layer filter                        
-        apply2LayerFilter(filterProducts.getGradientXY());
-                
-        input.resetTo(filterProducts.getGradientXY());
-        
+        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting);
+         
         // is this necessary?
-        for (int i = 0; i < input.getNPixels(); ++i) {
-            int v = input.getValue(i);
+        for (int i = 0; i < filterProducts.getGradientXY().getNPixels(); ++i) {
+            int v = filterProducts.getGradientXY().getValue(i);
             if (v < 0) {
-                input.setValue(i, 0);
+                filterProducts.getGradientXY().setValue(i, 0);
             }
         }
+                       
+        input.resetTo(filterProducts.getGradientXY());
     }
    
     /*
@@ -326,7 +341,8 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
        The threshold is determined adaptively using Otsu's multilevel threshold
         calculation.
     */
-    protected void apply2LayerFilter(final GreyscaleImage gradientXY) {
+    protected void apply2LayerFilter(final GreyscaleImage gradientXY,
+        Set<PairIntWithIndex> removedDisconnecting) {
         
         int n = gradientXY.getNPixels();
         int w = gradientXY.getWidth();
@@ -378,7 +394,7 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         only, and then a pattern of searching around it.
         TODO: write a second method for the later to try that too...
         */
-        
+                
         float tHigh = 0;
         float tLow = 0;
         if (!useAdaptive2Layer || (nLevels == 1)) {
@@ -461,6 +477,34 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         }
 
         gradientXY.resetTo(img2);
+        
+        if (restoreJunctions) {
+        
+            // while have information about the thresholds, will use them to
+            // make decisions about restoring pixels that disconnected edges.
+            PairInt[][] neighborCoordOffsets
+                = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+                    0, 0);
+
+            for (PairIntWithIndex p : removedDisconnecting) {
+                if (ImageSegmentation.doesDisconnect(gradientXY,
+                    neighborCoordOffsets, p.getX(), p.getY())) {
+
+                    int x = p.getX();
+                    int y = p.getY();
+                    int i = gradientXY.getIndex(x, y);
+
+                    if (useAdaptive2Layer && (nLevels > 1)) {
+                        tHigh = otsuScaleFactor * pixelThresholds[i];
+                        tLow = tHigh/factorBelowHighThreshold;
+                    }
+
+                    if (p.getPixIndex() > tLow) {
+                        gradientXY.setValue(x, y, 255);                    
+                    }
+                }
+            }
+        }
     }
     
     /**
@@ -652,7 +696,8 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         return g;
     }
 
-    private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts) {
+    private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
+        Set<PairIntWithIndex> disconnectingRemovals) {
         
         int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
         int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
@@ -665,6 +710,10 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         
         int w = img.getWidth();
         int h = img.getHeight();
+        
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+                0, 0);
         
         /*
          *           Y
@@ -742,11 +791,22 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
                 int v2 = img.getValue(x + compDx2, y + compDy2);
             
                 if ((v < v1) || (v < v2)) {
-                   img.setValue(x, y, 0);
-               }
+                    
+                    if (restoreJunctions) {
+                        boolean disconnects = ImageSegmentation.doesDisconnect(img,
+                            neighborCoordOffsets, x, y);
+
+                        if (disconnects) {
+                            PairIntWithIndex p = new PairIntWithIndex(x, y, v);
+                            disconnectingRemovals.add(p);
+                        }
+                    }
+                    
+                    img.setValue(x, y, 0);
+                }
             }
         }
-           
+        
         // because minResolvableAngle for default settings is smaller than 45/2., 
         // the resolution correction is usually not necessary, but does no
         // harm to include it 
