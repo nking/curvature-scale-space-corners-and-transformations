@@ -3,12 +3,18 @@ package algorithms.compGeometry;
 import algorithms.MultiArrayMergeSort;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
+import algorithms.imageProcessing.DFSConnectedGroupsFinder2;
+import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -264,9 +270,6 @@ public class HoughTransform {
     /**
      * given the theta values and a set of point coordinates, returns a map
      * of the angle and distance from the image origin.
-     * For example, a horizontal line in the theta image has value 90.
-     * The distance of the horizontal line from the origin is it's y value
-     * (y * sin theta).
      * 
      * @param points
      * @param theta360
@@ -280,17 +283,21 @@ public class HoughTransform {
         Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
                         
         Map<PairInt, PairInt> pointTRMap = new HashMap<PairInt, PairInt>();
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                 
         for (PairInt p : points) {
         
             int x = p.getX();
             int y = p.getY();
             int t = theta360.getValue(x, y);
+            
+            /*if ((t - 90) > 0) {
+                t -= 90;
+            } else if ((t + 90) < 360) {
+                t += 90;
+            }*/
            
             Integer theta = Integer.valueOf(t);
-
+            
             double ct = cosineMap.get(theta).doubleValue();
             double st = sineMap.get(theta).doubleValue();
 
@@ -309,6 +316,92 @@ public class HoughTransform {
     }
     
     /**
+     * given a set of points, search for contiguous lines within the points
+     * and return a map of the groups of points with value being their
+     * theta and radius.
+     * 
+     * not yet implemented.
+     * 
+     * @param points
+     * @return map with key = group of connected points having same theta and
+     * radius, value = pairint of the theta and radius for the group.
+     */
+    public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
+        int minimumGroupSize) {
+        
+        
+        
+        /*
+        for each point:
+             look at the 24 point neighborhood
+
+               2  2  2  2  2
+               2  1  1  1  2
+               2  1  @  1  2    test whether adjacent points fit patterns for:
+               2  1  1  1  2       0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5
+               2  2  2  2  2
+               *note, no radius calc is needed yet
+               store in 2 maps:  map<pairint, set<integer>> with key=x,y coordinates, value=set of derived theta
+                                 map<integer, set<pairint>> with key=theta value=set of points in that group that fit that.
+        
+        after visiting all points to build the 2 maps, analyze the maps.
+        
+        for each entry in the theta, set of points map
+        
+            make a stack out of the set of points and place into contiguous groups.
+
+            visit each of the contiguous groups within the current theta, radius:
+                store results in 2 ways:
+                     2 parallel lists: one holding the contiguous group of points, 
+                         the other holding the theta
+                     a map with key being the point x,y and value being a set of 
+                         indexes to the parallel list that the point belongs to.
+
+         when finished visiting all of the theta, points map:
+             sort the 2 parallel lists into descending number of points,
+                 (need to make an array to find the location of a list
+                 item by the original unsorted list index)
+             put the first list into a "decided" list of groups.
+                 - for each point in its group:
+                   - use the map to get the indexes to the groups it belongs in
+                   - remove the point from each group in the first list that the point is part of
+                   - remove the point's entry from the map
+              presumably, it is not necessary to resort the parallel lists.
+              if did need to re-sort those lists, would have to be careful
+              to update the lookup array from original list index to new indexes.
+        
+              continue through the list of groups until the size is smaller than
+                  minimumGroupSize.
+              check whether any more of the remaining groups are larger than
+                  minimumGroupSize 
+                  and if so:
+                  re-sort the lists and make sure the original list index 
+                      lookup array is updated.
+              
+           now have groups of contiguous points that have rough theta.
+        
+           the refined value for the theta could be done in many ways.
+               -- Theil Sen Estimator in my linear regression class.
+                  this method is nearly O(N^2) + 2*O(N*lg_2(N))
+               -- averaging the location of a few endpoints and determining
+                  the slope and hence theta from those.
+                  estimate the difference of point positions from the model
+                  and iterate over small changes to the theta to improve
+                  the fit.
+                  This method is O(N) times the number of iterations.
+                  Using a bisector pattern, the number of iterations should be
+                  small because the range is 22 degrees and would not expect
+                  accuracy better than 2 degrees or maybe higher 
+                      (0  *5.625  *11.25  *16.875  22.5)
+                  so that is 3 or 4 rounds of eval.
+                  --> 4 * O(N)
+                so would use the bisector pattern
+           then the distance of the line from the origin would be determined
+        */
+        throw new UnsupportedOperationException("not yet implmented");
+    }
+    
+    /**
      * given the theta values and a set of point coordinates, 
      * finds contiguous groups of points with the same theta and distance
      * from origin and returns them as lists of contiguous sets of such
@@ -318,24 +411,124 @@ public class HoughTransform {
      * adjacent points to the line sets that have values in between
      * two lines... that will be another method
      * 
-     * not yet implemented.
+     * unfortunately, this method is not returning the best of results because
+     * the angles in the theta map are determined from a very local 
+     * neighborhood when the gradient is made and so even a thinned line has
+     * a line with a large range in theta (as large as 20 degrees in a 
+     * straight line) and hence the radius calculations have a large range too.
+     * Instead, the user should prefer to use
+     * Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
+        int minimumGroupSize) 
+     * which has a larger factor times semi-linear runtime complexity, but the 
+     * results should be better.
      * 
      * @param points
      * @param theta360
-     * @return 
+     * 
+     * @return map with key = group of connected points having same theta and
+     * radius, value = pairint of the theta and radius for the group.
      */
-    public List<Set<PairInt>> findContiguousLines(Set<PairInt> points, 
+    public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points, 
         GreyscaleImage theta360) {
         
-        Map<PairInt, PairInt> pointTRMap = calculatehHoughTransforms(
-            points, theta360);
+        Map<PairInt, PairInt> pointTRMap = calculatehHoughTransforms(points, 
+            theta360);
         
-        DFSSimilarThetaRadiusGroupsFinder finder = 
-            new DFSSimilarThetaRadiusGroupsFinder();
+        /*
+        String[] fileNames = new String[]{"mask_01.png", "mask_02.png", 
+            "mask_03.png", "mask_04.png", "mask_05.png", "mask_06.png", 
+            "mask_07.png", "mask_08.png", "mask_09.png", "mask_10.png",
+            "mask_11.png", "mask_12.png"};
+        try {
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            for (String fileName : fileNames) {
+                 String filePath = ResourceFinder.getAFilePathInTmpData(fileName);
+                 GreyscaleImage mask = ImageIOHelper.readImageAsGreyscaleFullRange(filePath);
+                 Set<PairInt> edgePoints = new HashSet<PairInt>();
+                 for (int i = 0; i < mask.getNPixels(); ++i) {
+                     if (mask.getValue(i) > 127) {
+                         PairInt p2 = new PairInt(mask.getCol(i), mask.getRow(i));
+                         if (pointTRMap.containsKey(p2)) {
+                             edgePoints.add(p2);
+                         }
+                     }
+                 }
+                 float[] theta = new float[edgePoints.size()];
+                 float[] radius = new float[theta.length];
+                 int count = 0;
+                 for (PairInt p : edgePoints) {
+                     PairInt tr = pointTRMap.get(p);
+                     //theta[count] = tr.getX();
+                     //theta[count] = theta360.getValue(p);
+                     //radius[count] = tr.getY();
+                     theta[count] = p.getX();
+                     radius[count] = p.getY();
+                     count++;
+                 }
+                 float[] xPolygon = null; 
+                 float[] yPolygon = null;
+                 float minRadius = MiscMath.findMin(radius);
+                 float maxRadius = MiscMath.findMax(radius);
+                 float minX = MiscMath.findMin(theta);
+                 float maxX = MiscMath.findMax(theta);
+                 plotter.addPlot(minX - 1, maxX + 1, minRadius - 1, maxRadius + 1, theta,
+                     radius, xPolygon, yPolygon, "theta vs radius");
+            }
+            String filePath = plotter.writeFile();
+            int z = 1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getMessage());
+        }
+        */  
         
+        // edit theta in pointTRMap to only use angles between 0 and 180 to
+        // remove ambiguous edits made to theta360 or artifacts from the making
+        // of the gradient
+        for (Entry<PairInt, PairInt> entry : pointTRMap.entrySet()) {
+            PairInt tr = entry.getValue();
+            int t = tr.getY();
+            if (t > 179) {
+                tr.setY(t - 180);
+            }
+        }
         
+        DFSConnectedHoughTransformGroupsFinder finder = 
+            new DFSConnectedHoughTransformGroupsFinder();
         
-        throw new UnsupportedOperationException("not yet implemented");
+        finder.setMinimumNumberInCluster(1);
+        
+        int thetaTolerance = 10;
+        int radiusTolerance = 2;
+        int wrapAroundValue = 180;
+        
+        finder.findConnectedPointGroups(pointTRMap, thetaTolerance,
+            radiusTolerance, wrapAroundValue);
+        
+        Map<Set<PairInt>, PairInt> output = new HashMap<Set<PairInt>, PairInt>();
+        
+        for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+            
+            Set<PairInt> group = finder.getXY(i);
+            
+            if (group.size() < 2) {
+                continue;
+            }
+            
+            int averageTheta = 0;
+            int averageRadius = 0;
+            for (PairInt p : group) {
+                PairInt tr = pointTRMap.get(p);
+                averageTheta += tr.getX();
+                averageRadius += tr.getY();
+            }
+            averageTheta /= group.size();
+            averageRadius /= group.size();
+            
+            output.put(group, new PairInt(averageTheta, averageRadius));
+        }
+        
+        return output;
     }
     
     /**

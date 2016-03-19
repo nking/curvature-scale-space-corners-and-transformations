@@ -6,8 +6,12 @@ import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * The CannyEdge filter is an algorithm to operate on an image to
@@ -44,12 +48,13 @@ import java.util.Set;
  * edges, so use a higher setting than the default.
  * 
  * The "line drawing mode" is present as a convenience method to process images
- * that are somewhat thin line drawings for the case when the user needs
- * the theta image for example.  If only the edges are needed, it would be faster
- * for the user to use 
+ * that are line drawings or shapes filled with solid colors, for the case when 
+ * the user needs the theta image for example.  If only the edges are needed, 
+ * it would be faster for the user to use 
  *     ImageProcessor.applyAdaptiveMeanThresholding(mask, 1);
  *     followed by
  *     ZhangSuenLineThinner.applyFilter(filterProducts.getGradientXY());
+ * Note that line drawing mode starts with the 2 layer filter here, though.
  * </pre>
  * Not ready for use yet...
  * 
@@ -243,60 +248,44 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
                         
+            GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
+             
             applyNonMaximumSuppression(filterProducts);
             
-            // trying a pattern of running the remaining steps w/o nms to make
-            // a mask for theta first.
-            // this produces a gradient mask of very thick edges.
-            // then will edit the theta image for the values that are 
-            // significant in the mask and have theta values near horizontal or 
-            // vertical.  Because those gradientXs or gradientYs are below 
-            // resolution (which is 2.35 * approxProcessedSigma) they are all 
-            // orthogonal to their real values.
+            // TODO:
+            // the non-maximum suppression (nms) sometimes removes the ends
+            // of lines near junctions,
+            // so would like to either prevent those from being removed or
+            // restore them afterwards.
+            // (some applications of the edges use closed curves, so need those
+            // missing points).
+            //
+            // also, for low resoltuion images, there are sometimes double
+            // parallel lines for an edge.
+            // need to either look at parameters which result in only single
+            // edges, OR, consider post processing to reduce those.
             
-            // nms should be improved after that change.
+            // to find the junctions, will explore hough transforms.
             
-            // for the junctions that get removed during nms, will make one
-            // more pre-step to using nms.
-            // will use hough transforms to find lines and hence junctions
-            // of lines at least and explore other means to 
-            // add junctions to a set of points that should not be removed
-            // during nms.
-            
-            /*
-            GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
-            
-            apply2LayerFilter(filterProducts);
+            GreyscaleImage gXY = filterProducts.getGradientXY();
+                        
+            apply2LayerFilter(gXY);
             
             GreyscaleImage theta = filterProducts.getTheta().copyImage();
             
-            GreyscaleImage gXYMask = filterProducts.getGradientXY();
-            
-            
             // correct theta values below resolution
             // note that any real horizontal lines get value 180 to leave 0's as is.
-            correctThetaBelowResolution(theta, gXYMask, 
-                filterProducts.getGradientX(), filterProducts.getGradientY(),
-                approxProcessedSigma);
+            //correctThetaBelowResolution(theta, gXY, approxProcessedSigma);
+           
+            //MiscDebug.writeImage(theta, "_theta_AFTER_");
             
-            MiscDebug.writeImage(theta, "_theta_AFTER_");
+            //exploreHoughTransforms(gXY, theta);
             
-            int n = gXY0.getNPixels();
+            //applyNonMaximumSuppression(filterProducts);
             
-            for (int i = 0; i < n; ++i) {
-                if (gXYMask.getValue(i) == 0) {
-                    gXY0.setValue(i, 0);
-                }
-            }
+            //MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_NMS_");
             
-            filterProducts.getGradientXY().resetTo(gXY0);
-            
-            exploreHoughTransforms(filterProducts.getGradientXY(), theta);
-            
-            applyNonMaximumSuppression(filterProducts);
-            */
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_NMS_");
-                        
+            //return;
         }
                 
         //(4) adaptive 2 layer filter                        
@@ -780,15 +769,27 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
             }
         }
         
-        HoughTransform ht = new HoughTransform();
-        List<Set<PairInt>> lines = ht.findContiguousLines(points, theta);
+        //TODO: might need to revise findContiguousLines to allow for theta 180 degrees opposite
         
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, theta);
+        
+        if (debug) {
+            List<Set<PairInt>> tmpList = new ArrayList<Set<PairInt>>(lines.keySet());
+            Image tmp = gradientXYMasked.copyToColorGreyscale();
+            MiscDebug.writeAlternatingColor(tmp, tmpList, "_hough_lines_");
+            MiscDebug.writeImage(gradientXYMasked, "_gXY_masked");
+            try {
+                MiscDebug.writeImage(points, new Image(w, h), "_points_");
+            } catch (IOException ex) {
+                Logger.getLogger(CannyEdgeFilterAdaptive.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         // not finished
     }
 
     private void correctThetaBelowResolution(GreyscaleImage theta, 
-        GreyscaleImage gXYMask, GreyscaleImage gradientX, 
-        GreyscaleImage gradientY, double theApproxProcessedSigma) {
+        GreyscaleImage gXYMask, double theApproxProcessedSigma) {
         
         int minResolution = (int)Math.ceil(2.35 * theApproxProcessedSigma);
         int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
@@ -819,14 +820,8 @@ MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
                     
                     tmp.setRGB(i, 255, 0, 0);
                     
-                    System.out.println("   orthogonal? (" + theta.getCol(i) + "," +
-                        theta.getRow(i) + ") t=" + t);
-                    
                 } else {
                     
-                    System.out.println("** orthogonal? (" + theta.getCol(i) + "," +
-                        theta.getRow(i) + ") t=" + t);
-
                     tmp.setRGB(i, 0, 255, 0);
                 }
             }

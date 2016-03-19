@@ -787,37 +787,45 @@ public class GreyscaleImage {
         return img2;
     }
     
+    /**
+     * note, can only use this if image has values between 0 and 255, inclusive
+     * @return 
+     */
     public ImageExt copyToColorGreyscaleExt() {
         
+        /*
+        TODO:
+        consider changing this conversion to use
+        https://en.wikipedia.org/wiki/Grayscale
+            grey = red * .2126 + green * .07152 + blue * .0722;
+        */
         ImageExt img2 = new ImageExt(width, height, !is64Bit);
         
-        if (type.equals(Type.Bits32FullRangeInt)) {
-            System.arraycopy(a, 0, img2.r, 0, len);
-            System.arraycopy(a, 0, img2.g, 0, len);
-            System.arraycopy(a, 0, img2.b, 0, len);
-        } else {
-            for (int i = 0; i < nPixels; ++i) {
-                int v = getValue(i);
-                img2.setRGB(i, v, v, v);
-            }
+        for (int i = 0; i < nPixels; ++i) {
+            int v = getValue(i);
+            img2.setRGB(i, v, v, v);
         }
         
         return img2;
     }
     
+    /**
+     * note, can only use this if image has values between 0 and 255, inclusive
+     * @return 
+     */
     public Image copyToColorGreyscale() {
         
+        /*
+        TODO:
+        consider changing this conversion to use
+        https://en.wikipedia.org/wiki/Grayscale
+            grey = red * .2126 + green * .07152 + blue * .0722;
+        */
         Image img2 = new Image(width, height, !is64Bit);
         
-        if (type.equals(Type.Bits32FullRangeInt)) {
-            System.arraycopy(a, 0, img2.r, 0, len);
-            System.arraycopy(a, 0, img2.g, 0, len);
-            System.arraycopy(a, 0, img2.b, 0, len);
-        } else {
-            for (int i = 0; i < nPixels; ++i) {
-                int v = getValue(i);
-                img2.setRGB(i, v, v, v);
-            }
+        for (int i = 0; i < nPixels; ++i) {
+            int v = getValue(i);
+            img2.setRGB(i, v, v, v);
         }
         
         return img2;

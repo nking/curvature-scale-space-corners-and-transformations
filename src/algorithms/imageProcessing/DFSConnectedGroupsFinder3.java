@@ -27,7 +27,7 @@ class DFSConnectedGroupsFinder3 {
      * find contiguous pixels having a value within tolerance of the given value and 
      * using logic to
      * wrap around a set of values (0 to 360, for example, should see 0 and 359
-     * ss being within a tolerance of '1' from one another). Note that the
+     * as being within a tolerance of '1' from one another). Note that the
      * minimum possible value is always 0.
      * To correct for a group that has wandered from a total range of tolerance,
      * setTheCorrectForWandering to true
