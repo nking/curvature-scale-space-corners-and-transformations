@@ -2233,11 +2233,9 @@ public class MiscellaneousCurveHelper {
         // probably many ways to do this... ordered point algorithm?
         // dfs to find connected groups, then connect the closest among those?
 
-        int[] minMaxXY = MiscMath.findMinMaxXY(points);
-
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(1);
-        finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);
+        finder.findConnectedPointGroups(points);
 
         int nIter = 0;
         int nMaxIter = 10;
@@ -2359,7 +2357,7 @@ public class MiscellaneousCurveHelper {
 
             finder = new DFSConnectedGroupsFinder();
             finder.setMinimumNumberInCluster(1);
-            finder.findConnectedPointGroups(points, minMaxXY[1] + 1, minMaxXY[3] + 1);
+            finder.findConnectedPointGroups(points);
 
             nGroups = finder.getNumberOfGroups();
 

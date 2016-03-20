@@ -3281,7 +3281,7 @@ public class ImageProcessor {
             
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
             finder.setMinimumNumberInCluster(lowerLimitSize);
-            finder.findConnectedPointGroups(set, w, h);
+            finder.findConnectedPointGroups(set);
                 
             int nGroups = finder.getNumberOfGroups();
 
@@ -3338,7 +3338,7 @@ public class ImageProcessor {
         
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(lowerLimitSize);
-        finder.findConnectedPointGroups(pixels, w, h);
+        finder.findConnectedPointGroups(pixels);
         
         List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
         

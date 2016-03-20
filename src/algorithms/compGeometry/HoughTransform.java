@@ -1,6 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder2;
@@ -9,6 +10,8 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
+import algorithms.util.LinearRegression;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -16,6 +19,7 @@ import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -329,7 +333,12 @@ public class HoughTransform {
     public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
         int minimumGroupSize) {
         
+        // key=(x,y); value = derived thetas.  
+        // 0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5 where the 0.5 are rounded down
+        Map<PairInt, Set<Integer>> pointThetasMap = new HashMap<PairInt, Set<Integer>>();
         
+        //key = derived thetas; value = set of points with that theta
+        Map<Integer, Set<PairInt>> thetaPointMap = new HashMap<Integer, Set<PairInt>>();
         
         /*
         for each point:
@@ -381,24 +390,174 @@ public class HoughTransform {
            now have groups of contiguous points that have rough theta.
         
            the refined value for the theta could be done in many ways.
-               -- Theil Sen Estimator in my linear regression class.
-                  this method is nearly O(N^2) + 2*O(N*lg_2(N))
-               -- averaging the location of a few endpoints and determining
-                  the slope and hence theta from those.
-                  estimate the difference of point positions from the model
-                  and iterate over small changes to the theta to improve
-                  the fit.
-                  This method is O(N) times the number of iterations.
-                  Using a bisector pattern, the number of iterations should be
-                  small because the range is 22 degrees and would not expect
-                  accuracy better than 2 degrees or maybe higher 
-                      (0  *5.625  *11.25  *16.875  22.5)
-                  so that is 3 or 4 rounds of eval.
-                  --> 4 * O(N)
-                so would use the bisector pattern
-           then the distance of the line from the origin would be determined
+               will use a bisector pattern within the range of 22.5 degrees
+               and evaluate the angle for the points at each bisection.
         */
-        throw new UnsupportedOperationException("not yet implmented");
+        
+        boolean[] isPresent = new boolean[24];
+        
+        for (PairInt p : points) {
+            
+            populateNeighborhoodPresence(p.getX(), p.getY(), points, isPresent);
+            
+            Set<Integer> thetas = new HashSet<Integer>();
+            if ((isPresent[12] && isPresent[13]) && (isPresent[10] && isPresent[11])) {
+                Integer t = Integer.valueOf(0);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if (isPresent[18] && isPresent[5]) {
+                Integer t = Integer.valueOf(22);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if ((isPresent[17] && isPresent[23]) && (isPresent[6] && isPresent[0])) {
+                Integer t = Integer.valueOf(45);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if (isPresent[22] && isPresent[1]) {
+                Integer t = Integer.valueOf(67);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if ((isPresent[21] && isPresent[16]) && (isPresent[7] && isPresent[2])) {
+                Integer t = Integer.valueOf(90);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if (isPresent[20] && isPresent[3]) {
+                Integer t = Integer.valueOf(112);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if ((isPresent[19] && isPresent[15]) && (isPresent[8] && isPresent[4])) {
+                Integer t = Integer.valueOf(135);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            } else if (isPresent[14] && isPresent[9]) {
+                Integer t = Integer.valueOf(157);
+                thetas.add(t);
+                Set<PairInt> tPoints = thetaPointMap.get(t);
+                if (tPoints == null) {
+                    tPoints = new HashSet<PairInt>();
+                    thetaPointMap.put(t, tPoints);
+                }
+                tPoints.add(p);
+            }
+            pointThetasMap.put(p, thetas);
+        }
+        
+        // connected groups of points with same thetas
+        List<Set<PairInt>> contigGroups = new ArrayList<Set<PairInt>>();
+        
+        // the thetas of the groups in contigGroups
+        List<Integer> contigGroupThetas = new ArrayList<Integer>();
+        
+        // indexes to groups in contigGroups to which the key point belongs
+        Map<PairInt, Set<Integer>> pointIndexesToContigGroups = new HashMap<PairInt, Set<Integer>>();
+        
+        for (Entry<Integer, Set<PairInt>> entry : thetaPointMap.entrySet()) {
+            
+            // find contiguous groups
+            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
+            finder.setToUse8Neighbors();
+            finder.setMinimumNumberInCluster(minimumGroupSize);
+            finder.findConnectedPointGroups(entry.getValue());
+            
+            for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+                
+                Set<PairInt> group = finder.getXY(i);
+                
+                Integer index = Integer.valueOf(contigGroupThetas.size());
+                
+                contigGroups.add(group);
+                contigGroupThetas.add(index);
+                
+                for (PairInt p : group) {
+                    Set<Integer> indexes = pointIndexesToContigGroups.get(p);
+                    if (indexes == null) {
+                        indexes = new HashSet<Integer>();
+                        pointIndexesToContigGroups.put(p, indexes);
+                    }
+                    indexes.add(index);
+                }
+            }
+        }
+        
+        int[] indexes = new int[contigGroups.size()];
+        int[] sizes = new int[contigGroups.size()];
+        for (int i = 0; i < indexes.length; ++i) {
+            indexes[i] = i;
+            sizes[i] = contigGroups.get(i).size();
+        }
+        MultiArrayMergeSort.sortByDecr(sizes, indexes);
+        
+        List<Set<PairInt>> lines = new ArrayList<Set<PairInt>>();
+        List<Integer> lineThetas = new ArrayList<Integer>();
+        
+        for (int i = 0; i < indexes.length; ++i) {
+            int idx = indexes[i];
+            Set<PairInt> group = contigGroups.get(idx);
+            if (group.size() > minimumGroupSize) {
+                lines.add(group);
+                lineThetas.add(contigGroupThetas.get(idx));
+                for (PairInt p : group) {
+                    Set<Integer> index2Set = pointIndexesToContigGroups.get(p);
+                    for (Integer index2 : index2Set) {
+                        int idx2 = index2.intValue();
+                        if (idx2 != idx) {
+                            contigGroups.get(idx2).remove(p);
+                        }
+                    }
+                    pointIndexesToContigGroups.remove(p);
+                }
+            }
+        }
+        
+        // -- calculate refined theta for line groups and calculate radius
+       
+        Map<Set<PairInt>, PairInt> outputPointsTR = new HashMap<Set<PairInt>, PairInt>();
+             
+        for (int i = 0; i < lines.size(); ++i) {
+            Set<PairInt> linePoints = lines.get(i);
+            Integer roughTheta = lineThetas.get(i);
+            
+            PairInt tr = calculateLinePolarCoords(linePoints, roughTheta);
+            
+            outputPointsTR.put(linePoints, tr);
+        }
+        
+        return outputPointsTR;
     }
     
     /**
@@ -571,6 +730,106 @@ public class HoughTransform {
         
         return createPixTRMapsFromSorted(sortedTRKeys, thetaRadiusPixMap, 
             thetaTol, radiusTol);
+    }
+
+    /**
+     * sets true and false in present array for presence in points set.
+       <pre>
+          19 20 21 22 23
+          14 15 16 17 18
+          10 11  @ 12 13    
+           5  6  7  8  9       
+           0  1  2  3  4
+       </pre>
+     * @param x
+     * @param y
+     * @param points
+     * @param present 
+    */
+    private void populateNeighborhoodPresence(int x, int y, Set<PairInt> points, 
+        boolean[] present) {
+        
+        int count = 0;
+        for (int dy = -2; dy <= 2; ++dy) {
+            int y2 = y + dy;
+            for (int dx = -2; dx <= 2; ++dx) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                int x2 = x + dx;
+                PairInt p = new PairInt(x2, y2);
+                if (points.contains(p)) {
+                    present[count] = true;
+                } else {
+                    present[count] = false;
+                }
+                ++count;
+            }
+        }
+    }
+
+    private PairInt calculateLinePolarCoords(Set<PairInt> linePoints, 
+        Integer roughTheta) {
+        
+        PairFloatArray xy = new PairFloatArray();
+        
+        for (PairInt p : linePoints) {
+            xy.add(p.getX(), p.getY());
+        }
+        
+        float[] x = Arrays.copyOf(xy.getX(), xy.getN());
+        float[] y = Arrays.copyOf(xy.getY(), xy.getN());
+        
+        LinearRegression lReg = new LinearRegression();
+        //lReg.plotTheLinearRegression(x, y);
+        
+        float[] yInterceptAndSlope = 
+            lReg.calculateTheilSenEstimatorParams(x, y);
+        
+        double thetaRadians;
+        double rSum = 0;
+        
+        if (yInterceptAndSlope[1] == Float.MAX_VALUE) {
+            // vertical line
+            thetaRadians = Math.PI/2.;
+            int count = 0;
+            for (PairInt p : linePoints) {
+                if ((count & 1) == 1) {
+                    continue;
+                }
+
+                rSum += p.getX();
+
+                ++count;
+            }
+
+            rSum /= count;
+        } else {
+            thetaRadians = Math.atan(yInterceptAndSlope[1]);
+            double ct = Math.cos(thetaRadians);
+            double st = Math.sin(thetaRadians);
+            int count = 0;
+            for (PairInt p : linePoints) {
+                if ((count & 1) == 1) {
+                    continue;
+                }
+
+                rSum += (p.getX() * ct) + (p.getY() * st);
+
+                ++count;
+            }
+
+            rSum /= count;
+        }
+        
+        int t = (int)Math.round(thetaRadians*180./Math.PI);
+        if (t < 0) {
+            t += 360;
+        }
+        
+        // TODO: consider whether want to transform all angle to between 0 and 180
+                
+        return new PairInt(t, (int)Math.round(rSum));
     }
     
     public class HoughTransformLines {

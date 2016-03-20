@@ -457,7 +457,7 @@ public class PolynomialFitter {
         
         DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
         groupsFinder.setMinimumNumberInCluster(100);
-        groupsFinder.findConnectedPointGroups(points, imageWidth, imageHeight);
+        groupsFinder.findConnectedPointGroups(points);
         
         int n = groupsFinder.getNumberOfGroups();
         

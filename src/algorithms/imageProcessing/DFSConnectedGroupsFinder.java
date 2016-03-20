@@ -40,16 +40,14 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
         use4Neighbors = false;
     }
     
-    public void findConnectedPointGroups(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
+    public void findConnectedPointGroups(Set<PairInt> points) {
                 
-        findClustersIterative(points, imageWidth, imageHeight);
+        findClustersIterative(points);
         
         prune();        
     }
 
-    protected void findClustersIterative(Set<PairInt> points, int imageWidth, 
-        int imageHeight) {
+    protected void findClustersIterative(Set<PairInt> points) {
         
         if (points.isEmpty()) {
             return;
@@ -92,11 +90,6 @@ public class DFSConnectedGroupsFinder extends AbstractDFSConnectedGroupsFinder {
                 int vX = uX + dxs[i];
                 int vY = uY + dys[i];
             
-                if ((vX < 0) || (vX > (imageWidth - 1)) || (vY < 0) || 
-                    (vY > (imageHeight - 1))) {
-                    continue;
-                }
-                    
                 PairInt vPoint = new PairInt(vX, vY);
 
                 if (vPoint.equals(uPoint)) {

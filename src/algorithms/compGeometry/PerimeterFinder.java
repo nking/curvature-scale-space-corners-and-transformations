@@ -1428,8 +1428,7 @@ public class PerimeterFinder {
         //Find the contiguous groups among nonMembers.
         DFSConnectedGroupsFinder contigFinder = new DFSConnectedGroupsFinder();
         contigFinder.setMinimumNumberInCluster(1);
-        contigFinder.findConnectedPointGroups(nonMembers, imageMaxColumn,
-            imageMaxRow);
+        contigFinder.findConnectedPointGroups(nonMembers);
 
         Set<Set<PairInt>> contigNonMembers = new HashSet<Set<PairInt>>();
         for (int i = 0; i < contigFinder.getNumberOfGroups(); ++i) {

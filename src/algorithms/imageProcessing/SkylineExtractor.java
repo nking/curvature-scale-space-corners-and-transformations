@@ -3377,7 +3377,7 @@ if (col > 581 && row==282) {
                 // keep the rainbow colored points that are contiguous group
                 // containing skyPoints
                 DFSConnectedGroupsFinder groupsFinder = new DFSConnectedGroupsFinder();
-                groupsFinder.findConnectedPointGroups(rainbowColoredPoints, width, height);
+                groupsFinder.findConnectedPointGroups(rainbowColoredPoints);
                 for (int i = 0; i < groupsFinder.getNumberOfGroups(); ++i) {
                     Set<PairInt> group = groupsFinder.getXY(i);
                     boolean keep = false;

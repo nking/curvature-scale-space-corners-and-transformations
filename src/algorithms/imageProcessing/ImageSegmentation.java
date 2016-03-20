@@ -4704,7 +4704,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         return tmpImg2;
     }
 
-    private GreyscaleImage fillInGapsOf1(GreyscaleImage img,
+    GreyscaleImage fillInGapsOf1(GreyscaleImage img,
         Set<PairInt> outputAddedGaps, int value) {
 
         int w = img.getWidth();
@@ -5125,7 +5125,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             }
             DFSConnectedGroupsFinder finder2 = new DFSConnectedGroupsFinder();
             finder2.setMinimumNumberInCluster(1);
-            finder2.findConnectedPointGroups(points, input.getWidth(), input.getHeight());
+            finder2.findConnectedPointGroups(points);
             for (int ii = 0; ii < finder2.getNumberOfGroups(); ++ii) {
                 Set<PairInt> group = finder2.getXY(ii);
                 segmentedCellList2.add(group);
@@ -5906,7 +5906,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         int count2 = 0;
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(1);
-        finder.findConnectedPointGroups(unassigned, w, h);
+        finder.findConnectedPointGroups(unassigned);
         for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
             Set<PairInt> group = finder.getXY(i);
             count2 += group.size();
@@ -7848,6 +7848,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
     }
     
     /**
+     * for input with zeros for non-neighbor pixels else any value,
      * look within the neighborhood of point (col, row) to see if there are 
      * edges points to either side of the point that would be disconnected
      * if this one were removed.   A non-edge point is defined as having value 0.
@@ -7856,7 +7857,6 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
      * @param neighborCoords
      * @param col
      * @param row
-     * @param edgeValue
      * @return 
      */
     public static boolean doesDisconnect(final GreyscaleImage input,

@@ -51,7 +51,7 @@ public class DFSConnectedGroupsFinderTest extends TestCase {
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(2);
         finder.setToUse8Neighbors();
-        finder.findConnectedPointGroups(points, imageWidth, imageHeight);
+        finder.findConnectedPointGroups(points);
         
         assertTrue(finder.getNumberOfGroups() == 2);
         
@@ -93,7 +93,7 @@ public class DFSConnectedGroupsFinderTest extends TestCase {
         finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(3);
         finder.setToUse8Neighbors();
-        finder.findConnectedPointGroups(points, imageWidth, imageHeight);
+        finder.findConnectedPointGroups(points);
         
         assertTrue(finder.getNumberOfGroups() == 1);
         

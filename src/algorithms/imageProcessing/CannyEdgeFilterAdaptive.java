@@ -261,46 +261,7 @@ public class CannyEdgeFilterAdaptive {
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
-                        
-            GreyscaleImage gXY0 = filterProducts.getGradientXY().copyImage();
-             
-            applyNonMaximumSuppression(filterProducts, removedDisconnecting);
-            
-            // TODO:
-            // the non-maximum suppression (nms) sometimes removes the ends
-            // of lines near junctions,
-            // so would like to either prevent those from being removed or
-            // restore them afterwards.
-            // (some applications of the edges use closed curves, so need those
-            // missing points).
-            //
-            // also, for low resoltuion images, there are sometimes double
-            // parallel lines for an edge.
-            // need to either look at parameters which result in only single
-            // edges, OR, consider post processing to reduce those.
-            
-            // to find the junctions, will explore hough transforms.
-            /*
-            GreyscaleImage gXY = filterProducts.getGradientXY();
-                        
-            apply2LayerFilter(gXY);
-            
-            GreyscaleImage theta = filterProducts.getTheta().copyImage();
-            
-            // correct theta values below resolution
-            // note that any real horizontal lines get value 180 to leave 0's as is.
-            //correctThetaBelowResolution(theta, gXY, approxProcessedSigma);
-           
-            //MiscDebug.writeImage(theta, "_theta_AFTER_");
-            
-            //exploreHoughTransforms(gXY, theta);
-            
-            //applyNonMaximumSuppression(filterProducts);
-            
-            //MiscDebug.writeImage(filterProducts.getGradientXY(), "_gXY_NMS_");
-            
-            //return;
-            */
+            applyNonMaximumSuppression(filterProducts, removedDisconnecting);                            
         }
                 
         //(4) adaptive 2 layer filter                        
@@ -322,6 +283,8 @@ public class CannyEdgeFilterAdaptive {
                 filterProducts.getGradientXY().setValue(i, 0);
             }
         }
+        
+        //exploreHoughTransforms(filterProducts.getGradientXY());
                        
         input.resetTo(filterProducts.getGradientXY());
     }
@@ -826,38 +789,23 @@ public class CannyEdgeFilterAdaptive {
         curveHelper.additionalThinning45DegreeEdges2(theta, img, minResolvableAngle);
     }
     
-    private void exploreHoughTransforms(GreyscaleImage gradientXYMasked, 
-        GreyscaleImage theta) {
+    private void exploreHoughTransforms(GreyscaleImage gradientXY) {
         
-        int n = theta.getNPixels();
-        int w = theta.getWidth();
-        int h = theta.getHeight();
+        int n = gradientXY.getNPixels();
+        int w = gradientXY.getWidth();
+        int h = gradientXY.getHeight();
         
         Set<PairInt> points = new HashSet<PairInt>();
         
         for (int i = 0; i < n; ++i) {
-            if (gradientXYMasked.getValue(i) > 0) {
-                points.add(new PairInt(theta.getCol(i), theta.getRow(i)));
+            if (gradientXY.getValue(i) > 0) {
+                points.add(new PairInt(gradientXY.getCol(i), gradientXY.getRow(i)));
             }
         }
-        
-        //TODO: might need to revise findContiguousLines to allow for theta 180 degrees opposite
         
         HoughTransform ht = new HoughTransform();
-        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, theta);
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
         
-        if (debug) {
-            List<Set<PairInt>> tmpList = new ArrayList<Set<PairInt>>(lines.keySet());
-            Image tmp = gradientXYMasked.copyToColorGreyscale();
-            MiscDebug.writeAlternatingColor(tmp, tmpList, "_hough_lines_");
-            MiscDebug.writeImage(gradientXYMasked, "_gXY_masked");
-            try {
-                MiscDebug.writeImage(points, new Image(w, h), "_points_");
-            } catch (IOException ex) {
-                Logger.getLogger(CannyEdgeFilterAdaptive.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        // not finished
     }
 
     private void correctThetaBelowResolution(GreyscaleImage theta, 

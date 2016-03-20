@@ -693,7 +693,7 @@ if (imgHelper.isInDebugMode()) {
 
         finder2.setMinimumNumberInCluster(smallestGroupLimit - 4);
 
-        finder2.findConnectedPointGroups(points, minMaxXY[1], minMaxXY[3]);
+        finder2.findConnectedPointGroups(points);
 
         int nGroups2 = finder2.getNumberOfGroups();
 

@@ -156,8 +156,7 @@ MiscDebug.writeImage(img3, "removed_untr_lobe_"
 
             int[] minMaxXY = MiscMath.findMinMaxXY(closedCurve);
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-            finder.findConnectedPointGroups(closedCurve, minMaxXY[1] + 1,
-                minMaxXY[3] + 1);
+            finder.findConnectedPointGroups(closedCurve);
             int nMax = Integer.MIN_VALUE;
             int maxIdx = -1;
             for (int i = 0; i < finder.getNumberOfGroups(); ++i) {

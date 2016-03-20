@@ -242,10 +242,15 @@ public class LinearRegression {
             }
         }
         
+        if (count == 0) {
+            // this can happen for vertical lines
+            return new float[]{Float.NaN, Float.MAX_VALUE};
+        }
+        
+        float median;
         s = Arrays.copyOf(s, count);
         Arrays.sort(s);
         int idx = s.length/2;
-        float median;
         if ((idx & 1) == 0) {
             median = (s[idx] + s[idx - 1])/2.f;
         } else {
@@ -417,8 +422,8 @@ public class LinearRegression {
         plot dx, dy
         and plot a line generated from the yIntercept and median: yIntercept − median*x_i
         */        
-        int xMin = (int)Math.floor(MiscMath.findMin(x));
-        int xMax = (int)Math.ceil(MiscMath.findMax(x));
+        int xMin = (int)Math.floor(MiscMath.findMin(x)) - 1;
+        int xMax = (int)Math.ceil(MiscMath.findMax(x)) + 1;
         int len = xMax - xMin + 1;
         float[] tsbX = new float[len];
         float[] tsbY = new float[len];
@@ -430,8 +435,8 @@ public class LinearRegression {
             count++;
         }
         
-        int yMin = (int)Math.floor(MiscMath.findMin(y));
-        int yMax = (int)Math.ceil(MiscMath.findMax(y));
+        int yMin = (int)Math.floor(MiscMath.findMin(y)) - 1;
+        int yMax = (int)Math.ceil(MiscMath.findMax(y)) + 1;
        
         try {
             PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
