@@ -399,9 +399,15 @@ public class HoughTransform {
         for (PairInt p : points) {
             
             populateNeighborhoodPresence(p.getX(), p.getY(), points, isPresent);
-            
+      /*
+          19 20 21 22 23
+          14 15 16 17 18
+          10 11  @ 12 13    
+           5  6  7  8  9       
+           0  1  2  3  4
+     */      
             Set<Integer> thetas = new HashSet<Integer>();
-            if ((isPresent[12] && isPresent[13]) && (isPresent[10] && isPresent[11])) {
+            if ((isPresent[12] && isPresent[13]) || (isPresent[10] && isPresent[11])) {
                 Integer t = Integer.valueOf(0);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -410,7 +416,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[18] && isPresent[5]) {
+            } else if (isPresent[18] || isPresent[5]) {
                 Integer t = Integer.valueOf(22);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -419,7 +425,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[17] && isPresent[23]) && (isPresent[6] && isPresent[0])) {
+            } else if ((isPresent[17] && isPresent[23]) || (isPresent[6] && isPresent[0])) {
                 Integer t = Integer.valueOf(45);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -428,7 +434,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[22] && isPresent[1]) {
+            } else if (isPresent[22] || isPresent[1]) {
                 Integer t = Integer.valueOf(67);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -437,7 +443,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[21] && isPresent[16]) && (isPresent[7] && isPresent[2])) {
+            } else if ((isPresent[21] && isPresent[16]) || (isPresent[7] && isPresent[2])) {
                 Integer t = Integer.valueOf(90);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -446,7 +452,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[20] && isPresent[3]) {
+            } else if (isPresent[20] || isPresent[3]) {
                 Integer t = Integer.valueOf(112);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -455,7 +461,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[19] && isPresent[15]) && (isPresent[8] && isPresent[4])) {
+            } else if ((isPresent[19] && isPresent[15]) || (isPresent[8] && isPresent[4])) {
                 Integer t = Integer.valueOf(135);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -464,7 +470,7 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[14] && isPresent[9]) {
+            } else if (isPresent[14] || isPresent[9]) {
                 Integer t = Integer.valueOf(157);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -563,8 +569,14 @@ public class HoughTransform {
                   @  @  @  @  @
                                  @  @  @  @  @
         
+        Note that this aggregation step fails for lines which are rendered with
+            small segments of length < minimum group size of 3.
+        
+        Also, need a check that parallel connected lines do not get aggregated
+        into one line.
+        
         -- iterating over each point and searching the 8 neighbor region for
-           points in other sets is O(N) * 8 times.
+           points in other sets is O(N) * 8.
            -- when connected sets are found, need to store it in a way that
               is easy to chain it to others so the total composite line is 
               found.
