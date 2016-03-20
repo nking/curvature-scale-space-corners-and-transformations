@@ -305,7 +305,16 @@ public class CannyEdgeFilterAdaptive {
                 
         //(4) adaptive 2 layer filter                        
         apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting);
-         
+        
+        if (restoreJunctions) {
+            int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
+            int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            curveHelper.additionalThinning45DegreeEdges2(
+                filterProducts.getTheta(), filterProducts.getGradientXY(), 
+                minResolvableAngle);
+        }
+        
         // is this necessary?
         for (int i = 0; i < filterProducts.getGradientXY().getNPixels(); ++i) {
             int v = filterProducts.getGradientXY().getValue(i);
@@ -501,16 +510,9 @@ public class CannyEdgeFilterAdaptive {
                     }
 
                     if (p.getPixIndex() > tLow) {
-                        
-                        /*
-                        TODO:
-                        check that at least one of the disconnected edges is a straight
-                        vertical or horizontal line.
-                        goal is to avoid filling in diagonal lines that were
-                        thinned
-                        */
-                        
-                        gradientXY.setValue(x, y, 255);                    
+                        if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {
+                            gradientXY.setValue(x, y, 255);
+                        }
                     }
                 }
             }
@@ -926,6 +928,135 @@ public class CannyEdgeFilterAdaptive {
                 }
             }            
         }
+    }
+
+    private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
+        int x, int y, int minLineSize) {
+        
+        /*
+           1  1  1
+           1  0  1 
+           1  1  1
+        
+        if find a neighbor, check it for being part of _ or | of size minLineSize        
+        */
+        int w = gradientXY.getWidth();
+        int h = gradientXY.getHeight();
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int k = 0; k < dxs.length; ++k) {
+            int x2 = x + dxs[k];
+            int y2 = y + dys[k];
+            if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                continue;
+            }
+            if (gradientXY.getValue(x2, y2) == 0) {
+                continue;
+            }
+            
+            /*
+            if (x2, y2) is part of a vertical line, return true
+            
+              (x2, y2) 
+                 *   
+                 *    
+            */
+            int c = 0;
+            for (int dy2 = ((-minLineSize) + 1); dy2 < 0; ++dy2) {
+                int y3 = y2 + dy2;
+                if ((y3 < 0) || (y3 > (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {
+                    continue;
+                }
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+            /*            
+                   *     
+                (x2, y2)
+                   *    
+            */
+            c = 0;
+            for (int dy2 = (-minLineSize/2); dy2 <= (minLineSize/2); ++dy2) {
+                int y3 = y2 + dy2;
+                if ((y3 < 0) || (y3 > (h - 1)) || (gradientXY.getValue(x2, y3) == 0)
+                    || (y3 == y2)) {
+                    continue;
+                }
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+            /*            
+                   *
+                   *
+               (x2, y2)
+            */
+            c = 0;
+            for (int dy2 = 1; dy2 < minLineSize; ++dy2) {
+                int y3 = y2 + dy2;
+                if ((y3 < 0) || (y3 > (h - 1)) || (gradientXY.getValue(x2, y3) == 0)) {
+                    continue;
+                }
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+            
+            /*
+            if (x2, y2) is part of a horizontal line, return true
+            
+              *   *   (x2, y2) 
+            */
+            c = 0;
+            for (int dx2 = ((-minLineSize) + 1); dx2 < 0; ++dx2) {
+                int x3 = x2 + dx2;
+                if ((x3 < 0) || (x3 > (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {
+                    continue;
+                }            
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+            
+            /*            
+                  *  (x2, y2)   *
+            */
+            c = 0;
+            for (int dx2 = (-minLineSize/2); dx2 <= (minLineSize/2); ++dx2) {
+                int x3 = x2 + dx2;
+                if ((x3 < 0) || (x3 > (w - 1)) || (gradientXY.getValue(x3, y2) == 0)
+                    || (x3 == x2)) {
+                    continue;
+                }
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+            
+            /*            
+                  (x2, y2)   *    *
+            */
+            c = 0;
+            for (int dx2 = 1; dx2 < minLineSize; ++dx2) {
+                int x3 = x2 + dx2;
+                if ((x3 < 0) || (x3 > (w - 1)) || (gradientXY.getValue(x3, y2) == 0)) {
+                    continue;
+                }
+                c++;
+            }
+            if (c == (minLineSize - 1)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
 }
