@@ -487,7 +487,7 @@ public class HoughTransform {
         Map<PairInt, Set<Integer>> pointIndexesToContigGroups = new HashMap<PairInt, Set<Integer>>();
         
         for (Entry<Integer, Set<PairInt>> entry : thetaPointMap.entrySet()) {
-            
+                        
             // find contiguous groups
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
             finder.setToUse8Neighbors();
@@ -543,6 +543,33 @@ public class HoughTransform {
                 }
             }
         }
+        
+        /*
+        TODO: 
+            need to search the aggregated points for chains between them
+            that render a different composite angle on a larger scale.
+        
+            for example, this line is composed of 45 degree segments, but is
+               slightly larger than 45 degrees
+                              @
+                           @
+                        @
+                        @
+                     @
+                  @
+        
+            Or this composed of 0 degree segments
+        
+                  @  @  @  @  @
+                                 @  @  @  @  @
+        
+        -- iterating over each point and searching the 8 neighbor region for
+           points in other sets is O(N) * 8 times.
+           -- when connected sets are found, need to store it in a way that
+              is easy to chain it to others so the total composite line is 
+              found.
+              
+        */
         
         // -- calculate refined theta for line groups and calculate radius
        
