@@ -554,6 +554,7 @@ public class HoughTransform {
            This can be done in an evaluation stage after thiel sen parameters,
         */
         
+        /*
         //NOTE: had to use a generous theta diff of 44 degrees in the merging
         //   here, so may exclude this section in the end
         ConnectedGroupsWithGapsFinder cgFinder = new ConnectedGroupsWithGapsFinder();
@@ -580,6 +581,7 @@ public class HoughTransform {
                 indexes.add(index);
             }
         }
+        */
         
         int[] indexes = new int[contigGroups.size()];
         int[] sizes = new int[contigGroups.size()];
@@ -596,7 +598,7 @@ public class HoughTransform {
         Map<Set<PairInt>, PairInt> outputPointsTR = new HashMap<Set<PairInt>, PairInt>();
         
         float tol0 = 0.5f;
-        float tol1 = 0.5f;
+        float tol1 = 0.45f;
         
         for (int i = 0; i < indexes.length; ++i) {
             int idx = indexes[i];
@@ -613,7 +615,7 @@ public class HoughTransform {
                 
                 float t = trMeanStDev[0];
                 // if it's highly inclined line, tolerance has to allow for step width
-                if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) < 12) || 
+                /*if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) < 12) || 
                     (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) < 12) ||
                     (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) < 12) ||
                     (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) < 12) ||
@@ -623,8 +625,15 @@ public class HoughTransform {
                     (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) < 12)
                     ) {
                     tol1 = 1.5f;
+                }*/
+                
+                // consider attempting to split parallel connected lines.
+                if (trMeanStDev[2] >= 1) {
+                    // 3 parallel lines: t=353, mn=1.05, stdv=0.4
+                    int z = 1;
+                    // corner of 2 intersecting lines: t=311, mn=1.8, st=0.5
                 }
-                // raise to 2.5?
+                
                 if (trMeanStDev[2] > tol0 && trMeanStDev[3] > tol1) {
                     continue;
                 }
@@ -632,6 +641,9 @@ public class HoughTransform {
                 if (group.size() < minimumGroupSize) {
                     continue;
                 }
+                
+                System.out.println("t=" + trMeanStDev[0] + " r=" + trMeanStDev[1] + 
+                    " mn=" + trMeanStDev[2] + " stdv=" + trMeanStDev[3]);
                 
                 PairInt tr = new PairInt((int)trMeanStDev[0], 
                     (int)Math.round(trMeanStDev[1]));
@@ -989,7 +1001,7 @@ public class HoughTransform {
         stdv = (float)Math.sqrt(sum/((double)linePoints.size() - 1.));        
         
         if (stdv == 0) {
-            return new float[]{t, (float)rSum, mn, stdv};
+            return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};
         }
         
         // TODO: might want to allow a tolerance to be passed in
@@ -1046,7 +1058,7 @@ public class HoughTransform {
             count++;
         }
         stdv = (float)Math.sqrt(sum/((double)count - 1.));        
-        return new float[]{t, (float)rSum, mn, stdv};
+        return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};
     }
     
     public class HoughTransformLines {
