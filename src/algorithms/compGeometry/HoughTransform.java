@@ -1,6 +1,8 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
+import algorithms.compGeometry.ClosestPairBetweenSets.ClosestPairInt;
+import algorithms.imageProcessing.ConnectedGroupsWithGapsFinder;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
@@ -9,6 +11,8 @@ import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
@@ -20,12 +24,14 @@ import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * a class for Hough transforms of simple geometric shapes.  currently a line
@@ -324,7 +330,7 @@ public class HoughTransform {
      * and return a map of the groups of points with value being their
      * theta and radius.
      * 
-     * not yet implemented.
+     * not ready for use yet
      * 
      * @param points
      * @return map with key = group of connected points having same theta and
@@ -520,36 +526,6 @@ public class HoughTransform {
             }
         }
         
-        int[] indexes = new int[contigGroups.size()];
-        int[] sizes = new int[contigGroups.size()];
-        for (int i = 0; i < indexes.length; ++i) {
-            indexes[i] = i;
-            sizes[i] = contigGroups.get(i).size();
-        }
-        MultiArrayMergeSort.sortByDecr(sizes, indexes);
-        
-        List<Set<PairInt>> lines = new ArrayList<Set<PairInt>>();
-        List<Integer> lineThetas = new ArrayList<Integer>();
-        
-        for (int i = 0; i < indexes.length; ++i) {
-            int idx = indexes[i];
-            Set<PairInt> group = contigGroups.get(idx);
-            if (group.size() > minimumGroupSize) {
-                lines.add(group);
-                lineThetas.add(contigGroupThetas.get(idx));
-                for (PairInt p : group) {
-                    Set<Integer> index2Set = pointIndexesToContigGroups.get(p);
-                    for (Integer index2 : index2Set) {
-                        int idx2 = index2.intValue();
-                        if (idx2 != idx) {
-                            contigGroups.get(idx2).remove(p);
-                        }
-                    }
-                    pointIndexesToContigGroups.remove(p);
-                }
-            }
-        }
-        
         /*
         TODO: 
             need to search the aggregated points for chains between them
@@ -569,32 +545,111 @@ public class HoughTransform {
                   @  @  @  @  @
                                  @  @  @  @  @
         
-        Note that this aggregation step fails for lines which are rendered with
-            small segments of length < minimum group size of 3.
+        A quick look shows that some lines such as present in obtuse triangles
+            have a gap of 1 pixel and some a gap of 2 pixels in their lines 
+            composed of staircase segments.
         
-        Also, need a check that parallel connected lines do not get aggregated
-        into one line.
-        
-        -- iterating over each point and searching the 8 neighbor region for
-           points in other sets is O(N) * 8.
-           -- when connected sets are found, need to store it in a way that
-              is easy to chain it to others so the total composite line is 
-              found.
-              
+        Also, might need a check that parallel connected lines do not get 
+        aggregated into one line.
+           This can be done in an evaluation stage after thiel sen parameters,
         */
         
-        // -- calculate refined theta for line groups and calculate radius
-       
-        Map<Set<PairInt>, PairInt> outputPointsTR = new HashMap<Set<PairInt>, PairInt>();
-             
-        for (int i = 0; i < lines.size(); ++i) {
-            Set<PairInt> linePoints = lines.get(i);
-            Integer roughTheta = lineThetas.get(i);
-            
-            PairInt tr = calculateLinePolarCoords(linePoints, roughTheta);
-            
-            outputPointsTR.put(linePoints, tr);
+        //NOTE: had to use a generous theta diff of 44 degrees in the merging
+        //   here, so may exclude this section in the end
+        ConnectedGroupsWithGapsFinder cgFinder = new ConnectedGroupsWithGapsFinder();
+        cgFinder.setMinimumNumberInCluster(2);
+        cgFinder.findConnectedGroups(contigGroups, contigGroupThetas, 
+            Math.sqrt(2.)*2);
+        for (int i = 0; i < cgFinder.getNumberOfGroups(); ++i) {
+            Set<Integer> groupedIndexes = cgFinder.getGroupedIndexes(i);
+            Set<PairInt> combined = new HashSet<PairInt>();
+            for (Integer index : groupedIndexes) {
+                int idx = index.intValue();
+                combined.addAll(contigGroups.get(idx));
+            }
+            Integer theta = contigGroupThetas.get(groupedIndexes.iterator().next().intValue());
+            Integer index = Integer.valueOf(contigGroups.size());
+            contigGroups.add(combined);
+            contigGroupThetas.add(theta);
+            for (PairInt p : combined) {
+                Set<Integer> indexes = pointIndexesToContigGroups.get(p);
+                if (indexes == null) {
+                    indexes = new HashSet<Integer>();
+                    pointIndexesToContigGroups.put(p, indexes);
+                }
+                indexes.add(index);
+            }
         }
+        
+        int[] indexes = new int[contigGroups.size()];
+        int[] sizes = new int[contigGroups.size()];
+        for (int i = 0; i < indexes.length; ++i) {
+            indexes[i] = i;
+            sizes[i] = contigGroups.get(i).size();
+        }
+        MultiArrayMergeSort.sortByDecr(sizes, indexes);
+        
+        // ---- calculate a refined theta and radius and evaluate, then
+        //      store the acceptable solutions and remove them from those
+        //      further down the list
+        
+        Map<Set<PairInt>, PairInt> outputPointsTR = new HashMap<Set<PairInt>, PairInt>();
+        
+        float tol0 = 0.5f;
+        float tol1 = 0.5f;
+        
+        for (int i = 0; i < indexes.length; ++i) {
+            int idx = indexes[i];
+            Set<PairInt> group = contigGroups.get(idx);
+            if (group.size() >= minimumGroupSize) {
+                
+                Integer roughTheta = contigGroupThetas.get(idx);
+                
+                //float[] trMeanStDev = calculateLinePolarCoordsAndStats(group, 
+                //    roughTheta);
+                
+                float[] trMeanStDev = calculateReducedLinePolarCoordsAndStats(group, 
+                    roughTheta);
+                
+                float t = trMeanStDev[0];
+                // if it's highly inclined line, tolerance has to allow for step width
+                if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) < 12) || 
+                    (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 202.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 247.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 292.5f)) < 12) ||
+                    (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) < 12)
+                    ) {
+                    tol1 = 1.5f;
+                }
+                // raise to 2.5?
+                if (trMeanStDev[2] > tol0 && trMeanStDev[3] > tol1) {
+                    continue;
+                }
+                //TODO: consider another limit here
+                if (group.size() < minimumGroupSize) {
+                    continue;
+                }
+                
+                PairInt tr = new PairInt((int)trMeanStDev[0], 
+                    (int)Math.round(trMeanStDev[1]));
+                      
+                outputPointsTR.put(group, tr);
+                
+                for (PairInt p : group) {
+                    Set<Integer> index2Set = pointIndexesToContigGroups.get(p);
+                    for (Integer index2 : index2Set) {
+                        int idx2 = index2.intValue();
+                        if (idx2 != idx) {
+                            contigGroups.get(idx2).remove(p);
+                        }
+                    }
+                    pointIndexesToContigGroups.remove(p);
+                }
+            }
+        }        
         
         return outputPointsTR;
     }
@@ -807,8 +862,21 @@ public class HoughTransform {
         }
     }
 
-    private PairInt calculateLinePolarCoords(Set<PairInt> linePoints, 
-        Integer roughTheta) {
+    /**
+     *  uses thiel sen estimator to calculate the slope and y intercept,
+     * then calculates the average distance of the points from the line
+     * and then the standard deviation of that average.  then removes
+     * outliers that are further from the line than meanTolerance
+     * and then recalculates.  Note that the argument set points is modified
+     * to remove outliers.
+     * @param linePoints input and output modified set
+     * @param roughTheta
+     * @param meanTolerance
+     * @param stDvTolerance
+     * @return 
+     */
+    private float[] calculateReducedLinePolarCoordsAndStats(
+        Set<PairInt> linePoints, Integer roughTheta) {
         
         PairFloatArray xy = new PairFloatArray();
         
@@ -820,7 +888,7 @@ public class HoughTransform {
         float[] y = Arrays.copyOf(xy.getY(), xy.getN());
         
         LinearRegression lReg = new LinearRegression();
-        //lReg.plotTheLinearRegression(x, y);
+        lReg.plotTheLinearRegression(x, y);
         
         float[] yInterceptAndSlope = 
             lReg.calculateTheilSenEstimatorParams(x, y);
@@ -828,20 +896,30 @@ public class HoughTransform {
         double thetaRadians;
         double rSum = 0;
         
-        if (yInterceptAndSlope[1] == Float.MAX_VALUE) {
-            // vertical line
+        boolean isVertical = (yInterceptAndSlope[1] == Float.MAX_VALUE);
+        boolean isHorizontal = (yInterceptAndSlope[1] == 0); 
+        
+        if (isVertical) {
             thetaRadians = Math.PI/2.;
             int count = 0;
             for (PairInt p : linePoints) {
                 if ((count & 1) == 1) {
                     continue;
                 }
-
                 rSum += p.getX();
-
                 ++count;
             }
-
+            rSum /= count;
+        } else if (isHorizontal) {
+            thetaRadians = 0;
+            int count = 0;
+            for (PairInt p : linePoints) {
+                if ((count & 1) == 1) {
+                    continue;
+                }
+                rSum += p.getY();
+                ++count;
+            }
             rSum /= count;
         } else {
             thetaRadians = Math.atan(yInterceptAndSlope[1]);
@@ -852,12 +930,9 @@ public class HoughTransform {
                 if ((count & 1) == 1) {
                     continue;
                 }
-
                 rSum += (p.getX() * ct) + (p.getY() * st);
-
                 ++count;
             }
-
             rSum /= count;
         }
         
@@ -866,9 +941,112 @@ public class HoughTransform {
             t += 360;
         }
         
-        // TODO: consider whether want to transform all angle to between 0 and 180
-                
-        return new PairInt(t, (int)Math.round(rSum));
+        // ----- evaluate ------
+        
+        /*
+        have y = m * x + k  where m is slope and k is yIntercept
+
+        point (x0, y0)
+
+        d = sqrt( 
+            (((x0 + m*y0 - m*k)/(m*m + 1)) - x0)^2 +
+            (((m*(x0 + m*y0 - m*k))/(m*m + 1)) + k - y0)^2
+        )
+        */
+        
+        float m = yInterceptAndSlope[1];
+        float k = yInterceptAndSlope[0];
+        float mn, stdv;
+            
+        double sum = 0;
+        int count = 0;
+        double[] d = new double[linePoints.size()];
+        List<PairInt> points = new ArrayList<PairInt>(linePoints);
+        for (PairInt p : points) {
+            int x0 = p.getX();
+            int y0 = p.getY();
+            if (isVertical) {
+                d[count] = x0 - rSum;
+            } else if (isHorizontal) {
+                d[count] = y0 - rSum;
+            } else {
+                /*
+                m*x - y + yIntercept = 0
+                */
+                d[count] = Math.sqrt(Math.abs(m*x0 - y0 + k)/(m*m + 1));  
+            }
+            sum += d[count];
+            count++;
+        }
+        sum /= (double)linePoints.size();
+        mn = (float)sum;
+        sum = 0;
+        for (int i = 0; i < d.length; ++i) {
+            double diff = d[i] - mn;
+            sum += (diff * diff);
+            count++;
+        }
+        stdv = (float)Math.sqrt(sum/((double)linePoints.size() - 1.));        
+        
+        if (stdv == 0) {
+            return new float[]{t, (float)rSum, mn, stdv};
+        }
+        
+        // TODO: might want to allow a tolerance to be passed in
+        double limit = stdv;
+        // if it's highly inclined line, tolerance has to allow for step width
+        if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) < 12) || 
+            (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 202.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 247.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 292.5f)) < 12) ||
+            (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) < 12)
+            ) {
+            //TODO:
+            // this picks up the meeting of lines at a corner, so
+            // may need revision
+            limit = 2*stdv;
+        }
+        if (limit < 1) {
+            limit = 1;
+        }
+        
+        Set<Integer> remove = new HashSet<Integer>();
+        for (int i = 0; i < d.length; ++i) {
+            double diff = Math.abs(d[i] - mn);
+            if (diff > limit) {
+                remove.add(Integer.valueOf(i));
+            }
+        }
+        
+        // --- recalc mean and stdev w/o outliers ----
+  //TODO: consider recalculating the slope and intercept w/ thiel sen
+        sum = 0;
+        count = 0;
+        for (int i = 0; i < d.length; ++i) {
+            if (remove.contains(Integer.valueOf(i))) {
+                linePoints.remove(points.get(i));
+                continue;
+            }
+            sum += d[i];
+            count++;
+        }
+        sum /= (double)count;
+        mn = (float)sum;
+        count = 0;
+        sum = 0;
+        for (int i = 0; i < d.length; ++i) {
+            if (remove.contains(Integer.valueOf(i))) {
+                continue;
+            }
+            double diff = Math.abs(d[i] - mn);
+            sum += (diff * diff);
+            count++;
+        }
+        stdv = (float)Math.sqrt(sum/((double)count - 1.));        
+        return new float[]{t, (float)rSum, mn, stdv};
     }
     
     public class HoughTransformLines {

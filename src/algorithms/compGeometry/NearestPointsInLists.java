@@ -12,11 +12,15 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Builds an unmodifiable data structure to make finding member points within
+ * Builds a data structure to make finding member points within
  * a distance of a location faster than O(N^2).
  * 
  * The runtime complexity is O(N*lg2(N)) for the constructor
- * and for search is O(lg2(N)) + small number of scans surrounding the nearest x.
+ * and each search is O(lg2(N)) * at most 2*searchRadius.
+ * The search at worst is
+ * 4*O(lg_2(N)) + 4*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+ * 
+ * TODO: replace with a faster algorithm one day...
  * 
  * @author nichole
  */
@@ -156,9 +160,12 @@ public class NearestPointsInLists {
     
     /**
      * find points within radius of (xCenter, yCenter) in the contained points.
-     * runtime complexity is a little more than O(N*lg2(N)) and much less than
+     * runtime complexity is much less than
      * O(N^2) and depends upon the radius and the number of unique x integers
-     * between xCenter +- radius, so is roughly O(N * radius * lg2(N)).
+     * between xCenter +- radius.
+     * If the TreeSet iterator is O(1), then 
+     * at most, the runtime complexity is
+     *    4*O(lg_2(N)) + 4*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
      * @param xCenter
      * @param yCenter
      * @param radius
@@ -207,16 +214,19 @@ public class NearestPointsInLists {
             
             Integer xKey = Integer.valueOf(xCenter);
                                 
+            // O(lg_2(N)), but worse case is 2*O(lg_2(N))
             // --- search backwards ----
             if (xy.get(xKey) == null) {
                 Entry<Integer, TreeSet<Integer>> entry = xy.lowerEntry(xKey);
                 assert(entry != null);
                 xKey = entry.getKey();
             }
-            
+                        
+            //O(lg_2(N))
             NavigableMap<Integer, TreeSet<Integer>> navXMap 
                 = xy.headMap(xKey, true).descendingMap();
             
+            //at most is 2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
             searchX(xCenter, yCenter, xKey, yKey, navXMap, result, 
                 resultSqDistances, rSq);
                                
@@ -264,15 +274,41 @@ public class NearestPointsInLists {
         }        
     }
 
+    /**
+     * runtime complexity is at most
+     * 2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+     * 
+     * @param xCenter
+     * @param yCenter
+     * @param xKey
+     * @param yKey
+     * @param navXMap
+     * @param result
+     * @param resultSqDistances
+     * @param rSq 
+     */
     private void searchX(int xCenter, int yCenter, Integer xKey, Integer yKey, 
         NavigableMap<Integer, TreeSet<Integer>> navXMap, 
         Map<Integer, PairInt> result, Map<Integer, Integer> resultSqDistances, 
         double rSq) {
         
+        double r = Math.sqrt(rSq);
+        
+        /*
+        previous step is at most O(lg_2(N) + 2*searchRadius) to result in at
+        most 2*searchRadius entries in navXMap.
+        
+        The search within the 2*searchRadius entries in navXMap is at most
+           (O(lg_2(N_x_set_size)) + 2 * searchRadius).
+        
+        So the total runtime complexity at most for searchY is
+        2*searchRadius * (O(lg_2(N_x_set_size)) + 2 * searchRadius)
+        */
+        
         for (Entry<Integer, TreeSet<Integer>> entry : navXMap.entrySet()) {
             Integer x = entry.getKey();
             int diffX = Math.abs(x.intValue() - xCenter);
-            if (diffX > rSq) {
+            if (diffX > r) {
                 break;
             }
             TreeSet<Integer> ySet = entry.getValue();
