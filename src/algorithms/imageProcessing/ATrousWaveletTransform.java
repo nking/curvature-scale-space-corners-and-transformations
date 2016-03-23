@@ -482,7 +482,7 @@ System.out.println("j=" + j + " minW=" + cp[0] + " maxW=" + cp[cp.length - 1]
     denoising using BayesShrink, and a fast and simple to implement
     algorithm
     
-    see pg 37 of svn book
+    see pg 37 of sv book
     */
 
     /**

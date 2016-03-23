@@ -1,11 +1,15 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.HoughTransform;
 import algorithms.imageProcessing.features.BlobPerimeterCornerHelper;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -186,81 +190,55 @@ public class HoughTransformTest extends TestCase {
          *    225    |   315
          *          270
          *
-        Most of the theta image values are w.r.t. lines at origin of above diagram, for
-        example.  A line at 225 degrees would look like this in the image:
-                 /
-               /  
-             /
         
-        The results of atan2 on gY and gX resulted in values from -pi to pi radians
-        then those were transformed to 0 to 360 degrees
-       
-        for blox.gif,
-        
-        math.atan2(gY, gX)
-        
-        
-        There is a vertical line with expected theta being 90 or 270,
-           but theta image values are *orthogonal* to that:  
-           (198, 163) math.atan2(-1,-19)*180./math.pi=183
-           (198, 157) math.atan2(0,-17)*180./math.pi=180
-           might be a deceptive feature... consider whether the 2-1D binomial 
-           smoothing on a vertical feature produces a highly local
-           appearance of angle 180 preferentially along an axis as an artifact
-           while globally, the whole vertical line has that behavior...
-           comparing other points now...
-        
-        A line that is /  expected 215
-            has theta image value of 239
-            so is *not orthogonal* to expected  
-            (180, 84) math.atan2(-10,-6)*180./math.pi=239
-        
-        A line that is /  expected 45
-            has theta image value of about 45
-            so is *not orthogonal* to expected 
-            (60, 72) math.atan2(18,16)*180./math.pi=48
-        
-        a line that is expected to have angle 135
-            has theta image values of about 128
-            so is *not orthogonal*
-            (46, 118) math.atan2(19,-15)*180./math.pi=128
-        
-        a line that is expected to have angle 315
-            has theta image values of about 305
-            so is *not orthogonal*
-            (83, 235) math.atan2(-32,22)*180./math.pi=305
-        
-        a horizontal line -- expected 180 or 0
-            has theta image values of about 90
-            so is *orthogonal* to expected
-            (38, 228) math.atan2(46,0)*180./math.pi=90
-            The gX and gY values 
-        
-        For what angles subtended from horizontal or vertical can a significant
-        gX or gY be measured.
-            The first blur is one sigma, which has a FWHM of about 2.35 
-            and a FWZI ~ 4.5 pix.
-            The gradient uses sobel which is a sigma of sqrt(1)/2 so total sigma is sqrt(1.25),
-            and then FWHM is 2.35*sqrt(1.25) which is about 2.6.
-            So the minimum measurable angle would be a slope of 1 pixel vs 3 pixels,
-            math.atan2(1,3)*180./math.pi = 18.4 degrees.
-        
-        So, for any angle which has gX or gY < 3 pixels, the theta angle
-        in the image is present at values orthogonal to expected at
-        angles that are horizontal or vertical (and their actual lines in
-        the image are vertical or horizontal, respectively).
-        
+        2
+        1 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6
+        0           @ @ @ @ @ @
+        9         @             @
+        8       @                 @
+        7     @                     @     
+        6   @                         @
+        5 @                             @
+        4   @                         @
+        3     @                     @
+        2       @                 @
+        1         @             @
+        0           @ @ @ @ @ @
+          0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6
         */
-        /*
-        7
-        6       @ @ @ @
-        5     @         @
-        4   @             @
-        3 @                 @
-        2   @             @
-        1     @         @
-        0       @ @ @ @
-          0 1 2 3 4 5 6 7 8 9 
-        */
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        points.add(new PairInt(5, 0)); points.add(new PairInt(6, 0)); points.add(new PairInt(7, 0)); 
+        points.add(new PairInt(8, 0)); points.add(new PairInt(9, 0)); points.add(new PairInt(10, 0));
+        points.add(new PairInt(4, 1)); points.add(new PairInt(11, 1));
+        points.add(new PairInt(3, 2)); points.add(new PairInt(12, 2));
+        points.add(new PairInt(2, 3)); points.add(new PairInt(13, 3));
+        points.add(new PairInt(1, 4)); points.add(new PairInt(14, 4));
+        points.add(new PairInt(0, 5)); points.add(new PairInt(15, 5));
+        points.add(new PairInt(1, 6)); points.add(new PairInt(14, 6));
+        points.add(new PairInt(2, 7)); points.add(new PairInt(13, 7));
+        points.add(new PairInt(3, 8)); points.add(new PairInt(12, 8));
+        points.add(new PairInt(4, 9)); points.add(new PairInt(11, 9));
+        points.add(new PairInt(5, 10)); points.add(new PairInt(6, 10)); points.add(new PairInt(7, 10));
+        points.add(new PairInt(8, 10)); points.add(new PairInt(9, 10)); points.add(new PairInt(10, 10));
+        
+        int nExpected = points.size();
+        
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 2);
+
+        assertEquals(6, lines.size());
+        
+        int count = 0;
+        for (Set<PairInt> line : lines.keySet()) {
+            for (PairInt p : line) {
+                boolean rm = points.remove(p);
+                assertTrue(rm);
+                count++;
+            }
+        }
+        
+        // allow for corners not being in the lines:
+        assertTrue(points.isEmpty());
     }
 }

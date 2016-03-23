@@ -422,7 +422,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[18] || isPresent[5]) {
+            }
+            if (isPresent[18] || isPresent[5]) {
                 Integer t = Integer.valueOf(22);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -431,7 +432,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[17] && isPresent[23]) || (isPresent[6] && isPresent[0])) {
+            } 
+            if ((isPresent[17] && isPresent[23]) || (isPresent[6] && isPresent[0])) {
                 Integer t = Integer.valueOf(45);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -440,7 +442,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[22] || isPresent[1]) {
+            } 
+            if (isPresent[22] || isPresent[1]) {
                 Integer t = Integer.valueOf(67);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -449,7 +452,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[21] && isPresent[16]) || (isPresent[7] && isPresent[2])) {
+            } 
+            if ((isPresent[21] && isPresent[16]) || (isPresent[7] && isPresent[2])) {
                 Integer t = Integer.valueOf(90);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -458,7 +462,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[20] || isPresent[3]) {
+            } 
+            if (isPresent[20] || isPresent[3]) {
                 Integer t = Integer.valueOf(112);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -467,7 +472,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if ((isPresent[19] && isPresent[15]) || (isPresent[8] && isPresent[4])) {
+            } 
+            if ((isPresent[19] && isPresent[15]) || (isPresent[8] && isPresent[4])) {
                 Integer t = Integer.valueOf(135);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -476,7 +482,8 @@ public class HoughTransform {
                     thetaPointMap.put(t, tPoints);
                 }
                 tPoints.add(p);
-            } else if (isPresent[14] || isPresent[9]) {
+            } 
+            if (isPresent[14] || isPresent[9]) {
                 Integer t = Integer.valueOf(157);
                 thetas.add(t);
                 Set<PairInt> tPoints = thetaPointMap.get(t);
@@ -900,7 +907,7 @@ public class HoughTransform {
         float[] y = Arrays.copyOf(xy.getY(), xy.getN());
         
         LinearRegression lReg = new LinearRegression();
-        lReg.plotTheLinearRegression(x, y);
+        //lReg.plotTheLinearRegression(x, y);
         
         float[] yInterceptAndSlope = 
             lReg.calculateTheilSenEstimatorParams(x, y);

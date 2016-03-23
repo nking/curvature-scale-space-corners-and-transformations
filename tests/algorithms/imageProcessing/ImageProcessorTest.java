@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.GreyscaleImage.Type;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Complex;
@@ -664,7 +665,45 @@ public class ImageProcessorTest extends TestCase {
         imageProcessor.writeToImage(img3, ccOut);
         
         ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
+                
+    }
+    
+    public void testPerfft2() throws Exception {
         
+        String filePath = ResourceFinder.findFileInTestResources("checkerboard_01.jpg");  
+        GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        GreyscaleImage img = new GreyscaleImage(img0.getWidth(), img0.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int col = 0; col < img0.getWidth(); col++) {
+            for (int row = 0; row < img0.getHeight(); row++) {
+                int v = img0.getValue(col, row);
+                img.setValue(col, row, v);
+            }
+        }
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.apply2DFFT(img, true);
+        
+        ImageDisplayer.displayImage("FFT of checkerboard", img);
+        
+        
+        img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        PeriodicFFT pfft = new PeriodicFFT();
+        Complex[][][] pC = pfft.perfft2(img);
+        GreyscaleImage img2 = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int col = 0; col < img2.getWidth(); col++) {
+            for (int row = 0; row < img2.getHeight(); row++) {
+                double re = pC[0][col][row].re();
+                img2.setValue(col, row, (int)re);
+            }
+        }
+        HistogramEqualization hEq = new HistogramEqualization(img2);
+        hEq.applyFilter();;
+        
+        ImageDisplayer.displayImage("Periodic FFT of checkerboard", img2);
+        
+        int z = 1;
     }
     
     public void testDeconvolve() throws Exception {
