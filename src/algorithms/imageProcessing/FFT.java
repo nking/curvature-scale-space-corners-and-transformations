@@ -149,7 +149,7 @@ public class FFT {
             
             int idx = MiscMath.bitReverse(k, nBits);
             
-            r[idx] = new Complex(x[k].re(), x[k].im());
+            r[idx] = x[k].copy();
         }
         
         return r;

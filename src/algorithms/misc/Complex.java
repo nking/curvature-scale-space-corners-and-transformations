@@ -74,6 +74,10 @@ public class Complex {
         double imag = a.im - b.im;
         return new Complex(real, imag);
     }
+    
+    public Complex copy() {
+        return new Complex(this.re, this.im);
+    }
 
     // return a new Complex object whose value is (this * b)
     public Complex times(Complex b) {
@@ -103,7 +107,7 @@ public class Complex {
     public double im() { return im; }
 
     // return a / b
-    public Complex divides(Complex b) {
+    public Complex divided(Complex b) {
         Complex a = this;
         return a.times(b.reciprocal());
     }
@@ -125,7 +129,7 @@ public class Complex {
 
     // return a new Complex object whose value is the complex tangent of this
     public Complex tan() {
-        return sin().divides(cos());
+        return sin().divided(cos());
     }
     
     // a static version of plus

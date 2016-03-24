@@ -699,11 +699,10 @@ public class ImageProcessorTest extends TestCase {
             }
         }
         HistogramEqualization hEq = new HistogramEqualization(img2);
-        hEq.applyFilter();;
+        hEq.applyFilter();
         
         ImageDisplayer.displayImage("Periodic FFT of checkerboard", img2);
         
-        int z = 1;
     }
     
     public void testDeconvolve() throws Exception {
@@ -1164,4 +1163,31 @@ public class ImageProcessorTest extends TestCase {
         
         ImageDisplayer.displayImage("median filtered", out);                
     }
+    
+    
+    public void testIFFTShift() throws Exception {
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        double[][] a = new double[4][8];
+        a[0] = new double[]{-0.5, -0.375, -0.25, -0.125, 0., 0.125, 0.25, 0.375};
+        a[1] = new double[]{-0.5, -0.375, -0.25, -0.125, 0., 0.125, 0.25, 0.375};
+        a[2] = new double[]{-0.5, -0.375, -0.25, -0.125, 0., 0.125, 0.25, 0.375};
+        a[3] = new double[]{-0.5, -0.375, -0.25, -0.125, 0., 0.125, 0.25, 0.375};
+        
+        double[][] aShifted = imageProcessor.ifftShift(a);
+        
+        double[][] expected = new double[4][8];
+        expected[0] = new double[]{0., 0.125, 0.25, 0.375, -0.5, -0.375, -0.25, -0.125};
+        expected[1] = new double[]{0., 0.125, 0.25, 0.375, -0.5, -0.375, -0.25, -0.125};
+        expected[2] = new double[]{0., 0.125, 0.25, 0.375, -0.5, -0.375, -0.25, -0.125};
+        expected[3] = new double[]{0., 0.125, 0.25, 0.375, -0.5, -0.375, -0.25, -0.125};
+        
+        for (int i = 0; i < expected.length; ++i) {
+            for (int j = 0; j < expected[i].length; ++j) {
+                assertEquals(expected[i][j], aShifted[i][j]);
+            }
+        }
+    }
+    
 }

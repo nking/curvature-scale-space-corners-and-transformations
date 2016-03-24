@@ -13,6 +13,7 @@ import algorithms.misc.MiscDebug;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -2550,6 +2551,36 @@ public class ImageProcessor {
         return output;
     }
     
+    public Complex[][] padUpToPowerOfTwo2(Complex[][] input) {
+        
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
+        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+
+        int xOffset = w - w0;
+        int yOffset = h - h0;
+
+        if (xOffset == 0 && yOffset == 0) {
+            return input;
+        }
+       
+        Complex[][] output = new Complex[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new Complex[h];
+        }
+        
+        for (int i = 0; i < w0; ++i) {
+            for (int j = 0; j < h0; ++j) {
+                Complex v = input[i][j];
+                output[i][j] = v;
+            }
+        }
+
+        return output;
+    }
+    
     public GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
 
         int w0 = input.getWidth();
@@ -2655,7 +2686,7 @@ public class ImageProcessor {
         }
     }
 
-    protected Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {
+    public Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {
 
         // perform FFT by column
         for (int col = 0; col < cc.length; col++) {
@@ -4119,4 +4150,183 @@ public class ImageProcessor {
         return c;
     }
 
+    /**
+     * opposite to shift zero-frequency component to the center of the spectrum
+     * in that it shifts the zero-frequency component to the smallest indexes
+     * in the arrays.
+     * 
+     * adapted from
+     * https://github.com/numpy/numpy/blob/master/LICENSE.txt
+     * which has copyright
+     * 
+     * Copyright (c) 2005-2016, NumPy Developers.
+        All rights reserved.
+
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are
+        met:
+
+            * Redistributions of source code must retain the above copyright
+               notice, this list of conditions and the following disclaimer.
+
+            * Redistributions in binary form must reproduce the above
+               copyright notice, this list of conditions and the following
+               disclaimer in the documentation and/or other materials provided
+               with the distribution.
+
+            * Neither the name of the NumPy Developers nor the names of any
+               contributors may be used to endorse or promote products derived
+               from this software without specific prior written permission.
+
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     * @param a
+     * @return 
+     */
+    public double[][] ifftShift(double[][] a) {
+        
+        double[][] b = new double[a.length][];
+                
+        // ---- reorder columns ----
+        int nc = a.length;
+        int p2 = nc - ((nc + 1)/2);
+        List<Integer> range = new ArrayList<Integer>();
+        for (int i = p2; i < nc; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        for (int i = 0; i < p2; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        int count = 0;
+        for (Integer index : range) {
+            int idx = index.intValue();
+            b[count] = Arrays.copyOf(a[idx], a[idx].length);
+            count++;
+        }
+        
+        // ---- reorder rows ------
+        nc = a[0].length;
+        p2 = nc - ((nc + 1)/2);
+        range = new ArrayList<Integer>();
+        for (int i = p2; i < nc; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        for (int i = 0; i < p2; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        
+        double[][] c = new double[a.length][];
+        for (int i = 0; i < c.length; ++i) {
+            c[i] = new double[a[0].length];
+        }
+        count = 0;
+        for (Integer index : range) {
+            int j = index.intValue();
+            for (int col = 0; col < a.length; ++col) {
+                c[col][count] = b[col][j];
+            }
+            count++;
+        }
+        
+        return c;
+    }
+    
+    /**
+     * opposite to shift zero-frequency component to the center of the spectrum
+     * in that it shifts the zero-frequency component to the smallest indexes
+     * in the arrays.
+     * 
+     * adapted from
+     * https://github.com/numpy/numpy/blob/master/LICENSE.txt
+     * which has copyright
+     * 
+     * Copyright (c) 2005-2016, NumPy Developers.
+        All rights reserved.
+
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are
+        met:
+
+            * Redistributions of source code must retain the above copyright
+               notice, this list of conditions and the following disclaimer.
+
+            * Redistributions in binary form must reproduce the above
+               copyright notice, this list of conditions and the following
+               disclaimer in the documentation and/or other materials provided
+               with the distribution.
+
+            * Neither the name of the NumPy Developers nor the names of any
+               contributors may be used to endorse or promote products derived
+               from this software without specific prior written permission.
+
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+        "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+        LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+        A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+        OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+        LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+        DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+        THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+        (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     * @param a
+     * @return 
+     */
+    public Complex[][] ifftShift(Complex[][] a) {
+        
+        Complex[][] b = new Complex[a.length][];
+                
+        // ---- reorder columns ----
+        int nc = a.length;
+        int p2 = nc - ((nc + 1)/2);
+        List<Integer> range = new ArrayList<Integer>();
+        for (int i = p2; i < nc; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        for (int i = 0; i < p2; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        int count = 0;
+        for (Integer index : range) {
+            int idx = index.intValue();
+            b[count] = Arrays.copyOf(a[idx], a[idx].length);
+            count++;
+        }
+        
+        // ---- reorder rows ------
+        nc = a[0].length;
+        p2 = nc - ((nc + 1)/2);
+        range = new ArrayList<Integer>();
+        for (int i = p2; i < nc; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        for (int i = 0; i < p2; ++i) {
+            range.add(Integer.valueOf(i));
+        }
+        
+        Complex[][] c = new Complex[a.length][];
+        for (int i = 0; i < c.length; ++i) {
+            c[i] = new Complex[a[0].length];
+        }
+        count = 0;
+        for (Integer index : range) {
+            int j = index.intValue();
+            for (int col = 0; col < a.length; ++col) {
+                c[col][count] = b[col][j];
+            }
+            count++;
+        }
+        
+        return c;
+    }
 }

@@ -252,6 +252,12 @@ public class MiscMathTest extends TestCase {
         plotter.writeFile();
     }
 
+    public void test000() throws Exception {
+        double[] a = new double[]{0, 121, 3, 4};
+        double max = MiscMath.findMax(a);
+        assertEquals(121., max);
+    }
+
     public void test0() throws Exception {
         // constructor isn't used, this is to complete the coverage.
         MiscMath mm = new MiscMath();

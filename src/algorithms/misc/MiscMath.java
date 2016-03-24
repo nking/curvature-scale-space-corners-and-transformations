@@ -103,6 +103,16 @@ public class MiscMath {
         return max;
     }
     
+    public static double findMax(double[] a) {
+        double max = Double.MIN_VALUE;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] > max) {
+                max = a[i];
+            }
+        }
+        return max;
+    }
+    
     public static float findMax(float[] a, int nIndexes) {
         float max = Float.MIN_VALUE;
         for (int i = 0; i < nIndexes; i++) {
