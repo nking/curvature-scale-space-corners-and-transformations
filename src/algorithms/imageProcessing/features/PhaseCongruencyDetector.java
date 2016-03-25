@@ -158,6 +158,10 @@ import java.util.Stack;
  */
 public class PhaseCongruencyDetector {
         
+    /**
+     * @param img
+     * @return NOTE: the return products use notation a[row][col]
+     */
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
     
         // number of wavelet scales.  a lower value reveals more fine scale features.
@@ -207,26 +211,19 @@ public class PhaseCongruencyDetector {
         minWavelength = 3;
         k = 2.0f;
         
-        
         int nCols = img.getWidth();
         int nRows = img.getHeight();
-        
+                
+        // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
         //IM = perfft2(im);                   % Periodic Fourier transform of image
         Complex[][][] perfResults = perfft2.perfft2(img, true);
         Complex[][] capIm = perfResults[1];
         
+// PAUSED HERE.  add debugging plots        
         //DEBUG
         {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < capIm.length; ++i) {
-            for (int j = 0; j < capIm[0].length; ++j) {
-                Complex v = capIm[i][j];
-                sb.append(String.format("(%d,%d) %f + i %f\n", i, j, (float)v.re(),
-                    (float)v.im()));
-            }
-        }
-        System.out.println(sb.toString());
+        
         }
         
         /*
@@ -249,9 +246,10 @@ public class PhaseCongruencyDetector {
         Generate grid data for constructing filters in the frequency domain    
         [radius, u1, u2] = filtergrid(rows, cols);
         */
+        // results use notation a[row][col]
         FilterGrid fg = new FilterGrid();
-        FilterGridProducts fgProducts = fg.filtergrid(nCols, nRows);
-     
+        FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);     
+        
         /*
         Get rid of the 0 radius value in the middle (at top left corner after
         fftshifting) so that taking the log of the radius, or dividing by the
@@ -274,16 +272,17 @@ public class PhaseCongruencyDetector {
          % done as one in the frequency domain, saving time and memory.
          H = (1i*u1 - u2)./radius;
         */
+        // results use notation a[row][col]
         double[][] u1 = fgProducts.getU1();
         double[][] u2 = fgProducts.getU2();
         double[][] radius = fgProducts.getRadius();
-        Complex[][] capH = new Complex[nCols][];
-        for (int i = 0; i < u1.length; ++i) {
-            capH[i] = new Complex[nRows];
-            for (int j = 0; j < nRows; ++j) {
-                double re = -u2[i][j]/radius[i][j];
-                double im = u1[i][j]/radius[i][j];
-                capH[i][j] = new Complex(re, im);
+        Complex[][] capH = new Complex[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            capH[row] = new Complex[nCols];
+            for (int col = 0; col < nCols; ++col) {
+                double re = -u2[row][col]/radius[row][col];
+                double im = u1[row][col]/radius[row][col];
+                capH[row][col] = new Complex(re, im);
             }
         }
         
@@ -295,9 +294,10 @@ public class PhaseCongruencyDetector {
          % calculating phase congruency
          lp = lowpassfilter([rows,cols],.45,15);    % Radius .4, 'sharpness' 15
         */
+        // results use notation a[row][col]
         LowPassFilter lpFilter = new LowPassFilter();
-        double[][] lp = lpFilter.lowpassfilter(nCols, nRows, 0.45f, 15);
-        
+        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
+                
         ImageProcessor imageProcessor = new ImageProcessor();
         
         double[][] maxAN = null;
@@ -311,15 +311,14 @@ public class PhaseCongruencyDetector {
             
             double fo = 1.0/wavelength;
             
-            Complex[][] logGabor = new Complex[radius.length][];
-            for (int i = 0; i < logGabor.length; ++i) {
-                logGabor[i] = new Complex[radius[0].length];
-                for (int j = 0; j < radius[0].length; ++j) {
+            // use notation a[row][col]
+            Complex[][] logGabor = new Complex[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                logGabor[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
                     //logGabor = exp((-(log(radius/fo)).^2) / (2 * log(sigmaOnf)^2)); 
-                    
- //TODO: review the math here to see if imaginary portion should be part of operations too
-                    
-                    double v = radius[i][j]/fo;
+                                        
+                    double v = radius[row][col]/fo;
                     
                     v = Math.log(v);
                     v *= v;
@@ -329,37 +328,39 @@ public class PhaseCongruencyDetector {
                     v2 *= 2;
                     v = Math.exp(v/v2);
                     //logGabor = logGabor.*lp;
-                    logGabor[i][j] = new Complex(lp[i][j] * v, 0);
+                    logGabor[row][col] = new Complex(lp[row][col] * v, 0);
                 }
             }
             logGabor[0][0] = new Complex(0, 0);
             
+            // uses notation a[row][col]
             //Bandpassed image in the frequency domain
-            Complex[][] capIMF = new Complex[logGabor.length][];
-            for (int i = 0; i < logGabor.length; ++i) {
-                capIMF[i] = new Complex[logGabor[i].length];
-                for (int j = 0; j < logGabor[i].length; ++j) {
-                   capIMF[i][j] = capIm[i][j].times(logGabor[i][j]);
+            Complex[][] capIMF = new Complex[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                capIMF[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                   capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
             } 
             
+            // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
-            double[][] dIMF = new double[capIMF.length][];
-            for (int i = 0; i < dIMF.length; ++i) {
-                dIMF[i] = new double[capIMF[i].length];
-                for (int j = 0; j < capIMF[i].length; ++j) {
-                    dIMF[i][j] = capIMF[i][j].re();
+            double[][] dIMF = new double[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                dIMF[row] = new double[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    dIMF[row][col] = capIMF[row][col].re();
                 }
             }
             double[][] f = imageProcessor.ifftShift(dIMF);
             
             //h = ifft2(IMF.*H);
-            Complex[][] capIMFH = new Complex[capIMF.length][];
-            for (int i = 0; i < capIMFH.length; ++i) {
-                capIMFH[i] = new Complex[capIMF[i].length];
-                for (int j = 0; j < capIMF[i].length; ++j) {
-                    capIMFH[i][j] = capIMF[i][j].times(capH[i][j]);
+            Complex[][] capIMFH = new Complex[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                capIMFH[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
                 }
             }
             Complex[][] h = imageProcessor.ifftShift(capIMFH);
@@ -373,17 +374,18 @@ public class PhaseCongruencyDetector {
             sumh1 = sumh1 + h1;
             sumh2 = sumh2 + h2;
             */
-            double[][] aN = new double[nCols][];
-            for (int col = 0; col < nCols; ++col) {
-                aN[col] = new double[nRows];
-                for (int row = 0; row < nRows; ++row) {
-                    double f0 = f[col][row];
-                    double h1 = h[col][row].re();
-                    double h2 = h[col][row].im();
-                    aN[col][row] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
+            // uses notation a[row][col]
+            double[][] aN = new double[nRows][];
+            for (int row = 0; row < nRows; ++row) {
+                aN[row] = new double[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    double f0 = f[row][col];
+                    double h1 = h[row][col].re();
+                    double h2 = h[row][col].im();
+                    aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
                     
                     int idx = (row * nCols) + col;
-                    sumAn[idx] += aN[col][row];
+                    sumAn[idx] += aN[row][col];
                     sumF[idx] += f0;
                     sumH1[idx] += h1;
                     sumH2[idx] += h2;
@@ -412,10 +414,11 @@ public class PhaseCongruencyDetector {
             } else {
                 // Record maximum amplitude of components across scales.  This is needed
                 // to determine the frequency spread weighting.
-                //maxAN = max(maxAN, An);  
-                for (int col = 0; col < nCols; ++col) {
-                    for (int row = 0; row < nRows; ++row) {
-                        maxAN[col][row] = Math.max(maxAN[col][row], aN[col][row]);
+                //maxAN = max(maxAN, An); 
+                // uses notation a[row][col]
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        maxAN[row][col] = Math.max(maxAN[row][col], aN[row][col]);
                     }
                 }
             }
@@ -433,17 +436,18 @@ public class PhaseCongruencyDetector {
         Now calculate the sigmoidal weighting function.
         weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
         */
-        double[][] width = new double[nCols][];
-        double[][] weight = new double[nCols][];
-        for (int col = 0; col < nCols; ++col) {
-            width[col] = new double[nRows];
-            weight[col] = new double[nRows];
-            for (int row = 0; row < nRows; ++row) {
-                double v = (maxAN[col][row] + epsilon - 1)/(nScale - 1.);
+        // uses notation a[row][col]
+        double[][] width = new double[nRows][];
+        double[][] weight = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            width[row] = new double[nCols];
+            weight[row] = new double[nCols];
+            for (int col = 0; col < nCols; ++col) {
+                double v = (maxAN[row][col] + epsilon - 1)/(nScale - 1.);
                 int idx = (row * nCols) + col;
-                width[col][row] = sumAn[idx]/v;
-                v = Math.exp(g*(cutOff - width[col][row]));
-                weight[col][row] = 1./(1. + v);
+                width[row][col] = sumAn[idx]/v;
+                v = Math.exp(g*(cutOff - width[row][col]));
+                weight[row][col] = 1./(1. + v);
             }
         }
         
@@ -494,46 +498,48 @@ public class PhaseCongruencyDetector {
             threshold =  EstNoiseEnergyMean + k*EstNoiseEnergySigma;
         }
         
-        double[][] orientation = new double[nCols][];
-        double[][] ft = new double[nCols][];
-        double[][] energy = new double[nCols][];
-        double[][] pc = new double[nCols][];
-        for (int col = 0; col < nCols; ++col) {
-            orientation[col] = new double[nRows];
-            ft[col] = new double[nRows];
-            energy[col] = new double[nRows];
-            pc[col] = new double[nRows];
+        // uses notation a[row][col]
+        double[][] orientation = new double[nRows][];
+        double[][] ft = new double[nRows][];
+        double[][] energy = new double[nRows][];
+        double[][] pc = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            orientation[row] = new double[nCols];
+            ft[row] = new double[nCols];
+            energy[row] = new double[nCols];
+            pc[row] = new double[nCols];
         }
         
-        for (int col = 0; col < nCols; ++col) {
-            for (int row = 0; row < nRows; ++row) {
+        // uses notation a[row][col]
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
                 int idx = (row * nCols) + col;
-                orientation[col][row] = Math.atan(-sumH2[idx]/sumH1[idx]);
-                if (orientation[col][row] < 0) {
-                    orientation[col][row] += Math.PI;
+                orientation[row][col] = Math.atan(-sumH2[idx]/sumH1[idx]);
+                if (orientation[row][col] < 0) {
+                    orientation[row][col] += Math.PI;
                 }
                 // orientation values now range 0 - pi
                 // Quantize to 0 - 180 degrees (for NONMAXSUP)
-                orientation[col][row] = Math.floor(orientation[col][row]*180./Math.PI);
+                orientation[row][col] = Math.floor(orientation[row][col]*180./Math.PI);
                 
                 //Feature type - a phase angle -pi/2 to pi/2.
                 double v1 = sumH1[idx];
                 v1 *= v1;
                 double v2 = sumH2[idx];
                 v2 *= v2;
-                ft[col][row] = Math.atan2(sumF[idx], Math.sqrt(v1 + v2));
+                ft[row][col] = Math.atan2(sumF[idx], Math.sqrt(v1 + v2));
                 
                 //overall energy
                 double v0 = sumF[idx];
                 v0 *= v0;
-                energy[col][row] = Math.sqrt(v0 + v1 + v2);
+                energy[row][col] = Math.sqrt(v0 + v1 + v2);
                 
-                double eDiv = Math.acos(energy[col][row]/(sumAn[idx] + epsilon));
+                double eDiv = Math.acos(energy[row][col]/(sumAn[idx] + epsilon));
                 
-                pc[col][row] = weight[col][row] 
+                pc[row][col] = weight[row][col] 
                     * Math.max(1. - deviationGain * eDiv, 0)
-                    * Math.max(energy[col][row], 0)
-                    / (energy[col][row] + epsilon);
+                    * Math.max(energy[row][col], 0)
+                    / (energy[row][col] + epsilon);
                 
             }
         }

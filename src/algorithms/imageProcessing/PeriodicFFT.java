@@ -106,11 +106,14 @@ public class PeriodicFFT {
      *          P is the FFT of the periodic component
      *          s smooth component in the spatial domain
      *          p periodic component in the spatial domain
+     *    *NOTE that the output data use the notation a[row]col]
      */
     public Complex[][][] perfft2(GreyscaleImage img, boolean computeSpatial) {
-        
-        int nRows = img.getHeight();
+                
+        // using notation in PhaseCongruencyDetector,
+        // that is, arrays are a[row][col]            
         int nCols = img.getWidth();
+        int nRows = img.getHeight();
         
         /*
         Compute the boundary image which is equal to the image discontinuity
@@ -121,30 +124,31 @@ public class PeriodicFFT {
         s[:, 0] = s[:, 0] + im[:, 0] - im[:, -1]
         s[:, -1] = s[:, -1] - im[:, 0] + im[:, -1]
         */
-        double[][] s = new double[nCols][];
-        for (int i = 0; i < s.length; ++i) {
-            s[i] = new double[nRows];
+        // using notation a[row][col]
+        double[][] s = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            s[row] = new double[nCols];
         }
         
         for (int col = 0; col < nCols; ++col) {
             //s[row=0, col=:] = im[row=0, col=:] - im[row=-1, col=:]
             int v = img.getValue(col, 0) - img.getValue(col, nRows - 1);
-            s[col][0] = v;
+            s[0][col] = v;
         }
         for (int col = 0; col < nCols; ++col) {
             //s[row=-1, col=:] = -s[row=0, col=:]
-            double v = s[col][0];
-            s[col][nRows - 1] = -v;
+            double v = s[0][col];
+            s[nRows - 1][col] = -v;
         }
         for (int row = 0; row < nRows; ++row) {
             //s[row=:, col=0] = s[row=:, col=0] + im[row=:, col=0] - im[rod=:, col=-1]
-            double v = s[0][row] + img.getValue(0, row) - img.getValue(nCols - 1, row);
-            s[0][row] = v;
+            double v = s[row][0] + img.getValue(0, row) - img.getValue(nCols - 1, row);
+            s[row][0] = v;
         }
         for (int row = 0; row < nRows; ++row) {
             //s[row=:, col=-1] = s[row=:, col=-1] - im[row=:, col=0] + im[row=:, col=-1]
-            double v = s[nCols - 1][row] - img.getValue(0, row) + img.getValue(nCols - 1, row);
-            s[nCols - 1][row] = v;
+            double v = s[row][nCols - 1] - img.getValue(0, row) + img.getValue(nCols - 1, row);
+            s[row][nCols - 1] = v;
         }
                 
         /*
@@ -155,20 +159,21 @@ public class PeriodicFFT {
         x, y = (2 * np.pi * np.arange(0, v) / float(v) for v in (cols, rows))
         cx, cy = np.meshgrid(x, y)
         */
-        double[][] cx = new double[nCols][];
-        for (int i = 0; i < nCols; ++i) {
-            cx[i] = new double[nRows];
-            double v = (2. * Math.PI * i)/(double)nCols;
-            Arrays.fill(cx[i], v);
-        }
-        double[][] cy = new double[nCols][];
-        for (int i = 0; i < nCols; ++i) {
-            cy[i] = new double[nRows];
-        }
+        // using notation a[row][col]
+        double[][] cy = new double[nRows][];
         for (int row = 0; row < nRows; ++row) {
+            cy[row] = new double[nCols];
             double v = (2. * Math.PI * row)/(double)nRows;
-            for (int col = 0; col < nCols; ++col) {
-                cy[col][row] = v;
+            Arrays.fill(cy[row], v);
+        }
+        double[][] cx = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            cx[row] = new double[nCols];
+        }
+        for (int col = 0; col < nCols; ++col) {
+            double v = (2. * Math.PI * col)/(double)nCols;
+            for (int row = 0; row < nRows; ++row) {
+                cx[row][col] = v;
             }
         }
         
@@ -183,16 +188,17 @@ public class PeriodicFFT {
         // the fft algorithm using powers of 2 sizes is faster, so pad the data
         ImageProcessor imageProcessor = new ImageProcessor();
         
+        // using notation a[row][col]
         Complex[][] capS = imageProcessor.create2DFFT(s, true);
-        for (int col = 0; col < nCols; ++col) {
-            for (int row = 0; row < nRows; ++row) {
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
                 double denom;
                 if (col == 0 && row == 0) {
                     denom = 1;
                 } else {
-                    denom = (2. * (2. - Math.cos(cx[col][row]) - Math.cos(cy[col][row])));
+                    denom = (2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));
                 }
-                capS[col][row] = capS[col][row].divided(new Complex(denom, 0));
+                capS[row][col] = capS[row][col].divided(new Complex(denom, 0));
             }
         }
         
@@ -206,13 +212,14 @@ public class PeriodicFFT {
         P = fft2(im) - S;    % FFT of periodic component
         */
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] capP = imageProcessor.create2DFFT(imageProcessor.convertImage(img), true);
-             
-        for (int i = 0; i < nCols; ++i) {
-            for (int j = 0; j < nRows; ++j) {
-                Complex v0 = capP[i][j];
-                Complex s0 = capS[i][j];
-                capP[i][j] = v0.minus(s0);
+        // using notation a[row][col]
+        Complex[][] capP = imageProcessor.create2DFFT(imageProcessor.convertImageWithSwapMajor(img), true);
+    
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                Complex v0 = capP[row][col];
+                Complex s0 = capS[row][col];
+                capP[row][col] = v0.minus(s0);
             }
         }
         
@@ -220,9 +227,9 @@ public class PeriodicFFT {
         //DEBUG
         /*{
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < capP.length; ++i) {
-            for (int j = 0; j < capP[0].length; ++j) {
-                Complex v = capP[i][j];
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                Complex v = capP[row][col];
                 sb.append(String.format("S (%d,%d) %f + i %f\n", i, j, (float)v.re(),
                     (float)v.im()));
             }
@@ -230,35 +237,28 @@ public class PeriodicFFT {
         System.out.println(sb.toString());
         }*/
         
-        
         if (computeSpatial) {
             //s = real(ifft2(S)); 
             //p = im - s;
             
             Complex[][] lowerCaseS = imageProcessor.ifftShift(capS);
-            for (int i = 0; i < lowerCaseS.length; ++i) {
-                for (int j = 0; j < lowerCaseS[0].length; ++j) {
-                    lowerCaseS[i][j] = new Complex(lowerCaseS[i][j].re(), 0);
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    lowerCaseS[row][col] = new Complex(lowerCaseS[row][col].re(), 0);
                 }
             }
             
             Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];
-            for (int i = 0; i < lowerCaseS.length; ++i) {
-                lowerCaseP[i] = new Complex[lowerCaseS[i].length];
-                for (int j = 0; j < lowerCaseS[i].length; ++j) {
-                    lowerCaseP[i][j] = new Complex(
-                        img.getValue(i, j) - lowerCaseS[i][j].re(), 0);
+            for (int row = 0; row < nRows; ++row) {
+                lowerCaseP[row] = new Complex[nCols];
+                for (int col = 0; col < nCols; ++col) {
+                    lowerCaseP[row][col] = new Complex(
+                        img.getValue(col, row) - lowerCaseS[row][col].re(), 0);
                 }
             }
             
             return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};
         }
-        /*
-        if nargout > 2       % Generate spatial domain results 
-            s = real(ifft2(S)); 
-            p = im - s;         
-        end
-        */
         
         return new Complex[][][]{capS, capP};
     }

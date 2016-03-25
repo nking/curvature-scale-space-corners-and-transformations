@@ -51,6 +51,7 @@ public class FilterGrid {
           u1, u2 - Grids containing normalised frequency values
                    ranging from -0.5 to 0.5 in x and y directions
                    respectively. u1 and u2 are quadrant shifted.
+          NOTE: the returned results use notation a[row][col]
     */
     public FilterGridProducts filtergrid(int nRows, int nCols) {
                 
@@ -109,7 +110,7 @@ public class FilterGrid {
         for (int i = 0; i < u2Range.length; ++i) {
             u2Range[i] /= div;
         }
-    
+
         // nRows X nCols
         //[u1,u2] = meshgrid(u1range, u2range);
         double[][] u1 = new double[nRows][];
@@ -131,12 +132,12 @@ public class FilterGrid {
         u1 = imageProcessor.ifftShift(u1);
         u2 = imageProcessor.ifftShift(u2);
        
-        int w0 = u1.length;
-        int h0 = u1[0].length;
-        double[][] radius = new double[w0][];
-        for (int i = 0; i < w0; ++i) {
-            radius[i] = new double[h0];
-            for (int j = 0; j < h0; ++j) {
+        int len0 = u1.length;
+        int len1 = u1[0].length;
+        double[][] radius = new double[len0][];
+        for (int i = 0; i < len0; ++i) {
+            radius[i] = new double[len1];
+            for (int j = 0; j < len1; ++j) {
                 double v = u1[i][j] * u1[i][j] + u2[i][j] * u2[i][j];
                 radius[i][j] = Math.sqrt(v);
             }

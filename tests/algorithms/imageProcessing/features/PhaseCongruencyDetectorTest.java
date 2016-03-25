@@ -23,7 +23,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         
         //String fileName = "blox.gif";
         //String fileName = "susan-in_plus.png";
-        String fileName = "tmp.png";
+        //String fileName = "tmp.png";
+        String fileName = "lena.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
@@ -33,19 +34,23 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             phaseCDetector.phaseCongMono(img);
         
         assertNotNull(products);
-        
+                
         double[][] pc = products.getPhaseCongruency();
-        double[] pc0 = new double[pc.length * pc[0].length];
+        
+        int nRows = pc.length;
+        int nCols = pc[0].length;
+        
+        double[] pc0 = new double[nRows * nCols];
         for (int i = 0; i < pc0.length; ++i) {
-            int y = i/pc.length;
-            int x = i - (y * pc.length);
-            pc0[i] = pc[x][y];
+            int y = i/nCols;
+            int x = i - (y * nCols);
+            pc0[i] = pc[y][x];
         }
         int[] scaledPC = MiscMath.rescale(pc0, 0, 255);
-        GreyscaleImage out = new GreyscaleImage(pc.length, pc[0].length);
+        GreyscaleImage out = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < pc0.length; ++i) {
-            int y = i/pc.length;
-            int x = i - (y * pc.length);            
+            int y = i/nCols;
+            int x = i - (y * nCols);           
             out.setValue(x, y, scaledPC[i]);
         }
         MiscDebug.writeImage(out, "_phase_congr_0_");
@@ -55,17 +60,18 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         nm = nonmaxsup(PC, or, 1.5);   % nonmaxima suppression
         bw = hysthresh(nm, 0.1, 0.3);  % hysteresis thresholding 0.1 - 0.3
         */
+        
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
             products.getOrientation(), 1.5);
                 
         int[][] binaryImage = phaseCDetector.applyHysThresh(imgTh0, 0.1, 0.3);
                 
-        out = new GreyscaleImage(binaryImage.length, binaryImage[0].length);
-        for (int i = 0; i < binaryImage.length; ++i) {
-            for (int j = 0; j < binaryImage[i].length; ++j) {
-                if (binaryImage[i][j] > 0) {
-                    out.setValue(i, j, 255);
+        out = new GreyscaleImage(nCols, nRows);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                if (binaryImage[row][col] > 0) {
+                    out.setValue(col, row, 255);
                 }
             }
         }
