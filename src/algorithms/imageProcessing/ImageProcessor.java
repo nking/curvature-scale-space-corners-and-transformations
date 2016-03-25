@@ -2715,10 +2715,11 @@ public class ImageProcessor {
             }
         }
 
+        int nb = output[0].length;
         //transpose the matrix
         output = MatrixUtil.transpose(output);
         
-        assert(n1 == output.length);
+        assert(nb == output.length);
 
         // ----- perform FFT by dimension 1,transposed -----
         for (int i1 = 0; i1 < n1; i1++) {
