@@ -1,17 +1,27 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.AbstractLineThinner;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.PeriodicFFT;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  Not yet tested or ready for use.
@@ -147,14 +157,14 @@ import java.util.Arrays;
 %     DICTA 2003, Sydney Dec 10-12
  */
 public class PhaseCongruencyDetector {
-    
+        
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
     
         // number of wavelet scales.  a lower value reveals more fine scale features.
         int nScale = 4;
         
         // wavelength of smallest scale filter
-        int minWavelength = 1; // should this be 0?
+        int minWavelength = 1;
         
         // scaling factor between successive filters
         float mult = 2.1f;
@@ -191,12 +201,33 @@ public class PhaseCongruencyDetector {
         
         float epsilon = .0001f;
         
+        
+        //NOTE: changing parameters to match python code while debugging
+        nScale = 5;
+        minWavelength = 3;
+        k = 2.0f;
+        
+        
         int nCols = img.getWidth();
         int nRows = img.getHeight();
         
         PeriodicFFT perfft2 = new PeriodicFFT();
         //IM = perfft2(im);                   % Periodic Fourier transform of image
-        Complex[][] capIm = perfft2.perfft2(img)[0];
+        Complex[][][] perfResults = perfft2.perfft2(img, true);
+        Complex[][] capIm = perfResults[1];
+        
+        //DEBUG
+        {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < capIm.length; ++i) {
+            for (int j = 0; j < capIm[0].length; ++j) {
+                Complex v = capIm[i][j];
+                sb.append(String.format("(%d,%d) %f + i %f\n", i, j, (float)v.re(),
+                    (float)v.im()));
+            }
+        }
+        System.out.println(sb.toString());
+        }
         
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
@@ -537,7 +568,7 @@ public class PhaseCongruencyDetector {
         
         return products;
     }
-            
+
     public class PhaseCongruencyProducts {
         
         /**
@@ -661,4 +692,115 @@ public class PhaseCongruencyDetector {
         
         return rMode;
     }
+    
+    /**
+     * apply a 2 level threshold hysteresis filter to the image.  
+     * 
+     * 
+     * 
+     * @param img
+     * @param t1
+     * @param t2
+     * @return 
+     */
+    int[][] applyHysThresh(double[][] img, double t1, double t2) {
+        
+        // note that the kovesi code uses the octave bwselect and bwfill,
+        // which results in points > t2.
+        // so will instead adapt my canny edge detector 2-layer threshold
+        // here.
+        // if t1 and t2 suggested settings from his usage are not quite
+        // right for this, will use the otsu value and a scale factor.
+        
+        // copying apply2LayerFilter from the adaptive canny directly here,
+        // but if t1 and t2 are not producing best results, will edit
+        // the other apply2LayerFilter to accept the img here as int[][]
+        // instead
+        
+        int w = img.length;
+        int h = img[0].length;
+        int n = w * h;
+        
+        if (w < 3 || h < 3) {
+            throw new IllegalArgumentException("images should be >= 3x3 in size");
+        }
+    
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+            
+        double tHigh = t2;
+        double tLow = t1;
+        
+        int[][] img2 = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            img2[i] = new int[h];
+        }
+                
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+            
+                double v = img[x][y];
+            
+                if (v < tLow) {
+                    continue;
+                } else if (v > tHigh) {
+                    img2[x][y] = 255;
+                    continue;
+                }
+                
+                boolean foundHigh = false;
+                boolean foundMid = false;
+            
+                for (int k = 0; k < dxs.length; ++k) {                
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    double v2 = img[x2][y2];
+                    if (v2 > tHigh) {
+                        foundHigh = true;
+                        break;
+                    } else if (v2 > tLow) {
+                        foundMid = true;
+                    }
+                }
+                if (foundHigh) {
+                    img2[x][y] = 255;
+                    continue;
+                }
+                if (!foundMid) {
+                    continue;
+                }
+                // search the 5 by 5 region for a "sure edge" pixel
+                for (int dx = -2; dx <= 2; ++dx) {
+                    int x2 = x + dx;
+                    if ((x2 < 0) || (x2 > (w - 1))) {
+                        continue;
+                    }
+                    for (int dy = -2; dy <= 2; ++dy) {
+                        int y2 = y + dy;
+                        if ((y2 < 0) || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        if (x2 == x && y2 == y) {
+                            continue;
+                        }
+                        double v2 = img[x2][y2];
+                        if (v2 > tHigh) {
+                            img2[x][y] = 255;
+                            foundHigh = true;
+                            break;
+                        }
+                    }
+                    if (foundHigh) {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return img2;
+    }
+    
 }

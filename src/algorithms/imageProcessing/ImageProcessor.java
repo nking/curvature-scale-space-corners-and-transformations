@@ -2514,74 +2514,8 @@ public class ImageProcessor {
 
         return new double[]{avgY, avgR, avgG, avgB};
     }
-
-    /**
-     * pad up to the next power of 2, placing the padded portion at the
-     * end of the columns and rows
-     * @param input
-     * @return 
-     */
-    public double[][] padUpToPowerOfTwo2(double[][] input) {
-        
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        if (xOffset == 0 && yOffset == 0) {
-            return input;
-        }
-       
-        double[][] output = new double[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new double[h];
-        }
-        
-        for (int i = 0; i < w0; ++i) {
-            for (int j = 0; j < h0; ++j) {
-                double v = input[i][j];
-                output[i][j] = v;
-            }
-        }
-
-        return output;
-    }
     
-    public Complex[][] padUpToPowerOfTwo2(Complex[][] input) {
-        
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        if (xOffset == 0 && yOffset == 0) {
-            return input;
-        }
-       
-        Complex[][] output = new Complex[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new Complex[h];
-        }
-        
-        for (int i = 0; i < w0; ++i) {
-            for (int j = 0; j < h0; ++j) {
-                Complex v = input[i][j];
-                output[i][j] = v;
-            }
-        }
-
-        return output;
-    }
-    
-    public GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
+    private GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
 
         int w0 = input.getWidth();
         int h0 = input.getHeight();
@@ -2613,10 +2547,10 @@ public class ImageProcessor {
         return output;
     }
     
-    public GreyscaleImage padUpToPowerOfTwo2(GreyscaleImage input) {
+    private double[][] padUpToPowerOfTwo(double[][] input) {
 
-        int w0 = input.getWidth();
-        int h0 = input.getHeight();
+        int w0 = input.length;
+        int h0 = input[0].length;
 
         int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
         int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
@@ -2627,21 +2561,92 @@ public class ImageProcessor {
         if (xOffset == 0 && yOffset == 0) {
             return input;
         }
-
-        int xOffsetOrig = input.getXRelativeOffset();
-        int yOffsetOrig = input.getYRelativeOffset();
-
-        GreyscaleImage output = new GreyscaleImage(w, h, input.getType());
-        output.setXRelativeOffset(xOffsetOrig);
-        output.setYRelativeOffset(yOffsetOrig);
+        
+        double[][] output = new double[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new double[h];
+        }
 
         for (int i = 0; i < w0; ++i) {
             for (int j = 0; j < h0; ++j) {
-                int v = input.getValue(i, j);
-                output.setValue(i, j, v);
+                double v = input[i][j];
+                output[i + xOffset][j + yOffset] = v;
             }
         }
 
+        return output;
+    }
+    
+    private Complex[][] padUpToPowerOfTwoComplex(double[][] input) {
+
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
+        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+
+        int xOffset = w - w0;
+        int yOffset = h - h0;
+        
+        Complex[][] output = new Complex[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new Complex[h];
+        }
+
+        if (xOffset == 0 && yOffset == 0) {
+            
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    output[i][j] = new Complex(input[i][j], 0);
+                }
+            }
+            
+            return output;
+        }
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                if ((i < xOffset) || (j < yOffset)) {
+                    output[i][j] = new Complex(0, 0);
+                } else {
+                    output[i][j] = new Complex(input[i - xOffset][j - yOffset], 0);
+                }
+            }
+        }
+        
+        return output;
+    }
+    
+    private Complex[][] padUpToPowerOfTwo(Complex[][] input) {
+
+        int w0 = input.length;
+        int h0 = input[0].length;
+
+        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
+        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+
+        int xOffset = w - w0;
+        int yOffset = h - h0;
+
+        if (xOffset == 0 && yOffset == 0) {
+            return input;
+        }
+        
+        Complex[][] output = new Complex[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new Complex[h];
+        }
+
+         for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                if ((i < xOffset) || (j < yOffset)) {
+                    output[i][j] = new Complex(0, 0);
+                } else {
+                    output[i][j] = input[i - xOffset][j - yOffset].copy();
+                }
+            }
+        }
+        
         return output;
     }
     
@@ -2655,13 +2660,12 @@ public class ImageProcessor {
         int xOffsetOrig = input.getXRelativeOffset();
         int yOffsetOrig = input.getYRelativeOffset();
 
-        //TODO remove the other power of 2 padding method
         GreyscaleImage tmp = padUpToPowerOfTwo(input);
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         Complex[][] cc = convertImage(tmp);
 
-        Complex[][] ccOut = apply2DFFT(cc, forward);
+        Complex[][] ccOut = create2DFFT(cc, forward);
 
         writeToImage(tmp, ccOut);
 
@@ -2686,35 +2690,92 @@ public class ImageProcessor {
         }
     }
 
-    public Complex[][] apply2DFFT(Complex[][] cc, boolean forward) {
+    public Complex[][] create2DFFT(Complex[][] input, boolean forward) {
 
+        Complex[][] output = padUpToPowerOfTwo(input);
+        
         // perform FFT by column
-        for (int col = 0; col < cc.length; col++) {
+        for (int col = 0; col < output.length; col++) {
             if (forward) {
-                cc[col] = FFT.fft(cc[col]);
+                output[col] = FFT.fft(output[col]);
             } else {
-                cc[col] = FFT.ifft(cc[col]);
+                output[col] = FFT.ifft(output[col]);
             }
         }
 
-
         //transpose the matrix
-        cc = MatrixUtil.transpose(cc);
+        output = MatrixUtil.transpose(output);
 
         // perform FFT by column (originally rows)
-        for (int col = 0; col < cc.length; col++) {
+        for (int col = 0; col < output.length; col++) {
             if (forward) {
-                cc[col] = FFT.fft(cc[col]);
+                output[col] = FFT.fft(output[col]);
             } else {
-                cc[col] = FFT.ifft(cc[col]);
+                output[col] = FFT.ifft(output[col]);
             }
         }
 
         //transpose the matrix
-        cc = MatrixUtil.transpose(cc);
+        output = MatrixUtil.transpose(output);
 
+        if (output.length == input.length && output[0].length == input[0].length) {
+            return output;
+        }
+        
+        // padding is at front of cols and rows
+        int xOffset = output.length - input.length;
+        int yOffset = output[0].length - input[0].length;
+        
+        Complex[][] output2 = new Complex[input.length][];
+        for (int i = 0; i < input.length; ++i) {
+            output2[i] = new Complex[input[0].length];
+        }
+        
+        int x = 0;
+        for (int col = xOffset; col < output.length; col++) {
+            int y = 0;
+            for (int row = yOffset; row < output[0].length; row++) {
+                Complex v = output[col][row];
+                output2[x][y] = v.copy();
+                y++;
+            }
+            x++;
+        }
 
-        return cc;
+        return output2;
+    }
+
+    public Complex[][] create2DFFT(double[][] input, boolean forward) {
+
+        Complex[][] output = padUpToPowerOfTwoComplex(input);
+                
+        output = create2DFFT(output, forward);
+
+        if (output.length == input.length && output[0].length == input[0].length) {
+            return output;
+        }
+        
+        // padding is at front of cols and rows
+        int xOffset = output.length - input.length;
+        int yOffset = output[0].length - input[0].length;
+        
+        Complex[][] output2 = new Complex[input.length][];
+        for (int i = 0; i < input.length; ++i) {
+            output2[i] = new Complex[input[0].length];
+        }
+        
+        int x = 0;
+        for (int col = xOffset; col < output.length; col++) {
+            int y = 0;
+            for (int row = yOffset; row < output[0].length; row++) {
+                Complex v = output[col][row];
+                output2[x][y] = v.copy();
+                y++;
+            }
+            x++;
+        }
+
+        return output2;
     }
 
     public void writeToImage(GreyscaleImage img, Complex[][] cc) {
@@ -2831,7 +2892,7 @@ public class ImageProcessor {
                 psfNorm[col][row] = new Complex(vn, 0);
             }
         }
-        psfNorm = apply2DFFT(psfNorm, true);
+        psfNorm = create2DFFT(psfNorm, true);
 
         // filter out low values?
         for (int i = 0; i < psfNorm.length; i++) {
@@ -2849,7 +2910,7 @@ public class ImageProcessor {
 
         Complex[][] imgCC = convertImage(img0);
 
-        Complex[][] imgFFT = apply2DFFT(imgCC, true);
+        Complex[][] imgFFT = create2DFFT(imgCC, true);
 
         /*
         complex division:
@@ -2950,7 +3011,7 @@ public class ImageProcessor {
         ImageDisplayer.displayImage("FFT(img0)/FFT(PSF)", img2);
 
 
-        Complex[][] inverse = apply2DFFT(ccDeconv, false);
+        Complex[][] inverse = create2DFFT(ccDeconv, false);
 
         GreyscaleImage img4 = img0.createFullRangeIntWithDimensions();
 

@@ -6,6 +6,7 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Complex;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
@@ -645,14 +646,11 @@ public class ImageProcessorTest extends TestCase {
         String filePath = ResourceFinder.findFileInTestResources("lena.jpg");        
         GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         
-        int w = img2.getWidth();
-        int h = img2.getHeight();
-        
         ImageDisplayer.displayImage("lena", img2);
         
         Complex[][] cc = imageProcessor.convertImage(img2);
                 
-        Complex[][] ccOut = imageProcessor.apply2DFFT(cc, true);
+        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true);
         
         GreyscaleImage img3 = img2.createFullRangeIntWithDimensions();
         
@@ -660,12 +658,95 @@ public class ImageProcessorTest extends TestCase {
                            
         ImageDisplayer.displayImage("FFT of lena", img3);
         
-        ccOut = imageProcessor.apply2DFFT(ccOut, false);
+        ccOut = imageProcessor.create2DFFT(ccOut, false);
         
         imageProcessor.writeToImage(img3, ccOut);
         
         ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
-                
+        
+        int maxDiff = Integer.MIN_VALUE;
+        for (int i = 0; i < img2.getNPixels(); ++i) {
+            int v = Math.abs(img2.getValue(i) - img3.getValue(i));
+            if (v > maxDiff) {
+                maxDiff = v;
+            }
+        }
+        assertTrue(maxDiff < 5);  
+        
+        // --- the periodic fft -----
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        PeriodicFFT pfft = new PeriodicFFT();
+        Complex[][][] results = pfft.perfft2(img, true);
+        /*Complex[][] fftSmooth = pC[0];
+        Complex[][] fftPeriodic = pC[1];
+        Complex[][] smooth = pC[2];
+        Complex[][] periodic = pC[3];*/
+
+        // comparison by eye to paper's Figure 3:
+        // http://www.mi.parisdescartes.fr/~moisan/papers/2009-11r.pdf
+        
+        for (int i = 0; i < 4; ++i) {
+            String label;
+            Complex[][] t = results[i];
+            if (i == 0) {
+                label = "fftSmooth";
+            } else if (i == 1) {
+                label = "fftPeriodic";
+            } else if (i == 2) {
+                label = "smooth";
+            } else {
+                label = "periodic";
+            }
+            
+            double min = Double.MAX_VALUE;
+            for (int col = 0; col < t.length; ++col) {
+                for (int row = 0; row < t[i].length; ++row) {
+                    double re = t[col][row].re();
+                    if (re < min) {
+                        min = re;
+                    }
+                }
+            }
+            if (min <= 0) {
+                min += 0.001;
+            } else {
+                min = 0;
+            }
+            double[] logValues = new double[t.length * t[0].length];
+            for (int col = 0; col < t.length; ++col) {
+                for (int row = 0; row < t[i].length; ++row) {
+                    int idx = (row * t.length) + col;
+                    double re = t[col][row].re();
+                    logValues[idx] = Math.log(re - min);
+                }
+            }
+            
+            int[] scaled = MiscMath.rescale(logValues, 0, 255);
+            GreyscaleImage img2_ = new GreyscaleImage(img.getWidth(), img.getHeight(),
+                Type.Bits32FullRangeInt);
+            for (int col = 0; col < t.length; ++col) {
+                for (int row = 0; row < t[i].length; ++row) {
+                    int idx = (row * t.length) + col;
+                    img2_.setValue(col, row, scaled[idx]);
+                }
+            }
+            MiscDebug.writeImage(img2_, label + "_log_lena");
+
+            GreyscaleImage img3_ = new GreyscaleImage(img.getWidth(), img.getHeight(),
+                Type.Bits32FullRangeInt);
+            for (int col = 0; col < img3_.getWidth(); col++) {
+                for (int row = 0; row < img3_.getHeight(); row++) {
+                    double re = t[col][row].re();
+                    img3_.setValue(col, row, (int) re);
+                }
+            }
+            HistogramEqualization hEq = new HistogramEqualization(img3_);
+            hEq.applyFilter();
+
+            MiscDebug.writeImage(img3_, label + "_lena");
+        }
+        
+        int z = 1;
     }
     
     public void testPerfft2() throws Exception {
@@ -689,20 +770,44 @@ public class ImageProcessorTest extends TestCase {
         
         img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
         PeriodicFFT pfft = new PeriodicFFT();
-        Complex[][][] pC = pfft.perfft2(img);
-        GreyscaleImage img2 = new GreyscaleImage(img.getWidth(), img.getHeight(),
-            Type.Bits32FullRangeInt);
-        for (int col = 0; col < img2.getWidth(); col++) {
-            for (int row = 0; row < img2.getHeight(); row++) {
-                double re = pC[0][col][row].re();
-                img2.setValue(col, row, (int)re);
+        Complex[][][] pC = pfft.perfft2(img, false);
+        Complex[][] periodicComponent = pC[0];
+        
+        double[] logValues = new double[periodicComponent.length *
+            periodicComponent[0].length];
+        for (int i = 0; i < periodicComponent.length; ++i) {
+            for (int j = 0; j < periodicComponent[i].length; ++j) {
+                int idx = (j * periodicComponent.length) + i;
+                double re = periodicComponent[i][j].re();
+                logValues[idx] = Math.log(re);
             }
         }
-        HistogramEqualization hEq = new HistogramEqualization(img2);
+        
+        int[] scaled = MiscMath.rescale(logValues, 0, 255);
+        GreyscaleImage img2 = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int i = 0; i < img2.getWidth(); i++) {
+            for (int j = 0; j < img2.getHeight(); j++) {
+                int idx = (j * periodicComponent.length) + i;
+                img2.setValue(i, j, scaled[idx]);
+            }
+        }
+        ImageDisplayer.displayImage("log of Periodic FFT of checkerboard", img2);
+        
+        GreyscaleImage img3 = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int col = 0; col < img3.getWidth(); col++) {
+            for (int row = 0; row < img3.getHeight(); row++) {
+                double re = periodicComponent[col][row].re();
+                img3.setValue(col, row, (int)re);
+            }
+        }
+        HistogramEqualization hEq = new HistogramEqualization(img3);
         hEq.applyFilter();
         
-        ImageDisplayer.displayImage("Periodic FFT of checkerboard", img2);
+        ImageDisplayer.displayImage("Periodic FFT of checkerboard", img3);
         
+        int z = 1;
     }
     
     public void testDeconvolve() throws Exception {
