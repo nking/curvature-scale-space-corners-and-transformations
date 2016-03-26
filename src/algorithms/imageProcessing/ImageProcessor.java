@@ -2619,30 +2619,30 @@ public class ImageProcessor {
     
     private Complex[][] padUpToPowerOfTwo(Complex[][] input) {
 
-        int w0 = input.length;
-        int h0 = input[0].length;
+        int n0 = input.length;
+        int n1 = input[0].length;
 
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
+        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
 
-        int xOffset = w - w0;
-        int yOffset = h - h0;
+        int offset0 = nn0 - n0;
+        int offset1 = nn1 - n1;
 
-        if (xOffset == 0 && yOffset == 0) {
+        if (offset0 == 0 && offset1 == 0) {
             return input;
         }
         
-        Complex[][] output = new Complex[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new Complex[h];
+        Complex[][] output = new Complex[nn0][];
+        for (int i0 = 0; i0 < nn0; ++i0) {
+            output[i0] = new Complex[nn1];
         }
 
-         for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                if ((i < xOffset) || (j < yOffset)) {
-                    output[i][j] = new Complex(0, 0);
+         for (int i0 = 0; i0 < nn0; ++i0) {
+            for (int i1 = 0; i1 < nn1; ++i1) {
+                if ((i0 < offset0) || (i1 < offset1)) {
+                    output[i0][i1] = new Complex(0, 0);
                 } else {
-                    output[i][j] = input[i - xOffset][j - yOffset].copy();
+                    output[i0][i1] = input[i0 - offset0][i1 - offset1].copy();
                 }
             }
         }
@@ -2747,9 +2747,9 @@ public class ImageProcessor {
         }
         
         int ii0 = 0;
-        for (int i0 = offset0; i0 < n0; ++i0) {
+        for (int i0 = offset0; i0 < output.length; ++i0) {
             int ii1 = 0;
-            for (int i1 = offset1; i1 < n1; ++i1) {
+            for (int i1 = offset1; i1 < output[0].length; ++i1) {
                 Complex v = output[i0][i1];
                 output2[ii0][ii1] = v.copy();
                 ii1++;
