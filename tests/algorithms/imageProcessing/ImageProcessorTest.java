@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
+import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
 /**
  *
@@ -586,6 +587,14 @@ public class ImageProcessorTest extends TestCase {
         imageProcessor.apply2DFFT(img0, true);
         ImageDisplayer.displayImage("FFT of img0", img0);
         
+        // ---- a look at JFFTPack -------
+        img0 = getGrid(0);
+        imageProcessor.apply2DFFT2(img0, true);
+        int maxV = img0.getMax();
+        HistogramEqualization hEQ = new HistogramEqualization(img0);
+        hEQ.applyFilter();
+        ImageDisplayer.displayImage("FFT from JFFTPack of img0", img0);
+        
         GreyscaleImage img30 = getGrid(30);
         ImageDisplayer.displayImage("img30", img30);
         imageProcessor.apply2DFFT(img30, true);
@@ -663,7 +672,6 @@ public class ImageProcessorTest extends TestCase {
         ImageDisplayer.displayImage("FFT of lena", img3);
         
         ccOut = imageProcessor.create2DFFT(ccOut, false);
-        
         for (int col = 0; col < img3.getWidth(); col++) {
             for (int row = 0; row < img3.getHeight(); row++) {
                 double re = ccOut[col][row].re();
@@ -672,7 +680,6 @@ public class ImageProcessorTest extends TestCase {
         }
         
         ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
-        
         int maxDiff = Integer.MIN_VALUE;
         for (int i = 0; i < img2.getNPixels(); ++i) {
             int v = Math.abs(img2.getValue(i) - img3.getValue(i));
@@ -681,7 +688,46 @@ public class ImageProcessorTest extends TestCase {
             }
         }
         assertTrue(maxDiff < 5);  
-                
+
+        // ---- a look at JFFTPack ------        
+        img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        GreyscaleImage tmp2 = img2.createFullRangeIntWithDimensions();
+        for (int i = 0; i < tmp2.getWidth(); ++i) {
+            for (int j = 0; j < tmp2.getHeight(); ++j) {
+                tmp2.setValue(i, j, img2.getValue(i, j));
+            }
+        }
+        imageProcessor.apply2DFFT2(tmp2, true);
+        ImageDisplayer.displayImage("FFT from JFFTPack, lena", tmp2);
+        maxV = tmp2.getMax();
+        img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        tmp2 = img2.createFullRangeIntWithDimensions();
+        for (int i = 0; i < tmp2.getWidth(); ++i) {
+            for (int j = 0; j < tmp2.getHeight(); ++j) {
+                tmp2.setValue(i, j, img2.getValue(i, j));
+            }
+        }
+        Complex[][] imgFFT = imageProcessor.create2DFFT2WithSwapMajor(tmp2, true);
+        Complex[][] imgFFTInvFFT = imageProcessor.create2DFFT2(imgFFT, false);
+        img3 = img2.createFullRangeIntWithDimensions();
+        
+        for (int col = 0; col < img3.getWidth(); col++) {
+            for (int row = 0; row < img3.getHeight(); row++) {
+                double re = imgFFTInvFFT[row][col].re();
+                img3.setValue(col, row, (int)re);
+            }
+        }
+        ImageDisplayer.displayImage("FFT^-1 of FFT from JFFTPack, lena", img3);
+        
+        maxDiff = Integer.MIN_VALUE;
+        img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        for (int i = 0; i < img2.getNPixels(); ++i) {
+            int v = Math.abs(img2.getValue(i) - img3.getValue(i));
+            if (v > maxDiff) {
+                maxDiff = v;
+            }
+        }
+        assertTrue(maxDiff < 5);
     }
     
     public void testDeconvolve() throws Exception {

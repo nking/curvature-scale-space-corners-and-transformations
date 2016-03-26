@@ -207,13 +207,13 @@ public class PeriodicFFT {
         S(1,1) = 0;          % Enforce 0 mean 
         */
         capS[0][0] = new Complex(0, 0);
-        
+                
         /*
         P = fft2(im) - S;    % FFT of periodic component
         */
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         // using notation a[row][col]
-        Complex[][] capP = imageProcessor.create2DFFT(imageProcessor.convertImageWithSwapMajor(img), true);
+        Complex[][] capP = imageProcessor.create2DFFT2WithSwapMajor(img, true);
     
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {

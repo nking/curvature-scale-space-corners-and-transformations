@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
+import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
 /**
  *
@@ -2651,7 +2652,30 @@ public class ImageProcessor {
     }
     
     /**
-     *
+     * apply 2D FFT transform using the JFFTPack.
+     * 
+     * @param input input image, which should probably be type full range int
+     * @param forward if true, apply FFT transform, else inverse FFT transform
+     */
+    public void apply2DFFT2(GreyscaleImage input, boolean forward) {
+        
+         Complex[][] ccOut = create2DFFT2WithSwapMajor(input, forward);
+         
+         assert(ccOut.length == input.getHeight());
+         assert(ccOut[0].length == input.getWidth());
+        
+         for (int i0 = 0; i0 < ccOut.length; ++i0) {
+             for (int i1 = 0; i1 < ccOut[i0].length; ++i1) {
+                 double re = ccOut[i0][i1].re();
+                 input.setValue(i1, i0, (int)re);
+             }
+         }
+    }
+    
+    /**
+     * apply 2D FFT transform using the efficient iterative power of 2 method
+     * that uses the butterfly operation.
+     * 
      * @param input
      * @param forward if true, apply FFT transform, else inverse FFT transform
      */
@@ -2759,6 +2783,256 @@ public class ImageProcessor {
 
         return output2;
     }
+    
+    /**
+     * perform a 2-dimension FFT using the JFFTPack library using the input
+     * img and return the results as a complex two dimensional array
+     * which uses the format a[row][col].
+     * 
+     * @param img
+     * @param forward
+     * @return 
+     */
+    public Complex[][] create2DFFT2WithSwapMajor(GreyscaleImage img, boolean forward) {
+        
+        double[][] cInput = createInterleavedComplexSwapMajor(img);
+        
+        assert(cInput.length == img.getHeight());
+        assert(cInput[0].length == 2 * img.getWidth());
+        
+        Complex[][] output2 = create2DFFT2(cInput, forward);
+        
+        assert(output2.length == img.getHeight());
+        assert(output2[0].length == img.getWidth());
+        
+        return output2;
+    }
+    
+    /**
+     * perform a 2-dimension FFT using the JFFTPack library.
+     * 
+     * @param input
+     * @param forward
+     * @return 
+     */
+    public Complex[][] create2DFFT2(Complex[][] input, boolean forward) {
+                
+        final int n0 = input.length;
+        final int n1 = input[0].length;
+                
+        // the format for the double is real is even number and the 
+        // complementary imaginary number follows it.
+        // the columns have the double members in them while the number of rows 
+        // stay the same.
+        
+        double[][] output = new double[n0][];
+        for (int i0 = 0; i0 < n0; ++i0) {
+            output[i0] = new double[2*n1];
+            for (int i1 = 0; i1 < n1; ++i1) {
+                Complex v = input[i0][i1];
+                output[i0][2*i1] = v.re();
+                output[i0][(2*i1) + 1] = v.im();
+            }
+        }
+                
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+
+        ComplexDoubleFFT fft1 = new ComplexDoubleFFT(n1);
+        
+        final double norm1 = 1./Math.sqrt(n1);
+        
+        // ----- perform FFT by dimension 0 -----
+        for (int i0 = 0; i0 < n0; i0++) {
+            
+            if (forward) {
+                fft1.ft(output[i0]);
+            } else {
+                fft1.bt(output[i0]);
+            }
+            
+            // normalize the data
+            for (int i1 = 0; i1 < output[i0].length; ++i1) {
+                output[i0][i1] *= norm1;
+            }            
+        }       
+        
+        // re-use array for the FFT by dimension 1
+        double[] tmp = new double[2*n0];
+        
+        ComplexDoubleFFT fft0 = new ComplexDoubleFFT(n0);
+
+        final double norm0 = 1./Math.sqrt(n0);
+        
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+
+        // ----- perform the FFT on dimension 1 ------
+        for (int k = 0; k < n1; ++k) {
+            
+            final int c = 2*k;
+            
+            for (int r = 0; r < n0; r++) {
+                tmp[2*r] = output[r][c];
+                tmp[(2*r) + 1] = output[r][c + 1];
+            }
+            
+            if (forward) {
+                fft0.ft(tmp);
+            } else {
+                fft0.bt(tmp);
+            }
+            
+            //copy the data back into output, normalizating too
+            for (int r = 0; r < n0; r++) {
+                output[r][c] = tmp[2*r] * norm0;
+                output[r][c + 1] = tmp[(2*r) + 1] * norm0;
+            }
+        }
+       
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+        
+        Complex[][] output2 = new Complex[n0][];
+        for (int i0 = 0; i0 < n0; ++i0) {
+            output2[i0] = new Complex[n1];
+            for (int i1 = 0; i1 < n1; ++i1) {
+                output2[i0][i1] = new Complex(output[i0][2*i1], output[i0][(2*i1) + 1]);
+            }
+        }
+        
+        return output2;
+    }
+
+    /**
+     * perform a 2-dimension FFT using the JFFTPack library.
+     * 
+     * @param input double array of complex data in format double[nRows][2*nColumns]
+     * where the column elements are alternately the complex real number and the
+     * complex imaginary number.
+     * @param forward
+     * @return two dimensional complex array of size Complex[nRows][input.nCols/2)
+     */
+    public Complex[][] create2DFFT2(double[][] input, boolean forward) {
+                
+        final int n0 = input.length;
+        final int n1 = input[0].length/2;
+        
+        double[][] output = new double[input.length][];
+        for (int i = 0; i < input.length; ++i) {
+            output[i] = Arrays.copyOf(input[i], input[i].length);
+        } 
+
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+
+        ComplexDoubleFFT fft1 = new ComplexDoubleFFT(n1);
+        
+        final double norm1 = 1./Math.sqrt(n1);
+        
+        // ----- perform FFT by dimension 0 -----
+        for (int i0 = 0; i0 < n0; i0++) {
+            
+            if (forward) {
+                fft1.ft(output[i0]);
+            } else {
+                fft1.bt(output[i0]);
+            }
+            
+            // normalize the data
+            for (int i1 = 0; i1 < output[i0].length; ++i1) {
+                output[i0][i1] *= norm1;
+            }            
+        }       
+        
+        // re-use array for the FFT by dimension 1
+        double[] tmp = new double[2*n0];
+        
+        ComplexDoubleFFT fft0 = new ComplexDoubleFFT(n0);
+
+        final double norm0 = 1./Math.sqrt(n0);
+        
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+
+        // ----- perform the FFT on dimension 1 ------
+        for (int k = 0; k < n1; ++k) {
+            
+            final int c = 2*k;
+            
+            for (int r = 0; r < n0; r++) {
+                tmp[2*r] = output[r][c];
+                tmp[(2*r) + 1] = output[r][c + 1];
+            }
+            
+            if (forward) {
+                fft0.ft(tmp);
+            } else {
+                fft0.bt(tmp);
+            }
+            
+            //copy the data back into output, normalizating too
+            for (int r = 0; r < n0; r++) {
+                output[r][c] = tmp[2*r] * norm0;
+                output[r][c + 1] = tmp[(2*r) + 1] * norm0;
+            }
+        }
+       
+        /*
+         n0
+         ||
+         \/
+               col0  col1  col2  col3  col4  col5    <== 2 * n1
+        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
+        row 1   
+        row 2
+        */
+        
+        Complex[][] output2 = new Complex[n0][];
+        for (int i0 = 0; i0 < n0; ++i0) {
+            output2[i0] = new Complex[n1];
+            for (int i1 = 0; i1 < n1; ++i1) {
+                output2[i0][i1] = new Complex(output[i0][2*i1], output[i0][(2*i1) + 1]);
+            }
+        }
+        
+        return output2;
+    }
 
     public Complex[][] create2DFFT(double[][] input, boolean forward) {
 
@@ -2845,6 +3119,34 @@ public class ImageProcessor {
         }
 
         return cc;
+    }
+    
+    /**
+     * create an array of size double[nRows][*nCols] where the column elements
+     *    are alternately the complex real and complex imaginary numbers
+     *    (and the imaginary are 0 for this being real input).
+     * @param input
+     * @return 
+     */
+    protected double[][] createInterleavedComplexSwapMajor(GreyscaleImage input) {
+        
+        int nCols = input.getWidth();
+        int nRows = input.getHeight();
+        
+         // initialize matrix of complex numbers as real numbers from image
+        double[][] d = new double[nRows][];
+        
+        for (int row = 0; row < nRows; row++) {
+
+            d[row] = new double[2 * nCols];
+
+            for (int col = 0; col < nCols; ++col) {
+                d[row][2*col] = input.getValue(col, row);
+                d[row][(2*col) + 1] = 0;
+            }
+        }
+
+        return d;
     }
     
     /**
