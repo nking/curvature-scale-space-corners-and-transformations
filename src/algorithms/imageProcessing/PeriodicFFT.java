@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
+import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.Arrays;
 
 /**
@@ -189,7 +190,17 @@ public class PeriodicFFT {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         // using notation a[row][col]
-        Complex[][] capS = imageProcessor.create2DFFT(s, true);
+        
+        // make complex input for s for fft2:
+        double[][] sComplex = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            sComplex[row] = new double[2*nCols];
+            for (int i1 = 0; i1 < nCols; ++i1) {
+                sComplex[row][2*i1] = s[row][i1];
+            }
+        }
+    
+        Complex[][] capS = imageProcessor.create2DFFT2(sComplex, true);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 double denom;
@@ -222,19 +233,53 @@ public class PeriodicFFT {
                 capP[row][col] = v0.minus(s0);
             }
         }
-        
-            
+       
+        /*
         //DEBUG
-        /*{
-        StringBuilder sb = new StringBuilder();
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                Complex v = capP[row][col];
-                sb.append(String.format("S (%d,%d) %f + i %f\n", i, j, (float)v.re(),
-                    (float)v.im()));
+        {
+            try {
+                algorithms.util.PolygonAndPointPlotter plotter 
+                    = new algorithms.util.PolygonAndPointPlotter();
+                
+                int nc = capP[0].length;
+                int nr = capP.length;
+                
+                float[] x = new float[nc];
+                for (int ii = 0; ii < nc; ++ii) {
+                    x[ii] = ii;
+                }
+                
+                float[] y = new float[nc];
+                float[] xPolygon = null;
+                float[] yPolygon = null;
+                
+                // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+                for (int nf = 1; nf < 4; nf++) {
+                    int rowNumber = (int)(((float)nf) * 0.25f * nr);
+                    for (int ii = 0; ii < nc; ++ii) {
+                        y[ii] = (float)capP[rowNumber][ii].re();
+                    }
+                    float minY = MiscMath.findMin(y);
+                    float maxY = MiscMath.findMax(y);
+                    plotter.addPlot(-1, nc+1, minY, maxY, x, y, xPolygon,
+                        yPolygon, "row=" + rowNumber);
+                }
+                
+                // do same for columns
+                // plot rows 0.25*nCols, 0.5*nCols, and 0.75*nCols
+                for (int nf = 1; nf < 4; nf++) {
+                    int colNumber = (int)(((float)nf) * 0.25f * nc);
+                    for (int ii = 0; ii < nr; ++ii) {
+                        y[ii] = (float)capP[ii][colNumber].re();
+                    }
+                    float minY = MiscMath.findMin(y);
+                    float maxY = MiscMath.findMax(y);
+                    plotter.addPlot(-1, nc+1, minY, maxY, x, y, xPolygon,
+                        yPolygon, "col=" + colNumber);
+                }
+                plotter.writeFile();
+            } catch (Exception e) {
             }
-        }
-        System.out.println(sb.toString());
         }*/
         
         if (computeSpatial) {
