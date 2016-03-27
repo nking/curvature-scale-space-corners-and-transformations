@@ -2228,4 +2228,59 @@ public class MiscMath {
         return hist.getYHist()[idx];
     }
 
+    /**
+     * find the median in the double array of values.  
+     * runtime complexity is N*O(lg2(N)).
+     * @param a
+     * @return 
+     */
+    public static double findMedian(double[][] a) {
+        
+        double[] values = new double[a.length*a[0].length];
+        int count = 0;
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                values[count] = a[i][j];
+                count++;
+            }
+        }
+        
+        Arrays.sort(values);
+        
+        return values[count/2];
+    }
+    
+    /**
+     * find the median in the int array of values.  
+     * runtime complexity is either O(maxValue( or N*O(lg2(N)), whichever is
+     * smaller.
+     * @param a
+     * @return 
+     */
+    public static int findMedian(int[][] a) {
+        
+        // put in an array to sort.
+        // if max value < math.log(n)*n, will use counting sort
+        int maxV = Integer.MIN_VALUE;
+        int[] values = new int[a.length*a[0].length];
+        int count = 0;
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                values[count] = a[i][j];
+                if (values[count] > maxV) {
+                    maxV = values[count];
+                }
+                count++;
+            }
+        }
+        
+        if (maxV < (count * Math.log(count)/Math.log(2))) {
+            CountingSort.sort(values, maxV);
+        } else {
+            Arrays.sort(values);
+        }
+        
+        return values[count/2];
+    }
+    
 }

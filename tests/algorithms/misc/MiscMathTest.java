@@ -779,4 +779,45 @@ public class MiscMathTest extends TestCase {
         assertEquals(10, scaled[3]);
         
     }
+    
+    public void testFindMediant_double() throws Exception {
+        
+        int count = 0;
+        
+        double[][] a = new double[10][10];
+        
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = new double[10];
+            for (int j = 0; j < a[i].length; ++j) {
+                a[i][j] = count;
+                count++;
+            }
+        }
+        
+        double median = MiscMath.findMedian(a);
+        
+        assertTrue(Math.abs(((double)count/2.) - median) < 0.5);
+       
+    }
+    
+    public void testFindMediant_integer() throws Exception {
+        
+        int count = 0;
+        
+        int[][] a = new int[10][10];
+        
+        for (int i = 0; i < a.length; ++i) {
+            a[i] = new int[10];
+            for (int j = 0; j < a[i].length; ++j) {
+                a[i][j] = count;
+                count++;
+            }
+        }
+        
+        int median = MiscMath.findMedian(a);
+        
+        assertEquals(count/2, median);
+       
+    }
+    
 }

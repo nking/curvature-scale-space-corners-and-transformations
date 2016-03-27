@@ -6,6 +6,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.PeriodicFFT;
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -34,9 +35,22 @@ import java.util.Arrays;
  
   The Software is provided "as is", without warranty of any kind.
  
- * useful also in looking at a port in another language was
+ * useful also in looking at the python phasepack port by Alistair Muldal
  *  http://pydoc.net/Python/phasepack/1.4/phasepack.phasecongmono/
- * 
+ * which has the following copyright:
+ * # MIT License:
+
+# Permission is hereby  granted, free of charge, to any  person obtaining a
+# copy of this software and associated  documentation files (the "Software"),
+# to deal in the Software without restriction, subject to the following
+# conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# The software is provided "as is", without warranty of any kind.
+# 
+* 
  There are potentially many arguments, here is the full usage:
 %
 %   [PC or ft T] =  ...
@@ -82,7 +96,7 @@ import java.util.Arrays;
 %                            A value of 0 will turn off all noise compensation.
 %
 % Returned values:
-*    PC         - Phase congruency indicating edge significance
+*    PC         - Phase congruency indicating edge significance (values are in range 0 to 1.)
 %    or         - Orientation image in integer degrees 0-180,
 %                 positive anticlockwise.
 %                 0 corresponds to a vertical edge, 90 is horizontal.
@@ -156,10 +170,10 @@ public class PhaseCongruencyDetector {
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
     
         // number of wavelet scales.  a lower value reveals more fine scale features.
-        int nScale = 4;
+        int nScale = 5;
         
         // wavelength of smallest scale filter
-        int minWavelength = 1;
+        int minWavelength = 3;
         
         // scaling factor between successive filters
         float mult = 2.1f;
@@ -171,7 +185,7 @@ public class PhaseCongruencyDetector {
         //number of standard deviations of the noise energy beyond the mean
         // at which we set the noise threshold point.  You may want to vary this
         // up to a value of 10 or 20 for noisy images.
-        float k = 1.0f;
+        float k = 2.0f;
         
         // The fractional measure of frequency spread below which phase 
         // congruency values get penalized.
@@ -194,12 +208,7 @@ public class PhaseCongruencyDetector {
         // A value of 0 will turn off all noise compensation.
         int noiseMethod = -1;
         
-        float epsilon = .0001f;
-        
-//NOTE: changing parameters to match python code while debugging
-nScale = 5;
-minWavelength = 3;
-k = 2.0f;
+        final double epsilon = 1E-4;
         
         int nCols = img.getWidth();
         int nRows = img.getHeight();
@@ -220,14 +229,16 @@ k = 2.0f;
         sumh1  = zeros(rows,cols);                                      
         sumh2  = zeros(rows,cols);
         */
-        
-        //idx = (row * width) + col
-        //int row = idx/width;
-        //int col = idx - (row * width);
-        double[] sumAn = new double[nCols * nRows];
-        double[] sumF = new double[sumAn.length];
-        double[] sumH1 = new double[sumAn.length];
-        double[] sumH2 = new double[sumAn.length];
+        double[][] sumAn = new double[nRows][];
+        double[][] sumF = new double[sumAn.length][];
+        double[][] sumH1 = new double[sumAn.length][];
+        double[][] sumH2 = new double[sumAn.length][];
+        for (int row = 0; row < nRows; ++row) {
+            sumAn[row] = new double[nCols];
+            sumF[row] = new double[nCols];
+            sumH1[row] = new double[nCols];
+            sumH2[row] = new double[nCols];
+        }
         
         /*
         Generate grid data for constructing filters in the frequency domain    
@@ -292,8 +303,17 @@ k = 2.0f;
         double tau = Double.NaN;
         double sqml4 = Math.sqrt(Math.log(4));
         double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
+        double threshold = epsilon;
+        
+        double[][] width = new double[nRows][];
+        double[][] weight = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            width[row] = new double[nCols];
+            weight[row] = new double[nCols];
+        }
         
         for (int s = 0; s < nScale; ++s) {
+            
             // Centre frequency of filter.
             double wavelength = minWavelength * Math.pow(mult, s);
             
@@ -330,14 +350,7 @@ k = 2.0f;
             // but are by inverse fft so need a combined division here by nRows*nCols
             Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
      
-            double[][] f = new double[nRows][];
             double norm = nRows * nCols;
-            for (int row = 0; row < nRows; ++row) {
-                f[row] = new double[nCols];
-                for (int col = 0; col < nCols; ++col) {
-                    f[row][col] = fComplex[row][col].re()/norm;
-                }
-            }
 
             //h = ifft2(IMF.*H);
             Complex[][] capIMFH = new Complex[nRows][];
@@ -364,19 +377,17 @@ k = 2.0f;
             for (int row = 0; row < nRows; ++row) {
                 aN[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
-                    double f0 = fComplex[row][col].re();
+                    double f0 = fComplex[row][col].re()/norm;
                     double h1 = h[row][col].re()/norm;
                     double h2 = h[row][col].im()/norm;
                     aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
-                    
-                    int idx = (row * nCols) + col;
-                    sumAn[idx] += aN[row][col];
-                    sumF[idx] += f0;
-                    sumH1[idx] += h1;
-                    sumH2[idx] += h2;
+                    sumAn[row][col] += aN[row][col];
+                    sumF[row][col] += f0;
+                    sumH1[row][col] += h1;
+                    sumH2[row][col] += h2;
                 }
             }
-            
+                      
             /*
             At the smallest scale estimate noise characteristics from the
             distribution of the filter amplitude responses stored in sumAn. 
@@ -387,9 +398,8 @@ k = 2.0f;
                 if (noiseMethod == -1) {
                     //Use median to estimate noise statistics
                     //tau = median(sumAn(:))/sqrt(log(4));
-                    double[] cp = Arrays.copyOf(sumAn, sumAn.length);
-                    Arrays.sort(cp);
-                    tau = cp[cp.length/2]/sqml4;
+                    double median = MiscMath.findMedian(sumAn);
+                    tau = median/sqml4;
                 } else if (noiseMethod == -2) {
                     //Use mode to estimate noise statistics
                     //tau = rayleighmode(sumAn(:));
@@ -407,81 +417,77 @@ k = 2.0f;
                     }
                 }
             }
-        } // end for each scale
-        
-        /*
-        Form weighting that penalizes frequency distributions that are
-        particularly narrow.  Calculate fractional 'width' of the frequencies
-        present by taking the sum of the filter response amplitudes and dividing
-        by the maximum component amplitude at each point on the image.  If
-        there is only one non-zero component width takes on a value of 0, if
-        all components are equal width is 1.
-        width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);    
+                    
+            /*
+            Form weighting that penalizes frequency distributions that are
+            particularly narrow.  Calculate fractional 'width' of the frequencies
+            present by taking the sum of the filter response amplitudes and dividing
+            by the maximum component amplitude at each point on the image.  If
+            there is only one non-zero component width takes on a value of 0, if
+            all components are equal width is 1.
+            width = (sumAn./(maxAn + epsilon) - 1) / (nscale-1);    
 
-        Now calculate the sigmoidal weighting function.
-        weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
-        */
-        // uses notation a[row][col]
-        double[][] width = new double[nRows][];
-        double[][] weight = new double[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            width[row] = new double[nCols];
-            weight[row] = new double[nCols];
-            for (int col = 0; col < nCols; ++col) {
-                double v = (maxAN[row][col] + epsilon - 1)/(nScale - 1.);
-                int idx = (row * nCols) + col;
-                width[row][col] = sumAn[idx]/v;
-                v = Math.exp(g*(cutOff - width[row][col]));
-                weight[row][col] = 1./(1. + v);
+            Now calculate the sigmoidal weighting function.
+            weight = 1.0 ./ (1 + exp( (cutOff - width)*g)); 
+            */
+            // uses notation a[row][col]
+
+            double dn = (double)nScale - 1.;
+
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    double a = sumAn[row][col]/(maxAN[row][col] + epsilon);
+                    width[row][col] = (a - 1.)/dn;
+                    double v = Math.exp(g*(cutOff - width[row][col]));
+                    weight[row][col] = 1./(1. + v);
+                }
             }
-        }
         
-        /*
-        Automatically determine noise threshold
+            /*
+            Automatically determine noise threshold
     
-        Assuming the noise is Gaussian the response of the filters to noise will
-        form Rayleigh distribution.  We use the filter responses at the smallest
-        scale as a guide to the underlying noise level because the smallest scale
-        filters spend most of their time responding to noise, and only
-        occasionally responding to features. Either the median, or the mode, of
-        the distribution of filter responses can be used as a robust statistic to
-        estimate the distribution mean and standard deviation as these are related
-        to the median or mode by fixed constants.  The response of the larger
-        scale filters to noise can then be estimated from the smallest scale
-        filter response according to their relative bandwidths.
+            Assuming the noise is Gaussian the response of the filters to noise will
+            form Rayleigh distribution.  We use the filter responses at the smallest
+            scale as a guide to the underlying noise level because the smallest scale
+            filters spend most of their time responding to noise, and only
+            occasionally responding to features. Either the median, or the mode, of
+            the distribution of filter responses can be used as a robust statistic to
+            estimate the distribution mean and standard deviation as these are related
+            to the median or mode by fixed constants.  The response of the larger
+            scale filters to noise can then be estimated from the smallest scale
+            filter response according to their relative bandwidths.
 
-        This code assumes that the expected reponse to noise on the phase
-        congruency calculation is simply the sum of the expected noise responses
-        of each of the filters.  This is a simplistic overestimate, however these
-        two quantities should be related by some constant that will depend on the
-        filter bank being used.  Appropriate tuning of the parameter 'k' will
-        allow you to produce the desired output. (though the value of k seems to
-        be not at all critical)
-        */
+            This code assumes that the expected reponse to noise on the phase
+            congruency calculation is simply the sum of the expected noise responses
+            of each of the filters.  This is a simplistic overestimate, however these
+            two quantities should be related by some constant that will depend on the
+            filter bank being used.  Appropriate tuning of the parameter 'k' will
+            allow you to produce the desired output. (though the value of k seems to
+            be not at all critical)
+            */
         
-        double threshold;
-        double totalTau;
-        
-        if (noiseMethod >= 0) { 
-            //fixed noise threshold
-            threshold = noiseMethod;
-        } else {
-            //Estimate the effect of noise on the sum of the filter responses as
-            //the sum of estimated individual responses (this is a simplistic
-            //overestimate). As the estimated noise response at succesive scales
-            //is scaled inversely proportional to bandwidth we have a simple
-            //geometric sum.
-            //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
-            totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
-        
-            // Calculate mean and std dev from tau using fixed relationship
-            // between these parameters and tau. See
-            // http://mathworld.wolfram.com/RayleighDistribution.html
-            double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
-            double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
-        
-            threshold =  EstNoiseEnergyMean + k*EstNoiseEnergySigma;
-        }
+            if (noiseMethod >= 0) { 
+                //fixed noise threshold
+                threshold = noiseMethod;
+            } else {
+                //Estimate the effect of noise on the sum of the filter responses as
+                //the sum of estimated individual responses (this is a simplistic
+                //overestimate). As the estimated noise response at succesive scales
+                //is scaled inversely proportional to bandwidth we have a simple
+                //geometric sum.
+                //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
+                double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+
+                // Calculate mean and std dev from tau using fixed relationship
+                // between these parameters and tau. See
+                // http://mathworld.wolfram.com/RayleighDistribution.html
+                double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
+                double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+
+                threshold = Math.max(EstNoiseEnergyMean + k*EstNoiseEnergySigma, epsilon);
+            }
+            
+        } // end for each scale
         
         // uses notation a[row][col]
         double[][] orientation = new double[nRows][];
@@ -498,8 +504,7 @@ k = 2.0f;
         // uses notation a[row][col]
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
-                int idx = (row * nCols) + col;
-                orientation[row][col] = Math.atan(-sumH2[idx]/sumH1[idx]);
+                orientation[row][col] = Math.atan(-sumH2[row][col]/sumH1[row][col]);
                 if (orientation[row][col] < 0) {
                     orientation[row][col] += Math.PI;
                 }
@@ -508,22 +513,22 @@ k = 2.0f;
                 orientation[row][col] = Math.floor(orientation[row][col]*180./Math.PI);
                 
                 //Feature type - a phase angle -pi/2 to pi/2.
-                double v1 = sumH1[idx];
+                double v1 = sumH1[row][col];
                 v1 *= v1;
-                double v2 = sumH2[idx];
+                double v2 = sumH2[row][col];
                 v2 *= v2;
-                ft[row][col] = Math.atan2(sumF[idx], Math.sqrt(v1 + v2));
+                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(v1 + v2));
                 
                 //overall energy
-                double v0 = sumF[idx];
+                double v0 = sumF[row][col];
                 v0 *= v0;
                 energy[row][col] = Math.sqrt(v0 + v1 + v2);
                 
-                double eDiv = Math.acos(energy[row][col]/(sumAn[idx] + epsilon));
+                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
                 
                 pc[row][col] = weight[row][col] 
                     * Math.max(1. - deviationGain * eDiv, 0)
-                    * Math.max(energy[row][col], 0)
+                    * Math.max(energy[row][col] - threshold, 0)
                     / (energy[row][col] + epsilon);
                 
             }
@@ -652,16 +657,20 @@ k = 2.0f;
      * @param data data assumed to come from a Rayleigh distribution
      * @return 
      */
-    private double rayleighMode(double[] data) {
+    private double rayleighMode(double[][] data) {
         
         int nBins = 50;
         
         float[] values = new float[data.length];
         float max = Float.MIN_VALUE;
-        for (int i = 0; i < data.length; ++i) {
-            values[i] = (float)data[i];
-            if (values[i] > max) {
-                max = values[i];
+        int count = 0;
+        for (int j = 0; j < data.length; ++j) {
+            for (int i = 0; i < data[j].length; ++i) {
+                values[count] = (float)data[j][i];
+                if (values[count] > max) {
+                    max = values[i];
+                }
+                count++;
             }
         }
         float[] errs = Errors.populateYErrorsBySqrt(values);

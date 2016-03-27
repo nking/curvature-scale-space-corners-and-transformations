@@ -35,25 +35,70 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         
         assertNotNull(products);
                 
+        // range of data is 0 to 
         double[][] pc = products.getPhaseCongruency();
         
-        int nRows = pc.length;
-        int nCols = pc[0].length;
-        
-        double[] pc0 = new double[nRows * nCols];
-        for (int i = 0; i < pc0.length; ++i) {
-            int y = i/nCols;
-            int x = i - (y * nCols);
-            pc0[i] = pc[y][x];
-        }
-        int[] scaledPC = MiscMath.rescale(pc0, 0, 255);
-        GreyscaleImage out = new GreyscaleImage(nCols, nRows);
-        for (int i = 0; i < pc0.length; ++i) {
-            int y = i/nCols;
-            int x = i - (y * nCols);           
-            out.setValue(x, y, scaledPC[i]);
+        GreyscaleImage out = img.createWithDimensions();
+        for (int i = 0; i < out.getWidth(); ++i) {
+            for (int j = 0; j < out.getHeight(); ++j) {
+                out.setValue(i, j, (int)(255.*pc[j][i]));
+            }
         }
         MiscDebug.writeImage(out, "_phase_congr_0_");
+        
+        double[][] orientation = products.getOrientation();
+        out = img.createWithDimensions();
+        double maxV = Double.MIN_VALUE;
+        double minV = Double.MAX_VALUE;
+        double[] scaled = new double[out.getNPixels()];
+        for (int i = 0; i < out.getWidth(); ++i) {
+            for (int j = 0; j < out.getHeight(); ++j) {
+                double v = orientation[j][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+                int idx = out.getInternalIndex(i, j);
+                scaled[idx] = v;
+            }
+        }
+        System.out.println("orientation minV=" + minV + " maxV=" + maxV);
+        int[] scaled2 = MiscMath.rescale(scaled, 0, 255);
+        for (int i = 0; i < out.getNPixels(); ++i) {
+            int v = scaled2[i];
+            out.setValue(i, v);                
+        }
+        MiscDebug.writeImage(out, "_orientation_");
+        
+        double[][] phaseAngle = products.getPhaseAngle();
+        out = img.createWithDimensions();
+        maxV = Double.MIN_VALUE;
+        minV = Double.MAX_VALUE;
+        scaled = new double[out.getNPixels()];
+        for (int i = 0; i < out.getWidth(); ++i) {
+            for (int j = 0; j < out.getHeight(); ++j) {
+                double v = phaseAngle[j][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+                int idx = out.getInternalIndex(i, j);
+                scaled[idx] = v;
+            }
+        }
+        System.out.println("phase angle minV=" + minV + " maxV=" + maxV);
+        scaled2 = MiscMath.rescale(scaled, 0, 255);
+        for (int i = 0; i < out.getNPixels(); ++i) {
+            int v = scaled2[i];
+            out.setValue(i, v);                
+        }
+        MiscDebug.writeImage(out, "_phase_angle_");
+        
+        System.out.println("threshold=" + products.getThreshold());
         
         /*
         [PC, or] = phasecongmono(imread('lena.tif'));
@@ -64,20 +109,24 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
             products.getOrientation(), 1.5);
-                
-        int[][] binaryImage = phaseCDetector.applyHysThresh(imgTh0, 0.1, 0.3);
-                
-        out = new GreyscaleImage(nCols, nRows);
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                if (binaryImage[row][col] > 0) {
-                    out.setValue(col, row, 255);
-                }
+        
+        out = img.createWithDimensions();
+        for (int i = 0; i < out.getWidth(); ++i) {
+            for (int j = 0; j < out.getHeight(); ++j) {
+                out.setValue(i, j, (int)(255.*imgTh0[j][i]));
             }
         }
-        
-        MiscDebug.writeImage(out, "_hyst_");
-        int z = 1;
+        MiscDebug.writeImage(out, "_non_max_sup_");
+                        
+        int[][] binaryImage = phaseCDetector.applyHysThresh(imgTh0, 0.1, 0.3);
+                
+        out = img.createWithDimensions();
+        for (int i = 0; i < out.getWidth(); ++i) {
+            for (int j = 0; j < out.getHeight(); ++j) {
+                out.setValue(i, j, (int)binaryImage[j][i]);
+            }
+        }
+        MiscDebug.writeImage(out, "_filtered_hysteresis_");        
     }
     
 }
