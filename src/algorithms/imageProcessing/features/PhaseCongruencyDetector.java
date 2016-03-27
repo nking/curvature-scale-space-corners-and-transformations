@@ -1,27 +1,18 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.AbstractLineThinner;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.PeriodicFFT;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
-import algorithms.util.PairInt;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
 
 /**
  Not yet tested or ready for use.
@@ -205,27 +196,23 @@ public class PhaseCongruencyDetector {
         
         float epsilon = .0001f;
         
-        
-        //NOTE: changing parameters to match python code while debugging
-        nScale = 5;
-        minWavelength = 3;
-        k = 2.0f;
+//NOTE: changing parameters to match python code while debugging
+nScale = 5;
+minWavelength = 3;
+k = 2.0f;
         
         int nCols = img.getWidth();
         int nRows = img.getHeight();
                 
+        //Periodic Fourier transform of image
         // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
-        //IM = perfft2(im);                   % Periodic Fourier transform of image
+        perfft2.setToNotNormalize();
+        //IM = perfft2(im);                   % 
+        //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
         Complex[][][] perfResults = perfft2.perfft2(img, true);
         Complex[][] capIm = perfResults[1];
-        
-// PAUSED HERE.  add debugging plots        
-        //DEBUG
-        {
-        
-        }
-        
+                      
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
@@ -304,35 +291,28 @@ public class PhaseCongruencyDetector {
         
         double tau = Double.NaN;
         double sqml4 = Math.sqrt(Math.log(4));
+        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
         
-        for (int s = 1; s < nScale; ++s) {
+        for (int s = 0; s < nScale; ++s) {
             // Centre frequency of filter.
-            double wavelength = minWavelength * Math.pow(mult, (s-1));
+            double wavelength = minWavelength * Math.pow(mult, s);
             
             double fo = 1.0/wavelength;
-            
+                        
             // use notation a[row][col]
-            Complex[][] logGabor = new Complex[nRows][];
+            double[][] logGabor = new double[nRows][];
             for (int row = 0; row < nRows; ++row) {
-                logGabor[row] = new Complex[nCols];
+                logGabor[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
-                    //logGabor = exp((-(log(radius/fo)).^2) / (2 * log(sigmaOnf)^2)); 
-                                        
-                    double v = radius[row][col]/fo;
-                    
-                    v = Math.log(v);
+                    double v = Math.log(radius[row][col]/fo);
                     v *= v;
-                    v *= -1;
-                    double v2 = Math.log(sigmaOnf);
-                    v2 *= v2;
-                    v2 *= 2;
-                    v = Math.exp(v/v2);
+                    v = Math.exp(-v/logGaborDenom);
                     //logGabor = logGabor.*lp;
-                    logGabor[row][col] = new Complex(lp[row][col] * v, 0);
+                    logGabor[row][col] = lp[row][col] * v;
                 }
             }
-            logGabor[0][0] = new Complex(0, 0);
-            
+            logGabor[0][0] = 0;
+                    
             // uses notation a[row][col]
             //Bandpassed image in the frequency domain
             Complex[][] capIMF = new Complex[nRows][];
@@ -341,20 +321,24 @@ public class PhaseCongruencyDetector {
                 for (int col = 0; col < nCols; ++col) {
                    capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
-            } 
+            }
             
             // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
-            double[][] dIMF = new double[nRows][];
+            // the functions used in other code are not normalized on fft, 
+            // but are by inverse fft so need a combined division here by nRows*nCols
+            Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
+     
+            double[][] f = new double[nRows][];
+            double norm = nRows * nCols;
             for (int row = 0; row < nRows; ++row) {
-                dIMF[row] = new double[nCols];
+                f[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
-                    dIMF[row][col] = capIMF[row][col].re();
+                    f[row][col] = fComplex[row][col].re()/norm;
                 }
             }
-            double[][] f = imageProcessor.ifftShift(dIMF);
-            
+
             //h = ifft2(IMF.*H);
             Complex[][] capIMFH = new Complex[nRows][];
             for (int row = 0; row < nRows; ++row) {
@@ -363,8 +347,9 @@ public class PhaseCongruencyDetector {
                     capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
                 }
             }
-            Complex[][] h = imageProcessor.ifftShift(capIMFH);
-            
+            // result needs to be divided by nRows*nCols
+            Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
+  
             /*
             h1 = real(h); 
             h2 = imag(h);                                  
@@ -379,9 +364,9 @@ public class PhaseCongruencyDetector {
             for (int row = 0; row < nRows; ++row) {
                 aN[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
-                    double f0 = f[row][col];
-                    double h1 = h[row][col].re();
-                    double h2 = h[row][col].im();
+                    double f0 = fComplex[row][col].re();
+                    double h1 = h[row][col].re()/norm;
+                    double h2 = h[row][col].im()/norm;
                     aN[row][col] = Math.sqrt(f0*f0 + h1*h1 + h2*h2);
                     
                     int idx = (row * nCols) + col;
@@ -398,7 +383,7 @@ public class PhaseCongruencyDetector {
             tau is the Rayleigh parameter that is used to describe the
             distribution.
             */
-            if (s == 1) {
+            if (s == 0) {
                 if (noiseMethod == -1) {
                     //Use median to estimate noise statistics
                     //tau = median(sumAn(:))/sqrt(log(4));

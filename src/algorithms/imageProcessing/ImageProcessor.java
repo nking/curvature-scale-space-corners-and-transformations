@@ -2528,7 +2528,7 @@ public class ImageProcessor {
         int yOffset = h - h0;
 
         if (xOffset == 0 && yOffset == 0) {
-            return input;
+            return input.copyImage();
         }
 
         int xOffsetOrig = input.getXRelativeOffset();
@@ -2542,36 +2542,6 @@ public class ImageProcessor {
             for (int j = 0; j < h0; ++j) {
                 int v = input.getValue(i, j);
                 output.setValue(i + xOffset, j + yOffset, v);
-            }
-        }
-
-        return output;
-    }
-    
-    private double[][] padUpToPowerOfTwo(double[][] input) {
-
-        int w0 = input.length;
-        int h0 = input[0].length;
-
-        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
-        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
-
-        int xOffset = w - w0;
-        int yOffset = h - h0;
-
-        if (xOffset == 0 && yOffset == 0) {
-            return input;
-        }
-        
-        double[][] output = new double[w][];
-        for (int i = 0; i < w; ++i) {
-            output[i] = new double[h];
-        }
-
-        for (int i = 0; i < w0; ++i) {
-            for (int j = 0; j < h0; ++j) {
-                double v = input[i][j];
-                output[i + xOffset][j + yOffset] = v;
             }
         }
 
@@ -2618,7 +2588,7 @@ public class ImageProcessor {
         return output;
     }
     
-    private Complex[][] padUpToPowerOfTwo(Complex[][] input) {
+    private Complex[][] padUpToPowerOfTwo(final Complex[][] input) {
 
         int n0 = input.length;
         int n1 = input[0].length;
@@ -2630,7 +2600,11 @@ public class ImageProcessor {
         int offset1 = nn1 - n1;
 
         if (offset0 == 0 && offset1 == 0) {
-            return input;
+            Complex[][] output = new Complex[n0][];
+            for (int i0 = 0; i0 < n0; ++i0) {
+                output[i0] = Arrays.copyOf(input[i0], n1);
+            }
+            return output;
         }
         
         Complex[][] output = new Complex[nn0][];
@@ -2724,18 +2698,30 @@ public class ImageProcessor {
     }
 
     public Complex[][] create2DFFT(Complex[][] input, boolean forward) {
+        
+        // performs normalization by default
+        return create2DFFT(input, true, forward);
+    }
+    
+    public Complex[][] create2DFFT(final Complex[][] input, boolean doNormalize,
+        boolean forward) {
 
         Complex[][] output = padUpToPowerOfTwo(input);
         
         final int n0 = input.length;
         final int n1 = input[0].length;
         
+        FFT fft = new FFT();
+        if (!doNormalize) {
+            fft.setToNotNormalize();
+        }
+        
         // ----- perform FFT by dimension 0 -----
         for (int i0 = 0; i0 < n0; i0++) {
             if (forward) {
-                output[i0] = FFT.fft(output[i0]);
+                output[i0] = fft.fft(output[i0]);
             } else {
-                output[i0] = FFT.ifft(output[i0]);
+                output[i0] = fft.ifft(output[i0]);
             }
         }
 
@@ -2748,9 +2734,9 @@ public class ImageProcessor {
         // ----- perform FFT by dimension 1,transposed -----
         for (int i1 = 0; i1 < n1; i1++) {
             if (forward) {
-                output[i1] = FFT.fft(output[i1]);
+                output[i1] = fft.fft(output[i1]);
             } else {
-                output[i1] = FFT.ifft(output[i1]);
+                output[i1] = fft.ifft(output[i1]);
             }
         }
 
@@ -2806,6 +2792,70 @@ public class ImageProcessor {
         assert(output2[0].length == img.getWidth());
         
         return output2;
+    }
+    
+    /**
+     * apply 2D FFT transform using the efficient iterative power of 2 method
+     * that uses the butterfly operation.
+     * 
+     * @param img
+     * @param forward if true, apply FFT transform, else inverse FFT transform
+     * @return 2d fft results in format a[row][col]
+     */
+    public Complex[][] create2DFFTWithSwapMajor(GreyscaleImage img, boolean forward) {
+     
+        // normalize by default
+        return create2DFFTWithSwapMajor(img, true, forward);
+    }
+    
+    /**
+     * apply 2D FFT transform using the efficient iterative power of 2 method
+     * that uses the butterfly operation.
+     * 
+     * @param img
+     * @param forward if true, apply FFT transform, else inverse FFT transform
+     * @return 2d fft results in format a[row][col]
+     */
+    public Complex[][] create2DFFTWithSwapMajor(GreyscaleImage img, 
+        boolean doNoomalize, boolean forward) {
+
+        GreyscaleImage tmp = padUpToPowerOfTwo(img);
+
+        // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
+        Complex[][] cc = convertImage(tmp);
+
+        Complex[][] ccFFT = create2DFFT(cc, doNoomalize, forward);
+
+        Complex[][] output = new Complex[img.getHeight()][img.getWidth()];
+        for (int i = 0; i < img.getHeight(); ++i) {
+            output[i] = new Complex[img.getWidth()];
+        }
+         
+        if (tmp.getNPixels() == img.getNPixels()) {
+            
+            // swap axes to return format output[row][col]
+            for (int i = 0; i < img.getWidth(); ++i) {
+                for (int j = 0; j < img.getHeight(); ++j) {
+                    output[j][i] = ccFFT[i][j];
+                }
+            }
+        
+        } else  if (tmp.getNPixels() > img.getNPixels()) {
+
+            int xOffset = tmp.getXRelativeOffset();
+            int yOffset = tmp.getYRelativeOffset();
+            
+            // trim and swap axes to return format output[row][col]
+
+            // padding is at front of cols and rows
+            for (int i = 0; i < img.getWidth(); ++i) {
+                for (int j = 0; j < img.getHeight(); ++j) {
+                    output[j][i] = ccFFT[i + xOffset][j + yOffset];
+                }
+            }            
+        }
+        
+        return output;
     }
     
     /**
@@ -3033,12 +3083,59 @@ public class ImageProcessor {
         
         return output2;
     }
-
+    
+    /**
+     * 
+     * @return 2d fft results in format a[row][col]
+     */
+    public Complex[][] create2DFFTWithSwapMajor(double[][] input, boolean forward) {
+     
+        // by default, does normalization
+        return create2DFFTWithSwapMajor(input, true, forward);
+    }
+    
+    /**
+     * 
+     * @return 2d fft results in format a[row][col]
+     */
+    public Complex[][] create2DFFTWithSwapMajor(double[][] input, 
+        boolean doNormalize, boolean forward) {
+        
+        Complex[][] ccFFT = create2DFFT(input, doNormalize, forward);
+        
+        assert(input.length == ccFFT.length);
+        assert(input[0].length == ccFFT[0].length);
+        
+        int nCols = input.length;
+        int nRows = input[0].length;
+        
+        Complex[][] output = new Complex[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            output[i] = new Complex[nCols];
+        }
+                     
+        // swap axes to return format output[row][col]
+        for (int i = 0; i < nCols; ++i) {
+            for (int j = 0; j < nRows; ++j) {
+                output[j][i] = ccFFT[i][j];
+            }
+        }
+        
+        return output;
+    }
+    
     public Complex[][] create2DFFT(double[][] input, boolean forward) {
+
+        // by default, perfomrs normalization
+        return create2DFFT(input, true, forward);
+    }
+
+    public Complex[][] create2DFFT(double[][] input, boolean doNormalize, 
+        boolean forward) {
 
         Complex[][] output = padUpToPowerOfTwoComplex(input);
                 
-        output = create2DFFT(output, forward);
+        output = create2DFFT(output, doNormalize, forward);
 
         if (output.length == input.length && output[0].length == input[0].length) {
             return output;
@@ -3387,7 +3484,7 @@ public class ImageProcessor {
         boolean xIsPowerOf2 = MiscMath.isAPowerOf2(w);
         boolean yIsPowerOf2 = MiscMath.isAPowerOf2(h);
         if (xIsPowerOf2 && yIsPowerOf2) {
-            return img;
+            return img.copyImage();
         }
 
         int w2 = w;

@@ -4,9 +4,17 @@ import algorithms.misc.Complex;
 import algorithms.misc.MiscMath;
 
 public class FFT {
-
-    // compute the FFT of x[], assuming its length is a power of 2
-    public static Complex[] fft(Complex[] x) {
+    
+    private boolean performNormalization = true;
+    
+    public void setToNotNormalize() {
+        performNormalization = false;
+    }
+    
+    /**
+     * compute the FFT of x[], assuming its length is a power of 2
+     */ 
+    public Complex[] fft(Complex[] x) {
         
         return fft(x, true);
     }
@@ -20,7 +28,7 @@ public class FFT {
      * transform.
      * @return 
      */
-    protected static Complex[] fft(Complex[] x, boolean forward) {
+    protected Complex[] fft(Complex[] x, boolean forward) {
        
         if (x == null || x.length == 0) {
             throw new IllegalArgumentException("xReal cannot be null or empty");
@@ -37,6 +45,9 @@ public class FFT {
         }
         
         Complex[] a = bitReverseCopy(x);
+        
+        //TODO: could improve the speed at expense of space by caching
+        // norm, end, m, eCoeff, and wn
         
         double norm = 1./Math.sqrt(n);
         
@@ -69,8 +80,10 @@ public class FFT {
             }
         }
         
-        for (int i = 0; i < a.length; i++) {
-            a[i] = a[i].times(norm);
+        if (performNormalization) {
+            for (int i = 0; i < a.length; i++) {
+                a[i] = a[i].times(norm);
+            }
         }
         
         /*
@@ -95,13 +108,13 @@ public class FFT {
     }
     
     // compute the inverse FFT of x[], assuming its length is a power of 2
-    public static Complex[] ifft(Complex[] x) {
+    public Complex[] ifft(Complex[] x) {
         
        return fft(x, false);
         
     }
 
-    protected static double[] bitReverseCopy(double[] x) {
+    protected double[] bitReverseCopy(double[] x) {
         
         int n = x.length;
         
@@ -119,7 +132,7 @@ public class FFT {
         return r;
     }
     
-    protected static double[] bitReverseCopy(int[] x) {
+    protected double[] bitReverseCopy(int[] x) {
         
         int n = x.length;
         
@@ -137,7 +150,7 @@ public class FFT {
         return r;
     }
     
-    protected static Complex[] bitReverseCopy(Complex[] x) {
+    protected Complex[] bitReverseCopy(Complex[] x) {
         
         int n = x.length;
         
@@ -213,8 +226,10 @@ public class FFT {
             }
         }
         
-        for (int i = 0; i < a.length; i++) {
-            a[i] /= norm;
+        if (performNormalization) {
+            for (int i = 0; i < a.length; i++) {
+                a[i] /= norm;
+            }
         }
         
         /*

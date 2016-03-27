@@ -36,7 +36,7 @@ public class FFTTest extends TestCase {
         
         FFT fft = new FFT();
         
-        double[] r = FFT.bitReverseCopy(a);
+        double[] r = fft.bitReverseCopy(a);
         assertTrue(a[0] == r[0]);
         assertTrue(a[1] == r[4]);
         assertTrue(a[2] == r[2]);
@@ -53,7 +53,7 @@ public class FFTTest extends TestCase {
         a1[4] = new Complex(4, 0);
         a1[5] = new Complex(5, 0);
         a1[6] = new Complex(6, 0);
-        Complex[] r1 = FFT.bitReverseCopy(a1);
+        Complex[] r1 = fft.bitReverseCopy(a1);
         assertTrue(a1[0].re() == r1[0].re());
         assertTrue(a1[1].re() == r1[4].re());
         assertTrue(a1[2].re() == r1[2].re());
@@ -79,12 +79,12 @@ public class FFTTest extends TestCase {
         x4[1] = new Complex(x[1], 0);
         x4[2] = new Complex(x[2], 0);
         x4[3] = new Complex(x[3], 0);
-        Complex[] y4 = FFT.fft(x4);
+        Complex[] y4 = fft.fft(x4);
         for (int i = 0; i < y4.length; i++) {
             double v1Diff = y4[i].re() - expectedReal[i];
             assertTrue( Math.abs( v1Diff ) < 0.01 );
         }
-        Complex[] y4Inv = FFT.fft(y4, false);
+        Complex[] y4Inv = fft.fft(y4, false);
         for (int i = 0; i < y4.length; i++) {
             double v1Diff = y4Inv[i].re() - x[i];
             assertTrue( Math.abs( v1Diff ) < 0.01 );

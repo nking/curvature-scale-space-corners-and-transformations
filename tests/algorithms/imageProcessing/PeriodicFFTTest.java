@@ -1,18 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.GreyscaleImage.Type;
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.Complex;
-import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -25,8 +17,91 @@ public class PeriodicFFTTest extends TestCase {
     public PeriodicFFTTest(String testName) {
         super(testName);
     }
+    
+    public void test0() throws Exception {
+        
+        //String filePath = ResourceFinder.findFileInTestResources("tmp.png"); 
+        String filePath = ResourceFinder.findFileInTestResources("lena.jpg"); 
+        
+        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        PeriodicFFT pfft = new PeriodicFFT();
+        
+        // results use notation a[row][col]
+        // fftSmooth, fftPeriodic, smooth, periodic
+        Complex[][][] results = pfft.perfft2(img2, true);
 
-    public void testFFT2D() throws Exception {
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        for (int i = 0; i < 4; ++i) {
+            String label;
+            Complex[][] t = results[i];
+            if (i == 0) {
+                label = "fftSmooth";
+            } else if (i == 1) {
+                label = "fftPeriodic";
+            } else if (i == 2) {
+                label = "smooth";
+            } else {
+                label = "periodic";
+            }
+            
+            GreyscaleImage imgT = img2.createFullRangeIntWithDimensions();
+            imageProcessor.writeToImageWithSwapMajor(imgT, t);
+            ImageDisplayer.displayImage(label, imgT);
+            
+            int nRows = t.length;
+            int nCols = t[0].length;
+            
+            double min = Double.MAX_VALUE;
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    double re = t[row][col].re();
+                    if (re < min) {
+                        min = re;
+                    }
+                }
+            }
+            if (min <= 0) {
+                min += 0.001;
+            } else {
+                min = 0;
+            }
+            double[] logValues = new double[t.length * t[0].length];
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    int idx = (row * nCols) + col;
+                    double re = t[row][col].re();
+                    logValues[idx] = Math.log(re - min);
+                }
+            }
+            
+            int[] scaled = MiscMath.rescale(logValues, 0, 255);
+            GreyscaleImage img2_ = new GreyscaleImage(img2.getWidth(), img2.getHeight(),
+                Type.Bits32FullRangeInt);
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    int idx = (row * nCols) + col;
+                    img2_.setValue(col, row, scaled[idx]);
+                }
+            }
+            MiscDebug.writeImage(img2_, label + "_log_tmp");
+
+            GreyscaleImage img3_ = new GreyscaleImage(img2.getWidth(), img2.getHeight(),
+                Type.Bits32FullRangeInt);
+            for (int row = 0; row < nRows; ++row) {
+                for (int col = 0; col < nCols; ++col) {
+                    double re = t[row][col].re();
+                    img3_.setValue(col, row, (int) re);
+                }
+            }
+            HistogramEqualization hEq = new HistogramEqualization(img3_);
+            hEq.applyFilter();
+
+            MiscDebug.writeImage(img3_, label + "_tmp");
+        }
+    }
+
+    public void estFFT2D() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -150,7 +225,7 @@ public class PeriodicFFTTest extends TestCase {
         int z = 1;
     }
     
-    public void testPerfft2() throws Exception {
+    public void estPerfft2() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources("checkerboard_01.jpg");  
         GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
