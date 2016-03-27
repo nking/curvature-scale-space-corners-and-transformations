@@ -44,7 +44,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 out.setValue(i, j, (int)(255.*pc[j][i]));
             }
         }
-        MiscDebug.writeImage(out, "_phase_congr_0_");
+        MiscDebug.writeImage(out, "_phase_congruency_");
         
         double[][] orientation = products.getOrientation();
         out = img.createWithDimensions();
@@ -53,7 +53,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         double[] scaled = new double[out.getNPixels()];
         for (int i = 0; i < out.getWidth(); ++i) {
             for (int j = 0; j < out.getHeight(); ++j) {
-                double v = orientation[j][j];
+                double v = orientation[j][i];
                 if (v < minV) {
                     minV = v;
                 }
@@ -79,7 +79,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         scaled = new double[out.getNPixels()];
         for (int i = 0; i < out.getWidth(); ++i) {
             for (int j = 0; j < out.getHeight(); ++j) {
-                double v = phaseAngle[j][j];
+                double v = phaseAngle[j][i];
                 if (v < minV) {
                     minV = v;
                 }
