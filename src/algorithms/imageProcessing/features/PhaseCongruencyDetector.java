@@ -50,64 +50,8 @@ import java.util.Arrays;
 
 # The software is provided "as is", without warranty of any kind.
 # 
+% =========================================
 * 
- There are potentially many arguments, here is the full usage:
-%
-%   [PC or ft T] =  ...
-%                phasecongmono(im, nscale, minWaveLength, mult, ...
-%                         sigmaOnf, k, cutOff, g, deviationGain, noiseMethod)
-%
-% However, apart from the image, all parameters have defaults and the
-% usage can be as simple as:
-%
-%    phaseCong = phasecongmono(im);
-% 
-% Arguments:
-%              Default values      Description
-%
-%    nscale           4    - Number of wavelet scales, try values 3-6
-%                            A lower value will reveal more fine scale
-%                            features. A larger value will highlight 'major'
-%                            features.
-%    minWaveLength    3    - Wavelength of smallest scale filter.
-%    mult             2.1  - Scaling factor between successive filters.
-%    sigmaOnf         0.55 - Ratio of the standard deviation of the Gaussian 
-%                            describing the log Gabor filter's transfer function 
-%                            in the frequency domain to the filter center frequency.
-%    k                3.0  - No of standard deviations of the noise energy beyond
-%                            the mean at which we set the noise threshold point.
-%                            You may want to vary this up to a value of 10 or
-%                            20 for noisy images 
-%    cutOff           0.5  - The fractional measure of frequency spread
-%                            below which phase congruency values get penalized.
-*    g                10   - Controls the sharpness of the transition in
-%                            the sigmoid function used to weight phase
-%                            congruency for frequency spread.                        
-%    deviationGain    1.5  - Amplification to apply to the calculated phase
-%                            deviation result. Increasing this sharpens the
-%                            edge responses, but can also attenuate their
-%                            magnitude if the gain is too large.  Sensible
-%                            values to use lie in the range 1-2.
-%    noiseMethod      -1   - Parameter specifies method used to determine
-%                            noise statistics. 
-%                              -1 use median of smallest scale filter responses
-%                              -2 use mode of smallest scale filter responses
-%                               0+ use noiseMethod value as the fixed noise threshold 
-%                            A value of 0 will turn off all noise compensation.
-%
-% Returned values:
-*    PC         - Phase congruency indicating edge significance (values are in range 0 to 1.)
-%    or         - Orientation image in integer degrees 0-180,
-%                 positive anticlockwise.
-%                 0 corresponds to a vertical edge, 90 is horizontal.
-%    ft         - Local weighted mean phase angle at every point in the
-%                 image.  A value of pi/2 corresponds to a bright line, 0
-%                 corresponds to a step and -pi/2 is a dark line.
-%    T          - Calculated noise threshold (can be useful for
-%                 diagnosing noise characteristics of images).  Once you know
-%                 this you can then specify fixed thresholds and save some
-%                 computation time.
-%
 % Notes on specifying parameters:  
 %
 % The parameters can be specified as a full list eg.
@@ -131,7 +75,6 @@ import java.util.Arrays;
 %  >> [PC, or] = phasecongmono(imread('lena.tif'));
 %  >> nm = nonmaxsup(PC, or, 1.5);   % nonmaxima suppression
 %  >> bw = hysthresh(nm, 0.1, 0.3);  % hysteresis thresholding 0.1 - 0.3
-%  >> show(bw)
 %
 % Notes on filter settings to obtain even coverage of the spectrum
 % sigmaOnf       .85   mult 1.3
@@ -142,9 +85,6 @@ import java.util.Arrays;
 % Note that better results are achieved using the large bandwidth filters.  
 % I generally use a sigmaOnf value of 0.55 or even smaller.
 %
-% See Also:  PHASECONG, PHASECONG3, PHASESYMMONO, GABORCONVOLVE,
-% PLOTGABORFILTERS, FILTERGRID
-
 % References:
 %
 %     Peter Kovesi, "Image Features From Phase Congruency". Videre: A
@@ -162,54 +102,159 @@ import java.util.Arrays;
 %     DICTA 2003, Sydney Dec 10-12
  */
 public class PhaseCongruencyDetector {
-        
+    
+    final private static double epsilon = 1E-4;
+    
     /**
+     * <pre>
+     * use the phase congruency method of transformations to create
+     * edge maps, orientation, phase angle and a suggested threshold.
+     * The default values are:
+        int nScale = 5;        
+        int minWavelength = 3;        
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        float k = 2.0f;
+        float cutOff = 0.5f; 
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+     * </pre>
      * @param img
-     * @return NOTE: the return products use notation a[row][col]
+     * @return 
+       <pre>
+       NOTE: the return products use notation a[row][col]
+       Returned values:
+         phaseCongruency  - Phase congruency indicating edge significance 
+                            (values are in range 0 to 1.)
+         orientation      - Orientation image in integer degrees 0-180,
+                            positive anticlockwise.
+                            0 corresponds to a vertical edge, 90 is horizontal.
+         phaseAngle       - Local weighted mean phase angle at every point in 
+                            the image. A value of 
+                                pi/2 corresponds to a bright line, 
+                                0 corresponds to a step and 
+                                -pi/2 is a dark line.
+         threshold        - Calculated noise threshold (can be useful for
+                            diagnosing noise characteristics of images).  
+                            Once you know this you can then specify fixed 
+                            thresholds and save some computation time.
+      </pre>
      */
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img) {
     
-        // number of wavelet scales.  a lower value reveals more fine scale features.
-        int nScale = 5;
-        
-        // wavelength of smallest scale filter
-        int minWavelength = 3;
-        
-        // scaling factor between successive filters
+        int nScale = 5;        
+        int minWavelength = 3;        
         float mult = 2.1f;
-        
-        // ratio of standard deviation of Gaussian describing the log Gabor's filter's
-        // transfer function in the frequency domain to the filter center frquency
         float sigmaOnf = 0.55f;
-        
-        //number of standard deviations of the noise energy beyond the mean
-        // at which we set the noise threshold point.  You may want to vary this
-        // up to a value of 10 or 20 for noisy images.
         float k = 2.0f;
-        
-        // The fractional measure of frequency spread below which phase 
-        // congruency values get penalized.
-        float cutOff = 0.5f;
-        
-        //Controls the sharpness of the transition in the sigmoid function used 
-        // to weight phase congruency for frequency spread. 
+        float cutOff = 0.5f; 
         float g = 10;
-        
-        //Amplification to apply to the calculated phase deviation result. 
-        // Increasing this sharpens the edge responses, but can also attenuate 
-        // their magnitude if the gain is too large.  Sensible values to use 
-        //  lie in the range 1-2.
-        float deviationGain = 1.5f; 
-        
-        //Parameter specifies method used to determine noise statistics. 
-        //     -1 use median of smallest scale filter responses
-        //     -2 use mode of smallest scale filter responses
-        //      0+ use noiseMethod value as the fixed noise threshold 
-        // A value of 0 will turn off all noise compensation.
+        float deviationGain = 1.5f;
         int noiseMethod = -1;
         
-        final double epsilon = 1E-4;
+        return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
+            cutOff, g, deviationGain, noiseMethod);
+    }
+    
+    /**
+     * 
+     * @param img
+     * @param nScale number of wavelet scales.  a lower value reveals more fine 
+     * scale features.
+     * @param k number of standard deviations of the noise energy beyond the 
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+       * 
+     * @return 
+       <pre>
+       NOTE: the return products use notation a[row][col]
+       Returned values:
+         phaseCongruency  - Phase congruency indicating edge significance 
+                            (values are in range 0 to 1.)
+         orientation      - Orientation image in integer degrees 0-180,
+                            positive anticlockwise.
+                            0 corresponds to a vertical edge, 90 is horizontal.
+         phaseAngle       - Local weighted mean phase angle at every point in 
+                            the image. A value of 
+                                pi/2 corresponds to a bright line, 
+                                0 corresponds to a step and 
+                                -pi/2 is a dark line.
+         threshold        - Calculated noise threshold (can be useful for
+                            diagnosing noise characteristics of images).  
+                            Once you know this you can then specify fixed 
+                            thresholds and save some computation time.
+      </pre>
+     */    
+    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
+        final int nScale, final float k) {
         
+        int minWavelength = 3;        
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        float cutOff = 0.5f; 
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        
+        return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
+            cutOff, g, deviationGain, noiseMethod);
+    }
+    
+    /**
+     * an edge detector based upon the principal moments of phase congruency 
+     * to create an edge operator that is highly localized and has responses 
+     * that are invariant to image contrast. 
+     * @param img
+     * @param nScale number of wavelet scales.  a lower value reveals more fine 
+     * scale features.
+     * @param minWavelength wavelength of smallest scale filter
+     * @param mult scaling factor between successive filters
+     * @param sigmaOnf ratio of standard deviation of Gaussian describing the 
+     * log Gabor's filter's transfer function in the frequency domain to the 
+     * filter center frequency
+     * @param k number of standard deviations of the noise energy beyond the 
+     * mean at which we set the noise threshold point.  You may want to vary this
+       up to a value of 10 or 20 for noisy images.
+     * @param cutOff The fractional measure of frequency spread below which phase 
+     * congruency values get penalized
+     * @param g Controls the sharpness of the transition in the sigmoid function 
+     * used to weight phase congruency for frequency spread. 
+     * @param deviationGain Amplification to apply to the calculated phase 
+     * deviation result.  Increasing this sharpens the edge responses, but can 
+     * also attenuate their magnitude if the gain is too large.  Sensible values 
+     * to use lie in the range 1-2.
+     * @param noiseMethod Parameter specifies method used to determine noise 
+     * statistics: -1 use median of smallest scale filter responses; 
+     * -2 use mode of smallest scale filter responses;
+     * 0 turns off all noise compensation; and
+     * > 0 use noiseMethod value as the fixed noise threshold;
+     * 
+     * @return 
+       <pre>
+       NOTE: the return products use notation a[row][col]
+       Returned values:
+         phaseCongruency  - Phase congruency indicating edge significance 
+                            (values are in range 0 to 1.)
+         orientation      - Orientation image in integer degrees 0-180,
+                            positive anticlockwise.
+                            0 corresponds to a vertical edge, 90 is horizontal.
+         phaseAngle       - Local weighted mean phase angle at every point in 
+                            the image. A value of 
+                                pi/2 corresponds to a bright line, 
+                                0 corresponds to a step and 
+                                -pi/2 is a dark line.
+         threshold        - Calculated noise threshold (can be useful for
+                            diagnosing noise characteristics of images).  
+                            Once you know this you can then specify fixed 
+                            thresholds and save some computation time.
+      </pre>
+     */    
+    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
+        final int nScale, final int minWavelength, final float mult,
+        final float sigmaOnf, final float k, final float cutOff,
+        final float g, final float deviationGain, final int noiseMethod) {
+              
         int nCols = img.getWidth();
         int nRows = img.getHeight();
                 
@@ -225,7 +270,7 @@ public class PhaseCongruencyDetector {
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
-        sumf   = zeros(rows,cols);                                  
+        sumf   = zeros(rows,cols);          % ft is phase angle                   
         sumh1  = zeros(rows,cols);                                      
         sumh2  = zeros(rows,cols);
         */
@@ -486,10 +531,11 @@ public class PhaseCongruencyDetector {
 
                 threshold = Math.max(EstNoiseEnergyMean + k*EstNoiseEnergySigma, epsilon);
             }
-            
+                        
         } // end for each scale
         
         // uses notation a[row][col]
+        // fit is phase angle
         double[][] orientation = new double[nRows][];
         double[][] ft = new double[nRows][];
         double[][] energy = new double[nRows][];
@@ -510,19 +556,19 @@ public class PhaseCongruencyDetector {
                 }
                 // orientation values now range 0 - pi
                 // Quantize to 0 - 180 degrees (for NONMAXSUP)
-                orientation[row][col] = Math.floor(orientation[row][col]*180./Math.PI);
+                orientation[row][col] = (int)(orientation[row][col]*180./Math.PI);
                 
                 //Feature type - a phase angle -pi/2 to pi/2.
-                double v1 = sumH1[row][col];
-                v1 *= v1;
-                double v2 = sumH2[row][col];
-                v2 *= v2;
-                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(v1 + v2));
+                double h1Sq = sumH1[row][col];
+                h1Sq *= h1Sq;
+                double h2Sq = sumH2[row][col];
+                h2Sq *= h2Sq;
+                ft[row][col] = Math.atan2(sumF[row][col], Math.sqrt(h1Sq + h2Sq));
                 
                 //overall energy
                 double v0 = sumF[row][col];
                 v0 *= v0;
-                energy[row][col] = Math.sqrt(v0 + v1 + v2);
+                energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);
                 
                 double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
                 
@@ -530,12 +576,10 @@ public class PhaseCongruencyDetector {
                     * Math.max(1. - deviationGain * eDiv, 0)
                     * Math.max(energy[row][col] - threshold, 0)
                     / (energy[row][col] + epsilon);
-                
             }
         }
         
         /*
-        
         % Compute phase congruency.  The original measure, 
         % PC = energy/sumAn 
         % is proportional to the weighted cos(phasedeviation).  This is not very
@@ -558,7 +602,7 @@ public class PhaseCongruencyDetector {
         PC = weight.*max(1 - deviationGain*acos(energy./(sumAn + epsilon)),0) ...
               .* max(energy-T,0)./(energy+epsilon);
         */
-        
+       
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
@@ -628,6 +672,69 @@ public class PhaseCongruencyDetector {
         }
         
     }
+    
+    private void calculateCorners(PhaseCongruencyProducts products,
+        int[][] edges) {
+                
+        /*
+        can make corners in many different ways with these products or with
+            intermediate products in the above main methd.
+        
+        -- for the edge points alone, could use determinant and trace on 
+        autocorrelation matrix 
+        performed on the original image, can be used to filter out points that
+        are not easy to localize (such as points that are not corners).
+        see line 956 on my IntensityFeatures.java
+        
+        -- can make harris corners:
+            covariance matrix of the phase congruence image for each
+            edge point and the harris corners recipe of 
+                R = det(G) − k(tr(G))2
+                    where det(G) = αβ and tr(G) = α + β, 
+                    the parameter k is traditionally set to 0.04. 
+                This produces a measure that is large when both α and β are large
+        
+        -- presumably, can use f * h1 and f * h2 above  to
+           substitute for gradient x and gradient y at successive scales
+           to make corners with.
+           Would need to create a 2nd derivative for x and y too, so would need
+           to build a v1,v2 with the equivalent of filtergrid that results in
+           a second derivative filter like the binomial [1, -2, 1]
+        
+           (see line 39 of ScaleSpaceCurvture.java... )
+           
+            Then corners for each point are:
+                  X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+        k(t,o~) = -------------------------------------------------------------
+                               (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
+        
+            and like the gaussian version, would use the min max
+            rules and find the candidate corners at largest scales then track
+            them to the smallest for higher accuracy of location.
+            --> would require saving intermediate data products.        
+        
+        -- using the phase angle image and integrating over a patch to find
+              strong changes of direction along the given edges.
+        */
+        
+        double[][] pc = products.getPhaseCongruency();
+                 
+        int nRows = pc.length;
+        int nCols = pc[0].length;
+        
+        /*
+        */
+        double[][] minMoment = new double[nRows][];
+        for (int row = 0; row < nRows; ++row) {
+            minMoment[row] = new double[nCols];
+        }
+        
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {                
+            }
+        }
+        
+    }
 
     private Complex[][] copy(Complex[][] a) {
         
@@ -694,28 +801,23 @@ public class PhaseCongruencyDetector {
     }
     
     /**
-     * apply a 2 level threshold hysteresis filter to the image.  
+     * apply a 2 level threshold hysteresis filter to the image and use an
+     * association radius of 2 and value > t1 from any pixel within a
+     * radius of 2 of a pixel with value > t2.
      * 
-     * 
-     * 
-     * @param img
-     * @param t1
-     * @param t2
+     * @param img the phase congruence image
+     * @param t1 low threshold
+     * @param t2 high threshold
      * @return 
      */
     int[][] applyHysThresh(double[][] img, double t1, double t2) {
         
         // note that the kovesi code uses the octave bwselect and bwfill,
-        // which results in points > t2.
+        // which results in points > t2 which is thresholding just for 
+        // the high value.
+        
         // so will instead adapt my canny edge detector 2-layer threshold
         // here.
-        // if t1 and t2 suggested settings from his usage are not quite
-        // right for this, will use the otsu value and a scale factor.
-        
-        // copying apply2LayerFilter from the adaptive canny directly here,
-        // but if t1 and t2 are not producing best results, will edit
-        // the other apply2LayerFilter to accept the img here as int[][]
-        // instead
         
         int w = img.length;
         int h = img[0].length;

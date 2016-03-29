@@ -316,6 +316,9 @@ public class Gaussian1DSecondDeriv {
       n=16   * 1 14  89  336 820 1288 1092 -208 -2002 -2860 -2002 -208 1092 1288 820 336 89 14 1 <== sigma=2
     </pre>
     */
+    
+    //TODO:  These should be changed to include zeros on the ends
+    //        to complete the 2n deriv profile
   
     protected static float[] getBinomialKernelSigmaZeroPointFive() {
         // 1 -1  -1  1
