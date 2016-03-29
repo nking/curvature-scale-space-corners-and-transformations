@@ -227,6 +227,59 @@ public class MiscellaneousCurveHelper {
         }
     }
     
+    public void additionalThinning45DegreeEdges(
+        double[][] theta, double[][] input) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+        for (int i = 1; i < (input.length - 1); i++) {
+            for (int j = 1; j < (input[i].length - 1); j++) {
+
+                double vG = input[i][j];
+                              
+                if (vG <= 0) {
+                    continue;
+                }
+                
+                int tG = convert360To45RefFrame((int)Math.round(theta[i][j]));
+
+                if ((Math.abs(tG - 45) < 5) || (Math.abs(tG - -45) < 5)) {
+
+                    int tH0 = convert360To45RefFrame((int)Math.round(theta[i - 1][j]));
+                    int tH1 = convert360To45RefFrame((int)Math.round(theta[i + 1][j]));
+                    int tV0 = convert360To45RefFrame((int)Math.round(theta[i][j - 1]));
+                    int tV1 = convert360To45RefFrame((int)Math.round(theta[i][j + 1]));
+
+                    double gH0 = input[i - 1][j];
+                    double gH1 = input[i + 1][j];
+                    double gV0 = input[i][j - 1];
+                    double gV1 = input[i][j + 1];
+
+                    if ((gH0 > 0) && (Math.abs(tH0 - tG) < 5)) {
+                        if ((gV0 > 0) && (Math.abs(tV0 - tG) < 5)) {
+                            input[i][j] = 0;
+                        } else if ((gV1 > 0) && (Math.abs(tV1 - tG) < 5)) {
+                            input[i][j] = 0;
+                        }
+                    } else if ((gH1 > 0) && (Math.abs(tH1 - tG) < 5)) {
+                        if ((gV0 > 0) && (Math.abs(tV0 - tG) < 5)) {
+                            input[i][j] = 0;
+                        } else if ((gV1 > 0) && (Math.abs(tV1 - tG) < 5)) {
+                            input[i][j] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     /**
          *           Y
          *          90

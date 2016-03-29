@@ -215,6 +215,9 @@ im = im.*skel;
             }
         }
         
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        curveHelper.additionalThinning45DegreeEdges(orientation, output);
+        
         return output;
     }
 }
