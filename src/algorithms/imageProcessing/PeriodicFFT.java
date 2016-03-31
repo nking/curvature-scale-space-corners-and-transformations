@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Complex;
+import algorithms.misc.MiscMath;
 import java.util.Arrays;
 
 /**
@@ -58,18 +59,8 @@ import java.util.Arrays;
   L. Moisan, "Periodic plus Smooth Image Decomposition", Journal of
   Mathematical Imaging and Vision, vol 39:2, pp. 161-179, 2011.
  </pre>
- * @author nichole
  */
 public class PeriodicFFT {
-    
-    private boolean normalizeFFT = true;
-    
-    /**
-     * override the default to normalize the FFT, to instead not normalize
-     */
-    public void setToNotNormalize() {
-        normalizeFFT = false;
-    }
     
     /**
      * calculates the 2D fft of periodic image component and returns that and
@@ -150,7 +141,7 @@ public class PeriodicFFT {
             s[nRows - 1][col] = -v;
         }
         for (int row = 0; row < nRows; ++row) {
-            //s[row=:, col=0] = s[row=:, col=0] + im[row=:, col=0] - im[rod=:, col=-1]
+            //s[:, 0] = s[:, 0]  + im[:, 0] - im[:, -1]
             double v = s[row][0] + img.getValue(0, row) - img.getValue(nCols - 1, row);
             s[row][0] = v;
         }
@@ -185,7 +176,7 @@ public class PeriodicFFT {
                 cx[row][col] = v;
             }
         }
-        
+                
         /*
         denom = (2. * (2. - np.cos(cx) - np.cos(cy)))
         denom[0, 0] = 1.     # avoid / 0
@@ -196,10 +187,12 @@ public class PeriodicFFT {
         
         // the fft algorithm using powers of 2 sizes is faster, so pad the data
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         // using notation a[row][col]
-        Complex[][] capS = imageProcessor.create2DFFTWithSwapMajor(s, 
-            normalizeFFT, true);
+        
+        double postNorm = nRows * nCols;
+        
+        Complex[][] capS = imageProcessor.create2DFFT(s, false, true);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 double denom;
@@ -217,14 +210,16 @@ public class PeriodicFFT {
         S(1,1) = 0;          % Enforce 0 mean 
         */
         capS[0][0] = new Complex(0, 0);
-                
+        
         /*
         P = fft2(im) - S;    % FFT of periodic component
         */
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         // using notation a[row][col]
         Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, 
-            normalizeFFT, true);
+            false, true);
+        assert(capP.length == capS.length);
+        assert(capP[0].length == capS[0].length);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 Complex v0 = capP[row][col];
@@ -232,18 +227,25 @@ public class PeriodicFFT {
                 capP[row][col] = v0.minus(s0);
             }
         }
-                
+        
+//DEBUG
+DEBUG(capP, "P= fft(im) - S"); 
+        
         if (computeSpatial) {
             //s = real(ifft2(S)); 
             //p = im - s;
             
-            Complex[][] lowerCaseS = imageProcessor.ifftShift(capS);
+            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, true);
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
-                    lowerCaseS[row][col] = new Complex(lowerCaseS[row][col].re(), 0);
+                    lowerCaseS[row][col] 
+                        = new Complex(lowerCaseS[row][col].re()/postNorm, 0);
                 }
             }
-            
+//TODO: lower case s may be wrong            
+// DEBUG
+DEBUG(lowerCaseS, "inv FFT(S)");
+
             Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];
             for (int row = 0; row < nRows; ++row) {
                 lowerCaseP[row] = new Complex[nCols];
@@ -253,10 +255,94 @@ public class PeriodicFFT {
                 }
             }
             
+// DEBUG
+DEBUG(lowerCaseP, "p= im - s");
+            
             return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};
         }
         
         return new Complex[][][]{capS, capP};
     }
     
+    private void DEBUG(Complex[][] tmp, String label) {
+       
+        try {
+            algorithms.util.PolygonAndPointPlotter plotter
+                = new algorithms.util.PolygonAndPointPlotter();
+
+            int nc = tmp[0].length;
+            int nr = tmp.length;
+
+            float[] x = new float[nc];
+            for (int ii = 0; ii < nc; ++ii) {
+                x[ii] = ii;
+            }
+            float[] y = new float[nc];
+            float[] xPolygon = null;
+            float[] yPolygon = null;
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii].re();
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber + " REAL");
+            }
+            
+            // do same for complex
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii].im();
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber + " IMAGINARY");
+            }
+            
+            plotter.writeFile();
+        } catch (Exception e) {
+        }
+        int z = 1;
+    }
+    
+    private void DEBUG(double[][] tmp, String label) {
+       
+        try {
+            algorithms.util.PolygonAndPointPlotter plotter
+                = new algorithms.util.PolygonAndPointPlotter();
+
+            int nc = tmp[0].length;
+            int nr = tmp.length;
+
+            float[] x = new float[nc];
+            for (int ii = 0; ii < nc; ++ii) {
+                x[ii] = ii;
+            }
+            float[] y = new float[nc];
+            float[] xPolygon = null;
+            float[] yPolygon = null;
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii];
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber);
+            }
+            plotter.writeFile();
+        } catch (Exception e) {
+        }
+        int z = 1;
+    }
+
 }

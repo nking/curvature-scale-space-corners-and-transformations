@@ -18,50 +18,84 @@ public class PeriodicFFTTest extends TestCase {
         super(testName);
     }
     
-    public void testFFT2D() throws Exception {
+    public void estFFT2D() throws Exception {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        String filePath = ResourceFinder.findFileInTestResources("lena.jpg");        
-        GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        String fileName = "lab.gif";
+        //String fileName = "lena.jpg";
+        //String fileName = "tmp.png";
         
-        ImageDisplayer.displayImage("lena", img2);
+        String filePath = ResourceFinder.findFileInTestResources(fileName);        
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         
-        Complex[][] cc = imageProcessor.convertImage(img2);
-                
-        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true);
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
         
-        GreyscaleImage img3 = img2.createFullRangeIntWithDimensions();
-        for (int col = 0; col < img3.getWidth(); col++) {
-            for (int row = 0; row < img3.getHeight(); row++) {
-                double re = ccOut[col][row].re();
-                img3.setValue(col, row, (int)re);
+        double maxValue = Double.MIN_VALUE;
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                int re = img.getValue(col, row);
+                if (re > maxValue) {
+                    maxValue = re;
+                }
             }
         }
-                           
-        ImageDisplayer.displayImage("FFT of lena", img3);
         
+        ImageDisplayer.displayImage(fileName, img);
+                        
+        Complex[][] ccOut = imageProcessor.create2DFFTWithSwapMajor(img, true);
+        maxValue = Double.MIN_VALUE;
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                int re = img.getValue(col, row);
+                if (re > maxValue) {
+                    maxValue = re;
+                }
+            }
+        }
+        
+        GreyscaleImage img1 = img.createFullRangeIntWithDimensions();
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                int re = (int)ccOut[row][col].re();
+                img1.setValue(col, row, re);
+            }
+        }                           
+        ImageDisplayer.displayImage("FFT of " + fileName, img1);
+
+        // ---- inverse FFT -------
         ccOut = imageProcessor.create2DFFT(ccOut, false);
-        for (int col = 0; col < img3.getWidth(); col++) {
-            for (int row = 0; row < img3.getHeight(); row++) {
-                double re = ccOut[col][row].re();
-                img3.setValue(col, row, (int)re);
+        maxValue = Double.MIN_VALUE;
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                int re = (int)ccOut[row][col].re();
+                if (re > maxValue) {
+                    maxValue = re;
+                }
             }
         }
-        
-        ImageDisplayer.displayImage("FFT^-1 of FFT lena", img3);
+        System.out.println("maxValue=" + maxValue);
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                int re = (int)ccOut[row][col].re();
+                img1.setValue(col, row, re);
+            }
+        }
+        ImageDisplayer.displayImage("FFT^-1 of FFT " + fileName, img1);
         
         int maxDiff = Integer.MIN_VALUE;
-        for (int i = 0; i < img2.getNPixels(); ++i) {
-            int v = Math.abs(img2.getValue(i) - img3.getValue(i));
+        for (int i = 0; i < img1.getNPixels(); ++i) {
+            int v = Math.abs(img.getValue(i) - img1.getValue(i));
             if (v > maxDiff) {
                 maxDiff = v;
             }
         }
+        System.out.println("maxDiff=" + maxDiff);
         assertTrue(maxDiff < 5);  
         
         // --- the periodic fft -----
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         PeriodicFFT pfft = new PeriodicFFT();
         
         // results use notation a[row][col]
@@ -84,12 +118,10 @@ public class PeriodicFFTTest extends TestCase {
                 label = "periodic";
             }
             
-            GreyscaleImage imgT = img2.createFullRangeIntWithDimensions();
+            GreyscaleImage imgT = img.createFullRangeIntWithDimensions();
             imageProcessor.writeToImageWithSwapMajor(imgT, t);
+                       
             ImageDisplayer.displayImage(label, imgT);
-            
-            int nRows = t.length;
-            int nCols = t[0].length;
             
             double min = Double.MAX_VALUE;
             for (int row = 0; row < nRows; ++row) {
@@ -115,18 +147,16 @@ public class PeriodicFFTTest extends TestCase {
             }
             
             int[] scaled = MiscMath.rescale(logValues, 0, 255);
-            GreyscaleImage img2_ = new GreyscaleImage(img.getWidth(), img.getHeight(),
-                Type.Bits32FullRangeInt);
+            GreyscaleImage img2_ = img.createFullRangeIntWithDimensions();
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
                     int idx = (row * nCols) + col;
                     img2_.setValue(col, row, scaled[idx]);
                 }
             }
-            MiscDebug.writeImage(img2_, label + "_log_lena");
+            MiscDebug.writeImage(img2_, label + "_log_" + fileName);
 
-            GreyscaleImage img3_ = new GreyscaleImage(img.getWidth(), img.getHeight(),
-                Type.Bits32FullRangeInt);
+            GreyscaleImage img3_ = img.createFullRangeIntWithDimensions();
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
                     double re = t[row][col].re();
@@ -136,15 +166,31 @@ public class PeriodicFFTTest extends TestCase {
             HistogramEqualization hEq = new HistogramEqualization(img3_);
             hEq.applyFilter();
 
-            MiscDebug.writeImage(img3_, label + "_lena");
+            MiscDebug.writeImage(img3_, label + "_" + fileName);
         }
+        int z = 1;
+    }
+    
+    public void test0() throws Exception {
+                
+        //String fileName = "lena.jpg";
+        //String fileName = "tmp.png";
+        String fileName = "lab.gif";
+        //String fileName = "house.gif";
+        
+        String filePath = ResourceFinder.findFileInTestResources(fileName);        
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+        
+        PeriodicFFT pfft = new PeriodicFFT();
+        Complex[][][] pC = pfft.perfft2(img, true);
+        Complex[][] periodicComponent = pC[0];
         
     }
     
-    public void testPerfft2() throws Exception {
+    public void estPerfft2() throws Exception {
         
         String filePath = ResourceFinder.findFileInTestResources("checkerboard_01.jpg");  
-        GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath);
+        GreyscaleImage img0 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         GreyscaleImage img = new GreyscaleImage(img0.getWidth(), img0.getHeight(),
             Type.Bits32FullRangeInt);
         for (int col = 0; col < img0.getWidth(); col++) {

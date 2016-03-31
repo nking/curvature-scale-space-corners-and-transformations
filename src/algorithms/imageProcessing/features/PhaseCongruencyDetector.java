@@ -11,6 +11,7 @@ import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import java.util.Arrays;
@@ -258,15 +259,17 @@ public class PhaseCongruencyDetector {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
                 
-        //Periodic Fourier transform of image
+        //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
         PeriodicFFT perfft2 = new PeriodicFFT();
-        perfft2.setToNotNormalize();
         //IM = perfft2(im);                   % 
         //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
         Complex[][][] perfResults = perfft2.perfft2(img, true);
         Complex[][] capIm = perfResults[1];
-                      
+          
+DEBUG(capIm, " IM");
+int zz = 1;
+
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
@@ -328,7 +331,7 @@ public class PhaseCongruencyDetector {
                 capH[row][col] = new Complex(re, im);
             }
         }
-        
+               
         /*
          % First construct a low-pass filter that is as large as possible, yet falls
          % away to zero at the boundaries.  All filters are multiplied by
@@ -340,7 +343,7 @@ public class PhaseCongruencyDetector {
         // results use notation a[row][col]
         LowPassFilter lpFilter = new LowPassFilter();
         double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);
-                
+             
         ImageProcessor imageProcessor = new ImageProcessor();
         
         double[][] maxAN = null;
@@ -388,15 +391,34 @@ public class PhaseCongruencyDetector {
                 }
             }
             
+DEBUG(capIMF, "s=" + s + " sumAn");            
+            
             // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
             // the functions used in other code are not normalized on fft, 
-            // but are by inverse fft so need a combined division here by nRows*nCols
+            // but are by inverse fft so need a combined division here by nomr=nRows*nCols
             Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
-     
-            double norm = nRows * nCols;
 
+            double norm = nRows * nCols;
+            
+//DEBUG
+{
+//ERROR somewhere here.  my "f" is smaller than the python
+    double[][] f = new double[nRows][];
+    double avg = 0;
+    for (int row = 0; row < nRows; ++row) {
+        f[row] = new double[nCols];
+        for (int col = 0; col < nCols; ++col) {
+            f[row][col] = fComplex[row][col].re();///norm;
+            avg += f[row][col];
+        }
+    }
+    avg /= norm;
+    DEBUG(f, "f");
+int z = 1;
+}
+        
             //h = ifft2(IMF.*H);
             Complex[][] capIMFH = new Complex[nRows][];
             for (int row = 0; row < nRows; ++row) {
@@ -405,9 +427,9 @@ public class PhaseCongruencyDetector {
                     capIMFH[row][col] = capIMF[row][col].times(capH[row][col]);
                 }
             }
-            // result needs to be divided by nRows*nCols
+            // result needs to be divided by norm=nRows*nCols
             Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
-  
+
             /*
             h1 = real(h); 
             h2 = imag(h);                                  
@@ -422,6 +444,7 @@ public class PhaseCongruencyDetector {
             for (int row = 0; row < nRows; ++row) {
                 aN[row] = new double[nCols];
                 for (int col = 0; col < nCols; ++col) {
+                    // results of inverse transforms need normalization
                     double f0 = fComplex[row][col].re()/norm;
                     double h1 = h[row][col].re()/norm;
                     double h2 = h[row][col].im()/norm;
@@ -432,7 +455,7 @@ public class PhaseCongruencyDetector {
                     sumH2[row][col] += h2;
                 }
             }
-                      
+            
             /*
             At the smallest scale estimate noise characteristics from the
             distribution of the filter amplitude responses stored in sumAn. 
@@ -487,7 +510,15 @@ public class PhaseCongruencyDetector {
                     weight[row][col] = 1./(1. + v);
                 }
             }
-        
+    
+DEBUG(sumAn, "s=" + s + " sumAn");
+DEBUG(sumF, "s=" + s + " sumF");
+DEBUG(sumH1, "s=" + s + " sumH1");
+DEBUG(sumH2, "s=" + s + " sumH2");
+DEBUG(aN, "s=" + s + " An");
+DEBUG(width, "s=" + s + " width");
+DEBUG(weight, "s=" + s + " weight");
+
             /*
             Automatically determine noise threshold
     
@@ -609,6 +640,55 @@ public class PhaseCongruencyDetector {
         return products;
     }
 
+    void explorePhaseAngle(PhaseCongruencyProducts products, 
+        double[][] thinnedPC, double t1) {
+        
+        double[][] phaseAngle = products.getPhaseAngle();
+        
+        int nRows = phaseAngle.length;
+        int nCols = phaseAngle[0].length;
+        
+        GreyscaleImage img0 = new GreyscaleImage(nCols, nRows);
+        GreyscaleImage img1 = new GreyscaleImage(nCols, nRows);
+        GreyscaleImage img2 = new GreyscaleImage(nCols, nRows);
+        
+        double piDiv2 = Math.PI/2.;
+        double piDiv4 = piDiv2/2.;
+        
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                if (thinnedPC[row][col] < t1) {
+                    continue;
+                }
+                // placing values closer to -pi/2 than 0 into img0,
+                //         values closer to +p1/2 than 0 into img2,
+                //         else they are closer to 0 and in img1
+                // TODO: when see the results, might consider a smaller tolerance
+                //        for img1
+                double v = phaseAngle[row][col];
+                if (v < 0) {
+                    if (Math.abs(v - -piDiv2) < piDiv4) {
+                        img0.setValue(col, row, 255);
+                    } else {
+                        img1.setValue(col, row, 255);
+                    }
+                } else if (v == 0) {
+                    img1.setValue(col, row, 255);
+                } else {
+                    if (Math.abs(v - piDiv2) < piDiv4) {
+                        img2.setValue(col, row, 255);
+                    } else {
+                        img1.setValue(col, row, 255);
+                    }
+                }
+            }
+        }
+        
+        MiscDebug.writeImage(img0, "_bright_lines+");
+        MiscDebug.writeImage(img1, "_steps_");
+        MiscDebug.writeImage(img2, "_dark_lines_");
+    }
+
     public class PhaseCongruencyProducts {
         
         /**
@@ -675,7 +755,7 @@ public class PhaseCongruencyDetector {
     
     private void calculateCorners(PhaseCongruencyProducts products,
         int[][] edges) {
-                
+                        
         /*
         can make corners in many different ways with these products or with
             intermediate products in the above main methd.
@@ -905,4 +985,85 @@ public class PhaseCongruencyDetector {
         return img2;
     }
     
+    private void DEBUG(Complex[][] tmp, String label) {
+       
+        try {
+            algorithms.util.PolygonAndPointPlotter plotter
+                = new algorithms.util.PolygonAndPointPlotter();
+
+            int nc = tmp[0].length;
+            int nr = tmp.length;
+
+            float[] x = new float[nc];
+            for (int ii = 0; ii < nc; ++ii) {
+                x[ii] = ii;
+            }
+            float[] y = new float[nc];
+            float[] xPolygon = null;
+            float[] yPolygon = null;
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii].re();
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber + " REAL");
+            }
+            
+            // do same for complex
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii].im();
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber + " IMAGINARY");
+            }
+            
+            plotter.writeFile();
+        } catch (Exception e) {
+        }
+        int z = 1;
+    }
+    
+    private void DEBUG(double[][] tmp, String label) {
+       
+        try {
+            algorithms.util.PolygonAndPointPlotter plotter
+                = new algorithms.util.PolygonAndPointPlotter();
+
+            int nc = tmp[0].length;
+            int nr = tmp.length;
+
+            float[] x = new float[nc];
+            for (int ii = 0; ii < nc; ++ii) {
+                x[ii] = ii;
+            }
+            float[] y = new float[nc];
+            float[] xPolygon = null;
+            float[] yPolygon = null;
+
+            // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
+            for (int nf = 1; nf < 4; nf++) {
+                int rowNumber = (int) (((float) nf) * 0.25f * nr);
+                for (int ii = 0; ii < nc; ++ii) {
+                    y[ii] = (float) tmp[rowNumber][ii];
+                }
+                float minY = MiscMath.findMin(y);
+                float maxY = MiscMath.findMax(y);
+                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
+                    yPolygon, label + " row=" + rowNumber);
+            }
+            plotter.writeFile();
+        } catch (Exception e) {
+        }
+        int z = 1;
+    }
+
 }
