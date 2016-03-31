@@ -191,7 +191,7 @@ public class FFT {
         
         double[] a = bitReverseCopy(x);
         
-        double norm = Math.sqrt(n);
+        double norm = 1./Math.sqrt(n);
         
         int end = (int)(Math.log(n)/Math.log(2));
         
@@ -228,7 +228,7 @@ public class FFT {
         
         if (performNormalization) {
             for (int i = 0; i < a.length; i++) {
-                a[i] /= norm;
+                a[i] *= norm;
             }
         }
         
