@@ -2634,7 +2634,13 @@ public class ImageProcessor {
         return output;
     }
 
-    private Complex[][] padUpToPowerOfTwo(final Complex[][] input) {
+    /**
+     * add zeros to beginning of arrays to pad up to a size of the power of 2.
+     * 
+     * @param input
+     * @return 
+     */
+    public Complex[][] padUpToPowerOfTwo(final Complex[][] input) {
 
         int n0 = input.length;
         int n1 = input[0].length;
@@ -2701,44 +2707,28 @@ public class ImageProcessor {
      */
     public void apply2DFFT(GreyscaleImage input, boolean forward) {
 
-        int xOffsetOrig = input.getXRelativeOffset();
-        int yOffsetOrig = input.getYRelativeOffset();
+        int n0 = input.getWidth();
+        int n1 = input.getHeight();
 
-        GreyscaleImage tmp = padUpToPowerOfTwo(input);
+        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
+        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
+
+        if (nn0 > n0 || nn1 > n1) {
+            apply2DFFT2(input, forward);
+            return;
+        }
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] cc = convertImage(tmp);
+        Complex[][] cc = convertImage(input);
 
         Complex[][] ccOut = create2DFFT(cc, forward);
 
-        if (tmp.getNPixels() == input.getNPixels()) {
-
-            input.fill(0);
-            for (int col = 0; col < input.getWidth(); col++) {
-                for (int row = 0; row < input.getHeight(); row++) {
-                    double re = ccOut[col][row].re();
-                    input.setValue(col, row, (int)re);
-                }
+        input.fill(0);
+        for (int col = 0; col < input.getWidth(); col++) {
+            for (int row = 0; row < input.getHeight(); row++) {
+                double re = ccOut[col][row].re();
+                input.setValue(col, row, (int)re);
             }
-
-        } else  if (tmp.getNPixels() > input.getNPixels()) {
-
-            int xOffset = tmp.getXRelativeOffset();
-            int yOffset = tmp.getYRelativeOffset();
-
-            // padding is at front of cols and rows
-            int x = 0;
-            for (int col = xOffset; col < tmp.getWidth(); col++) {
-                int y = 0;
-                for (int row = yOffset; row < tmp.getHeight(); row++) {
-                    double re = ccOut[col][row].re();
-                    input.setValue(x, y, (int) re);
-                    y++;
-                }
-                x++;
-            }
-            input.setXRelativeOffset(xOffsetOrig);
-            input.setYRelativeOffset(yOffsetOrig);
         }
 
     }
@@ -2750,8 +2740,7 @@ public class ImageProcessor {
     }
     
     /**
-     * perform fft on input.  note that internally, the method pads up to power
-     * of 2 if needed and trims after fft if needed.
+     * perform fft on input.  
      * @param input
      * @param doNormalize
      * @param forward
@@ -2778,8 +2767,7 @@ public class ImageProcessor {
     }
 
     /**
-     * perform fft on input.  note that internally, the method pads up to power
-     * of 2 if needed and trims after fft if needed.
+     * perform fft on input.
      * @param input
      * @param doNormalize
      * @param forward
@@ -2788,10 +2776,24 @@ public class ImageProcessor {
     public Complex[][] create2DFFT(final Complex[][] input, boolean doNormalize,
         boolean forward) {
 
-        Complex[][] output = padUpToPowerOfTwo(input);
-
         final int n0 = input.length;
         final int n1 = input[0].length;
+        
+        int nn0 = 1 << (int)(Math.ceil(Math.log(n0)/Math.log(2)));
+        int nn1 = 1 << (int)(Math.ceil(Math.log(n1)/Math.log(2)));
+        
+        if (nn0 > n0 || nn1 > n1) {
+            Complex1D[] input2 = convertToComplex1D(input);
+            Complex1D[] output = create2DFFT2(input2, doNormalize, forward);
+            Complex[][] output2 = convertToComplex(output);
+            return output2;
+        }
+            
+        Complex[][] output = copy(input);
+        
+        // padding is at front of cols and rows
+        final int offset0 = nn0 - n0;
+        final int offset1 = nn1 - n1;
         
         FFT fft = new FFT();
         if (!doNormalize) {
@@ -2799,7 +2801,7 @@ public class ImageProcessor {
         }
 
         // ----- perform FFT by dimension 0 -----
-        for (int i0 = 0; i0 < n0; i0++) {
+        for (int i0 = 0; i0 < nn0; i0++) {
             if (forward) {
                 output[i0] = fft.fft(output[i0]);
             } else {
@@ -2808,22 +2810,22 @@ public class ImageProcessor {
         }
 
         // re-use array for the FFT by dimension 1
-        Complex[] tmp = new Complex[n0];
+        Complex[] tmp = new Complex[nn0];
 
         /*
-        n0
+        nn0
          |
         \|/
-        [0]  ..........n1-1
-        [1]  ..........n1-1
+        [0]  ..........nn1-1
+        [1]  ..........nn1-1
         */
         
         // ----- perform the FFT on dimension 1 ------
-        for (int i1 = 0; i1 < n1; ++i1) {
+        for (int i1 = 0; i1 < nn1; ++i1) {
 
             // store each column in tmp array and perform fft on it then
             // recopy values back into columns
-            for (int i0 = 0; i0 < n0; ++i0) {
+            for (int i0 = 0; i0 < nn0; ++i0) {
                 tmp[i0] = output[i0][i1];
             }
 
@@ -2833,31 +2835,12 @@ public class ImageProcessor {
                 tmp = fft.ifft(tmp);
             }
 
-            for (int i0 = 0; i0 < n0; ++i0) {
+            for (int i0 = 0; i0 < nn0; ++i0) {
                 output[i0][i1] = tmp[i0];
             }
         }
 
-        if (output.length == n0 && output[0].length == n1) {
-            return output;
-        }
-
-        // padding is at front of cols and rows
-        final int offset0 = output.length - n0;
-        final int offset1 = output[0].length - n1;
-
-        Complex[][] output2 = new Complex[n0][];
-        for (int i0 = 0; i0 < n0; ++i0) {
-            output2[i0] = new Complex[n1];
-        }
-
-        for (int i0 = 0; i0 < n0; ++i0) {
-            for (int i1 = 0; i1 < n1; ++i1) {
-                output2[i0][i1] = output[i0 + offset0][i1 + offset1];
-            }
-        }
-
-        return output2;
+        return output;        
     }
 
     /**
@@ -4430,6 +4413,53 @@ public class ImageProcessor {
         }
 
         input.resetTo(tmp);
+    }
+
+    public Complex1D[] convertToComplex1D(Complex[][] input) {
+        
+        int n0 = input.length;
+        int n1 = input[0].length;
+        
+        Complex1D[] output = new Complex1D[n0];
+        for (int i = 0; i < n0; ++i) {
+            output[i] = new Complex1D();
+            output[i].x = new double[n1];
+            output[i].y = new double[n1];
+            for (int j = 0; j < n1; ++j) {
+                output[i].x[j] = input[i][j].re();
+                output[i].y[j] = input[i][j].im();
+            }
+        }
+        
+        return output;
+    }
+
+    public Complex[][] copy(Complex[][] input) {
+        
+        int n0 = input.length;
+        
+        Complex[][] output = new Complex[n0][];
+        for (int i = 0; i < n0; ++i) {
+            output[i] = Arrays.copyOf(input[i], input[i].length);
+        }
+        
+        return output;
+    }
+
+    public Complex[][] convertToComplex(Complex1D[] input) {
+        
+        int n0 = input.length;
+        int n1 = input[0].x.length;
+            
+        Complex[][] output = new Complex[n0][];
+        for (int i = 0; i < n0; ++i) {
+            output[i] = new Complex[n1];
+            for (int j = 0; j < n1; ++j) {
+                output[i][j] = new Complex(input[i].x[j], input[i].y[j]);
+            }
+        }
+        
+        return output;
     }
 
     public static class Colors {
