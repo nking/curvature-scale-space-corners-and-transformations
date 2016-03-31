@@ -2792,7 +2792,7 @@ public class ImageProcessor {
 
         final int n0 = input.length;
         final int n1 = input[0].length;
-
+        
         FFT fft = new FFT();
         if (!doNormalize) {
             fft.setToNotNormalize();
@@ -2810,13 +2810,21 @@ public class ImageProcessor {
         // re-use array for the FFT by dimension 1
         Complex[] tmp = new Complex[n0];
 
+        /*
+        n0
+         |
+        \|/
+        [0]  ..........n1-1
+        [1]  ..........n1-1
+        */
+        
         // ----- perform the FFT on dimension 1 ------
         for (int i1 = 0; i1 < n1; ++i1) {
 
             // store each column in tmp array and perform fft on it then
             // recopy values back into columns
             for (int i0 = 0; i0 < n0; ++i0) {
-                tmp[i0] = output[i1][i0];
+                tmp[i0] = output[i0][i1];
             }
 
             if (forward) {
@@ -2826,7 +2834,7 @@ public class ImageProcessor {
             }
 
             for (int i0 = 0; i0 < n0; ++i0) {
-                output[i1][i0] = tmp[i0];
+                output[i0][i1] = tmp[i0];
             }
         }
 
@@ -2996,8 +3004,8 @@ public class ImageProcessor {
             // store each column in tmp array and perform fft on it then
             // recopy values back into columns
             for (int i0 = 0; i0 < n0; ++i0) {
-                tmp.x[i0] = output[i1].x[i0];
-                tmp.y[i0] = output[i1].y[i0];
+                tmp.x[i0] = output[i0].x[i1];
+                tmp.y[i0] = output[i0].y[i1];
             }
 
             if (forward) {
@@ -3007,8 +3015,8 @@ public class ImageProcessor {
             }
 
             for (int i0 = 0; i0 < n0; ++i0) {
-                output[i1].x[i0] = tmp.x[i0] * norm0;
-                output[i1].y[i0] = tmp.y[i0] * norm0;
+                output[i0].x[i1] = tmp.x[i0] * norm0;
+                output[i0].y[i1] = tmp.y[i0] * norm0;
             }
         }
 

@@ -30,7 +30,7 @@ public class ImageProcessor2Test extends TestCase {
         usng a 2-d signum function
         */
         
-        int nRows = 4;
+        int nRows = 2;
         int nCols = 4;
         
         Complex[][] a = new Complex[nRows][];
@@ -72,7 +72,7 @@ public class ImageProcessor2Test extends TestCase {
                 double r2 = ccTr2[row].x[col];
                 double im2 = ccTr2[row].y[col];
                 
-                System.out.println(String.format("** %f %f", (float)r1, (float)r2));
+                //System.out.println(String.format("** %f %f", (float)r1, (float)r2));
                 
                 assertTrue(Math.abs(r2 - r1) < 0.01);
                 assertTrue(Math.abs(im2 - im1) < 0.01);
@@ -94,8 +94,8 @@ public class ImageProcessor2Test extends TestCase {
                 
                 double r0 = a[row][col].re();
                 
-                System.out.println(String.format("*** %f %f  %f", 
-                    (float)r1/norm, (float)r2/norm, (float)r0));
+                //System.out.println(String.format("*** %f %f  %f", 
+                //    (float)r1/norm, (float)r2/norm, (float)r0));
                 
                 assertTrue(Math.abs(r2 - r1) < 0.01);
                 assertTrue(Math.abs(im2 - im1) < 0.01);
@@ -104,9 +104,37 @@ public class ImageProcessor2Test extends TestCase {
                 //assertTrue(Math.abs(r0 - r1) < 0.01);
             }
         }
+        
+        GreyscaleImage img = new GreyscaleImage(a.length, a[0].length,
+           GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[0].length; ++j) {
+                img.setValue(i, j, (int)a[i][j].re());
+            }
+        }
+        
+        Complex[][] cc = imageProcessor.convertImage(img);
+        Complex[][] ccOut = imageProcessor.create2DFFT(cc, true, true);
+        Complex[][] ccOut2 = imageProcessor.create2DFFT(ccOut, true, false);
+        
+        for (int row = 0; row < ccTr1.length; ++row) {
+            for (int col = 0; col < ccTr1[0].length; ++col) {
+                
+                double r1 = ccOut2[row][col].re();
+                double im1 = ccOut2[row][col].im();
+                
+                double r0 = a[row][col].re();
+                
+                System.out.println(String.format("**** %f %f", (float)r1, 
+                    (float)r0));
+                
+                assertTrue(Math.abs(r0 - r1) < 0.01);
+            }
+        }
     }
     
-    /*public void test0() throws Exception {
+    /*
+    public void test0() throws Exception {
         
         String fileName = "lab.gif";
         String filePath = ResourceFinder.findFileInTestResources(fileName);     
@@ -124,13 +152,16 @@ public class ImageProcessor2Test extends TestCase {
                 int v = img.getValue(i, j);
                 double diff = v - vTrTr;
                 double r = vTrTr/v;
+                if (diff > 1) {
                 System.out.println("img=" + v + " FFT(v)=" + vTr 
                     + " iFFT(FFT(v)=" + vTrTr + " diff = " + diff
-                    + " ratio=" + r  + " nPix=" + img.getNPixels());
+                    + " ratio=" + r  + " (" + i + "," + j + ")");
+                }
                 //assertTrue(Math.abs(diff) < 1);
             }
         }
-    }*/
+    }
+    */
     
     public void est() throws Exception {
         
