@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Logger;
+import thirdparty.ca.uol.aig.fftpack.Complex1D;
 import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
 
 /**
@@ -89,7 +90,7 @@ public class ImageProcessor {
      * @param kernelX
      * @param kernelY
      * @param normFactorX
-     * @param normFactorY 
+     * @param normFactorY
      */
     protected void applyKernels(Image input, Kernel kernelX, Kernel kernelY,
         float normFactorX, float normFactorY) {
@@ -205,7 +206,7 @@ public class ImageProcessor {
 
         return img2;
     }
-    
+
     public void capToRange(GreyscaleImage img, int minV, int maxV) {
         int w = img.getWidth();
         int h = img.getHeight();
@@ -421,10 +422,10 @@ public class ImageProcessor {
 
         return output;
     }
-    
+
     /**
      * calculate theta, transforming values from -pi to pi to range 0 to 360.
-     * Note that the value of theta for pixel with gradientX or gradientY 
+     * Note that the value of theta for pixel with gradientX or gradientY
      * smaller than the resolution of the data (FWHM of PSF) is actually
      * orthogonal to it's real value, so those need to be interpreted
      * differently.
@@ -434,9 +435,9 @@ public class ImageProcessor {
      * sigma sqrt(1)/2 results in a sigma of
      * sqrt( (1*1) + (sqrt(1)/2)*(sqrt(1)/2) ).  The FWHM of the combined
      * operations is then approx 2.35 * sigma, so that's 3 pixels.
-     * The minimum resolvable angle is then math.atan2(1, 3)*180./Math.PI is 
-     * 18.4 degrees for this example, so any theta within 19 degrees of 
-     * horizontal or vertical where there is signal in the image, has to be 
+     * The minimum resolvable angle is then math.atan2(1, 3)*180./Math.PI is
+     * 18.4 degrees for this example, so any theta within 19 degrees of
+     * horizontal or vertical where there is signal in the image, has to be
      * corrected by 90 degrees.
      * Such correction isn't made here to allow the method to be used without
      * such knowledge.
@@ -452,7 +453,7 @@ public class ImageProcessor {
      * </pre>
      * @param gradientX
      * @param gradientY
-     * @return 
+     * @return
      */
     public GreyscaleImage computeTheta360_0(final GreyscaleImage gradientX,
         final GreyscaleImage gradientY) {
@@ -468,14 +469,14 @@ public class ImageProcessor {
 
                 // -pi to pi radians
                 double theta = Math.atan2(gY, gX);
-                
+
                 // transform to 0 to 2*pi radians
                 if (theta < 0) {
                     theta += 2. * Math.PI;
                 }
 
                 int d = (int)Math.round(theta * 180./Math.PI);
-                
+
                 output.setValue(i, j, d);
             }
         }
@@ -868,7 +869,7 @@ public class ImageProcessor {
     public void subtractMinimum(GreyscaleImage input) {
 
         int min = input.getMin();
-        
+
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
@@ -968,24 +969,24 @@ public class ImageProcessor {
 
         applyKernel1D(input, kernel, false);
     }
-    
+
     /**
      * apply a sigma=0.5 first derivative of Gaussian ([0.5, 0, -0.5], a.k.a. Sobel)
-     * @param input 
+     * @param input
      */
     public GreyscaleImage createSmallFirstDerivGaussian(GreyscaleImage input) {
-        
+
         float[] kernel = Gaussian1DFirstDeriv.getKernel(
             SIGMA.ZEROPOINTFIVE);
-        
+
         GreyscaleImage gX = input.copyImage();
         GreyscaleImage gY = input.copyImage();
         applyKernel1D(gX, kernel, true);
         applyKernel1D(gY, kernel, false);
-        
+
         return combineConvolvedImages(gX, gY);
     }
-    
+
     protected void blur(GreyscaleImage input, float[] kernel, int minValue, int maxValue) {
 
         applyKernel1D(input, kernel, true, minValue, maxValue);
@@ -1006,7 +1007,7 @@ public class ImageProcessor {
 
         blur(input, kernel);
     }
-    
+
     public void blur(GreyscaleImage input, SIGMA sigma, int minValue, int maxValue) {
         float[] kernel = Gaussian1D.getKernel(sigma);
         blur(input, kernel, minValue, maxValue);
@@ -1047,7 +1048,7 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
-    
+
     /**
      * blur the r, g, b vectors of image input by sigma.
      * @param input
@@ -1059,7 +1060,7 @@ public class ImageProcessor {
 
         blur(input, kernel, minValue, maxValue);
     }
-    
+
     /**
      * blur the r, g, b vectors of image input by sigma.
      * @param input
@@ -1129,7 +1130,7 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
-    
+
     public void applyFirstDerivGaussian(GreyscaleImage input, SIGMA sigma,
         int minValueRange, int maxValueRange) {
 
@@ -1143,18 +1144,18 @@ public class ImageProcessor {
 
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
-                
+
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, true);
-                
+
                 int v = (int)Math.round(conv);
-                
+
                 if (v < minValueRange) {
                     v = minValueRange;
                 } else if (v > maxValueRange) {
                     v = maxValueRange;
                 }
-                
+
                 output.setValue(i, j, v);
             }
         }
@@ -1163,25 +1164,25 @@ public class ImageProcessor {
 
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
-                
+
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
-                
+
                 int v = (int)Math.round(conv);
-                
+
                 if (v < minValueRange) {
                     v = minValueRange;
                 } else if (v > maxValueRange) {
                     v = maxValueRange;
                 }
-                
+
                 output.setValue(i, j, v);
             }
         }
 
         input.resetTo(output);
     }
-    
+
     public void applySecondDerivGaussian(GreyscaleImage input, SIGMA sigma,
         int minValueRange, int maxValueRange) {
 
@@ -1195,18 +1196,18 @@ public class ImageProcessor {
 
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
-                
+
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, true);
-                
+
                 int v = (int)Math.round(conv);
-                
+
                 if (v < minValueRange) {
                     v = minValueRange;
                 } else if (v > maxValueRange) {
                     v = maxValueRange;
                 }
-                
+
                 output.setValue(i, j, v);
             }
         }
@@ -1215,18 +1216,18 @@ public class ImageProcessor {
 
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
-                
+
                 double conv = kernel1DHelper.convolvePointWithKernel(
                     input, i, j, kernel, false);
-                
+
                 int v = (int)Math.round(conv);
-                
+
                 if (v < minValueRange) {
                     v = minValueRange;
                 } else if (v > maxValueRange) {
                     v = maxValueRange;
                 }
-                
+
                 output.setValue(i, j, v);
             }
         }
@@ -1252,7 +1253,7 @@ public class ImageProcessor {
 
         input.resetTo(output);
     }
-    
+
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX, int minValue, int maxValue) {
 
@@ -1520,7 +1521,7 @@ public class ImageProcessor {
 
         return count;
     }
-    
+
     protected int count8RegionNeighbors(GreyscaleImage input, int x, int y,
         int edgeValue) {
 
@@ -1618,7 +1619,7 @@ public class ImageProcessor {
 
         return index;
     }
-    
+
     protected int getIndexIfOnlyOneNeighbor(GreyscaleImage input, int x, int y,
         int edgeValue) {
 
@@ -1765,12 +1766,12 @@ public class ImageProcessor {
         return new int[]{(int)Math.round(rSum), (int)Math.round(gSum),
             (int)Math.round(bSum)};
     }
-    
+
     public void applyErosionFilter(GreyscaleImage img) {
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyFilter(img);
     }
-    
+
     public void applyErosionFilterOnZeroes(GreyscaleImage img) {
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyFilterOnZeros(img);
@@ -2068,8 +2069,8 @@ public class ImageProcessor {
 
         return out;
     }
-    
-    
+
+
     public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
 
         if (input == null) {
@@ -2078,10 +2079,10 @@ public class ImageProcessor {
 
         int w1 = 2 * input.getWidth();
         int h1 = 2 * input.getHeight();
-        
+
         return expandBy2UsingBilinearInterp(input, w1, h1);
     }
-            
+
     /**
      * expand image to final size by a factor of 2, and use the given output
      * widths and heights which are expected to be either twice the input
@@ -2089,7 +2090,7 @@ public class ImageProcessor {
      * @param input
      * @param outWidth
      * @param outHeight
-     * @return 
+     * @return
      */
     public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input,
         int outWidth, int outHeight) {
@@ -2100,7 +2101,7 @@ public class ImageProcessor {
 
         int w0 = input.getWidth();
         int h0 = input.getHeight();
-        
+
         if ((2*w0 != outWidth) && ((2*w0 + 1) != outWidth)) {
             throw new IllegalArgumentException(
             "outWidth should be 2 * input.getWidth() or (2 * input.getWidth()) + 1");
@@ -2114,7 +2115,7 @@ public class ImageProcessor {
 
         for (int i = 0; i < outWidth; ++i) {
             for (int j = 0; j < outHeight; ++j) {
-                
+
                 if (((i & 1) != 1) && ((j & 1) != 1)) {
                     int x0 = i/2;
                     int y0 = j/2;
@@ -2126,23 +2127,23 @@ public class ImageProcessor {
 
                 float x0 = (float)i/2.f;
                 float y0 = (float)j/2.f;
-                
+
                 if (x0 > (w0 - 1)) {
                     x0 = w0 - 1;
                 }
                 if (y0 > (h0 - 1)) {
                     y0 = h0 - 1;
                 }
-                
+
                 double v2 = biLinearInterpolation(input, x0, y0);
-                
+
                 out.setValue(i, j, (int)Math.round(v2));
             }
         }
 
         return out;
     }
-    
+
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
 
         if (input == null) {
@@ -2515,7 +2516,7 @@ public class ImageProcessor {
 
         return new double[]{avgY, avgR, avgG, avgB};
     }
-    
+
     private GreyscaleImage padUpToPowerOfTwo(GreyscaleImage input) {
 
         int w0 = input.getWidth();
@@ -2547,7 +2548,52 @@ public class ImageProcessor {
 
         return output;
     }
-    
+
+    private Complex[][] padUpToPowerOfTwoComplex(GreyscaleImage input) {
+
+        int w0 = input.getWidth();
+        int h0 = input.getHeight();
+
+        int w = 1 << (int)(Math.ceil(Math.log(w0)/Math.log(2)));
+        int h = 1 << (int)(Math.ceil(Math.log(h0)/Math.log(2)));
+
+        int xOffset = w - w0;
+        int yOffset = h - h0;
+
+        Complex[][] output = new Complex[w][];
+        for (int i = 0; i < w; ++i) {
+            output[i] = new Complex[h];
+        }
+
+        if (xOffset == 0 && yOffset == 0) {
+            for (int i = 0; i < w; ++i) {
+                output[i] = new Complex[h];
+                for (int j = 0; j < h; ++j) {
+                    output[i][j] = new Complex(input.getValue(i, j), 0);
+                }
+            }
+            return output;
+        }
+
+        for (int i = 0; i < w; ++i) {
+            output[i] = new Complex[h];
+            for (int j = 0; j < h; ++j) {
+                if ((i < xOffset) || (j < yOffset)) {
+                    output[i][j] = new Complex(0, 0);
+                } else {
+                    output[i][j] = new Complex(input.getValue(i - xOffset, j - yOffset), 0);
+                }
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     *
+     * @param input a double array without complex interleaving items in columns
+     * @return
+     */
     private Complex[][] padUpToPowerOfTwoComplex(double[][] input) {
 
         int w0 = input.length;
@@ -2558,23 +2604,23 @@ public class ImageProcessor {
 
         int xOffset = w - w0;
         int yOffset = h - h0;
-        
+
         Complex[][] output = new Complex[w][];
         for (int i = 0; i < w; ++i) {
             output[i] = new Complex[h];
         }
 
         if (xOffset == 0 && yOffset == 0) {
-            
+
             for (int i = 0; i < w; ++i) {
                 for (int j = 0; j < h; ++j) {
                     output[i][j] = new Complex(input[i][j], 0);
                 }
             }
-            
+
             return output;
         }
-        
+
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 if ((i < xOffset) || (j < yOffset)) {
@@ -2584,10 +2630,10 @@ public class ImageProcessor {
                 }
             }
         }
-        
+
         return output;
     }
-    
+
     private Complex[][] padUpToPowerOfTwo(final Complex[][] input) {
 
         int n0 = input.length;
@@ -2606,7 +2652,7 @@ public class ImageProcessor {
             }
             return output;
         }
-        
+
         Complex[][] output = new Complex[nn0][];
         for (int i0 = 0; i0 < nn0; ++i0) {
             output[i0] = new Complex[nn1];
@@ -2621,35 +2667,35 @@ public class ImageProcessor {
                 }
             }
         }
-        
+
         return output;
     }
-    
+
     /**
      * apply 2D FFT transform using the JFFTPack.
-     * 
+     *
      * @param input input image, which should probably be type full range int
      * @param forward if true, apply FFT transform, else inverse FFT transform
      */
     public void apply2DFFT2(GreyscaleImage input, boolean forward) {
-        
-         Complex[][] ccOut = create2DFFT2WithSwapMajor(input, forward);
-         
+
+         Complex1D[] ccOut = create2DFFT2WithSwapMajor(input, forward);
+
          assert(ccOut.length == input.getHeight());
-         assert(ccOut[0].length == input.getWidth());
-        
+         assert(ccOut[0].x.length == input.getWidth());
+
          for (int i0 = 0; i0 < ccOut.length; ++i0) {
-             for (int i1 = 0; i1 < ccOut[i0].length; ++i1) {
-                 double re = ccOut[i0][i1].re();
+             for (int i1 = 0; i1 < ccOut[i0].x.length; ++i1) {
+                 double re = ccOut[i0].x[i1];
                  input.setValue(i1, i0, (int)re);
              }
          }
     }
-    
+
     /**
      * apply 2D FFT transform using the efficient iterative power of 2 method
      * that uses the butterfly operation.
-     * 
+     *
      * @param input
      * @param forward if true, apply FFT transform, else inverse FFT transform
      */
@@ -2666,7 +2712,7 @@ public class ImageProcessor {
         Complex[][] ccOut = create2DFFT(cc, forward);
 
         if (tmp.getNPixels() == input.getNPixels()) {
-            
+
             input.fill(0);
             for (int col = 0; col < input.getWidth(); col++) {
                 for (int row = 0; row < input.getHeight(); row++) {
@@ -2674,7 +2720,7 @@ public class ImageProcessor {
                     input.setValue(col, row, (int)re);
                 }
             }
-        
+
         } else  if (tmp.getNPixels() > input.getNPixels()) {
 
             int xOffset = tmp.getXRelativeOffset();
@@ -2694,28 +2740,64 @@ public class ImageProcessor {
             input.setXRelativeOffset(xOffsetOrig);
             input.setYRelativeOffset(yOffsetOrig);
         }
-        
-    }
 
-    public Complex[][] create2DFFT(Complex[][] input, boolean forward) {
-        
+    }
+    
+    public Complex[][] create2DFFT(double[][] input, boolean forward) {
+
         // performs normalization by default
         return create2DFFT(input, true, forward);
     }
     
+    /**
+     * perform fft on input.  note that internally, the method pads up to power
+     * of 2 if needed and trims after fft if needed.
+     * @param input
+     * @param doNormalize
+     * @param forward
+     * @return
+     */
+    public Complex[][] create2DFFT(final double[][] input, boolean doNormalize,
+        boolean forward) {
+        
+        Complex[][] input2 = new Complex[input.length][];
+        for (int i = 0; i < input.length; ++i) {
+            input2[i] = new Complex[input[0].length];
+            for (int j = 0; j < input[0].length; ++j) {
+                input2[i][j] = new Complex(input[i][j], 0);
+            }
+        }
+        
+        return create2DFFT(input2, doNormalize, forward);
+    }
+
+    public Complex[][] create2DFFT(Complex[][] input, boolean forward) {
+
+        // performs normalization by default
+        return create2DFFT(input, true, forward);
+    }
+
+    /**
+     * perform fft on input.  note that internally, the method pads up to power
+     * of 2 if needed and trims after fft if needed.
+     * @param input
+     * @param doNormalize
+     * @param forward
+     * @return
+     */
     public Complex[][] create2DFFT(final Complex[][] input, boolean doNormalize,
         boolean forward) {
 
         Complex[][] output = padUpToPowerOfTwo(input);
-        
+
         final int n0 = input.length;
         final int n1 = input[0].length;
-        
+
         FFT fft = new FFT();
         if (!doNormalize) {
             fft.setToNotNormalize();
         }
-        
+
         // ----- perform FFT by dimension 0 -----
         for (int i0 = 0; i0 < n0; i0++) {
             if (forward) {
@@ -2725,445 +2807,214 @@ public class ImageProcessor {
             }
         }
 
-        int nb = output[0].length;
-        //transpose the matrix
-        output = MatrixUtil.transpose(output);
-        
-        assert(nb == output.length);
+        // re-use array for the FFT by dimension 1
+        Complex[] tmp = new Complex[n0];
 
-        // ----- perform FFT by dimension 1,transposed -----
-        for (int i1 = 0; i1 < n1; i1++) {
+        // ----- perform the FFT on dimension 1 ------
+        for (int i1 = 0; i1 < n1; ++i1) {
+
+            // store each column in tmp array and perform fft on it then
+            // recopy values back into columns
+            for (int i0 = 0; i0 < n0; ++i0) {
+                tmp[i0] = output[i1][i0];
+            }
+
             if (forward) {
-                output[i1] = fft.fft(output[i1]);
+                tmp = fft.fft(tmp);
             } else {
-                output[i1] = fft.ifft(output[i1]);
+                tmp = fft.ifft(tmp);
+            }
+
+            for (int i0 = 0; i0 < n0; ++i0) {
+                output[i1][i0] = tmp[i0];
             }
         }
-
-        //transpose the matrix
-        output = MatrixUtil.transpose(output);
 
         if (output.length == n0 && output[0].length == n1) {
             return output;
         }
-        
+
         // padding is at front of cols and rows
-        final int offset0 = output.length - input.length;
-        final int offset1 = output[0].length - input[0].length;
-        
+        final int offset0 = output.length - n0;
+        final int offset1 = output[0].length - n1;
+
         Complex[][] output2 = new Complex[n0][];
         for (int i0 = 0; i0 < n0; ++i0) {
             output2[i0] = new Complex[n1];
         }
-        
-        int ii0 = 0;
-        for (int i0 = offset0; i0 < output.length; ++i0) {
-            int ii1 = 0;
-            for (int i1 = offset1; i1 < output[0].length; ++i1) {
-                Complex v = output[i0][i1];
-                output2[ii0][ii1] = v.copy();
-                ii1++;
+
+        for (int i0 = 0; i0 < n0; ++i0) {
+            for (int i1 = 0; i1 < n1; ++i1) {
+                output2[i0][i1] = output[i0 + offset0][i1 + offset1];
             }
-            ii0++;
         }
 
         return output2;
     }
-    
+
     /**
      * perform a 2-dimension FFT using the JFFTPack library using the input
      * img and return the results as a complex two dimensional array
      * which uses the format a[row][col].
-     * 
+     *
      * @param img
      * @param forward
-     * @return 
+     * @return
      */
-    public Complex[][] create2DFFT2WithSwapMajor(GreyscaleImage img, boolean forward) {
-        
-        double[][] cInput = createInterleavedComplexSwapMajor(img);
-        
-        assert(cInput.length == img.getHeight());
-        assert(cInput[0].length == 2 * img.getWidth());
-        
-        Complex[][] output2 = create2DFFT2(cInput, forward);
-        
-        assert(output2.length == img.getHeight());
-        assert(output2[0].length == img.getWidth());
-        
+    public Complex1D[] create2DFFT2WithSwapMajor(GreyscaleImage img, boolean forward) {
+
+        // swap major axes for input to FFT 2D algorithm 2
+        Complex1D[] cInput = new Complex1D[img.getWidth()];
+        for (int i = 0; i < img.getWidth(); ++i) {
+            cInput[i] = new Complex1D();
+            cInput[i].x = new double[img.getHeight()];
+            cInput[i].y = new double[img.getHeight()];
+            for (int j = 0; j < img.getHeight(); ++j) {
+                cInput[i].x[j] = img.getValue(i, j);
+            }
+        }
+
+        Complex1D[] output2 = create2DFFT2(cInput, forward);
+
         return output2;
     }
-    
+
     /**
      * apply 2D FFT transform using the efficient iterative power of 2 method
      * that uses the butterfly operation.
-     * 
+     *
      * @param img
      * @param forward if true, apply FFT transform, else inverse FFT transform
      * @return 2d fft results in format a[row][col]
      */
     public Complex[][] create2DFFTWithSwapMajor(GreyscaleImage img, boolean forward) {
-     
+
         // normalize by default
         return create2DFFTWithSwapMajor(img, true, forward);
     }
-    
+
     /**
      * apply 2D FFT transform using the efficient iterative power of 2 method
      * that uses the butterfly operation.
-     * 
-     * @param img
+     *
+     * @param input
+     * @param doNormalize perform FFT normalization if true
      * @param forward if true, apply FFT transform, else inverse FFT transform
      * @return 2d fft results in format a[row][col]
      */
-    public Complex[][] create2DFFTWithSwapMajor(GreyscaleImage img, 
-        boolean doNoomalize, boolean forward) {
-
-        GreyscaleImage tmp = padUpToPowerOfTwo(img);
+    public Complex[][] create2DFFTWithSwapMajor(GreyscaleImage input,
+        boolean doNormalize, boolean forward) {
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] cc = convertImage(tmp);
+        Complex[][] cc = convertImage(input);
 
-        Complex[][] ccFFT = create2DFFT(cc, doNoomalize, forward);
+        // this method already pads up to power of 2 and trims
+        Complex[][] ccFFT = create2DFFT(cc, doNormalize, forward);
 
-        Complex[][] output = new Complex[img.getHeight()][img.getWidth()];
-        for (int i = 0; i < img.getHeight(); ++i) {
-            output[i] = new Complex[img.getWidth()];
+        // swap axes to return format output[row][col]
+        Complex[][] output = new Complex[input.getHeight()][input.getWidth()];
+        for (int i = 0; i < input.getHeight(); ++i) {
+            output[i] = new Complex[input.getWidth()];
         }
-         
-        if (tmp.getNPixels() == img.getNPixels()) {
-            
-            // swap axes to return format output[row][col]
-            for (int i = 0; i < img.getWidth(); ++i) {
-                for (int j = 0; j < img.getHeight(); ++j) {
-                    output[j][i] = ccFFT[i][j];
-                }
+
+        for (int i = 0; i < input.getWidth(); ++i) {
+            for (int j = 0; j < input.getHeight(); ++j) {
+                output[j][i] = ccFFT[i][j];
             }
-        
-        } else  if (tmp.getNPixels() > img.getNPixels()) {
-
-            int xOffset = tmp.getXRelativeOffset();
-            int yOffset = tmp.getYRelativeOffset();
-            
-            // trim and swap axes to return format output[row][col]
-
-            // padding is at front of cols and rows
-            for (int i = 0; i < img.getWidth(); ++i) {
-                for (int j = 0; j < img.getHeight(); ++j) {
-                    output[j][i] = ccFFT[i + xOffset][j + yOffset];
-                }
-            }            
         }
-        
+
         return output;
     }
-    
-    /**
-     * perform a 2-dimension FFT using the JFFTPack library.
-     * 
-     * @param input
-     * @param forward
-     * @return 
-     */
-    public Complex[][] create2DFFT2(Complex[][] input, boolean forward) {
-                
-        final int n0 = input.length;
-        final int n1 = input[0].length;
-                
-        // the format for the double is real is even number and the 
-        // complementary imaginary number follows it.
-        // the columns have the double members in them while the number of rows 
-        // stay the same.
-        
-        double[][] output = new double[n0][];
-        for (int i0 = 0; i0 < n0; ++i0) {
-            output[i0] = new double[2*n1];
-            for (int i1 = 0; i1 < n1; ++i1) {
-                Complex v = input[i0][i1];
-                output[i0][2*i1] = v.re();
-                output[i0][(2*i1) + 1] = v.im();
-            }
-        }
-                
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
-
-        ComplexDoubleFFT fft1 = new ComplexDoubleFFT(n1);
-        
-        final double norm1 = 1./Math.sqrt(n1);
-        
-        // ----- perform FFT by dimension 0 -----
-        for (int i0 = 0; i0 < n0; i0++) {
-            
-            if (forward) {
-                fft1.ft(output[i0]);
-            } else {
-                fft1.bt(output[i0]);
-            }
-            
-            // normalize the data
-            for (int i1 = 0; i1 < output[i0].length; ++i1) {
-                output[i0][i1] *= norm1;
-            }            
-        }       
-        
-        // re-use array for the FFT by dimension 1
-        double[] tmp = new double[2*n0];
-        
-        ComplexDoubleFFT fft0 = new ComplexDoubleFFT(n0);
-
-        final double norm0 = 1./Math.sqrt(n0);
-        
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
-
-        // ----- perform the FFT on dimension 1 ------
-        for (int k = 0; k < n1; ++k) {
-            
-            final int c = 2*k;
-            
-            for (int r = 0; r < n0; r++) {
-                tmp[2*r] = output[r][c];
-                tmp[(2*r) + 1] = output[r][c + 1];
-            }
-            
-            if (forward) {
-                fft0.ft(tmp);
-            } else {
-                fft0.bt(tmp);
-            }
-            
-            //copy the data back into output, normalizating too
-            for (int r = 0; r < n0; r++) {
-                output[r][c] = tmp[2*r] * norm0;
-                output[r][c + 1] = tmp[(2*r) + 1] * norm0;
-            }
-        }
-       
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
-        
-        Complex[][] output2 = new Complex[n0][];
-        for (int i0 = 0; i0 < n0; ++i0) {
-            output2[i0] = new Complex[n1];
-            for (int i1 = 0; i1 < n1; ++i1) {
-                output2[i0][i1] = new Complex(output[i0][2*i1], output[i0][(2*i1) + 1]);
-            }
-        }
-        
-        return output2;
-    }
 
     /**
      * perform a 2-dimension FFT using the JFFTPack library.
-     * 
+     *
      * @param input double array of complex data in format double[nRows][2*nColumns]
      * where the column elements are alternately the complex real number and the
      * complex imaginary number.
      * @param forward
      * @return two dimensional complex array of size Complex[nRows][input.nCols/2)
      */
-    public Complex[][] create2DFFT2(double[][] input, boolean forward) {
-                
-        final int n0 = input.length;
-        final int n1 = input[0].length/2;
-        
-        double[][] output = new double[input.length][];
-        for (int i = 0; i < input.length; ++i) {
-            output[i] = Arrays.copyOf(input[i], input[i].length);
-        } 
+    public Complex1D[] create2DFFT2(Complex1D[] input, boolean forward) {
 
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
+        // perform normalization by default
+        return create2DFFT2(input, true, forward);
+    }
+
+    /**
+     * perform a 2-dimension FFT using the JFFTPack library.
+     *
+     * @param input double array of complex data in format double[nRows][2*nColumns]
+     * where the column elements are alternately the complex real number and the
+     * complex imaginary number.
+     * @param forward
+     * @return two dimensional complex array of size Complex[nRows][input.nCols/2)
+     */
+    public Complex1D[] create2DFFT2(Complex1D[] input, boolean performNormalization,
+        boolean forward) {
+
+        final int n0 = input.length;
+        final int n1 = input[0].x.length;
+
+        Complex1D[] output = Arrays.copyOf(input, input.length);
 
         ComplexDoubleFFT fft1 = new ComplexDoubleFFT(n1);
-        
+
         final double norm1 = 1./Math.sqrt(n1);
-        
+
         // ----- perform FFT by dimension 0 -----
         for (int i0 = 0; i0 < n0; i0++) {
-            
+
             if (forward) {
                 fft1.ft(output[i0]);
             } else {
                 fft1.bt(output[i0]);
             }
-            
+
             // normalize the data
-            for (int i1 = 0; i1 < output[i0].length; ++i1) {
-                output[i0][i1] *= norm1;
-            }            
-        }       
-        
-        // re-use array for the FFT by dimension 1
-        double[] tmp = new double[2*n0];
-        
+            if (performNormalization) {
+                Complex1D a = output[i0];
+                for (int idx = 0; idx < a.x.length; ++idx) {
+                    a.x[idx] *= norm1;
+                    a.y[idx] *= norm1;
+                }
+            }
+        }
+
+        // re-use array for the FFT by dimension 1 (across rows)
+        Complex1D tmp = new Complex1D();
+        tmp.x = new double[n0];
+        tmp.y = new double[n0];
+
         ComplexDoubleFFT fft0 = new ComplexDoubleFFT(n0);
 
-        final double norm0 = 1./Math.sqrt(n0);
+        final double norm0 = performNormalization ? (1./Math.sqrt(n0)) : 1.;
         
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
-
         // ----- perform the FFT on dimension 1 ------
-        for (int k = 0; k < n1; ++k) {
-            
-            final int c = 2*k;
-            
-            for (int r = 0; r < n0; r++) {
-                tmp[2*r] = output[r][c];
-                tmp[(2*r) + 1] = output[r][c + 1];
+        for (int i1 = 0; i1 < n1; ++i1) {
+
+            // store each column in tmp array and perform fft on it then
+            // recopy values back into columns
+            for (int i0 = 0; i0 < n0; ++i0) {
+                tmp.x[i0] = output[i1].x[i0];
+                tmp.y[i0] = output[i1].y[i0];
             }
-            
+
             if (forward) {
                 fft0.ft(tmp);
             } else {
                 fft0.bt(tmp);
             }
-            
-            //copy the data back into output, normalizating too
-            for (int r = 0; r < n0; r++) {
-                output[r][c] = tmp[2*r] * norm0;
-                output[r][c + 1] = tmp[(2*r) + 1] * norm0;
+
+            for (int i0 = 0; i0 < n0; ++i0) {
+                output[i1].x[i0] = tmp.x[i0] * norm0;
+                output[i1].y[i0] = tmp.y[i0] * norm0;
             }
         }
-       
-        /*
-         n0
-         ||
-         \/
-               col0  col1  col2  col3  col4  col5    <== 2 * n1
-        row 0   d0R   d0I   d1R   d1I   d2R   d2I   
-        row 1   
-        row 2
-        */
-        
-        Complex[][] output2 = new Complex[n0][];
-        for (int i0 = 0; i0 < n0; ++i0) {
-            output2[i0] = new Complex[n1];
-            for (int i1 = 0; i1 < n1; ++i1) {
-                output2[i0][i1] = new Complex(output[i0][2*i1], output[i0][(2*i1) + 1]);
-            }
-        }
-        
-        return output2;
-    }
-    
-    /**
-     * 
-     * @return 2d fft results in format a[row][col]
-     */
-    public Complex[][] create2DFFTWithSwapMajor(double[][] input, boolean forward) {
-     
-        // by default, does normalization
-        return create2DFFTWithSwapMajor(input, true, forward);
-    }
-    
-    /**
-     * 
-     * @return 2d fft results in format a[row][col]
-     */
-    public Complex[][] create2DFFTWithSwapMajor(double[][] input, 
-        boolean doNormalize, boolean forward) {
-        
-        Complex[][] ccFFT = create2DFFT(input, doNormalize, forward);
-        
-        assert(input.length == ccFFT.length);
-        assert(input[0].length == ccFFT[0].length);
-        
-        int nCols = input.length;
-        int nRows = input[0].length;
-        
-        Complex[][] output = new Complex[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            output[i] = new Complex[nCols];
-        }
-                     
-        // swap axes to return format output[row][col]
-        for (int i = 0; i < nCols; ++i) {
-            for (int j = 0; j < nRows; ++j) {
-                output[j][i] = ccFFT[i][j];
-            }
-        }
-        
+
         return output;
     }
-    
-    public Complex[][] create2DFFT(double[][] input, boolean forward) {
 
-        // by default, perfomrs normalization
-        return create2DFFT(input, true, forward);
-    }
-
-    public Complex[][] create2DFFT(double[][] input, boolean doNormalize, 
-        boolean forward) {
-
-        Complex[][] output = padUpToPowerOfTwoComplex(input);
-                
-        output = create2DFFT(output, doNormalize, forward);
-
-        if (output.length == input.length && output[0].length == input[0].length) {
-            return output;
-        }
-        
-        // padding is at front of cols and rows
-        int xOffset = output.length - input.length;
-        int yOffset = output[0].length - input[0].length;
-        
-        Complex[][] output2 = new Complex[input.length][];
-        for (int i = 0; i < input.length; ++i) {
-            output2[i] = new Complex[input[0].length];
-        }
-        
-        int x = 0;
-        for (int col = xOffset; col < output.length; col++) {
-            int y = 0;
-            for (int row = yOffset; row < output[0].length; row++) {
-                Complex v = output[col][row];
-                output2[x][y] = v.copy();
-                y++;
-            }
-            x++;
-        }
-
-        return output2;
-    }
-    
     public void writeToImageWithSwapMajor(GreyscaleImage img, Complex[][] cc) {
 
         img.fill(0);
@@ -3199,7 +3050,7 @@ public class ImageProcessor {
     /**
      * create a complex double array with format a[col][row]
      * @param input
-     * @return 
+     * @return
      */
     protected Complex[][] convertImage(GreyscaleImage input) {
 
@@ -3217,22 +3068,22 @@ public class ImageProcessor {
 
         return cc;
     }
-    
+
     /**
      * create an array of size double[nRows][*nCols] where the column elements
      *    are alternately the complex real and complex imaginary numbers
      *    (and the imaginary are 0 for this being real input).
      * @param input
-     * @return 
+     * @return
      */
     protected double[][] createInterleavedComplexSwapMajor(GreyscaleImage input) {
-        
+
         int nCols = input.getWidth();
         int nRows = input.getHeight();
-        
+
          // initialize matrix of complex numbers as real numbers from image
         double[][] d = new double[nRows][];
-        
+
         for (int row = 0; row < nRows; row++) {
 
             d[row] = new double[2 * nCols];
@@ -3245,17 +3096,17 @@ public class ImageProcessor {
 
         return d;
     }
-    
+
     /**
      * create a complex double array with format a[row][col]
      * @param input
-     * @return 
+     * @return
      */
     protected Complex[][] convertImageWithSwapMajor(GreyscaleImage input) {
-        
+
         int nCols = input.getWidth();
         int nRows = input.getHeight();
-        
+
         // initialize matrix of complex numbers as real numbers from image
         Complex[][] cc = new Complex[nRows][];
 
@@ -3270,12 +3121,12 @@ public class ImageProcessor {
 
         return cc;
     }
-    
+
     protected Complex[][] convertImage(double[][] input) {
 
         int w = input.length;
         int h = input[0].length;
-        
+
         // initialize matrix of complex numbers as real numbers from image
         Complex[][] cc = new Complex[w][];
 
@@ -3802,22 +3653,22 @@ public class ImageProcessor {
 
         System.gc();
     }
-    
+
     /**
      * @param input
-     * @return 
+     * @return
      */
     public GreyscaleImage makeWatershedFromAdaptiveMedian(GreyscaleImage input) {
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
-        
-        int[] dxs0, dys0;      
+
+        int[] dxs0, dys0;
         dxs0 = Misc.dx8;
         dys0 = Misc.dy8;
         GreyscaleImage tmpImg2 = input.copyImage();
         // fill in gaps of size 1 flooded the whole image. invert afterwards had same result.
-        // increase the 0's by 1 pixel then invert however, is interesting. 
+        // increase the 0's by 1 pixel then invert however, is interesting.
         // where there is a '0', make all neighbors a '0':
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
@@ -3835,13 +3686,13 @@ public class ImageProcessor {
                 }
             }
         }
-        
+
         // invert image
         for (int i = 0; i < tmpImg2.getNPixels(); ++i) {
             int v = tmpImg2.getValue(i);
             tmpImg2.setValue(i, 255 - v);
         }
-                
+
         WaterShed ws = new WaterShed();
         int[][] labelled = ws.createLabelledImage(tmpImg2.copyImage());
         GreyscaleImage wsImg = tmpImg2.createFullRangeIntWithDimensions();
@@ -3854,10 +3705,10 @@ public class ImageProcessor {
                 wsImg.setValue(i, j, v);
             }
         }
-        
+
         return wsImg;
     }
-    
+
     /**
      * an algorithm that takes as input an image array of values and for
      * each unique values larger than 0, searches for connected components with a lowerLimitSize
@@ -3867,13 +3718,13 @@ public class ImageProcessor {
      * @param input
      * @param lowerLimitSize, the minimum length of a connected component to
      * keep and return as an item in the results list.
-     * @return 
+     * @return
      */
     public List<Set<PairInt>> extractConnectedComponents(int[][] input,
         int lowerLimitSize) {
-        
+
         Map<Integer, Set<PairInt>> valuePixelsMap = new HashMap<Integer, Set<PairInt>>();
-        
+
         int w = input.length;
         int h = Integer.MIN_VALUE;
         for (int i = 0; i < input.length; ++i) {
@@ -3894,17 +3745,17 @@ public class ImageProcessor {
                 }
             }
         }
-        
+
         List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
-        
+
         for (Entry<Integer, Set<PairInt>> entry : valuePixelsMap.entrySet()) {
-            
+
             Set<PairInt> set = entry.getValue();
-            
+
             DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
             finder.setMinimumNumberInCluster(lowerLimitSize);
             finder.findConnectedPointGroups(set);
-                
+
             int nGroups = finder.getNumberOfGroups();
 
             for (int i = 0; i < nGroups; ++i) {
@@ -3913,24 +3764,24 @@ public class ImageProcessor {
                 outputLists.add(set2);
             }
         }
-        
+
         return outputLists;
     }
-        
+
     /**
      * an algorithm to operate on the results of adaptive mean algorithm,
-     * that is, expecting the input is all 0 or positive numbers, and that 
-     * the 0's are the segments that are searched to filter out the connected 
+     * that is, expecting the input is all 0 or positive numbers, and that
+     * the 0's are the segments that are searched to filter out the connected
      * segments shorter than lowerLimitSize.
      * @param img
      * @param lowerLimitSize, the minimum length of a connected component to
      * keep and return as an item in the results list.
      * @param mask
-     * @return 
+     * @return
      */
     public List<Set<PairInt>> extractConnectedComponents(GreyscaleImage img,
         int lowerLimitSize, Set<PairInt> mask, int edgeValue) {
-        
+
         if (img == null) {
             throw new IllegalArgumentException("img canot be null");
         }
@@ -3938,10 +3789,10 @@ public class ImageProcessor {
             throw new IllegalArgumentException(
             "mask can be empty, but cannot be null");
         }
-        
+
         int w = img.getWidth();
         int h = img.getHeight();
-                
+
         // for input being adaptive mean, most pixels are 255, and the edges are '0'
         // so we are looking for the edges not in the mask.
         Set<PairInt> pixels = new HashSet<PairInt>();
@@ -3957,24 +3808,24 @@ public class ImageProcessor {
                 }
             }
         }
-        
+
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
         finder.setMinimumNumberInCluster(lowerLimitSize);
         finder.findConnectedPointGroups(pixels);
-        
+
         List<Set<PairInt>> outputLists = new ArrayList<Set<PairInt>>();
-        
+
         int nGroups = finder.getNumberOfGroups();
-        
+
         for (int i = 0; i < nGroups; ++i) {
             Set<PairInt> group = finder.getXY(i);
             Set<PairInt> set = new HashSet<PairInt>(group);
             outputLists.add(set);
         }
-     
+
         return outputLists;
     }
-    
+
     /**
      * create an image of the mean of the surrounding dimension x dimension
      * pixels for each pixel.  The calculation starts at 0 and the end
@@ -3990,7 +3841,7 @@ public class ImageProcessor {
      * </pre>
      * runtime complexity is O(N_pixels)
      * This can be used as part of adaptive mean thresholding.
-     * 
+     *
      * @param img
      * @param dimension
      */
@@ -4014,7 +3865,7 @@ public class ImageProcessor {
         int h = img.getHeight();
 
         int[] mean = new int[img.getNPixels()];
-        
+
         // sum along rows
         for (int i = 0; i < w; ++i) {
             int sum0 = 0;
@@ -4042,7 +3893,7 @@ public class ImageProcessor {
         }
 
         int[] mean2 = new int[img.getNPixels()];
-      
+
         // sum along columns
         for (int j = 0; j < h; ++j) {
             int sum0 = 0;
@@ -4120,9 +3971,9 @@ public class ImageProcessor {
         int h = img.getHeight();
 
         int[] mean = new int[img.getNPixels()];
-        
+
         int[] imgValues = img.getValues();
-        
+
         // sum along rows
         for (int i = 0; i < w; ++i) {
 
@@ -4204,7 +4055,7 @@ public class ImageProcessor {
                 float sum = 0;
                 for (int k = i; k < halfDimension; ++k) {
                     int pixIdx = img.getIndex(k, j);
-                    sum += mean[pixIdx];                    
+                    sum += mean[pixIdx];
                 }
                 sum /= count;
                 sum *= dimension;
@@ -4221,7 +4072,7 @@ public class ImageProcessor {
             int sum0 = 0;
             for (int i = 0; i <= 2*halfDimension; ++i) {
                 int pixIdx = img.getIndex(i, j);
-                sum0 += mean[pixIdx]; 
+                sum0 += mean[pixIdx];
             }
             int pixIdx = img.getIndex(halfDimension, j);
             imgValues[pixIdx] = sum0;
@@ -4274,18 +4125,18 @@ public class ImageProcessor {
         }
     }
 
-    public GreyscaleImage createSmallImage(int bufferSize, Set<PairInt> points, 
+    public GreyscaleImage createSmallImage(int bufferSize, Set<PairInt> points,
         int pointValue) {
-        
+
         //minMaxXY int[]{xMin, xMax, yMin, yMax}
         int[] minMaxXY = MiscMath.findMinMaxXY(points);
-        
+
         int xOffset = minMaxXY[0] - bufferSize;
         int yOffset = minMaxXY[2] - bufferSize;
-        
+
         int width = (minMaxXY[1] - minMaxXY[0]) + (2 * bufferSize);
         int height = (minMaxXY[3] - minMaxXY[2]) + (2 * bufferSize);
-        
+
         GreyscaleImage img = new GreyscaleImage(width, height);
         img.setXRelativeOffset(xOffset);
         img.setYRelativeOffset(yOffset);
@@ -4294,14 +4145,14 @@ public class ImageProcessor {
             int y = p.getY() - yOffset;
             img.setValue(x, y, pointValue);
         }
-        
+
         return img;
     }
-    
+
     public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img) {
-        
+
         GreyscaleImage gsImg = img.copyImage();
-        
+
         applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
 
         PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(gsImg);
@@ -4334,35 +4185,35 @@ public class ImageProcessor {
                 pixels.add(new PairInt(x, y));
             }
         }
-        
+
         log.info("before nPoints=" + pixels.size());
-        
+
         reduceTo4NeighborCentroids(pixels);
-        
+
         log.info("after nPoints=" + pixels.size());
-        
+
         return pixels;
     }
-    
+
     /**
      * NOT READY FOR USE YET
      * extract the high value points in the second derivative gaussian of
      * img to a number of points less than or equal to maxNPoints and
      * if the variable reduceForNoise is true, then look for patterns
-     * of noise and reduce the maximum value extracted from the 2nd deriv 
+     * of noise and reduce the maximum value extracted from the 2nd deriv
      * points until no noise patterns are seen.
      * @param img
      * @param maxNPoints
      * @param reduceForNoise
-     * @return 
+     * @return
      */
     public Set<PairInt> extract2ndDerivPoints(GreyscaleImage img, int maxNPoints,
         boolean reduceForNoise) {
-        
+
         GreyscaleImage gsImg = img.copyImage();
-        
+
         applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
-        
+
         PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(gsImg);
         int nTot = 0;
         int v1 = 0;
@@ -4376,7 +4227,7 @@ public class ImageProcessor {
                 break;
             }
         }
-        
+
         int w = gsImg.getWidth();
         int h = gsImg.getHeight();
 
@@ -4386,7 +4237,7 @@ public class ImageProcessor {
             if (v >= v1) {
                 int x = gsImg.getCol(i);
                 int y = gsImg.getRow(i);
-                
+
                 // avoid points on image boundaries
                 if (x == 0 || y == 0 || (x > (w - 1)) || (y > (h - 1))) {
                     continue;
@@ -4394,45 +4245,45 @@ public class ImageProcessor {
                 pixels.add(new PairInt(x, y));
             }
         }
-        
+
         log.info("before nPoints=" + pixels.size());
-        
+
         reduceTo4NeighborCentroids(pixels);
-        
+
         log.info("after nPoints=" + pixels.size());
-        
+
         if (reduceForNoise) {
             // look for patterns of noise and reduce v1 until not present
         }
-        
+
         return pixels;
     }
 
     private void reduceTo4NeighborCentroids(Set<PairInt> pixels) {
-        
+
         Set<PairInt> processed = new HashSet<PairInt>();
-        
+
         Set<PairInt> output = new HashSet<PairInt>();
-        
+
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+
         int[] dxs = Misc.dx4;
         int[] dys = Misc.dy4;
-        
+
         Set<PairInt> neighbors = new HashSet<PairInt>();
-        
+
         for (PairInt p : pixels) {
-            
+
             if (processed.contains(p)) {
                 continue;
             }
-            
-            curveHelper.findNeighbors(p.getX(), p.getY(), pixels, processed, 
+
+            curveHelper.findNeighbors(p.getX(), p.getY(), pixels, processed,
                 dxs, dys, neighbors);
-            
+
             processed.add(p);
             processed.addAll(neighbors);
-            
+
             if (neighbors.size() == 0) {
                 output.add(p);
             } else {
@@ -4444,30 +4295,30 @@ public class ImageProcessor {
                 output.add(new PairInt(x, y));
             }
         }
-        
+
         pixels.clear();
         pixels.addAll(output);
-        
+
     }
-    
-    public double determineLowerThreshold(GreyscaleImage input, 
+
+    public double determineLowerThreshold(GreyscaleImage input,
         double lowThresholdFractionOfTotal) {
-        
+
         int n = input.getNPixels();
-        
+
         // value, count
         PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
         double sum = 0;
         for (int i = 0; i < sortedFreq.getN(); ++i) {
             sum += sortedFreq.getY(i);
         }
-        
+
         int thresh = (int)Math.round(lowThresholdFractionOfTotal * sum);
-        
+
         if (thresh == 0) {
             return 0;
         }
-        
+
         double critValue = -1;
         double sum2 = 0;
         for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
@@ -4476,46 +4327,46 @@ public class ImageProcessor {
                 return sortedFreq.getX(i);
             }
         }
-        
+
         return 0;
     }
-    
-    public double highPassIntensityFilter(GreyscaleImage input, 
+
+    public double highPassIntensityFilter(GreyscaleImage input,
         double lowThresholdFractionOfTotal) {
-        
+
         int n = input.getNPixels();
-        
-        double critValue = determineLowerThreshold(input, 
+
+        double critValue = determineLowerThreshold(input,
             lowThresholdFractionOfTotal);
-        
+
         for (int i = 0; i < n; ++i) {
             int v = input.getValue(i);
             if (v < critValue) {
                 input.setValue(i, 0);
             }
         }
-        
+
         return critValue;
     }
-    
-    public void twoLayerIntensityFilter(GreyscaleImage input, 
+
+    public void twoLayerIntensityFilter(GreyscaleImage input,
         double highThresholdFractionOfTotal) {
-        
+
         int n = input.getNPixels();
-        
+
         // value, count
         PairIntArray sortedFreq = Histogram.createADescendingSortbyFrequencyArray(input);
         double sum = 0;
         for (int i = 0; i < sortedFreq.getN(); ++i) {
             sum += sortedFreq.getY(i);
         }
-        
+
         int thresh = (int)Math.round(highThresholdFractionOfTotal * sum);
-        
+
         if (thresh == 0) {
             return;
         }
-        
+
         double critValue = -1;
         double sum2 = 0;
         for (int i = (sortedFreq.getN() - 1); i > -1; --i) {
@@ -4525,7 +4376,7 @@ public class ImageProcessor {
                 break;
             }
         }
-        
+
         Stack<Integer> stack = new Stack<Integer>();
         Set<Integer> visited = new HashSet<Integer>();
         for (int i = 0; i < n; ++i) {
@@ -4534,26 +4385,26 @@ public class ImageProcessor {
                 stack.add(Integer.valueOf(i));
             }
         }
-        
+
         int critValue2 = (int)Math.round(0.5 * critValue);
-        
+
         int w = input.getWidth();
         int h = input.getHeight();
         int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;                
+        int[] dys = Misc.dy8;
         GreyscaleImage tmp = input.createWithDimensions();
-        
+
         while (!stack.isEmpty()) {
             Integer pixIndex = stack.pop();
             if (visited.contains(pixIndex)) {
                 continue;
             }
-            
+
             int x = input.getCol(pixIndex.intValue());
             int y = input.getRow(pixIndex.intValue());
-            
+
             tmp.setValue(pixIndex.intValue(), 255);
-            
+
             for (int i = 0; i < dxs.length; ++i) {
                 int x2 = x + dxs[i];
                 int y2 = y + dys[i];
@@ -4569,10 +4420,10 @@ public class ImageProcessor {
             }
             visited.add(pixIndex);
         }
-        
+
         input.resetTo(tmp);
     }
-    
+
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
@@ -4584,11 +4435,11 @@ public class ImageProcessor {
     }
 
     public Colors calculateAverageLAB(ImageExt input, Set<PairInt> points) {
-        
+
         double labA = 0;
         double labB = 0;
         double labL = 0;
-        
+
         for (PairInt p : points) {
             float[] lab = input.getCIELAB(p.getX(), p.getY());
             labL += lab[0];
@@ -4598,22 +4449,22 @@ public class ImageProcessor {
         labL /= (double)points.size();
         labA /= (double)points.size();
         labB /= (double)points.size();
-        
+
         float[] labAvg = new float[]{(float)labL, (float)labA, (float)labB};
-        
+
         Colors c = new Colors(labAvg);
-        
+
         return c;
     }
-    
+
     public int calculateAverageHueAngle(ImageExt input, Set<PairInt> points) {
-        
+
         double hueAngle = 0;
-        
+
         for (PairInt p : points) {
-            
+
             float[] lab = input.getCIELAB(p.getX(), p.getY());
-            
+
             double ha;
             if (lab[1] == 0) {
                 ha = 0;
@@ -4626,16 +4477,16 @@ public class ImageProcessor {
             hueAngle += ha;
         }
         hueAngle /= (double)points.size();
-        
+
         return (int)Math.round(hueAngle);
     }
-    
+
     public Colors calculateAverageRGB(ImageExt input, Set<PairInt> points) {
-        
+
         float r = 0;
         float g = 0;
         float b = 0;
-        
+
         for (PairInt p : points) {
             int idx = input.getInternalIndex(p.getX(), p.getY());
             r += input.getR(idx);
@@ -4645,11 +4496,11 @@ public class ImageProcessor {
         r /= (float)points.size();
         g /= (float)points.size();
         b /= (float)points.size();
-        
+
         float[] rgbAvg = new float[]{r, g, b};
-        
+
         Colors c = new Colors(rgbAvg);
-        
+
         return c;
     }
 
@@ -4657,11 +4508,11 @@ public class ImageProcessor {
      * opposite to shift zero-frequency component to the center of the spectrum
      * in that it shifts the zero-frequency component to the smallest indexes
      * in the arrays.
-     * 
+     *
      * adapted from
      * https://github.com/numpy/numpy/blob/master/LICENSE.txt
      * which has copyright
-     * 
+     *
      * Copyright (c) 2005-2016, NumPy Developers.
         All rights reserved.
 
@@ -4693,12 +4544,12 @@ public class ImageProcessor {
         (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
         OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      * @param a
-     * @return 
+     * @return
      */
     public double[][] ifftShift(double[][] a) {
-        
+
         double[][] b = new double[a.length][];
-                
+
         // ---- reorder columns ----
         int nc = a.length;
         int p2 = nc - ((nc + 1)/2);
@@ -4715,7 +4566,7 @@ public class ImageProcessor {
             b[count] = Arrays.copyOf(a[idx], a[idx].length);
             count++;
         }
-        
+
         // ---- reorder rows ------
         nc = a[0].length;
         p2 = nc - ((nc + 1)/2);
@@ -4726,7 +4577,7 @@ public class ImageProcessor {
         for (int i = 0; i < p2; ++i) {
             range.add(Integer.valueOf(i));
         }
-        
+
         double[][] c = new double[a.length][];
         for (int i = 0; i < c.length; ++i) {
             c[i] = new double[a[0].length];
@@ -4739,19 +4590,19 @@ public class ImageProcessor {
             }
             count++;
         }
-        
+
         return c;
     }
-    
+
     /**
      * opposite to shift zero-frequency component to the center of the spectrum
      * in that it shifts the zero-frequency component to the smallest indexes
      * in the arrays.
-     * 
+     *
      * adapted from
      * https://github.com/numpy/numpy/blob/master/LICENSE.txt
      * which has copyright
-     * 
+     *
      * Copyright (c) 2005-2016, NumPy Developers.
         All rights reserved.
 
@@ -4783,12 +4634,12 @@ public class ImageProcessor {
         (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
         OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      * @param a
-     * @return 
+     * @return
      */
     public Complex[][] ifftShift(Complex[][] a) {
-        
+
         Complex[][] b = new Complex[a.length][];
-                
+
         // ---- reorder dimension 0 ----
         int n0 = a.length;
         int p2 = n0 - ((n0 + 1)/2);
@@ -4805,7 +4656,7 @@ public class ImageProcessor {
             b[count] = Arrays.copyOf(a[idx], a[idx].length);
             count++;
         }
-        
+
         // ---- reorder dimension 1 ------
         int n1 = a[0].length;
         p2 = n1 - ((n1 + 1)/2);
@@ -4816,7 +4667,7 @@ public class ImageProcessor {
         for (int i = 0; i < p2; ++i) {
             range.add(Integer.valueOf(i));
         }
-        
+
         Complex[][] c = new Complex[a.length][];
         for (int i = 0; i < c.length; ++i) {
             c[i] = new Complex[a[0].length];
@@ -4829,7 +4680,7 @@ public class ImageProcessor {
             }
             count++;
         }
-        
+
         return c;
     }
 }

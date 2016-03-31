@@ -157,7 +157,7 @@ public class TmpTest extends TestCase {
             int b1 = img1Binned.getB(x1, y1);
             float[] lab1 = img1Binned.getCIELAB(x1, y1);
             double o1_1 = (double)(r1 - g1)/Math.sqrt(2.);
-            double o2_1 = (double)(r1 + g1 - 2.*b1)/Math.sqrt(6.);
+            double o2_1 = (r1 + g1 - 2.*b1)/Math.sqrt(6.);
             double o3_1 = (double)(r1 + g1 - b1)/Math.sqrt(2.);
             float ha1;
             if (lab1[1] == 0) {
@@ -174,7 +174,7 @@ public class TmpTest extends TestCase {
             int b2 = img1Binned.getB(x2, y2);
             float[] lab2 = img1Binned.getCIELAB(x2, y2);
             double o1_2 = (double)(r1 - g1)/Math.sqrt(2.);
-            double o2_2 = (double)(r1 + g1 - 2.*b1)/Math.sqrt(6.);
+            double o2_2 = (r1 + g1 - 2.*b1)/Math.sqrt(6.);
             double o3_2 = (double)(r1 + g1 - b1)/Math.sqrt(2.);
             float ha2;
             if (lab2[1] == 0) {
@@ -194,9 +194,9 @@ public class TmpTest extends TestCase {
             
             String str = String.format(
                 "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",
-                (float)ha1,(float)o1_1,(float)o2_1,(float)o3_1,
-                (float)ha2,(float)o1_2,(float)o2_2,(float)o3_2,
-                (float)lab1[0],(float)lab2[0],
+                ha1,(float)o1_1,(float)o2_1,(float)o3_1,
+                ha2,(float)o1_2,(float)o2_2,(float)o3_2,
+                lab1[0],lab2[0],
                 (float)deltaE1994, (float)deltaE2000, (float)deltaDelta
                 );
             

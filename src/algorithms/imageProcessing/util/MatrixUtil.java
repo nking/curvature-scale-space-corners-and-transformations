@@ -389,7 +389,7 @@ public class MatrixUtil {
         return t;
     }
     
-    public static Complex[][] transpose(Complex[][] m) {
+    public static Complex[][] swapXandY(Complex[][] m) {
 
         if (m == null || m.length == 0) {
             throw new IllegalArgumentException("m cannot be null or empty");
