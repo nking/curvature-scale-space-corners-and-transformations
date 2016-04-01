@@ -190,6 +190,8 @@ public class PeriodicFFT {
 
         // using notation a[row][col]
         
+        //double normCofactor = 1./(2. * Math.PI);
+        
         Complex[][] capS = imageProcessor.create2DFFT(s, false, true);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {

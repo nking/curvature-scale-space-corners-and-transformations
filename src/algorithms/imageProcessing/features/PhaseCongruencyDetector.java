@@ -6,7 +6,6 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.PeriodicFFT;
-import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -264,12 +263,9 @@ public class PhaseCongruencyDetector {
         PeriodicFFT perfft2 = new PeriodicFFT();
         //IM = perfft2(im);                   % 
         //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
-        Complex[][][] perfResults = perfft2.perfft2(img, true);
+        Complex[][][] perfResults = perfft2.perfft2(img, false);
         Complex[][] capIm = perfResults[1];
           
-DEBUG(capIm, " IM");
-int zz = 1;
-
         /*
         sumAn  = zeros(rows,cols);          % Matrix for accumulating filter response
                                             % amplitude values.
@@ -361,7 +357,7 @@ int zz = 1;
         }
         
         for (int s = 0; s < nScale; ++s) {
-            
+                        
             // Centre frequency of filter.
             double wavelength = minWavelength * Math.pow(mult, s);
             
@@ -380,7 +376,7 @@ int zz = 1;
                 }
             }
             logGabor[0][0] = 0;
-                    
+            
             // uses notation a[row][col]
             //Bandpassed image in the frequency domain
             Complex[][] capIMF = new Complex[nRows][];
@@ -390,9 +386,7 @@ int zz = 1;
                    capIMF[row][col] = capIm[row][col].times(logGabor[row][col]);
                 }
             }
-            
-DEBUG(capIMF, "s=" + s + " sumAn");            
-            
+           
             // uses notation a[row][col]
             //  Bandpassed image in spatial domain.
             //  f = real(ifft2(IMF));
@@ -401,23 +395,6 @@ DEBUG(capIMF, "s=" + s + " sumAn");
             Complex[][] fComplex = imageProcessor.create2DFFT(capIMF, false, false);    
 
             double norm = nRows * nCols;
-            
-//DEBUG
-{
-//ERROR somewhere here.  my "f" is smaller than the python
-    double[][] f = new double[nRows][];
-    double avg = 0;
-    for (int row = 0; row < nRows; ++row) {
-        f[row] = new double[nCols];
-        for (int col = 0; col < nCols; ++col) {
-            f[row][col] = fComplex[row][col].re();///norm;
-            avg += f[row][col];
-        }
-    }
-    avg /= norm;
-    DEBUG(f, "f");
-int z = 1;
-}
         
             //h = ifft2(IMF.*H);
             Complex[][] capIMFH = new Complex[nRows][];
@@ -429,7 +406,7 @@ int z = 1;
             }
             // result needs to be divided by norm=nRows*nCols
             Complex[][] h = imageProcessor.create2DFFT(capIMFH, false, false);
-
+ 
             /*
             h1 = real(h); 
             h2 = imag(h);                                  
@@ -510,14 +487,6 @@ int z = 1;
                     weight[row][col] = 1./(1. + v);
                 }
             }
-    
-DEBUG(sumAn, "s=" + s + " sumAn");
-DEBUG(sumF, "s=" + s + " sumF");
-DEBUG(sumH1, "s=" + s + " sumH1");
-DEBUG(sumH2, "s=" + s + " sumH2");
-DEBUG(aN, "s=" + s + " An");
-DEBUG(width, "s=" + s + " width");
-DEBUG(weight, "s=" + s + " weight");
 
             /*
             Automatically determine noise threshold
@@ -985,6 +954,7 @@ DEBUG(weight, "s=" + s + " weight");
         return img2;
     }
     
+    /*
     private void DEBUG(Complex[][] tmp, String label) {
        
         try {
@@ -1065,5 +1035,6 @@ DEBUG(weight, "s=" + s + " weight");
         }
         int z = 1;
     }
-
+    */
+    
 }

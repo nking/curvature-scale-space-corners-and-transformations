@@ -22,8 +22,8 @@ public class PeriodicFFTTest extends TestCase {
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        String fileName = "lab.gif";
-        //String fileName = "lena.jpg";
+        //String fileName = "lab.gif";
+        String fileName = "lena.jpg";
         //String fileName = "tmp.png";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);        
@@ -173,18 +173,69 @@ public class PeriodicFFTTest extends TestCase {
     
     public void test0() throws Exception {
                 
-        //String fileName = "lena.jpg";
+        String fileName = "lena.jpg";
         //String fileName = "tmp.png";
-        String fileName = "lab.gif";
+        //String fileName = "lab.gif";
         //String fileName = "house.gif";
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);        
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         
         PeriodicFFT pfft = new PeriodicFFT();
-        Complex[][][] pC = pfft.perfft2(img, true);
-        Complex[][] periodicComponent = pC[0];
+        Complex[][][] pProducts = pfft.perfft2(img, true);
+        Complex[][] fftSmooth = pProducts[0];
+        Complex[][] fftPeriodic = pProducts[1];
+        Complex[][] smoothSpatial = pProducts[2];
+        Complex[][] periodicSpatial = pProducts[3];
         
+        int nRows = periodicSpatial.length;
+        int nCols = periodicSpatial[0].length;
+
+        GreyscaleImage perSpatialImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                double re = periodicSpatial[row][col].re();
+                perSpatialImg.setValue(col, row, (int)re);
+            }
+        }
+        HistogramEqualization hEq = new HistogramEqualization(perSpatialImg);
+        hEq.applyFilter();
+        ImageDisplayer.displayImage("perioidic spatial", perSpatialImg);
+        
+        GreyscaleImage smoothSpatialImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                double re = smoothSpatial[row][col].re();
+                smoothSpatialImg.setValue(col, row, (int)re);
+            }
+        }
+        hEq = new HistogramEqualization(smoothSpatialImg);
+        hEq.applyFilter();
+        ImageDisplayer.displayImage("smooth spatial", smoothSpatialImg);
+        
+        GreyscaleImage fftPeriodicImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                double re = fftPeriodic[row][col].re();
+                fftPeriodicImg.setValue(col, row, (int)re);
+            }
+        }
+        ImageDisplayer.displayImage("FFT of periodic", fftPeriodicImg);
+        
+        GreyscaleImage fftSmoothImg = new GreyscaleImage(img.getWidth(), img.getHeight(),
+            Type.Bits32FullRangeInt);
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                double re = fftSmooth[row][col].re();
+                fftSmoothImg.setValue(col, row, (int)re);
+            }
+        }
+        ImageDisplayer.displayImage("FFT of smooth", fftSmoothImg);
+        
+        int z = 1;
     }
     
     public void estPerfft2() throws Exception {

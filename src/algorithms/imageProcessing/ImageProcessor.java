@@ -2897,24 +2897,11 @@ public class ImageProcessor {
         boolean doNormalize, boolean forward) {
 
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
-        Complex[][] cc = convertImage(input);
+        Complex[][] cc = convertImageWithSwapMajor(input);
 
-        // this method already pads up to power of 2 and trims
         Complex[][] ccFFT = create2DFFT(cc, doNormalize, forward);
 
-        // swap axes to return format output[row][col]
-        Complex[][] output = new Complex[input.getHeight()][input.getWidth()];
-        for (int i = 0; i < input.getHeight(); ++i) {
-            output[i] = new Complex[input.getWidth()];
-        }
-
-        for (int i = 0; i < input.getWidth(); ++i) {
-            for (int j = 0; j < input.getHeight(); ++j) {
-                output[j][i] = ccFFT[i][j];
-            }
-        }
-
-        return output;
+        return ccFFT;
     }
 
     /**
@@ -4720,5 +4707,21 @@ public class ImageProcessor {
         }
 
         return c;
+    }
+    
+    public double[][] threshold(double[][] a, double threshold) {
+        
+        double[][] output = new double[a.length][];
+        for (int i = 0; i < output.length; ++i) {
+            output[i] = Arrays.copyOf(a[i], a[i].length);
+            for (int j = 0; j < output[i].length; ++j) {
+                double v = output[i][j];
+                if (v < threshold) {
+                    output[i][j] = 0;
+                }
+            }
+        }
+        
+        return output;
     }
 }
