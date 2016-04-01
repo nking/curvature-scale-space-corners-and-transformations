@@ -176,7 +176,7 @@ public class PeriodicFFT {
                 cx[row][col] = v;
             }
         }
-                
+
         /*
         denom = (2. * (2. - np.cos(cx) - np.cos(cy)))
         denom[0, 0] = 1.     # avoid / 0
@@ -190,8 +190,6 @@ public class PeriodicFFT {
 
         // using notation a[row][col]
         
-        double postNorm = nRows * nCols;
-        
         Complex[][] capS = imageProcessor.create2DFFT(s, false, true);
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
@@ -199,9 +197,9 @@ public class PeriodicFFT {
                 if (col == 0 && row == 0) {
                     denom = 1;
                 } else {
-                    denom = (2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));
+                    denom = 1./(2. * (2. - Math.cos(cx[row][col]) - Math.cos(cy[row][col])));
                 }
-                capS[row][col] = capS[row][col].divided(new Complex(denom, 0));
+                capS[row][col] = capS[row][col].times(denom);
             }
         }
         
@@ -216,8 +214,7 @@ public class PeriodicFFT {
         */
         // initialize matrix of complex numbers as real numbers from image (imaginary are 0's)
         // using notation a[row][col]
-        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, 
-            false, true);
+        Complex[][] capP = imageProcessor.create2DFFTWithSwapMajor(img, false, true);
         assert(capP.length == capS.length);
         assert(capP[0].length == capS[0].length);
         for (int row = 0; row < nRows; ++row) {
@@ -228,23 +225,19 @@ public class PeriodicFFT {
             }
         }
         
-//DEBUG
-DEBUG(capP, "P= fft(im) - S"); 
-        
         if (computeSpatial) {
             //s = real(ifft2(S)); 
             //p = im - s;
             
-            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, true);
+            double postNorm = nRows * nCols;
+            
+            Complex[][] lowerCaseS = imageProcessor.create2DFFT(capS, false, false);
             for (int row = 0; row < nRows; ++row) {
                 for (int col = 0; col < nCols; ++col) {
                     lowerCaseS[row][col] 
                         = new Complex(lowerCaseS[row][col].re()/postNorm, 0);
                 }
             }
-//TODO: lower case s may be wrong            
-// DEBUG
-DEBUG(lowerCaseS, "inv FFT(S)");
 
             Complex[][] lowerCaseP = new Complex[lowerCaseS.length][];
             for (int row = 0; row < nRows; ++row) {
@@ -254,9 +247,6 @@ DEBUG(lowerCaseS, "inv FFT(S)");
                         img.getValue(col, row) - lowerCaseS[row][col].re(), 0);
                 }
             }
-            
-// DEBUG
-DEBUG(lowerCaseP, "p= im - s");
             
             return new Complex[][][]{capS, capP, lowerCaseS, lowerCaseP};
         }
@@ -292,6 +282,22 @@ DEBUG(lowerCaseP, "p= im - s");
                 plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,
                     yPolygon, label + " row=" + rowNumber + " REAL");
             }
+            float[] x2 = new float[nr];
+            for (int ii = 0; ii < nr; ++ii) {
+                x2[ii] = ii;
+            }
+            float[] y2 = new float[nr];
+            // plot cols 0.25*nCols, 0.5*nCols, and 0.75*nCols
+            for (int nf = 1; nf < 4; nf++) {
+                int colNumber = (int) (((float) nf) * 0.25f * nc);
+                for (int ii = 0; ii < nr; ++ii) {
+                    y2[ii] = (float) tmp[ii][colNumber].re();
+                }
+                float minY = MiscMath.findMin(y2);
+                float maxY = MiscMath.findMax(y2);
+                plotter.addPlot(-1, nr + 1, minY, maxY, x2, y2, xPolygon,
+                    yPolygon, label + " col=" + colNumber + " REAL");
+            }
             
             // do same for complex
             for (int nf = 1; nf < 4; nf++) {
@@ -307,6 +313,7 @@ DEBUG(lowerCaseP, "p= im - s");
             
             plotter.writeFile();
         } catch (Exception e) {
+            int z = 1;
         }
         int z = 1;
     }
