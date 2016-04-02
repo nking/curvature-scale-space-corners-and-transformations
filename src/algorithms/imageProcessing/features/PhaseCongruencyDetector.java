@@ -1,11 +1,16 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
+import algorithms.imageProcessing.Gaussian1D;
+import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
+import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -13,7 +18,13 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  Not yet tested or ready for use.
@@ -104,6 +115,12 @@ import java.util.Arrays;
 public class PhaseCongruencyDetector {
     
     final private static double epsilon = 1E-4;
+    
+    private boolean determineCorners = false;
+    
+    public void setToCreateCorners() {
+        this.determineCorners = true;
+    }
     
     /**
      * <pre>
@@ -257,6 +274,13 @@ public class PhaseCongruencyDetector {
               
         int nCols = img.getWidth();
         int nRows = img.getHeight();
+        
+        double[][][] aNXList = null;
+        double[][][] aNYList = null;
+        if (determineCorners) {
+            aNXList = new double[nScale][][];
+            aNYList = new double[nScale][][];
+        }
                 
         //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
@@ -433,6 +457,25 @@ public class PhaseCongruencyDetector {
                 }
             }
             
+            if (determineCorners) {
+                double[][] aXN = new double[nRows][];
+                double[][] aYN = new double[nRows][];
+                for (int row = 0; row < nRows; ++row) {
+                    aXN[row] = new double[nCols];
+                    aYN[row] = new double[nCols];
+                    for (int col = 0; col < nCols; ++col) {
+                        // results of inverse transforms need normalization
+                        double f0 = fComplex[row][col].re()/norm;
+                        double h1 = h[row][col].re()/norm;
+                        double h2 = h[row][col].im()/norm;
+                        aXN[row][col] = Math.sqrt(f0*f0 + h1*h1);
+                        aYN[row][col] = Math.sqrt(f0*f0 + h2*h2);
+                    }
+                }
+                aNXList[s] = aXN;
+                aNYList[s] = aYN;
+            }
+            
             /*
             At the smallest scale estimate noise characteristics from the
             distribution of the filter amplitude responses stored in sumAn. 
@@ -606,8 +649,159 @@ public class PhaseCongruencyDetector {
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
+        if (determineCorners) {
+            
+            applyLineThinners(products);
+            
+            //double t1 = 0.1;
+            
+            //createPhaseAngleSteps(products, t1);
+            
+            //addConnectedPhaseAngleSteps(products);
+            
+            calculateCorners(products, aNXList, aNYList);
+        }
+        
         return products;
     }
+    
+    protected void applyLineThinners(PhaseCongruencyProducts products) {
+        
+        NonMaximumSuppression ns = new NonMaximumSuppression();
+        double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
+            products.getOrientation(), 1.0);
+        
+        double t1 = 0.1;
+        double t2 = 0.3;
+        
+        int[][] binaryImage = applyHysThresh(imgTh0, t1, t2, true);
+        
+        products.setThinnedImage(binaryImage);
+    }
+    
+    /* Not using this method unless apply the thinning to the steps image.
+    
+     * to the thresholded binary image, products.getThinneed(), add the connected
+     * pixels from the thresholded phase angle image steps.
+     * 
+     * @param products 
+    private void addConnectedPhaseAngleSteps(PhaseCongruencyProducts products) {
+        
+        if (products.getThinned() == null) {
+            throw new IllegalArgumentException(
+            "Error: thinned image needs to be set in products");
+        }
+        
+        if (products.getStepsInPhaseAngle() == null) {
+            throw new IllegalArgumentException(
+            "Error: phase angle steps image needs to be set in products");
+        }
+        
+        int[][] thinned = products.getThinned();
+        
+        int[][] steps = products.getStepsInPhaseAngle();
+        
+        // dfs traversal through points in thinned to search for neighbors
+        // in steps and add to stack and thinned image if found
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        int nRows = thinned.length;
+        int nCols = thinned[0].length;
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                if (thinned[i][j] > 0) {
+                    stack.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        while (!stack.isEmpty()) {
+            
+            PairInt uPoint = stack.pop();
+            
+            if (visited.contains(uPoint)) {
+                continue;
+            }
+            
+            int x = uPoint.getX();
+            int y = uPoint.getY();
+            
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                
+                // this class uses convention a[row][col]
+                if ((x2 < 0) || (y2 < 0) || (x2 > (nRows - 1)) || (y2 > (nCols - 1))) {
+                    continue;
+                }
+                
+                if (steps[x2][y2] > 0) {
+                    thinned[x2][y2] = 255;
+                    stack.add(new PairInt(x2, y2));
+                }
+            }
+            
+            visited.add(uPoint);
+        }
+    }
+    */
+    
+    /*
+    void createPhaseAngleSteps(PhaseCongruencyProducts products, double t1) {
+        
+        if (products.getThinned() == null) {
+            throw new IllegalArgumentException(
+            "Error: thinned image needs to be set in products");
+        }
+        
+        double[][] phaseAngle = products.getPhaseAngle();
+        
+        double[][] thinnedPC = products.getPhaseCongruency();
+        
+        int nRows = phaseAngle.length;
+        int nCols = phaseAngle[0].length;
+        
+        double piDiv2 = Math.PI/2.;
+        double piDiv4 = piDiv2/2.;
+        
+        //TODO: consider a smaller tolerance for "step" thatn piDiv2
+        
+        int[][] steps = new int[nRows][nCols];
+        
+        for (int i = 0; i < nRows; ++i) {
+            
+            steps[i] = new int[nCols];
+            
+            for (int j = 0; j < nCols; ++j) {
+                
+                if (thinnedPC[i][j] < t1) {
+                    continue;
+                }
+                
+                double v = phaseAngle[i][j];
+                if (v < 0) {
+                    if (Math.abs(v - -piDiv2) >= piDiv4) {
+                        steps[i][j] = 255;
+                    }
+                } else if (v == 0) {
+                    steps[i][j] = 255;
+                } else {
+                    if (Math.abs(v - piDiv2) >= piDiv4) {
+                        steps[i][j] = 255;
+                    }
+                }
+            }
+        }
+        
+        products.setStepsInPhaseAngle(steps);
+    }
+    */
 
     void explorePhaseAngle(PhaseCongruencyProducts products, 
         double[][] thinnedPC, double t1) {
@@ -658,6 +852,122 @@ public class PhaseCongruencyDetector {
         MiscDebug.writeImage(img2, "_dark_lines_");
     }
 
+    protected void calculateCorners(PhaseCongruencyProducts products,
+        double[][][] aXList, double[][][] aYList) {
+
+        // approximating the 2nd derivatives with the difference between next
+        // scale and current scale
+        
+        /*
+        elsewhere in this project, in making css corners:
+        statistics are used to keep only the min and max of curvature
+        for the local region or edge and to only keep the points with 
+        curvature magnitude higher than a factor above adjacent minima or 
+        maxima.
+        
+        note that the results of the former congruency code by Kovesi,
+        phasecong.py calculates the minimum moments of energy and then the
+        corners from that.  that image for the minimum moments of energy
+        picks up most corners very well for the few test images I tried.
+        */
+        
+        // only computing curvature for edge points
+        int[][] edgeImage = products.getThinned();
+
+        // TODO: the calculation below is dependent upon edge extraction here.
+        //       instead of the CSSCornerMaker pattern outlined below,
+        //       might first create instead a pattern which does not need to form 
+        //       edges as connected points, and instead performs the statistics
+        //       over neighboring regions but only for the edge points.
+        //
+        //  NOTE: the method below approximates the 2nd derivative from a 
+        //        difference of wavelet images.  might need to adjust the
+        //        measurement region for an edge points values 
+        //        (similar to a larger larger convolutionarea)...
+        // 
+        List<PairIntArray> theEdges;
+        /*
+        for (int s = 0; s < (aXList.length - 1); ++s) {
+            
+            double[][] aX = aXList[s];
+            double[][] aY = aYList[s];
+            
+            for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
+                
+                PairIntArray edge = theEdges.get(edgeIdx);
+                
+                float[] k = new float[edge.getN()];
+                
+                for (int idx = 0; idx < edge.getN(); ++idx) {
+                    int i = edge.getX(idx);
+                    int j = edge.getY(idx);
+                                        
+                    double dx = aX[i][j];
+                    double dy = aY[i][j];
+                    double d2x = aXList[s + 1][i][j] - dx;
+                    double d2y = aYList[s + 1][i][j] - dy;
+                    
+                    double denominator = Math.pow(
+                        ((dx * dx)+ (dy * dy)), 1.5);
+            
+                    double numerator = (dx * d2y) - (dy * d2x);
+            
+                    double curvature = (denominator == 0)  ? 
+                        (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
+                        : numerator / denominator;
+                    
+                    k[idx] = (float)curvature; 
+                }
+                
+                // find candidates as min and maxes
+                CSSCornerMaker
+                //protected List<Integer> findMinimaAndMaximaInCurvature(float[] k,
+                //    float[] outputLowThreshold) {
+                
+                protected List<Integer> findCandidateCornerIndexes(float[] k,
+                    List<Integer> minMaxIndexes, float lowThreshold,
+                    final boolean doUseOutdoorMode) {
+                    
+                might need to remove artifcats of straight line.  might be able
+                to use the phase angle image
+                    
+                if (s > 0) {
+                    
+                    // refine the coordinates
+                    
+                     // roughly estimating maxSep as the ~FWZI of the gaussian
+                    //TODO: this may need to be altered to a smaller value
+                    float maxSepSq = Gaussian1D.estimateHWZI(previousSigma, 0.01f);
+                    maxSepSq *= maxSepSq;
+                    if (maxSepSq > 4) {
+                        maxSepSq = 4;
+                    }
+                    float maxSep = (float)Math.sqrt(maxSepSq);
+
+                    NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(),
+                        xy2.getN());
+
+                    // revise the points in {xc, yc} to the closest in {xc2, yc2}
+                    for (int j = 0; j < candidateCornersXY.getN(); j++) {
+                        float x = candidateCornersXY.getX(j);
+                        float y = candidateCornersXY.getY(j);
+
+                        Integer minSepIndex = np.findClosestNeighborIndex(x, y, maxSep);
+
+                        if (minSepIndex != null) {
+                            int minSepIdx = minSepIndex.intValue();
+                            float x3 = xy2.getX(minSepIdx);
+                            float y3 = xy2.getY(minSepIdx);
+                            candidateCornersXY.set(j, x3, y3,
+                                xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
+                        }
+                    }
+                }
+            }
+        }
+       */ 
+    }
+
     public class PhaseCongruencyProducts {
         
         /**
@@ -684,12 +994,24 @@ public class PhaseCongruencyDetector {
          */
         private final double threshold;
         
+        private int[][] thinned = null;
+        
+        private int[][] stepsInPhaseAngle = null;
+        
         public PhaseCongruencyProducts(double[][] pc, double[][] or, 
             double[][] ft, double thr) {
             this.phaseCongruency = pc;
             this.orientation = or;
             this.phaseAngle = ft;
             this.threshold = thr;
+        }
+        
+        public void setThinnedImage(int[][] thImg) {
+            thinned = thImg;
+        }
+        
+        public int[][] getThinned() {
+            return thinned;
         }
 
         /**
@@ -718,6 +1040,14 @@ public class PhaseCongruencyDetector {
          */
         public double getThreshold() {
             return threshold;
+        }
+
+        public void setStepsInPhaseAngle(int[][] steps) {
+            stepsInPhaseAngle = steps;
+        }
+        
+        public int[][] getStepsInPhaseAngle() {
+            return stepsInPhaseAngle;
         }
         
     }
@@ -857,9 +1187,12 @@ public class PhaseCongruencyDetector {
      * @param img the phase congruence image
      * @param t1 low threshold
      * @param t2 high threshold
+     * @param extendAssocRadiusTo2 if true, searches the neighbors of
+     *    neighbors for a strong point
      * @return 
      */
-    int[][] applyHysThresh(double[][] img, double t1, double t2) {
+    int[][] applyHysThresh(double[][] img, double t1, double t2, 
+        boolean extendAssocRadiusTo2) {
         
         // note that the kovesi code uses the octave bwselect and bwfill,
         // which results in points > t2 which is thresholding just for 
@@ -923,29 +1256,32 @@ public class PhaseCongruencyDetector {
                 if (!foundMid) {
                     continue;
                 }
-                // search the 5 by 5 region for a "sure edge" pixel
-                for (int dx = -2; dx <= 2; ++dx) {
-                    int x2 = x + dx;
-                    if ((x2 < 0) || (x2 > (w - 1))) {
-                        continue;
-                    }
-                    for (int dy = -2; dy <= 2; ++dy) {
-                        int y2 = y + dy;
-                        if ((y2 < 0) || (y2 > (h - 1))) {
+                
+                if (extendAssocRadiusTo2) {
+                    // search the 5 by 5 region for a "sure edge" pixel
+                    for (int dx = -2; dx <= 2; ++dx) {
+                        int x2 = x + dx;
+                        if ((x2 < 0) || (x2 > (w - 1))) {
                             continue;
                         }
-                        if (x2 == x && y2 == y) {
-                            continue;
+                        for (int dy = -2; dy <= 2; ++dy) {
+                            int y2 = y + dy;
+                            if ((y2 < 0) || (y2 > (h - 1))) {
+                                continue;
+                            }
+                            if (x2 == x && y2 == y) {
+                                continue;
+                            }
+                            double v2 = img[x2][y2];
+                            if (v2 > tHigh) {
+                                img2[x][y] = 255;
+                                foundHigh = true;
+                                break;
+                            }
                         }
-                        double v2 = img[x2][y2];
-                        if (v2 > tHigh) {
-                            img2[x][y] = 255;
-                            foundHigh = true;
+                        if (foundHigh) {
                             break;
                         }
-                    }
-                    if (foundHigh) {
-                        break;
                     }
                 }
             }

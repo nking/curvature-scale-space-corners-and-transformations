@@ -1,20 +1,13 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.SubsetChooser;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.transform.EpipolarFeatureTransformationFit;
-import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.util.MiscStats;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,11 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * create lists of singly matched points between 2 images.
+ * create lists of singly matched points in two different lists.
  * It uses the criteria that matches are discarded if a point has a second
  * best match whose SSD is within 0.8*SSD or 0.9*SSD of best match.
  * @author nichole

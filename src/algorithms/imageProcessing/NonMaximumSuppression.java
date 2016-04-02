@@ -23,7 +23,8 @@ package algorithms.imageProcessing;
 %   radius  - Distance in pixel units to be looked at on each side of each
 %             pixel when determining whether it is a local maxima or not.
 %             This value cannot be less than 1.
-%             (Suggested value about 1.2 - 1.5)
+%             (Suggested value about 1.2 - 1.5).
+*             Caveat: found a value of 1.0 was better for the house.gif test.
 
 * Returns:
 %   im        - Non maximally suppressed image.

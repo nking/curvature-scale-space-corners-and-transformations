@@ -346,8 +346,9 @@ public class Gaussian1DSecondDeriv {
     protected static float[] getBinomialKernelSigmaOne() {
         // 1   2   -1  -4  -1   2   1 , norm=1./9.
         // editing to:
-        float a = 1.f/30.f;
-        return new float[]{a, 5*a, 0, -12*a, 0, 5*a, a};
+        //float a = 1.f/30.f;
+        //return new float[]{a, 5*a, 0, -12*a, 0, 5*a, a};
+        return new float[]{1, 2, -1, -4, -1, 2, 1};
     }
     
     protected static float[] getBinomialKernelSigmaOneSQRT2() {

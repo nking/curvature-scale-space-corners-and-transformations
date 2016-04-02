@@ -1257,6 +1257,15 @@ public class ImageProcessor {
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
         boolean calcForX, int minValue, int maxValue) {
 
+        GreyscaleImage output = convolveWithKernel1D(input, kernel, calcForX, 
+            minValue, maxValue);
+
+        input.resetTo(output);
+    }
+    
+    public GreyscaleImage convolveWithKernel1D(GreyscaleImage input, float[] kernel,
+        boolean calcForX, int minValue, int maxValue) {
+
         Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
 
         GreyscaleImage output = input.createWithDimensions();
@@ -1275,7 +1284,7 @@ public class ImageProcessor {
             }
         }
 
-        input.resetTo(output);
+        return output;
     }
 
     /**

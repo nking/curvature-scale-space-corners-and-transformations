@@ -13,6 +13,8 @@ import java.util.logging.Logger;
 /**
  * class to invoke methods needed to solve for euclidean scale between
  * image1 and image2 using methods specific to corners on closed curves.
+ * given a list of groups of corners and another list of groups of corners,
+ * finds the best matches of groups of corners between the lists.
  *
  * @author nichole
  */
