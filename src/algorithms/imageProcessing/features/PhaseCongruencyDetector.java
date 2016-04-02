@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.NearestPointsFloat;
+import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.Gaussian1D;
@@ -21,8 +22,11 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 
@@ -873,7 +877,7 @@ public class PhaseCongruencyDetector {
         
         // only computing curvature for edge points
         int[][] edgeImage = products.getThinned();
-
+        
         // TODO: the calculation below is dependent upon edge extraction here.
         //       instead of the CSSCornerMaker pattern outlined below,
         //       might first create instead a pattern which does not need to form 
@@ -881,16 +885,25 @@ public class PhaseCongruencyDetector {
         //       over neighboring regions but only for the edge points.
         //
         //  NOTE: the method below approximates the 2nd derivative from a 
-        //        difference of wavelet images.  might need to adjust the
-        //        measurement region for an edge points values 
-        //        (similar to a larger larger convolutionarea)...
-        // 
-        List<PairIntArray> theEdges;
+        //        difference of wavelet images.
+        //
+        
+        EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(edgeImage);
+        edgeExtractor.extractEdges();
+        
+        Set<PairInt> junctions = edgeExtractor.getJunctions();
+        
+        List<PairIntArray> theEdges = edgeExtractor.getEdges();
+        
         /*
-        for (int s = 0; s < (aXList.length - 1); ++s) {
+        for (int s = 0; s < 1 ; ++s) {
+        //for (int s = 0; s < (aXList.length - 1); ++s) {
             
             double[][] aX = aXList[s];
             double[][] aY = aYList[s];
+            
+            int nRows = aX.length;
+            int nCols = aX[0].length;
             
             for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
                 
@@ -916,13 +929,18 @@ public class PhaseCongruencyDetector {
                         (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
                         : numerator / denominator;
                     
+                    if (Double.isInfinite(curvature)) {
+                        System.out.println("inf curvature for (" + i + "," + j + ")");
+                    }
+                    
                     k[idx] = (float)curvature; 
                 }
                 
                 // find candidates as min and maxes
-                CSSCornerMaker
-                //protected List<Integer> findMinimaAndMaximaInCurvature(float[] k,
-                //    float[] outputLowThreshold) {
+                float[] outputLowThreshold = new float[1];
+                 List<Integer> minMaxIndexes 
+                     = CSSCornerMaker.findMinimaAndMaximaInCurvature(float[] k,
+                       outputLowThreshold);
                 
                 protected List<Integer> findCandidateCornerIndexes(float[] k,
                     List<Integer> minMaxIndexes, float lowThreshold,

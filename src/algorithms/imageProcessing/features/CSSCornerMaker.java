@@ -458,10 +458,10 @@ public class CSSCornerMaker {
      * indexes for the minima as negative values and the maxima as positive
      * values.
      * @param k
-     * @param outputLowThreshold
-     * @return
+     * @param outputLowThreshold array of size 1 to receive the low threshold used.
+     * @return list of indexes of minima and maxima (minima have negative values).
      */
-    protected List<Integer> findMinimaAndMaximaInCurvature(float[] k,
+    public static List<Integer> findMinimaAndMaximaInCurvature(float[] k,
         float[] outputLowThreshold) {
 
         if ((k == null) || (k.length == 0)) {
@@ -477,10 +477,10 @@ public class CSSCornerMaker {
         if (k.length < 3) {
             return new ArrayList<Integer>();
         }
-
+        
         float[] kQuartiles = ImageStatisticsHelper.getQuartiles(k);
 
-        log.fine("quartiles=" + Arrays.toString(kQuartiles));
+        //log.fine("quartiles=" + Arrays.toString(kQuartiles));
 
         //float kMax = MiscMath.findMax(k);
 
@@ -533,10 +533,10 @@ public class CSSCornerMaker {
             firstPeakAndMinIdx[1]--;
         }
 
-        log.fine("lowThresh=" + outputLowThreshold[0]
+        /*log.fine("lowThresh=" + outputLowThreshold[0]
             + " sum0=" + sum0 + " sum1=" + sum1 + " divsum=" + divSum
             + " firstPeakAndMinIdx[0]=" + firstPeakAndMinIdx[0]
-            + " firstPeakAndMinIdx[1]=" + firstPeakAndMinIdx[1]);
+            + " firstPeakAndMinIdx[1]=" + firstPeakAndMinIdx[1]);*/
 
         /*
         storing the minima and maxima in the same array list.
@@ -582,7 +582,7 @@ public class CSSCornerMaker {
      * @param h
      * @return
      */
-    protected int[] findFirstPeakAndMinimum(HistogramHolder h) {
+    protected static int[] findFirstPeakAndMinimum(HistogramHolder h) {
 
         float[] xh = h.getXHist();
         float[] yh = h.getYHistFloat();
