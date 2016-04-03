@@ -261,7 +261,6 @@
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
                 <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-                <pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -411,7 +410,6 @@
             <classpath>
                 <pathelement location="${lib.dir}/aspectjrt-1.8.0.jar"/>
                 <pathelement location="${lib.dir}/aspectjweaver-1.8.0.jar"/>
-            	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -434,7 +432,6 @@
             <jvmarg value="-XX:-UseSplitVerifier" />
             <sysproperty key="java.util.logging.config.file" value="${classes.dir}/classes/logging.properties"/>
             <classpath>
-                <pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
@@ -507,7 +504,6 @@
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             
             <jvmarg value="-XX:-UseSplitVerifier" />
@@ -541,12 +537,7 @@
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
             <classpath>
                 <pathelement location="${tests.out.dir}"/>
-                <!--
-                <pathelement location="${src.out.dir}"/>
-                <path refid="compile.classpath"/>
-                -->
                 <path refid="test.classpath"/>
-                <pathelement location="${src.out.dir}"/>
             </classpath>
             <test name="${test}" fork="yes" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
@@ -633,7 +624,6 @@
             <sysproperty key="java.util.logging.config.file" 
                 value="${src.out.dir}/logging.properties"/>
             <classpath>
-            	<pathelement location="${src.out.dir}"/>
                 <pathelement location="${basedir}/res/META-INF/"/>
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
