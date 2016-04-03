@@ -338,7 +338,8 @@ public class CSSCornerMaker {
             k, outputLowThreshold);
 
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
-            k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode);
+            k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode,
+            this.factorIncreaseForCurvatureMinimum);
 
         CornerArray xy = new CornerArray(maxCandidateCornerIndexes.size());
 
@@ -940,20 +941,22 @@ public class CSSCornerMaker {
      * @param minMaxIndexes
      * @param lowThreshold
      * @param doUseOutdoorMode
+     * @param curvatureFactor2 factor which is multiplied by 2.5 to result
+     * in the factor above minimum for a value to be significant.
      * @return
      */
-    protected List<Integer> findCandidateCornerIndexes(float[] k,
+    public static List<Integer> findCandidateCornerIndexes(float[] k,
         List<Integer> minMaxIndexes, float lowThreshold,
-        final boolean doUseOutdoorMode) {
+        final boolean doUseOutdoorMode, float curvatureFactor2) {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima
 
-        float factorAboveMin = factorIncreaseForCurvatureMinimum * 2.5f;//3.5f;// 10 misses some corners
+        float factorAboveMin = curvatureFactor2 * 2.5f;//3.5f;// 10 misses some corners
 
 if (doUseOutdoorMode) {
-    factorAboveMin = factorIncreaseForCurvatureMinimum * 3.5f;//10.f;
+    factorAboveMin = curvatureFactor2 * 3.5f;//10.f;
 }
-        log.fine("using factorAboveMin=" + factorAboveMin);
+        //log.fine("using factorAboveMin=" + factorAboveMin);
 
         //to limit k to curvature that shows a rise in 1 pixel over a run of 3,
         // use 0.2 for a lower limit.

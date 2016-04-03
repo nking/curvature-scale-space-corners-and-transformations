@@ -2173,7 +2173,8 @@ public class MiscMath {
     }
     
     /**
-     * rscale a to values between vi and vf, inclusive
+     * rscale a to values between vi and vf, inclusive.  the input array a is
+     * not modified.
      * @param a
      * @param vi
      * @param vf
