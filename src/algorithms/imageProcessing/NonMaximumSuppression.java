@@ -1,5 +1,9 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * a version of non-maximum suppression compatible with the PhaseConguencyDetector.
  * 
@@ -63,11 +67,23 @@ package algorithms.imageProcessing;
 %
 % The Software is provided "as is", without warranty of any kind.
  * 
- * @author nichole
+ * adapted by nichole to check that gaps are not added to previously connected
+ * curves.
  */
 public class NonMaximumSuppression {
     
-    public double[][] nonmaxsup(double[][] img, double[][] orientation, double radius) {
+    /**
+     * 
+     * @param img
+     * @param orientation
+     * @param radius
+     * @param useLowerThreshold if true, uses a lower threshold when checking
+     * whether to keep points - the lower threshold is useful for example, when
+     * thinning the steps from the phase angle image.
+     * @return 
+     */
+    public double[][] nonmaxsup(double[][] img, double[][] orientation, 
+        double radius, boolean useLowerThreshold) {
         
         if (img.length != orientation.length || img[0].length != orientation[0].length) {
             throw new IllegalArgumentException("img and orientation must be same size");
@@ -103,6 +119,8 @@ public class NonMaximumSuppression {
             hFrac[i] = xOff[i] - Math.floor(xOff[i]);
             vFrac[i] = yOff[i] - Math.floor(yOff[i]);
         }
+         
+        Set<PairInt> checkForDisconnects = new HashSet<PairInt>();
         
         // run through the image interpolating grey values on each side
         // of the centre pixel to be used for the non-maximal suppression
@@ -132,8 +150,11 @@ public class NonMaximumSuppression {
                 double upperAvg = tl + hFrac[or] * (tr - tl);
                 double lowerAvg = bl + hFrac[or] * (br - bl);
                 double v1 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
-                
-                if (img[col][row] > v1) {
+if (((col==145 || col==146) && row==83)) {
+    int z = 1;//v1=0.106  img=0.059    for col=146, img=0.2437  v1=0.319
+}
+                if ((img[col][row] > v1) ||
+                    (useLowerThreshold && (img[col][row] > 0.95*v1))) {
                     //x, y location on the `other side' of the point in question
                     x = col - xOff[or];
                     y = row + yOff[or];
@@ -156,8 +177,13 @@ public class NonMaximumSuppression {
                     upperAvg = tl + hFrac[or] * (tr - tl);
                     lowerAvg = bl + hFrac[or] * (br - bl);
                     double v2 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
+                     
+                    if (useLowerThreshold && (img[col][row] <= v2)) {
+                        
+                        checkForDisconnects.add(new PairInt(col, row));
                     
-                    if (img[col][row] > v2) {
+                    } else if (img[col][row] > v2) {
+                        
                         // this is the local maximum
                         output[col][row] = img[col][row];
                         
@@ -175,7 +201,27 @@ public class NonMaximumSuppression {
                                 row + r * yOff[or]);
                         */
                     }
+                    
+                } else if (useLowerThreshold && (img[col][row] > 0.8*v1)) {
+                    checkForDisconnects.add(new PairInt(col, row));
                 }
+            }
+        }
+               
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
+                0, 0);
+        
+        for (PairInt p : checkForDisconnects) {
+            int i = p.getX();
+            int j = p.getY();
+            
+            boolean disconnects = useLowerThreshold ? 
+                ImageSegmentation.doesDisconnect(output, 
+                    neighborCoordOffsets, i, j) : false;
+                       
+            if (disconnects) {
+                output[i][j] = img[i][j];
             }
         }
         
@@ -186,15 +232,10 @@ public class NonMaximumSuppression {
         // I know it is oxymoronic to thin a nonmaximally supressed image but 
         // fixes the multiple adjacent peaks that can arise from using a radius
         // value > 1.
-
-if Octave
-    skel = bwmorph(im>0,'thin',Inf);   % Octave's 'thin' seems to produce better results.
-else
-    skel = bwmorph(im>0,'skel',Inf);
-end
-im = im.*skel;
-
         */
+        
+        // operating on output so that can add a check for whether a new 0
+        // disconnects a line
         
         // make binary image for bwmorph input
         int[][] morphInput = new int[output.length][];
@@ -203,7 +244,21 @@ im = im.*skel;
         }
         for (int i = 0; i < output.length; ++i) {
             for (int j = 0; j < output[i].length; ++j) {
-                morphInput[i][j] = (output[i][j] > 0) ? 1 : 0;
+                                
+                if (output[i][j] > 0) {
+                    
+                    morphInput[i][j] = 1;
+                    
+                } else {
+
+                    // make sure does not add a gap into a curve
+                    //boolean disconnects = ImageSegmentation.doesDisconnect(output,
+                    //    neighborCoordOffsets, i, j);
+                    //if (!disconnects) {
+                        morphInput[i][j] = 0;
+                        output[i][j] = 0;
+                    //}
+                }
             }
         }
         
@@ -212,7 +267,11 @@ im = im.*skel;
         
         for (int i = 0; i < output.length; ++i) {
             for (int j = 0; j < output[i].length; ++j) {
-                output[i][j] *= skel[i][j];
+                int m = skel[i][j];
+if ((i==145 && j == 152) || (i==146 && j==152)) {
+     int z = 1;
+}                
+                output[i][j] *= m;
             }
         }
         

@@ -125,6 +125,77 @@ public class Kernel1DHelper {
     }
 
     /**
+     * convolve curve[cIndex] with the kernel g.
+     * @param curve
+     * @param cIndex
+     * @param g
+     * @return 
+     */
+    public float convolvePointWithKernel(float[] curve, int cIndex,
+        float[] g) {
+
+        int h = g.length >> 1;
+
+        float sum = 0;
+
+        int curveLength = curve.length;
+        
+        /*
+        correct for the edges.
+        Can try:
+            (1) wrap around - If this is a closed curve, use the points on the
+                 other end to continue matching the kernel point for point.
+                 ** this is what will use for closed curves **
+            (2) expand/pad - expand to fill the area large enough to match
+                the entire filter by:
+                    -- replicating the last point
+                    -- or reflecting the previous points around this boundary
+                       ** this is the one will use for open curves **
+                    -- or pad with zeroes.  (this one does NOT work well  it's
+                       the same as 'crop the area')
+            (3) crop the area.  this involves re-normalization of the percentage
+                 of the kernel which was used and can introduce large errors
+                 thru division by a very small number for example, so don't use
+                 it if possible.
+        */
+                
+        for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+            float gg = g[gIdx];
+
+            if (gg == 0) {
+                continue;
+            }
+            
+            int x = gIdx - h;
+
+            int curveIdx = cIndex + x;
+
+            if (curveIdx < 0) {
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+                // replicate
+                curveIdx = -1*curveIdx - 1;
+                if (curveIdx > (curveLength - 1)) {
+                    curveIdx = curveLength - 1;
+                }
+            } else if (curveIdx >= (curveLength)) {
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+                int diff = curveIdx - curveLength;
+                curveIdx = curveLength - diff - 1;
+                if (curveIdx < 0) {
+                    curveIdx = 0;
+                }
+            }
+            
+            float point = curve[curveIdx];
+            
+            sum += (point * gg);
+        }
+
+        return sum;
+    }
+    
+    /**
      * convolve point[xyIdx] with the kernel g along a column if calcX is true,
      * else along a row if calcX is false.
      * @param img

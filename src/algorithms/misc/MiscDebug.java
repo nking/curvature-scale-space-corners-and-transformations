@@ -1573,4 +1573,59 @@ public class MiscDebug {
         
         MiscDebug.writeImage(img, fileNameSuffix);
     }
+    
+    public static GreyscaleImage rescaleToImageWithSwapMajor(double[][] a) {
+        return rescaleToImage(a, false);
+    }
+    
+    public static GreyscaleImage rescaleToImage(double[][] a) {
+        return rescaleToImage(a, true);
+    }
+    
+    private static GreyscaleImage rescaleToImage(double[][] a, boolean useDefaultAxesOrder) {
+        
+        double minV = Double.MAX_VALUE;
+        double maxV = Double.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                double v = a[i][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        double range = maxV - minV;
+        
+        double scale = 255./range;
+        
+        GreyscaleImage output;
+        if (useDefaultAxesOrder) {
+            output = new GreyscaleImage(a.length, a[0].length);
+        } else {
+            output = new GreyscaleImage(a[0].length, a.length);
+        }
+        
+System.out.println("value 0 is rescaled to value=" + ((int)(-minV*scale))
++ " minV=" + minV + " scale=" + scale);
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                
+                double v = (a[i][j] - minV) * scale;
+                
+                if (useDefaultAxesOrder) {
+                    output.setValue(i, j, (int)v);
+                } else {
+                    output.setValue(j, i, (int)v);
+                }
+            }
+        }
+        
+        return output;
+    }
+    
 }

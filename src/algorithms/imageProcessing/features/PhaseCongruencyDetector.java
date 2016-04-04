@@ -7,6 +7,8 @@ import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.LowPassFilter;
@@ -14,6 +16,8 @@ import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
+import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
+import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -736,12 +740,12 @@ public class PhaseCongruencyDetector {
                     double eDivY = Math.acos(energyY / (sumAnY[row][col] + epsilon));
 
                     //TODO: may need to revise the noise compensation to be same as pc for X and Y components
-                    pcX[row][col] = weightX[row][col]
+                    pcX[row][col] = weight[row][col]
                         * Math.max(1. - deviationGain * eDivX, 0)
                         * Math.max(energyX - thresholdX, 0)
                         / (energyX + epsilon);
                     
-                    pcY[row][col] = weightY[row][col]
+                    pcY[row][col] = weight[row][col]
                         * Math.max(1. - deviationGain * eDivY, 0)
                         * Math.max(energyY - thresholdY, 0)
                         / (energyY + epsilon);
@@ -782,13 +786,13 @@ public class PhaseCongruencyDetector {
             
             applyLineThinners(products);
             
-            //double t1 = 0.1;
+            double t1 = 0.1;
             
-            //createPhaseAngleSteps(products, t1);
+            createPhaseAngleSteps(products, t1);
             
-            //addConnectedPhaseAngleSteps(products);
-            
-            calculateCorners(products, pcX, pcY);
+            addConnectedPhaseAngleSteps(products);
+                        
+            calculateCorners(products, pcX, pcY, img);
         }
         
         return products;
@@ -798,7 +802,7 @@ public class PhaseCongruencyDetector {
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0);
+            products.getOrientation(), 1.0, false);
         
         double t1 = 0.1;
         double t2 = 0.3;
@@ -808,12 +812,13 @@ public class PhaseCongruencyDetector {
         products.setThinnedImage(binaryImage);
     }
     
-    /* Not using this method unless apply the thinning to the steps image.
+    /**
     
      * to the thresholded binary image, products.getThinneed(), add the connected
      * pixels from the thresholded phase angle image steps.
      * 
-     * @param products 
+     * @param products
+     */
     private void addConnectedPhaseAngleSteps(PhaseCongruencyProducts products) {
         
         if (products.getThinned() == null) {
@@ -878,10 +883,55 @@ public class PhaseCongruencyDetector {
             
             visited.add(uPoint);
         }
+        
+        double[][] pc = products.getPhaseCongruency();
+        
+        // thinned now needs one more round of thinning, so restore the
+        // original values in an array and thin those
+        double[][] thinnedPC = new double[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            thinnedPC[i] = new double[nCols];
+            for (int j = 0; j < nCols; ++j) {
+                if (thinned[i][j] > 0) {
+                    thinnedPC[i][j] = pc[i][j];
+                }
+            }
+        }
+        
+        NonMaximumSuppression ns = new NonMaximumSuppression();
+        double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 1.0,
+            true);
+        
+        for (int i = 0; i < nRows; ++i) {
+            Arrays.fill(thinned[i], 0);
+            for (int j = 0; j < nCols; ++j) {
+                
+                if (thinned2[i][j] > 0) {
+                    // if a point has 0 neighbors, do not add it
+                    
+                    int c = 0;
+                    for (int k = 0; k < dxs.length; ++k) {
+                        int i2 = i + dxs[k];
+                        int j2 = j + dys[k];
+                        if (i2 < 0 || j2 < 0 || (i2 > (thinned.length - 1)) ||
+                            (j2 > (thinned[0].length - 1))) {
+                            continue;
+                        }
+                        if (thinned2[i2][j2] > 0) {
+                            c++;
+                            break;
+                        }
+                    }
+                    if (c > 0) {
+                        thinned[i][j] = 255;
+                    }
+                }
+            }
+        }
+                        
+        products.setThinnedImage(thinned);
     }
-    */
     
-    /*
     void createPhaseAngleSteps(PhaseCongruencyProducts products, double t1) {
         
         if (products.getThinned() == null) {
@@ -899,13 +949,13 @@ public class PhaseCongruencyDetector {
         double piDiv2 = Math.PI/2.;
         double piDiv4 = piDiv2/2.;
         
-        //TODO: consider a smaller tolerance for "step" thatn piDiv2
+        //TODO: consider a smaller tolerance for "step" than piDiv2
         
-        int[][] steps = new int[nRows][nCols];
+        double[][] steps0 = new double[nRows][nCols];
         
         for (int i = 0; i < nRows; ++i) {
             
-            steps[i] = new int[nCols];
+            steps0[i] = new double[nCols];
             
             for (int j = 0; j < nCols; ++j) {
                 
@@ -916,21 +966,41 @@ public class PhaseCongruencyDetector {
                 double v = phaseAngle[i][j];
                 if (v < 0) {
                     if (Math.abs(v - -piDiv2) >= piDiv4) {
-                        steps[i][j] = 255;
+                        steps0[i][j] = thinnedPC[i][j];
                     }
                 } else if (v == 0) {
-                    steps[i][j] = 255;
+                    steps0[i][j] = thinnedPC[i][j];
                 } else {
                     if (Math.abs(v - piDiv2) >= piDiv4) {
-                        steps[i][j] = 255;
+                        steps0[i][j] = thinnedPC[i][j];
                     }
                 }
             }
         }
         
+        NonMaximumSuppression ns = new NonMaximumSuppression();
+        double[][] thinned0 = ns.nonmaxsup(steps0, products.getOrientation(), 1.0,
+            true);
+        
+        /*
+        double t1 = 0.1;
+        double t2 = 0.3;
+        int[][] binaryImage = applyHysThresh(imgTh0, t1, t2, true);
+        */
+                
+        int[][] steps = new int[nRows][nCols];        
+        for (int i = 0; i < nRows; ++i) {
+            steps[i] = new int[nCols];            
+            for (int j = 0; j < nCols; ++j) {
+                if (thinned0[i][j] > 0) {
+                    steps[i][j] = 255;
+                }
+            }
+        }
+        
+        
         products.setStepsInPhaseAngle(steps);
     }
-    */
 
     void explorePhaseAngle(PhaseCongruencyProducts products, 
         double[][] thinnedPC, double t1) {
@@ -982,11 +1052,25 @@ public class PhaseCongruencyDetector {
     }
 
     protected void calculateCorners(PhaseCongruencyProducts products,
-        double[][] pcX, double[][] pcY) {
+        double[][] pcX, double[][] pcY, GreyscaleImage img) {
+        
+        // TODO: looks like the differences in zero-points, etc for pc_X and pc_y
+        // from pc need to be corrected
         
         // only computing curvature for edge points
         int[][] edgeImage = products.getThinned();
         
+        int[][] steps = products.getStepsInPhaseAngle();
+        GreyscaleImage out0 = new GreyscaleImage(steps[0].length, steps.length);
+            for (int i = 0; i < steps.length; ++i) {
+            for (int j = 0; j < steps[i].length; ++j) {
+                if (steps[i][j] > 0) {
+                    out0.setValue(j, i, 255);
+                }
+            }
+        }
+            MiscDebug.writeImage(out0, "__steps__");
+
         double[][] pc = products.getPhaseCongruency();
         
         int nRows = edgeImage.length;
@@ -999,305 +1083,54 @@ public class PhaseCongruencyDetector {
         
         List<PairIntArray> theEdges = edgeExtractor.getEdges();
         
-        Map<PairInt, Float> cornerMap = new HashMap<PairInt, Float>();
+        Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
+            = new HashMap<Integer,Set<PairIntWithIndex>>();
         
-        int minEdgeSize = 3;
+        PairIntArray outputCorners = new PairIntArray();
         
-        {
-            // ------ quick look at the resulting 2nd derivs as images ------
-            //        (only the edge points are needed, so this is exploration
-            //         before implementing the corner calculations).
-            
-            //plotting the x and y components
-            GreyscaleImage out = new GreyscaleImage(nCols, nRows);
-            for (int i = 0; i < out.getWidth(); ++i) {
-                for (int j = 0; j < out.getHeight(); ++j) {
-                    out.setValue(i, j, (int)(255.*pc[j][i]));
-                }
-            }
-            MiscDebug.writeImage(out, "_PC_");
-            out = out.createWithDimensions();
-            for (int i = 0; i < out.getWidth(); ++i) {
-                for (int j = 0; j < out.getHeight(); ++j) {
-                    out.setValue(i, j, (int)(255.*pcX[j][i]));
-                }
-            }
-            MiscDebug.writeImage(out, "_PC_X_");
-            out = out.createWithDimensions();
-            for (int i = 0; i < out.getWidth(); ++i) {
-                for (int j = 0; j < out.getHeight(); ++j) {
-                    out.setValue(i, j, (int)(255.*pcY[j][i]));
-                }
-            }
-            MiscDebug.writeImage(out, "_PC_Y_");
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
-
-            for (int i = 0; i < 3; ++i) {
-                
-                double[][] a = null;
-                String label = "";
-                if (i == 0) {
-                    label = "_PC_";
-                    a = new double[nRows][nCols];
-                    for (int ii = 0; ii < nRows; ++ii) {
-                        a[ii] = Arrays.copyOf(pc[ii], pc[ii].length);
-                    }
-                } else if (i == 1) {
-                    label = "_PC_X_";
-                    a = new double[nRows][nCols];
-                    for (int ii = 0; ii < nRows; ++ii) {
-                        a[ii] = Arrays.copyOf(pcX[ii], pcX[ii].length);
-                    }
-                } else {
-                    label = "_PC_Y_";
-                    a = new double[nRows][nCols];
-                    for (int ii = 0; ii < nRows; ++ii) {
-                        a[ii] = Arrays.copyOf(pcY[ii], pcY[ii].length);
-                    }
-                }
-                double[][] aDx = new double[nRows][nCols];
-                double[][] aDy = new double[nRows][nCols];
-                for (int ii = 0; ii < nRows; ++ii) {
-                    aDx[ii] = new double[nCols];
-                    aDy[ii] = new double[nCols];
-                }
-                
-                float[] kernel = Gaussian1DFirstDeriv.getKernel(SIGMA.ONE);
-                
-                float[] valuesDX = new float[out.getNPixels()];
-                float[] valuesDY = new float[out.getNPixels()];
-                int count = 0;
-                
-                boolean calcForX = true;
-                for (int ii = 0; ii < nRows; ++ii) {
-                    for (int jj = 0; jj < nCols; ++jj) {
-                        double conv = kernel1DHelper.convolvePointWithKernel(
-                            a, ii, jj, kernel, calcForX);
-                        aDx[ii][jj] = conv;
-                        
-                        valuesDX[count] = (float)conv;
-                        count++;
-                    }
-                }
-                
-                count = 0;
-                calcForX = false;
-                for (int ii = 0; ii < nRows; ++ii) {
-                    for (int jj = 0; jj < nCols; ++jj) {
-                        double conv = kernel1DHelper.convolvePointWithKernel(
-                            a, ii, jj, kernel, calcForX);
-                        aDy[ii][jj] = conv;
-                        
-                        valuesDY[count] = (float)conv;
-                        count++;
-                    }
-                }
-                
-                float minVX = MiscMath.findMin(valuesDX);
-                float maxVX = MiscMath.findMax(valuesDX);
-                float minVY = MiscMath.findMin(valuesDY);
-                float maxVY = MiscMath.findMax(valuesDY);
-                
-                System.out.println(label + ": minDX=" + minVX + " maxDX=" + maxVX
-                    + " minDY=" + minVY + " maxDY=" + maxVY);
-                
-                float[] rescaledX = MiscMath.rescale(valuesDX, 0, 255);
-                
-                float[] rescaledY = MiscMath.rescale(valuesDY, 0, 255);
-                
-                count = 0;
-                out = out.createWithDimensions();
-                for (int ii = 0; ii < nRows; ++ii) {
-                    for (int jj = 0; jj < nCols; ++jj) {
-                        out.setValue(jj, ii, (int) rescaledX[count]);
-                        count++;
-                    }
-                }
-                MiscDebug.writeImage(out, label + "DX_");
-                
-                count = 0;
-                out = out.createWithDimensions();
-                for (int ii = 0; ii < nRows; ++ii) {
-                    for (int jj = 0; jj < nCols; ++jj) {
-                        out.setValue(jj, ii, (int) rescaledY[count]);
-                        count++;
-                    }
-                }
-                MiscDebug.writeImage(out, label + "DY_");
-                
-            }
-            
-        }
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         
-        /*
-        double[][] aX = aXList[0];
-        double[][] aY = aYList[0];
-
-        // approximating the 2nd derivatives with the difference between next
-        // scale and current scale
+        Map<PairIntArray,Map<SIGMA,ScaleSpaceCurve>> scaleSpaceMap =
+            cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap,
+            false, outputCorners);
         
-        for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
-
-            PairIntArray edge = theEdges.get(edgeIdx);
-
-            final int n = edge.getN();
-
-            if (n < minEdgeSize) {
-                continue;
-            }
-
-            float[] k = new float[edge.getN()];
-
-            for (int idx = 0; idx < n; ++idx) {
-                int i = edge.getX(idx);
-                int j = edge.getY(idx);
-
-                double dx = aX[i][j];
-                double dy = aY[i][j];
-                double d2x = aXList[1][i][j] - dx;
-                double d2y = aYList[1][i][j] - dy;
-
-                double denominator = Math.pow(
-                    ((dx * dx)+ (dy * dy)), 1.5);
-
-                double numerator = (dx * d2y) - (dy * d2x);
-
-                double curvature = (denominator == 0)  ? 
-                    (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
-                    : numerator / denominator;
-
-                if (Double.isInfinite(curvature)) {
-                    System.out.println("inf curvature for (" + i + "," + j + ")");
-                }
-
-                k[idx] = (float)curvature; 
-            }
-                
-            // find candidates as min and maxes
-            float[] outputLowThreshold = new float[1];
-            List<Integer> minMaxIndexes 
-                = CSSCornerMaker.findMinimaAndMaximaInCurvature(k, 
-                    outputLowThreshold);
-
-            List<Integer> candidateIndexes = 
-                CSSCornerMaker.findCandidateCornerIndexes(k, minMaxIndexes, 
-                    outputLowThreshold[0], false, 1.f);
-
-            CornerArray corners = new CornerArray(candidateIndexes.size());
-
-            if (candidateIndexes.size() > 0) {
-                for (int ii = 0; ii < candidateIndexes.size(); ii++) {
-                    int idx = candidateIndexes.get(ii);
-                    int x = edge.getX(idx);
-                    int y = edge.getY(idx);
-                    corners.add(x, y, idx, SIGMA.ONE);
-                }
-            }
-            
-            // refine the coordinates
-            for (int s = 1; s < aXList.length; ++s) {
-                                        
-                //TODO: this may need to be altered to a smaller value
-                float maxSepSq = Gaussian1D.estimateHWZI(1, 0.01f);
-                maxSepSq *= maxSepSq;
-                if (maxSepSq > 4) {
-                    maxSepSq = 4;
-                }
-                float maxSep = (float)Math.sqrt(maxSepSq);
-
-                NearestPointsFloat np = new NearestPointsFloat(
-                    xy2.getX(), xy2.getY(),
-                    xy2.getN());
-
-                // revise the points in {xc, yc} to the closest in {xc2, yc2}
-                for (int j = 0; j < candidateCornersXY.getN(); j++) {
-                    float x = candidateCornersXY.getX(j);
-                    float y = candidateCornersXY.getY(j);
-
-                    Integer minSepIndex = np.findClosestNeighborIndex(x, y, maxSep);
-
-                    if (minSepIndex != null) {
-                        int minSepIdx = minSepIndex.intValue();
-                        float x3 = xy2.getX(minSepIdx);
-                        float y3 = xy2.getY(minSepIdx);
-                        candidateCornersXY.set(j, x3, y3,
-                            xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
-                    }
-                }
-            }
-                        
-            for (int i = 0; i < corners.getN(); ++i) {
-                
-                int idx = corners.getYInt()[i];
-                float x = corners.getX(i);
-                float y = corners.getY(i);
-                float curvature = k[idx];
-                
-                cornerMap.put(new PairInt(Math.round(x), Math.round(y)), 
-                    Float.valueOf(curvature));
+        // swap major order of edges and corners
+        Image imgCp = img.copyToColorGreyscale();
+        for (PairIntArray edge : theEdges) {
+            for (int i = 0; i < edge.getN(); ++i) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                edge.set(i, y, x);
             }
         }
-        
-        // combine adjacent corners in cornerMap
-        GreyscaleImage edgesImg = new GreyscaleImage(nCols, nRows);
-        GreyscaleImage anImg = new GreyscaleImage(nCols, nRows);
-        GreyscaleImage anP1Img = new GreyscaleImage(nCols, nRows);
-        
-        double[] values0 = new double[anP1Img.getNPixels()];
-        int count = 0;
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                if (edgeImage[i][j] > 0) {
-                    edgesImg.setValue(j, i, 255);
-                }
-                int v0 = (int)aXList[0][i][j];
-                if (v0 > 255 || v0 < 0) {
-                    int z = 1;
-                }
-                anImg.setValue(j, i, v0);
-                int v1 = (int)aXList[1][i][j];
-                anP1Img.setValue(j, i, v1);
-                values0[count] = aXList[1][i][j] - aXList[0][i][j];
-                count++;
-            }
+        for (int i = 0; i < outputCorners.getN(); ++i) {
+            int x = outputCorners.getX(i);
+            int y = outputCorners.getY(i);
+            outputCorners.set(i, y, x);
         }
-        int[] scaled0 = MiscMath.rescale(values0, 0, 255);
-        GreyscaleImage anDiffImg = new GreyscaleImage(nCols, nRows);
-        count = 0;
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                int v = scaled0[count];
-                anDiffImg.setValue(j, i, v);
-                count++;
-            }
-        }
-        MiscDebug.writeImage(anDiffImg, "_diff_");
-        
-        MiscDebug.writeImage(edgesImg, "_edges_");
-        MiscDebug.writeImage(anImg, "_AN_X_0");
-        MiscDebug.writeImage(anP1Img, "_AN_X_1_");
-        
-        float[] values = new float[cornerMap.size()];
-        PairInt[] coords = new PairInt[cornerMap.size()];
-        count = 0;
-        for (Entry<PairInt, Float> entry : cornerMap.entrySet()) {
-            coords[count] = entry.getKey();
-            values[count] = entry.getValue().floatValue();
-            count++;
-        }
-        float[] scaled = MiscMath.rescale(values, 0, 255);
-        
-        GreyscaleImage cornersImg = new GreyscaleImage(nCols, nRows);
-        for (int i = 0; i < coords.length; ++i) {
-            PairInt p = coords[i];
-            float v = scaled[i];
-            cornersImg.setValue(p.getY(), p.getX(), (int)v);
+        PairIntArray junctionsToAddToImage = new PairIntArray();
+        for (PairInt junction : junctions) {
+            int x = junction.getX();
+            int y = junction.getY();
+            junctionsToAddToImage.add(y, x);
         }
         
-        MiscDebug.writeImage(cornersImg, "_corners_");
-        */
+        ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, imgCp, 0, 0, 0);
+        ImageIOHelper.addCurveToImage(outputCorners, imgCp, 3, 255, 0, 0);
+        ImageIOHelper.addCurveToImage(junctionsToAddToImage, imgCp, 3, 255, 0, 0);
+        MiscDebug.writeImage(imgCp, "_css_corners_");
+        
+        //TODO: use hough transform to remove corner in lines that are only
+        //   steps in the lines.
+        //   can combine the line and corner strength information
+    }
+
+    private double[][] copy(double[][] a) {
+        double[][] cp = new double[a.length][];
+        for (int i = 0; i < a.length; ++i) {
+            cp[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+        return cp;
     }
 
     public class PhaseCongruencyProducts {

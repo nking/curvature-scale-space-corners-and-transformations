@@ -2,159 +2,268 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.misc.MiscMath;
-import algorithms.util.PairIntArray;
 import java.io.IOException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import junit.framework.TestCase;
 
 /**
  *
  * @author nichole
  */
-public class Gaussian1DRecursiveTest {
+public class Gaussian1DRecursiveTest extends TestCase {
     
     public Gaussian1DRecursiveTest() {
     }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
 
-    @Test
     public void testCompareRecursiveConvolveGaussian1D() throws IOException {
         
-        System.out.println("testCompareRecursiveConvolveGaussian1D");
+        boolean doPlot = false;
+                              
+        float[] gSIGMATWO = Gaussian1D.getKernel(SIGMA.TWO);
+        float[] gSIGMAFOUR = Gaussian1D.getKernel(SIGMA.FOUR);
+        
+        int n1 = 2 * gSIGMAFOUR.length - 1;
+        int n1Alt = 2 * gSIGMATWO.length - 1;
+        if (n1Alt > n1) {
+            n1 = n1Alt;
+        }
+        int ns1 = (n1 - gSIGMAFOUR.length)/2;
+        
+        int n0 = n1;
+        int ns0 = (n1 - gSIGMATWO.length)/2;
+        
+        float[] x0 = new float[n0];
+        float[] y0 = new float[n0];
+        
+        float[] x1 = new float[n1];
+        float[] y1 = new float[n1];
+        
+        float norm1 = 1.f/MiscMath.findMax(gSIGMAFOUR);
+        
+        int idx = 0;
+        for (int i = 0; i < n0; ++i) {
+            x0[i] = i;
+            if (i < ns0 || (idx > (gSIGMATWO.length - 1))) {
+                y0[i] = 0;
+            } else {
+                y0[i] = gSIGMATWO[idx];
+                idx++;
+            }
+        }
+        
+        idx = 0;
+        for (int i = 0; i < n1; ++i) {
+            x1[i] = i;
+            if (i < ns1 || (idx > (gSIGMAFOUR.length - 1))) {
+                y1[i] = 0;
+            } else {
+                y1[i] = norm1 * gSIGMAFOUR[idx];
+                idx++;
+            }
+        }
+        
+        float fwhm0 = GaussianHelperForTests.measureFWHM(x0, y0);
+               
+        PolygonAndPointPlotter plotter = null;
+        
+        if (doPlot) {
+            
+            plotter = new PolygonAndPointPlotter();
+
+            float xMax, yMax, xMin, yMin;
+
+            xMin = MiscMath.findMin(x0);
+            xMax = MiscMath.findMax(x0);
+            yMin = MiscMath.findMin(y0);
+            yMax = MiscMath.findMax(y0);
+            plotter.addPlot(xMin, xMax, yMin, yMax, x0, y0, x0, y0, " SIGMA=2");
+        }
+        
+        // ---- convolve y0 with itself, widening sigm by factor sqrt(2) each time -------
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        float[] kernel = Arrays.copyOf(y0, y0.length);
+        for (int i = 0; i < n0; ++i) {
+            float convolve = kernel1DHelper.convolvePointWithKernel(y0, i, 
+                kernel);
+            y0[i] = convolve;
+        }
+        kernel = Arrays.copyOf(y0, y0.length);
+        for (int i = 0; i < n0; ++i) {
+            float convolve = kernel1DHelper.convolvePointWithKernel(y0, i, 
+                kernel);
+            y0[i] = convolve;
+        }
+
+        // normalize so that peak is at 1
+        float norm0 = 1.f/MiscMath.findMax(y0);
+        for (int i = 0; i < n0; ++i) {
+            y0[i] *= norm0;
+        }
+
+        float fwhm2 = GaussianHelperForTests.measureFWHM(x1, y1);
+        float fwhm1 = GaussianHelperForTests.measureFWHM(x0, y0);
+
+        if (doPlot) {
+            float xMax, yMax, xMin, yMin;
+            
+            // compare y0 with y1
+            xMin = MiscMath.findMin(x0);
+            xMax = MiscMath.findMax(x0);
+            yMin = MiscMath.findMin(y0);
+            yMax = MiscMath.findMax(y0);
+            plotter.addPlot(xMin, xMax, yMin, yMax, x0, y0, x0, y0, 
+                " SIGMA=2 convolved with itself twice");
+
+            xMin = MiscMath.findMin(x1);
+            xMax = MiscMath.findMax(x1);
+            yMin = MiscMath.findMin(y1);
+            yMax = 1.2f*Math.max(MiscMath.findMax(y1), MiscMath.findMax(y0));
+            plotter.addPlot(xMin, xMax, yMin, yMax, x1, y1, x0, y0, 
+                " SIGMA=4 w/ overplot of conv");
+
+            String filePath = plotter.writeFile();
+        }
         
         /*
-        a is a dirac delta function w/ peak at value 1
+        variance^2 = variance_a^2 + variance_b^2 + 2*covariance(a, b)
         
-        a convolved with gauss(sigma=2) = a smoothed by sigma=2
+        for gaussian, variance = sigma^2
+        */
         
-        (a convolved with gauss(sigma=2)) convolved w/ gauss(sigma=2) = a 
-           smoothed by sigma=2*sqrt(2)
-       */
-        
-        // kernel for 2*sqrt(2) is size 13
-        int n = 15;
-        int h = n >> 1;
-        PairIntArray a = new PairIntArray(n);
-        for (int i = 0; i < n; i++) {
-            int xc = i - h;
-            if (i == h) {
-                a.add(xc, 255);
-            } else {
-                a.add(xc, 0);
-            }
-        }
-
-        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
-                      
-        float[] gSIGMATWO = Gaussian1D.getKernel(SIGMA.TWO);
-        
-        // ===== convolve 'a' with a gaussian kernel of sigma=2 ========
-        // ===== as a 1-D convolution with the y-axis
-        // 1-D convolution of 'a' X-axis w/ a sigma=2 1D Gaussian kernel
-        PairIntArray ac2 = new PairIntArray(n);
-        for (int i = 0; i < n; i++) {            
-            double convY = kernel1DHelper.convolvePointWithKernel(a, i, 
-                gSIGMATWO, false);
-            ac2.add(a.getX(i), (int)convY);
-        }
-        
-        // ====== convolving 'ac2' w/ a sigma=2 kernel should produce same
-        //        results as 'a' convolved by a sigma=2*sqrt(2).
-        PairIntArray ac2c2 = new PairIntArray(n);
-        for (int i = 0; i < n; i++) {            
-            double convY = kernel1DHelper.convolvePointWithKernel(ac2, i, 
-                gSIGMATWO, false);
-            ac2c2.add(ac2.getX(i), (int)convY);
-        }
-       
-        // ==== convolve 'a' by a sigma=2*sqrt(2) kernel
-        float[] gSIGMATWOSQRT2 = Gaussian1D.getKernel(SIGMA.TWOSQRT2);
-        PairIntArray ac2sqrt2 = new PairIntArray(n);
-        for (int i = 0; i < n; i++) {            
-            double convY = kernel1DHelper.convolvePointWithKernel(a, i, 
-                gSIGMATWOSQRT2, false);
-            ac2sqrt2.add(a.getX(i), (int)convY);
-        }
-        
-        // compare  ac2c2  to  ac2sqrt2
-      
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        
-        float xMax, yMax, xMin, yMin;
-        
-        xMin = MiscMath.findMin(ac2.getX());
-        xMax = MiscMath.findMax(ac2.getX());
-        yMin = MiscMath.findMin(ac2.getY());
-        yMax = MiscMath.findMax(ac2.getY());
-        plotter.addPlot(xMin, xMax, yMin, yMax, 
-            ac2.getX(), ac2.getY(), ac2.getX(), ac2.getY(),
-            "a conv w/ gaussian1d(sigma=2)");
-        String filePath = plotter.writeFile();
-        
-        xMin = MiscMath.findMin(ac2c2.getX());
-        xMax = MiscMath.findMax(ac2c2.getX());
-        yMin = MiscMath.findMin(ac2c2.getY());
-        yMax = MiscMath.findMax(ac2c2.getY());
-        plotter.addPlot(xMin, xMax, yMin, yMax, 
-            ac2c2.getX(), ac2c2.getY(), ac2c2.getX(), ac2c2.getY(),
-            "a conv w/ g(2) conv w/ g(2)");
-        plotter.writeFile();
-        
-        xMin = MiscMath.findMin(ac2sqrt2.getX());
-        xMax = MiscMath.findMax(ac2sqrt2.getX());
-        yMin = MiscMath.findMin(ac2sqrt2.getY());
-        yMax = MiscMath.findMax(ac2sqrt2.getY());
-        plotter.addPlot(xMin, xMax, yMin, yMax, 
-            ac2sqrt2.getX(), ac2sqrt2.getY(), 
-            ac2sqrt2.getX(), ac2sqrt2.getY(),
-            "a conv w/ g(2*sqrt(2))");
-        plotter.writeFile();
-    
-         System.out.println(filePath);
-         
-        // assert that peaks are the same and FWHM are the same
-        float yMax0 = Float.MIN_VALUE;
-        float yMax1 = Float.MIN_VALUE;
-        int yMax0Idx = -1;
-        int yMax1Idx = -1;
-        for (int i = 0; i < ac2c2.getN(); i++) {
-            if (ac2c2.getY(i) > yMax0) {
-                yMax0 = ac2c2.getY(i);
-                yMax0Idx = i;
-            }
-        }
-        for (int i = 0; i < ac2sqrt2.getN(); i++) {
-            if (ac2sqrt2.getY(i) > yMax1) {
-                yMax1 = ac2sqrt2.getY(i);
-                yMax1Idx = i;
-            }
-        }
-        assertTrue(yMax0Idx == yMax1Idx);
-        assertTrue(Math.abs(yMax0 - yMax1) < 0.01);
-        
-        float FWHM0 = GaussianHelperForTests.measureFWHM(ac2c2.getX(), 
-            ac2c2.getY());
-        
-        float FWHM1 = GaussianHelperForTests.measureFWHM(ac2sqrt2.getX(), 
-            ac2sqrt2.getY());
-                
-        float expectedFWHM = (float)(SIGMA.getValue(SIGMA.TWOSQRT2) 
-            * 2.f * Math.sqrt(2*Math.log(2)));
-       
-        float eps = 2*(ac2c2.getX(4) - ac2c2.getX(3));
-        
-        assertTrue(Math.abs(FWHM0 - expectedFWHM) < eps);
-        assertTrue(Math.abs(FWHM1 - expectedFWHM) < eps);       
-                        
+        assertEquals(fwhm2, fwhm1);            
     }
 
+    public void testCompareRecursiveConvolveFirstDerivGaussian1D() throws IOException {
+
+        //NOTE: this shows the kernel is not recursive
+        
+        boolean doPlot = false;
+        
+        /*
+        temporarily flipping the negative y's to positive for easier viewing
+        */
+                              
+        float[] gSIGMATWO = Gaussian1DFirstDeriv.getKernel(SIGMA.TWO);
+        float[] gSIGMAFOUR = Gaussian1DFirstDeriv.getKernel(SIGMA.FOUR);
+        
+        // reverse the polarity of the y's
+        int idx0First = -1;
+        int idx0Last = -1;
+        for (int i = 0; i < gSIGMATWO.length; ++i) {
+            if (gSIGMATWO[i] < 0) {
+                if (idx0First == -1) {
+                    idx0First = i;
+                } else {
+                    idx0Last = i;
+                }
+                gSIGMATWO[i] *= -1;
+            }
+        }
+        int idx1First = -1;
+        int idx1Last = -1;
+        for (int i = 0; i < gSIGMAFOUR.length; ++i) {
+            if (gSIGMAFOUR[i] < 0) {
+                if (idx1First == -1) {
+                    idx1First = i;
+                } else {
+                    idx1Last = i;
+                }
+                gSIGMAFOUR[i] *= -1;
+            }
+        }
+        
+        int n1 = 200;//2 * gSIGMAFOUR.length - 1;
+        
+        int ns1 = (n1 - gSIGMAFOUR.length)/2;
+        
+        int n0 = n1;
+        int ns0 = (n1 - gSIGMATWO.length)/2;
+        
+        float[] x0 = new float[n0];
+        float[] y0 = new float[n0];
+        
+        float[] x1 = new float[n1];
+        float[] y1 = new float[n1];
+        
+        float norm1 = 1.f/MiscMath.findMax(gSIGMAFOUR);
+        
+        int idx = 0;
+        for (int i = 0; i < n0; ++i) {
+            x0[i] = i;
+            if (i < ns0 || (idx > (gSIGMATWO.length - 1))) {
+                y0[i] = 0;
+            } else {
+                y0[i] = gSIGMATWO[idx];
+                idx++;
+            }
+        }
+        
+        idx = 0;
+        for (int i = 0; i < n1; ++i) {
+            x1[i] = i;
+            if (i < ns1 || (idx > (gSIGMAFOUR.length - 1))) {
+                y1[i] = 0;
+            } else {
+                y1[i] = norm1 * gSIGMAFOUR[idx];
+                idx++;
+            }
+        }
+        
+        float fwhm0 = GaussianHelperForTests.measureFWHM(x0, y0);
+               
+        PolygonAndPointPlotter plotter = null;
+        
+        if (doPlot) {
+            
+            plotter = new PolygonAndPointPlotter();
+
+            float xMax, yMax, xMin, yMin;
+
+            xMin = MiscMath.findMin(x0);
+            xMax = MiscMath.findMax(x0);
+            yMin = MiscMath.findMin(y0);
+            yMax = MiscMath.findMax(y0);
+            plotter.addPlot(xMin, xMax, yMin, yMax, x0, y0, x0, y0, " SIGMA=2");
+        }
+        
+        // ---- convolve y0 with sigma one, twice to result in conv with sigma*2 -------
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+        int cTimes = 4;
+        for (int j = 0; j < cTimes; ++j) {
+            float[] kernel = Arrays.copyOf(y0, y0.length);
+            for (int i = 0; i < n0; ++i) {
+                float convolve = kernel1DHelper.convolvePointWithKernel(y0, i, 
+                    kernel);
+                y0[i] = convolve;
+            }
+        }
+        
+        float fwhm2 = GaussianHelperForTests.measureFWHM(x1, y1);
+        float fwhm1 = GaussianHelperForTests.measureFWHM(x0, y0);
+
+        if (doPlot) {
+            float xMax, yMax, xMin, yMin;
+            
+            xMin = MiscMath.findMin(x0);
+            xMax = MiscMath.findMax(x0);
+            yMin = MiscMath.findMin(y0);
+            yMax = MiscMath.findMax(y0);
+            plotter.addPlot(xMin, xMax, yMin, yMax, x0, y0, x0, y0, 
+                " SIGMA=2 convolved with itself " + cTimes + " times");
+
+            xMin = MiscMath.findMin(x1);
+            xMax = MiscMath.findMax(x1);
+            yMin = MiscMath.findMin(y1);
+            yMax = MiscMath.findMax(y1);
+            plotter.addPlot(xMin, xMax, yMin, yMax, x1, y1, x1, y1, 
+                " SIGMA=4 w/ overplot of conv");
+
+            String filePath = plotter.writeFile();
+        }
+        
+        System.out.println("fwhm0=" + fwhm0 + " fwhm1=" + fwhm1 + " fwhm2=" + fwhm2);
+        
+        // can see it's not a recursive function...
+        
+    }
 }

@@ -2284,4 +2284,33 @@ public class MiscMath {
         return values[count/2];
     }
     
+    public static void applyRescale(double[][] a, double minScaled, double maxScaled) {
+        
+        double minV = Double.MAX_VALUE;
+        double maxV = Double.MIN_VALUE;
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                double v = a[i][j];
+                if (v < minV) {
+                    minV = v;
+                }
+                if (v > maxV) {
+                    maxV = v;
+                }
+            }
+        }
+        double range = maxV - minV;
+        
+        double scale = (maxScaled - minScaled)/range;
+        
+System.out.println("value 0 is rescaled to value=" + (-minV*scale)
++ " minV=" + minV + " scale=" + scale);
+        
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[i].length; ++j) {
+                a[i][j] = (a[i][j] - minV) * scale;
+            }
+        }
+    }
 }
