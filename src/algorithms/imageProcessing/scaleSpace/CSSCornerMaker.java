@@ -3,6 +3,9 @@ package algorithms.imageProcessing.scaleSpace;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.Gaussian1D;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageStatisticsHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
@@ -11,11 +14,14 @@ import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1177,17 +1183,99 @@ if (doUseOutdoorMode) {
     }
 
     public void useHoughTransformationsToRemoveIntralineSteps(
-        PairIntArray theEdges, Set<PairInt> corners) {
+        List<PairIntArray> theEdges, Map<PairInt, Float> corners, 
+        Set<PairInt> junctions, int imageWidth, int imageHeight) {
         
-        Set<PairInt> allPoints = new HashSet<PairInt>(corners);
-        for (int i = 0; i < theEdges.getN(); ++i) {
-            allPoints.add(new PairInt(theEdges.getX(i), theEdges.getY(i)));
+        Set<PairInt> allPoints = new HashSet<PairInt>(corners.keySet());
+        for (PairIntArray edge : theEdges) {
+            for (int i = 0; i < edge.getN(); ++i) {
+                allPoints.add(new PairInt(edge.getX(i), edge.getY(i)));
+            }
+        }
+        for (PairInt p : junctions) {
+            allPoints.add(p);
         }
         
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(allPoints, 3);
         
-        // not finished yet
+        //for each corner, find the line it is in and if it is not
+        // an endpoint, remove it.  
+        // a thorough implementation would order the points and hence know
+        // endpoints precisely.
+        // using a less precise faster approach here to just checking the
+        // number of neighbors of the corner in the line.
+        
+        int[] dxs = Misc.dx4;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> remove = new HashSet<PairInt>();
+        for (Entry<PairInt, Float> pEntry : corners.entrySet()) {
+            
+            PairInt p = pEntry.getKey();
+            
+            if (junctions.contains(p)) {
+                // no need to delete junctions
+                continue;
+            }
+            
+            // NOTE: this may need to be adjusted to a higher limit between 0.11 and 0.2
+            Float curvature = pEntry.getValue();
+            if (Math.abs(curvature.floatValue()) > 0.11) {
+                continue;
+            }
+            
+            Set<PairInt> pLine = null;
+            for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
+                Set<PairInt> line = entry.getKey();
+                if (line.contains(p)) {
+                    pLine = line;
+                    break;
+                }
+            }
+            
+            if (pLine == null) {
+                continue;
+            }
+            
+            int c = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = p.getX() + dxs[k];
+                int y2 = p.getY() + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (pLine.contains(p2)) {
+                    c++;
+                }
+            }
+            
+            if (c > 1) {
+                // this might not always be correct
+                remove.add(p);
+                //System.out.println("REMOVE " + p.toString() + " k=" + pEntry.getValue());
+            } else {                                
+                if (Math.abs(curvature.floatValue()) < 0.075) {
+                    remove.add(p);
+                    //System.out.println("REMOVE " + p.toString() + " k=" + pEntry.getValue());
+                }
+            }
+        }
+        
+        for (PairInt p : remove) {
+            corners.remove(p);
+        }
+        
+        /*
+        try {
+            Image out = new Image(imageWidth, imageHeight);
+            ImageIOHelper.addAlternatingColorPointSetsToImage(
+                new ArrayList<Set<PairInt>>(lines.keySet()),
+                0, 0, 2, out);
+            MiscDebug.writeImage(out, "_HOUGH_LINES_");  
+        } catch (IOException ex) {
+            Logger.getLogger(CSSCornerMaker.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        */
+              
     }
 
 }

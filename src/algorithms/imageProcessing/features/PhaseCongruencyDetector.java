@@ -1,24 +1,17 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
-import algorithms.imageProcessing.Gaussian1D;
-import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.LowPassFilter;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
-import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
@@ -30,18 +23,45 @@ import algorithms.util.CornerArray;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 
 /**
- Not yet tested or ready for use.
- 
+ An edge detector that uses principles of phase congruency to create an edge
+ * map and orientation and phase angle images.  
+ * Phase congruency operates in the frequency domain of fourer transforms and
+ * with the inverse FFT produces an image that is summed over scales and
+ * cleaned of some of the noise.
+ * The phase congruency refers to the overlapping of sine waves at same phases
+ * in the frequency domain produced from feature edges in the spatial domain.
+ * <pre>
+ * The phase congruency method is thought to be better able to find edges
+ * under varying illumination conditions.  It also has the characteristic of 
+ * producing a single response to an edge (in contrast to many spatial gradient
+ * methods which for blurry edges, especially, produce a double response in
+ * the gradient image).
+ * </pre>
+ * Corners can be produced with this detector too.  Currently, the corners are
+ * produced using curvature scale curvature calculations for the extracted edge
+ * points.
+ * Alternative corner methods may be offered in the future.
+ * Note that edge detector follows the codes referenced below.
+ * Also note that the Peter Kovesi implementation of Phase Congruency detector 
+ * before this version which uses monogenic filters, produced a corner map using
+ * minimum moments from the phase congruency energy over 6 angles.  That method
+ * may be implemented separately from this class in the future because
+ * the corners produced from it look very good, but are at the expense of a
+ * longer runtime.
+ * Note, line drawings and images which are solid shapes are probably best
+ * handled by the CannyEdgeDetectorFilterAdpative with setToUseLineDrawingMode().
+ * 
  adapted from 
   http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m
   which has copyright:
@@ -78,28 +98,12 @@ import java.util.Stack;
 * 
 % Notes on specifying parameters:  
 %
-% The parameters can be specified as a full list eg.
-%  >> PC = phasecongmono(im, 5, 3, 2.5, 0.55, 2.0);
-%
-% or as a partial list with unspecified parameters taking on default values
-%  >> PC = phasecongmono(im, 5, 3);
-%
-% or as a partial list of parameters followed by some parameters specified via a
-% keyword-value pair, remaining parameters are set to defaults, for example:
-%  >> PC = phasecongmono(im, 5, 3, 'k', 2.5);
-% 
 % The convolutions are done via the FFT.  Many of the parameters relate to the
 % specification of the filters in the frequency plane.  The values do not seem
 % to be very critical and the defaults are usually fine.  You may want to
 % experiment with the values of 'nscales' and 'k', the noise compensation
 % factor.
 * 
-* Typical sequence of operations to obtain an edge image:
-%
-%  >> [PC, or] = phasecongmono(imread('lena.tif'));
-%  >> nm = nonmaxsup(PC, or, 1.5);   % nonmaxima suppression
-%  >> bw = hysthresh(nm, 0.1, 0.3);  % hysteresis thresholding 0.1 - 0.3
-%
 % Notes on filter settings to obtain even coverage of the spectrum
 % sigmaOnf       .85   mult 1.3
 % sigmaOnf       .75   mult 1.6     (filter bandwidth ~1 octave)
@@ -373,8 +377,6 @@ public class PhaseCongruencyDetector {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         double[][] maxAN = null;
-        double[][] maxANX = null;
-        double[][] maxANY = null;
         
         double tau = Double.NaN;
         double tauX = tau;
@@ -641,7 +643,7 @@ public class PhaseCongruencyDetector {
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
-        // ------- use line thinnes and concatenate the phase angle steps ----
+        // ------- use line thinnes and concatenate with the phase angle steps ----
         applyLineThinners(products);
             
         double t1 = 0.1;
@@ -759,8 +761,8 @@ public class PhaseCongruencyDetector {
         }
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
-        double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 1.0,
-            true);
+        double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 
+            1.0, true);
         
         // gather the points into a set and remove hole artifacts
         Set<PairInt> correctedPoints = new HashSet<PairInt>();
@@ -790,6 +792,8 @@ public class PhaseCongruencyDetector {
         }
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForLineHatHoriz(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length);
         
         // small clumps of pixels may be present from artifact corrections,
         // so use one more round of non maximum suppression thinning       
@@ -805,7 +809,7 @@ public class PhaseCongruencyDetector {
             int j = p.getY();
             thinned[i][j] = 255;
         }
-                                
+                       
         products.setThinnedImage(thinned);
     }
     
@@ -931,24 +935,8 @@ public class PhaseCongruencyDetector {
     protected void calculateCorners(PhaseCongruencyProducts products,
         GreyscaleImage img) {
         
-        // TODO: looks like the differences in zero-points, etc for pc_X and pc_y
-        // from pc need to be corrected
-        
         // only computing curvature for edge points
         int[][] edgeImage = products.getThinned();
-        
-        int[][] steps = products.getStepsInPhaseAngle();
-        GreyscaleImage out0 = new GreyscaleImage(steps[0].length, steps.length);
-            for (int i = 0; i < steps.length; ++i) {
-            for (int j = 0; j < steps[i].length; ++j) {
-                if (steps[i][j] > 0) {
-                    out0.setValue(j, i, 255);
-                }
-            }
-        }
-        MiscDebug.writeImage(out0, "__steps__");
-
-        double[][] pc = products.getPhaseCongruency();
         
         int nRows = edgeImage.length;
         int nCols = edgeImage[0].length;        
@@ -960,6 +948,21 @@ public class PhaseCongruencyDetector {
         
         List<PairIntArray> theEdges = edgeExtractor.getEdges();
         
+        // ---- placing these in coordinate reference frame of images -------
+        Set<PairInt> tmp = new HashSet<PairInt>();
+        for (PairInt p : junctions) {
+            tmp.add(new PairInt(p.getY(), p.getX()));
+        }
+        junctions = tmp;
+        
+        for (PairIntArray edge : theEdges) {
+            for (int i = 0; i < edge.getN(); ++i) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                edge.set(i, y, x);
+            }
+        }
+        
         Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
             = new HashMap<Integer,Set<PairIntWithIndex>>();
                 
@@ -970,51 +973,45 @@ public class PhaseCongruencyDetector {
             cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap,
             false);
         
-// swap major order of edges and corners
-Image imgCp = img.copyToColorGreyscale();
-for (PairIntArray edge : theEdges) {
-    for (int i = 0; i < edge.getN(); ++i) {
-        int x = edge.getX(i);
-        int y = edge.getY(i);
-        edge.set(i, y, x);
-    }
-}
         /*
         filter out small curvature:
         see line 64 of comments in CornerRegion.java.
         for curvature smaller than 0.2 won't see changes in slope in the
              neighboring 2 points on either side.
         */
-        Set<PairInt> corners = new HashSet<PairInt>();
+        Map<PairInt, Float> cornerMap = new HashMap<PairInt, Float>();
         for (int i = 0; i < cornerList.size(); ++i) {
             CornerArray ca = cornerList.get(i);
             for (int idx = 0; idx < ca.getN(); ++idx) {
                 float curvature = ca.getCurvature(idx);
                 
                 if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
-                    
-                    //SWAP AXES for plotting
-                    
-                    corners.add(new PairInt(Math.round(ca.getY(idx)),
-                        Math.round(ca.getX(idx))));
+                                        
+                    cornerMap.put(new PairInt(Math.round(ca.getX(idx)),
+                        Math.round(ca.getY(idx))), 
+                        Float.valueOf(ca.getCurvature(idx)));
                 }
             }
-        }
-                
-        for (PairInt junction : junctions) {
-            int x = junction.getX();
-            int y = junction.getY();
-            corners.add(new PairInt(y, x));
         }
         
         // both theEdges and corners are now in reference frame of image
         //   with columns being first axis
-        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(theEdges, corners);        
+        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(theEdges, 
+            cornerMap, junctions, nRows, nCols);        
+
+        Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
+        outputCorners.addAll(junctions);
         
+        products.setEdges(theEdges);
+        products.setJunctions(junctions);
+        products.setCorners(outputCorners);
+        
+        /*        
+        Image imgCp = img.copyToColorGreyscale();
         ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, imgCp, 0, 0, 0);
-        ImageIOHelper.addCurveToImage(corners, imgCp, 3, 255, 0, 0);
-        MiscDebug.writeImage(imgCp, "_css_corners_");
-        
+        ImageIOHelper.addCurveToImage(outputCorners, imgCp, 3, 255, 0, 0);
+        MiscDebug.writeImage(imgCp, "_CORNERS_0");
+        */
     }
 
     private double[][] copy(double[][] a) {
@@ -1055,23 +1052,41 @@ for (PairIntArray edge : theEdges) {
         
         private int[][] stepsInPhaseAngle = null;
         
+        private List<PairIntArray> edgeList = null;
+        
+        private Set<PairInt> junctions = null;
+        
+        private Set<PairInt> corners = null;
+        
         public PhaseCongruencyProducts(double[][] pc, double[][] or, 
             double[][] ft, double thr) {
-            this.phaseCongruency = pc;
-            this.orientation = or;
-            this.phaseAngle = ft;
+            this.phaseCongruency = copy(pc);
+            this.orientation = copy(or);
+            this.phaseAngle = copy(ft);
             this.threshold = thr;
         }
         
+        /**
+         * set the thinned phase congruence image, a.k.a. the edge image.
+         * @param thImg 
+         */
         public void setThinnedImage(int[][] thImg) {
-            thinned = thImg;
+            thinned = copy(thImg);
         }
         
+        /**
+         * get the thinned phase congruence image, a.k.a. the edge image.
+         * Note that the array is accessed as a[row][column].
+         * @@return edgeImg 
+         */
         public int[][] getThinned() {
             return thinned;
         }
 
         /**
+         * return the gradient image produced by phase congruency as a double
+         * array of values in range 0 to 1.0.
+         * Note that the array is accessed as a[row][column].
          * @return the phaseCongruency
          */
         public double[][] getPhaseCongruency() {
@@ -1079,6 +1094,8 @@ for (PairIntArray edge : theEdges) {
         }
 
         /**
+         * return the orientation image.
+         * Note that the array is accessed as a[row][column].
          * @return the orientation
          */
         public double[][] getOrientation() {
@@ -1086,6 +1103,15 @@ for (PairIntArray edge : theEdges) {
         }
 
         /**
+         * return the phase angle image.
+         * <pre>
+         * Local weighted mean phase angle at every point in the image. 
+         * A value of 
+                pi/2 corresponds to a bright line, 
+                0 corresponds to a step and 
+                -pi/2 is a dark line.
+         * </pre>
+         * Note that the array is accessed as a[row][column].
          * @return the phaseAngle
          */
         public double[][] getPhaseAngle() {
@@ -1100,11 +1126,89 @@ for (PairIntArray edge : theEdges) {
         }
 
         public void setStepsInPhaseAngle(int[][] steps) {
-            stepsInPhaseAngle = steps;
+            stepsInPhaseAngle = copy(steps);
         }
         
+        /**
+         * get the extracted phase angle steps in a binary image with values
+         * 0 or 255. Connected edges in this image hve been included in the
+         * thinned image.
+         * Note that the array is accessed as a[row][column].
+         * @return 
+         */
         public int[][] getStepsInPhaseAngle() {
             return stepsInPhaseAngle;
+        }
+
+        /**
+         * set the edge list extracted from the thinned image using coordinates
+         * that are in the reference frame of the GreyscaleIamge instance.
+         * Note that the closed curves are converted to instances of
+         * PairIntArrayWithColor having color=1.
+         * @param theEdgeList 
+         */
+        private void setEdges(List<PairIntArray> theEdgeList) {
+            
+            this.edgeList = new ArrayList<PairIntArray>();
+            
+            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            
+            for (PairIntArray p : theEdgeList) {
+                
+                PairIntArray cp = p.copy();
+                if (curveHelper.isAdjacent(p, 0, p.getN() - 1, 1)) {
+                    cp = new PairIntArrayWithColor(cp);
+                }
+                this.edgeList.add(cp);
+            }
+        }
+
+        /**
+         * set the junction points found in the edge list.  Note that the
+         * points should be using coordinates that are in the reference frame 
+         * of the GreyscaleIamge instance.
+         * @param theJunctions 
+         */
+        private void setJunctions(Set<PairInt> theJunctions) {
+            this.junctions = new HashSet<PairInt>(theJunctions);
+        }
+
+        /**
+         * set the corners found in the edge list.  Note that the points should 
+         * be using coordinates that are in the reference frame of the 
+         * GreyscaleIamge instance.
+         * @param theCorners 
+         */
+        private void setCorners(Set<PairInt> theCorners) {
+            this.corners = new HashSet<PairInt>(theCorners);
+        }
+
+        /**
+         * get the list of extracted edges as points that are in the reference 
+         * frame of the GreyscaleImage instance.
+         * @return the edgeList
+         */
+        public List<PairIntArray> getEdgeList() {
+            return edgeList;
+        }
+
+        /**
+         * get the set of junction points found within the edges in the reference
+         * frame of the GreyscaleIamge instance.
+         * @return the junctions
+         */
+        public Set<PairInt> getJunctions() {
+            return junctions;
+        }
+
+        /**
+         * get the corners found in the edges as set of points that are in the
+         * reference frame of the GreyscaleImage instance.  Note that the 
+         * junction points are included in here.
+         * @return the corners
+         */
+        public Set<PairInt> getCorners() {
+            return corners;
         }
         
     }
@@ -1112,6 +1216,15 @@ for (PairIntArray edge : theEdges) {
     private Complex[][] copy(Complex[][] a) {
         
         Complex[][] b = new Complex[a.length][];
+        for (int i = 0; i < b.length; ++i) {
+            b[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+        
+        return b;
+    }
+    private int[][] copy(int[][] a) {
+        
+        int[][] b = new int[a.length][];
         for (int i = 0; i < b.length; ++i) {
             b[i] = Arrays.copyOf(a[i], a[i].length);
         }

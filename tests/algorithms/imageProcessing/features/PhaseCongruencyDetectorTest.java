@@ -2,12 +2,14 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.HistogramEqualization;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
@@ -24,26 +26,33 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         
         //String fileName = "blox.gif";
         //String fileName = "lab.gif";
-        String fileName = "android_statues_01.jpg";
+        String fileName = "house.gif";
         //String fileName = "susan-in_plus.png";
-        //String fileName = "tmp.png";
         //String fileName = "lena.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
         GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         
-        float cutoff = 0.3f;//0.5f;
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        float k = 10;//2;
+        float g = 10; 
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+            
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         
         phaseCDetector.setToCreateCorners();
         
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            //phaseCDetector.phaseCongMono(img);
-            phaseCDetector.phaseCongMono(img, 5, 3, 2.1f, 0.55f, 2, cutoff, 
-                10, 1.5f, -1);
+            phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
+                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod);
+        
         assertNotNull(products);
                 
-        // range of data is 0 to 
         double[][] pc = products.getPhaseCongruency();
         double[][] orientation = products.getOrientation();
         double[][] phaseAngle = products.getPhaseAngle();
@@ -116,7 +125,15 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 out.setValue(i, j, thinned[j][i]);
             }
         }
-        MiscDebug.writeImage(out, "_filtered_hysteresis_" + cutoff + "_");        
+        MiscDebug.writeImage(out, "_filtered_hysteresis_" + cutOff + "_");  
+        
+        Image out2 = img.copyToColorGreyscale();
+        for (PairInt p : products.getCorners()) {
+            int x = p.getX();
+            int y = p.getY();
+            out2.setRGB(x, y, 255, 0, 0);
+        }
+        MiscDebug.writeImage(out2, "_corners_");
     }
     
 }

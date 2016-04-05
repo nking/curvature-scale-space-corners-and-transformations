@@ -205,11 +205,11 @@ public class Image {
         
         if ((col < 0) || (col > (width - 1))) {
             throw new IllegalArgumentException(
-                "col is out of bounds");
+                "col " + col + " is out of bounds");
         }
         if ((row < 0) || (row > (height - 1))) {
             throw new IllegalArgumentException(
-                "row is out of bounds");
+                "row " + row + " is out of bounds");
         }
         
         int idx = getInternalIndex(col, row);
