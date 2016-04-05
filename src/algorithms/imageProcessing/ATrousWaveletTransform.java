@@ -172,6 +172,11 @@ public class ATrousWaveletTransform {
      * 
      *  Not Ready For Use.
      * 
+     * NOTE: see PahseCongruence.java instead.  It uses log gabor in frequency
+     * space (along with a monogenic filter) and inverse transform to find edges
+     * and uses successive scale transformations to help remove noise.
+     * The phase congruence produces an edge image, however.
+     * 
      * @param input
      * @param outputTransformed
      * @param outputCoeff 

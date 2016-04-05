@@ -14,7 +14,9 @@ import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -388,31 +390,6 @@ public class PhaseCongruencyDetector {
             weight[row] = new double[nCols];
         }
         
-        double[][] widthX = null;
-        double[][] weightX = null;
-        double[][] widthY = null;
-        double[][] weightY = null;
-        double[][] sumAnX = null;
-        double[][] sumAnY = null;
-        double thresholdX = threshold;
-        double thresholdY = threshold;
-        if (determineCorners) {
-            widthX = new double[nRows][];
-            weightX = new double[nRows][];
-            widthY = new double[nRows][];
-            weightY = new double[nRows][];
-            sumAnX = new double[nRows][];
-            sumAnY = new double[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                sumAnX[row] = new double[nCols];
-                sumAnY[row] = new double[nCols];
-                widthX[row] = new double[nCols];
-                weightX[row] = new double[nCols];
-                widthY[row] = new double[nCols];
-                weightY[row] = new double[nCols];
-            }
-        }
-        
         for (int s = 0; s < nScale; ++s) {
                         
             // Centre frequency of filter.
@@ -489,28 +466,7 @@ public class PhaseCongruencyDetector {
                     sumH2[row][col] += h2;
                 }
             }
-            
-            double[][] aNX = null;
-            double[][] aNY = null;
-            if (determineCorners) {
-                aNX = new double[nRows][];
-                aNY = new double[nRows][];
-                for (int row = 0; row < nRows; ++row) {
-                    aNX[row] = new double[nCols];
-                    aNY[row] = new double[nCols];
-                    for (int col = 0; col < nCols; ++col) {
-                        // results of inverse transforms need normalization
-                        double f0 = fComplex[row][col].re()/norm;
-                        double h1 = h[row][col].re()/norm;
-                        double h2 = h[row][col].im()/norm;
-                        aNX[row][col] = Math.sqrt(f0*f0 + h1*h1);
-                        sumAnX[row][col] += aNX[row][col];
-                        aNY[row][col] = Math.sqrt(f0*f0 + h2*h2);
-                        sumAnY[row][col] += aNY[row][col];
-                    }
-                }
-            }
-            
+         
             /*
             At the smallest scale estimate noise characteristics from the
             distribution of the filter amplitude responses stored in sumAn. 
@@ -523,22 +479,10 @@ public class PhaseCongruencyDetector {
                     //tau = median(sumAn(:))/sqrt(log(4));
                     double median = MiscMath.findMedian(sumAn);
                     tau = median/sqml4;
-                    if (determineCorners) {
-                        tauX = MiscMath.findMedian(sumAnX)/sqml4;
-                        tauY = MiscMath.findMedian(sumAnY)/sqml4;
-                        maxANX = aNX;
-                        maxANY = aNY;
-                    }
                 } else if (noiseMethod == -2) {
                     //Use mode to estimate noise statistics
                     //tau = rayleighmode(sumAn(:));
                     tau = rayleighMode(sumAn);
-                    if (determineCorners) {
-                        tauX = rayleighMode(sumAnX);
-                        tauY = rayleighMode(sumAnY);
-                        maxANX = aNX;
-                        maxANY = aNY;
-                    }
                 }
                 maxAN = aN;
             } else {
@@ -549,14 +493,6 @@ public class PhaseCongruencyDetector {
                 for (int row = 0; row < nRows; ++row) {
                     for (int col = 0; col < nCols; ++col) {
                         maxAN[row][col] = Math.max(maxAN[row][col], aN[row][col]);
-                    }
-                }
-                if (determineCorners) {
-                    for (int row = 0; row < nRows; ++row) {
-                        for (int col = 0; col < nCols; ++col) {
-                            maxANX[row][col] = Math.max(maxANX[row][col], aNX[row][col]);
-                            maxANY[row][col] = Math.max(maxANY[row][col], aNY[row][col]);
-                        }
                     }
                 }
             }
@@ -586,22 +522,6 @@ public class PhaseCongruencyDetector {
                 }
             }
             
-            if (determineCorners) {
-                for (int row = 0; row < nRows; ++row) {
-                    for (int col = 0; col < nCols; ++col) {
-                        double aX = sumAnX[row][col] / (maxANX[row][col] + epsilon);
-                        widthX[row][col] = (aX - 1.) / dn;
-                        double vX = Math.exp(g * (cutOff - widthX[row][col]));
-                        weightX[row][col] = 1. / (1. + vX);
-                        
-                        double aY = sumAnY[row][col] / (maxANY[row][col] + epsilon);
-                        widthY[row][col] = (aY - 1.) / dn;
-                        double vY = Math.exp(g * (cutOff - widthY[row][col]));
-                        weightY[row][col] = 1. / (1. + vY);
-                    }
-                }
-            }
-
             /*
             Automatically determine noise threshold
     
@@ -628,10 +548,6 @@ public class PhaseCongruencyDetector {
             if (noiseMethod >= 0) { 
                 //fixed noise threshold
                 threshold = noiseMethod;
-                if (determineCorners) {
-                    thresholdX = noiseMethod;
-                    thresholdY = noiseMethod;
-                }
             } else {
                 //Estimate the effect of noise on the sum of the filter responses as
                 //the sum of estimated individual responses (this is a simplistic
@@ -649,17 +565,6 @@ public class PhaseCongruencyDetector {
 
                 threshold = Math.max(EstNoiseEnergyMean + k*EstNoiseEnergySigma, epsilon);
                 
-                if (determineCorners) {
-                    double totalTauX = tauX * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
-                    double EstNoiseEnergyMeanX = totalTauX * Math.sqrt(Math.PI/2.);
-                    double EstNoiseEnergySigmaX = totalTauX * Math.sqrt((4. - Math.PI)/2.);
-                    thresholdX = Math.max(EstNoiseEnergyMeanX + k*EstNoiseEnergySigmaX, epsilon);
-                    
-                    double totalTauY = tauY * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
-                    double EstNoiseEnergyMeanY = totalTauY * Math.sqrt(Math.PI/2.);
-                    double EstNoiseEnergySigmaY = totalTauY * Math.sqrt((4. - Math.PI)/2.);
-                    thresholdY = Math.max(EstNoiseEnergyMeanY + k*EstNoiseEnergySigmaY, epsilon);
-                }
             }
                         
         } // end for each scale
@@ -709,50 +614,6 @@ public class PhaseCongruencyDetector {
             }
         }
         
-        double[][] pcX = null;
-        double[][] pcY = null;
-        if (determineCorners) {
-            pcX = new double[nRows][];
-            pcY = new double[nRows][];
-            for (int row = 0; row < nRows; ++row) {
-                pcX[row] = new double[nCols];
-                pcY[row] = new double[nCols];
-            }
-
-            // uses notation a[row][col]
-            for (int row = 0; row < nRows; ++row) {
-                for (int col = 0; col < nCols; ++col) {
-                    
-                    //Feature type - a phase angle -pi/2 to pi/2.
-                    double h1Sq = sumH1[row][col];
-                    h1Sq *= h1Sq;
-                    double h2Sq = sumH2[row][col];
-                    h2Sq *= h2Sq;
-                    
-                    //overall energy
-                    double v0 = sumF[row][col];
-                    v0 *= v0;
-                    
-                    double energyX = Math.sqrt(v0 + h1Sq);
-                    double energyY = Math.sqrt(v0 + h2Sq);
-
-                    double eDivX = Math.acos(energyX / (sumAnX[row][col] + epsilon));
-                    double eDivY = Math.acos(energyY / (sumAnY[row][col] + epsilon));
-
-                    //TODO: may need to revise the noise compensation to be same as pc for X and Y components
-                    pcX[row][col] = weight[row][col]
-                        * Math.max(1. - deviationGain * eDivX, 0)
-                        * Math.max(energyX - thresholdX, 0)
-                        / (energyX + epsilon);
-                    
-                    pcY[row][col] = weight[row][col]
-                        * Math.max(1. - deviationGain * eDivY, 0)
-                        * Math.max(energyY - thresholdY, 0)
-                        / (energyY + epsilon);
-                }
-            }
-        }
-        
         /*
         % Compute phase congruency.  The original measure, 
         % PC = energy/sumAn 
@@ -780,19 +641,18 @@ public class PhaseCongruencyDetector {
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
+        // ------- use line thinnes and concatenate the phase angle steps ----
+        applyLineThinners(products);
+            
+        double t1 = 0.1;
+            
+        createPhaseAngleSteps(products, t1);
+            
+        addConnectedPhaseAngleSteps(products);
+            
         if (determineCorners) {
-            
-            System.out.println("thresholdX=" + thresholdX + " thresholdY=" + thresholdY);
-            
-            applyLineThinners(products);
-            
-            double t1 = 0.1;
-            
-            createPhaseAngleSteps(products, t1);
-            
-            addConnectedPhaseAngleSteps(products);
-                        
-            calculateCorners(products, pcX, pcY, img);
+                                                
+            calculateCorners(products, img);
         }
         
         return products;
@@ -902,10 +762,10 @@ public class PhaseCongruencyDetector {
         double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 1.0,
             true);
         
+        // gather the points into a set and remove hole artifacts
+        Set<PairInt> correctedPoints = new HashSet<PairInt>();
         for (int i = 0; i < nRows; ++i) {
-            Arrays.fill(thinned[i], 0);
             for (int j = 0; j < nCols; ++j) {
-                
                 if (thinned2[i][j] > 0) {
                     // if a point has 0 neighbors, do not add it
                     
@@ -913,8 +773,8 @@ public class PhaseCongruencyDetector {
                     for (int k = 0; k < dxs.length; ++k) {
                         int i2 = i + dxs[k];
                         int j2 = j + dys[k];
-                        if (i2 < 0 || j2 < 0 || (i2 > (thinned.length - 1)) ||
-                            (j2 > (thinned[0].length - 1))) {
+                        if (i2 < 0 || j2 < 0 || (i2 > (thinned2.length - 1)) ||
+                            (j2 > (thinned2[0].length - 1))) {
                             continue;
                         }
                         if (thinned2[i2][j2] > 0) {
@@ -923,12 +783,29 @@ public class PhaseCongruencyDetector {
                         }
                     }
                     if (c > 0) {
-                        thinned[i][j] = 255;
+                        correctedPoints.add(new PairInt(i, j));
                     }
                 }
             }
         }
-                        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
+        
+        // small clumps of pixels may be present from artifact corrections,
+        // so use one more round of non maximum suppression thinning       
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(correctedPoints);
+  
+        for (int i = 0; i < nRows; ++i) {
+            Arrays.fill(thinned[i], 0);
+        }
+        for (PairInt p : correctedPoints) {
+            int i = p.getX();
+            int j = p.getY();
+            thinned[i][j] = 255;
+        }
+                                
         products.setThinnedImage(thinned);
     }
     
@@ -1052,7 +929,7 @@ public class PhaseCongruencyDetector {
     }
 
     protected void calculateCorners(PhaseCongruencyProducts products,
-        double[][] pcX, double[][] pcY, GreyscaleImage img) {
+        GreyscaleImage img) {
         
         // TODO: looks like the differences in zero-points, etc for pc_X and pc_y
         // from pc need to be corrected
@@ -1069,7 +946,7 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-            MiscDebug.writeImage(out0, "__steps__");
+        MiscDebug.writeImage(out0, "__steps__");
 
         double[][] pc = products.getPhaseCongruency();
         
@@ -1085,44 +962,59 @@ public class PhaseCongruencyDetector {
         
         Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
             = new HashMap<Integer,Set<PairIntWithIndex>>();
-        
-        PairIntArray outputCorners = new PairIntArray();
-        
+                
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
-        
-        Map<PairIntArray,Map<SIGMA,ScaleSpaceCurve>> scaleSpaceMap =
+        cornerMaker.doNotStoreCornerRegions();
+        cornerMaker.disableJaggedLineCorrections();
+        List<CornerArray> cornerList =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap,
-            false, outputCorners);
+            false);
         
-        // swap major order of edges and corners
-        Image imgCp = img.copyToColorGreyscale();
-        for (PairIntArray edge : theEdges) {
-            for (int i = 0; i < edge.getN(); ++i) {
-                int x = edge.getX(i);
-                int y = edge.getY(i);
-                edge.set(i, y, x);
+// swap major order of edges and corners
+Image imgCp = img.copyToColorGreyscale();
+for (PairIntArray edge : theEdges) {
+    for (int i = 0; i < edge.getN(); ++i) {
+        int x = edge.getX(i);
+        int y = edge.getY(i);
+        edge.set(i, y, x);
+    }
+}
+        /*
+        filter out small curvature:
+        see line 64 of comments in CornerRegion.java.
+        for curvature smaller than 0.2 won't see changes in slope in the
+             neighboring 2 points on either side.
+        */
+        Set<PairInt> corners = new HashSet<PairInt>();
+        for (int i = 0; i < cornerList.size(); ++i) {
+            CornerArray ca = cornerList.get(i);
+            for (int idx = 0; idx < ca.getN(); ++idx) {
+                float curvature = ca.getCurvature(idx);
+                
+                if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
+                    
+                    //SWAP AXES for plotting
+                    
+                    corners.add(new PairInt(Math.round(ca.getY(idx)),
+                        Math.round(ca.getX(idx))));
+                }
             }
         }
-        for (int i = 0; i < outputCorners.getN(); ++i) {
-            int x = outputCorners.getX(i);
-            int y = outputCorners.getY(i);
-            outputCorners.set(i, y, x);
-        }
-        PairIntArray junctionsToAddToImage = new PairIntArray();
+                
         for (PairInt junction : junctions) {
             int x = junction.getX();
             int y = junction.getY();
-            junctionsToAddToImage.add(y, x);
+            corners.add(new PairInt(y, x));
         }
         
+        // both theEdges and corners are now in reference frame of image
+        //   with columns being first axis
+        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(theEdges, corners);        
+        
         ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, imgCp, 0, 0, 0);
-        ImageIOHelper.addCurveToImage(outputCorners, imgCp, 3, 255, 0, 0);
-        ImageIOHelper.addCurveToImage(junctionsToAddToImage, imgCp, 3, 255, 0, 0);
+        ImageIOHelper.addCurveToImage(corners, imgCp, 3, 255, 0, 0);
         MiscDebug.writeImage(imgCp, "_css_corners_");
         
-        //TODO: use hough transform to remove corner in lines that are only
-        //   steps in the lines.
-        //   can combine the line and corner strength information
     }
 
     private double[][] copy(double[][] a) {
@@ -1213,69 +1105,6 @@ public class PhaseCongruencyDetector {
         
         public int[][] getStepsInPhaseAngle() {
             return stepsInPhaseAngle;
-        }
-        
-    }
-    
-    private void calculateCorners(PhaseCongruencyProducts products,
-        int[][] edges) {
-                        
-        /*
-        can make corners in many different ways with these products or with
-            intermediate products in the above main methd.
-        
-        -- for the edge points alone, could use determinant and trace on 
-        autocorrelation matrix 
-        performed on the original image, can be used to filter out points that
-        are not easy to localize (such as points that are not corners).
-        see line 956 on my IntensityFeatures.java
-        
-        -- can make harris corners:
-            covariance matrix of the phase congruence image for each
-            edge point and the harris corners recipe of 
-                R = det(G) − k(tr(G))2
-                    where det(G) = αβ and tr(G) = α + β, 
-                    the parameter k is traditionally set to 0.04. 
-                This produces a measure that is large when both α and β are large
-        
-        -- presumably, can use f * h1 and f * h2 above  to
-           substitute for gradient x and gradient y at successive scales
-           to make corners with.
-           Would need to create a 2nd derivative for x and y too, so would need
-           to build a v1,v2 with the equivalent of filtergrid that results in
-           a second derivative filter like the binomial [1, -2, 1]
-        
-           (see line 39 of ScaleSpaceCurvture.java... )
-           
-            Then corners for each point are:
-                  X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
-        k(t,o~) = -------------------------------------------------------------
-                               (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
-        
-            and like the gaussian version, would use the min max
-            rules and find the candidate corners at largest scales then track
-            them to the smallest for higher accuracy of location.
-            --> would require saving intermediate data products.        
-        
-        -- using the phase angle image and integrating over a patch to find
-              strong changes of direction along the given edges.
-        */
-        
-        double[][] pc = products.getPhaseCongruency();
-                 
-        int nRows = pc.length;
-        int nCols = pc[0].length;
-        
-        /*
-        */
-        double[][] minMoment = new double[nRows][];
-        for (int row = 0; row < nRows; ++row) {
-            minMoment[row] = new double[nCols];
-        }
-        
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {                
-            }
         }
         
     }

@@ -4330,4 +4330,375 @@ public class PostLineThinnerCorrections {
         
         return remove.size();
     }
+    
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * this pattern embedded in many different ways in a curve can be corrected
+     * by removing two oppossing points around the empty center and filling
+     * the center as long as connecting points are not disconnected
+     * (avoiding breaking a curve into two pieces).
+     *       #
+     *      # #
+     *       #
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForHolePattern100(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                
+        // first try to change the 2 horizontal points to zeros and center to one
+        // then repeat check with the 2 vertical points if pattern still exists
+        
+        PairInt[][] neighborCoordOffsets
+            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(0, 0);
+        
+        int nCorrections = 0;
+        int nIter = 0;
+        
+        Set<PairInt> editedPoints = new HashSet<PairInt>(points);
+        
+        while ((nIter == 0) || (nCorrections > 0)) {
+            
+            nCorrections = 0;
+            
+            for (PairInt p : points) {
+                int x = p.getX();
+                int y = p.getY();
+
+                //TODO: should simplify this to use transformations by 90.
+
+                // test for pattern where the current (x,y) is at bottom of diamond
+                if (editedPoints.contains(new PairInt(x - 1, y + 1)) && 
+                    editedPoints.contains(new PairInt(x + 1, y + 1)) && 
+                    editedPoints.contains(new PairInt(x, y + 2)) && 
+                    !editedPoints.contains(new PairInt(x, y + 1)) 
+                    ){
+
+                    /*
+                        0  #  0     2    
+                        #  0  #     1   
+                        0  *  0     0  x,y is at (0, 0) here
+                       -1  0  1     
+                    */
+                    // see if setting x,y and nulling x-1 and x+1 disconnects
+                    // any points
+
+                    PairInt pCenter = new PairInt(x, y + 1);
+
+                    editedPoints.add(pCenter);
+
+                    PairInt pLeft = new PairInt(x - 1, y + 1);
+
+                    // test for left disconnects
+                    boolean disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x - 1, y + 1, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+
+                        editedPoints.remove(pLeft);
+
+                        // test for right point
+                        disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                            neighborCoordOffsets, x + 1, y + 1, imageWidth, imageHeight);
+
+                        if (!disconnects) {
+                            // tests passed, so finish changes and continue
+                            editedPoints.remove(new PairInt(x + 1, y + 1));
+                            ++nCorrections;
+                            continue;                        
+                        } else {
+                            // undo remove pLeft to reset for next tests
+                            editedPoints.add(pLeft);
+                        }
+                    }
+
+                    // test above
+                    PairInt pAbove = new PairInt(x, y + 2);
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y + 2, imageWidth, imageHeight);
+
+                    if (disconnects) {
+                        // tests failed, so undo add pCenter and continue
+                        editedPoints.remove(pCenter);
+                        continue;
+                    }
+
+                    // test for pBelow
+                    editedPoints.remove(pAbove);
+
+                    PairInt pBelow = p;
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+                        // pattern succeeded, so remove last point and continue
+                        editedPoints.remove(pBelow);
+                        ++nCorrections;
+                        continue;
+                    }
+
+                    // else tests didn't pass so undo temporary changes
+                    editedPoints.remove(pCenter);
+                    editedPoints.add(pAbove);
+                }
+
+                // test for pattern where the current (x,y) is at top of diamond
+                if (editedPoints.contains(new PairInt(x - 1, y - 1)) && 
+                    editedPoints.contains(new PairInt(x + 1, y - 1)) && 
+                    editedPoints.contains(new PairInt(x, y - 2)) && 
+                    !editedPoints.contains(new PairInt(x, y - 1)) 
+                    ){
+
+                    /*
+                        0  *  0     0    x,y is at (0, 0) here
+                        #  0  #    -1   
+                        0  #  0    -2  
+                       -1  0  1     
+                    */
+
+                    // see if setting x,y and nulling x-1 and x+1 disconnects
+                    // any points
+
+                    PairInt pCenter = new PairInt(x, y - 1);
+
+                    editedPoints.add(pCenter);
+
+                    PairInt pLeft = new PairInt(x - 1, y - 1);
+
+                    // test for left disconnects
+                    boolean disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x - 1, y - 1, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+
+                        editedPoints.remove(pLeft);
+
+                        // test for right point
+                        disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                            neighborCoordOffsets, x + 1, y - 1, imageWidth, imageHeight);
+
+                        if (!disconnects) {
+                            // tests passed, so finish changes and continue
+                            editedPoints.remove(new PairInt(x + 1, y - 1));
+                            ++nCorrections;
+                            continue;                        
+                        } else {
+                            // undo remove pLeft to reset for next tests
+                            editedPoints.add(pLeft);
+                        }
+                    }
+
+                    // test below
+                    PairInt pBelow = new PairInt(x, y - 2);
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y - 2, imageWidth, imageHeight);
+
+                    if (disconnects) {
+                        // tests failed, so undo add pCenter and continue
+                        editedPoints.remove(pCenter);
+                        continue;
+                    }
+
+                    // test for pAbove
+                    editedPoints.remove(pBelow);
+
+                    PairInt pAbove = p;
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+                        // pattern succeeded, so remove last point and continue
+                        editedPoints.remove(pAbove);
+                        ++nCorrections;
+                        continue;
+                    }
+
+                    // else tests didn't pass so undo temporary changes
+                    editedPoints.remove(pCenter);
+                    editedPoints.add(pBelow);
+                }
+
+                // test for pattern where the current (x,y) is at left of diamond
+                if (editedPoints.contains(new PairInt(x + 1, y + 1)) && 
+                    editedPoints.contains(new PairInt(x + 1, y - 1)) && 
+                    editedPoints.contains(new PairInt(x + 2, y)) && 
+                    !editedPoints.contains(new PairInt(x + 1, y)) 
+                    ){
+
+                    /*
+                              0  #  0     1    
+                              *  0  #     0  x,y is at (0, 0) here
+                              0  #  0    -1  
+                          -1  0  1  2 
+                    */
+                    // see if setting x,y and nulling x-1 and x+1 disconnects
+                    // any points
+
+                    PairInt pCenter = new PairInt(x, y + 1);
+
+                    editedPoints.add(pCenter);
+
+                    // test for above disconnects
+                    PairInt pAbove = new PairInt(x + 1, y + 1);
+
+                    boolean disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x + 1, y + 1, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+
+                        editedPoints.remove(pAbove);
+
+                        // test for below disconnects
+                        disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                            neighborCoordOffsets, x + 1, y - 1, imageWidth, imageHeight);
+
+                        if (!disconnects) {
+                            // tests passed, so finish changes and continue
+                            editedPoints.remove(new PairInt(x + 1, y - 1));
+                            ++nCorrections;
+                            continue;                        
+                        } else {
+                            // undo remove pAbove to reset for next tests
+                            editedPoints.add(pAbove);
+                        }
+                    }
+                    /*
+                              0  #  0     1    
+                              *  0  #     0  x,y is at (0, 0) here
+                              0  #  0    -1  
+                          -1  0  1  2 
+                    */
+
+                    // test right
+                    PairInt pRight = new PairInt(x + 2, y);
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x + 2, y, imageWidth, imageHeight);
+
+                    if (disconnects) {
+                        // tests failed, so undo add pCenter and continue
+                        editedPoints.remove(pCenter);
+                        continue;
+                    }
+
+                    // test for pLeft
+                    editedPoints.remove(pRight);
+
+                    PairInt pLeft = p;
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+                        // pattern succeeded, so remove last point and continue
+                        editedPoints.remove(pLeft);
+                        ++nCorrections;
+                        continue;
+                    }
+
+                    // else tests didn't pass so undo temporary changes
+                    editedPoints.remove(pCenter);
+                    editedPoints.add(pRight);
+                }
+
+                // test for pattern where the current (x,y) is at right of diamond
+                if (editedPoints.contains(new PairInt(x - 1, y + 1)) && 
+                    editedPoints.contains(new PairInt(x - 1, y - 1)) && 
+                    editedPoints.contains(new PairInt(x - 2, y)) && 
+                    !editedPoints.contains(new PairInt(x - 1, y)) 
+                    ){
+
+                    /*
+                              0  #  0     1    
+                              #  0  *     0  x,y is at (0, 0) here
+                              0  #  0    -1  
+                             -2 -1  0  1  2 
+                    */
+                    // see if setting x,y and nulling x-1 and x+1 disconnects
+                    // any points
+
+                    PairInt pCenter = new PairInt(x - 1, y);
+
+                    editedPoints.add(pCenter);
+
+                    // test for above disconnects
+                    PairInt pAbove = new PairInt(x - 1, y + 1);
+
+                    boolean disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x - 1, y + 1, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+
+                        editedPoints.remove(pAbove);
+
+                        // test for below disconnects
+                        disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                            neighborCoordOffsets, x - 1, y - 1, imageWidth, imageHeight);
+
+                        if (!disconnects) {
+                            // tests passed, so finish changes and continue
+                            editedPoints.remove(new PairInt(x - 1, y - 1));
+                            ++nCorrections;
+                            continue;                        
+                        } else {
+                            // undo remove pAbove to reset for next tests
+                            editedPoints.add(pAbove);
+                        }
+                    }
+                    /*
+                              0  #  0     1    
+                              #  0  *     0  x,y is at (0, 0) here
+                              0  #  0    -1  
+                             -2 -1  0  1  2 
+                    */ 
+
+                    // test left
+                    PairInt pLeft = new PairInt(x - 2, y);
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x - 2, y, imageWidth, imageHeight);
+
+                    if (disconnects) {
+                        // tests failed, so undo add pCenter and continue
+                        editedPoints.remove(pCenter);
+                        continue;
+                    }
+
+                    // test for pRight
+                    editedPoints.remove(pLeft);
+
+                    PairInt pRight = p;
+
+                    disconnects = ImageSegmentation.doesDisconnect(editedPoints, 
+                        neighborCoordOffsets, x, y, imageWidth, imageHeight);
+
+                    if (!disconnects) {
+                        // pattern succeeded, so remove last point and continue
+                        editedPoints.remove(pRight);
+                        ++nCorrections;
+                        continue;
+                    }
+
+                    // else tests didn't pass so undo temporary changes
+                    editedPoints.remove(pCenter);
+                    editedPoints.add(pLeft);
+                }
+            }
+            ++nIter;
+        }
+    
+        points.clear();
+        points.addAll(editedPoints);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
 }

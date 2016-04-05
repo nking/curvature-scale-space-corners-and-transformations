@@ -3497,14 +3497,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             GreyscaleImage.Type.Bits32FullRangeInt);
         labA = MiscMath.rescale(labA, 0, 255);
         for (int i = 0; i < labA.length; ++i) {
-            labAImg.setValue(i, (int)Math.round(labA[i]));
+            labAImg.setValue(i, Math.round(labA[i]));
         }
         
         GreyscaleImage labBImg = new GreyscaleImage(w, h,
             GreyscaleImage.Type.Bits32FullRangeInt);
         labB = MiscMath.rescale(labB, 0, 255);
         for (int i = 0; i < labB.length; ++i) {
-            labBImg.setValue(i, (int)Math.round(labB[i]));
+            labBImg.setValue(i, Math.round(labB[i]));
         }
 
         long t1 = System.currentTimeMillis();
@@ -6935,8 +6935,6 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 }
             }
 
-            AngleUtil angleUtil = new AngleUtil();
-            
             for (Entry<Integer, List<Double>> entry : listIndexDeltaEMap.entrySet()) {
 
                 Integer listIndex2 = entry.getKey();
@@ -6958,10 +6956,10 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     hueAngles2[ii] = ha2s.get(ii).intValue();
                 }
                 
-                float avgHA1 = angleUtil.calculateAverageWithQuadrantCorrections(
+                float avgHA1 = AngleUtil.calculateAverageWithQuadrantCorrections(
                     hueAngles1, hueAngles1.length - 1);
                 
-                float avgHA2 = angleUtil.calculateAverageWithQuadrantCorrections(
+                float avgHA2 = AngleUtil.calculateAverageWithQuadrantCorrections(
                     hueAngles2, hueAngles2.length - 1);
                 
                 if (avgHA1 < 0) {
@@ -7975,6 +7973,131 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
      * @param neighborCoords
      * @param col
      * @param row
+     * @param w width of image
+     * @param h height of image
+     * @return 
+     */
+    public static boolean doesDisconnect(final Set<PairInt> input,
+        PairInt[][] neighborCoords, int col, int row, int w, int h) {
+
+        if (((col - 1) < 0) || ((row - 1) < 0) || ((col + 1) > (w - 1)) ||
+            ((row + 1) > (h - 1))) {
+            // general rule so that invoker doesn't disconnect a line that is
+            // connected to image boundaries
+            return true;
+        }
+
+        /*
+        coordinates of the 8 neighbors as already created PairInts without
+        bound checks.
+        indexes are found as +1 of the difference relative to center,
+        for example, a point for (col-1, row-1) is found as neighborCoords[0][0]
+        */
+
+         /*
+            6  7  8      +1  2      transformed by 90 rot:     15  11  6
+           11 *C* 12     0   1                                 16  C*  7
+           15  16 17     -1  0                                 17  12  8
+
+           -1  0   1
+            0  1   2
+
+        disconnects:
+           -- if (6) && (8) && !(7) && (!(11) || !(16) || !(12))
+           -- if (6) && (12) && !(7) && (!(11) || !(16))
+           -- if (6) && (15) && !(11) && (!(16) || !(12) || !(7))
+           -- if (6) && (16) && !(7) && !(11)
+           -- if (6) && (17) && ( (!(7) || !(12)) && (!(11) || !(16)) )
+           -- if (7) && (15) && !(11) && (!(12) || !(16))
+           -- if (7) && (17) && !(12) && (!(11) || !(16))
+           -- if (7) && (16) && !(11) && !(12)
+           -- if (8) && (11) && !(7) && (!(12) || !(16))
+           -- if (8) && (17) && !(12) && (!(16) || !(11) || !(7))
+           -- if (8) && (16) && !(7) && !(12)
+           -- if (8) && (15) && ( (!(7) || !(11)) && (!(12) || !(16)) )
+           -- if (11) && (12) && !(7) && !(16)
+           -- if (11) && (17) && !(16) && (!(7) || !(12))
+           -- if (12) && (15) && !(16) && (!(7) || !(11))
+           -- if (15) && (17) && !(16) && (!(11) || !(7) || !(12))
+
+        does not disconnect
+           -- if (6 || 7 || 8) && !(15) && !(16) && !(17) && !(11) && !(12)
+
+        then rotate 90 and test, then rotate 90 and test, then rotate 90 and test
+        */
+
+        boolean t6 = input.contains(
+            new PairInt(neighborCoords[0][2].getX() + col,
+            neighborCoords[0][2].getY() + row));
+        boolean t7 = input.contains(
+            new PairInt(neighborCoords[1][2].getX() + col,
+            neighborCoords[1][2].getY() + row));
+        boolean t8 = input.contains(
+            new PairInt(neighborCoords[2][2].getX() + col,
+            neighborCoords[2][2].getY() + row));
+        boolean t11 = input.contains(
+            new PairInt(neighborCoords[0][1].getX() + col,
+            neighborCoords[0][1].getY() + row));
+        boolean t12 = input.contains(
+            new PairInt(neighborCoords[2][1].getX() + col,
+            neighborCoords[2][1].getY() + row));
+        boolean t15 = input.contains(
+            new PairInt(neighborCoords[0][0].getX() + col,
+            neighborCoords[0][0].getY() + row));
+        boolean t16 = input.contains(
+            new PairInt(neighborCoords[1][0].getX() + col,
+            neighborCoords[1][0].getY() + row));
+        boolean t17 = input.contains(
+            new PairInt(neighborCoords[2][0].getX() + col,
+            neighborCoords[2][0].getY() + row));
+
+       if ((t6) && (t8) && !(t7) && (!(t11) || !(t16) || !(t12))) {
+            return true;
+        } else if ((t6) && (t12) && !(t7) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t6) && (t15) && !(t11) && (!(t16) || !(t12) || !(t7))) {
+            return true;
+        } else if ((t6) && (t16) && !(t7) && !(t11)) {
+            return true;
+        } else if ((t6) && (t17) && ( (!(t7) || !(t12)) && (!(t11) || !(t16)) )) {
+            return true;
+        } else if ((t7) && (t15) && !(t11) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t7) && (t17) && !(t12) && (!(t11) || !(t16))) {
+            return true;
+        } else if ((t7) && (t16) && !(t11) && !(t12)) {
+            return true;
+        } else if ((t8) && (t11) && !(t7) && (!(t12) || !(t16))) {
+            return true;
+        } else if ((t8) && (t17) && !(t12) && (!(t16) || !(t11) || !(t7))) {
+            return true;
+        } else if ((t8) && (t16) && !(t7) && !(t12)) {
+            return true;
+        } else if ((t8) && (t15) && ( (!(t7) || !(t11)) && (!(t12) || !(t16)) )) {
+            return true;
+        } else if ((t11) && (t12) && !(t7) && !(t16)) {
+            return true;
+        } else if ((t11) && (t17) && !(t16) && (!(t7) || !(t12))) {
+            return true;
+        } else if ((t12) && (t15) && !(t16) && (!(t7) || !(t11))) {
+            return true;
+        } else if ((t15) && (t17) && !(t16) && (!(t11) || !(t7) || !(t12))) {
+            return true;
+        }
+
+        return false;
+    }
+    
+    /**
+     * for input with zeros for non-neighbor pixels else any value,
+     * look within the neighborhood of point (col, row) to see if there are 
+     * edges points to either side of the point that would be disconnected
+     * if this one were removed.   A non-edge point is defined as having value 0.
+     * 
+     * @param input
+     * @param neighborCoords
+     * @param col
+     * @param row
      * @return 
      */
     public static boolean doesDisconnect(final double[][] input,
@@ -8098,10 +8221,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         
 //TODO: an adaptive gradient might help here
         
-        CannyEdgeFilterLite fl = new CannyEdgeFilterLite();
-        // TODO: consider adding impl for adaptive edges
-        fl.setToUseSobel();
-        //fl.overrideLowThreshold(0.6f);//0.9
+        CannyEdgeFilterAdaptive fl = new CannyEdgeFilterAdaptive();
         fl.applyFilter(greyGradient2);    
         removeIsolatedPixels(greyGradient2, 0, 255, true);
         removeIsolatedPixels(greyGradient2, 255, 0, true);
@@ -8131,7 +8251,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         ImageProcessor imageProcessor = new ImageProcessor();
         HistogramEqualization hEq = new HistogramEqualization(img);
         hEq.applyFilter();
-        CannyEdgeFilterLite cannyFilter = new CannyEdgeFilterLite();
+        CannyEdgeFilterAdaptive cannyFilter = new CannyEdgeFilterAdaptive();
         cannyFilter.applyFilter(img);
         
         //MiscDebug.writeImage(img, "_canny_" + debugTag);

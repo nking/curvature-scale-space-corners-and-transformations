@@ -82,9 +82,7 @@ public class BlobMedialAxes implements Serializable {
             Set<PairInt> blob = blobs.get(i);
             Set<PairInt> skeleton = new HashSet<PairInt>(blob);
             
-            int[] minMaxXY = MiscMath.findMinMaxXY(skeleton);
-            lt.applyLineThinner(skeleton, minMaxXY[0], minMaxXY[1], minMaxXY[2],
-                minMaxXY[3]);
+            lt.applyLineThinner(skeleton);
             int[] xPoints = new int[skeleton.size()];
             int[] yPoints = new int[skeleton.size()];
 

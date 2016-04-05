@@ -367,7 +367,7 @@ public class SunFinder {
         // so trying Zhang-Suen: 
         
         ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
-        zsLT.applyLineThinner(set, minX, maxX, minY, maxY);
+        zsLT.applyLineThinner(set);
         
         ch.populateGapsWithInterpolation(set);
 

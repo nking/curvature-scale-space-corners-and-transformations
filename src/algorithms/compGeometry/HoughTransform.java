@@ -653,7 +653,7 @@ public class HoughTransform {
                     " mn=" + trMeanStDev[2] + " stdv=" + trMeanStDev[3]);
                 
                 PairInt tr = new PairInt((int)trMeanStDev[0], 
-                    (int)Math.round(trMeanStDev[1]));
+                    Math.round(trMeanStDev[1]));
                       
                 outputPointsTR.put(group, tr);
                 

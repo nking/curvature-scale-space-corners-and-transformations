@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
+import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.ImageStatisticsHelper;
@@ -217,7 +218,7 @@ public class CSSCornerMaker {
                             int y2 = Math.round(edgeCorners.getY(ii2));
                             float xAvg = (edgeCorners.getX(ii) + edgeCorners.getX(ii2))/2.f;
                             float yAvg = (edgeCorners.getY(ii) + edgeCorners.getY(ii2))/2.f;
-                            edgeCorners.set(ii, xAvg, yAvg, idx, sscSigma);
+                            edgeCorners.set(ii, xAvg, yAvg, idx, sscSigma, k);
                             removeIndexes.add(Integer.valueOf(ii2));
                         }
                     }
@@ -242,6 +243,49 @@ public class CSSCornerMaker {
         }
 
         return scaleSpaceMaps;
+    }
+
+    /**
+     *
+     * @param theEdges edges with points ordered counter-clockwise.
+     * the ordering is important if the corner regions will be used.
+     * @param junctions map w/ key=edge index,
+     *     values = junctions on edge as (x,y) and edge curve indexes
+     * @param doUseOutdoorMode
+     * @return
+     */
+    public List<CornerArray> findCornersInScaleSpaceMaps(
+        final List<PairIntArray> theEdges, 
+        Map<Integer, Set<PairIntWithIndex>> junctions, 
+        final boolean doUseOutdoorMode) {
+
+        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
+            = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
+
+        List<CornerArray> output = new ArrayList<CornerArray>();
+        
+        // perform the analysis on the edgesScaleSpaceMaps
+        for (int i = 0; i < theEdges.size(); i++) {
+
+            final PairIntArray edge = theEdges.get(i);
+
+            boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &&
+                (((PairIntArrayWithColor)edge).getColor() == 1);
+
+            final Map<SIGMA, ScaleSpaceCurve> map =
+                createLowUpperThresholdScaleSpaceMaps(edge);
+
+            scaleSpaceMaps.put(edge, map);
+
+            Set<PairIntWithIndex> edgeJunctions = junctions.get(Integer.valueOf(i));
+
+            CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,
+                edgeJunctions, i, doUseOutdoorMode);
+                        
+            output.add(edgeCorners);
+        }
+
+        return output;
     }
 
     /**
@@ -354,7 +398,7 @@ public class CSSCornerMaker {
                 isAClosedCurve);
         }
 
-        int minDistFromEnds = 5;
+        int minDistFromEnds = 2;//5;
         int nPoints = scaleSpace.getSize();
         for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
 
@@ -362,7 +406,7 @@ public class CSSCornerMaker {
 
             if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
-                    || (idx > (nPoints - minDistFromEnds))) {
+                    || (idx > (nPoints - minDistFromEnds - 1))) {
                     continue;
                 }
             }
@@ -370,7 +414,7 @@ public class CSSCornerMaker {
             float x = scaleSpace.getX(idx);
             float y = scaleSpace.getY(idx);
 
-            xy.add(x, y, idx, scaleSpaceSigma);
+            xy.add(x, y, idx, scaleSpaceSigma, scaleSpace.getK(idx));
         }
 
         return xy;
@@ -443,9 +487,10 @@ public class CSSCornerMaker {
 
             int xte = Math.round(candidateCornersXY.getX(ii));
             int yte = Math.round(candidateCornersXY.getY(ii));
-
+            
             edgeCorners.add(xte, yte, candidateCornersXY.getInt(ii),
-                candidateCornersXY.getSIGMA(ii));
+                candidateCornersXY.getSIGMA(ii),
+                candidateCornersXY.getCurvature(ii));
         }
 
         //insertJunctions(edgeCorners, scaleSpaceCurves, junctions);
@@ -793,6 +838,7 @@ public class CSSCornerMaker {
         }
         float maxSep = (float)Math.sqrt(maxSepSq);
 
+//TODO replace with faster 
         NearestPointsFloat np = new NearestPointsFloat(xy2.getX(), xy2.getY(),
             xy2.getN());
 
@@ -807,8 +853,13 @@ public class CSSCornerMaker {
                 int minSepIdx = minSepIndex.intValue();
                 float x3 = xy2.getX(minSepIdx);
                 float y3 = xy2.getY(minSepIdx);
+                
+ //NOTE: temporarily retaining the coarser curvature value
+                
                 candidateCornersXY.set(j, x3, y3,
-                    xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx));
+                    xy2.getInt(minSepIdx), xy2.getSIGMA(minSepIdx),
+                    //xy2.getCurvature(minSepIdx));
+                    candidateCornersXY.getCurvature(j));
             }
         }
     }
@@ -1120,8 +1171,23 @@ if (doUseOutdoorMode) {
             float x = scaleSpace.getX(idxWithinEdge);
             float y = scaleSpace.getY(idxWithinEdge);
 
-            candidateCornersXY.insert(idx, x, y, idxWithinEdge, sigma);
+            candidateCornersXY.insert(idx, x, y, idxWithinEdge, sigma,
+                scaleSpace.getK(idxWithinEdge));
         }
+    }
+
+    public void useHoughTransformationsToRemoveIntralineSteps(
+        PairIntArray theEdges, Set<PairInt> corners) {
+        
+        Set<PairInt> allPoints = new HashSet<PairInt>(corners);
+        for (int i = 0; i < theEdges.getN(); ++i) {
+            allPoints.add(new PairInt(theEdges.getX(i), theEdges.getY(i)));
+        }
+        
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(allPoints, 3);
+        
+        // not finished yet
     }
 
 }

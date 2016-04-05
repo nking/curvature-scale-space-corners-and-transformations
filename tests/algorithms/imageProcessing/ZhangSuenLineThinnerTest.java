@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -69,8 +68,7 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         
         ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
         
-        zsLT.applyLineThinner(points, 0, image[0].toCharArray().length - 1, 0, 
-            image.length - 1);
+        zsLT.applyLineThinner(points);
         
         for (int r = 0; r < image.length; r++) {
             

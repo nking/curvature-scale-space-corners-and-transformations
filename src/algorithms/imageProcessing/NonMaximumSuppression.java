@@ -150,9 +150,7 @@ public class NonMaximumSuppression {
                 double upperAvg = tl + hFrac[or] * (tr - tl);
                 double lowerAvg = bl + hFrac[or] * (br - bl);
                 double v1 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
-if (((col==145 || col==146) && row==83)) {
-    int z = 1;//v1=0.106  img=0.059    for col=146, img=0.2437  v1=0.319
-}
+
                 if ((img[col][row] > v1) ||
                     (useLowerThreshold && (img[col][row] > 0.95*v1))) {
                     //x, y location on the `other side' of the point in question
@@ -267,10 +265,7 @@ if (((col==145 || col==146) && row==83)) {
         
         for (int i = 0; i < output.length; ++i) {
             for (int j = 0; j < output[i].length; ++j) {
-                int m = skel[i][j];
-if ((i==145 && j == 152) || (i==146 && j==152)) {
-     int z = 1;
-}                
+                int m = skel[i][j];                
                 output[i][j] *= m;
             }
         }

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -22,6 +23,9 @@ import java.util.Stack;
  *           the line and that to the stack.
  *     -- joins lines whose endpoints are not adjacent to junctions and whose
  *            endpoints are adjacent.
+ *     -- performs a correction for an artifact pattern in the edges that tends 
+ *        to be present due to the line thinning plus concatenation operations 
+ *        on the given image.
  * </pre>
  * 
  * @author nichole
@@ -36,10 +40,16 @@ public class EdgeExtractorSimple {
     
     private boolean finished = false;
     
+    private final int n0;
+    private final int n1;
+    
     public EdgeExtractorSimple(int[][] edgeImage) {
         
-        for (int i = 0; i < edgeImage.length; ++i) {
-            for (int j = 0; j < edgeImage[i].length; ++j) {
+        n0 = edgeImage.length;
+        n1 = edgeImage[0].length;
+        
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
                 if (edgeImage[i][j] == 0) {
                     continue;
                 }
@@ -54,13 +64,13 @@ public class EdgeExtractorSimple {
         if (finished) {
             throw new IllegalStateException("edges have already been extracted");
         }
-        
+                
         findJunctions();
         
         findConnectedPoints();
         
         joinEdges();
-        
+                
         finished = true;
     }
 

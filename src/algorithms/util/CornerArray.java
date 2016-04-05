@@ -21,6 +21,9 @@ public class CornerArray {
     
     protected SIGMA[] sigma = null;
     
+    //curvature:
+    protected float[] k = null;
+    
     protected int n = 0;
     
     public CornerArray(int capacity) {
@@ -28,6 +31,8 @@ public class CornerArray {
         x = new float[capacity];
         
         y = new float[capacity];
+        
+        k = new float[capacity];
         
         idx = new int[capacity];
         
@@ -39,6 +44,8 @@ public class CornerArray {
         x = new float[10];
         
         y = new float[10];
+        
+        k = new float[10];
         
         idx = new int[10];
         
@@ -58,12 +65,14 @@ public class CornerArray {
      * @param anInt
      * @param s 
      */
-    public void add(float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void add(float xPoint, float yPoint, int anInt, SIGMA s, 
+        float curvature) {
         
         expandIfNeeded(n + 1);
         
         x[n] = xPoint;
         y[n] = yPoint;
+        k[n] = curvature;
         idx[n] = anInt;
         sigma[n] = s;
         
@@ -81,7 +90,8 @@ public class CornerArray {
      * @param anInt
      * @param s 
      */
-    public void set(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void set(int index, float xPoint, float yPoint, int anInt, SIGMA s,
+        float curvature) {
         
         if (index < 0) {
             throw new IllegalArgumentException("index is out of bounds of arrays");
@@ -91,6 +101,7 @@ public class CornerArray {
         
         x[index] = xPoint;
         y[index] = yPoint;
+        k[index] = curvature;
         idx[index] = anInt;
         sigma[index] = s;
     }
@@ -106,7 +117,8 @@ public class CornerArray {
      * @param anInt
      * @param s 
      */
-    public void insert(int index, float xPoint, float yPoint, int anInt, SIGMA s) {
+    public void insert(int index, float xPoint, float yPoint, int anInt, SIGMA s,
+        float curvature) {
         
         if (index < 0 || (index > n)) {
             throw new IllegalArgumentException("index is out of bounds of arrays");
@@ -118,12 +130,14 @@ public class CornerArray {
         for (int i = n; i > index; i--) {
             x[i] = x[i - 1];
             y[i] = y[i - 1];
+            k[i] = k[i - 1];
             idx[i] = idx[i - 1];
             sigma[i] = sigma[i - 1];
         }
         
         x[index] = xPoint;
         y[index] = yPoint;
+        k[index] = curvature;
         idx[index] = anInt;
         sigma[index] = s;
         
@@ -142,6 +156,13 @@ public class CornerArray {
             throw new IllegalArgumentException("index is out of range");
         }
         return y[index];
+    }
+    
+    public float getCurvature(int index) {
+        if (index > (n - 1)) {
+            throw new IllegalArgumentException("index is out of range");
+        }
+        return k[index];
     }
     
     public int getInt(int index) {
@@ -166,6 +187,10 @@ public class CornerArray {
         return y;
     }
     
+    public float[] getCurvature() {
+        return k;
+    }
+    
     public int[] getYInt() {
         return idx;
     }
@@ -184,6 +209,8 @@ public class CornerArray {
             
             y = Arrays.copyOf(y, n2);
             
+            k = Arrays.copyOf(k, n2);
+            
             idx = Arrays.copyOf(idx, n2);
             
             sigma = Arrays.copyOf(sigma, n2);
@@ -196,6 +223,7 @@ public class CornerArray {
         
         System.arraycopy(x, 0, clone.x, 0, n);
         System.arraycopy(y, 0, clone.y, 0, n);
+        System.arraycopy(k, 0, clone.k, 0, n);
         System.arraycopy(idx, 0, clone.idx, 0, n);
         System.arraycopy(sigma, 0, clone.sigma, 0, n);
         
@@ -228,6 +256,7 @@ public class CornerArray {
             for (int moveToIdx = idxLo; moveToIdx < (n - nRemove); moveToIdx++) {
                 x[moveToIdx] = x[moveIdx];
                 y[moveToIdx] = y[moveIdx];
+                k[moveToIdx] = k[moveIdx];
                 idx[moveToIdx] = idx[moveIdx];
                 sigma[moveToIdx] = sigma[moveIdx];
                 moveIdx++;
@@ -238,6 +267,7 @@ public class CornerArray {
         for (int i = (n - nRemove); i < n; i++) {
             x[i] = 0;
             y[i] = 0;
+            k[i] = 0;
             idx[i] = 0;
             sigma[i] = null;
         }
@@ -249,6 +279,7 @@ public class CornerArray {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
             sb.append("x=").append(x[i]).append(",y=").append(y[i])
+                .append(",curvature=").append(k[i])
                 .append(",idx=").append(idx[i]).append(",sigma=").append(sigma[i])
                 .append("\n");
         }

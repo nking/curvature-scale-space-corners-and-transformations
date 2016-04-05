@@ -43,7 +43,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                 }
             }
         }
-        applyLineThinner(points, 0, w2, 0, h2);
+        applyLineThinner(points);
         input2.fill(0);
         for (PairInt p : points) {
             input2.setValue(p.getX(), p.getY(), 1);
@@ -85,7 +85,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                 }
             }
         }
-        applyLineThinner(points, 0, w2, 0, h2);
+        applyLineThinner(points);
         input2.fill(255);
         for (PairInt p : points) {
             input2.setValue(p.getX(), p.getY(), 0);
@@ -111,8 +111,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
                 
     }
     
-    public void applyLineThinner(Set<PairInt> points, int minX, int maxX,
-        int minY, int maxY) {
+    public void applyLineThinner(Set<PairInt> points) {
         
         // adapted from code at http://rosettacode.org/wiki/Zhang-Suen_thinning_algorithm#Java
          
@@ -125,31 +124,30 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             hasChanged = false;
             firstStep = !firstStep;
              
-            for (int r = minY + 1; r < maxY - 1; r++) {
-                for (int c = minX + 1; c < maxX - 1; c++) {
-                     
-                    PairInt uPoint = new PairInt(c, r);
+            for (PairInt uPoint : points) {
+                
+                int c = uPoint.getX();
+                int r = uPoint.getY();
                     
-                    if (!points.contains(uPoint)) {
-                        continue;
-                    }
- 
-                    int nn = numNeighbors(r, c, points);
-                    if (nn < 2 || nn > 6) {
-                        continue;
-                    }
- 
-                    int nt = numTransitions(r, c, points);
-                    if (nt != 1) {
-                        continue;
-                    }
- 
-                    if (!atLeastOneIsVacant(r, c, firstStep ? 0 : 1, points)) {
-                        continue;
-                    }
-                     
-                    remove.add(uPoint);
+                if (remove.contains(uPoint)) {
+                    continue;
                 }
+ 
+                int nn = numNeighbors(r, c, points, remove);
+                if (nn < 2 || nn > 6) {
+                    continue;
+                }
+ 
+                int nt = numTransitions(r, c, points, remove);
+                if (nt != 1) {
+                    continue;
+                }
+
+                if (!atLeastOneIsVacant(r, c, firstStep ? 0 : 1, points, remove)) {
+                    continue;
+                }
+
+                remove.add(uPoint);
             }
  
             if (!remove.isEmpty()) {
@@ -173,8 +171,19 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
             PairInt p = new PairInt(x, y);
             if (points.contains(p)) {
                 count++;
-            } else {
-                int z = 1;
+            }
+        }
+        return count;
+    }
+    
+    private int numNeighbors(int r, int c, Set<PairInt> points, Set<PairInt> remove) {
+        int count = 0;
+        for (int i = 0; i < nbrs.length - 1; i++) {
+            int x = c + nbrs[i][0];
+            int y = r + nbrs[i][1];
+            PairInt p = new PairInt(x, y);
+            if (!remove.contains(p) && points.contains(p)) {
+                count++;
             }
         }
         return count;
@@ -215,6 +224,42 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
         }
         return count;
     }
+    
+    /**
+     * visits neighbors in counter-clockwise direction and looks for the
+     * pattern 0:1 in the current and next neighbor.  each such pattern
+     * is counted as a transition.
+     * @param r
+     * @param c
+     * @param points
+     * @return 
+     */
+    static int numTransitions(int r, int c, Set<PairInt> points, Set<PairInt> remove) {
+        
+        /* 
+         5  4  3    1
+         6     2    0
+         7  0  1   -1
+ 
+         -1  0  1
+         */
+        
+        int count = 0;
+        for (int i = 0; i < nbrs.length - 1; i++) {
+            int x = c + nbrs[i][0];
+            int y = r + nbrs[i][1];
+            PairInt p = new PairInt(x, y);
+            if (!points.contains(p) || remove.contains(p)) {
+                int x2 = c + nbrs[i + 1][0];
+                int y2 = r + nbrs[i + 1][1];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2) && !remove.contains(p)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
  
     /**
      * looking for 2 zeroes within the 4 neighborhood pattern of point (c,r).
@@ -224,7 +269,9 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
      * @param points
      * @return 
      */
-    static boolean atLeastOneIsVacant(int r, int c, int step, Set<PairInt> points) {
+    static boolean atLeastOneIsVacant(int r, int c, int step, Set<PairInt> 
+        points, Set<PairInt> remove) {
+        
         int count = 0;
         
         int[][] group = nbrGroups[step];
@@ -237,7 +284,7 @@ public class ZhangSuenLineThinner extends AbstractLineThinner {
 
                 PairInt p = new PairInt(x, y);
 
-                if (!points.contains(p)) {
+                if (!points.contains(p) || remove.contains(p)) {
                     count++;
                     break;
                 }
