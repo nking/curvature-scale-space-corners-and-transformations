@@ -79,6 +79,8 @@ public class CannyEdgeFilterAdaptive {
     
     private boolean restoreJunctions = false;
     
+    private boolean useAlternateNMS = false;
+    
     /**
      * the sigma from the blur combined with the sigma present in the gradient
      * are present in this variable by the end of processing.
@@ -137,6 +139,10 @@ public class CannyEdgeFilterAdaptive {
      */
     public void setToPerformHistogramEqualization() {
         performHistEq = true;
+    }
+    
+    public void setToUseAlternateNonMaximumSuppression() {
+        useAlternateNMS = true;
     }
     
     /**
@@ -264,7 +270,7 @@ public class CannyEdgeFilterAdaptive {
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
-            applyNonMaximumSuppression(filterProducts, removedDisconnecting);                            
+            applyNonMaximumSuppression(filterProducts, removedDisconnecting);                 
         }
                 
         //(4) adaptive 2 layer filter                        
@@ -675,8 +681,39 @@ public class CannyEdgeFilterAdaptive {
         return g;
     }
 
+    private void applyAlternateNonMaximumSuppression(EdgeFilterProducts filterProducts,
+        Set<PairIntWithIndex> disconnectingRemovals) {
+        
+        //TODO: 
+        // -- need to alter NonMaximumSuppression to return the removed
+        //    pixel set
+        // -- need to extract points here to use PostLineThinnerCorrections
+        //    methods below
+        
+         NonMaximumSuppression nms = new NonMaximumSuppression();
+            
+            //TODO: radius can be adjusted from 1 to higher
+        nms.nonmaxsup(filterProducts.getGradientXY(),
+            filterProducts.getTheta(), 1.5, false);
+
+        /*
+         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+         pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
+         pltc.correctForLineHatHoriz(correctedPoints, thinned2.length, thinned2[0].length);
+         pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length);
+         */
+    }
+    
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
         Set<PairIntWithIndex> disconnectingRemovals) {
+        
+        if (useAlternateNMS) {
+            
+            applyAlternateNonMaximumSuppression(filterProducts, disconnectingRemovals);
+            
+            return;
+        }
+        
         
         int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
         int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);

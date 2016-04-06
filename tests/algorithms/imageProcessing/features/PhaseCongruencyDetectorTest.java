@@ -150,6 +150,12 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
         canny1.applyFilter(img);
         MiscDebug.writeImage(img, "_gradient_canny_adaptivw_");
+        
+        img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+        canny1 = new CannyEdgeFilterAdaptive();
+        canny1.setToUseAlternateNonMaximumSuppression();
+        canny1.applyFilter(img);
+        MiscDebug.writeImage(img, "_gradient_canny_adaptivw__alt_nms");
     }
     
 }
