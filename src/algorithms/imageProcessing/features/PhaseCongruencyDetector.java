@@ -36,7 +36,7 @@ import java.util.Stack;
 /**
  An edge detector that uses principles of phase congruency to create an edge
  * map and orientation and phase angle images.  
- * Phase congruency operates in the frequency domain of fourer transforms and
+ * Phase congruency operates in the frequency domain of fourier transforms and
  * with the inverse FFT produces an image that is summed over scales and
  * cleaned of some of the noise.
  * The phase congruency refers to the overlapping of sine waves at same phases
@@ -48,19 +48,23 @@ import java.util.Stack;
  * methods which for blurry edges, especially, produce a double response in
  * the gradient image).
  * </pre>
- * Corners can be produced with this detector too.  Currently, the corners are
- * produced using curvature scale curvature calculations for the extracted edge
- * points.
+ * Currently, the corners are produced using curvature scale curvature 
+ * calculations for the extracted edge points.
  * Alternative corner methods may be offered in the future.
  * Note that edge detector follows the codes referenced below.
  * Also note that the Peter Kovesi implementation of Phase Congruency detector 
  * before this version which uses monogenic filters, produced a corner map using
  * minimum moments from the phase congruency energy over 6 angles.  That method
  * may be implemented separately from this class in the future because
- * the corners produced from it look very good, but are at the expense of a
- * longer runtime.
+ * the corners produced from it look very good (but are at the expense of a
+ * longer runtime).
  * Note, line drawings and images which are solid shapes are probably best
  * handled by the CannyEdgeDetectorFilterAdpative with setToUseLineDrawingMode().
+ * For further reading other than the references below, a summary of band-pass
+ * quadrature filters is in
+ * https://www.utc.fr/~dboukerr/Papers/Qf_JMIV_2004.pdf
+ * 
+ * Listings of copyrights for the original source codes in languages Matlab and python:
  * 
  adapted from 
   http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m

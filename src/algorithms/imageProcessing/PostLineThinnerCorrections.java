@@ -4747,7 +4747,7 @@ public class PostLineThinnerCorrections {
         changeToOnes.add(new PairInt(0, 1));
         
         int nCorrections = 0;
-//178  175        
+       
         nCorrections += replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         
