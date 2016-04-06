@@ -64,7 +64,8 @@ import java.util.Stack;
  * quadrature filters is in
  * https://www.utc.fr/~dboukerr/Papers/Qf_JMIV_2004.pdf
  * 
- * Listings of copyrights for the original source codes in languages Matlab and python:
+ * Listings of copyrights for the original source codes in languages Matlab and 
+ * python follow:
  * 
  adapted from 
   http://www.peterkovesi.com/matlabfns/PhaseCongruency/phasecongmono.m
@@ -591,7 +592,7 @@ public class PhaseCongruencyDetector {
         // uses notation a[row][col]
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
-                orientation[row][col] = Math.atan(-sumH2[row][col]/sumH1[row][col]);
+                orientation[row][col] = Math.atan2(-sumH2[row][col], sumH1[row][col]);
                 if (orientation[row][col] < 0) {
                     orientation[row][col] += Math.PI;
                 }
@@ -803,7 +804,7 @@ public class PhaseCongruencyDetector {
         // so use one more round of non maximum suppression thinning       
         
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(correctedPoints);
+        lt.applyLineThinner(correctedPoints, 0, nRows - 1, 0, nCols - 1);
   
         for (int i = 0; i < nRows; ++i) {
             Arrays.fill(thinned[i], 0);
@@ -882,7 +883,6 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        
         
         products.setStepsInPhaseAngle(steps);
     }
@@ -974,8 +974,7 @@ public class PhaseCongruencyDetector {
         cornerMaker.doNotStoreCornerRegions();
         cornerMaker.disableJaggedLineCorrections();
         List<CornerArray> cornerList =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap,
-            false);
+            cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap);
         
         /*
         filter out small curvature:

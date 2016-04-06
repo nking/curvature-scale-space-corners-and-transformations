@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**
- * class encapsulating the steps from generating a degenerate correspondenc list
+ * class encapsulating the steps from generating a degenerate correspondence list
  * to solving for the best epipolar projection.
  
  * Note, the design of this class is inverted from the paradigm of classes
@@ -61,7 +61,6 @@ public class EpipolarMultiplicitySolver {
             throw new IllegalStateException("solve() has already been invoked");
         }
 
-        //NOTE: will change this to the non euclidean solver soon
         NonEuclideanSegmentFeatureMatcher2 wrapper
             = new NonEuclideanSegmentFeatureMatcher2(img1, img2, featureSettings);
 

@@ -1317,10 +1317,8 @@ public class MiscMath {
             }
             return Math.PI/2.;
         }
-        
-        double div = y/x;
-        
-        double theta = Math.atan(div);
+                
+        double theta = Math.atan2(y, x);
         
         if (x > 0) {
             // if y > 0, no change needed

@@ -200,7 +200,7 @@ int z = 1;
             Misc.convertWithoutOrder(borderPixels));
         
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(borderPixels);
+        lt.applyLineThinner(borderPixels, 0, imageWidth - 1, 0, imageHeight - 1);
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForExtCorner(borderPixels, imageWidth, imageHeight);
                 

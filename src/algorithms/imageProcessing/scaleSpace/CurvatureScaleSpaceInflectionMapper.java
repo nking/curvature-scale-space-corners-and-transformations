@@ -135,9 +135,6 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         if (useLineDrawingMode) {
             imgMaker.useLineDrawingMode();
         }
-        if (useOutdoorMode) {
-            imgMaker.useOutdoorMode();
-        }
         imgMaker.initialize();
 
         edges1 = getEdges(imgMaker);
@@ -152,9 +149,6 @@ public final class CurvatureScaleSpaceInflectionMapper extends
         CurvatureScaleSpaceImageMaker imgMaker = new CurvatureScaleSpaceImageMaker(image2);
         if (useLineDrawingMode) {
             imgMaker.useLineDrawingMode();
-        }
-        if (useOutdoorMode) {
-            imgMaker.useOutdoorMode();
         }
         imgMaker.initialize();
 

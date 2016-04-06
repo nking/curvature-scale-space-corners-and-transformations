@@ -81,7 +81,6 @@ public class NonEuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             List<List<CornerRegion>> corners2List = img2Helper.getPerimeterCorners(
                 type, useBinned);
 
-
             for (int i = 0; i < corners1List.size(); ++i) {
                 corners1.addAll(corners1List.get(i));
             }

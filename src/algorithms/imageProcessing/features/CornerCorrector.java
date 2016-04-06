@@ -1,12 +1,10 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.FurthestPair;
-import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.HoughTransform.HoughTransformLines;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -106,7 +107,7 @@ public class CannyEdgeFilterAdaptive {
 
     private boolean lineDrawingMode = false;
         
-    private float otsuScaleFactor = 0.45f;//0.4f;
+    private float otsuScaleFactor = 0.75f;//0.65f;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
@@ -225,6 +226,8 @@ public class CannyEdgeFilterAdaptive {
             ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
             lt.applyFilter(filterProducts.getGradientXY());
             
+            //exploreHoughTransforms(filterProducts.getGradientXY());
+            
             input.resetTo(filterProducts.getGradientXY());
             
             return;
@@ -323,7 +326,7 @@ public class CannyEdgeFilterAdaptive {
         if (w < 3 || h < 3) {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
-        
+    
         int nLevels = numberOfLevelsForHistogram;
         
         OtsuThresholding ot = new OtsuThresholding();
@@ -521,6 +524,7 @@ public class CannyEdgeFilterAdaptive {
                 
         // 0.5f, -0.0f, -0.5f
         float[] kernel = Gaussian1DFirstDeriv.getKernel(
+            //SIGMA.ZEROPOINTSEVENONE);
             SIGMA.ZEROPOINTFIVE);
                 
         GreyscaleImage output = input.copyToSignedImage();
@@ -806,6 +810,24 @@ public class CannyEdgeFilterAdaptive {
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
         
+        int count = 0;
+        Image tmp = gradientXY.copyToColorGreyscale();
+        for (int i = 0; i < tmp.getNPixels(); ++i) {
+            if (tmp.getR(i) > 0) {
+                tmp.setRGB(i, 0, 0, 0);
+            } else {
+                tmp.setRGB(i, 255, 255, 255);
+            }
+        }
+        for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
+            Set<PairInt> group = entry.getKey();
+            int[] clr = ImageIOHelper.getNextRGB(count);
+            for (PairInt p : group) {
+                tmp.setRGB(p.getX(), p.getY(), clr[0], clr[1], clr[2]);
+            }
+            count++;
+        }
+        MiscDebug.writeImage(tmp, "_lines_");
     }
 
     private void correctThetaBelowResolution(GreyscaleImage theta, 
@@ -1007,4 +1029,40 @@ public class CannyEdgeFilterAdaptive {
         return false;
     }
 
+    public GreyscaleImage createGradientPSFForTesting() {
+                
+        float[] k = Gaussian1D.getBinomialKernelSigmaZeroPointFive();
+        
+        GreyscaleImage gX = new GreyscaleImage(3, 3);
+        gX.setValue(1, 1, 127);        
+        apply1DKernelToImage(gX, k, true);
+        
+        GreyscaleImage gY = new GreyscaleImage(3, 3);
+        gY.setValue(1, 1, 127);
+        apply1DKernelToImage(gY, k, false);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        GreyscaleImage g = imageProcessor.combineConvolvedImages(gX, gY);
+        
+        return g;
+    }
+
+    /**
+     * @return the filterProducts
+     */
+    public EdgeFilterProducts getFilterProducts() {
+        return filterProducts;
+    }
+
+    public void setSetters(CannyEdgeFilterSettings settings) {
+        
+        if (settings.getNormalizeByHistogram()) {
+            setToPerformHistogramEqualization();
+        }
+        
+        if (settings.getUseLineDrawingMode()) {
+            setToUseLineDrawingMode();
+        }
+    }
+    
 }

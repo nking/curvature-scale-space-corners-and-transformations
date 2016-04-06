@@ -128,16 +128,14 @@ ImageIOHelper.writeOutputImage(dirPath + "/sp1.png", cImg);
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
-                
-        boolean useOutdoorMode = false;
-        
+                        
         detector.useLineDrawingMode();
         
         detector.initialize();
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
             detector.findCornersInScaleSpaceMaps(detector.getEdges(),
-                useOutdoorMode, detector.getCorners());
+                detector.getCorners());
       
         Iterator<Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > > iter = 
             map.entrySet().iterator();

@@ -163,7 +163,7 @@ public class TmpTest extends TestCase {
             if (lab1[1] == 0) {
                 ha1 = 0;
             } else {
-                ha1 = (float)(Math.atan(lab1[2]/lab1[1]) * 180. / Math.PI);
+                ha1 = (float)(Math.atan2(lab1[2], lab1[1]) * 180. / Math.PI);
                 if (ha1 < 0) {
                     ha1 += 360.;
                 }
@@ -180,7 +180,7 @@ public class TmpTest extends TestCase {
             if (lab2[1] == 0) {
                 ha2 = 0;
             } else {
-                ha2 = (float)(Math.atan(lab2[2]/lab2[1]) * 180. / Math.PI);
+                ha2 = (float)(Math.atan2(lab2[2], lab2[1]) * 180. / Math.PI);
                 if (ha2 < 0) {
                     ha2 += 360.;
                 }

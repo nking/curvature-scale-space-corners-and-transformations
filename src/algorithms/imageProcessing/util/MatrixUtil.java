@@ -1128,13 +1128,13 @@ public class MatrixUtil {
     
     public static double[] extractRawPitchRollFromRotation(SimpleMatrix rotMatrix) {
         
-        double yaw = Math.atan(rotMatrix.get(1, 0)/ rotMatrix.get(0, 0));
+        double yaw = Math.atan2(rotMatrix.get(1, 0), rotMatrix.get(0, 0));
         
-        double pitch = Math.atan(-rotMatrix.get(2, 0)/
+        double pitch = Math.atan2(-rotMatrix.get(2, 0),
             Math.sqrt(rotMatrix.get(2, 1)*rotMatrix.get(2, 1) +
                 rotMatrix.get(2, 2)*rotMatrix.get(2, 2)));
          
-        double roll = Math.atan(rotMatrix.get(2, 1)/ rotMatrix.get(2, 2));
+        double roll = Math.atan2(rotMatrix.get(2, 1), rotMatrix.get(2, 2));
         
         return new double[]{yaw, pitch, roll};
     }

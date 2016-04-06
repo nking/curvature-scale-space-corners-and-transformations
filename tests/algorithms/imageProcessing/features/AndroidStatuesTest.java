@@ -2,7 +2,6 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.CannyEdgeFilter;
 import algorithms.imageProcessing.EdgeFilterProducts;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.HistogramEqualization;

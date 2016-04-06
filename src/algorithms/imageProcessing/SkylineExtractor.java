@@ -115,6 +115,8 @@ public class SkylineExtractor {
      * @return
      * @throws IOException
      * @throws NoSuchAlgorithmException 
+     * 
+     * NOTE, this entire class will be refactored soon.  
      */
     public GreyscaleImage createSkyline(GreyscaleImage theta, 
         GreyscaleImage gradientXY, ImageExt originalImage,
@@ -134,11 +136,7 @@ public class SkylineExtractor {
             
             mask.multiply(255);
             
-            CannyEdgeFilter filter = new CannyEdgeFilter();
-            
-            filter.setFilterImageTrim(theta.getXRelativeOffset(), 
-                theta.getYRelativeOffset(), theta.getWidth(), 
-                theta.getHeight());
+            CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
             
             filter.applyFilter(mask);
             
@@ -3683,7 +3681,7 @@ try {
                 mask.setValue(x, y, 0);
             }
 
-            CannyEdgeFilter cFilter = new CannyEdgeFilter();
+            CannyEdgeFilterAdaptive cFilter = new CannyEdgeFilterAdaptive();
             cFilter.applyFilter(mask);
 
             IEdgeExtractor edgeExtractor = new EdgeExtractorWithJunctions(mask);

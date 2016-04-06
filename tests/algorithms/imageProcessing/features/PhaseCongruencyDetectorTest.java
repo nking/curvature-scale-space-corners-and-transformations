@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.HistogramEqualization;
@@ -142,7 +143,13 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         ImageIOHelper.addCurveToImage(products.getCorners(), out2, 
             2, 255, 0, 0);
         MiscDebug.writeImage(out2, "_corners_");
+                
+        // ---- compare to CannyEdgeFilter ----
+        img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
         
+        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
+        canny1.applyFilter(img);
+        MiscDebug.writeImage(img, "_gradient_canny_adaptivw_");
     }
     
 }

@@ -69,7 +69,7 @@ public class EpipolarMultiplicitySolverTest extends TestCase {
                     fileName1 = "checkerboard_01.jpg";
                     fileName2 = "checkerboard_02.jpg";
                     settings.setUseNormalizedFeatures(true);
-                    settings.setToUse2ndDerivCorners();
+                    //settings.setToUse2ndDerivCorners();
                     break;
                 }
             }
@@ -163,12 +163,12 @@ public class EpipolarMultiplicitySolverTest extends TestCase {
         // until add back the extra features step in the feature matcher, just catch the too few points exception
         // the books test for example, produces precise but few points.  
         //     it needs a different analysis of matched features because of the rectification.
-        try {
+        //try {
         EpipolarTransformationFit fit = solver.solve();
         
         assertNotNull(fit);
 
-        } catch(Exception e) {}
+        //} catch(Exception e) {}
         
     }
 }

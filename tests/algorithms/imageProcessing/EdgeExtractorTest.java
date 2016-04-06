@@ -1354,7 +1354,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         }
         
         // get a line thinned image:
-        CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive edgeFilter = new CannyEdgeFilterAdaptive();
         edgeFilter.applyFilter(img);
         
         IEdgeExtractor contourExtractor = new EdgeExtractorWithJunctions(img);
@@ -1442,7 +1442,7 @@ System.out.println(edge.getX(nExpected - 1) + ":" + edge1PointLast.getX() + " "
         }
         
         // get a line thinned image:
-        CannyEdgeFilter edgeFilter = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive edgeFilter = new CannyEdgeFilterAdaptive();
         edgeFilter.applyFilter(img);
         
         IEdgeExtractor contourExtractor = new EdgeExtractorWithJunctions(img);

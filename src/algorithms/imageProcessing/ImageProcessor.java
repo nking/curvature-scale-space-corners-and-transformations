@@ -401,6 +401,24 @@ public class ImageProcessor {
         input.resetTo(output);
     }
 
+    /**
+     * calculate theta from the gradient x and y images.
+     * <pre>
+     * The results are given as quadrants of values from 0 to 90.
+     * 
+     *     -45    90    45          y/x
+                -  |  +
+            0 -----|----- 0
+                +  |  -
+            45    90    -45
+
+           when X is 0: if Y > 0, theta is 90
+           when Y is 0: if X >= 0, theta is 0
+     * </pre>
+     * @param convolvedX
+     * @param convolvedY
+     * @return 
+     */
     public GreyscaleImage computeTheta(final GreyscaleImage convolvedX,
         final GreyscaleImage convolvedY) {
 
@@ -416,6 +434,51 @@ public class ImageProcessor {
                 int thetaG = calculateTheta(gX, gY);
 
                 output.setValue(i, j, thetaG);
+
+            }
+        }
+
+        return output;
+    }
+
+    /**
+     * calculate theta from the gradient x and y images and transform to
+     * range 0 to 180.
+     * <pre>
+     * 
+     *           90    45          y/x
+                -  |  +
+          180 -----|----- 0
+                +  |  -
+                         
+     * </pre>
+     * @param convolvedX
+     * @param convolvedY
+     * @return 
+     */
+    public GreyscaleImage computeTheta180(final GreyscaleImage convolvedX,
+        final GreyscaleImage convolvedY) {
+
+        GreyscaleImage output = convolvedX.createWithDimensions();
+
+        for (int i = 0; i < convolvedX.getWidth(); i++) {
+            for (int j = 0; j < convolvedX.getHeight(); j++) {
+
+                double gX = convolvedX.getValue(i, j);
+
+                double gY = convolvedY.getValue(i, j);
+
+                double radians = Math.atan2(gY, gX);
+                if (radians < 0) {
+                    radians += Math.PI;
+                }
+                
+                int theta = (int)(radians * 180./Math.PI);
+                if (theta == 180) {
+                    theta = 0;
+                }
+
+                output.setValue(i, j, theta);
 
             }
         }
@@ -564,9 +627,7 @@ public class ImageProcessor {
             return 0;
         }
 
-        double div = gradientY/gradientX;
-
-        double theta = Math.atan(div)*180./Math.PI;
+        double theta = Math.atan2(gradientY, gradientX)*180./Math.PI;
 
         int angle = (int)theta;
 
@@ -3151,7 +3212,7 @@ public class ImageProcessor {
 
         //TODO NOT READY FOR USE YET...
 
-        CannyEdgeFilter cef = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive cef = new CannyEdgeFilterAdaptive();
 
         // note, this is not scaled for total sum = 1 yet
         GreyscaleImage psf = cef.createGradientPSFForTesting();
@@ -4503,7 +4564,7 @@ public class ImageProcessor {
             if (lab[1] == 0) {
                 ha = 0;
             } else {
-                ha = (Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
+                ha = (Math.atan2(lab[2], lab[1]) * 180. / Math.PI);
                 if (ha < 0) {
                     ha += 360.;
                 }

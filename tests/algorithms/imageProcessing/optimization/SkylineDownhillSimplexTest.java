@@ -112,7 +112,7 @@ public class SkylineDownhillSimplexTest extends TestCase {
             }
             CurvatureScaleSpaceCornerDetector detector = new
                 CurvatureScaleSpaceCornerDetector(img);
-            detector.useOutdoorModeAndExtractSkyline();
+            //detector.useOutdoorModeAndExtractSkyline();
             detector.findCorners();
             
             images.add(img);

@@ -84,12 +84,12 @@ public class MatchedPointsTransformationCalculator {
 
         For example:
             theta of pair in image1:
-                theta = math.atan( (y1-y0)/(x1-x0) )
+                theta = math.atan2( (y1-y0), (x1-x0) )
                       = 0.7853981633974483 radians
                       = 45 degrees
 
             theta of pair in image2:
-                theta = math.atan( (yt1-yt0)/(xt1-xt0) )
+                theta = math.atan2( (yt1-yt0), (xt1-xt0) )
                       = 0.3490522203358645
                       = 20.0
 

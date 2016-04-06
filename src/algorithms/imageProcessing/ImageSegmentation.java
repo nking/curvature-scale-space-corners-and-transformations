@@ -3353,12 +3353,17 @@ MiscDebug.writeImage(img, "_end_seg_" + MiscDebug.getCurrentTimeFormatted());
      */
     public GreyscaleImage createGreyscale6(GreyscaleImage input) {
 
-        CannyEdgeFilter filter = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         filter.applyFilter(input.copyImage());
 
-        double thresh = filter.getLowThresholdApplied2Layer() + 2;
+        OtsuThresholding ot = new OtsuThresholding();
+        float otsuScaleFactor = 0.65f;//0.4f;
+        double tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(
+            filter.getFilterProducts().getGradientXY());
+        
+        double thresh = tHigh;
 
-        GreyscaleImage img = filter.getEdgeFilterProducts().getGradientXY();
+        GreyscaleImage img = filter.getFilterProducts().getGradientXY();
 
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > thresh) {
@@ -3626,7 +3631,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             if (lab[1] == 0) {
                 ha = 0;
             } else {
-                ha = (float)(Math.atan(lab[2]/lab[1]) * 180. / Math.PI);
+                ha = (float)(Math.atan2(lab[2], lab[1]) * 180. / Math.PI);
                 if (ha < 0) {
                     ha += 360.;
                 }
@@ -3637,7 +3642,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             //TODO: replace w/ cached method
             float[] cieXY = input.getCIEXY_(i);
 
-            float cieXYAngle = (float)(Math.atan(cieXY[1]/cieXY[0]) * 180. / Math.PI);
+            float cieXYAngle = (float)(Math.atan2(cieXY[1], cieXY[0]) * 180. / Math.PI);
             if (cieXYAngle < 0) {
                 cieXYAngle += 360.;
             }
@@ -3708,10 +3713,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         GreyscaleImage aWSImg = imageProcessor.makeWatershedFromAdaptiveMedian(
             aImg);
 
-        CannyEdgeFilter filter = new CannyEdgeFilter();
-        filter.doNotPerformHistogramEqualization();
+        CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         filter.applyFilter(input.copyToGreyscale());
-        EdgeFilterProducts ep = filter.getEdgeFilterProducts();
+        EdgeFilterProducts ep = filter.getFilterProducts();
         MiscDebug.writeImage(ep.getGradientXY(), "_edges_" + debugLabel);
     }
 
@@ -5157,7 +5161,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         if (labA == 0) {
             ha = 0;
         } else {
-            ha = (float) (Math.atan(labB / labA) * 180. / Math.PI);
+            ha = (float) (Math.atan2(labB, labA) * 180. / Math.PI);
             if (ha < 0) {
                 ha += 360.;
             }
@@ -6903,7 +6907,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     if (lab[1] == 0) {
                         ha1 = 0;
                     } else {
-                        ha1 = (float) (Math.atan(lab[2] / lab[1]) * 180. / Math.PI);
+                        ha1 = (float) (Math.atan2(lab[2], lab[1]) * 180. / Math.PI);
                         if (ha1 < 0) {
                             ha1 += 360.;
                         }
@@ -6920,7 +6924,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     if (lab2[1] == 0) {
                         ha2 = 0;
                     } else {
-                        ha2 = (float) (Math.atan(lab2[2] / lab2[1]) * 180. / Math.PI);
+                        ha2 = (float) (Math.atan2(lab2[2], lab2[1]) * 180. / Math.PI);
                         if (ha2 < 0) {
                             ha2 += 360.;
                         }
@@ -7072,7 +7076,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 if (lab1[1] == 0) {
                     ha1 = 0;
                 } else {
-                    ha1 = (float) (Math.atan(lab1[2] / lab1[1]) * 180. / Math.PI);
+                    ha1 = (float) (Math.atan2(lab1[2], lab1[1]) * 180. / Math.PI);
                     if (ha1 < 0) {
                         ha1 += 360.;
                     }
@@ -7082,7 +7086,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 if (lab2[1] == 0) {
                     ha2 = 0;
                 } else {
-                    ha2 = (float) (Math.atan(lab2[2] / lab2[1]) * 180. / Math.PI);
+                    ha2 = (float) (Math.atan2(lab2[2], lab2[1]) * 180. / Math.PI);
                     if (ha2 < 0) {
                         ha2 += 360.;
                     }

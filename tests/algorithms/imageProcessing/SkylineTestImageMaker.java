@@ -61,7 +61,7 @@ public class SkylineTestImageMaker {
            
             CurvatureScaleSpaceCornerDetector detector = new
                 CurvatureScaleSpaceCornerDetector(img1);
-            detector.useOutdoorModeAndExtractSkyline();
+            //detector.useOutdoorModeAndExtractSkyline();
             detector.findCorners();
 
 
@@ -413,13 +413,13 @@ public class SkylineTestImageMaker {
 
                 //TODO:  the center of CIE theta should be w.r.t. CIE (x,y) (0.35, 0.35)
                 
-                double diffTheta24 = 2. * Math.atan(diffCIEX24/
+                double diffTheta24 = 2. * Math.atan2(diffCIEX24, 
                     (diffCIEX24 + diffCIEY24));
 
-                double diffTheta8 = 2. * Math.atan(diffCIEX8/
+                double diffTheta8 = 2. * Math.atan2(diffCIEX8,
                     (diffCIEX8 + diffCIEY8));
 
-                double diffTheta1 = 2. * Math.atan(diffCIEX1/
+                double diffTheta1 = 2. * Math.atan2(diffCIEX1,
                     (diffCIEX1 + diffCIEY1));
 
                 borderDiff24CIETheta = (float)diffTheta24;
@@ -591,13 +591,13 @@ public class SkylineTestImageMaker {
 
                 //TODO:  the center of CIE theta should be w.r.t. CIE (x,y) (0.35, 0.35)
                 
-                diffTheta24 = 2. * Math.atan(diffCIEX24/
+                diffTheta24 = 2. * Math.atan2(diffCIEX24,
                     (diffCIEX24 + diffCIEY24));
 
-                diffTheta8 = 2. * Math.atan(diffCIEX8/
+                diffTheta8 = 2. * Math.atan2(diffCIEX8,
                     (diffCIEX8 + diffCIEY8));
 
-                diffTheta1 = 2. * Math.atan(diffCIEX1/
+                diffTheta1 = 2. * Math.atan2(diffCIEX1,
                     (diffCIEX1 + diffCIEY1));
 
                 borderDiff24CIETheta = (float)diffTheta24;
@@ -783,7 +783,7 @@ public class SkylineTestImageMaker {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
-        detector.useOutdoorModeAndExtractSkyline();
+        //detector.useOutdoorModeAndExtractSkyline();
         detector.findCorners();
         
         SkylineExtractor skylineExtractor = new SkylineExtractor();

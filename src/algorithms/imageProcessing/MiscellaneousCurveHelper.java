@@ -227,7 +227,12 @@ public class MiscellaneousCurveHelper {
         }
     }
     
-    public void additionalThinning45DegreeEdges(
+    /**
+     * 
+     * @param theta image with values in range 0 to 180.
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
         double[][] theta, double[][] input) {
 
         // thin the edges for angles 45 and -45 as suggested by
@@ -2225,7 +2230,7 @@ public class MiscellaneousCurveHelper {
         if (x10 == 0) {
             theta = (y10 < 0) ? 1.5 * Math.PI : 0.5 * Math.PI;
         } else {
-            theta = Math.atan((double) y10 / (double) x10);
+            theta = Math.atan2((double) y10, (double) x10);
         }
 
         return theta;

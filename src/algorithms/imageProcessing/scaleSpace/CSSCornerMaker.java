@@ -106,14 +106,13 @@ public class CSSCornerMaker {
      * the ordering is important if the corner regions will be used.
      * @param junctions map w/ key=edge index,
      *     values = junctions on edge as (x,y) and edge curve indexes
-     * @param doUseOutdoorMode
      * @param outputCorners
      * @return
      */
     public Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >
     findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges,
         Map<Integer, Set<PairIntWithIndex>> junctions,
-        final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
+        final PairIntArray outputCorners) {
 
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
@@ -134,7 +133,7 @@ public class CSSCornerMaker {
             Set<PairIntWithIndex> edgeJunctions = junctions.get(Integer.valueOf(i));
 
             CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,
-                edgeJunctions, i, doUseOutdoorMode);
+                edgeJunctions, i);
 
             // remove aliasing artifacts of a straight line with a single
             // step in it.
@@ -257,13 +256,11 @@ public class CSSCornerMaker {
      * the ordering is important if the corner regions will be used.
      * @param junctions map w/ key=edge index,
      *     values = junctions on edge as (x,y) and edge curve indexes
-     * @param doUseOutdoorMode
      * @return
      */
     public List<CornerArray> findCornersInScaleSpaceMaps(
         final List<PairIntArray> theEdges, 
-        Map<Integer, Set<PairIntWithIndex>> junctions, 
-        final boolean doUseOutdoorMode) {
+        Map<Integer, Set<PairIntWithIndex>> junctions) {
 
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > scaleSpaceMaps
             = new HashMap<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >();
@@ -286,7 +283,7 @@ public class CSSCornerMaker {
             Set<PairIntWithIndex> edgeJunctions = junctions.get(Integer.valueOf(i));
 
             CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,
-                edgeJunctions, i, doUseOutdoorMode);
+                edgeJunctions, i);
                         
             output.add(edgeCorners);
         }
@@ -372,13 +369,12 @@ public class CSSCornerMaker {
      * debugging purposes.
      * @param correctForJaggedLines
      * @param isAClosedCurve
-     * @param doUseOutdoorMode
      * @return
      */
     protected CornerArray findCornersInScaleSpaceMap(
         final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
         int edgeNumber, boolean correctForJaggedLines,
-        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
+        final boolean isAClosedCurve) {
 
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
 
@@ -388,7 +384,7 @@ public class CSSCornerMaker {
             k, outputLowThreshold);
 
         List<Integer> maxCandidateCornerIndexes = findCandidateCornerIndexes(
-            k, minimaAndMaximaIndexes, outputLowThreshold[0], doUseOutdoorMode,
+            k, minimaAndMaximaIndexes, outputLowThreshold[0],
             this.factorIncreaseForCurvatureMinimum);
 
         CornerArray xy = new CornerArray(maxCandidateCornerIndexes.size());
@@ -397,7 +393,7 @@ public class CSSCornerMaker {
             return xy;
         }
 
-        if (correctForJaggedLines && !doUseOutdoorMode) {
+        if (correctForJaggedLines) {
 
             PairIntArray jaggedLines = removeFalseCorners(
                 scaleSpace.getXYCurve(), maxCandidateCornerIndexes,
@@ -410,7 +406,7 @@ public class CSSCornerMaker {
 
             int idx = maxCandidateCornerIndexes.get(ii);
 
-            if (doUseOutdoorMode && !scaleSpace.curveIsClosed()) {
+            if (!scaleSpace.curveIsClosed()) {
                 if ((idx < minDistFromEnds)
                     || (idx > (nPoints - minDistFromEnds - 1))) {
                     continue;
@@ -437,8 +433,7 @@ public class CSSCornerMaker {
      */
     private CornerArray findCornersInScaleSpaceMap(final PairIntArray edge,
         final Map<SIGMA, ScaleSpaceCurve> scaleSpaceCurves,
-        final Set<PairIntWithIndex> junctions,
-        final int edgeNumber, final boolean doUseOutdoorMode) {
+        final Set<PairIntWithIndex> junctions, final int edgeNumber) {
 
         boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &&
             (((PairIntArrayWithColor)edge).getColor() == 1);
@@ -458,7 +453,7 @@ public class CSSCornerMaker {
 
         CornerArray candidateCornersXY =
             findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber,
-                enableJaggedLineCorrections, isAClosedCurve, doUseOutdoorMode);
+                enableJaggedLineCorrections, isAClosedCurve);
 
         insertJunctions(maxScaleSpace, maxSIGMA, edgeNumber, junctions,
             candidateCornersXY);
@@ -473,8 +468,7 @@ public class CSSCornerMaker {
             ScaleSpaceCurve scaleSpace = scaleSpaceCurves.get(sigma);
 
             refinePrimaryCoordinates(candidateCornersXY,
-                scaleSpace, sigma, prevSigma, edgeNumber, isAClosedCurve,
-                doUseOutdoorMode);
+                scaleSpace, sigma, prevSigma, edgeNumber, isAClosedCurve);
 
             removeRedundantPoints(candidateCornersXY, scaleSpaceCurves);
 
@@ -824,7 +818,7 @@ public class CSSCornerMaker {
     private void refinePrimaryCoordinates(CornerArray candidateCornersXY,
         ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
         final SIGMA previousSigma, final int edgeNumber,
-        final boolean isAClosedCurve, final boolean doUseOutdoorMode) {
+        final boolean isAClosedCurve) {
 
         if (scaleSpace == null || scaleSpace.getK() == null) {
             //TODO: follow up on NPE here
@@ -833,7 +827,7 @@ public class CSSCornerMaker {
 
         CornerArray xy2 =
             findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber,
-                false, isAClosedCurve, doUseOutdoorMode);
+                false, isAClosedCurve);
 
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value
@@ -997,22 +991,17 @@ public class CSSCornerMaker {
      * @param k
      * @param minMaxIndexes
      * @param lowThreshold
-     * @param doUseOutdoorMode
      * @param curvatureFactor2 factor which is multiplied by 2.5 to result
      * in the factor above minimum for a value to be significant.
      * @return
      */
     public static List<Integer> findCandidateCornerIndexes(float[] k,
-        List<Integer> minMaxIndexes, float lowThreshold,
-        final boolean doUseOutdoorMode, float curvatureFactor2) {
+        List<Integer> minMaxIndexes, float lowThreshold, float curvatureFactor2) {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima
 
         float factorAboveMin = curvatureFactor2 * 2.5f;//3.5f;// 10 misses some corners
 
-if (doUseOutdoorMode) {
-    factorAboveMin = curvatureFactor2 * 3.5f;//10.f;
-}
         //log.fine("using factorAboveMin=" + factorAboveMin);
 
         //to limit k to curvature that shows a rise in 1 pixel over a run of 3,

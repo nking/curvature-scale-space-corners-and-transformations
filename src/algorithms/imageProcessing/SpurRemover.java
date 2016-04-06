@@ -14,7 +14,7 @@ import java.util.Set;
  * 
  * @author nichole
  */
-class SpurRemover {
+public class SpurRemover {
     
     private boolean debug = false;
     

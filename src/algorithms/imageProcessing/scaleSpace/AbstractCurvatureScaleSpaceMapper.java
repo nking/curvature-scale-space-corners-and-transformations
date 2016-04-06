@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.imageProcessing.CannyEdgeFilter;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterSettings;
 import algorithms.imageProcessing.ClosedCurveAndJunctionFinder;
 import algorithms.imageProcessing.EdgeExtractorWithJunctions;
@@ -57,21 +57,13 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     protected boolean doNotFindJunctions = false;
     
     protected boolean useLineDrawingMode = false;
-        
-    protected boolean useLowestHighIntensityCutoff = false;
-    
-    protected boolean useLowHighIntensityCutoff = false;
     
     protected boolean extractSkyline = false;
     
     protected final int trimmedXOffset;
     
     protected final int trimmedYOffset;
-    
-    protected boolean useOutdoorMode = false;
-    
-    protected HistogramHolder imgHistogram = null;
-    
+            
     protected EdgeFilterProducts filterProducts = null;
     
     /**
@@ -167,38 +159,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         doNotFindJunctions = true;
     }
     
-    public void useLowestHighIntensityCutoff() {
-        useLowestHighIntensityCutoff = true;
-    }
-    
-    public void useLowHighIntensityCutoff() {
-        useLowHighIntensityCutoff = true;
-    }
-    
     public void useLineDrawingMode() {
         useLineDrawingMode = true;
-    }
-    
-    public void useOutdoorMode() {
-        
-        useLowestHighIntensityCutoff();
-        
-        useOutdoorMode = true;
-    }
-    
-    /**
-     * set the edge detector to create edges that are better for outdoor
-     * conditions and also extract the skyline from the intermediate
-     * image products.  Note that the skyline extraction is currently
-     * a long running process.
-     */
-    public void useOutdoorModeAndExtractSkyline() {
-        
-        useLowestHighIntensityCutoff();
-        
-        useOutdoorMode = true;
-        
-        extractSkyline = true;
     }
     
     protected void initialize() {
@@ -229,84 +191,9 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         }
     }
     
-    protected abstract void reinitializeSpecialization();
-    
-    protected void reinitialize(float cannyLowThreshold, float additionalBlurSigma) {
-        
-        if (state.ordinal() < 
-            CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
-            
-            throw new IllegalStateException(
-                "initialize() should have been invoked before reinitialize(...)");
-            
-        } else {
-                       
-            GreyscaleImage input = filterProducts.getGradientXY().copyImage();
-            GreyscaleImage gTheta = filterProducts.getTheta();
-            HistogramHolder hist = imgHistogram;
-        
-            reinitializeSpecialization();
-            
-            edges.clear();
-            
-            if (additionalBlurSigma > 0) {
-                
-                // (1) apply an edge filter
-                
-                CannyEdgeFilter filter = new CannyEdgeFilter();
-
-                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
-        
-                filter.setSetters(settings);
-                
-                filter.setAdditionalImageBlur(additionalBlurSigma);
-                
-                filter.overrideLowThreshold(cannyLowThreshold);
-                
-                img = originalImg.copyToGreyscale();
-                
-                filter.applyFilter(img);
-                
-                filterProducts = filter.getEdgeFilterProducts();
-        
-                imgHistogram = filter.getImgHistogram();
-                
-                img = filterProducts.getGradientXY();
-                
-            } else {
-            
-                // (1) re-apply an edge filter
-
-                CannyEdgeFilter filter = new CannyEdgeFilter();
-                CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
-
-                filter.setSetters(settings);
-
-                filter.overrideLowThreshold(cannyLowThreshold);
-
-                filter.reApply2LayerFilter(input, gTheta, hist);
-
-                img = input;
-                
-            }
-            
-            // (2) extract edges
-            extractEdges();
-            
-            //TODO: note that there may be a need to search for closed
-            //      curves in the EdgeContourExtractor instead of here
-            //      in order to create shapes instead of creating
-            //      lines preferentially.
-            // (3) look for t-junctions and closed curves
-            markTheClosedCurves();
-            
-            state = CurvatureScaleSpaceMapperState.INITIALIZED;
-        }
-    }
-
     protected void applyEdgeFilter() {
         
-        CannyEdgeFilter filter = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
 
         CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
         
@@ -314,10 +201,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
                 
         filter.applyFilter(img);
         
-        filterProducts = filter.getEdgeFilterProducts();
-        
-        imgHistogram = filter.getImgHistogram();
-                                
+        filterProducts = filter.getFilterProducts();
+                                        
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
     }
     
@@ -380,21 +265,11 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
         CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
         
-        if (useOutdoorMode) {
-            settings.setUseOutdoorMode();
-        }
-        
-        if (doNotNormalizeByHistogram) {
-            settings.setDoNotNormalizeByHistogram();
+        if (!doNotNormalizeByHistogram) {
+            settings.setToNormalizeByHistogram();
         }
         if (useLineDrawingMode) {
             settings.setUseLineDrawingMode();
-        }
-        
-        if (useLowestHighIntensityCutoff) {
-            settings.setOverrideHighThreshold(1.0f);
-        } else if (useLowHighIntensityCutoff) {
-            settings.setOverrideHighThreshold(2.0f);
         }
         
         return settings;

@@ -73,6 +73,8 @@ import java.util.Set;
 public class NonMaximumSuppression {
     
     /**
+     * a non-maximal implementation that expects orientation image to have
+     * values in range 0 to 180.  img can have any set of values.
      * 
      * @param img
      * @param orientation
@@ -93,18 +95,15 @@ public class NonMaximumSuppression {
             throw new IllegalArgumentException("radius must be >= 1");
         }
 
-        int nCols = img.length;
-        int nRows = img[0].length;
+        int n0 = img.length;
+        int n1 = img[0].length;
         
-        double[][] output = new double[nCols][];
-        for (int i = 0; i < nCols; ++i) {
-            output[i] = new double[nRows];
+        double[][] output = new double[n0][];
+        for (int i = 0; i < n0; ++i) {
+            output[i] = new double[n1];
         }
         
         int iRadius = (int)Math.ceil(radius);
-        
-        // for matlab: Orientations start at 0 degrees but arrays start with index 1
-        //orient = fix(orient)+1;
         
         double dToR = Math.PI/180.;
         double[] angle = new double[180];
@@ -124,66 +123,69 @@ public class NonMaximumSuppression {
         
         // run through the image interpolating grey values on each side
         // of the centre pixel to be used for the non-maximal suppression
-        for (int row = (iRadius + 1); row < (nRows - iRadius); ++row) {
-            for (int col = (iRadius+1); col < (nCols - iRadius) ; ++col) {
+        for (int i1 = (iRadius + 1); i1 < (n1 - iRadius); ++i1) {
+            for (int i0 = (iRadius+1); i0 < (n0 - iRadius) ; ++i0) {
                 
-                int or = (int)orientation[col][row];
-                double x = col + xOff[or];
-                double y = row - yOff[or];
+                int or = (int)orientation[i0][i1];
+                if (or > 179) {
+                    or -= 180;
+                }
+                double ii0 = i0 + xOff[or];
+                double ii1 = i1 - yOff[or];
                 
                 //Get integer pixel locations that surround location x,y
-                int fx = (int)Math.floor(x);
-                int cx = (int)Math.ceil(x);
-                int fy = (int)Math.floor(y);
-                int cy = (int)Math.ceil(y);
+                int f0 = (int)Math.floor(ii0);
+                int c0 = (int)Math.ceil(ii0);
+                int f1 = (int)Math.floor(ii1);
+                int c1 = (int)Math.ceil(ii1);
                 
                 // top left
-                double tl = img[fx][fy];
+                double tl = img[f0][f1];
                 // top right
-                double tr = img[cx][fy];
+                double tr = img[c0][f1];
                 // bottom left
-                double bl = img[fx][cy];
+                double bl = img[f0][c1];
                 // bottom right
-                double br = img[cx][cy];
+                double br = img[c0][c1];
                 
                 // use bilinear interpolation to estimate value at x,y
                 double upperAvg = tl + hFrac[or] * (tr - tl);
                 double lowerAvg = bl + hFrac[or] * (br - bl);
                 double v1 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
 
-                if ((img[col][row] > v1) ||
-                    (useLowerThreshold && (img[col][row] > 0.95*v1))) {
+                if ((img[i0][i1] > v1) ||
+                    (useLowerThreshold && (img[i0][i1] > 0.95*v1))) {
                     //x, y location on the `other side' of the point in question
-                    x = col - xOff[or];
-                    y = row + yOff[or];
+                    ii0 = i0 - xOff[or];
+                    ii1 = i1 + yOff[or];
                 
-                    fx = (int)Math.floor(x);
-                    cx = (int)Math.ceil(x);
-                    fy = (int)Math.floor(y);
-                    cy = (int)Math.ceil(y);
+                    f0 = (int)Math.floor(ii0);
+                    c0 = (int)Math.ceil(ii0);
+                    f1 = (int)Math.floor(ii1);
+                    c1 = (int)Math.ceil(ii1);
                 
                     // top left
-                    tl = img[fx][fy];
+                    tl = img[f0][f1];
                     // top right
-                    tr = img[cx][fy];
+                    tr = img[c0][f1];
                     // bottom left
-                    bl = img[fx][cy];
+                    bl = img[f0][c1];
                     // bottom right
-                    br = img[cx][cy];
+                    br = img[c0][c1];
                 
                     // use bilinear interpolation to estimate value at x,y
                     upperAvg = tl + hFrac[or] * (tr - tl);
                     lowerAvg = bl + hFrac[or] * (br - bl);
                     double v2 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
                      
-                    if (useLowerThreshold && (img[col][row] <= v2)) {
+                    if (useLowerThreshold && (img[i0][i1] <= v2)) {
                         
-                        checkForDisconnects.add(new PairInt(col, row));
+                        checkForDisconnects.add(new PairInt(i0, i1));
                     
-                    } else if (img[col][row] > v2) {
+                    } else if (img[i0][i1] > v2) {
                         
                         // this is the local maximum
-                        output[col][row] = img[col][row];
+                        output[i0][i1] = img[i0][i1];
                         
                         /* if wanted to create the localization image:
                             // Solve for coefficients of parabola that passes through 
@@ -200,8 +202,8 @@ public class NonMaximumSuppression {
                         */
                     }
                     
-                } else if (useLowerThreshold && (img[col][row] > 0.8*v1)) {
-                    checkForDisconnects.add(new PairInt(col, row));
+                } else if (useLowerThreshold && (img[i0][i1] > 0.8*v1)) {
+                    checkForDisconnects.add(new PairInt(i0, i1));
                 }
             }
         }
@@ -236,12 +238,12 @@ public class NonMaximumSuppression {
         // disconnects a line
         
         // make binary image for bwmorph input
-        int[][] morphInput = new int[output.length][];
-        for (int i = 0; i < output.length; ++i) {
-            morphInput[i] = new int[output[0].length];
+        int[][] morphInput = new int[n0][];
+        for (int i = 0; i < n0; ++i) {
+            morphInput[i] = new int[n1];
         }
-        for (int i = 0; i < output.length; ++i) {
-            for (int j = 0; j < output[i].length; ++j) {
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
                                 
                 if (output[i][j] > 0) {
                     
@@ -263,16 +265,65 @@ public class NonMaximumSuppression {
         MorphologicalFilter mFilter = new MorphologicalFilter();
         int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
         
-        for (int i = 0; i < output.length; ++i) {
-            for (int j = 0; j < output[i].length; ++j) {
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
                 int m = skel[i][j];                
                 output[i][j] *= m;
             }
         }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        curveHelper.additionalThinning45DegreeEdges(orientation, output);
+        curveHelper.additionalThinning45DegreeEdges2(orientation, output);
         
         return output;
     }
+    
+    /**
+     * a non-maximal implementation that expects orientation image to have
+     * values in range 0 to 180.  img can have any set of values.
+     * 
+     * @param img
+     * @param orientation
+     * @param radius
+     * @param useLowerThreshold if true, uses a lower threshold when checking
+     * whether to keep points - the lower threshold is useful for example, when
+     * thinning the steps from the phase angle image.
+     */
+    public void nonmaxsup(GreyscaleImage img, GreyscaleImage orientation, 
+        double radius, boolean useLowerThreshold) {
+        
+        if (img.getWidth() != orientation.getWidth() || 
+            img.getHeight() != orientation.getHeight()) {
+            throw new IllegalArgumentException("img and orientation must be same size");
+        }
+        
+        if (radius < 1) {
+            throw new IllegalArgumentException("radius must be >= 1");
+        }
+        
+        int n0 = img.getWidth();
+        int n1 = img.getHeight();
+
+        double[][] a = new double[n0][];
+        double[][] or = new double[n0][];
+        for (int i = 0; i < n0; ++i) {
+            a[i] = new double[n1];
+            or[i] = new double[n1];
+            for (int j = 0; j < n1; ++j) {
+                a[i][j] = img.getValue(i, j);
+                or[i][j] = orientation.getValue(i, j);
+            }
+        }
+        
+        double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold);
+        
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                if (thinned[i][j] == 0) {
+                    img.setValue(i, j, 0);
+                }
+            }
+        }
+    }
+    
 }

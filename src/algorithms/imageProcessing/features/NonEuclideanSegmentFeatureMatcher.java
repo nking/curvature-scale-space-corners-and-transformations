@@ -15,7 +15,8 @@ import java.util.List;
  */
 public class NonEuclideanSegmentFeatureMatcher extends AbstractFeatureMatcher {
     
-    protected List<FeatureComparisonStat> rejectedBy2ndBest = new ArrayList<FeatureComparisonStat>();
+    protected List<FeatureComparisonStat> rejectedBy2ndBest 
+        = new ArrayList<FeatureComparisonStat>();
         
     /**
      *

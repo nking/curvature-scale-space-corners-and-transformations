@@ -59,10 +59,6 @@ public final class CurvatureScaleSpaceImageMaker extends
         
     } 
     
-    @Override
-    protected void reinitializeSpecialization() {
-    }
-
     /**
      * Create for each edge in the instance variable edges, 
      * X(t,sigma), Y(t,sigma), k(t, sigma) for sigma=1 until sigma=the level at 

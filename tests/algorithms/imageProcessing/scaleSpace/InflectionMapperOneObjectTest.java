@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.imageProcessing.CannyEdgeFilter;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.CannyEdgeFilterSettings;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
@@ -39,8 +39,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
         lineThinner.applyFilter(img2);
         */
 
-        CannyEdgeFilter filter = new CannyEdgeFilter();
-        filter.useLineDrawingMode();
+        CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
         settings.setUseLineDrawingMode();
         filter.setSetters(settings);

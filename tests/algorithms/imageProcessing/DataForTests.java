@@ -600,9 +600,7 @@ public class DataForTests {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img1);
-        
-        detector.useOutdoorMode();
-       
+               
         detector.findCorners();
         
         PairIntArray c = detector.getCornersInOriginalReferenceFrame();
@@ -615,9 +613,7 @@ public class DataForTests {
         
         detector = new
             CurvatureScaleSpaceCornerDetector(img2);
-        
-        detector.useOutdoorMode();
-       
+               
         detector.findCorners();
         
         c = detector.getCornersInOriginalReferenceFrame();

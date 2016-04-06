@@ -1,14 +1,10 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.misc.MiscDebug;
-import algorithms.util.PathStep;
 import algorithms.misc.MiscMath;
-import algorithms.util.BitVectorRepresentation;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
@@ -20,11 +16,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

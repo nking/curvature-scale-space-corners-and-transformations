@@ -479,15 +479,13 @@ public class BlobPerimeterCornerHelper {
         }
         
         boolean useBinned = false;
-        
-        final boolean outdoorMode = false;
-        
+                
         final boolean enableJaggedLineCorrections = false;
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
    
         corners = BlobsAndCorners.populateCorners(this, type, useBinned,
-            outdoorMode, enableJaggedLineCorrections, 
+            enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
        
         segCornersMap.put(type, corners);
@@ -513,15 +511,13 @@ public class BlobPerimeterCornerHelper {
         }
        
         boolean useBinned = true;
-        
-        final boolean outdoorMode = false;
-        
+                
         final boolean enableJaggedLineCorrections = false;
         
         final float factorIncreaseForCurvatureMinimum = 1.f;
 
         corners = BlobsAndCorners.populateCorners(this, type, useBinned,
-            outdoorMode, enableJaggedLineCorrections, 
+            enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
         
         segBinnedCornersMap.put(type, corners);
@@ -822,12 +818,11 @@ public class BlobPerimeterCornerHelper {
                 corners.add(bprList);
             }
         } else {        
-            final boolean outdoorMode = false;
             final boolean enableJaggedLineCorrections = false;
             final float factorIncreaseForCurvatureMinimum = 1.f;
                         
             corners = BlobsAndCorners.populateCorners(this, type, useBinned,
-                outdoorMode, enableJaggedLineCorrections, 
+                enableJaggedLineCorrections, 
                 factorIncreaseForCurvatureMinimum);
             assert(corners.size() == perimeterLists.size());
             int k = 5;
@@ -903,12 +898,11 @@ public class BlobPerimeterCornerHelper {
     private List<List<CornerRegion>> extractCorners1(List<PairIntArray> 
         perimeterLists, SegmentationType type, boolean useBinned) {
                          
-        final boolean outdoorMode = false;
         final boolean enableJaggedLineCorrections = false;
         final float factorIncreaseForCurvatureMinimum = 1.f;
 
         List<List<CornerRegion>> corners = BlobsAndCorners.populateCorners(this, 
-            type, useBinned, outdoorMode, enableJaggedLineCorrections, 
+            type, useBinned, enableJaggedLineCorrections, 
             factorIncreaseForCurvatureMinimum);
         
         assert(corners.size() == perimeterLists.size());

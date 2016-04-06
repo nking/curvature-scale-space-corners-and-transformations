@@ -68,7 +68,7 @@ public class ZhangSuenLineThinnerTest extends TestCase {
         
         ZhangSuenLineThinner zsLT = new ZhangSuenLineThinner();
         
-        zsLT.applyLineThinner(points);
+        zsLT.applyLineThinner(points, 0, 80, 0, image.length - 1);
         
         for (int r = 0; r < image.length; r++) {
             

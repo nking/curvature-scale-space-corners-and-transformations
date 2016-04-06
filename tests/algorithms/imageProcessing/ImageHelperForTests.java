@@ -54,7 +54,7 @@ public class ImageHelperForTests {
         trimmedXOffset = offsetXY[0];
         trimmedYOffset = offsetXY[1];
         
-        CannyEdgeFilter filter = new CannyEdgeFilter();
+        CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
         
         CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
         
@@ -62,7 +62,7 @@ public class ImageHelperForTests {
                 
         filter.applyFilter(img);
         
-        edgeFilterProducts = filter.getEdgeFilterProducts();
+        edgeFilterProducts = filter.getFilterProducts();
         
     }
     
@@ -123,10 +123,6 @@ public class ImageHelperForTests {
     public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
                 
         CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
-        
-        if (useOutdoorMode) {
-            settings.setUseOutdoorMode();
-        }
         
         if (useLineDrawingMode) {
             settings.setUseLineDrawingMode();

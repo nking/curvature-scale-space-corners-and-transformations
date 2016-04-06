@@ -2,7 +2,6 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.NearestPoints;
-import algorithms.imageProcessing.CannyEdgeFilter;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SIGMA;
@@ -98,9 +97,7 @@ public class CurvatureScaleSpaceCornerDetector extends
      * a long running process.
      */
     void calculateSkylineCornersOnly() {
-        
-        useOutdoorModeAndExtractSkyline();
-        
+                
         performWholeImageCorners = false;
     }
   
@@ -139,115 +136,9 @@ public class CurvatureScaleSpaceCornerDetector extends
         // not re-using return maps for now, but they are available here
         // while refactoring the public method returns and signatures
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);        
+            findCornersInScaleSpaceMaps(edges, corners);        
     }
     
-    @Override
-    protected void reinitializeSpecialization() {
-        corners = new PairIntArray();
-    }
-
-    /**
-     * find corners iteratively until approximately the number desired are
-     * found.  This method is useful for creating corners in stereo projection
-     * images - it helps to adjust the image intensity levels so that
-     * similar edges can be formed in both images.
-     * Presumably, if calibration of the images were possible, findCorners()
-     * should alone provide a stable result (where calibration of the images
-     * are steps such as bias removal, flat field corrections, intensity
-     * corrections using standard candles, and corrections to make the
-     * point spread functions similar for the images).
-     *
-     * @param approxNumberOfCornersDesired
-     * @param filterOnlyAboveThisNumberOfCorners if the default number of corners
-     * produced is this larger or larger, the method will iteratively
-     * increase the lower intensity filter until approxNumberOfCornersDesired
-     * are produced, else if the default number of corners is less
-     * than useOnlyAboveThisNumberOfCorners, the method will not filter
-     * the image further.
-     */
-    public void findCornersIteratively(int approxNumberOfCornersDesired,
-        int filterOnlyAboveThisNumberOfCorners) {
-
-        //TODO: this method needs to be refactored
-        
-        if (!performWholeImageCorners) {
-            throw new IllegalStateException(
-                "performWholeImageCorners is currently set to false");
-        }
-
-        float lowerThresholdStepSize = 1.0f;
-        
-        int nCorners = corners.getN();
-
-        float lowThreshold = (useOutdoorMode) ?
-            CannyEdgeFilter.defaultOutdoorLowThreshold :
-            CannyEdgeFilter.defaultLowThreshold;
-        
-        if ((nCorners > 0) && (nCorners < filterOnlyAboveThisNumberOfCorners)) {
-            return;
-        } else if ((nCorners > 0) && (nCorners < approxNumberOfCornersDesired)) {
-            return;
-        } else if (state.ordinal() < CurvatureScaleSpaceMapperState.INITIALIZED.ordinal()) {
-            findCorners();
-        }
-
-        nCorners = corners.getN();
-
-        if (nCorners < filterOnlyAboveThisNumberOfCorners) {
-            return;
-        }
-
-        //TODO: this could be improved to assert a minimum presence of corners
-        // at boundaries and throughout the image compared to the first round.
-        // In other words, would not want to remove all corners for an important
-        // part of the image intersection with another image.
-
-        List<PairIntArray> prevEdges = copy(this.edges);
-        PairIntArray prevCorners = corners.copy();
-
-        int nIter = 0;
-            
-        while ((nCorners > 0) && (nCorners > approxNumberOfCornersDesired)) {
-
-            log.info("nCorners=" + nCorners);
-
-            prevEdges = copy(this.edges);
-            prevCorners = this.corners.copy();
-
-            //TODO: needs adjustments:
-            float additionalBlurSigma = 0;
-            if (nIter == 0) {
-                //additionalBlurSigma = 1;
-                /*if (nCorners > 1000) {
-                    lowerThresholdStepSize  = 1.5f;
-                } else {*/
-                    lowerThresholdStepSize = 0.5f;
-                //}
-            }
-            
-            lowThreshold += lowerThresholdStepSize;
-            
-            reinitialize(lowThreshold, additionalBlurSigma);
-
-            findCornersInScaleSpaceMaps(edges, useOutdoorMode, corners);
-
-            includeJunctionsInCorners();
-            
-            nCorners = corners.getN();
-            
-            nIter++;
-        }
-
-        if (Math.abs(corners.getN() - approxNumberOfCornersDesired) >
-            Math.abs(prevCorners.getN() - approxNumberOfCornersDesired)) {
-            
-            this.edges = prevEdges;
-            this.corners = prevCorners;
-        }
-        
-    }
-
     /**
      * Find corners in the edges by creating scale space maps for each edge that
      * range from a maximum value determined in getMaxSIGMAForECSS() and
@@ -263,13 +154,12 @@ public class CurvatureScaleSpaceCornerDetector extends
      * determination.
      *
      * @param theEdges
-     * @param doUseOutdoorMode
      * @param outputCorners
      * @return scale space maps for each edge
      */
     protected Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >
     findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
-        final boolean doUseOutdoorMode, final PairIntArray outputCorners) {
+        final PairIntArray outputCorners) {
 
         CSSCornerMaker cornerMaker = new CSSCornerMaker(this.img.getWidth(),
             this.img.getHeight());
@@ -291,7 +181,7 @@ public class CurvatureScaleSpaceCornerDetector extends
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges, junctionCoords,
-                doUseOutdoorMode, outputCorners); 
+                outputCorners); 
         
         if (doStoreCornerRegions) {
             edgeCornerRegionMap.clear();
@@ -458,7 +348,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
         enableJaggedLineCorrections = false;
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(skylineEdges, false, theSkylineCorners);
+            findCornersInScaleSpaceMaps(skylineEdges, theSkylineCorners);
 
         // TODO: improve this for resolution
         
@@ -482,8 +372,7 @@ MultiArrayMergeSort.sortByYThenX(cp);
             
             PairIntArray theSkylineCorners2 = new PairIntArray();
             
-            maps = findCornersInScaleSpaceMaps(skylineEdges, false, 
-                theSkylineCorners2);
+            maps = findCornersInScaleSpaceMaps(skylineEdges, theSkylineCorners2);
             
             log.info("before curvature factor change, number of skyline corners=" 
                 + theSkylineCorners.getN());

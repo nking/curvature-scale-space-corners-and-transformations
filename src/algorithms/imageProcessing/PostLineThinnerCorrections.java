@@ -2814,8 +2814,7 @@ public class PostLineThinnerCorrections {
                 int row = p.getY();
 
                 // make sure the current point hasn't been added to tmpPointsRemoved
-                boolean isNotPresent = tmpPointsRemoved.contains(p);
-                if (isNotPresent) {
+                if (tmpPointsRemoved.contains(p)) {
                     continue;
                 }
 

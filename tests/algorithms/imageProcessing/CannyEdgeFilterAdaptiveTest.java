@@ -19,15 +19,16 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         
         Set<String> testFiles = new HashSet<String>();
         testFiles.add("blox.gif");
-        testFiles.add("two_circles_color.png");
+        //testFiles.add("two_circles_color.png");
         testFiles.add("house.gif");
-        testFiles.add("lab.gif");
+        /*testFiles.add("lab.gif");
         testFiles.add("africa2.png");
         testFiles.add("susan-in.gif");
         testFiles.add("valve_gaussian.png");
         testFiles.add("lena.jpg");
         testFiles.add("android_statues_01.jpg");
         testFiles.add("android_statues_04.jpg");
+        */
         testFiles.add("checkerboard_01.jpg");
         
         for (String fileName : testFiles) {
@@ -44,14 +45,17 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             GreyscaleImage gsImg = img.copyToGreyscale();
 
             CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
+            //CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
             //filter.setToNotUseNonMaximumSuppression();
             //filter.setToPerformHistogramEqualization();
             //filter.setOtsuScaleFactor(0.2f);
             //filter.override2LayerFactorBelowHighThreshold(10.f);
-            //filter.overrideDefaultNumberOfLevels(16);
-            if (fileName.contains("africa")) {
+            filter.overrideDefaultNumberOfLevels(16);
+            if (fileName.contains("africa") || fileName.contains("circle") 
+                || fileName.contains("susan")) {
                 filter.setToUseLineDrawingMode();
             }
+            filter.setToRestoreJunctions();
             filter.setToDebug();
             filter.applyFilter(gsImg);
             

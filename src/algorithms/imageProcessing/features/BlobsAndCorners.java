@@ -29,7 +29,6 @@ public class BlobsAndCorners  {
      * @param blobPerimeterHelper
      * @param type
      * @param useBinnedImage
-     * @param outdoorMode
      * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
      * @return 
@@ -37,7 +36,6 @@ public class BlobsAndCorners  {
     public static List<List<CornerRegion>> populateCorners(
         final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage,
-        final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum) {
 
@@ -55,7 +53,7 @@ public class BlobsAndCorners  {
             blobPerimeterHelper.getGreyscaleImage().getHeight();
         
         List<List<CornerRegion>> cornerRegionLists = populateCorners(
-            perimeterLists, useBinnedImage, outdoorMode,
+            perimeterLists, useBinnedImage,
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
         
@@ -76,7 +74,6 @@ public class BlobsAndCorners  {
      * consistent use of the corner region orientation.)
      * @param perimeterLists
      * @param useBinnedImage
-     * @param outdoorMode
      * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
      * @param width
@@ -85,7 +82,6 @@ public class BlobsAndCorners  {
      */
     public static List<List<CornerRegion>> populateCorners(
         List<PairIntArray> perimeterLists, boolean useBinnedImage,
-        final boolean outdoorMode,
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum,
         int width, int height) {
@@ -96,7 +92,7 @@ public class BlobsAndCorners  {
         PairIntArray allCorners = new PairIntArray();
         
         Map<Integer, List<CornerRegion> > indexCornerRegionMap = 
-            findCornersInScaleSpaceMaps(perimeterLists, outdoorMode, allCorners,
+            findCornersInScaleSpaceMaps(perimeterLists, allCorners,
             enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
             width, height);
         
@@ -190,7 +186,6 @@ public class BlobsAndCorners  {
      * determination.
      *
      * @param theEdges
-     * @param doUseOutdoorMode
      * @param outputCorners
      * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
@@ -200,7 +195,7 @@ public class BlobsAndCorners  {
      */
     protected static Map<Integer, List<CornerRegion> >
         findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
-        final boolean doUseOutdoorMode, final PairIntArray outputCorners,
+        final PairIntArray outputCorners,
         final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum, int imageWidth,
         int imageHeight) {
@@ -222,7 +217,7 @@ public class BlobsAndCorners  {
         
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges, noJunctions,
-                doUseOutdoorMode, outputCorners); 
+                outputCorners); 
         
         return cornerMaker.getEdgeCornerRegionMap();        
     }

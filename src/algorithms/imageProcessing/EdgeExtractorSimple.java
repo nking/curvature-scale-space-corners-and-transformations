@@ -15,16 +15,16 @@ import java.util.Stack;
 /**
  * The simplest edge extractor which does the following:
  * <pre>
- *     -- finds junctions and stores them in a hash
- *     -- dfs traversal of each point u w/ pixel value > 0.
+ *     -- finds junctions and stores them in a set
+ *     -- dfs traversal of each point w/ pixel value > 0.
  *           searches for a neighbor and if junction is within
- *           neighbors, terminates the line and starts a new line
+ *           neighbors, terminates the curve and starts a new curve
  *           with the next popped point, else adds one neighbor to
- *           the line and that to the stack.
- *     -- joins lines whose endpoints are not adjacent to junctions and whose
+ *           the curve and that to the stack.
+ *     -- joins curves whose endpoints are not adjacent to junctions and whose
  *            endpoints are adjacent.
  *     -- performs a correction for an artifact pattern in the edges that tends 
- *        to be present due to the line thinning plus concatenation operations 
+ *        to be present due to the curve thinning plus concatenation operations 
  *        on the given image.
  * </pre>
  * 
