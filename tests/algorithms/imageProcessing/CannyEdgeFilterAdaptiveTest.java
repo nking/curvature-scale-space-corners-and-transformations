@@ -59,7 +59,6 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
                 || fileName.contains("susan")) {
                 filter.setToUseLineDrawingMode();
             }
-            filter.setToRestoreJunctions();
             filter.setToDebug();
             filter.applyFilter(gsImg);
             
@@ -89,7 +88,6 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
         CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
         canny1.setToUseLineDrawingMode();;
         //canny1.setToDebug();
-        canny1.setToRestoreJunctions();
         canny1.applyFilter(img);
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > 0) {

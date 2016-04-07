@@ -72,7 +72,9 @@ public class CannyEdgeFilterAdaptive {
     
     private boolean debug = false;
     
-    private boolean restoreJunctions = false;
+    private boolean restoreJunctions = true;
+    
+    private boolean useHigherThresholdIfNeeded = false;
         
     /**
      * the sigma from the blur combined with the sigma present in the gradient
@@ -118,8 +120,8 @@ public class CannyEdgeFilterAdaptive {
      * removed during non-maximum suppression that disconnected edges and
      * have values above the low threshold of the 2 layer adaptive filter.
      */
-    public void setToRestoreJunctions() {
-        restoreJunctions = true;
+    public void setToNotRestoreJunctions() {
+        restoreJunctions = false;
     }
     
     public void setToUseLineDrawingMode() {
@@ -143,6 +145,17 @@ public class CannyEdgeFilterAdaptive {
     
     public void setToNotUseNonMaximumSuppression() {
         performNonMaxSuppr = false;
+    }
+    
+    /**
+     * use this setting to check the number of thinned points and if the number
+     * is very high, resets the parameters to nLevels=1
+     * and otsuFactor=2.5 and performs the line thinning again.   Note that
+     * if the image has alot of small textures, using PhaseCongruencyDetector
+     * in default mode and k=1 w nsCale = 6 or 3, etc may produce better results.
+     */
+    public void setToUseHigherThresholdIfNeeded() {
+        useHigherThresholdIfNeeded = true;
     }
     
     /**
@@ -245,7 +258,7 @@ public class CannyEdgeFilterAdaptive {
             ImageProcessor imageProcessor = new ImageProcessor();
             imageProcessor.blur(input, sigma, 0, 255);
             approxProcessedSigma = SIGMA.getValue(sigma);
-        }
+        }        
         
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
@@ -266,6 +279,23 @@ public class CannyEdgeFilterAdaptive {
         //(4) adaptive 2 layer filter                        
         apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
             gradientCopyBeforeThinning);
+        
+        if (useHigherThresholdIfNeeded) {
+            int c = countAboveZero(filterProducts.getGradientXY());
+            float cFraction = (float)c/(float)input.getNPixels();
+            if (cFraction > 0.1) {
+                this.useAdaptive2Layer = false;
+                this.numberOfLevelsForHistogram = 1;
+                this.otsuScaleFactor = 2.5f;
+                
+                filterProducts.getGradientX().resetTo(gradientCopyBeforeThinning);
+                if (performNonMaxSuppr) {
+                    applyNonMaximumSuppression(filterProducts, removedDisconnecting);
+                }
+                apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
+                    gradientCopyBeforeThinning);
+            }
+        }
         
         if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
@@ -982,10 +1012,17 @@ public class CannyEdgeFilterAdaptive {
         int n0 = gradientXY.getWidth();
         int n1 = gradientXY.getHeight();
         
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForHolePattern100(correctedPoints, n0, n1);
-        pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
-        pltc.correctForLineHatVert(correctedPoints, n0, n1);
+        // if there are too many points in correctedPoints, then
+        // the image is probably still filled with pixels noise or textures
+        // so do not perform line thinning in that case.
+        int nP = correctedPoints.size();
+        float frac = (float)nP/(float)(n0 * n1);
+        if (nP < 10000) {
+            PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+            pltc.correctForHolePattern100(correctedPoints, n0, n1);
+            pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
+            pltc.correctForLineHatVert(correctedPoints, n0, n1);
+        }
         
         GreyscaleImage out = gradientXY.createWithDimensions();
         for (PairInt p : correctedPoints) {
@@ -996,6 +1033,18 @@ public class CannyEdgeFilterAdaptive {
         }
         
         gradientXY.resetTo(out);
+    }
+
+    private int countAboveZero(GreyscaleImage img) {
+        
+        int n = 0;
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                n++;
+            }
+        }
+        
+        return n;
     }
     
 }

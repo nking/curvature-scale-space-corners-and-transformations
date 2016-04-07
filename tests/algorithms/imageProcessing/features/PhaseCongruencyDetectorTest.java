@@ -23,6 +23,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         //String fileName = "blox.gif";
         //String fileName = "lab.gif";
         String fileName = "house.gif";
+        //String fileName = "seattle.jpg";
+        //String fileName = "merton_college_I_001.jpg";
         //String fileName = "susan-in_plus.png";
         //String fileName = "lena.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -34,7 +36,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         int minWavelength = 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 10;//2;
+        float k = 2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
@@ -42,7 +44,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         
         phaseCDetector.setToCreateCorners();
-        
+                
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
                 sigmaOnf, k, cutOff, g, deviationGain, noiseMethod);
@@ -128,13 +130,29 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             2, 255, 0, 0);
         MiscDebug.writeImage(out2, "_corners_");
                 
-        // ---- compare to CannyEdgeFilter ----
-        img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-        
-        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
-        canny1.applyFilter(img);
-        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
-        
+        String[] fileNames = new String[]{
+            "blox.gif", "lab.gif", "house.gif", "checkerboard_01.jpg", 
+            "merton_college_I_001.jpg", "seattle.jpg", "campus_010.jpg"
+        };
+        for (String fn : fileNames) {
+            
+            System.out.println("fileName=" + fn);
+            
+            filePath = ResourceFinder.findFileInTestResources(fn);
+
+            // ---- compare to CannyEdgeFilter ----
+            img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+
+            CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
+            canny1.setToUseHigherThresholdIfNeeded();
+            canny1.applyFilter(img);
+            for (int i = 0; i < img.getNPixels(); ++i) {
+                if (img.getValue(i) > 0) {
+                    img.setValue(i, 255);
+                }
+            }
+            MiscDebug.writeImage(img, "_canny_" + fn);
+        }
     }
     
 }
