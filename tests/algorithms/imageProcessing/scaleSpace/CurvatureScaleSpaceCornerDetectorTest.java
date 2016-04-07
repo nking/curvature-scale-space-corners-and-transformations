@@ -112,120 +112,6 @@ ImageIOHelper.writeOutputImage(dirPath + "/sp1.png", cImg);
         ImageDisplayer.displayImage("convolved edge", cImg);        
     }
     
-    public void testScaleSpaceImagesFigure2() throws Exception {
-        
-        System.out.println("testScaleSpaceImagesFigure2");
-                        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
-        // IEEE 'TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, 
-        // VOL. PAMI-8, NO. 1. JANUARY 1986
-        // Scale-Based Description and Recognition of Planar Curves and 
-        // Two-Dimensional Shapes by FARZIN MOKHTARIAN AND ALAN MACKWORTH
-        String filePath = ResourceFinder.findFileInTestResources("africa2.png");
-        
-        ImageExt img = ImageIOHelper.readImageExt(filePath);
-        
-        CurvatureScaleSpaceCornerDetector detector = new
-            CurvatureScaleSpaceCornerDetector(img);
-                        
-        detector.useLineDrawingMode();
-        
-        detector.initialize();
-        
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
-            detector.findCornersInScaleSpaceMaps(detector.getEdges(),
-                detector.getCorners());
-      
-        Iterator<Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > > iter = 
-            map.entrySet().iterator();
-        
-        PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
-        PolygonAndPointPlotter plotterX = new PolygonAndPointPlotter();
-        PolygonAndPointPlotter plotterY = new PolygonAndPointPlotter();
-        
-        while (iter.hasNext()) {
-            
-            Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > entry = iter.next();
-            
-            PairIntArray edge = entry.getKey();
-            
-            //======== draw the sigma=4  k vs t figure, x vs t, and y vs t ======
-            
-            Map<SIGMA, ScaleSpaceCurve> mapOfScaleSpacesForAnEdge = entry.getValue();
-            ScaleSpaceCurve scaleSpaceCurveSigma = 
-                mapOfScaleSpacesForAnEdge.get(SIGMA.FOUR);
-            
-            if (scaleSpaceCurveSigma == null || scaleSpaceCurveSigma.getSize() < 2) {
-                continue;
-            }
-                        
-            float[] xPoints = new float[scaleSpaceCurveSigma.getSize()];
-            float[] yPoints = new float[xPoints.length];
-            for (int ii = 0; ii < xPoints.length; ii++) {
-                xPoints[ii] = ii;
-            }
-            float xMin = 0;
-            float xMax = 1.1f * algorithms.misc.MiscMath.findMax(xPoints);
-            float yMin, yMax;
-            
-            // ============ draw X(t,sigma) =============
-            for (int ii = 0; ii < xPoints.length; ++ii) {
-                yPoints[ii] = scaleSpaceCurveSigma.getX(ii);
-            }
-            yMin = 0.9f * algorithms.misc.MiscMath.findMin(yPoints);
-            yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
-
-            plotterX.addPlot(
-                0, xMax, yMin, yMax,
-                null, null, xPoints, yPoints, 
-                "t vs. X(t, sigma)");
-            String filePathX = plotterX.writeFile2();
-
-                        
-            for (int ii = 0; ii < xPoints.length; ii++) {
-                yPoints[ii] = scaleSpaceCurveSigma.getK(ii);
-            }
-            yMin = algorithms.misc.MiscMath.findMin(yPoints);
-            if (yMin < 0) {
-                yMin *= 1.1;
-            } else {
-                yMin *= 0.9;
-            }
-            yMax = algorithms.misc.MiscMath.findMax(yPoints);
-            // ==== k vs t
-            plotterC.addPlot(
-                xMin, xMax, yMin, yMax,
-                null, null, xPoints, yPoints,
-                "t vs. curvature");
-
-            String filePathC = plotterC.writeFile();
-            
-            // ============ draw Y(t,sigma) =============
-            Arrays.fill(yPoints, 0);
-            for (int ii = 0; ii < xPoints.length; ii++) {
-                yPoints[ii] = scaleSpaceCurveSigma.getY(ii);
-            }
-
-            yMin = algorithms.misc.MiscMath.findMin(yPoints);
-            if (yMin < 0) {
-                yMin *= 1.1;
-            } else {
-                yMin *= 0.9;
-            }
-            yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
-
-            plotterY.addPlot(
-                xMin, xMax, yMin, yMax,
-                xPoints, yPoints, xPoints, yPoints, 
-                "t vs. Y(t, sigma)");
-
-            String filePath3 = plotterY.writeFile3();
-            
-            break;
-        }
-    }
-    
     public void testScaleSpaceImagesFigure3() throws Exception {
         
         System.out.println("testScaleSpaceImagesFigure3");
@@ -300,12 +186,11 @@ ImageIOHelper.writeOutputImage(dirPath + "/sp1.png", cImg);
         try {
             
             CurvatureScaleSpaceCornerDetectorTest test = 
-                new CurvatureScaleSpaceCornerDetectorTest("StackTest");
+                new CurvatureScaleSpaceCornerDetectorTest(
+                    "CurvatureScaleSpaceCornerDetectorTest");
             
             test.testConvolve_image();
-            
-            test.testScaleSpaceImagesFigure2();
-            
+                        
             test.testScaleSpaceImagesFigure3();
             
         } catch (Exception e) {

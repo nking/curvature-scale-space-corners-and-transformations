@@ -2,6 +2,7 @@ package algorithms.imageProcessing.optimization;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.imageProcessing.CannyEdgeFilterSettings;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -123,12 +124,13 @@ public class SkylineDownhillSimplexTest extends TestCase {
             SkylineExtractor.RemovedSets removedSets = 
                 skylineExtractor.new RemovedSets();
             PairIntArray outputSkyCentroid = new PairIntArray();
+            
+            CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
         
             Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
                 detector.getEdgeFilterProducts().getTheta(), 
                 detector.getEdgeFilterProducts().getGradientXY(), 
-                img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
-                removedSets);
+                img, settings, outputSkyCentroid, removedSets);
         
             seedPoints.add(points);
             

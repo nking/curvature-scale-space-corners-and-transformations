@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
-import algorithms.imageProcessing.CannyEdgeFilterSettings;
 import algorithms.imageProcessing.ClosedCurveAndJunctionFinder;
 import algorithms.imageProcessing.EdgeExtractorWithJunctions;
 import algorithms.imageProcessing.EdgeFilterProducts;
@@ -11,15 +10,9 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.SkylineExtractor;
-import algorithms.misc.HistogramHolder;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayComparator;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,20 +39,12 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      */
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
     
-    /**
-     * if extractSkline is true, this is populated with the sky line
-     * edge(s).
-     */
-    protected final List<PairIntArray> skylineEdges = new ArrayList<PairIntArray>();
-        
-    protected boolean doNotNormalizeByHistogram = false;
+    protected boolean doNormalizeByHistogram = false;
     
     protected boolean doNotFindJunctions = false;
     
     protected boolean useLineDrawingMode = false;
-    
-    protected boolean extractSkyline = false;
-    
+        
     protected final int trimmedXOffset;
     
     protected final int trimmedYOffset;
@@ -151,8 +136,8 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
      * apply histogram normalization before processing.  For some images, this
      * will increase the contrast of fainter features.
      */
-    public void doNotPerformHistogramEqualization() {
-        this.doNotNormalizeByHistogram = true;
+    public void dotPerformHistogramEqualization() {
+        this.doNormalizeByHistogram = true;
     }
     
     public void doNotFindJunctions() {
@@ -171,13 +156,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
             // (1) apply an edge filter
             applyEdgeFilter();
             
-            if (extractSkyline && skylineEdges.isEmpty()) {
-                
-                List<PairIntArray> skyEdges = extractSkyline();
-                                    
-                skylineEdges.addAll(skyEdges);
-            }
-            
             // (2) extract edges and create junction maps
             extractEdges();
             
@@ -195,84 +173,18 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         
         CannyEdgeFilterAdaptive filter = new CannyEdgeFilterAdaptive();
 
-        CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
+        if (doNormalizeByHistogram) {
+            filter.setToPerformHistogramEqualization();
+        }
+        if (useLineDrawingMode) {
+            filter.setToUseLineDrawingMode();
+        }
         
-        filter.setSetters(settings);
-                
         filter.applyFilter(img);
         
         filterProducts = filter.getFilterProducts();
                                         
         state = CurvatureScaleSpaceMapperState.EDGE_FILTERED;
-    }
-    
-    /**
-     * use the output from the canny edge filter and the theta image
-     * it produced to find the skyline in the image, extract it as
-     * an edge(s) and make several pixels adjustment to align with
-     * the output of the canny edge filter (which should be a binary
-     * image with edges as 0's).   NOTE that this is currently a long
-     * running process.
-     * 
-     */
-    protected List<PairIntArray> extractSkyline() {
-                
-        try {            
-            
-            CannyEdgeFilterSettings settings = getCannyEdgeFilterSettings();
-            
-            SkylineExtractor skylineExtractor = new SkylineExtractor();
-            
-            PairIntArray outputSkyCentroid = new PairIntArray();
-            GreyscaleImage out = skylineExtractor.createSkyline(
-                filterProducts.getTheta(), filterProducts.getGradientXY(),
-                this.originalImg, settings, outputSkyCentroid);
-             
-            List<PairIntArray> skyEdges = skylineExtractor.getSkylineEdges();
-            
-            if (skyEdges == null) {
-                return new ArrayList<PairIntArray>();
-            }
-            
-            Collections.sort(skyEdges, new PairIntArrayComparator());
-
-            //reverse the list so the edges with largest numbers of points are
-            // at smaller indexes
-            int n = skyEdges.size();
-            if (n > 1) {
-                int end = n >> 1;
-                for (int i = 0; i < end; i++) {
-                    int idx2 = n - i - 1;                
-                    PairIntArray swap = skyEdges.get(i);
-                    skyEdges.set(i, skyEdges.get(idx2));
-                    skyEdges.set(idx2, swap);
-                }
-            }
-            
-            return skyEdges;
-            
-        } catch(IOException e) {
-            log.severe(e.getMessage());
-            
-        } catch(NoSuchAlgorithmException e) {
-            log.severe(e.getMessage());
-        }
-        
-        return new ArrayList<PairIntArray>();
-    }
-    
-    public CannyEdgeFilterSettings getCannyEdgeFilterSettings() {
-    
-        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
-        
-        if (!doNotNormalizeByHistogram) {
-            settings.setToNormalizeByHistogram();
-        }
-        if (useLineDrawingMode) {
-            settings.setUseLineDrawingMode();
-        }
-        
-        return settings;
     }
     
     protected void extractEdges() {
@@ -328,10 +240,6 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
         return edges;
     }
     
-    public List<PairIntArray> getSkylineEdges() {
-        return skylineEdges;
-    }
-
     protected void addCurveToImage(PairIntArray edge, GreyscaleImage input, 
         int nExtraForDot, int value) {
         

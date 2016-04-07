@@ -8,10 +8,16 @@ import algorithms.misc.MiscMath;
 import java.util.logging.Logger;
 
 /**
- * The CannyEdge filter is an algorithm to operate on an image to
- * replace objects with their edges.  This class creates only the gradient
- * as the result and does not offer other options.
- * 
+   this version of the Canny edge detector has only a few of the
+   characteristics of the standard canny edge detector.
+   -- creates a gradient image
+   -- applies a 2 layer hysteresis filter to remove low intensity
+      pixels.
+   -- applies a line thinner instead of the non-maximal suppression
+      algorithm 
+
+   no orientation image is available as a result.
+  
  * @author nichole
  */
 public class CannyEdgeFilterLite {

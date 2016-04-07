@@ -421,7 +421,6 @@ public abstract class AbstractFeatureMatcher {
         imageProcessor.blur(gsImg1, SIGMA.ONE);
 
         CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg1);
-        detector.doNotPerformHistogramEqualization();
         detector.findCorners();
 
         Set<CornerRegion> cornerRegions1 = detector.getEdgeCornerRegions(true);
@@ -432,7 +431,6 @@ public abstract class AbstractFeatureMatcher {
         imageProcessor.blur(gsImg2, SIGMA.ONE);
 
         detector = new CurvatureScaleSpaceCornerDetector(gsImg2);
-        detector.doNotPerformHistogramEqualization();
         detector.findCorners();
         Set<CornerRegion> cornerRegions2 = detector.getEdgeCornerRegions(true);
         //cornerRegions2 = detector.getEdgeCornerRegionsInOriginalReferenceFrame(true);

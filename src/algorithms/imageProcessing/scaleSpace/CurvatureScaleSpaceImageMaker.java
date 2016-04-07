@@ -7,12 +7,8 @@ import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  given an image, creates scale space maps to find inflection points

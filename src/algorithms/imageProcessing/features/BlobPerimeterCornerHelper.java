@@ -1329,7 +1329,6 @@ public class BlobPerimeterCornerHelper {
         GreyscaleImage gsImg = this.getGreyscaleImageBinned().copyImage();
         
         CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg);
-        detector.disableJaggedLineCorrections();
         detector.doNotFindJunctions();
         detector.doNotStoreCornerRegions();
         
@@ -1385,7 +1384,6 @@ public class BlobPerimeterCornerHelper {
         GreyscaleImage gsImg = this.getGreyscaleImageBinned().copyImage();
         
         CurvatureScaleSpaceCornerDetector detector = new CurvatureScaleSpaceCornerDetector(gsImg);
-        detector.disableJaggedLineCorrections();
         detector.doNotFindJunctions();
         detector.doNotStoreCornerRegions();
         

@@ -7,10 +7,9 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.MiscDebug;
+import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairInt;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The code is implemented from interpreting several papers by the authors
@@ -61,17 +58,8 @@ public class CurvatureScaleSpaceCornerDetector extends
     protected Map<Integer, List<CornerRegion>> edgeCornerRegionMap = new
         HashMap<Integer, List<CornerRegion>>();
     
-    /**
-     * corners populated if extractSkyline is true
-     */
-    protected PairIntArray skylineCorners = new PairIntArray();
-
-    protected boolean enableJaggedLineCorrections = true;
-    
     protected float factorIncreaseForCurvatureMinimum = 1.f;
-    
-    protected boolean performWholeImageCorners = true;
-    
+        
     protected boolean doStoreCornerRegions = true;
             
     public CurvatureScaleSpaceCornerDetector(final ImageExt input) {
@@ -90,24 +78,6 @@ public class CurvatureScaleSpaceCornerDetector extends
         super(input, theEdges);
     }
     
-    /**
-     * set the edge detector to create edges that are better for outdoor
-     * conditions and calculate corners only for the skyline.  
-     * Note that the skyline extraction is currently
-     * a long running process.
-     */
-    void calculateSkylineCornersOnly() {
-                
-        performWholeImageCorners = false;
-    }
-  
-    public void enableJaggedLineCorrections() {
-        enableJaggedLineCorrections = true;
-    }
-    public void disableJaggedLineCorrections() {
-        enableJaggedLineCorrections = false;
-    }
-    
     public void doNotStoreCornerRegions() {
         doStoreCornerRegions = false;
     }
@@ -121,104 +91,68 @@ public class CurvatureScaleSpaceCornerDetector extends
     }
     
     public void findCorners() {
-
+        
         // extract edges and junction maps:
         initialize();
-
-        if (extractSkyline && !skylineEdges.isEmpty()) {
-            calculateSkylineCorners();
-        }
-
-        if (!performWholeImageCorners) {
-            return;
-        }
-             
-        // not re-using return maps for now, but they are available here
-        // while refactoring the public method returns and signatures
+        
+        /*
         Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(edges, corners);        
-    }
-    
-    /**
-     * Find corners in the edges by creating scale space maps for each edge that
-     * range from a maximum value determined in getMaxSIGMAForECSS() and
-     * determine the corners in the highest sigma of those maps and refine the
-     * corner locations in the smaller sigma maps.  The corners are found using
-     * the curvature minima and maxima points in the curve.  A lower threshold
-     * is determined and used during the maxima finding and minima comparison.
-     * Each corner candidate is larger than one of the adjacent minima by
-     * a factor such as 2 or 3.
-     * The results are set in the instance variable corners.
-     * The returned variable is the set of scale space maps which might be
-     * useful for other purposes, but are no longer needed for the corner
-     * determination.
-     *
-     * @param theEdges
-     * @param outputCorners
-     * @return scale space maps for each edge
-     */
-    protected Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> >
-    findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
-        final PairIntArray outputCorners) {
-
-        CSSCornerMaker cornerMaker = new CSSCornerMaker(this.img.getWidth(),
-            this.img.getHeight());
+            findCornersInScaleSpaceMaps(edges, corners);
+        */
+        // changing to use hough transforms to clean the lines of corners 
+        // created by line rendering
+        Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
+            = new HashMap<Integer,Set<PairIntWithIndex>>();
+                
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
+        cornerMaker.doNotStoreCornerRegions();
+        cornerMaker.disableJaggedLineCorrections();
+        List<CornerArray> cornerList =
+            cornerMaker.findCornersInScaleSpaceMaps(edges, emptyJunctionsMap);
         
-        if (enableJaggedLineCorrections) {
-            cornerMaker.enableJaggedLineCorrections();
-        }
-        
-        if (!doStoreCornerRegions) {
-            cornerMaker.doNotStoreCornerRegions();
-        }
-        
-        cornerMaker.increaseFactorForCurvatureMinimum(
-            factorIncreaseForCurvatureMinimum);
-        
-        //map w/ key = edge index,
-        //   values = junctions on edge as (x,y) and edge curve indexs
-        Map<Integer, Set<PairIntWithIndex>> junctionCoords = getJunctionCoordinates();
-        
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, junctionCoords,
-                outputCorners); 
-        
-        if (doStoreCornerRegions) {
-            edgeCornerRegionMap.clear();
-            Map<Integer, List<CornerRegion>> tmp = cornerMaker.getEdgeCornerRegionMap();
-            edgeCornerRegionMap.putAll(tmp);
-        }
-    
-        //TODO: place in the replacement for aspects:
-        /*if (true) {
-            try {
-                Image imgCp = this.img.copyToColorGreyscale();
-                ImageIOHelper.addAlternatingColorCurvesToImage(edges, imgCp, 3);
-                MiscDebug.writeImage(imgCp, "_dbg_edges_");
-                imgCp = imgCp = this.img.copyToColorGreyscale();
-                for (Entry<Integer, List<CornerRegion>> entry : edgeCornerRegionMap.entrySet()) {
-                    for (CornerRegion cr : entry.getValue()) {
-                        int x = cr.getX()[cr.getKMaxIdx()];
-                        int y = cr.getY()[cr.getKMaxIdx()];
-                        ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
-                    }
+        /*
+        filter out small curvature:
+        see line 64 of comments in CornerRegion.java.
+        for curvature smaller than 0.2 won't see changes in slope in the
+             neighboring 2 points on either side.
+        */
+        Map<PairInt, Float> cornerMap = new HashMap<PairInt, Float>();
+        for (int i = 0; i < cornerList.size(); ++i) {
+            CornerArray ca = cornerList.get(i);
+            for (int idx = 0; idx < ca.getN(); ++idx) {
+                float curvature = ca.getCurvature(idx);
+                
+                if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
+                                        
+                    cornerMap.put(new PairInt(Math.round(ca.getX(idx)),
+                        Math.round(ca.getY(idx))), 
+                        Float.valueOf(ca.getCurvature(idx)));
                 }
-                MiscDebug.writeImage(imgCp, "_dbg_cornerregions_");
-                imgCp = this.img.copyToColorGreyscale();
-                for (int ii = 0; ii < outputCorners.getN(); ++ii) {
-                    int x = outputCorners.getX(ii);
-                    int y = outputCorners.getY(ii);
-                    ImageIOHelper.addPointToImage(x, y, imgCp, 2, 255, 0, 0);
-                }
-                MiscDebug.writeImage(imgCp, "_dbg_corners_");
-            } catch (IOException ex) {
-                Logger.getLogger(this.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }*/
+        }
         
-        return sMap;
+        Set<PairInt> edgeJunctions = new HashSet<PairInt>();
+        for (Entry<Integer, Set<Integer>> entry : junctionMap.entrySet()) {
+            int pixIdx = entry.getKey().intValue();
+            int col = img.getCol(pixIdx);
+            int row = img.getRow(pixIdx);
+            PairInt p = new PairInt(col, row);
+            edgeJunctions.add(p);
+        }
+        
+        //remove intra-line corners from corner map
+        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(edges, 
+            cornerMap, edgeJunctions, img.getWidth(), img.getHeight());
+        
+        corners = new PairIntArray();
+        for (Entry<PairInt, Float> entry : cornerMap.entrySet()) {
+            int x = entry.getKey().getX();
+            int y = entry.getKey().getY();
+            corners.add(x, y);
+        }
+        
     }
-
+    
     public PairIntArray getCorners() {
         return corners;
     }
@@ -244,21 +178,6 @@ public class CurvatureScaleSpaceCornerDetector extends
             y += this.trimmedYOffset;
             co.add(x, y);
         }*/
-
-        return co;
-    }
-
-    public PairIntArray getSkylineCornersInOriginalReferenceFrame() {
-
-        PairIntArray co = new PairIntArray();
-
-        for (int i = 0; i < skylineCorners.getN(); i++) {
-            int x = skylineCorners.getX(i);
-            int y = skylineCorners.getY(i);
-            x += this.trimmedXOffset;
-            y += this.trimmedYOffset;
-            co.add(x, y);
-        }
 
         return co;
     }
@@ -304,92 +223,12 @@ MultiArrayMergeSort.sortByYThenX(cp);
         return output;
     }
 
-    public List<PairIntArray> getSkylineEdgesInOriginalReferenceFrame() {
-
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
-
-        for (int i = 0; i < skylineEdges.size(); i++) {
-
-            PairIntArray ce = new PairIntArray();
-
-            PairIntArray edge = skylineEdges.get(i);
-
-            for (int j = 0; j < edge.getN(); j++) {
-                int x = edge.getX(j);
-                int y = edge.getY(j);
-                x += this.trimmedXOffset;
-                y += this.trimmedYOffset;
-                ce.add(x, y);
-            }
-
-            output.add(ce);
-        }
-
-        return output;
-    }
-
     private List<PairIntArray> copy(List<PairIntArray> edges) {
         List<PairIntArray> copied = new ArrayList<PairIntArray>();
         for (PairIntArray edge : edges) {
             copied.add(edge.copy());
         }
         return copied;
-    }
-
-    //NOT READY FOR USE YET
-    private void calculateSkylineCorners() {
-
-        if (!extractSkyline) {
-            return;
-        }
-
-        PairIntArray theSkylineCorners = new PairIntArray();
-    
-        enableJaggedLineCorrections = false;
-        
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > maps =
-            findCornersInScaleSpaceMaps(skylineEdges, theSkylineCorners);
-
-        // TODO: improve this for resolution
-        
-        // smoothing does not make fewer points, so using min curvature factor
-        
-        if (filterProducts == null) {
-            throw new IllegalStateException("Error in use of method.  filterProducts should not be null.");
-        }
-        
-        float nGoalCorners = (filterProducts.getGradientXY().getNPixels() 
-            < 500000) ? 50.f : 100.f;
-        
-        // want about 50 points
-        float factor = (float)theSkylineCorners.getN()/nGoalCorners;
-        
-        if (factor > 1.2) {
-            
-            //TODO: consider saving the space curves to make recalc faster
-            
-            increaseFactorForCurvatureMinimum(4.0f * factor);
-            
-            PairIntArray theSkylineCorners2 = new PairIntArray();
-            
-            maps = findCornersInScaleSpaceMaps(skylineEdges, theSkylineCorners2);
-            
-            log.info("before curvature factor change, number of skyline corners=" 
-                + theSkylineCorners.getN());
-            log.info("after=" + theSkylineCorners2.getN());
-            
-            theSkylineCorners = theSkylineCorners2;
-            
-            resetFactorForCurvatureMinimum();
-        }
-        
-        if (theSkylineCorners.getN() > 0) {
-            skylineCorners.addAll(theSkylineCorners);
-        }
-        
-        enableJaggedLineCorrections = true;
-        
-        log.info("number of skyline corners=" + theSkylineCorners.getN());
     }
 
     public Map<Integer, List<CornerRegion>> getEdgeCornerRegionMap() {

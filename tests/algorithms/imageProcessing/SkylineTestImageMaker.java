@@ -791,11 +791,12 @@ public class SkylineTestImageMaker {
         RemovedSets removedSets = skylineExtractor.new RemovedSets();
         PairIntArray outputSkyCentroid = new PairIntArray();
         
+        CannyEdgeFilterSettings settings = new CannyEdgeFilterSettings();
+        
         Set<PairInt> points = skylineExtractor.extractSkyStarterPoints(
             detector.getEdgeFilterProducts().getTheta(), 
             detector.getEdgeFilterProducts().getGradientXY(), 
-            img, detector.getCannyEdgeFilterSettings(), outputSkyCentroid,
-            removedSets);
+            img, settings, outputSkyCentroid, removedSets);
         
         // ---- ready to use findClouds -----
 
