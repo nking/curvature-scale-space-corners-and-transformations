@@ -156,7 +156,7 @@ public class NonMaximumSuppression {
                 double upperAvg = tl + hFrac[or] * (tr - tl);
                 double lowerAvg = bl + hFrac[or] * (br - bl);
                 double v1 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
-
+                
                 if ((img[i0][i1] > v1) ||
                     (useLowerThreshold && (img[i0][i1] > 0.95*v1))) {
                     //x, y location on the `other side' of the point in question
@@ -181,7 +181,7 @@ public class NonMaximumSuppression {
                     upperAvg = tl + hFrac[or] * (tr - tl);
                     lowerAvg = bl + hFrac[or] * (br - bl);
                     double v2 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
-                     
+                    
                     if (useLowerThreshold && (img[i0][i1] <= v2)) {
                         
                         outputCandidateJunctionsToRestore.add(new PairInt(i0, i1));
@@ -222,7 +222,7 @@ public class NonMaximumSuppression {
         for (PairInt p : outputCandidateJunctionsToRestore) {
             int i0 = p.getX();
             int i1 = p.getY();
-            
+             
             boolean disconnects = useLowerThreshold ? 
                 ImageSegmentation.doesDisconnect(output, 
                     neighborCoordOffsets, i0, i1) : false;
@@ -277,7 +277,7 @@ public class NonMaximumSuppression {
         
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
-                int m = skel[i][j];                
+                int m = skel[i][j];                 
                 output[i][j] *= m;
             }
         }
@@ -302,7 +302,7 @@ public class NonMaximumSuppression {
      */
     public void nonmaxsup(GreyscaleImage img, GreyscaleImage orientation, 
         double radius, boolean useLowerThreshold, 
-        Set<PairIntWithIndex0> outputCandidateJunctionsRemoved) {
+        Set<PairInt> outputCandidateJunctionsRemoved) {
         
         if (img.getWidth() != orientation.getWidth() || 
             img.getHeight() != orientation.getHeight()) {
@@ -326,18 +326,9 @@ public class NonMaximumSuppression {
                 or[i][j] = orientation.getValue(i, j);
             }
         }
-        
-        Set<PairInt> tmp = new HashSet<PairInt>();
-        
-        double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold, tmp);
-        
-        // CannyEdgeFilterAdaptive needs the original pixel values to be
-        // stored in instance for use later
-        for (PairInt p : tmp) {
-            int v = img.getValue(p);
-            PairIntWithIndex0 p2 = new PairIntWithIndex0(p.getX(), p.getY(), v);
-            outputCandidateJunctionsRemoved.add(p2);
-        }
+                
+        double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold, 
+            outputCandidateJunctionsRemoved);
         
         // apply thinning to the image
         for (int i = 0; i < n0; ++i) {

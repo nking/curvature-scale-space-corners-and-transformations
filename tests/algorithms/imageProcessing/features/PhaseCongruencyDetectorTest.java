@@ -149,20 +149,15 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         
         CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
         canny1.applyFilter(img);
-        MiscDebug.writeImage(img, "_gradient_canny_adaptivw_");
+        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
         
-        img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-        canny1 = new CannyEdgeFilterAdaptive();
-        canny1.setToUseAlternateNonMaximumSuppression();
-        canny1.applyFilter(img);
-        MiscDebug.writeImage(img, "_gradient_canny_adaptivw__alt_nms");
     }
     
     public void test1() throws Exception {
         
-        String fileName = "blox.gif";
+        //String fileName = "blox.gif";
         //String fileName = "lab.gif";
-        //String fileName = "house.gif";
+        String fileName = "house.gif";
         //String fileName = "susan-in_plus.png";
         //String fileName = "lena.jpg";
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -171,10 +166,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
        
         CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
         canny1 = new CannyEdgeFilterAdaptive();
-        canny1.setToUseAlternateNonMaximumSuppression();
         canny1.setToRestoreJunctions();
         canny1.applyFilter(img);
-        MiscDebug.writeImage(img, "_gradient_canny_adaptivw__alt_nms");
+        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
     }
     
 }

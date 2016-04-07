@@ -79,9 +79,7 @@ public class CannyEdgeFilterAdaptive {
     private boolean debug = false;
     
     private boolean restoreJunctions = false;
-    
-    private boolean useAlternateNMS = false;
-    
+        
     /**
      * the sigma from the blur combined with the sigma present in the gradient
      * are present in this variable by the end of processing.
@@ -142,10 +140,6 @@ public class CannyEdgeFilterAdaptive {
         performHistEq = true;
     }
     
-    public void setToUseAlternateNonMaximumSuppression() {
-        useAlternateNMS = true;
-    }
-    
     /**
      * by default this is 0.45.
      */
@@ -197,7 +191,7 @@ public class CannyEdgeFilterAdaptive {
         
         if (lineDrawingMode) {
             otsuScaleFactor = 1.0f;
-            apply2LayerFilter(input, new HashSet<PairIntWithIndex0>(), input);
+            apply2LayerFilter(input, new HashSet<PairInt>(), input);
             if (debug) {
                 MiscDebug.writeImage(input, "_after_2_layer_");
             }
@@ -266,14 +260,12 @@ public class CannyEdgeFilterAdaptive {
 
         approxProcessedSigma = Math.sqrt(
             approxProcessedSigma*approxProcessedSigma + (1./4.));
-        
-        //MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
-        
-        Set<PairIntWithIndex0> removedDisconnecting = new HashSet<PairIntWithIndex0>();
+                
+        Set<PairInt> removedDisconnecting = new HashSet<PairInt>();
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
-            applyNonMaximumSuppression(filterProducts, removedDisconnecting);                 
+            applyNonMaximumSuppression(filterProducts, removedDisconnecting);
         }
                 
         //(4) adaptive 2 layer filter                        
@@ -283,6 +275,7 @@ public class CannyEdgeFilterAdaptive {
         if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
             int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
+            
             MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
             curveHelper.additionalThinning45DegreeEdges2(
                 filterProducts.getTheta(), filterProducts.getGradientXY(), 
@@ -327,7 +320,7 @@ public class CannyEdgeFilterAdaptive {
         calculation.
     */
     protected void apply2LayerFilter(final GreyscaleImage gradientXY,
-        Set<PairIntWithIndex0> removedDisconnecting,
+        Set<PairInt> removedDisconnecting,
         GreyscaleImage gradientCopyBeforeThinning) {
         
         int n = gradientXY.getNPixels();
@@ -463,14 +456,10 @@ public class CannyEdgeFilterAdaptive {
         }
         
         gradientXY.resetTo(img2);
-        
-        if (useAlternateNMS) {
-            MiscDebug.writeImage(gradientXY, "_before_corrections");
-            applyPostLineThinningCorrections(gradientXY, 
-                gradientCopyBeforeThinning);
-            MiscDebug.writeImage(gradientXY, "_before_restore_junctions");
-        }
-        
+             
+        applyPostLineThinningCorrections(gradientXY, 
+            gradientCopyBeforeThinning);
+             
         if (restoreJunctions) {
         
             // while have information about the thresholds, will use them to
@@ -479,7 +468,7 @@ public class CannyEdgeFilterAdaptive {
                 = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
                     0, 0);
 
-            for (PairIntWithIndex0 p : removedDisconnecting) {
+            for (PairInt p : removedDisconnecting) {
                                 
                 if (ImageSegmentation.doesDisconnect(gradientXY,
                     neighborCoordOffsets, p.getX(), p.getY())) {
@@ -492,20 +481,20 @@ public class CannyEdgeFilterAdaptive {
                         tHigh = otsuScaleFactor * pixelThresholds[i];
                         tLow = tHigh/factorBelowHighThreshold;
                     }
-
-                    if (p.getPixIndex() > tLow) {
+                    
+                    int v = gradientCopyBeforeThinning.getValue(p);
+                                      
+                    if (v > tLow) {
                         if (isAdjacentToAHorizOrVertLine(gradientXY, x, y, 3)) {
                             gradientXY.setValue(x, y, 255);
                         }
                     }
                 }
             }
-            MiscDebug.writeImage(gradientXY, "_after_restore_junctions");
-            if (useAlternateNMS) {
-                applyPostLineThinningCorrections(gradientXY, 
-                    gradientCopyBeforeThinning);
-                MiscDebug.writeImage(gradientXY, "_after_corrections_2");
-            }
+     
+            applyPostLineThinningCorrections(gradientXY, 
+                gradientCopyBeforeThinning);
+            
         }
     }
     
@@ -699,141 +688,15 @@ public class CannyEdgeFilterAdaptive {
         return g;
     }
 
-    private void applyAlternateNonMaximumSuppression(EdgeFilterProducts filterProducts,
-        Set<PairIntWithIndex0> disconnectingRemovals) {
+    private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
+        Set<PairInt> disconnectingRemovals) {
         
          NonMaximumSuppression nms = new NonMaximumSuppression();
-            
-         //TODO: radius can be adjusted from 1 to higher
-         nms.<PairIntWithIndex0>nonmaxsup(filterProducts.getGradientXY(),
-            filterProducts.getTheta(), 1.5, false, disconnectingRemovals);
          
-    }
-      
-    private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
-        Set<PairIntWithIndex0> disconnectingRemovals) {
-        
-        if (useAlternateNMS) {
-            
-            applyAlternateNonMaximumSuppression(filterProducts, disconnectingRemovals);
-            
-            return;
-        }
-        
-        
-        int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
-        int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
-        
-        GreyscaleImage theta = filterProducts.getTheta();
-        
-        GreyscaleImage img = filterProducts.getGradientXY();
-                   
-        int n = img.getNPixels();
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        PairInt[][] neighborCoordOffsets
-            = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
-                0, 0);
-        
-        /*
-         *           Y
-         *          90
-         *     135   |    +45
-         *           |
-         *   180------------ 0   X
-         *           |
-         *    225    |   315
-         *          270
-        */
-        for (int x = 1; x < (w - 1); ++x) {
-            for (int y = 1; y < (h - 1); ++y) {
-            
-                int pixIdx = theta.getInternalIndex(x, y);
-           
-                int t = theta.getValue(pixIdx);
-
-                int compDx1, compDy1, compDx2, compDy2;
-                
-                // angles within minResolvableAngle of horizontal or vertical
-                // are orthogonal to the pattern present for other pixels
-                
-                if ((Math.abs(t - 0) < minResolvableAngle) || 
-                    (Math.abs(180 - t) < minResolvableAngle) || 
-                    (Math.abs(360 - t) < minResolvableAngle)) {
-                    // measured 0 or 180, but should be 90 or 270
-                    compDx1 = 1;
-                    compDy1 = 0;
-                    compDx2 = -1;
-                    compDy2 = 0;
-                } else if ((Math.abs(90 - t) < minResolvableAngle) ||
-                    (Math.abs(270 - t) < minResolvableAngle) ) {
-                    // measured 90 or 270, but should be 0 or 180
-                    compDx1 = 0;
-                    compDy1 = 1;
-                    compDx2 = 0;
-                    compDy2 = -1;
-                } else if ((Math.abs(t - 90) < 22.5) || 
-                    (Math.abs(270 - t) < 22.5)) {
-                    // is within 45 degree cone centered at 90 or 270
-                    compDx1 = 0;
-                    compDy1 = 1;
-                    compDx2 = 0;
-                    compDy2 = -1;
-                } else if ((Math.abs(t - 0) < 22.5) ||
-                    (Math.abs(180 - t) < 22.5) | (Math.abs(360 - t) < 22.5)) {
-                    // is within 45 degree cone centered at 0 or 180
-                    compDx1 = -1;
-                    compDy1 = 0;
-                    compDx2 = 1;
-                    compDy2 = 0;
-                } else if ((Math.abs(t - 45) < 22.5) || 
-                    (Math.abs(225 - t) < 22.5)) {
-                    // is within 45 degree cone centered at 45 or 225
-                    compDx1 = 1; 
-                    compDy1 = 1;
-                    compDx2 = -1;
-                    compDy2 = -1;
-                } else if ((Math.abs(t - 135) < 22.5) || 
-                    (Math.abs(315 - t) < 22.5)) {
-                    // is within 45 degree cone centered at 135 or 315
-                    compDx1 = -1; 
-                    compDy1 = 1;
-                    compDx2 = 1;
-                    compDy2 = -1;
-                } else {
-                    throw new IllegalStateException("Error in algorithm bounds: " 
-                        +  " t=" + t);
-                }
-
-                int v = img.getValue(x, y);
-            
-                int v1 = img.getValue(x + compDx1, y + compDy1);
-                int v2 = img.getValue(x + compDx2, y + compDy2);
-            
-                if ((v < v1) || (v < v2)) {
-                    
-                    if (restoreJunctions) {
-                        boolean disconnects = ImageSegmentation.doesDisconnect(img,
-                            neighborCoordOffsets, x, y);
-
-                        if (disconnects) {
-                            PairIntWithIndex0 p = new PairIntWithIndex0(x, y, v);
-                            disconnectingRemovals.add(p);
-                        }
-                    }
-                    
-                    img.setValue(x, y, 0);
-                }
-            }
-        }
-        
-        // because minResolvableAngle for default settings is smaller than 45/2., 
-        // the resolution correction is usually not necessary, but does no
-        // harm to include it 
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        curveHelper.additionalThinning45DegreeEdges2(theta, img, minResolvableAngle);
+         //TODO: radius can be adjusted from 1 to higher
+         nms.nonmaxsup(filterProducts.getGradientXY(),
+            filterProducts.getTheta(), 1.5, true, disconnectingRemovals);
+         
     }
     
     private void exploreHoughTransforms(GreyscaleImage gradientXY) {
@@ -870,7 +733,7 @@ public class CannyEdgeFilterAdaptive {
             }
             count++;
         }
-        MiscDebug.writeImage(tmp, "_lines_");
+        //MiscDebug.writeImage(tmp, "_lines_");
     }
 
     private void correctThetaBelowResolution(GreyscaleImage theta, 
@@ -912,7 +775,7 @@ public class CannyEdgeFilterAdaptive {
             }
         }
         
-        MiscDebug.writeImage(tmp, "_gXY_BELOW_RESOLUTION_");
+        //MiscDebug.writeImage(tmp, "_gXY_BELOW_RESOLUTION_");
         
         for (int i = 0; i < n; ++i) {
             
