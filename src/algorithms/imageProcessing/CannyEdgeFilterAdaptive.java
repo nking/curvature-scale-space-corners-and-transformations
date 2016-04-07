@@ -1,20 +1,14 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.HoughTransform;
-import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
 import java.util.HashSet;
 import algorithms.util.PairInt;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * The CannyEdge filter is an algorithm to operate on an image to
@@ -190,7 +184,8 @@ public class CannyEdgeFilterAdaptive {
         }
         
         if (lineDrawingMode) {
-            otsuScaleFactor = 1.0f;
+            useAdaptive2Layer = true;
+            this.numberOfLevelsForHistogram = 16;
             apply2LayerFilter(input, new HashSet<PairInt>(), input);
             if (debug) {
                 MiscDebug.writeImage(input, "_after_2_layer_");

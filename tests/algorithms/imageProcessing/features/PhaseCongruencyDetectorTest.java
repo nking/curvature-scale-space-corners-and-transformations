@@ -1,29 +1,13 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
-import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.HistogramEqualization;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.Kernel1DHelper;
-import algorithms.imageProcessing.MorphologicalFilter;
-import algorithms.imageProcessing.NonMaximumSuppression;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.util.Errors;
-import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
-import java.util.Arrays;
-import java.util.List;
 import junit.framework.TestCase;
-import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -151,24 +135,6 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         canny1.applyFilter(img);
         MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
         
-    }
-    
-    public void test1() throws Exception {
-        
-        //String fileName = "blox.gif";
-        //String fileName = "lab.gif";
-        String fileName = "house.gif";
-        //String fileName = "susan-in_plus.png";
-        //String fileName = "lena.jpg";
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-       
-        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
-        canny1 = new CannyEdgeFilterAdaptive();
-        canny1.setToRestoreJunctions();
-        canny1.applyFilter(img);
-        MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
     }
     
 }

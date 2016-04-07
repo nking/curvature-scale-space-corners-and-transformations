@@ -1,7 +1,6 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
@@ -51,6 +50,22 @@ public class EdgeExtractorSimple {
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
                 if (edgeImage[i][j] == 0) {
+                    continue;
+                }
+                points.add(new PairInt(i, j));
+            }
+        }
+        
+    }
+    
+    public EdgeExtractorSimple(GreyscaleImage img) {
+        
+        n0 = img.getWidth();
+        n1 = img.getHeight();
+        
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                if (img.getValue(i, j) == 0) {
                     continue;
                 }
                 points.add(new PairInt(i, j));

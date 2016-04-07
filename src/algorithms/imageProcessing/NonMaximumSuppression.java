@@ -1,6 +1,5 @@
 package algorithms.imageProcessing;
 
-import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;

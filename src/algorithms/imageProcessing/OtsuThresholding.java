@@ -166,9 +166,16 @@ public class OtsuThresholding {
         for (int i = 0; i < img.getNPixels(); ++i) {
             int v = img.getValue(i);
             int binNumberV = (v - 0)/binWidth;
+            if (binNumberV > (twoDHist[0].length - 1)) {
+                binNumberV =twoDHist[0].length - 1;
+            }
             
             int vAvg = avgImg.getValue(i);
             int binNumberVAvg = (vAvg - 0)/binWidthAvg;
+            
+            if (binNumberVAvg > (twoDHist.length - 1)) {
+                binNumberVAvg = twoDHist.length - 1;
+            }
             
             twoDHist[binNumberVAvg][binNumberV]++;
         }
@@ -194,7 +201,10 @@ public class OtsuThresholding {
         
         for (int i = 0; i < img.getNPixels(); ++i) {
             int vAvg = avgImg.getValue(i);
-            int binNumberVAvg = (vAvg - 0)/binWidthAvg;            
+            int binNumberVAvg = (vAvg - 0)/binWidthAvg;  
+            if (binNumberVAvg > (thresholds.length - 1)) {
+                binNumberVAvg = thresholds.length - 1;
+            }
             pixelThresholds[i] = thresholds[binNumberVAvg];
         }
         

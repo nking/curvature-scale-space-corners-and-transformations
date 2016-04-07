@@ -1,8 +1,12 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -68,6 +72,42 @@ public class CannyEdgeFilterAdaptiveTest extends TestCase {
             MiscDebug.writeImage(gsImg, "_canny_adaptive_" + fileNameRoot);
         }
         
+    }
+    
+    public void test1() throws Exception {
+        
+        //String fileName = "blox.gif";
+        //String fileName = "lab.gif";
+        //String fileName = "house.gif";
+        //String fileName = "susan-in_plus.png";
+        String fileName = "africa2.png";
+        //String fileName = "lena.jpg";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+       
+        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
+        canny1.setToUseLineDrawingMode();;
+        //canny1.setToDebug();
+        canny1.setToRestoreJunctions();
+        canny1.applyFilter(img);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                img.setValue(i, 255);
+            }
+        }
+        //MiscDebug.writeImage(img, "_gradient_canny_adaptive_");
+        
+        EdgeExtractorWithJunctions extractor = new EdgeExtractorWithJunctions(img);
+        List<PairIntArray> edges = extractor.findEdges();
+        int n = 0;
+        for (PairIntArray edge : edges) {
+            if (edge.getN() > 3) {
+                n++;
+            }
+        }
+        Map<Integer, Set<Integer>> junctionMap = extractor.getJunctionMap();
+        assertEquals(1, n);
     }
     
 }
