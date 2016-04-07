@@ -2123,9 +2123,9 @@ public class PostLineThinnerCorrections {
 
         Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
         Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
-
+        
         for (PairInt p : points) {
-             
+
             boolean isRemoved = tmpPointsRemoved.contains(p);
             if (isRemoved) {
                 continue;
@@ -2184,7 +2184,7 @@ public class PostLineThinnerCorrections {
                     continue;
                 }
                 PairInt p3 = new PairInt(x, y);
-                tmpPointsAdded.remove(p3);                
+                tmpPointsAdded.remove(p3);              
                 tmpPointsRemoved.add(p3);
             }
 
@@ -2194,7 +2194,7 @@ public class PostLineThinnerCorrections {
                 if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
                     continue;
                 }
-                PairInt p3 = new PairInt(x, y);                
+                PairInt p3 = new PairInt(x, y);                 
                 tmpPointsRemoved.remove(p3);
                 tmpPointsAdded.add(p3);
             }
@@ -4804,7 +4804,7 @@ public class PostLineThinnerCorrections {
         zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
         zeroes.add(new PairInt(2, -2));
         
-        ones.add(new PairInt(1, 2)); ones.add(new PairInt(1, 1));
+        ones.add(new PairInt(1, 2)); ones.add(new PairInt(1, 1)); ones.add(new PairInt(0, 0));
         ones.add(new PairInt(1, -1));  ones.add(new PairInt(1, -2));
         
         changeToZeroes.add(new PairInt(0, 0));
@@ -4812,7 +4812,7 @@ public class PostLineThinnerCorrections {
         changeToOnes.add(new PairInt(1, 0));
         
         int nCorrections = 0;
-        
+
         nCorrections += replacePattern(points, imageWidth, imageHeight,
             zeroes, ones, changeToZeroes, changeToOnes);
         

@@ -1,7 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.HoughTransform;
-import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
@@ -9,6 +9,7 @@ import java.util.HashSet;
 import algorithms.util.PairInt;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -196,7 +197,7 @@ public class CannyEdgeFilterAdaptive {
         
         if (lineDrawingMode) {
             otsuScaleFactor = 1.0f;
-            apply2LayerFilter(input, new HashSet<PairIntWithIndex>());
+            apply2LayerFilter(input, new HashSet<PairIntWithIndex0>(), input);
             if (debug) {
                 MiscDebug.writeImage(input, "_after_2_layer_");
             }
@@ -260,13 +261,15 @@ public class CannyEdgeFilterAdaptive {
         //(2) create gradient
         // uses a binomial filter for a first derivative gradient, sobel.
         filterProducts = createGradient(input);
+        
+        GreyscaleImage gradientCopyBeforeThinning = filterProducts.getGradientXY().copyImage();
 
         approxProcessedSigma = Math.sqrt(
             approxProcessedSigma*approxProcessedSigma + (1./4.));
         
         //MiscDebug.writeImage(filterProducts.getGradientXY(), "_pre_nms_");
         
-        Set<PairIntWithIndex> removedDisconnecting = new HashSet<PairIntWithIndex>();
+        Set<PairIntWithIndex0> removedDisconnecting = new HashSet<PairIntWithIndex0>();
         
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
@@ -274,7 +277,8 @@ public class CannyEdgeFilterAdaptive {
         }
                 
         //(4) adaptive 2 layer filter                        
-        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting);
+        apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
+            gradientCopyBeforeThinning);
         
         if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
@@ -323,7 +327,8 @@ public class CannyEdgeFilterAdaptive {
         calculation.
     */
     protected void apply2LayerFilter(final GreyscaleImage gradientXY,
-        Set<PairIntWithIndex> removedDisconnecting) {
+        Set<PairIntWithIndex0> removedDisconnecting,
+        GreyscaleImage gradientCopyBeforeThinning) {
         
         int n = gradientXY.getNPixels();
         int w = gradientXY.getWidth();
@@ -456,8 +461,15 @@ public class CannyEdgeFilterAdaptive {
                 }
             }
         }
-
+        
         gradientXY.resetTo(img2);
+        
+        if (useAlternateNMS) {
+            MiscDebug.writeImage(gradientXY, "_before_corrections");
+            applyPostLineThinningCorrections(gradientXY, 
+                gradientCopyBeforeThinning);
+            MiscDebug.writeImage(gradientXY, "_before_restore_junctions");
+        }
         
         if (restoreJunctions) {
         
@@ -467,8 +479,8 @@ public class CannyEdgeFilterAdaptive {
                 = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
                     0, 0);
 
-            for (PairIntWithIndex p : removedDisconnecting) {
-                
+            for (PairIntWithIndex0 p : removedDisconnecting) {
+                                
                 if (ImageSegmentation.doesDisconnect(gradientXY,
                     neighborCoordOffsets, p.getX(), p.getY())) {
 
@@ -487,6 +499,12 @@ public class CannyEdgeFilterAdaptive {
                         }
                     }
                 }
+            }
+            MiscDebug.writeImage(gradientXY, "_after_restore_junctions");
+            if (useAlternateNMS) {
+                applyPostLineThinningCorrections(gradientXY, 
+                    gradientCopyBeforeThinning);
+                MiscDebug.writeImage(gradientXY, "_after_corrections_2");
             }
         }
     }
@@ -682,30 +700,18 @@ public class CannyEdgeFilterAdaptive {
     }
 
     private void applyAlternateNonMaximumSuppression(EdgeFilterProducts filterProducts,
-        Set<PairIntWithIndex> disconnectingRemovals) {
-        
-        //TODO: 
-        // -- need to alter NonMaximumSuppression to return the removed
-        //    pixel set
-        // -- need to extract points here to use PostLineThinnerCorrections
-        //    methods below
+        Set<PairIntWithIndex0> disconnectingRemovals) {
         
          NonMaximumSuppression nms = new NonMaximumSuppression();
             
-            //TODO: radius can be adjusted from 1 to higher
-        nms.nonmaxsup(filterProducts.getGradientXY(),
-            filterProducts.getTheta(), 1.5, false);
-
-        /*
-         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-         pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
-         pltc.correctForLineHatHoriz(correctedPoints, thinned2.length, thinned2[0].length);
-         pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length);
-         */
+         //TODO: radius can be adjusted from 1 to higher
+         nms.<PairIntWithIndex0>nonmaxsup(filterProducts.getGradientXY(),
+            filterProducts.getTheta(), 1.5, false, disconnectingRemovals);
+         
     }
-    
+      
     private void applyNonMaximumSuppression(EdgeFilterProducts filterProducts,
-        Set<PairIntWithIndex> disconnectingRemovals) {
+        Set<PairIntWithIndex0> disconnectingRemovals) {
         
         if (useAlternateNMS) {
             
@@ -813,7 +819,7 @@ public class CannyEdgeFilterAdaptive {
                             neighborCoordOffsets, x, y);
 
                         if (disconnects) {
-                            PairIntWithIndex p = new PairIntWithIndex(x, y, v);
+                            PairIntWithIndex0 p = new PairIntWithIndex0(x, y, v);
                             disconnectingRemovals.add(p);
                         }
                     }
@@ -1100,6 +1106,38 @@ public class CannyEdgeFilterAdaptive {
         if (settings.getUseLineDrawingMode()) {
             setToUseLineDrawingMode();
         }
+    }
+
+    private void applyPostLineThinningCorrections(GreyscaleImage gradientXY,
+        GreyscaleImage valuesBeforeThinning) {
+
+        Set<PairInt> correctedPoints = new HashSet<PairInt>();
+        
+        for (int i = 0; i < gradientXY.getWidth(); ++i) {
+            for (int j = 0; j < gradientXY.getHeight(); ++j) {
+                if (gradientXY.getValue(i, j) > 0) {
+                    correctedPoints.add(new PairInt(i, j));
+                }
+            }
+        }
+        
+        int n0 = gradientXY.getWidth();
+        int n1 = gradientXY.getHeight();
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForHolePattern100(correctedPoints, n0, n1);
+        pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
+        pltc.correctForLineHatVert(correctedPoints, n0, n1);
+        
+        GreyscaleImage out = gradientXY.createWithDimensions();
+        for (PairInt p : correctedPoints) {
+                                    
+            int v = valuesBeforeThinning.getValue(p);
+            
+            out.setValue(p.getX(), p.getY(), v);
+        }
+        
+        gradientXY.resetTo(out);
     }
     
 }

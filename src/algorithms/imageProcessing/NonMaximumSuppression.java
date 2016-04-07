@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
@@ -82,15 +83,20 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
+     * @param outputCandidateJunctionsToRestore the points removed within
+     * threshold range are put into this set which can be tested after
+     * 2-layer filter to see if restoring the pixels would restore their
+     * values.
      * @return 
      */
     public double[][] nonmaxsup(double[][] img, double[][] orientation, 
-        double radius, boolean useLowerThreshold) {
+        double radius, boolean useLowerThreshold, 
+        Set<PairInt> outputCandidateJunctionsToRestore) {
         
         if (img.length != orientation.length || img[0].length != orientation[0].length) {
             throw new IllegalArgumentException("img and orientation must be same size");
         }
-        
+                
         if (radius < 1) {
             throw new IllegalArgumentException("radius must be >= 1");
         }
@@ -118,9 +124,7 @@ public class NonMaximumSuppression {
             hFrac[i] = xOff[i] - Math.floor(xOff[i]);
             vFrac[i] = yOff[i] - Math.floor(yOff[i]);
         }
-         
-        Set<PairInt> checkForDisconnects = new HashSet<PairInt>();
-        
+                 
         // run through the image interpolating grey values on each side
         // of the centre pixel to be used for the non-maximal suppression
         for (int i1 = (iRadius + 1); i1 < (n1 - iRadius); ++i1) {
@@ -180,7 +184,7 @@ public class NonMaximumSuppression {
                      
                     if (useLowerThreshold && (img[i0][i1] <= v2)) {
                         
-                        checkForDisconnects.add(new PairInt(i0, i1));
+                        outputCandidateJunctionsToRestore.add(new PairInt(i0, i1));
                     
                     } else if (img[i0][i1] > v2) {
                         
@@ -200,10 +204,12 @@ public class NonMaximumSuppression {
                             location[col][row] = new Complex(col - r * xOff[or],
                                 row + r * yOff[or]);
                         */
+                    } else {
+                        outputCandidateJunctionsToRestore.add(new PairInt(i0, i1));
                     }
                     
                 } else if (useLowerThreshold && (img[i0][i1] > 0.8*v1)) {
-                    checkForDisconnects.add(new PairInt(i0, i1));
+                    outputCandidateJunctionsToRestore.add(new PairInt(i0, i1));
                 }
             }
         }
@@ -212,18 +218,22 @@ public class NonMaximumSuppression {
             = AbstractLineThinner.createCoordinatePointsForEightNeighbors(
                 0, 0);
         
-        for (PairInt p : checkForDisconnects) {
-            int i = p.getX();
-            int j = p.getY();
+        Set<PairInt> addedBack = new HashSet<PairInt>();
+        for (PairInt p : outputCandidateJunctionsToRestore) {
+            int i0 = p.getX();
+            int i1 = p.getY();
             
             boolean disconnects = useLowerThreshold ? 
                 ImageSegmentation.doesDisconnect(output, 
-                    neighborCoordOffsets, i, j) : false;
+                    neighborCoordOffsets, i0, i1) : false;
                        
             if (disconnects) {
-                output[i][j] = img[i][j];
+                output[i0][i1] = img[i0][i1];
+                addedBack.add(p);
             }
         }
+        
+        outputCandidateJunctionsToRestore.removeAll(addedBack);
         
         /*
         // Finally thin the 'nonmaximally suppressed' image by pointwise
@@ -288,9 +298,11 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
+     * @param outputCandidateJunctionsRemoved
      */
     public void nonmaxsup(GreyscaleImage img, GreyscaleImage orientation, 
-        double radius, boolean useLowerThreshold) {
+        double radius, boolean useLowerThreshold, 
+        Set<PairIntWithIndex0> outputCandidateJunctionsRemoved) {
         
         if (img.getWidth() != orientation.getWidth() || 
             img.getHeight() != orientation.getHeight()) {
@@ -315,8 +327,19 @@ public class NonMaximumSuppression {
             }
         }
         
-        double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold);
+        Set<PairInt> tmp = new HashSet<PairInt>();
         
+        double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold, tmp);
+        
+        // CannyEdgeFilterAdaptive needs the original pixel values to be
+        // stored in instance for use later
+        for (PairInt p : tmp) {
+            int v = img.getValue(p);
+            PairIntWithIndex0 p2 = new PairIntWithIndex0(p.getX(), p.getY(), v);
+            outputCandidateJunctionsRemoved.add(p2);
+        }
+        
+        // apply thinning to the image
         for (int i = 0; i < n0; ++i) {
             for (int j = 0; j < n1; ++j) {
                 if (thinned[i][j] == 0) {

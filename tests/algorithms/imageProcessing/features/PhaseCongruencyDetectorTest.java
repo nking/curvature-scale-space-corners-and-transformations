@@ -158,4 +158,23 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         MiscDebug.writeImage(img, "_gradient_canny_adaptivw__alt_nms");
     }
     
+    public void test1() throws Exception {
+        
+        String fileName = "blox.gif";
+        //String fileName = "lab.gif";
+        //String fileName = "house.gif";
+        //String fileName = "susan-in_plus.png";
+        //String fileName = "lena.jpg";
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+       
+        CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();        
+        canny1 = new CannyEdgeFilterAdaptive();
+        canny1.setToUseAlternateNonMaximumSuppression();
+        canny1.setToRestoreJunctions();
+        canny1.applyFilter(img);
+        MiscDebug.writeImage(img, "_gradient_canny_adaptivw__alt_nms");
+    }
+    
 }
