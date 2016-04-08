@@ -256,7 +256,7 @@ public final class CurvatureScaleSpaceImageMaker extends
         
         for (PairIntArray edge : edges) {
             if (edge instanceof PairIntArrayWithColor) {
-                if (((PairIntArrayWithColor)edge).getColor() == 1) {
+                if (((PairIntArrayWithColor)edge).isClosedCurve()) {
                     closedCurves.add(edge);
                 }
             }

@@ -29,9 +29,9 @@ public class PairIntArrayWithColorTest {
         xy.add(10, 20);
         
         PairIntArrayWithColor xyColor = new PairIntArrayWithColor(xy);
-        xyColor.setColor(1);
+        xyColor.setAsClosedCurve();
         
-        assertTrue(xyColor.getColor() == 1);
+        assertTrue(xyColor.isClosedCurve());
         
         assertTrue(xyColor.getN() == 1);
         

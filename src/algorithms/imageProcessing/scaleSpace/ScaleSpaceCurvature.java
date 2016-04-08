@@ -81,7 +81,7 @@ public class ScaleSpaceCurvature {
         int n = curve.getN();
 
         boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)
-            && (((PairIntArrayWithColor) curve).getColor() == 1);
+            && (((PairIntArrayWithColor) curve).isClosedCurve());
 
         ScaleSpaceCurve scaleSpaceCurve = new ScaleSpaceCurve(resultingSigma,
             curve, isClosedCurved);

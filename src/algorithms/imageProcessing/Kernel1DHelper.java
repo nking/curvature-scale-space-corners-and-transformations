@@ -34,7 +34,7 @@ public class Kernel1DHelper {
         int curveLength = curve.getN();
         
         boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)
-            && (((PairIntArrayWithColor) curve).getColor() == 1);
+            && ((PairIntArrayWithColor) curve).isClosedCurve();
             
         /*
         correct for the edges.

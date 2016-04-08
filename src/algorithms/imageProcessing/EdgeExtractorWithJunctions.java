@@ -1905,7 +1905,7 @@ MiscDebug.writeImage(img2, "output_after_merges_" + MiscDebug.getCurrentTimeForm
         
         if (isAdjacent) {
             PairIntArrayWithColor p = new PairIntArrayWithColor(out);
-            p.setColor(1);
+            p.setAsClosedCurve();
             out = p;
         }
 

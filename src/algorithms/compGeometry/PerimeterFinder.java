@@ -1912,7 +1912,7 @@ public class PerimeterFinder {
         
         if (isAdjacent) {
             PairIntArrayWithColor p = new PairIntArrayWithColor(orderedEdge);
-            p.setColor(1);
+            p.setAsClosedCurve();
             orderedEdge = p;
         }
             

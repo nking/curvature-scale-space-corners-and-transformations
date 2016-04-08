@@ -731,7 +731,7 @@ public class ContourFinder {
             betweenInflectionIndexes.add(Integer.valueOf(iMid));
         }
         boolean isClosedCurved = (edge instanceof PairIntArrayWithColor)
-            && (((PairIntArrayWithColor) edge).getColor() == 1);
+            && ((PairIntArrayWithColor) edge).isClosedCurve();
         if (isClosedCurved) {
             int n = indexes.size();
             int i0 = indexes.get(n - 1);

@@ -1,8 +1,6 @@
 package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
-import java.util.Arrays;
 
 /**
  * extends ScaleSpaceCurve to hold the gaussian 2nd derivatives in x, and y

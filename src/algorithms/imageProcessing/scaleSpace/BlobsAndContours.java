@@ -300,7 +300,7 @@ public class BlobsAndContours  {
         // presumably these are all closed curves, but verify that:
         boolean isClosedCurve = false;
         if ((curve instanceof PairIntArrayWithColor) &&
-            (((PairIntArrayWithColor)curve).getColor() == 1)) {
+            ((PairIntArrayWithColor)curve).isClosedCurve()) {
             isClosedCurve = true;
         }
 
@@ -559,7 +559,7 @@ public class BlobsAndContours  {
         // presumably these are all closed curves, but verify that:
         boolean isClosedCurve = false;
         if ((curve instanceof PairIntArrayWithColor) &&
-            (((PairIntArrayWithColor)curve).getColor() == 1)) {
+            ((PairIntArrayWithColor)curve).isClosedCurve()) {
             isClosedCurve = true;
         }
 

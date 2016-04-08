@@ -138,6 +138,7 @@ public class CannyEdgeFilterAdaptive {
     
     /**
      * by default this is 0.45.
+     * @param factor
      */
     public void setOtsuScaleFactor(float factor) {
         otsuScaleFactor = factor;
@@ -167,6 +168,7 @@ public class CannyEdgeFilterAdaptive {
      * over the image, one in which the average intensity of neighbors is
      * in bin1 and the other in bin2, etc... the histograms are indexed
      * by the average values of the neighbors.
+     * @param nLevels
      */
     public void overrideDefaultNumberOfLevels(int nLevels) {
         this.numberOfLevelsForHistogram = nLevels;
@@ -296,7 +298,7 @@ public class CannyEdgeFilterAdaptive {
                     gradientCopyBeforeThinning);
             }
         }
-        
+                
         if (restoreJunctions) {
             int minResolution = (int)Math.ceil(2.35 * approxProcessedSigma);
             int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
@@ -315,8 +317,8 @@ public class CannyEdgeFilterAdaptive {
             }
         }
         
-        //exploreHoughTransforms(filterProducts.getGradientXY());
-                       
+        applyHoughBasedLineThinning(filterProducts);
+                               
         input.resetTo(filterProducts.getGradientXY());
     }
    
@@ -723,113 +725,6 @@ public class CannyEdgeFilterAdaptive {
             filterProducts.getTheta(), 1.5, true, disconnectingRemovals);
          
     }
-    
-    private void exploreHoughTransforms(GreyscaleImage gradientXY) {
-        
-        int n = gradientXY.getNPixels();
-        int w = gradientXY.getWidth();
-        int h = gradientXY.getHeight();
-        
-        Set<PairInt> points = new HashSet<PairInt>();
-        
-        for (int i = 0; i < n; ++i) {
-            if (gradientXY.getValue(i) > 0) {
-                points.add(new PairInt(gradientXY.getCol(i), gradientXY.getRow(i)));
-            }
-        }
-        
-        HoughTransform ht = new HoughTransform();
-        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
-        
-        int count = 0;
-        Image tmp = gradientXY.copyToColorGreyscale();
-        for (int i = 0; i < tmp.getNPixels(); ++i) {
-            if (tmp.getR(i) > 0) {
-                tmp.setRGB(i, 0, 0, 0);
-            } else {
-                tmp.setRGB(i, 255, 255, 255);
-            }
-        }
-        for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
-            Set<PairInt> group = entry.getKey();
-            int[] clr = ImageIOHelper.getNextRGB(count);
-            for (PairInt p : group) {
-                tmp.setRGB(p.getX(), p.getY(), clr[0], clr[1], clr[2]);
-            }
-            count++;
-        }
-        //MiscDebug.writeImage(tmp, "_lines_");
-    }
-
-    private void correctThetaBelowResolution(GreyscaleImage theta, 
-        GreyscaleImage gXYMask, double theApproxProcessedSigma) {
-        
-        int minResolution = (int)Math.ceil(2.35 * theApproxProcessedSigma);
-        int minResolvableAngle = (int)Math.ceil(Math.atan2(1, minResolution) * 180./Math.PI);
-        
-        int n = theta.getNPixels();
-        int w = theta.getWidth();
-        int h = theta.getHeight();
-        
-        int mr = (int)Math.ceil(this.approxProcessedSigma * 2.35);
-        Image tmp = new Image(theta.getWidth(), theta.getHeight());
-        for (int i = 0; i < n; ++i) {
-            
-            if (gXYMask.getValue(i) == 0) {
-                continue;
-            }
-            
-            int t = theta.getValue(i);
-
-            if (
-                (Math.abs(t - 0) < minResolvableAngle) || 
-                (Math.abs(180 - t) < minResolvableAngle) ||
-                (Math.abs(360 - t) < minResolvableAngle) ||
-                (Math.abs(90 - t) < minResolvableAngle) ||
-                (Math.abs(270 - t) < minResolvableAngle) ) {
-                
-                if ((Math.abs(filterProducts.getGradientX().getValue(i)) <= mr) || 
-                    (Math.abs(filterProducts.getGradientY().getValue(i)) <= mr)) {
-                    
-                    tmp.setRGB(i, 255, 0, 0);
-                    
-                } else {
-                    
-                    tmp.setRGB(i, 0, 255, 0);
-                }
-            }
-        }
-        
-        //MiscDebug.writeImage(tmp, "_gXY_BELOW_RESOLUTION_");
-        
-        for (int i = 0; i < n; ++i) {
-            
-            if (gXYMask.getValue(i) == 0) {
-                continue;
-            }
-            
-            int t = theta.getValue(i);
-            
-            if (
-                (Math.abs(t - 0) < minResolvableAngle) || 
-                (Math.abs(180 - t) < minResolvableAngle) ||
-                (Math.abs(360 - t) < minResolvableAngle) ||
-                (Math.abs(90 - t) < minResolvableAngle) ||
-                (Math.abs(270 - t) < minResolvableAngle) ) {
-                
-                int t1 = t - 90;
-                int t2 = t + 90;
-                if (t1 > minResolvableAngle) {
-                    theta.setValue(i, t1);
-                } else if (t2 < (360 - minResolvableAngle)) {
-                    theta.setValue(i, t2);
-                } else {
-                    throw new IllegalStateException("Error in algorithm.  theta="
-                        + t);
-                }
-            }            
-        }
-    }
 
     private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
         int x, int y, int minLineSize) {
@@ -1045,6 +940,38 @@ public class CannyEdgeFilterAdaptive {
         }
         
         return n;
+    }
+
+    private void applyHoughBasedLineThinning(EdgeFilterProducts products) {
+        
+        GreyscaleImage gradientXY = products.getGradientXY();
+        
+        int n = gradientXY.getNPixels();
+        int w = gradientXY.getWidth();
+        int h = gradientXY.getHeight();
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i = 0; i < n; ++i) {
+            if (gradientXY.getValue(i) > 0) {
+                points.add(new PairInt(gradientXY.getCol(i), gradientXY.getRow(i)));
+            }
+        }
+        
+MiscDebug.writeImage(gradientXY, "_grdient_");
+        
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
+                
+        products.setHoughLines(lines);
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        Set<PairInt> removed = pltc.thinLineStaircases(lines, points, w, h);
+
+        for (PairInt p : removed) {
+            gradientXY.setValue(p.getX(), p.getY(), 0);
+        }
+        
     }
     
 }

@@ -140,9 +140,16 @@ public class CurvatureScaleSpaceCornerDetector extends
             edgeJunctions.add(p);
         }
         
-        //remove intra-line corners from corner map
-        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(edges, 
-            cornerMap, edgeJunctions, img.getWidth(), img.getHeight());
+        if (this.filterProducts.getHoughLines() != null) {
+            //remove intra-line corners from corner map
+            cornerMaker.useHoughTransformationToFilterCornersForOrdered(edges, 
+                cornerMap, edgeJunctions, filterProducts.getHoughLines(),
+                img.getWidth(), img.getHeight());
+        } else {
+            //remove intra-line corners from corner map
+            cornerMaker.useHoughTransformationToFilterCornersForOrdered(edges, 
+                cornerMap, edgeJunctions, img.getWidth(), img.getHeight());
+        }
         
         corners = new PairIntArray();
         for (Entry<PairInt, Float> entry : cornerMap.entrySet()) {

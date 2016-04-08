@@ -38,10 +38,10 @@ public class ClosedCurveAndJunctionFinderTest {
         instance.findClosedCurves(edges);
 
         assertTrue(edges.get(0) instanceof PairIntArrayWithColor);
-        assertTrue(((PairIntArrayWithColor)edges.get(0)).getColor() == 1);
+        assertTrue(((PairIntArrayWithColor)edges.get(0)).isClosedCurve());
         
         assertTrue(edges.get(1) instanceof PairIntArrayWithColor);
-        assertTrue(((PairIntArrayWithColor)edges.get(1)).getColor() == 1);
+        assertTrue(((PairIntArrayWithColor)edges.get(1)).isClosedCurve());
         
         edges.clear();
         PairIntArray e1 = getTestEdge1();
@@ -54,10 +54,10 @@ public class ClosedCurveAndJunctionFinderTest {
         instance.findClosedCurves(edges);
 
         assertTrue(edges.get(0) instanceof PairIntArrayWithColor);
-        assertTrue(((PairIntArrayWithColor)edges.get(0)).getColor() == 1);
+        assertTrue(((PairIntArrayWithColor)edges.get(0)).isClosedCurve());
         
         assertTrue(edges.get(1) instanceof PairIntArrayWithColor);
-        assertTrue(((PairIntArrayWithColor)edges.get(1)).getColor() == 1);
+        assertTrue(((PairIntArrayWithColor)edges.get(1)).isClosedCurve());
         
         edges.clear();
         PairIntArray notClosed = new PairIntArray();

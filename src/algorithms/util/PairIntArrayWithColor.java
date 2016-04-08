@@ -10,9 +10,18 @@ public class PairIntArrayWithColor extends PairIntArray {
     
     /**
      * a color for the array of points.  can be used to store a value that 
-     * is interpreted as a closed curve, for example.
+     * holds special meaning.
+     * have added logic for "closed curve" and "ordered points"
+     * 
+     * changing to use set bit and test bit
+     * <pre>
+     * set color:
+     *    color |= (1 << 2)
+     * test color:
+     *     (color & (1 << x)) != 0
+     * </pre>
      */
-    protected int color = 0;
+    private int color = 0;
     
     public PairIntArrayWithColor(PairIntArray obj) {
         this.x = Arrays.copyOf(obj.x, obj.x.length);
@@ -24,19 +33,19 @@ public class PairIntArrayWithColor extends PairIntArray {
         super(nPoints);
     }
     
-    public int getColor() {
-        return color;
+    public boolean isClosedCurve() {
+        return (color & (1 << 1)) != 0;
     }
     
-    /**
-     * set the color for this set of points.  the field can be used to hold
-     * a value that's interpreted as the points being a closed curve, for
-     * example.
-     * 
-     * @param clr 
-     */
-    public void setColor(int clr) {
-        color = clr;
+    public void setAsClosedCurve() {
+        color |= (1 << 1);
     }
-     
+    
+    public boolean isOrderedCurve() {
+        return (color & (1 << 2)) != 0;
+    }
+    
+    public void setAsOrderedCurve() {
+        color |= (1 << 2);
+    }
 }

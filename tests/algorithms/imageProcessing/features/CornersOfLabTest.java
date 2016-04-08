@@ -4,6 +4,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -93,24 +94,16 @@ public class CornersOfLabTest extends TestCase {
         corners = detector.getCornersInOriginalReferenceFrame();
         ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
         ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);
-
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String sep = System.getProperty("file.separator");
-        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_lab.png", image);
+        MiscDebug.writeImage(image, "corners_lab.png");
      
         Image img2 = detector.getImage().copyToColorGreyscale();
         
-        try {
-            for (PairIntArray edge : detector.getEdges()) {
-                debugAddCurveToImage(edge, img2, 0, 255, 255, 0);
-            }
-            debugAddCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
-            ImageIOHelper.writeOutputImage(
-                dirPath + "/image_with_expected_corners.png", img2);
- 
-        } catch (IOException ex) {
-            throw new RuntimeException("ERROR: " + ex.getMessage());
+        for (PairIntArray edge : detector.getEdges()) {
+            ImageIOHelper.addCurveToImage(edge, img2, 0, 255, 255, 0);
         }
+        ImageIOHelper.addCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
+        MiscDebug.writeImage(img2, "corners_lab_EXPECTED.png");
+
     }
     
     protected PairIntArray getExpectedLabCorners() {
@@ -284,26 +277,6 @@ public class CornersOfLabTest extends TestCase {
         return a;
     }
  
-    private void debugAddCurveToImage(PairIntArray edge, Image input, 
-        int nExtraForDot, int rClr, int gClr, int bClr) {
-        
-        for (int i = 0; i < edge.getN(); i++) {
-            int x = edge.getX(i);
-            int y = edge.getY(i);
-            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
-                float xx = x + dx;
-                if ((xx > -1) && (xx < (input.getWidth() - 1))) {
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); dy++) {
-                        float yy = y + dy;
-                        if ((yy > -1) && (yy < (input.getHeight() - 1))) {
-                            input.setRGB((int)xx, (int)yy, rClr, gClr, bClr);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
     public static void main(String[] args) {
         try {
             CornersOfLabTest test = new CornersOfLabTest("CornersOfLabTest");

@@ -2,8 +2,10 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.*;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
+import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
+import java.io.IOException;
 import java.util.List;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -78,21 +80,27 @@ public class CornersOfHouseTest extends TestCase {
             }
         }
         
-        Image image = ImageIOHelper.readImageAsGrayScale(filePath);
-        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
-        corners = detector.getCornersInOriginalReferenceFrame();
-        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
-        ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);
-        String dirPath = ResourceFinder.findDirectory("bin");
-        String sep = System.getProperty("file.separator");
-        ImageIOHelper.writeOutputImage(dirPath + sep + "corners_house.png", image);
-        
         log.info(foundExpectedCount + " out of " + expectedCorners.getN() 
             + " expected");
         
         log.info((corners.getN() - foundExpectedCount) 
             + " beyond expected found");
        
+        Image image = ImageIOHelper.readImageAsGrayScale(filePath);
+        List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        corners = detector.getCornersInOriginalReferenceFrame();
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, image);
+        ImageIOHelper.addCurveToImage(corners, image, 2, 255, 0, 0);
+        MiscDebug.writeImage(image, "corners_house.png");
+     
+        Image img2 = detector.getImage().copyToColorGreyscale();
+        
+        for (PairIntArray edge : detector.getEdges()) {
+            ImageIOHelper.addCurveToImage(edge, img2, 0, 255, 255, 0);
+        }
+        ImageIOHelper.addCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
+        MiscDebug.writeImage(img2, "corners_house_EXPECTED.png");
+
     }
     
     protected PairIntArray getExpectedHouseCorners() {
@@ -130,6 +138,7 @@ public class CornersOfHouseTest extends TestCase {
         a.add(154, 120);
         a.add(172, 114);
         a.add(154, 120);
+        a.add(157, 56);
         a.add(114, 129);
         a.add(111, 166);
         a.add(135, 162);

@@ -34,8 +34,7 @@ public abstract class AbstractCurvatureScaleSpaceMapper {
     
     /**
      * edges extracted from image.  if an instance of PairIntArrayWithColor
-     * is present, that holds a color field in which a value of '1' means
-     * the curve is closed.
+     * is present whether it is a closed curve or not can be checked.
      */
     protected List<PairIntArray> edges = new ArrayList<PairIntArray>();
     

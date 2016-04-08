@@ -2,6 +2,7 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsFloat;
+import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
@@ -123,7 +124,7 @@ public class CSSCornerMaker {
             final PairIntArray edge = theEdges.get(i);
 
             boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &&
-                (((PairIntArrayWithColor)edge).getColor() == 1);
+                (((PairIntArrayWithColor)edge).isClosedCurve());
 
             final Map<SIGMA, ScaleSpaceCurve> map =
                 createLowUpperThresholdScaleSpaceMaps(edge);
@@ -273,7 +274,7 @@ public class CSSCornerMaker {
             final PairIntArray edge = theEdges.get(i);
 
             boolean isClosedCurve = (edge instanceof PairIntArrayWithColor) &&
-                (((PairIntArrayWithColor)edge).getColor() == 1);
+                (((PairIntArrayWithColor)edge).isClosedCurve());
 
             final Map<SIGMA, ScaleSpaceCurve> map =
                 createLowUpperThresholdScaleSpaceMaps(edge);
@@ -436,7 +437,7 @@ public class CSSCornerMaker {
         final Set<PairIntWithIndex> junctions, final int edgeNumber) {
 
         boolean isAClosedCurve = (edge instanceof PairIntArrayWithColor) &&
-            (((PairIntArrayWithColor)edge).getColor() == 1);
+            (((PairIntArrayWithColor)edge).isClosedCurve());
 
         SIGMA maxSIGMA = getMaxSIGMAForECSS(edge.getN());
 
@@ -1170,8 +1171,19 @@ public class CSSCornerMaker {
                 scaleSpace.getK(idxWithinEdge));
         }
     }
-
-    public void useHoughTransformationsToRemoveIntralineSteps(
+    
+    /**
+     * a method that finds lines in theEdges and junctions and then removes
+     * corners that have more than 2 neighboring points in theEdges points.
+     * Note that for lines that are steps, one should use the "...ForOrdered"
+     * instead to keep only the edge endpoints in lines.
+     * @param theEdges
+     * @param corners
+     * @param junctions
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void useHoughTransformationToFilterCornersForUnordered(
         List<PairIntArray> theEdges, Map<PairInt, Float> corners, 
         Set<PairInt> junctions, int imageWidth, int imageHeight) {
         
@@ -1187,6 +1199,27 @@ public class CSSCornerMaker {
         
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(allPoints, 3);
+        
+        useHoughTransformationToFilterCornersForUnordered(theEdges, corners, 
+            junctions, lines, imageWidth, imageHeight);
+    }
+
+    /**
+     * a method that finds lines in theEdges and junctions and then removes
+     * corners that have more than 2 neighboring points in theEdges points.
+     * Note that for lines that are steps, one should use the "...ForOrdered"
+     * instead to keep only the edge endpoints in lines.
+     * @param theEdges
+     * @param corners
+     * @param junctions
+     * @param lines map with key = set of points in a line, value = theta and radius
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void useHoughTransformationToFilterCornersForUnordered(
+        List<PairIntArray> theEdges, Map<PairInt, Float> corners, 
+        Set<PairInt> junctions, Map<Set<PairInt>, PairInt> lines,
+        int imageWidth, int imageHeight) {
         
         //for each corner, find the line it is in and if it is not
         // an endpoint, remove it.  
@@ -1265,6 +1298,170 @@ public class CSSCornerMaker {
         }
         */
               
+    }
+    
+    /**
+     * a method that finds lines in theEdges and junctions and then removes
+     * corners that are not near the endpoints in the lines.
+     * @param theEdges
+     * @param corners
+     * @param junctions
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void useHoughTransformationToFilterCornersForOrdered(
+        List<PairIntArray> theEdges, Map<PairInt, Float> corners, 
+        Set<PairInt> junctions, int imageWidth, int imageHeight) {
+        
+        Set<PairInt> allPoints = new HashSet<PairInt>(corners.keySet());
+        for (int i = 0; i < theEdges.size(); ++i) {
+            PairIntArray edge = theEdges.get(i);
+            for (int j = 0; j < edge.getN(); ++j) {
+                PairInt p = new PairInt(edge.getX(j), edge.getY(j));
+                allPoints.add(p);
+            }
+        }
+        for (PairInt p : junctions) {
+            allPoints.add(p);
+        }
+        
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(allPoints, 3);
+        
+        useHoughTransformationToFilterCornersForOrdered(theEdges, corners, 
+            junctions, lines, imageWidth, imageHeight);
+    }
+
+    /**
+     * a method that finds lines in theEdges and junctions and then removes
+     * corners that are not near the endpoints in the lines.
+     * @param theEdges
+     * @param corners
+     * @param junctions
+     * @param lines map with key = set of points in a line, value = theta and radius
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void useHoughTransformationToFilterCornersForOrdered(
+        List<PairIntArray> theEdges, Map<PairInt, Float> corners, 
+        Set<PairInt> junctions, Map<Set<PairInt>, PairInt> lines,
+        int imageWidth, int imageHeight) {
+        
+        /*
+        edge 0:   line0   line1   line2
+        
+        so order each line.
+           -- use algorithm like the EdgeExtractorSimple
+        
+        for each corner,
+            find line it is in and see if it is near endpoint.
+        */
+        
+        int distLimit = 2;
+        
+        Map<PairInt, Integer> pointLineMap = new HashMap<PairInt, Integer>();
+        List<PairIntArray> orderedLines = new ArrayList<PairIntArray>();
+        for (Set<PairInt> lPoints : lines.keySet()) {
+            
+            if (lPoints.size() < 3) {
+                continue;
+            }
+            
+            EdgeExtractorSimple extractor = new EdgeExtractorSimple(lPoints,
+                imageWidth, imageHeight);
+            extractor.extractEdges();
+            
+            List<PairIntArray> lEdges = extractor.getEdges();
+            
+            for (PairIntArray lEdge : lEdges) {
+                //if (lEdge.getN() < distLimit) {
+                //}
+            
+                Integer lineIndex = Integer.valueOf(orderedLines.size());
+                for (int i = 0; i < lEdge.getN(); ++i) {
+                    int x = lEdge.getX(i);
+                    int y = lEdge.getY(i);
+                    PairInt p = new PairInt(x, y);
+                    pointLineMap.put(p, lineIndex);
+                }
+
+                orderedLines.add(lEdge);
+            }
+;       }
+        
+        Set<PairInt> rm = new HashSet<PairInt>();
+        for (Entry<PairInt, Float> pEntry : corners.entrySet()) {
+            
+            PairInt p = pEntry.getKey();
+             
+            if (junctions.contains(p)) {
+                // no need to delete junctions
+                continue;
+            }
+            
+            // NOTE: this may need to be adjusted to a higher limit between 0.11 and 0.2
+            /*Float curvature = pEntry.getValue();
+            if (Math.abs(curvature.floatValue()) > 0.11) {
+                continue;
+            }*/
+            
+            Integer lineIndex = pointLineMap.get(p);
+            if (lineIndex == null) {
+                continue;
+            }
+            
+            PairIntArray orderedLine = orderedLines.get(lineIndex.intValue());
+            
+            int n = orderedLine.getN();
+            
+            int minDistSq = Integer.MAX_VALUE;
+            for (int i = 0; i < distLimit; ++i) {
+                if (i > (n - 1)) {
+                    continue;
+                }
+                int distSq = distSq(orderedLine.getX(i), orderedLine.getY(i), p);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                }
+            }
+            
+            for (int i = (n - distLimit - 1); i < n; ++i) {
+                if (i < 0) {
+                    continue;
+                }
+                int distSq = distSq(orderedLine.getX(i), orderedLine.getY(i), p);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                }
+            }
+            
+            if (minDistSq > (distLimit * distLimit)) {
+                rm.add(p);
+            }
+        }
+        
+        for (PairInt p : rm) {
+            corners.remove(p);
+        }
+       
+        try {
+            Image out = new Image(imageWidth, imageHeight);
+            ImageIOHelper.addAlternatingColorPointSetsToImage(
+                new ArrayList<Set<PairInt>>(lines.keySet()),
+                0, 0, 2, out);
+            MiscDebug.writeImage(out, "_HOUGH_LINES_");  
+        } catch (IOException ex) {
+            Logger.getLogger(CSSCornerMaker.class.getName()).log(Level.SEVERE, null, ex);
+        }
+              
+    }
+
+    private int distSq(int x, int y, PairInt p) {
+        
+        int diffX = x - p.getX();
+        int diffY = y - p.getY();
+        
+        return (diffX * diffX) + (diffY * diffY);
     }
 
 }

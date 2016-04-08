@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.compGeometry.HoughTransform;
 import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
@@ -648,11 +649,12 @@ public class PhaseCongruencyDetector {
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
-        // ------- use line thinnes and concatenate with the phase angle steps ----
+        // ------- use line thinners ------
         applyLineThinners(products);
             
         double t1 = 0.1;
             
+        // -------- concatenate with the phase angle steps ----
         createPhaseAngleSteps(products, t1);
             
         addConnectedPhaseAngleSteps(products);
@@ -675,6 +677,34 @@ public class PhaseCongruencyDetector {
         double t2 = 0.3;
         
         int[][] binaryImage = applyHysThresh(imgTh0, t1, t2, true);
+        
+        // ----- find lines and thin the staircases to 1 pixel width -----
+        Set<PairInt> points = extractNonZeroPoints(binaryImage);
+        
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
+        
+        products.setHoughLines(lines);
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        Set<PairInt> removed = pltc.thinLineStaircases(lines, points,
+            binaryImage.length, binaryImage[0].length);
+        
+        for (PairInt p : removed) {
+            
+            binaryImage[p.getX()][p.getY()] = 0;
+            
+            Set<PairInt> line = null;
+            for (Set<PairInt> hLine : lines.keySet()) {
+                if (hLine.contains(p)) {
+                    line = hLine;
+                    break;
+                }
+            }
+            if (line != null) {
+                line.remove(p);
+            }
+        }
         
         products.setThinnedImage(binaryImage);
     }
@@ -999,8 +1029,9 @@ public class PhaseCongruencyDetector {
         
         // both theEdges and corners are now in reference frame of image
         //   with columns being first axis
-        cornerMaker.useHoughTransformationsToRemoveIntralineSteps(theEdges, 
-            cornerMap, junctions, nRows, nCols);        
+        cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges, 
+            cornerMap, junctions, products.getHoughLines(),
+            nRows, nCols);        
 
         Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
         outputCorners.addAll(junctions);
@@ -1023,6 +1054,21 @@ public class PhaseCongruencyDetector {
             cp[i] = Arrays.copyOf(a[i], a[i].length);
         }
         return cp;
+    }
+
+    private Set<PairInt> extractNonZeroPoints(int[][] binaryImage) {
+        
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        for (int i0 = 0; i0 < binaryImage.length; ++i0) {
+            for (int i1 = 0; i1 < binaryImage[0].length; ++i1) {
+                if (binaryImage[i0][i1] > 0) {
+                    points.add(new PairInt(i0, i1));
+                }
+            }
+        }
+        
+        return points;
     }
 
     public class PhaseCongruencyProducts {
@@ -1060,6 +1106,14 @@ public class PhaseCongruencyDetector {
         private Set<PairInt> junctions = null;
         
         private Set<PairInt> corners = null;
+        
+        /**
+         * a map with key being a hough line set of points and value being
+         * the theta and radius for the hough line.  Note that the coordinates
+         * in the key are using the same notation as the thinnedImage, that is,
+         * a[row][col], but pairint.x is row, and pairint.y is col.
+         */
+        private Map<Set<PairInt>, PairInt> houghLines = null;
         
         public PhaseCongruencyProducts(double[][] pc, double[][] or, 
             double[][] ft, double thr) {
@@ -1147,7 +1201,7 @@ public class PhaseCongruencyDetector {
          * set the edge list extracted from the thinned image using coordinates
          * that are in the reference frame of the GreyscaleIamge instance.
          * Note that the closed curves are converted to instances of
-         * PairIntArrayWithColor having color=1.
+         * PairIntArrayWithColor.
          * @param theEdgeList 
          */
         private void setEdges(List<PairIntArray> theEdgeList) {
@@ -1212,6 +1266,29 @@ public class PhaseCongruencyDetector {
          */
         public Set<PairInt> getCorners() {
             return corners;
+        }
+
+        /**
+           a map with key being a hough line set of points and value being
+         * the theta and radius for the hough line.  Note that the coordinates
+         * in the key are using the same notation as the thinnedImage, that is,
+         * a[row][col], but pairint.x is row, and pairint.y is col.
+         * @param lines 
+         */
+        public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
+            
+             this.houghLines = new HashMap<Set<PairInt>, PairInt>(lines);
+        }
+        
+        /**
+         * a map with key being a hough line set of points and value being
+         * the theta and radius for the hough line.  Note that the coordinates
+         * in the key are using the same notation as the thinnedImage, that is,
+         * a[row][col], but pairint.x is row, and pairint.y is col.
+         * @return 
+         */
+        public Map<Set<PairInt>, PairInt> getHoughLines() {
+            return houghLines;
         }
         
     }

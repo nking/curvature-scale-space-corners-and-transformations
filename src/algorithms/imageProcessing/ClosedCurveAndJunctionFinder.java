@@ -142,7 +142,7 @@ public class ClosedCurveAndJunctionFinder {
             }
             
             PairIntArrayWithColor closedCurve = new PairIntArrayWithColor(edge);
-            closedCurve.setColor(1);
+            closedCurve.setAsClosedCurve();
             
             edges.set(i, closedCurve);
         }

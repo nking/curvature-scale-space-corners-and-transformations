@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
@@ -9,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -4826,4 +4828,375 @@ public class PostLineThinnerCorrections {
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
     }
+
+    /**
+     * note, line should already be thinned to use this method.  it's intended
+     * to remove the pixels with 3 neighbors.
+     * @param lines
+     * @param points
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
+    public Set<PairInt> thinLineStaircases(Map<Set<PairInt>, PairInt> lines, 
+        Set<PairInt> points, int imageWidth, int imageHeight) {
+        
+        Set<PairInt> removed = new HashSet<PairInt>();
+        
+        /*
+        looking for stair case patterns in each line that are thicker than 
+        1 pixel.
+        if found, determines longest connected segment to both sides and 
+        trims the pixel from that side.
+        
+        for example:
+                    would trim this pixel instead of pixel below it
+                    \/
+            # # # # # 
+                    # # #
+        */
+        
+        int[] dxs = new int[]{ 0,  1,  1,  1,  0, -1, -1, -1};
+        int[] dys = new int[]{ 1,  1,  0, -1, -1, -1,  0,  1};
+  
+        List<Set<PairInt>> lineList = new ArrayList<Set<PairInt>>(lines.keySet());
+        for (int i = 0; i < lineList.size(); ++i) {
+            Set<PairInt> line = lineList.get(i);            
+            Set<PairInt> rm = new HashSet<PairInt>();
+            
+            /*
+             7 0 1
+             6 # 2
+             5 4 3
+            */
+            boolean[] present = new boolean[8];
+            for (PairInt p : line) {                
+                if (rm.contains(p)) {
+                    continue;
+                }
+                int x = p.getX();
+                int y = p.getY();
+                int c = 0;
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (line.contains(p2) && !rm.contains(p2)) {
+                        ++c;
+                        present[k] = true;
+                    } else {
+                        present[k] = false;
+                    }
+                }                
+                if (c < 3) {
+                    continue;
+                }
+                /*
+                 7 0 1
+                 6 # 2
+                 5 4 3
+                */
+                //  #  #  #
+                //        *#  #
+                if (present[7] && present[0] && present[2] 
+                    && !present[1] && present[5] && present[4] && !present[3]
+                    && !present[6]
+                    ) {
+                    int left = 0;
+                    int right = 0;
+                    int y2 = y + 1;
+                    for (int x2 = x; x2 > -1; --x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++left;
+                        } else {
+                            break;
+                        }
+                    }
+                    y2 = y;
+                    for (int x2 = (x + 1); x2 < Integer.MAX_VALUE; ++x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++right;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (left > right) {
+                        rm.add(new PairInt(x, y + 1));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[6] && present[0] && present[1]
+                    && !present[7] && !present[2]
+                    && !present[5] && !present[4] && !present[3]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //        #  #
+                    //  #  #  #*
+                    int left = 0;
+                    int right = 0;
+                    int y2 = y;
+                    for (int x2 = (x - 1); x2 > -1; --x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++left;
+                        } else {
+                            break;
+                        }
+                    }
+                    y2 = y + 1;
+                    for (int x2 = x; x2 < Integer.MAX_VALUE; ++x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++right;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (right > left) {
+                        rm.add(new PairInt(x, y + 1));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[5] && present[4] && present[2]
+                    && !present[0] && !present[1] && !present[3] && !present[6] && !present[7]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //        *#  #
+                    //  #  #  #
+                    
+                    int left = 0;
+                    int right = 0;
+                    int y2 = y - 1;
+                    for (int x2 = x; x2 > -1; --x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++left;
+                        } else {
+                            break;
+                        }
+                    }
+                    y2 = y;
+                    for (int x2 = (x + 1); x2 < Integer.MAX_VALUE; ++x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++right;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (left > right) {
+                        rm.add(new PairInt(x, y - 1));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[6] && present[4] && present[3]
+                    && !present[0] && !present[1] && !present[2]
+                    && !present[5] && !present[7]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //  #  #  #*
+                    //        #  #
+                    int left = 0;
+                    int right = 0;
+                    int y2 = y;
+                    for (int x2 = x - 1; x2 > -1; --x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++left;
+                        } else {
+                            break;
+                        }
+                    }
+                    y2 = y - 1;
+                    for (int x2 = x; x2 < Integer.MAX_VALUE; ++x2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++right;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (right > left) {
+                        rm.add(new PairInt(x, y - 1));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[0] && present[2] && present[3]
+                    && !present[1] && !present[4] && !present[5]
+                    && !present[6] && !present[7]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //     #
+                    //     #
+                    //    *#  #
+                    //        #
+                    int up = 0;
+                    int down = 0;
+                    int x2 = x;
+                    for (int y2 = (y + 1); y2 < Integer.MAX_VALUE; ++y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++up;
+                        } else {
+                            break;
+                        }
+                    }
+                    x2 = x + 1;
+                    for (int y2 = y; y2 > -1; --y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++down;
+                        } else {
+                            break;
+                        }
+                    }                    
+                    if (down > up) {
+                        rm.add(new PairInt(x + 1, y));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[5] && present[6] && present[0]
+                    && !present[1] && !present[2] && !present[3]
+                    && !present[4] && !present[7]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //     #
+                    //     #
+                    //  # *#   
+                    //  #  
+                    int up = 0;
+                    int down = 0;
+                    int x2 = x - 1;
+                    for (int y2 = y; y2 > -1; --y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++down;
+                        } else {
+                            break;
+                        }
+                    }
+                    x2 = x;
+                    for (int y2 = (y + 1); y2 < Integer.MAX_VALUE; ++y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++up;
+                        } else {
+                            break;
+                        }
+                    }                    
+                    if (down > up) {
+                        rm.add(new PairInt(x - 1, y));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[7] && present[6] && present[4]
+                    && !present[0] && !present[1] && !present[2]
+                    && !present[3] && !present[5]
+                    ) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //     #
+                    //     #
+                    //     #  #*
+                    //        #
+                    int up = 0;
+                    int down = 0;
+                    int x2 = x - 1;
+                    for (int y2 = y; y2 < Integer.MAX_VALUE; ++y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++up;
+                        } else {
+                            break;
+                        }
+                    }
+                    x2 = x;
+                    for (int y2 = (y - 1); y2 > -1; --y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++down;
+                        } else {
+                            break;
+                        }
+                    }                    
+                    if (up > down) {
+                        rm.add(new PairInt(x - 1, y));
+                    } else {
+                        rm.add(p);
+                    }
+                } else if (present[4] && present[2] && present[1]
+                    && !present[0] && !present[3] && !present[5]
+                    && !present[6] && !present[7]) {
+                    /*
+                     7 0 1
+                     6 # 2
+                     5 4 3
+                     */
+                    //     #
+                    //     #
+                    // *#  #   
+                    //  #  
+                    int up = 0;
+                    int down = 0;
+                    int x2 = x;
+                    for (int y2 = (y - 1); y2 > -1; --y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++down;
+                        } else {
+                            break;
+                        }
+                    }
+                    x2 = x + 1;
+                    for (int y2 = y; y2 < Integer.MAX_VALUE; ++y2) {
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (line.contains(p2)) {
+                            ++up;
+                        } else {
+                            break;
+                        }
+                    }                    
+                    if (up > down) {
+                        rm.add(new PairInt(x + 1, y));
+                    } else {
+                        rm.add(p);
+                    }
+                }
+            }
+            
+            for (PairInt p : rm) {
+                line.remove(p);
+                removed.add(p);
+                points.remove(p);
+            }
+        }
+        
+        return removed;
+    }
+    
 }

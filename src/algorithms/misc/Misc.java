@@ -2,18 +2,13 @@ package algorithms.misc;
 
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.ResourceFinder;
-import java.io.BufferedWriter;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -22,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  * miscellaneous boiler plate code

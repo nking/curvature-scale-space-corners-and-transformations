@@ -384,65 +384,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         assertFalse(overlapped);
     }
     
-    public void testPruneIncludedAdjacentCurves() throws Exception {
-        
-        /*
-        3                         3
-        2          @  @  @        2               @
-        1    @  @  @  @     ==>   1   @  @  @  @
-        0                         0
-          0  1  2  3  4  5         0  1  2  3  4  5 
-        */
-        PairIntArray curve0 = new PairIntArray();
-        PairIntArray curve1 = new PairIntArray();
-        curve0.add(1, 1);
-        curve0.add(2, 1);
-        curve0.add(3, 1);
-        curve0.add(4, 1);
-        curve1.add(3, 2);
-        curve1.add(4, 2);
-        curve1.add(5, 2);
-        
-        List<PairIntArray> edges = new ArrayList<PairIntArray>();
-        edges.add(curve0);
-        edges.add(curve1);
-        
-        MiscellaneousCurveHelper instance = new MiscellaneousCurveHelper();
-        List<PairIntArray> output = instance.pruneAndIncludeAdjacentCurves(edges, 10);
-       
-        assertTrue(output.size() == 1);
-        
-        
-        /*
-        6          @
-        5       @
-        4    @
-        3                         
-        2                  
-        1    @  @  @  @    
-        0                  
-          0  1  2  3  4  5 
-        */
-        
-        curve0 = new PairIntArray();
-        curve1 = new PairIntArray();
-        curve0.add(1, 1);
-        curve0.add(2, 1);
-        curve0.add(3, 1);
-        curve0.add(4, 1);
-        curve1.add(1, 4);
-        curve1.add(2, 5);
-        curve1.add(3, 6);
-        
-        edges = new ArrayList<PairIntArray>();
-        edges.add(curve0);
-        edges.add(curve1);
-        
-        output = instance.pruneAndIncludeAdjacentCurves(edges, 10);
-       
-        assertTrue(output.size() == 2);
-    }
-
     public void testFindMinIdx() {
         
         PairIntArray closedCurve = getSquare();

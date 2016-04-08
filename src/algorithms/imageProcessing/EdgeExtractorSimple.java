@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PairIntArrayWithColor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +59,13 @@ public class EdgeExtractorSimple {
         
     }
     
+    public EdgeExtractorSimple(Set<PairInt> edgePoints, int imageWidth, int imageHeight) {
+        
+        n0 = imageWidth;
+        n1 = imageHeight;
+        points.addAll(edgePoints);
+    }
+    
     public EdgeExtractorSimple(GreyscaleImage img) {
         
         n0 = img.getWidth();
@@ -86,6 +94,8 @@ public class EdgeExtractorSimple {
         
         joinEdges();
                 
+        setEdgesAsOrdered();
+        
         finished = true;
     }
 
@@ -221,7 +231,7 @@ public class EdgeExtractorSimple {
             if (n == 0) {
                 continue;
             }
-            
+                        
             PairInt p0 = new PairInt(edge.getX(0), edge.getY(0));
             
             PairInt p1 = new PairInt(edge.getX(n - 1), edge.getY(n - 1));
@@ -415,4 +425,19 @@ public class EdgeExtractorSimple {
         
     }
 
+    private void setEdgesAsOrdered() {
+        
+        for (int i = 0; i < theEdges.size(); ++i) {
+            
+            PairIntArray edge = theEdges.get(i);
+            
+            PairIntArrayWithColor e2 = new PairIntArrayWithColor(edge);
+            
+            e2.setAsOrderedCurve();
+            
+            theEdges.set(i, e2);
+        }
+        
+    }
+    
 }

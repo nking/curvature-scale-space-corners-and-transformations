@@ -64,7 +64,7 @@ public class ScaleSpaceCurve {
             (PairIntArrayWithColor) curve : new PairIntArrayWithColor(curve);
         
         if (curveIsClosed) {
-            xy.setColor(1);
+            xy.setAsClosedCurve();
         }
         
         size = curve.getN();
@@ -193,7 +193,7 @@ public class ScaleSpaceCurve {
     }
     
     public boolean curveIsClosed() {
-        return (xy.getColor() == 1);
+        return xy.isClosedCurve();
     }
     
     public PairIntArray getXYCurve() {

@@ -83,7 +83,7 @@ public class HoughTransform {
         Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
         
         boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &&
-            (((PairIntArrayWithColor)edge).getColor() == 1);
+            (((PairIntArrayWithColor)edge).isClosedCurve());
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                     
@@ -195,7 +195,7 @@ public class HoughTransform {
             int nEdge = edge.getN();
             
             boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &&
-                (((PairIntArrayWithColor)edge).getColor() == 1);
+                (((PairIntArrayWithColor)edge).isClosedCurve());
 
             List<CornerRegion> cornerList = cornerLists.get(cIdx);
             
