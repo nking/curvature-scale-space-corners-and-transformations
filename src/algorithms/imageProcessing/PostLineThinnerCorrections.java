@@ -4836,13 +4836,10 @@ public class PostLineThinnerCorrections {
      * @param points
      * @param imageWidth
      * @param imageHeight
-     * @return 
      */
-    public Set<PairInt> thinLineStaircases(Map<Set<PairInt>, PairInt> lines, 
+    public void thinLineStaircases(Map<Set<PairInt>, PairInt> lines, 
         Set<PairInt> points, int imageWidth, int imageHeight) {
-        
-        Set<PairInt> removed = new HashSet<PairInt>();
-        
+                
         /*
         looking for stair case patterns in each line that are thicker than 
         1 pixel.
@@ -4907,7 +4904,7 @@ public class PostLineThinnerCorrections {
                     int y2 = y + 1;
                     for (int x2 = x; x2 > -1; --x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++left;
                         } else {
                             break;
@@ -4916,7 +4913,7 @@ public class PostLineThinnerCorrections {
                     y2 = y;
                     for (int x2 = (x + 1); x2 < Integer.MAX_VALUE; ++x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++right;
                         } else {
                             break;
@@ -4943,7 +4940,7 @@ public class PostLineThinnerCorrections {
                     int y2 = y;
                     for (int x2 = (x - 1); x2 > -1; --x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++left;
                         } else {
                             break;
@@ -4952,7 +4949,7 @@ public class PostLineThinnerCorrections {
                     y2 = y + 1;
                     for (int x2 = x; x2 < Integer.MAX_VALUE; ++x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++right;
                         } else {
                             break;
@@ -4979,7 +4976,7 @@ public class PostLineThinnerCorrections {
                     int y2 = y - 1;
                     for (int x2 = x; x2 > -1; --x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++left;
                         } else {
                             break;
@@ -4988,7 +4985,7 @@ public class PostLineThinnerCorrections {
                     y2 = y;
                     for (int x2 = (x + 1); x2 < Integer.MAX_VALUE; ++x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++right;
                         } else {
                             break;
@@ -5015,7 +5012,7 @@ public class PostLineThinnerCorrections {
                     int y2 = y;
                     for (int x2 = x - 1; x2 > -1; --x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++left;
                         } else {
                             break;
@@ -5024,7 +5021,7 @@ public class PostLineThinnerCorrections {
                     y2 = y - 1;
                     for (int x2 = x; x2 < Integer.MAX_VALUE; ++x2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++right;
                         } else {
                             break;
@@ -5053,7 +5050,7 @@ public class PostLineThinnerCorrections {
                     int x2 = x;
                     for (int y2 = (y + 1); y2 < Integer.MAX_VALUE; ++y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++up;
                         } else {
                             break;
@@ -5062,7 +5059,7 @@ public class PostLineThinnerCorrections {
                     x2 = x + 1;
                     for (int y2 = y; y2 > -1; --y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++down;
                         } else {
                             break;
@@ -5091,7 +5088,7 @@ public class PostLineThinnerCorrections {
                     int x2 = x - 1;
                     for (int y2 = y; y2 > -1; --y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++down;
                         } else {
                             break;
@@ -5100,7 +5097,7 @@ public class PostLineThinnerCorrections {
                     x2 = x;
                     for (int y2 = (y + 1); y2 < Integer.MAX_VALUE; ++y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++up;
                         } else {
                             break;
@@ -5129,7 +5126,7 @@ public class PostLineThinnerCorrections {
                     int x2 = x - 1;
                     for (int y2 = y; y2 < Integer.MAX_VALUE; ++y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++up;
                         } else {
                             break;
@@ -5138,7 +5135,7 @@ public class PostLineThinnerCorrections {
                     x2 = x;
                     for (int y2 = (y - 1); y2 > -1; --y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++down;
                         } else {
                             break;
@@ -5166,7 +5163,7 @@ public class PostLineThinnerCorrections {
                     int x2 = x;
                     for (int y2 = (y - 1); y2 > -1; --y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++down;
                         } else {
                             break;
@@ -5175,7 +5172,7 @@ public class PostLineThinnerCorrections {
                     x2 = x + 1;
                     for (int y2 = y; y2 < Integer.MAX_VALUE; ++y2) {
                         PairInt p2 = new PairInt(x2, y2);
-                        if (line.contains(p2)) {
+                        if (line.contains(p2) && !rm.contains(p2)) {
                             ++up;
                         } else {
                             break;
@@ -5191,12 +5188,132 @@ public class PostLineThinnerCorrections {
             
             for (PairInt p : rm) {
                 line.remove(p);
-                removed.add(p);
                 points.remove(p);
             }
-        }
-        
-        return removed;
+        }        
     }
     
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * the pattern is a single pixel displaced on a vertical or horizontal 
+     * line
+     *        #
+     *     #######
+     *     
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForLineSpurHoriz(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                
+        /*
+                    .  .  .         1                           2
+                 .  .  #  .  .      0                           1
+                 #  #  #  #  #     -1                           0
+                 .  .  .  .  .     -2                          -1
+             -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 2)); zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 0));
+        
+        ones.add(new PairInt(-2, 1));  ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(0, 1)); 
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(2, 1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+                
+        int nCorrections = 0;
+       
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of y to handle other direction -----
+        reverseYs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * the pattern is a single pixel displaced on a vertical or horizontal 
+     * line
+     *     
+     *     #
+     *     #
+     *     # #
+     *     #
+     *     #
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForLineSpurVert(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                
+        /*
+                    .  #  .         2
+                 .  .  #  .         1                          
+                 .  #  #  .         0                          
+                 .  .  #  .        -1                          
+                    .  #  .        -2                         
+          -3 -2 -1  0  1  2  3       
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, 1)); 
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1));
+        zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
+        zeroes.add(new PairInt(2, -2));
+        
+        ones.add(new PairInt(1, 0));
+        ones.add(new PairInt(1, 2)); ones.add(new PairInt(1, 1)); ones.add(new PairInt(0, 0));
+        ones.add(new PairInt(1, -1));  ones.add(new PairInt(1, -2));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+                
+        int nCorrections = 0;
+
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of y to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+
 }

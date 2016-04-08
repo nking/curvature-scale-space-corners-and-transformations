@@ -917,6 +917,8 @@ public class CannyEdgeFilterAdaptive {
             pltc.correctForHolePattern100(correctedPoints, n0, n1);
             pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
             pltc.correctForLineHatVert(correctedPoints, n0, n1);
+            pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
+            pltc.correctForLineSpurVert(correctedPoints, n0, n1);
         }
         
         GreyscaleImage out = gradientXY.createWithDimensions();
@@ -957,19 +959,33 @@ public class CannyEdgeFilterAdaptive {
                 points.add(new PairInt(gradientXY.getCol(i), gradientXY.getRow(i)));
             }
         }
-        
-MiscDebug.writeImage(gradientXY, "_grdient_");
-        
+        Set<PairInt> pointsCp = new HashSet<PairInt>(points);
+                
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
                 
         products.setHoughLines(lines);
         
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        Set<PairInt> removed = pltc.thinLineStaircases(lines, points, w, h);
+        pltc.thinLineStaircases(lines, points, w, h);
+        pltc.correctForLineSpurHoriz(points, w, h);
+        pltc.correctForLineSpurVert(points, w, h);
 
-        for (PairInt p : removed) {
+        pointsCp.removeAll(points);
+        
+        for (PairInt p : pointsCp) {
             gradientXY.setValue(p.getX(), p.getY(), 0);
+            
+            Set<PairInt> line = null;
+            for (Set<PairInt> hLine : lines.keySet()) {
+                if (hLine.contains(p)) {
+                    line = hLine;
+                    break;
+                }
+            }
+            if (line != null) {
+                line.remove(p);
+            }
         }
         
     }

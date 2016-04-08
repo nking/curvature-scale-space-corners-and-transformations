@@ -680,6 +680,7 @@ public class PhaseCongruencyDetector {
         
         // ----- find lines and thin the staircases to 1 pixel width -----
         Set<PairInt> points = extractNonZeroPoints(binaryImage);
+        Set<PairInt> pointCp = new HashSet<PairInt>(points);
         
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
@@ -687,10 +688,14 @@ public class PhaseCongruencyDetector {
         products.setHoughLines(lines);
         
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        Set<PairInt> removed = pltc.thinLineStaircases(lines, points,
+        pltc.thinLineStaircases(lines, points,
             binaryImage.length, binaryImage[0].length);
+        pltc.correctForLineSpurHoriz(points, binaryImage.length, binaryImage[0].length);
+        pltc.correctForLineSpurVert(points, binaryImage.length, binaryImage[0].length);
         
-        for (PairInt p : removed) {
+        pointCp.removeAll(points);
+        
+        for (PairInt p : pointCp) {
             
             binaryImage[p.getX()][p.getY()] = 0;
             
