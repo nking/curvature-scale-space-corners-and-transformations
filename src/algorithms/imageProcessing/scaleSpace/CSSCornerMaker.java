@@ -60,8 +60,6 @@ import java.util.logging.Logger;
  */
 public class CSSCornerMaker {
 
-    protected boolean enableJaggedLineCorrections = true;
-
     protected float factorIncreaseForCurvatureMinimum = 1.f;
 
     protected boolean performWholeImageCorners = true;
@@ -80,13 +78,6 @@ public class CSSCornerMaker {
     public CSSCornerMaker(int imageWidth, int imageHeight) {
         width = imageWidth;
         height = imageHeight;
-    }
-
-    public void enableJaggedLineCorrections() {
-        enableJaggedLineCorrections = true;
-    }
-    public void disableJaggedLineCorrections() {
-        enableJaggedLineCorrections = false;
     }
 
     public void doNotStoreCornerRegions() {
@@ -368,14 +359,12 @@ public class CSSCornerMaker {
      * @param scaleSpaceSigma
      * @param edgeNumber the edgeNumber of the scaleSpace.  it's passed for
      * debugging purposes.
-     * @param correctForJaggedLines
      * @param isAClosedCurve
      * @return
      */
     protected CornerArray findCornersInScaleSpaceMap(
         final ScaleSpaceCurve scaleSpace, final SIGMA scaleSpaceSigma,
-        int edgeNumber, boolean correctForJaggedLines,
-        final boolean isAClosedCurve) {
+        int edgeNumber, final boolean isAClosedCurve) {
 
         float[] k = Arrays.copyOf(scaleSpace.getK(), scaleSpace.getK().length);
 
@@ -392,13 +381,6 @@ public class CSSCornerMaker {
 
         if (maxCandidateCornerIndexes.isEmpty()) {
             return xy;
-        }
-
-        if (correctForJaggedLines) {
-
-            PairIntArray jaggedLines = removeFalseCorners(
-                scaleSpace.getXYCurve(), maxCandidateCornerIndexes,
-                isAClosedCurve);
         }
 
         int minDistFromEnds = 2;//5;
@@ -454,7 +436,7 @@ public class CSSCornerMaker {
 
         CornerArray candidateCornersXY =
             findCornersInScaleSpaceMap(maxScaleSpace, maxSIGMA, edgeNumber,
-                enableJaggedLineCorrections, isAClosedCurve);
+                isAClosedCurve);
 
         insertJunctions(maxScaleSpace, maxSIGMA, edgeNumber, junctions,
             candidateCornersXY);
@@ -659,151 +641,6 @@ public class CSSCornerMaker {
         return new int[]{yFirstPeakIdx, firstMinIdx};
     }
 
-    /**
-     * remove false corners from maxCandidateCornerIndexes by determining if
-     * the corner is due to a jagged line.  The flag "isAClosedCurve" is
-     * used to preserve corners that are on the edges of the curve because
-     * the calculation of curvature has used that property to do a more
-     * accurate "wrap around" calculation, so the corners there should be real.
-     *
-     * @param xyCurve
-     * @param maxCandidateCornerIndexes indexes which are reduced by this method
-     * to a smaller number due to removing false corners
-     * @param isAClosedCurve
-     * @return returns the found jagged lines in the edge
-     */
-     protected PairIntArray removeFalseCorners(PairIntArray xyCurve,
-        List<Integer> maxCandidateCornerIndexes, boolean isAClosedCurve) {
-
-        // until the methods used by findJaggedLineSegments and
-        // findJaggedLineSegments2 are simplified, use both separately
-        // and keep the solution which results in fewer corners.
-
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-
-        PairIntArray jaggedLineSegments1 =
-            curveHelper.findJaggedLineSegments(xyCurve);
-
-        PairIntArray jaggedLineSegments2 =
-            curveHelper.findJaggedLineSegments2(xyCurve);
-
-        List<Integer> remove1 = new ArrayList<Integer>();
-
-        List<Integer> remove2 = new ArrayList<Integer>();
-
-        for (int ii = 0; ii < maxCandidateCornerIndexes.size(); ii++) {
-
-            int idx = maxCandidateCornerIndexes.get(ii);
-
-            if (isAClosedCurve && ((idx < 3) || (idx > (xyCurve.getN() - 4)))) {
-                // keep
-
-            } else if ((idx < 4) || (idx > (xyCurve.getN() - 5))) {
-
-                remove1.add(Integer.valueOf(ii));
-                remove2.add(Integer.valueOf(ii));
-
-            } else {
-
-                //TODO: make this result less sensitive to minDistFromBoundary
-                int range1Idx = isWithinARange(jaggedLineSegments1, idx,
-                    3);
-
-                if (range1Idx > -1) {
-
-                    int last1Idx = jaggedLineSegments1.getN() - 1;
-
-                    if ((range1Idx > 0) && (range1Idx < last1Idx)) {
-                        remove1.add(Integer.valueOf(ii));
-                    }
-                }
-                int range2Idx = isWithinARange(jaggedLineSegments2, idx, 3);
-                if (range2Idx > -1) {
-                    remove2.add(Integer.valueOf(ii));
-                }
-            }
-        }
-        int choose1 = 0;
-        if (remove1.size() == remove2.size()) {
-            // choose the lines which cover more of the curve
-            int sum1 = 0;
-            if (jaggedLineSegments1 != null) {
-                for (int ii = 0; ii < jaggedLineSegments1.getN(); ii++) {
-                    sum1 += (jaggedLineSegments1.getY(ii)
-                        - jaggedLineSegments1.getX(ii));
-                }
-            }
-            int sum2 = 0;
-            if (jaggedLineSegments2 != null) {
-                for (int ii = 0; ii < jaggedLineSegments2.getN(); ii++) {
-                    sum2 += (jaggedLineSegments2.getY(ii)
-                        - jaggedLineSegments2.getX(ii));
-                }
-            }
-            if (sum1 > sum2) {
-                choose1 = 1;
-            }
-        } else if (remove1.size() > remove2.size()) {
-            choose1 = 1;
-        }
-        if (choose1 == 0) {
-            for (int ii = (remove2.size() - 1); ii > -1; ii--) {
-                int idx = remove2.get(ii).intValue();
-                maxCandidateCornerIndexes.remove(idx);
-            }
-            log.fine("NREMOVED=" + remove2.size());
-
-            return jaggedLineSegments2;
-
-        } else {
-            for (int ii = (remove1.size() - 1); ii > -1; ii--) {
-                int idx = remove1.get(ii).intValue();
-                maxCandidateCornerIndexes.remove(idx);
-            }
-            log.fine("NREMOVED=" + remove1.size());
-
-            return jaggedLineSegments1;
-        }
-    }
-
-    /**
-     * search for idx within ranges in lineRangeSegments and return the index of
-     * lineRangeSegments in which it is found, else -1.  Note that
-     * lineRangeSegments have to be ordered by x and unique.
-     * @param lineRangeSegments
-     * @param idx
-     * @param minDistFromEnds
-     * @return
-     */
-    private int isWithinARange(PairIntArray lineRangeSegments, int idx,
-        int minDistFromEnds) {
-
-        if ((lineRangeSegments == null) || (lineRangeSegments.getN() == 0)) {
-            return -1;
-        }
-
-        // search outside of bounds first:
-        if (idx < lineRangeSegments.getX(0)) {
-            return -1;
-        } else if (idx > lineRangeSegments.getY(lineRangeSegments.getN() - 1)) {
-            return -1;
-        }
-
-        for (int i = 0; i < lineRangeSegments.getN(); i++) {
-
-            int idx0 = lineRangeSegments.getX(i);
-            int idx1 = lineRangeSegments.getY(i);
-
-            if ((idx >= (idx0 + minDistFromEnds))
-                && (idx <= (idx1 - minDistFromEnds))) {
-
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
      /**
      * refine the primary coordinates given in xc and yc using the corner
      * candidate results of the given scale space map.  Matches to a corner
@@ -828,7 +665,7 @@ public class CSSCornerMaker {
 
         CornerArray xy2 =
             findCornersInScaleSpaceMap(scaleSpace, scaleSpaceSigma, edgeNumber,
-                false, isAClosedCurve);
+                isAClosedCurve);
 
         // roughly estimating maxSep as the ~FWZI of the gaussian
         //TODO: this may need to be altered to a smaller value

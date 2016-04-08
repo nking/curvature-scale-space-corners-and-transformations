@@ -1007,7 +1007,6 @@ public class PhaseCongruencyDetector {
                 
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
-        cornerMaker.disableJaggedLineCorrections();
         List<CornerArray> cornerList =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap);
         

@@ -29,14 +29,12 @@ public class BlobsAndCorners  {
      * @param blobPerimeterHelper
      * @param type
      * @param useBinnedImage
-     * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
      * @return 
      */
     public static List<List<CornerRegion>> populateCorners(
         final BlobPerimeterCornerHelper blobPerimeterHelper,
         SegmentationType type, boolean useBinnedImage,
-        final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum) {
 
         List<PairIntArray> perimeterLists = blobPerimeterHelper.getBlobPerimeters(
@@ -54,7 +52,7 @@ public class BlobsAndCorners  {
         
         List<List<CornerRegion>> cornerRegionLists = populateCorners(
             perimeterLists, useBinnedImage,
-            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
+            factorIncreaseForCurvatureMinimum,
             width, height);
         
         if (blobPerimeterHelper.isInDebugMode()) {
@@ -74,7 +72,6 @@ public class BlobsAndCorners  {
      * consistent use of the corner region orientation.)
      * @param perimeterLists
      * @param useBinnedImage
-     * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
      * @param width
      * @param height
@@ -82,7 +79,6 @@ public class BlobsAndCorners  {
      */
     public static List<List<CornerRegion>> populateCorners(
         List<PairIntArray> perimeterLists, boolean useBinnedImage,
-        final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum,
         int width, int height) {
 
@@ -93,7 +89,7 @@ public class BlobsAndCorners  {
         
         Map<Integer, List<CornerRegion> > indexCornerRegionMap = 
             findCornersInScaleSpaceMaps(perimeterLists, allCorners,
-            enableJaggedLineCorrections, factorIncreaseForCurvatureMinimum,
+            factorIncreaseForCurvatureMinimum,
             width, height);
         
         int nTotCR = 0;
@@ -187,7 +183,6 @@ public class BlobsAndCorners  {
      *
      * @param theEdges
      * @param outputCorners
-     * @param enableJaggedLineCorrections
      * @param factorIncreaseForCurvatureMinimum
      * @param imageWidth
      * @param imageHeight
@@ -196,18 +191,11 @@ public class BlobsAndCorners  {
     protected static Map<Integer, List<CornerRegion> >
         findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
         final PairIntArray outputCorners,
-        final boolean enableJaggedLineCorrections,
         final float factorIncreaseForCurvatureMinimum, int imageWidth,
         int imageHeight) {
 
         CSSCornerMaker cornerMaker = new CSSCornerMaker(imageWidth, imageHeight);
         
-        if (enableJaggedLineCorrections) {
-            cornerMaker.enableJaggedLineCorrections();
-        } else {
-            cornerMaker.disableJaggedLineCorrections();
-        }
-       
         cornerMaker.increaseFactorForCurvatureMinimum(
             factorIncreaseForCurvatureMinimum);
         
