@@ -1271,7 +1271,8 @@ public class CSSCornerMaker {
             ImageIOHelper.addAlternatingColorPointSetsToImage(
                 new ArrayList<Set<PairInt>>(lines.keySet()),
                 0, 0, 2, out);
-            MiscDebug.writeImage(out, "_HOUGH_LINES_");  
+            MiscDebug.writeImage(out, "_HOUGH_LINES_" 
+                + MiscDebug.getCurrentTimeFormatted());  
         } catch (IOException ex) {
             Logger.getLogger(CSSCornerMaker.class.getName()).log(Level.SEVERE, null, ex);
         }

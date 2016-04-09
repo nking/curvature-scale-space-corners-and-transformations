@@ -5267,8 +5267,7 @@ public class PostLineThinnerCorrections {
     }
 
     /**
-     * corrects for the curve artifacts introduced after phase congruency edge 
-     * thinning followed by phase angle step concatenation.
+     * corrects for the curve artifacts 
      * <pre>
      * the pattern is a 3 parallel diagonal lines
      *    
@@ -5426,7 +5425,112 @@ public class PostLineThinnerCorrections {
         tmpPointsRemoved.clear();
         tmpPointsAdded.clear();
          
-    }    
+    }   
+    
+    /**
+     * remove single isolated pixels
+     * 
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForIsolatedPixels(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> rm = new HashSet<PairInt>();
+        for (PairInt p : points) {
+            int x = p.getX();
+            int y = p.getY();
+            boolean found = false;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (points.contains(p2) && !rm.contains(p2)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // no neighbors
+                rm.add(p);
+            }
+        }
+        for (PairInt p : rm) {
+            points.remove(p);
+        }
+    }
+    
+    /**
+     * for gaps of one in lines, collect the gaps and return them.
+     * @param points
+     * @param imageWidth
+     * @param imageHeight
+     * @return 
+     */
+    public Set<PairInt> findGapsOf1(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        int w = imageWidth;
+        int h = imageHeight;
+
+        /*
+        0  1  2
+        7     3
+        6  5  4
+        fill in !value if these pairs are filled in:
+            0:3, 0:4, 0:5
+            1:4, 1:5, 1:6
+            2:5, 2:6, 2:7
+            3:6, 3:7, 3:0
+            4:7
+        so a +1 and -1 in x or y and a +1 or -1 in y or x
+        */
+        int[] dxs0 = new int[]{-1, -1, -1,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1};
+        int[] dys0 = new int[]{+1, +1, +1,  1,  1,  1,  1,  1,  1,  0,  0,  0, -1};
+        int[] dxs1 = new int[]{1,  +1,  0,  1,  0, -1,  0, -1, -1, -1, -1, -1, -1};
+        int[] dys1 = new int[]{0,  -1, -1, -1, -1, -1, -1, -1,  0, -1,  0,  1,  0};
+        
+        Set<PairInt> gaps = new HashSet<PairInt>();
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+
+                PairInt p = new PairInt(i, j);
+                if (points.contains(p)) {
+                    continue;
+                }
+
+                for (int k = 0; k < dxs0.length; ++k) {
+                    int x1 = i + dxs0[k];
+                    int y1 = j + dys0[k];
+                    if (x1 < 0 || (x1 > (w - 1)) || y1 < 0 || (y1 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p1 = new PairInt(x1, y1);
+                    if (!points.contains(p1)) {
+                        continue;
+                    }
+                    int x2 = i + dxs1[k];
+                    int y2 = j + dys1[k];
+                    if (x2 < 0 || (x2 > (w - 1)) || y2 < 0 || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!points.contains(p2)) {
+                        continue;
+                    }
+                    gaps.add(p);
+                    break;
+                }
+            }
+        }
+        
+        return gaps;
+    }
 
     private boolean foundPattern(PairInt p, Set<PairInt> points, 
         int imageWidth, int imageHeight, LinkedHashSet<PairInt> zeroes, 

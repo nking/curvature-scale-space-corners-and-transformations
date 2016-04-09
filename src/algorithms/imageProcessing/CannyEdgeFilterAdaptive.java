@@ -161,16 +161,21 @@ public class CannyEdgeFilterAdaptive {
     
     /**
      * override the default number of levels used in the histogram used to find the
-     * high threshold in the 2 - layer thresholding, where the default is 1.  
-     * it's the number of levels given to Otsu's multi-level thresholding.
-     * for a value of 1, the histogram is performed over the entire image.
-     * for a value of 2, histograms are calculated for 2 sets of calculations
-     * over the image, one in which the average intensity of neighbors is
-     * in bin1 and the other in bin2, etc... the histograms are indexed
+     * high threshold in the 2 layer thresholding, The default is number of 
+     * levels is 1.  It's the number of levels given to Otsu's multi-level 
+     * thresholding.  For a value of 1, the histogram is performed over the 
+     * entire image.  For a value of 2, histograms are calculated for 2 sets of
+     * calculations over the image, one in which the average intensity of 
+     * neighbors is in bin1 (values 0 to 126)and the other in 
+     * bin2 (values 127 to 255), etc... The histograms are indexed
      * by the average values of the neighbors.
      * @param nLevels
      */
     public void overrideDefaultNumberOfLevels(int nLevels) {
+        if (nLevels < 1 || nLevels > 255) {
+            throw new IllegalArgumentException(
+                "nLevels must be between 0 and 255, inclusive");
+        }
         this.numberOfLevelsForHistogram = nLevels;
     }
     
@@ -273,11 +278,19 @@ public class CannyEdgeFilterAdaptive {
                 
         Set<PairInt> removedDisconnecting = new HashSet<PairInt>();
         
+        if (debug) {
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_before_nms_");
+        }
+        
         //(3) non-maximum suppression
         if (performNonMaxSuppr) {
             applyNonMaximumSuppression(filterProducts, removedDisconnecting);
         }
-                
+        
+        if (debug) {
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_nms_");
+        }
+           
         //(4) adaptive 2 layer filter                        
         apply2LayerFilter(filterProducts.getGradientXY(), removedDisconnecting,
             gradientCopyBeforeThinning);
@@ -483,10 +496,18 @@ public class CannyEdgeFilterAdaptive {
         }
         
         gradientXY.resetTo(img2);
+        
+        if (debug) {
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_2layer_");
+        }
              
         applyPostLineThinningCorrections(gradientXY, 
             gradientCopyBeforeThinning);
              
+        if (debug) {
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_");
+        }
+        
         if (restoreJunctions) {
         
             // while have information about the thresholds, will use them to
@@ -519,9 +540,16 @@ public class CannyEdgeFilterAdaptive {
                 }
             }
      
+            if (debug) {
+                MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_restore_junctions_");
+            }
+            
             applyPostLineThinningCorrections(gradientXY, 
                 gradientCopyBeforeThinning);
             
+            if (debug) {
+                MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_2_");
+            }
         }
     }
     
@@ -624,8 +652,8 @@ public class CannyEdgeFilterAdaptive {
 
         g = imageProcessor.combineConvolvedImages(gX, gY);
         
-        // the theta is in range 0 to 360
-        theta = imageProcessor.computeTheta360_0(gX, gY);
+        // the theta is in range 0 to 180
+        theta = imageProcessor.computeTheta180(gX, gY);
         
         if (debug) {
             // when replace the aspect library, put these renders in the 
@@ -669,8 +697,8 @@ public class CannyEdgeFilterAdaptive {
             
         g = imageProcessor.combineConvolvedImages(gX, gY);
         
-        // the theta is in range 0 to 360
-        theta = imageProcessor.computeTheta360_0(gX, gY);
+        // the theta is in range 0 to 180
+        theta = imageProcessor.computeTheta180(gX, gY);
         
         EdgeFilterProducts efp = new EdgeFilterProducts();
         efp.setGradientX(gX);
@@ -722,10 +750,9 @@ public class CannyEdgeFilterAdaptive {
          
          //TODO: radius can be adjusted from 1 to higher
          nms.nonmaxsup(filterProducts.getGradientXY(),
-            filterProducts.getTheta(), 1.5, true, disconnectingRemovals);
-         
+            filterProducts.getTheta(), 1.5, false, disconnectingRemovals);
     }
-
+    
     private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
         int x, int y, int minLineSize) {
         
@@ -874,6 +901,8 @@ public class CannyEdgeFilterAdaptive {
     }
 
     /**
+     * get the filter products for gradient and orientation, and hough
+     * lines.  note that the orientation image has values between 0 and 180.
      * @return the filterProducts
      */
     public EdgeFilterProducts getFilterProducts() {
@@ -912,23 +941,57 @@ public class CannyEdgeFilterAdaptive {
         // so do not perform line thinning in that case.
         int nP = correctedPoints.size();
         float frac = (float)nP/(float)(n0 * n1);
-        if (nP < 10000) {
+        Set<PairInt> gaps = null;
+        if (nP < 30000) {
             PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-            pltc.correctForHolePattern100(correctedPoints, n0, n1);
+            pltc.correctForHolePattern100(correctedPoints, n0, n1);            
             pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
             pltc.correctForLineHatVert(correctedPoints, n0, n1);
             pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
             pltc.correctForLineSpurVert(correctedPoints, n0, n1);
             pltc.correctForTripleLines(correctedPoints, n0, n1);
+            pltc.correctForIsolatedPixels(correctedPoints, n0, n1);
+                        
+            gaps = pltc.findGapsOf1(correctedPoints, n0, n1);
+            GreyscaleImage out = gradientXY.createWithDimensions();
+            if (debug) {
+                for (PairInt p : correctedPoints) {
+                   out.setValue(p.getX(), p.getY(), 255);
+                }
+                MiscDebug.writeImage(out, "_after_tripple_line_thinning");
+            }
         }
         
         GreyscaleImage out = gradientXY.createWithDimensions();
-        for (PairInt p : correctedPoints) {
-                                    
-            int v = valuesBeforeThinning.getValue(p);
-            
-            out.setValue(p.getX(), p.getY(), v);
+        int[][] morphInput = new int[out.getWidth()][out.getHeight()];
+        for (int i = 0; i < morphInput.length; ++i) {
+            morphInput[i] = new int[out.getHeight()];
         }
+        for (PairInt p : correctedPoints) {
+            int v = valuesBeforeThinning.getValue(p);
+            out.setValue(p.getX(), p.getY(), v);
+            morphInput[p.getX()][p.getY()] = 1;
+        }
+        if (gaps != null) {
+            for (PairInt p : gaps) {
+                int v = valuesBeforeThinning.getValue(p);
+                out.setValue(p.getX(), p.getY(), v);
+                morphInput[p.getX()][p.getY()] = 1;
+            }
+        }
+        
+        MorphologicalFilter mFilter = new MorphologicalFilter();
+        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                int m = skel[i][j]; 
+                if (m == 0) {
+                    out.setValue(i, j, 0);
+                }
+            }
+        }
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyFilter(out);
         
         gradientXY.resetTo(out);
     }
@@ -973,6 +1036,7 @@ public class CannyEdgeFilterAdaptive {
         pltc.correctForLineSpurVert(points, w, h);
         pltc.correctForLine2SpurVert(points, w, h);
         pltc.correctForLine2SpurHoriz(points, w, h);
+        pltc.correctForIsolatedPixels(points, w, h);
     
         pointsCp.removeAll(points);
         

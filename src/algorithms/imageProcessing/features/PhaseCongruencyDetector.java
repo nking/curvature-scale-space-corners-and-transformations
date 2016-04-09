@@ -817,6 +817,7 @@ public class PhaseCongruencyDetector {
         pltc.correctForLine2SpurVert(correctedPoints, thinned2.length, thinned2[0].length);
         pltc.correctForLine2SpurHoriz(correctedPoints, thinned2.length, thinned2[0].length);
         pltc.correctForTripleLines(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForIsolatedPixels(correctedPoints, thinned.length, thinned[0].length);
         
         // ----- find lines w/ hough transform, then thin line staircase with it ---
         Set<PairInt> pointCp = new HashSet<PairInt>(correctedPoints);
@@ -824,6 +825,7 @@ public class PhaseCongruencyDetector {
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(correctedPoints, 3);
 
         pltc.thinLineStaircases(lines, correctedPoints, thinned.length, thinned[0].length);
+        
         pointCp.removeAll(correctedPoints);        
         
         for (PairInt p : pointCp) {
