@@ -1,16 +1,20 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.misc.MiscDebug;
+import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertNotNull;
 
 /**
  *
@@ -104,6 +108,37 @@ public class CornersOfLabTest extends TestCase {
         ImageIOHelper.addCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
         MiscDebug.writeImage(img2, "corners_lab_EXPECTED.png");
 
+        
+        GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        float k = 2;
+        float g = 10; 
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
+        phaseCDetector.setToCreateCorners();                
+        PhaseCongruencyDetector.PhaseCongruencyProducts products =
+            phaseCDetector.phaseCongMono(img3, nScale, minWavelength, mult, 
+                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod);
+        assertNotNull(products);
+        Set<PairInt> pCorners = products.getCorners();
+        Image out2 = img3.copyToColorGreyscale();
+        for (int i = 0; i < out2.getWidth(); ++i) {
+            for (int j = 0; j < out2.getHeight(); ++j) {
+                if (products.getThinned()[j][i] > 0) {
+                    out2.setRGB(i, j, 0, 0, 255);
+                }
+            }
+        }
+        for (PairInt p : pCorners) {
+            out2.setRGB(p.getX(), p.getY(), 255, 0, 0);
+        }
+        MiscDebug.writeImage(out2, "_phase_congruency_corners_lab_" + cutOff + "_");  
+        
     }
     
     protected PairIntArray getExpectedLabCorners() {

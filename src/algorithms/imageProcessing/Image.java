@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 
 /**
  * space conserving image data holder.
@@ -10,7 +11,7 @@ import java.awt.image.BufferedImage;
 public class Image {
     
     //TODO:  add alpha when needed
-    
+        
     public final boolean is64Bit;
     
     /**
@@ -772,6 +773,44 @@ public class Image {
             System.arraycopy(copyThis.r, 0, r, 0, copyThis.len);
             System.arraycopy(copyThis.g, 0, g, 0, copyThis.len);
             System.arraycopy(copyThis.b, 0, b, 0, copyThis.len);
+        }
+    }
+    
+    public Image createWithDimensions() {
+       
+        Image img2 = new Image(width, height, is64Bit);
+        
+        return img2;
+    }
+    
+    /**
+     * convenience method to fill image with the red, reen, and blue values
+     * which are between 0 and 255 inclusive.
+     * @param red value for red in range 0 to 255, inclusive
+     * @param green value for green in range 0 to 255, inclusive
+     * @param blue value for blue in range 0 to 255, inclusive
+     */
+    public void fill(int red, int green, int blue) {
+        
+        if (red < 0 || (red > 255)) {
+            throw new IllegalArgumentException(
+                "red must be between 0 and 255 inclusive"); 
+        }
+        if (green < 0 || (green > 255)) {
+            throw new IllegalArgumentException(
+                "green must be between 0 and 255 inclusive"); 
+        }
+        if (blue < 0 || (blue > 255)) {
+            throw new IllegalArgumentException(
+                "blue must be between 0 and 255 inclusive"); 
+        }
+        
+        //TODO: improve to use Arrays.fill on n < length for bytes per item
+       
+        for (int i = 0; i < width; i ++) {
+            for (int j = 0; j < height; ++j) {
+                setRGB(i, j, red, green, blue);
+            }
         }
     }
 
