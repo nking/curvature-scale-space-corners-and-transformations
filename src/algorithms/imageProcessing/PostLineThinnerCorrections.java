@@ -2128,56 +2128,15 @@ public class PostLineThinnerCorrections {
         
         for (PairInt p : points) {
 
-            boolean isRemoved = tmpPointsRemoved.contains(p);
-            if (isRemoved) {
+            boolean foundPattern = foundPattern(p, points, imageWidth,
+                imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded);
+            
+            if (!foundPattern) {
                 continue;
             }
             
             int col = p.getX();
-            int row = p.getY();           
-                
-            boolean foundPattern = true;
-           
-            for (PairInt p2 : zeroes) {
-                int x = col + p2.getX();
-                int y = row + p2.getY();
-                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                    //TODO: revisit this
-                    foundPattern = false;
-                    break;
-                }
-                PairInt p3 = new PairInt(x, y);
-                if (!tmpPointsRemoved.contains(p3)
-                    && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
-                    foundPattern = false;
-              
-                    break;
-                }
-            }
-               
-            if (!foundPattern) {
-                continue;
-            }
-
-            for (PairInt p2 : ones) {
-                int x = col + p2.getX();
-                int y = row + p2.getY();
-                if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
-                    foundPattern = false;
-                    break;
-                }
-                PairInt p3 = new PairInt(x, y);
-                if (tmpPointsRemoved.contains(p3) ||
-                    (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
-                    foundPattern = false;
-
-                    break;
-                }
-            }
-          
-            if (!foundPattern) {
-                continue;
-            }
+            int row = p.getY();
             
             for (PairInt p2 : changeToZeroes) {
                 int x = col + p2.getX();
@@ -4186,152 +4145,7 @@ public class PostLineThinnerCorrections {
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));
     }
-    
-    /**
-     * given an ordered list of corners, remove any corners that appear to be 
-     * the artifact of a single pixel staircases in a straight line that is 
-     * nearly vertical or nearly horizontal. Note that ordered list of corners
-     * means that edgeCorners data are internally ordered by increasing values
-     * of idx.
-     * runtime complexity is O(N_corners).
-     * @param edgeCorners 
-     * @param curveIsClosed 
-     */
-    public static void removeSingleStairsAliasArtifacts(CornerArray edgeCorners, 
-        boolean curveIsClosed) {
-        
-        int nMaxIter = edgeCorners.getN();
-        int nIter = 0;
-        int nRemoved = 0;
-        while ((nIter == 0) || ((nIter < nMaxIter) && (nRemoved > 0))) {
-            
-            nRemoved = removeSingleStairAliasArtifacts(edgeCorners, 
-                curveIsClosed);
-            
-            nIter++;
-        }
-    }
-    
-    /**
-     * given an ordered list of corners, remove any corners that appear to be 
-     * the artifact of a single pixel staircase in a straight line that is 
-     * nearly vertical or nearly horizontal. Note that ordered list of corners
-     * means that edgeCorners data are internally ordered by increasing values
-     * of idx.
-     * runtime complexity is O(N_corners).
-     * @param edgeCorners 
-     * @param curveIsClosed 
-     */
-    protected static int removeSingleStairAliasArtifacts(CornerArray edgeCorners, 
-        boolean curveIsClosed) {
-        
-        if (edgeCorners.getN() < 3) {
-            return 0;
-        }
-        
-        /*
-        look for pattern __-- embedded between 2 corners that have the same 
-        y's as the 1 pixel step
-        then do same for vertical pattern.
-        */
-        
-        List<Integer> remove = new ArrayList<Integer>();
-        
-        for (int i = 1; i < edgeCorners.getN() - 1; ++i) {
-            int xa = Math.round(edgeCorners.getX(i - 1));
-            int ya = Math.round(edgeCorners.getY(i - 1));
-            
-            int xb = Math.round(edgeCorners.getX(i));
-            int yb = Math.round(edgeCorners.getY(i));
-            
-            int xc = Math.round(edgeCorners.getX(i + 1));
-            int yc = Math.round(edgeCorners.getY(i + 1));
-            
-            int diffYac = Math.abs(ya - yc);
-            int diffYab = Math.abs(ya - yb);
-            int diffYbc = Math.abs(yb - yc);
-                        
-            if ((diffYac == 1) && (
-                ((diffYab == 0) && (diffYbc == 1)) ||
-                ((diffYab == 1) && (diffYbc == 0)))) {
-                
-                if (((xa < xb) && (xb < xc)) || ((xa > xb) && (xb > xc))) {
-                    remove.add(Integer.valueOf(i));
-                    ++i;
-                    continue;
-                }
-            }
-        
-            int diffXac = Math.abs(xa - xc);
-            int diffXab = Math.abs(xa - xb);
-            int diffXbc = Math.abs(xb - xc);
-            
-            if ((diffXac == 1) && (
-                ((diffXab == 0) && (diffXbc == 1)) ||
-                ((diffXab == 1) && (diffXbc == 0)))) {
-                
-                if (((ya < yb) && (yb < yc)) || ((ya > yb) && (yb > yc))) {
-                    remove.add(Integer.valueOf(i));
-                    ++i;
-                }
-            }
-        }
-        
-        if (curveIsClosed) {
-            
-            int n = edgeCorners.getN();
-            
-            boolean contains = remove.contains(Integer.valueOf(n - 1)) || 
-                remove.contains(Integer.valueOf(0)) ||
-                remove.contains(Integer.valueOf(1));
-            
-            if (!contains) {
-                
-                int xa = Math.round(edgeCorners.getX(n - 1));
-                int ya = Math.round(edgeCorners.getY(n - 1));
-
-                int xb = Math.round(edgeCorners.getX(0));
-                int yb = Math.round(edgeCorners.getY(0));
-
-                int xc = Math.round(edgeCorners.getX(1));
-                int yc = Math.round(edgeCorners.getY(1));
-                
-                int diffYac = Math.abs(ya - yc);
-                int diffYab = Math.abs(ya - yb);
-                int diffYbc = Math.abs(yb - yc);
-
-                if ((diffYac == 1) && (((diffYab == 0) && (diffYbc == 1))
-                    || ((diffYab == 1) && (diffYbc == 0)))) {
-                    
-                    if (((xa < xb) && (xb < xc)) || ((xa > xb) && (xb > xc))) {
-                        remove.add(Integer.valueOf(0));
-                    }
-                    
-                } else {
-
-                    int diffXac = Math.abs(xa - xc);
-                    int diffXab = Math.abs(xa - xb);
-                    int diffXbc = Math.abs(xb - xc);
-
-                    if ((diffXac == 1) && (((diffXab == 0) && (diffXbc == 1))
-                        || ((diffXab == 1) && (diffXbc == 0)))) {
-                        
-                        if (((ya < yb) && (yb < yc)) || ((ya > yb) && (yb > yc))) {
-                            remove.add(Integer.valueOf(0));
-                        }
-                    }
-                }
-            }
-        }
-        
-        for (int i = (remove.size() - 1); i > -1; --i) {
-            int idx = remove.get(i).intValue();
-            edgeCorners.removeRange(idx, idx);
-        }
-        
-        return remove.size();
-    }
-    
+      
     /**
      * corrects for the curve artifacts introduced after phase congruency edge 
      * thinning followed by phase angle step concatenation.
@@ -5452,4 +5266,211 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
 
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * the pattern is a 3 parallel diagonal lines
+     *    
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForTripleLines(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                
+        /*
+                 .  .  #            2
+                 .  #  .  #         1                           2
+                 #  .  #  .  #      0                           1
+                    #  .  #  .     -1                           0
+                       #  .  .     -2                          -1
+             -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3
+        
+        for each of 4 directions
+           it needs to find the beginning and end of such a sequence of patterns
+           and make correction to the entire middle row excepting the ends.
+        */
+                
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, -1)); zeroes.add(new PairInt(-2, -2)); 
+        zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -2)); 
+        zeroes.add(new PairInt(0, 1)); zeroes.add(new PairInt(0, -1));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1));
+        
+        ones.add(new PairInt(-2, 0)); 
+        ones.add(new PairInt(-1, 1)); ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(0, 2)); ones.add(new PairInt(0, 0)); ones.add(new PairInt(0, -2));
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(1, -1));
+        ones.add(new PairInt(2, 0));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+                        
+        /*
+        searching for pattern that extends down and to left
+        and then the same but extending down and to right and 
+        choose the longer pattern to act upon.
+        
+                 .  .  #            2
+                 .  #  .  #         1                           2
+                 #  .  #  .  #      0                           1
+              #     #  .  #  .     -1                           0
+                 #     #  .  .     -2                          -1
+                    #
+        */
+        int w = imageWidth;
+        int h = imageHeight;
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+        for (PairInt p : points) {
+            
+            if (tmpPointsRemoved.contains(p)) {
+                continue;
+            }
+            if (!foundPattern(p, points, imageWidth,
+                imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded)) {
+                continue;
+            }
+            int col = p.getX();
+            int row = p.getY();
+            
+            // if found pattern, descend to lower left until pattern ends
+            int col1_0 = col;
+            int row1_0 = row;
+            while (true) {
+                int x2 = col1_0 - 1;
+                int y2 = row1_0 - 1;
+                PairInt p2 = new PairInt(x2, y2);
+                if (!foundPattern(p2, points, imageWidth,
+                    imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded)) {
+                    break;
+                }
+                col1_0 = x2;
+                row1_0 = y2;
+            }
+            // ascend to upper right until pattern ends
+            int col1_1 = col;
+            int row1_1 = row;
+            while (true) {
+                int x2 = col1_1 + 1;
+                int y2 = row1_1 + 1;
+                PairInt p2 = new PairInt(x2, y2);
+                if (!foundPattern(p2, points, imageWidth,
+                    imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded)) {
+                    break;
+                }
+                col1_1 = x2;
+                row1_1 = y2;
+            }
+            int n1 = col1_1 - col1_0 + 1;
+            
+            // compare to pattern which descends to right
+            int col2_0 = col;
+            int row2_0 = row;
+            while (true) {
+                int x2 = col2_0 - 1;
+                int y2 = row2_0 + 1;
+                PairInt p2 = new PairInt(x2, y2);
+                if (!foundPattern(p2, points, imageWidth,
+                    imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded)) {
+                    break;
+                }
+                col2_0 = x2;
+                row2_0 = y2;
+            }
+            // descend to lower right until pattern ends
+            int col2_1 = col;
+            int row2_1 = row;
+            while (true) {
+                int x2 = col2_1 + 1;
+                int y2 = row2_1 - 1;
+                PairInt p2 = new PairInt(x2, y2);
+                if (!foundPattern(p2, points, imageWidth,
+                    imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded)) {
+                    break;
+                }
+                col2_1 = x2;
+                row2_1 = y2;
+            }
+            
+            int n2 = col2_1 - col2_0 + 1;
+            
+            if (n1 >= n2) {
+                int r = row1_0;
+                for (int c = col1_0; c <= col1_1; ++c) {
+                    PairInt p3 = new PairInt(c, r);
+                    tmpPointsRemoved.add(p3);
+                    ++r;
+                }
+            } else {
+                int r = row2_0;
+                for (int c = col2_0; c <= col2_1; ++c) {
+                    PairInt p3 = new PairInt(c, r);
+                    tmpPointsRemoved.add(p3);
+                    --r;
+                }
+            }
+        }
+        for (PairInt p2 : tmpPointsRemoved) {
+            points.remove(p2);
+        }
+        for (PairInt p2 : tmpPointsAdded) {
+            points.add(p2);
+        }
+        tmpPointsRemoved.clear();
+        tmpPointsAdded.clear();
+         
+    }    
+
+    private boolean foundPattern(PairInt p, Set<PairInt> points, 
+        int imageWidth, int imageHeight, LinkedHashSet<PairInt> zeroes, 
+        LinkedHashSet<PairInt> ones, Set<PairInt> tmpPointsRemoved, 
+        Set<PairInt> tmpPointsAdded) {
+        
+        boolean isRemoved = tmpPointsRemoved.contains(p);
+        if (isRemoved) {
+            return false;
+        }
+            
+        int col = p.getX();
+        int row = p.getY();     
+        
+        int w = imageWidth;
+        int h = imageHeight;
+
+        boolean foundPattern = true;
+
+        for (PairInt p2 : zeroes) {
+            int x = col + p2.getX();
+            int y = row + p2.getY();
+            if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                return false;
+            }
+            PairInt p3 = new PairInt(x, y);
+            if (!tmpPointsRemoved.contains(p3)
+                && (points.contains(p3) || tmpPointsAdded.contains(p3))) {
+                return false;
+            }
+        }
+
+        for (PairInt p2 : ones) {
+            int x = col + p2.getX();
+            int y = row + p2.getY();
+            if ((x < 0) || (y < 0) || (x > (w - 1)) || (y > (h - 1))) {
+                return false;
+            }
+            PairInt p3 = new PairInt(x, y);
+            if (tmpPointsRemoved.contains(p3) ||
+                (!points.contains(p3) && !tmpPointsAdded.contains(p3))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

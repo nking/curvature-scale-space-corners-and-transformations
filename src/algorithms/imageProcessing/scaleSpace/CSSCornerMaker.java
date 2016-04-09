@@ -4,12 +4,9 @@ import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPointsFloat;
 import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.Gaussian1D;
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageStatisticsHelper;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.util.PairIntWithIndex;
@@ -126,12 +123,6 @@ public class CSSCornerMaker {
 
             CornerArray edgeCorners = findCornersInScaleSpaceMap(edge, map,
                 edgeJunctions, i);
-
-            // remove aliasing artifacts of a straight line with a single
-            // step in it.
-            // note that edgeCorners are already ordered by index.
-            PostLineThinnerCorrections.removeSingleStairsAliasArtifacts(
-                edgeCorners, isClosedCurve);
 
             log.log(Level.FINE,
                 "{0}) number of corners adding ={1} for edge={2}",

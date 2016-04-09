@@ -919,6 +919,7 @@ public class CannyEdgeFilterAdaptive {
             pltc.correctForLineHatVert(correctedPoints, n0, n1);
             pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
             pltc.correctForLineSpurVert(correctedPoints, n0, n1);
+            pltc.correctForTripleLines(correctedPoints, n0, n1);
         }
         
         GreyscaleImage out = gradientXY.createWithDimensions();

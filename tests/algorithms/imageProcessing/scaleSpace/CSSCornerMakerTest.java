@@ -41,12 +41,10 @@ public class CSSCornerMakerTest extends TestCase {
         super.tearDown();
     }
      
-    public void testScaleSpaceImagesFigure2() throws Exception {
+    public void estScaleSpaceImagesFigure2() throws Exception {
         
         System.out.println("testScaleSpaceImagesFigure2");
-                        
-        String dirPath = ResourceFinder.findDirectory("bin");
-        
+                                
         // IEEE 'TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE, 
         // VOL. PAMI-8, NO. 1. JANUARY 1986
         // Scale-Based Description and Recognition of Planar Curves and 
@@ -164,13 +162,76 @@ public class CSSCornerMakerTest extends TestCase {
         }
     }
     
+    public void testPrintScaleSpaceCurves() throws Exception {
+                                    
+        String filePath = ResourceFinder.findFileInTestResources("lab.gif");
+        
+        ImageExt img = ImageIOHelper.readImageExt(filePath);
+        
+        int imageWidth = img.getWidth();
+        int imageHeight = img.getHeight();
+        
+        CurvatureScaleSpaceCornerDetector detector = new
+            CurvatureScaleSpaceCornerDetector(img);
+                        
+        detector.useLineDrawingMode();
+        
+        detector.initialize();
+        
+        PairIntArray outputCorners = new PairIntArray();
+        Map<Integer, Set<PairIntWithIndex>> emptyJunctionsMap = 
+            new HashMap<Integer, Set<PairIntWithIndex>>();
+        
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(imageWidth, imageHeight);
+        
+        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
+            cornerMaker.findCornersInScaleSpaceMaps(detector.getEdges(), 
+                emptyJunctionsMap, outputCorners);
+        
+        int xTest = 0;
+        int yTest = 0;
+        
+        for (Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > entry : 
+            map.entrySet()) {
+                            
+            PairIntArray edge = entry.getKey();
+            
+            boolean found = false;
+            for (int i = 0; i < edge.getN(); ++i) {
+                if ((Math.abs(xTest - edge.getX(i)) < 5) && Math.abs(yTest - edge.getY(i)) < 5) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                continue;
+            }
+                                    
+            /*
+            need to print i (x,y) sigma k
+            */
+            for (Entry<SIGMA, ScaleSpaceCurve> entry2 : entry.getValue().entrySet()) {
+                SIGMA sigma = entry2.getKey();
+                ScaleSpaceCurve scaleSpaceCurve = entry2.getValue();
+                
+                for (int i = 0; i < scaleSpaceCurve.getT().length; ++i) {
+                    String str = String.format("", 0);
+                    
+                    System.out.println(str);
+                }
+            }
+            
+            break;
+        }
+    }
+    
     public static void main(String[] args) {
         try {
             
             CSSCornerMakerTest test = 
                 new CSSCornerMakerTest("CSSCornerMakerTest");
                                     
-            test.testScaleSpaceImagesFigure2();
+            //test.testScaleSpaceImagesFigure2();
             
         } catch (Exception e) {
             e.printStackTrace();
