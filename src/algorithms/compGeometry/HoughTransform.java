@@ -405,13 +405,14 @@ public class HoughTransform {
         for (PairInt p : points) {
             
             populateNeighborhoodPresence(p.getX(), p.getY(), points, isPresent);
+
       /*
           19 20 21 22 23
           14 15 16 17 18
           10 11  @ 12 13    
            5  6  7  8  9       
            0  1  2  3  4
-     */      
+     */ 
             Set<Integer> thetas = new HashSet<Integer>();
             if ((isPresent[12] && isPresent[13]) || (isPresent[10] && isPresent[11])) {
                 Integer t = Integer.valueOf(0);
@@ -493,7 +494,7 @@ public class HoughTransform {
                 }
                 tPoints.add(p);
             }
-            pointThetasMap.put(p, thetas);
+            pointThetasMap.put(p, thetas);            
         }
         
         // connected groups of points with same thetas
@@ -503,8 +504,7 @@ public class HoughTransform {
         List<Integer> contigGroupThetas = new ArrayList<Integer>();
         
         // indexes to groups in contigGroups to which the key point belongs
-        Map<PairInt, Set<Integer>> pointIndexesToContigGroups = new HashMap<PairInt, Set<Integer>>();
-        
+        Map<PairInt, Set<Integer>> pointIndexesToContigGroups = new HashMap<PairInt, Set<Integer>>();       
         for (Entry<Integer, Set<PairInt>> entry : thetaPointMap.entrySet()) {
                         
             // find contiguous groups
@@ -523,6 +523,7 @@ public class HoughTransform {
                 contigGroupThetas.add(index);
                 
                 for (PairInt p : group) {
+
                     Set<Integer> indexes = pointIndexesToContigGroups.get(p);
                     if (indexes == null) {
                         indexes = new HashSet<Integer>();
@@ -637,7 +638,6 @@ public class HoughTransform {
                 // consider attempting to split parallel connected lines.
                 if (trMeanStDev[2] >= 1) {
                     // 3 parallel lines: t=353, mn=1.05, stdv=0.4
-                    int z = 1;
                     // corner of 2 intersecting lines: t=311, mn=1.8, st=0.5
                 }
                 

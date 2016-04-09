@@ -970,7 +970,9 @@ public class CannyEdgeFilterAdaptive {
         pltc.thinLineStaircases(lines, points, w, h);
         pltc.correctForLineSpurHoriz(points, w, h);
         pltc.correctForLineSpurVert(points, w, h);
-
+        pltc.correctForLine2SpurVert(points, w, h);
+        pltc.correctForLine2SpurHoriz(points, w, h);
+    
         pointsCp.removeAll(points);
         
         for (PairInt p : pointsCp) {

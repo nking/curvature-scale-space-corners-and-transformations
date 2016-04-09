@@ -1171,7 +1171,9 @@ public class CSSCornerMaker {
 
     /**
      * a method that finds lines in theEdges and junctions and then removes
-     * corners that are not near the endpoints in the lines.
+     * corners and junctions that are not near the endpoints in the lines.
+     * If you want to retain junctions, then copy them before use of these
+     * methods or give this method an empty hash for junctions.
      * @param theEdges
      * @param corners
      * @param junctions
@@ -1199,7 +1201,7 @@ public class CSSCornerMaker {
         Map<PairInt, Integer> pointLineMap = new HashMap<PairInt, Integer>();
         List<PairIntArray> orderedLines = new ArrayList<PairIntArray>();
         for (Set<PairInt> lPoints : lines.keySet()) {
-            
+
             if (lPoints.size() < 3) {
                 continue;
             }
@@ -1224,23 +1226,14 @@ public class CSSCornerMaker {
 
                 orderedLines.add(lEdge);
             }
-;       }
+        }
         
+        Set<PairInt> allPoints = new HashSet<PairInt>();
+        allPoints.addAll(corners.keySet());
+        allPoints.addAll(junctions);
+                
         Set<PairInt> rm = new HashSet<PairInt>();
-        for (Entry<PairInt, Float> pEntry : corners.entrySet()) {
-            
-            PairInt p = pEntry.getKey();
-             
-            if (junctions.contains(p)) {
-                // no need to delete junctions
-                continue;
-            }
-            
-            // NOTE: this may need to be adjusted to a higher limit between 0.11 and 0.2
-            /*Float curvature = pEntry.getValue();
-            if (Math.abs(curvature.floatValue()) > 0.11) {
-                continue;
-            }*/
+        for (PairInt p : allPoints) {
             
             Integer lineIndex = pointLineMap.get(p);
             if (lineIndex == null) {
@@ -1279,6 +1272,7 @@ public class CSSCornerMaker {
         
         for (PairInt p : rm) {
             corners.remove(p);
+            junctions.remove(p);
         }
        
         try {

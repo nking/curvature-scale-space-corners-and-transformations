@@ -805,21 +805,28 @@ public class PhaseCongruencyDetector {
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
         pltc.correctForLineHatHoriz(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length);        
+        pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length); 
                 
         // small clumps of pixels may be present from artifact corrections,
         // so use one more round of non maximum suppression thinning       
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyLineThinner(correctedPoints, 0, nRows - 1, 0, nCols - 1);
   
-        
+        pltc.correctForLineSpurHoriz(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForLineSpurVert(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForLine2SpurVert(correctedPoints, thinned2.length, thinned2[0].length);
+        pltc.correctForLine2SpurHoriz(correctedPoints, thinned2.length, thinned2[0].length);
+              
         // ----- find lines w/ hough transform, then thin line staircase with it ---
         Set<PairInt> pointCp = new HashSet<PairInt>(correctedPoints);
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(correctedPoints, 3);
+
         pltc.thinLineStaircases(lines, correctedPoints, thinned.length, thinned[0].length);
-        pointCp.removeAll(correctedPoints);
+        pointCp.removeAll(correctedPoints);        
+        
         for (PairInt p : pointCp) {
+           
             Set<PairInt> line = null;
             for (Set<PairInt> hLine : lines.keySet()) {
                 if (hLine.contains(p)) {
@@ -1035,14 +1042,14 @@ public class PhaseCongruencyDetector {
                         Float.valueOf(ca.getCurvature(idx)));
                 }
             }
-        }
+        }        
         
         // both theEdges and corners are now in reference frame of image
         //   with columns being first axis
         cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges, 
             cornerMap, junctions, products.getHoughLines(),
             nCols, nRows);        
-
+        
         Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
         outputCorners.addAll(junctions);
         

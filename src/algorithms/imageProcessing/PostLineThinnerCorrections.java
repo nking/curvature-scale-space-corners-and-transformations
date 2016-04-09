@@ -5316,4 +5316,140 @@ public class PostLineThinnerCorrections {
             Integer.toString(nCorrections));
     }
 
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * the pattern is a 2 pixel pixel spur displaced on a vertical or horizontal 
+     * line
+     *        #
+     *        #
+     *     #######
+     *     
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForLine2SpurVert(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+                
+        /*
+                 .  .  .  .  .      3
+                 .  .  .  .  .      2
+                 .  .  #  .  .      1                           2
+                 .  .  #  .  .      0                           1
+                 #  #  #  #  #     -1                           0
+                 .  .  .  .  .     -2                          -1
+             -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3
+        */
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        zeroes.add(new PairInt(-2, 2)); zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-2, -1)); zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-2, -3));
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
+        zeroes.add(new PairInt(-1, -2)); zeroes.add(new PairInt(-1, -3));
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -2)); zeroes.add(new PairInt(0, -3));
+        zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
+        zeroes.add(new PairInt(1, -2)); zeroes.add(new PairInt(1, -3));
+        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, -1)); zeroes.add(new PairInt(2, -2));
+        zeroes.add(new PairInt(2, -3));
+        
+        ones.add(new PairInt(-2, 1));  ones.add(new PairInt(-1, 1));
+        ones.add(new PairInt(0, 1)); ones.add(new PairInt(0, 0));  ones.add(new PairInt(0, -1));
+        ones.add(new PairInt(1, 1)); ones.add(new PairInt(2, 1));
+        
+        changeToZeroes.add(new PairInt(0, 0));
+        changeToZeroes.add(new PairInt(0, -1));
+                
+        int nCorrections = 0;
+       
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of y to handle other direction -----
+        reverseYs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+    
+    /**
+     * corrects for the curve artifacts introduced after phase congruency edge 
+     * thinning followed by phase angle step concatenation.
+     * <pre>
+     * the pattern is a 2 pixel spur displaced on a vertical or horizontal 
+     * line
+     *     
+     *     #
+     *     #
+     *     # # #
+     *     #
+     *     #
+     * </pre>
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public void correctForLine2SpurHoriz(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+        
+        //TODO: may want to consider extending the vertical line out 3 pix on each side
+                
+        /*
+           .  .  .  .  #  .         2
+           .  .  .  .  #  .         1                          
+           .  .  #  #  #  .         0                          
+           .  .  .  .  #  .        -1                          
+           .  .  .  .  #  .        -2                         
+          -3 -2 -1  0  1  2  3       
+        */
+        
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToZeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+       
+        // y's are inverted here because sketch above is top left is (0,0)
+        for (int i = 0; i < 5; ++i) {
+            zeroes.add(new PairInt(-3, i - 2));
+            zeroes.add(new PairInt(-2, i - 2));
+            zeroes.add(new PairInt(2, i - 2));
+            ones.add(new PairInt(1, i - 2));
+        }
+        zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 1)); 
+        zeroes.add(new PairInt(-1, -1)); zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, 1)); 
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        
+        ones.add(new PairInt(-1, 0)); ones.add(new PairInt(0, 0));
+        
+        changeToZeroes.add(new PairInt(-1, 0)); changeToZeroes.add(new PairInt(0, 0));
+                
+        int nCorrections = 0;
+
+        nCorrections += replacePattern(points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        // ----- change the sign of y to handle other direction -----
+        reverseXs(zeroes, ones, changeToZeroes, changeToOnes);
+        
+        nCorrections += replacePattern(
+            points, imageWidth, imageHeight,
+            zeroes, ones, changeToZeroes, changeToOnes);
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(nCorrections));
+    }
+
 }
