@@ -170,7 +170,6 @@ public class ImageProcessor {
     }
 
     /**
-     * process only the green channel and set red and blue to zero
      * @param imageX
      * @param imageY
      * @return
@@ -187,19 +186,12 @@ public class ImageProcessor {
 
                 int gY = imageY.getValue(i, j);
 
-                //double g = Math.sqrt(0.5*(gX*gX + gY*gY));
-
-                //g = (g > 255) ? 255 : g;
-
                 double g = Math.sqrt(gX*gX + gY*gY);
 
                 if (g > 255) {
                     g = 255;
                 }
-
-                //int rgb = (int)(((rSum & 0x0ff) << 16)
-                //    | ((gSum & 0x0ff) << 8) | (bSum & 0x0ff));
-
+                
                 img2.setValue(i, j, (int)g);
             }
         }

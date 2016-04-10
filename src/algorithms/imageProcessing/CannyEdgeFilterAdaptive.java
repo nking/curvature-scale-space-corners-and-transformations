@@ -498,14 +498,14 @@ public class CannyEdgeFilterAdaptive {
         gradientXY.resetTo(img2);
         
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_2layer_");
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_2layer_before_pltc_");
         }
-             
+
         applyPostLineThinningCorrections(gradientXY, 
             gradientCopyBeforeThinning);
-             
+
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_");
+            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_1_");
         }
         
         if (restoreJunctions) {
@@ -1002,7 +1002,6 @@ public class CannyEdgeFilterAdaptive {
         // so do not perform line thinning in that case.
         int nP = correctedPoints.size();
         float frac = (float)nP/(float)(n0 * n1);
-        Set<PairInt> gaps = null;
         if (nP < 30000) {
             PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
             pltc.correctForHolePattern100(correctedPoints, n0, n1);            
@@ -1010,17 +1009,7 @@ public class CannyEdgeFilterAdaptive {
             pltc.correctForLineHatVert(correctedPoints, n0, n1);
             pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
             pltc.correctForLineSpurVert(correctedPoints, n0, n1);
-            pltc.correctForTripleLines(correctedPoints, n0, n1);
             pltc.correctForIsolatedPixels(correctedPoints, n0, n1);
-                        
-            gaps = pltc.findGapsOf1(correctedPoints, n0, n1);
-            GreyscaleImage out = gradientXY.createWithDimensions();
-            if (debug) {
-                for (PairInt p : correctedPoints) {
-                   out.setValue(p.getX(), p.getY(), 255);
-                }
-                MiscDebug.writeImage(out, "_after_tripple_line_thinning");
-            }
         }
         
         GreyscaleImage out = gradientXY.createWithDimensions();
@@ -1032,13 +1021,6 @@ public class CannyEdgeFilterAdaptive {
             int v = valuesBeforeThinning.getValue(p);
             out.setValue(p.getX(), p.getY(), v);
             morphInput[p.getX()][p.getY()] = 1;
-        }
-        if (gaps != null) {
-            for (PairInt p : gaps) {
-                int v = valuesBeforeThinning.getValue(p);
-                out.setValue(p.getX(), p.getY(), v);
-                morphInput[p.getX()][p.getY()] = 1;
-            }
         }
         
         MorphologicalFilter mFilter = new MorphologicalFilter();
