@@ -82,6 +82,10 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
+     * @param useMorphologicalFilter if true, uses a morphological filter 
+     * at the end of the method.  note that tests suggest this should be
+     * false for use with Canny edges and true for use with phase 
+     * congruency edges.
      * @param outputCandidateJunctionsToRestore the points removed within
      * threshold range are put into this set which can be tested after
      * 2-layer filter to see if restoring the pixels would restore their
@@ -89,7 +93,7 @@ public class NonMaximumSuppression {
      * @return 
      */
     public double[][] nonmaxsup(double[][] img, double[][] orientation, 
-        double radius, boolean useLowerThreshold, 
+        double radius, boolean useLowerThreshold, boolean useMorphologicalFilter,
         Set<PairInt> outputCandidateJunctionsToRestore) {
         
         if (img.length != orientation.length || img[0].length != orientation[0].length) {
@@ -133,6 +137,7 @@ public class NonMaximumSuppression {
                 if (or > 179) {
                     or -= 180;
                 }
+
                 double ii0 = i0 + xOff[or];
                 double ii1 = i1 - yOff[or];
                 
@@ -155,7 +160,7 @@ public class NonMaximumSuppression {
                 double upperAvg = tl + hFrac[or] * (tr - tl);
                 double lowerAvg = bl + hFrac[or] * (br - bl);
                 double v1 = upperAvg + vFrac[or] * (lowerAvg - upperAvg);
-                
+
                 if ((img[i0][i1] > v1) ||
                     (useLowerThreshold && (img[i0][i1] > 0.95*v1))) {
                     //x, y location on the `other side' of the point in question
@@ -269,21 +274,23 @@ public class NonMaximumSuppression {
                     //}
                 }
             }
-        }
+        }        
         
-        MorphologicalFilter mFilter = new MorphologicalFilter();
-        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
-        
-        for (int i = 0; i < n0; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                int m = skel[i][j];                 
-                output[i][j] *= m;
+        if (useMorphologicalFilter) {
+            MorphologicalFilter mFilter = new MorphologicalFilter();
+            int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
+
+            for (int i = 0; i < n0; ++i) {
+                for (int j = 0; j < n1; ++j) {
+                    int m = skel[i][j];
+                    output[i][j] *= m;
+                }
             }
         }
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         curveHelper.additionalThinning45DegreeEdges2(orientation, output);
-        
+     
         return output;
     }
     
@@ -297,10 +304,14 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
+     * @param useMorphologicalFilter if true, uses a morphological filter 
+     * at the end of the method.  note that tests suggest this should be
+     * false for use with Canny edges and true for use with phase 
+     * congruency edges.
      * @param outputCandidateJunctionsRemoved
      */
     public void nonmaxsup(GreyscaleImage img, GreyscaleImage orientation, 
-        double radius, boolean useLowerThreshold, 
+        double radius, boolean useLowerThreshold, boolean useMorphologicalFilter,
         Set<PairInt> outputCandidateJunctionsRemoved) {
         
         if (img.getWidth() != orientation.getWidth() || 
@@ -327,7 +338,7 @@ public class NonMaximumSuppression {
         }
                 
         double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold, 
-            outputCandidateJunctionsRemoved);
+            useMorphologicalFilter, outputCandidateJunctionsRemoved);
         
         // apply thinning to the image
         for (int i = 0; i < n0; ++i) {

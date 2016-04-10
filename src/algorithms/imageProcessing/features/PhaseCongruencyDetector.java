@@ -675,7 +675,7 @@ public class PhaseCongruencyDetector {
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0, false, new HashSet<PairInt>());
+            products.getOrientation(), 1.0, false, true, new HashSet<PairInt>());
         
         double t1 = 0.1;
         double t2 = 0.3;
@@ -773,7 +773,7 @@ public class PhaseCongruencyDetector {
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 
-            1.0, true, new HashSet<PairInt>());
+            1.0, true, true, new HashSet<PairInt>());
         
         // gather the points into a set and remove hole artifacts
         Set<PairInt> correctedPoints = new HashSet<PairInt>();
@@ -917,7 +917,7 @@ public class PhaseCongruencyDetector {
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
         double[][] thinned0 = ns.nonmaxsup(steps0, products.getOrientation(), 1.0,
-            true, new HashSet<PairInt>());
+            true, true, new HashSet<PairInt>());
         
         /*
         double t1 = 0.1;

@@ -750,7 +750,8 @@ public class CannyEdgeFilterAdaptive {
          
          //TODO: radius can be adjusted from 1 to higher
          nms.nonmaxsup(filterProducts.getGradientXY(),
-            filterProducts.getTheta(), 1.5, false, disconnectingRemovals);
+            filterProducts.getTheta(), 1.5, false, false,
+            disconnectingRemovals);
     }
     
     private boolean isAdjacentToAHorizOrVertLine(GreyscaleImage gradientXY, 
