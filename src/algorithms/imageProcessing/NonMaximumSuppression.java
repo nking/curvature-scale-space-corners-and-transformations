@@ -82,10 +82,6 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
-     * @param useMorphologicalFilter if true, uses a morphological filter 
-     * at the end of the method.  note that tests suggest this should be
-     * false for use with Canny edges and true for use with phase 
-     * congruency edges.
      * @param outputCandidateJunctionsToRestore the points removed within
      * threshold range are put into this set which can be tested after
      * 2-layer filter to see if restoring the pixels would restore their
@@ -93,7 +89,7 @@ public class NonMaximumSuppression {
      * @return 
      */
     public double[][] nonmaxsup(double[][] img, double[][] orientation, 
-        double radius, boolean useLowerThreshold, boolean useMorphologicalFilter,
+        double radius, boolean useLowerThreshold,
         Set<PairInt> outputCandidateJunctionsToRestore) {
         
         if (img.length != orientation.length || img[0].length != orientation[0].length) {
@@ -276,15 +272,13 @@ public class NonMaximumSuppression {
             }
         }        
         
-        if (useMorphologicalFilter) {
-            MorphologicalFilter mFilter = new MorphologicalFilter();
-            int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
+        MorphologicalFilter mFilter = new MorphologicalFilter();
+        int[][] skel = mFilter.bwMorphThin(morphInput, Integer.MAX_VALUE);
 
-            for (int i = 0; i < n0; ++i) {
-                for (int j = 0; j < n1; ++j) {
-                    int m = skel[i][j];
-                    output[i][j] *= m;
-                }
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < n1; ++j) {
+                int m = skel[i][j];
+                output[i][j] *= m;
             }
         }
         
@@ -304,14 +298,10 @@ public class NonMaximumSuppression {
      * @param useLowerThreshold if true, uses a lower threshold when checking
      * whether to keep points - the lower threshold is useful for example, when
      * thinning the steps from the phase angle image.
-     * @param useMorphologicalFilter if true, uses a morphological filter 
-     * at the end of the method.  note that tests suggest this should be
-     * false for use with Canny edges and true for use with phase 
-     * congruency edges.
      * @param outputCandidateJunctionsRemoved
      */
     public void nonmaxsup(GreyscaleImage img, GreyscaleImage orientation, 
-        double radius, boolean useLowerThreshold, boolean useMorphologicalFilter,
+        double radius, boolean useLowerThreshold,
         Set<PairInt> outputCandidateJunctionsRemoved) {
         
         if (img.getWidth() != orientation.getWidth() || 
@@ -338,7 +328,7 @@ public class NonMaximumSuppression {
         }
                 
         double[][] thinned = nonmaxsup(a, or, radius, useLowerThreshold, 
-            useMorphologicalFilter, outputCandidateJunctionsRemoved);
+            outputCandidateJunctionsRemoved);
         
         // apply thinning to the image
         for (int i = 0; i < n0; ++i) {
