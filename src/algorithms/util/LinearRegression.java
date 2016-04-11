@@ -218,6 +218,11 @@ public class LinearRegression {
         
         int n = x.length;
         
+        if (n > 46340) {
+            throw new IllegalArgumentException("x and y lengths must be "
+                + "less than 46340 for indexing an array of size length*lnegth");
+        }
+        
         /*      
         for 1000 points, for each possible pair w/ image 2 points,
         the real solution would be looking for a match within 

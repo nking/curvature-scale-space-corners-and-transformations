@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
@@ -339,6 +340,8 @@ public class HoughTransform {
     public Map<Set<PairInt>, PairInt> findContiguousLines(Set<PairInt> points,
         int minimumGroupSize) {
         
+        //TODO: need more efficient use of data structures.        
+        
         // key=(x,y); value = derived thetas.  
         // 0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5 where the 0.5 are rounded down
         Map<PairInt, Set<Integer>> pointThetasMap = new HashMap<PairInt, Set<Integer>>();
@@ -618,8 +621,8 @@ public class HoughTransform {
                 //float[] trMeanStDev = calculateLinePolarCoordsAndStats(group, 
                 //    roughTheta);
                 
-                float[] trMeanStDev = calculateReducedLinePolarCoordsAndStats(group, 
-                    roughTheta);
+                float[] trMeanStDev = calculateReducedLinePolarCoordsAndStats(
+                    group, roughTheta);
                 
                 float t = trMeanStDev[0];
                 // if it's highly inclined line, tolerance has to allow for step width
@@ -902,15 +905,36 @@ public class HoughTransform {
         for (PairInt p : linePoints) {
             xy.add(p.getX(), p.getY());
         }
-        
-        float[] x = Arrays.copyOf(xy.getX(), xy.getN());
-        float[] y = Arrays.copyOf(xy.getY(), xy.getN());
-        
+            
         LinearRegression lReg = new LinearRegression();
         //lReg.plotTheLinearRegression(x, y);
         
-        float[] yInterceptAndSlope = 
-            lReg.calculateTheilSenEstimatorParams(x, y);
+        float[] yInterceptAndSlope;
+        
+        if (xy.getN() > 3162) {
+        //if (xy.getN() > 46340) {
+            // need to reduce the number of points
+            //TODO: replace with faster sampling
+            Random random = new Random(System.nanoTime());
+            int n = 3162;
+            float[] xs = new float[n];
+            float[] ys = new float[n];
+            Set<Integer> chosen = new HashSet<Integer>();
+            while (chosen.size() < n) {
+                int idx = random.nextInt(n);
+                Integer index = Integer.valueOf(idx);
+                if (!chosen.contains(index)) {
+                    xs[chosen.size()] = xy.getX(idx);
+                    ys[chosen.size()] = xy.getY(idx);
+                    chosen.add(index);
+                }
+            }
+            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(xs, ys);
+        } else {            
+            float[] x = Arrays.copyOf(xy.getX(), xy.getN());
+            float[] y = Arrays.copyOf(xy.getY(), xy.getN());
+            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(x, y);
+        }
         
         double thetaRadians;
         double rSum = 0;

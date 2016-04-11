@@ -211,6 +211,10 @@ public class SunFinder {
             
         double[] sunXYCen = ch.calculateXYCentroids(sunPoints);
         
+        //TODO: when refactor this code, if still using theil sen estimator,
+        // need to make sure xsl.length is < sqrt(Integer.MAX_VALUE^2),
+        // else sample up to that
+        
         LinearRegression lr = new LinearRegression();
         float[] yInterceptAndSlope = lr.calculateTheilSenEstimatorParams(
             xsl, ysl);

@@ -55,7 +55,7 @@ public class CornersOfLabTest extends TestCase {
         
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        CurvatureScaleSpaceCornerDetector detector = new
+    /*  CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
        
         detector.findCorners();
@@ -92,7 +92,7 @@ public class CornersOfLabTest extends TestCase {
         
         log.info((corners.getN() - foundExpectedCount) 
             + " beyond expected found");
-       
+      
         Image image = ImageIOHelper.readImageAsGrayScale(filePath);
         List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
         corners = detector.getCornersInOriginalReferenceFrame();
@@ -107,36 +107,41 @@ public class CornersOfLabTest extends TestCase {
         }
         ImageIOHelper.addCurveToImage(expectedCorners, img2, 2, 255, 0, 255);
         MiscDebug.writeImage(img2, "corners_lab_EXPECTED.png");
-
-        
+*/
+        // nScle=4; minWave=4; k=10 is good
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
         float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
-        int minWavelength = 3;
+        int nScale = 4;//5;
+        int minWavelength = nScale;//3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 2;
+        float k = 10;//2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
+        double tLow = 0.025;
+        double tHigh = 0.3;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         phaseCDetector.setToCreateCorners();                
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseCDetector.phaseCongMono(img3, nScale, minWavelength, mult, 
-                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod);
+                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
         assertNotNull(products);
         Set<PairInt> pCorners = products.getCorners();
         Image out2 = img3.copyToColorGreyscale();
         out2 = out2.createWithDimensions();
         out2.fill(255, 255, 255);
+        GreyscaleImage out3 = img3.createWithDimensions();
         for (int i = 0; i < out2.getWidth(); ++i) {
             for (int j = 0; j < out2.getHeight(); ++j) {
                 if (products.getThinned()[j][i] > 0) {
                     out2.setRGB(i, j, 0, 0, 255);
                 }
+                out3.setValue(i, j, (int)(255.*products.getPhaseCongruency()[j][i]));
             }
         }
         ImageIOHelper.addCurveToImage(pCorners, out2, 2, 255, 0, 0);
+        MiscDebug.writeImage(out3, "_phase_congruency_lab_" + cutOff + "_"); 
         MiscDebug.writeImage(out2, "_phase_congruency_corners_lab_" + cutOff + "_");  
         
     }

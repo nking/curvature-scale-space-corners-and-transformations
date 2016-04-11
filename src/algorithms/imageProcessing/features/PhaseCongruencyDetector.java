@@ -193,9 +193,11 @@ public class PhaseCongruencyDetector {
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
+        double tLow = 0.1;
+        double tHigh = 0.3;
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod);
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
     }
     
     /**
@@ -237,9 +239,11 @@ public class PhaseCongruencyDetector {
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
+        double tLow = 0.1;
+        double tHigh = 0.3;
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod);
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
     }
     
     /**
@@ -270,6 +274,8 @@ public class PhaseCongruencyDetector {
      * -2 use mode of smallest scale filter responses;
      * 0 turns off all noise compensation; and
      * > 0 use noiseMethod value as the fixed noise threshold;
+     * @param tLow the low threshold fraction of 1.  this is usually 0.1.
+     * @param tHigh the high threshold fraction of 1.  this is usually 0.3.
      * 
      * @return 
        <pre>
@@ -294,7 +300,8 @@ public class PhaseCongruencyDetector {
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
         final int nScale, final int minWavelength, final float mult,
         final float sigmaOnf, final float k, final float cutOff,
-        final float g, final float deviationGain, final int noiseMethod) {
+        final float g, final float deviationGain, final int noiseMethod,
+        final double tLow, final double tHigh) {
               
         int nCols = img.getWidth();
         int nRows = img.getHeight();
@@ -650,20 +657,13 @@ public class PhaseCongruencyDetector {
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
-        // ------- use line thinners ------
-        applyLineThinners1(products);
-            
-        double t1 = 0.1;
-            
-        // -------- concatenate with the phase angle steps ----
-        createPhaseAngleSteps(products, t1);
-            
-        //if steps are adjacent to thinned, they're added, 
-        // then all is thinned again.
-        // hough transform lines are calculated and stored here to:
-        addConnectedPhaseAngleSteps(products);
-       
+        createEdges(products, tLow, tHigh);
+        
+    //completeEdges(products, tLow, tHigh);
+        
         if (determineCorners) {
+            
+            calculateHoughTransforms(products);
                                                 
             calculateCorners(products, img);
         }
@@ -671,322 +671,6 @@ public class PhaseCongruencyDetector {
         return products;
     }
     
-    protected void applyLineThinners1(PhaseCongruencyProducts products) {
-        
-        NonMaximumSuppression ns = new NonMaximumSuppression();
-        double[][] imgTh0 = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0, false, new HashSet<PairInt>());
-        
-        double t1 = 0.1;
-        double t2 = 0.3;
-        
-        int[][] binaryImage = applyHysThresh(imgTh0, t1, t2, true);
-        
-        products.setThinnedImage(binaryImage);
-    }
-    
-    /**
-    
-     * to the thresholded binary image, products.getThinneed(), add the connected
-     * pixels from the thresholded phase angle image steps.
-     * 
-     * @param products
-     */
-    private void addConnectedPhaseAngleSteps(PhaseCongruencyProducts products) {
-        
-        if (products.getThinned() == null) {
-            throw new IllegalArgumentException(
-            "Error: thinned image needs to be set in products");
-        }
-        
-        if (products.getStepsInPhaseAngle() == null) {
-            throw new IllegalArgumentException(
-            "Error: phase angle steps image needs to be set in products");
-        }
-        
-        int[][] thinned = products.getThinned();
-        
-        int[][] steps = products.getStepsInPhaseAngle();
-        
-        // dfs traversal through points in thinned to search for neighbors
-        // in steps and add to stack and thinned image if found
-        
-        Set<PairInt> visited = new HashSet<PairInt>();
-        
-        int nRows = thinned.length;
-        int nCols = thinned[0].length;
-        
-        Stack<PairInt> stack = new Stack<PairInt>();
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                if (thinned[i][j] > 0) {
-                    stack.add(new PairInt(i, j));
-                }
-            }
-        }
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        while (!stack.isEmpty()) {
-            
-            PairInt uPoint = stack.pop();
-            
-            if (visited.contains(uPoint)) {
-                continue;
-            }
-            
-            int x = uPoint.getX();
-            int y = uPoint.getY();
-            
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                
-                // this class uses convention a[row][col]
-                if ((x2 < 0) || (y2 < 0) || (x2 > (nRows - 1)) || (y2 > (nCols - 1))) {
-                    continue;
-                }
-                
-                if (steps[x2][y2] > 0) {
-                    thinned[x2][y2] = 255;
-                    stack.add(new PairInt(x2, y2));
-                }
-            }
-            
-            visited.add(uPoint);
-        }
-        
-        double[][] pc = products.getPhaseCongruency();
-        
-        // thinned now needs one more round of thinning, so restore the
-        // original values in an array and thin those
-        double[][] thinnedPC = new double[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            thinnedPC[i] = new double[nCols];
-            for (int j = 0; j < nCols; ++j) {
-                if (thinned[i][j] > 0) {
-                    thinnedPC[i][j] = pc[i][j];
-                }
-            }
-        }
-        
-        NonMaximumSuppression ns = new NonMaximumSuppression();
-        double[][] thinned2 = ns.nonmaxsup(thinnedPC, products.getOrientation(), 
-            1.0, true, new HashSet<PairInt>());
-        
-        // gather the points into a set and remove hole artifacts
-        Set<PairInt> correctedPoints = new HashSet<PairInt>();
-        for (int i = 0; i < nRows; ++i) {
-            for (int j = 0; j < nCols; ++j) {
-                if (thinned2[i][j] > 0) {
-                    // if a point has 0 neighbors, do not add it
-                    
-                    int c = 0;
-                    for (int k = 0; k < dxs.length; ++k) {
-                        int i2 = i + dxs[k];
-                        int j2 = j + dys[k];
-                        if (i2 < 0 || j2 < 0 || (i2 > (thinned2.length - 1)) ||
-                            (j2 > (thinned2[0].length - 1))) {
-                            continue;
-                        }
-                        if (thinned2[i2][j2] > 0) {
-                            c++;
-                            break;
-                        }
-                    }
-                    if (c > 0) {
-                        correctedPoints.add(new PairInt(i, j));
-                    }
-                }
-            }
-        }
-        
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForHolePattern100(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLineHatHoriz(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLineHatVert(correctedPoints, thinned2.length, thinned2[0].length); 
-                
-        // small clumps of pixels may be present from artifact corrections,
-        // so use one more round of non maximum suppression thinning       
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(correctedPoints, 0, nRows - 1, 0, nCols - 1);
-  
-        pltc.correctForLineSpurHoriz(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLineSpurVert(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLine2SpurVert(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForLine2SpurHoriz(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForTripleLines(correctedPoints, thinned2.length, thinned2[0].length);
-        pltc.correctForIsolatedPixels(correctedPoints, thinned.length, thinned[0].length);
-        
-        // ----- find lines w/ hough transform, then thin line staircase with it ---
-        Set<PairInt> pointCp = new HashSet<PairInt>(correctedPoints);
-        HoughTransform ht = new HoughTransform();
-        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(correctedPoints, 3);
-
-        pltc.thinLineStaircases(lines, correctedPoints, thinned.length, thinned[0].length);
-        
-        pointCp.removeAll(correctedPoints);        
-        
-        for (PairInt p : pointCp) {
-           
-            Set<PairInt> line = null;
-            for (Set<PairInt> hLine : lines.keySet()) {
-                if (hLine.contains(p)) {
-                    line = hLine;
-                    break;
-                }
-            }
-            if (line != null) {
-                line.remove(p);
-            }
-        }  
-        
-        // ------ put hough lines into reference frame of GreyscaleImage instance
-        Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();
-        for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
-            Set<PairInt> line = entry.getKey();
-            Set<PairInt> transformedLine = new HashSet<PairInt>();
-            for (PairInt p : line) {
-                int x = p.getX();
-                int y = p.getY();
-                transformedLine.add(new PairInt(y, x));
-            }
-            transformedLines.put(transformedLine, entry.getValue());
-        }
-        
-        products.setHoughLines(transformedLines);
-        
-        for (int i = 0; i < nRows; ++i) {
-            Arrays.fill(thinned[i], 0);
-        }
-        for (PairInt p : correctedPoints) {
-            int i = p.getX();
-            int j = p.getY();
-            thinned[i][j] = 255;
-        }
-        
-        products.setThinnedImage(thinned);
-    }
-    
-    void createPhaseAngleSteps(PhaseCongruencyProducts products, double t1) {
-        
-        if (products.getThinned() == null) {
-            throw new IllegalArgumentException(
-            "Error: thinned image needs to be set in products");
-        }
-        
-        double[][] phaseAngle = products.getPhaseAngle();
-        
-        double[][] thinnedPC = products.getPhaseCongruency();
-        
-        int nRows = phaseAngle.length;
-        int nCols = phaseAngle[0].length;
-        
-        double piDiv2 = Math.PI/2.;
-        double piDiv4 = piDiv2/2.;
-        
-        //TODO: consider a smaller tolerance for "step" than piDiv2
-        
-        double[][] steps0 = new double[nRows][nCols];
-        
-        for (int i = 0; i < nRows; ++i) {
-            
-            steps0[i] = new double[nCols];
-            
-            for (int j = 0; j < nCols; ++j) {
-                
-                if (thinnedPC[i][j] < t1) {
-                    continue;
-                }
-                
-                double v = phaseAngle[i][j];
-                if (v < 0) {
-                    if (Math.abs(v - -piDiv2) >= piDiv4) {
-                        steps0[i][j] = thinnedPC[i][j];
-                    }
-                } else if (v == 0) {
-                    steps0[i][j] = thinnedPC[i][j];
-                } else {
-                    if (Math.abs(v - piDiv2) >= piDiv4) {
-                        steps0[i][j] = thinnedPC[i][j];
-                    }
-                }
-            }
-        }
-        
-        NonMaximumSuppression ns = new NonMaximumSuppression();
-        double[][] thinned0 = ns.nonmaxsup(steps0, products.getOrientation(), 1.0,
-            true, new HashSet<PairInt>());
-        
-        /*
-        double t1 = 0.1;
-        double t2 = 0.3;
-        int[][] binaryImage = applyHysThresh(imgTh0, t1, t2, true);
-        */
-                
-        int[][] steps = new int[nRows][nCols];        
-        for (int i = 0; i < nRows; ++i) {
-            steps[i] = new int[nCols];            
-            for (int j = 0; j < nCols; ++j) {
-                if (thinned0[i][j] > 0) {
-                    steps[i][j] = 255;
-                }
-            }
-        }
-        
-        products.setStepsInPhaseAngle(steps);
-    }
-
-    void explorePhaseAngle(PhaseCongruencyProducts products, 
-        double[][] thinnedPC, double t1) {
-        
-        double[][] phaseAngle = products.getPhaseAngle();
-        
-        int nRows = phaseAngle.length;
-        int nCols = phaseAngle[0].length;
-        
-        GreyscaleImage img0 = new GreyscaleImage(nCols, nRows);
-        GreyscaleImage img1 = new GreyscaleImage(nCols, nRows);
-        GreyscaleImage img2 = new GreyscaleImage(nCols, nRows);
-        
-        double piDiv2 = Math.PI/2.;
-        double piDiv4 = piDiv2/2.;
-        
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                if (thinnedPC[row][col] < t1) {
-                    continue;
-                }
-                // placing values closer to -pi/2 than 0 into img0,
-                //         values closer to +p1/2 than 0 into img2,
-                //         else they are closer to 0 and in img1
-                // TODO: when see the results, might consider a smaller tolerance
-                //        for img1
-                double v = phaseAngle[row][col];
-                if (v < 0) {
-                    if (Math.abs(v - -piDiv2) < piDiv4) {
-                        img0.setValue(col, row, 255);
-                    } else {
-                        img1.setValue(col, row, 255);
-                    }
-                } else if (v == 0) {
-                    img1.setValue(col, row, 255);
-                } else {
-                    if (Math.abs(v - piDiv2) < piDiv4) {
-                        img2.setValue(col, row, 255);
-                    } else {
-                        img1.setValue(col, row, 255);
-                    }
-                }
-            }
-        }
-        
-        MiscDebug.writeImage(img0, "_bright_lines+");
-        MiscDebug.writeImage(img1, "_steps_");
-        MiscDebug.writeImage(img2, "_dark_lines_");
-    }
-
     protected void calculateCorners(PhaseCongruencyProducts products,
         GreyscaleImage img) {
         
@@ -1091,6 +775,145 @@ public class PhaseCongruencyDetector {
         return points;
     }
 
+    /**
+     * creating edges using thinned phase angle image.
+     * @param products
+     * @param tLow
+     * @param tHigh 
+     */
+    private void createEdges(PhaseCongruencyProducts products, double tLow, double tHigh) {
+        
+        NonMaximumSuppression ns = new NonMaximumSuppression();
+
+        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
+            products.getOrientation(), 1.0, false, new HashSet<PairInt>());              
+
+        // not applying 2 layer filter:
+        //int[][] binaryImage = applyHysThresh(thinnedPC, t1, t2, true);
+
+        double[][] phaseAngle = products.getPhaseAngle();
+        
+        int nRows = phaseAngle.length;
+        int nCols = phaseAngle[0].length;
+ 
+        Set<PairInt> brightLinePoints = new HashSet<PairInt>();
+        Set<PairInt> darkLinePoints = new HashSet<PairInt>();
+        Set<PairInt> stepPoints = new HashSet<PairInt>();
+                    
+        double piDiv2 = Math.PI/2.;
+        double piDiv4 = piDiv2/2.;
+        
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                
+                if (thinnedPC[row][col] < tLow) {
+                    continue;
+                }
+                // placing values closer to -pi/2 than 0 into img0,
+                //         values closer to +p1/2 than 0 into img2,
+                //         else they are closer to 0 and in img1
+                // TODO: when see the results, might consider a smaller tolerance
+                //        than piDiv4 for steps
+                double v = phaseAngle[row][col];
+                if (v < 0) {
+                    if (Math.abs(v - -piDiv2) < piDiv4) {
+                        brightLinePoints.add(new PairInt(row, col));
+                    } else {
+                        stepPoints.add(new PairInt(row, col));
+                    }
+                } else if (v == 0) {
+                    stepPoints.add(new PairInt(row, col));
+                } else {
+                    if (Math.abs(v - piDiv2) < piDiv4) {
+                        stepPoints.add(new PairInt(row, col));
+                    } else {
+                        stepPoints.add(new PairInt(row, col));
+                    }
+                }
+            }
+        }
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForIsolatedPixels(brightLinePoints, nRows, nCols);
+        pltc.correctForIsolatedPixels(darkLinePoints, nRows, nCols);
+        
+        stepPoints.addAll(brightLinePoints);
+        stepPoints.addAll(darkLinePoints);
+        
+        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
+        pltc.correctForLine2SpurHoriz(stepPoints, nRows, nCols);
+        pltc.correctForLine2SpurVert(stepPoints, nRows, nCols);
+        pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
+        pltc.correctForLineHatVert(stepPoints, nRows, nCols);
+        
+        int[][] thinned = new int[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            thinned[i] = new int[nCols];
+        }
+        for (PairInt p : stepPoints) {
+            thinned[p.getX()][p.getY()] = 255;
+        }
+        
+        GreyscaleImage imgComb = new GreyscaleImage(nCols, nRows);
+        for (PairInt p : stepPoints) {
+            imgComb.setValue(p.getY(), p.getX(), 255);
+        }
+        MiscDebug.writeImage(imgComb, "_phase_congruence_edges_");
+
+        products.setThinnedImage(thinned);
+    }
+
+    private void calculateHoughTransforms(PhaseCongruencyProducts products) {
+
+        int[][] thinned = products.getThinned();
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i < thinned.length; ++i) {
+            for (int j = 0; j < thinned[i].length; ++j) {
+                points.add(new PairInt(i, j));
+            }
+        }
+        
+        // ----- find lines w/ hough transform, then thin line staircase with it ---
+        //Set<PairInt> pointCp = new HashSet<PairInt>(points);
+        HoughTransform ht = new HoughTransform();
+        Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
+
+        /*PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.thinLineStaircases(lines, points, thinned.length, thinned[0].length);
+        
+        pointCp.removeAll(points);        
+        
+        for (PairInt p : pointCp) {
+           
+            Set<PairInt> line = null;
+            for (Set<PairInt> hLine : lines.keySet()) {
+                if (hLine.contains(p)) {
+                    line = hLine;
+                    break;
+                }
+            }
+            if (line != null) {
+                line.remove(p);
+            }
+        }  
+        */
+        // ------ put hough lines into reference frame of GreyscaleImage instance
+        Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();
+        for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {
+            Set<PairInt> line = entry.getKey();
+            Set<PairInt> transformedLine = new HashSet<PairInt>();
+            for (PairInt p : line) {
+                int x = p.getX();
+                int y = p.getY();
+                transformedLine.add(new PairInt(y, x));
+            }
+            transformedLines.put(transformedLine, entry.getValue());
+        }
+        
+        products.setHoughLines(transformedLines);        
+    }
+
     public class PhaseCongruencyProducts {
         
         /**
@@ -1118,9 +941,7 @@ public class PhaseCongruencyDetector {
         private final double threshold;
         
         private int[][] thinned = null;
-        
-        private int[][] stepsInPhaseAngle = null;
-        
+                
         private List<PairIntArray> edgeList = null;
         
         private Set<PairInt> junctions = null;
@@ -1200,21 +1021,6 @@ public class PhaseCongruencyDetector {
          */
         public double getThreshold() {
             return threshold;
-        }
-
-        public void setStepsInPhaseAngle(int[][] steps) {
-            stepsInPhaseAngle = copy(steps);
-        }
-        
-        /**
-         * get the extracted phase angle steps in a binary image with values
-         * 0 or 255. Connected edges in this image hve been included in the
-         * thinned image.
-         * Note that the array is accessed as a[row][column].
-         * @return 
-         */
-        public int[][] getStepsInPhaseAngle() {
-            return stepsInPhaseAngle;
         }
 
         /**
