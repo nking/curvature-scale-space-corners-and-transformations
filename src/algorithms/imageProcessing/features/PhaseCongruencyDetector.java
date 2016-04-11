@@ -8,10 +8,10 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  An edge detector that uses principles of phase congruency to create an edge
@@ -392,12 +391,10 @@ public class PhaseCongruencyDetector {
         
         double[][] maxAN = null;
         
-        double tau = Double.NaN;
-        double tauX = tau;
-        double tauY = tau;
+        double tau = noiseMethod;
+        // keeping taus in case need to increase noise estimate
         double sqml4 = Math.sqrt(Math.log(4));
         double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);
-        double threshold = epsilon;
         
         double[][] width = new double[nRows][];
         double[][] weight = new double[nRows][];
@@ -537,53 +534,30 @@ public class PhaseCongruencyDetector {
                     weight[row][col] = 1./(1. + v);
                 }
             }
-            
-            /*
-            Automatically determine noise threshold
-    
-            Assuming the noise is Gaussian the response of the filters to noise will
-            form Rayleigh distribution.  We use the filter responses at the smallest
-            scale as a guide to the underlying noise level because the smallest scale
-            filters spend most of their time responding to noise, and only
-            occasionally responding to features. Either the median, or the mode, of
-            the distribution of filter responses can be used as a robust statistic to
-            estimate the distribution mean and standard deviation as these are related
-            to the median or mode by fixed constants.  The response of the larger
-            scale filters to noise can then be estimated from the smallest scale
-            filter response according to their relative bandwidths.
-
-            This code assumes that the expected reponse to noise on the phase
-            congruency calculation is simply the sum of the expected noise responses
-            of each of the filters.  This is a simplistic overestimate, however these
-            two quantities should be related by some constant that will depend on the
-            filter bank being used.  Appropriate tuning of the parameter 'k' will
-            allow you to produce the desired output. (though the value of k seems to
-            be not at all critical)
-            */
+        }  // end for each scale
         
-            if (noiseMethod >= 0) { 
-                //fixed noise threshold
-                threshold = noiseMethod;
-            } else {
-                //Estimate the effect of noise on the sum of the filter responses as
-                //the sum of estimated individual responses (this is a simplistic
-                //overestimate). As the estimated noise response at succesive scales
-                //is scaled inversely proportional to bandwidth we have a simple
-                //geometric sum.
-                //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
-                double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+        /*
+        Automatically determine noise threshold
 
-                // Calculate mean and std dev from tau using fixed relationship
-                // between these parameters and tau. See
-                // http://mathworld.wolfram.com/RayleighDistribution.html
-                double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
-                double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+        Assuming the noise is Gaussian the response of the filters to noise will
+        form Rayleigh distribution.  We use the filter responses at the smallest
+        scale as a guide to the underlying noise level because the smallest scale
+        filters spend most of their time responding to noise, and only
+        occasionally responding to features. Either the median, or the mode, of
+        the distribution of filter responses can be used as a robust statistic to
+        estimate the distribution mean and standard deviation as these are related
+        to the median or mode by fixed constants.  The response of the larger
+        scale filters to noise can then be estimated from the smallest scale
+        filter response according to their relative bandwidths.
 
-                threshold = Math.max(EstNoiseEnergyMean + k*EstNoiseEnergySigma, epsilon);
-                
-            }
-                        
-        } // end for each scale
+        This code assumes that the expected reponse to noise on the phase
+        congruency calculation is simply the sum of the expected noise responses
+        of each of the filters.  This is a simplistic overestimate, however these
+        two quantities should be related by some constant that will depend on the
+        filter bank being used.  Appropriate tuning of the parameter 'k' will
+        allow you to produce the desired output. (though the value of k seems to
+        be not at all critical)
+        */
         
         // uses notation a[row][col]
         // fit is phase angle
@@ -598,7 +572,6 @@ public class PhaseCongruencyDetector {
             pc[row] = new double[nCols];
         }
         
-        // uses notation a[row][col]
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 orientation[row][col] = Math.atan2(-sumH2[row][col], sumH1[row][col]);
@@ -620,13 +593,6 @@ public class PhaseCongruencyDetector {
                 double v0 = sumF[row][col];
                 v0 *= v0;
                 energy[row][col] = Math.sqrt(v0 + h1Sq + h2Sq);
-                
-                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
-                
-                pc[row][col] = weight[row][col] 
-                    * Math.max(1. - deviationGain * eDiv, 0)
-                    * Math.max(energy[row][col] - threshold, 0)
-                    / (energy[row][col] + epsilon);
             }
         }
         
@@ -654,13 +620,69 @@ public class PhaseCongruencyDetector {
               .* max(energy-T,0)./(energy+epsilon);
         */
         
+        double threshold;
+        if (noiseMethod >= 0) { 
+            //fixed noise threshold
+            threshold = noiseMethod;
+        } else {
+            //Estimate the effect of noise on the sum of the filter responses as
+            //the sum of estimated individual responses (this is a simplistic
+            //overestimate). As the estimated noise response at succesive scales
+            //is scaled inversely proportional to bandwidth we have a simple
+            //geometric sum.
+            //totalTau = tau * (1 - (1/mult)^nscale)/(1-(1/mult));
+            double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+
+            // Calculate mean and std dev from tau using fixed relationship
+            // between these parameters and tau. See
+            // http://mathworld.wolfram.com/RayleighDistribution.html
+            double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
+            double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+
+            threshold = Math.max(EstNoiseEnergyMean + k * EstNoiseEnergySigma, 
+                epsilon);
+        } 
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                
+                double eDiv = Math.acos(energy[row][col]/(sumAn[row][col] + epsilon));
+                
+                pc[row][col] = weight[row][col] 
+                    * Math.max(1. - deviationGain * eDiv, 0)
+                    * Math.max(energy[row][col] - threshold, 0)
+                    / (energy[row][col] + epsilon);
+            }
+        }
+                
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
             orientation, ft, threshold);
         
+{
+GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
+for (int i = 0; i < nCols; ++i) {
+    for (int j = 0; j < nRows; ++j) {
+        tmp.setValue(i, j, (int)(255.*pc[j][i]));
+    }
+}
+MiscDebug.writeImage(tmp, "_PC_");
+}        
+        //TODO: need default option to automatically increase k for
+        //   a large number of points, then recacl threshold and then pc
+
         createEdges(products, tLow, tHigh);
-        
-    //completeEdges(products, tLow, tHigh);
-        
+                
+{        
+GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
+for (int i = 0; i < nRows; ++i) {
+    for (int j = 0; j < nCols; ++j) {
+        if (products.getThinned()[i][j] > 0) {
+            tmp.setValue(j, i, 255);
+        }
+    }
+}
+MiscDebug.writeImage(tmp, "_EDGES_");
+}
+
         if (determineCorners) {
             
             calculateHoughTransforms(products);
@@ -784,9 +806,25 @@ public class PhaseCongruencyDetector {
     private void createEdges(PhaseCongruencyProducts products, double tLow, double tHigh) {
         
         NonMaximumSuppression ns = new NonMaximumSuppression();
+        
+        Set<PairInt> r = new HashSet<PairInt>();
 
         double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0, false, new HashSet<PairInt>());              
+            products.getOrientation(), 1.0, false, r);  
+        
+{
+    int nRows = thinnedPC.length;
+    int nCols = thinnedPC[0].length;
+    GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
+    for (PairInt p : r) {
+        int x = p.getX();
+        int y = p.getY();
+        if (products.getPhaseCongruency()[x][y] > tLow) {
+            tmp.setValue(y, x, 255);
+        }
+    }
+    MiscDebug.writeImage(tmp, "_REMOVED_");
+}
 
         // not applying 2 layer filter:
         //int[][] binaryImage = applyHysThresh(thinnedPC, t1, t2, true);
@@ -846,23 +884,58 @@ public class PhaseCongruencyDetector {
         pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
         pltc.correctForLineHatVert(stepPoints, nRows, nCols);
         
+        
+        // ---- complete the edges where possible ----
+        double[][] pc = products.getPhaseCongruency();
+        Set<PairInt> gaps = pltc.findGapsOf1(stepPoints, nRows, nCols);
+        for (PairInt p : gaps) {
+            int x = p.getX();
+            int y = p.getY();
+            if (pc[x][y] > 0) {
+                stepPoints.add(new PairInt(x, y));
+            }
+        }
+        
         int[][] thinned = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinned[i] = new int[nCols];
         }
         for (PairInt p : stepPoints) {
+            thinned[p.getX()][p.getY()] = 1;
+        }
+        stepPoints = null;
+        gaps = null;
+        
+        MorphologicalFilter mFilter = new MorphologicalFilter();
+        int[][] skel = mFilter.bwMorphThin(thinned, Integer.MAX_VALUE);
+
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i < nRows; ++i) {
+            for (int j = 0; j < nCols; ++j) {
+                int m = skel[i][j];
+                thinned[i][j] *= m;
+                if (thinned[i][j] > 0) {
+                    points.add(new PairInt(i, j));
+                }
+            }
+        }
+        pltc.correctForLineHatHoriz(points, nRows, nCols);
+        pltc.correctForLineHatVert(points, nRows, nCols);
+        for (int i = 0; i < nRows; ++i) {
+            Arrays.fill(thinned[i], 0);
+        }
+        for (PairInt p : points) {
             thinned[p.getX()][p.getY()] = 255;
         }
         
-        GreyscaleImage imgComb = new GreyscaleImage(nCols, nRows);
-        for (PairInt p : stepPoints) {
-            imgComb.setValue(p.getY(), p.getX(), 255);
-        }
-        MiscDebug.writeImage(imgComb, "_phase_congruence_edges_");
-
         products.setThinnedImage(thinned);
     }
 
+    /**
+     * calculate the hough transform lines, and use them to thin the 
+     * staircases within inclined lines.
+     * @param products 
+     */
     private void calculateHoughTransforms(PhaseCongruencyProducts products) {
 
         int[][] thinned = products.getThinned();
@@ -875,17 +948,16 @@ public class PhaseCongruencyDetector {
         }
         
         // ----- find lines w/ hough transform, then thin line staircase with it ---
-        //Set<PairInt> pointCp = new HashSet<PairInt>(points);
+        Set<PairInt> pointCp = new HashSet<PairInt>(points);
         HoughTransform ht = new HoughTransform();
         Map<Set<PairInt>, PairInt> lines = ht.findContiguousLines(points, 3);
 
-        /*PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc.thinLineStaircases(lines, points, thinned.length, thinned[0].length);
         
         pointCp.removeAll(points);        
         
         for (PairInt p : pointCp) {
-           
             Set<PairInt> line = null;
             for (Set<PairInt> hLine : lines.keySet()) {
                 if (hLine.contains(p)) {
@@ -897,7 +969,7 @@ public class PhaseCongruencyDetector {
                 line.remove(p);
             }
         }  
-        */
+        
         // ------ put hough lines into reference frame of GreyscaleImage instance
         Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();
         for (Entry<Set<PairInt>, PairInt> entry : lines.entrySet()) {

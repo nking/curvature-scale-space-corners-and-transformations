@@ -100,7 +100,7 @@ public class MorphologicalFilter {
             int[][] outer = applyLut(inner, lut2);
             // bImg & outer
             for (int col = 0; col < bImg.length; ++col) {
-                for (int row = 0; row < bImg[0].length; ++row) {
+                for (int row = 0; row < bImg[col].length; ++row) {
                     bImg2[col][row] = bImg[col][row] & outer[col][row];
                 }
             }
@@ -177,7 +177,7 @@ public class MorphologicalFilter {
      */
     private int[][] applyLut(int[][] bImg, int[] lut) {
         
-        // for 512, this i 9
+        // for 512, this is 9
         double nq = Math.log(lut.length)/Math.log(2);
         
         // for 512, this is 3
@@ -290,13 +290,14 @@ public class MorphologicalFilter {
         //  [4, 2, 1]]
         //  [32, 16, 8],
         //  [256, 128, 64],
-        
+      
         // swap columns within w180[i][j]
         int end = nRows >> 1;
         for (int i = 0; i < nCols; ++i) {
             for (int j = 0; j < end; ++j) {
-                int swap = w180[i][nRows - j - 1];
-                w180[i][nRows - j - 1] = w180[i][j];
+                int j2 = nRows - j - 1;
+                int swap = w180[i][j2];
+                w180[i][j2] = w180[i][j];
                 w180[i][j] = swap;
             }
         }
