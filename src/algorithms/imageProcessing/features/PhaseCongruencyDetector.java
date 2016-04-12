@@ -674,7 +674,17 @@ public class PhaseCongruencyDetector {
         NonMaximumSuppression ns = new NonMaximumSuppression();
         
         double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0, false, new HashSet<PairInt>());  
+            products.getOrientation(), 1.2, new HashSet<PairInt>());  
+        
+{
+GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
+for (int i = 0; i < nCols; ++i) {
+    for (int j = 0; j < nRows; ++j) {
+        tmp.setValue(i, j, (int)(255.*thinnedPC[j][i]));
+    }
+}
+MiscDebug.writeImage(tmp, "_THINNED_PC_");
+}        
         
         // NOTE: limit does not scale with resolution, so user may want to
         // pre-process images to a common resolution or size depending upon goal
@@ -725,7 +735,7 @@ public class PhaseCongruencyDetector {
                     threshold);
 
                 thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-                    products.getOrientation(), 1.0, false, new HashSet<PairInt>());
+                    products.getOrientation(), 1.2,  new HashSet<PairInt>());
 
                 nEdgePoints = countEdgePoints(products, thinnedPC, tLow, tHigh);
                 
@@ -1046,7 +1056,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
             if (line != null) {
                 line.remove(p);
             }
-        }  
+        }
         
         // ------ put hough lines into reference frame of GreyscaleImage instance
         Map<Set<PairInt>, PairInt> transformedLines = new HashMap<Set<PairInt>, PairInt>();

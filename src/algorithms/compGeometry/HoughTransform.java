@@ -1,30 +1,21 @@
 package algorithms.compGeometry;
 
 import algorithms.MultiArrayMergeSort;
-import algorithms.compGeometry.ClosestPairBetweenSets.ClosestPairInt;
-import algorithms.imageProcessing.ConnectedGroupsWithGapsFinder;
 import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.DFSSimilarThetaRadiusGroupsFinder;
-import algorithms.imageProcessing.DFSConnectedGroupsFinder2;
 import algorithms.imageProcessing.DFSConnectedHoughTransformGroupsFinder;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Misc;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
-import com.climbwithyourfeet.clustering.util.MiscMath;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  * a class for Hough transforms of simple geometric shapes.  currently a line
@@ -614,6 +604,7 @@ public class HoughTransform {
         for (int i = 0; i < indexes.length; ++i) {
             int idx = indexes[i];
             Set<PairInt> group = contigGroups.get(idx);
+                        
             if (group.size() >= minimumGroupSize) {
                 
                 Integer roughTheta = contigGroupThetas.get(idx);
