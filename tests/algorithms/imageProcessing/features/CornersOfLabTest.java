@@ -4,13 +4,10 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceCornerDetector;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairIntArray;
-import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -111,21 +108,23 @@ public class CornersOfLabTest extends TestCase {
         // nScle=4; minWave=4; k=10 is good
         GreyscaleImage img3 = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();        
         float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 4;//5;
+        int nScale = 5;//5;
         int minWavelength = nScale;//3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 10;//2;
+        int k = 5;//10;//2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
         double tLow = 0.025;
         double tHigh = 0.3;
+        boolean increaseKIfNeeded = true;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         phaseCDetector.setToCreateCorners();                
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseCDetector.phaseCongMono(img3, nScale, minWavelength, mult, 
-                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+                sigmaOnf, k, increaseKIfNeeded,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
         assertNotNull(products);
         Set<PairInt> pCorners = products.getCorners();
         Image out2 = img3.copyToColorGreyscale();

@@ -36,17 +36,19 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         int minWavelength = 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 2;
+        int k = 2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
         double tLow = 0.05;
         double tHigh = 0.3;
+        boolean increaseKIfNeeded = false;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         phaseCDetector.setToCreateCorners();                
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
-                sigmaOnf, k, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+                sigmaOnf, k, increaseKIfNeeded,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
         
         assertNotNull(products);
                 

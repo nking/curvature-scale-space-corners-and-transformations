@@ -12,6 +12,7 @@ import algorithms.imageProcessing.MorphologicalFilter;
 import algorithms.imageProcessing.NonMaximumSuppression;
 import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
@@ -154,7 +155,7 @@ public class PhaseCongruencyDetector {
         int minWavelength = 3;        
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 2.0f;
+        int k = 2;
         float cutOff = 0.5f; 
         float g = 10;
         float deviationGain = 1.5f;
@@ -187,16 +188,18 @@ public class PhaseCongruencyDetector {
         int minWavelength = 3;        
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        float k = 2.0f;
+        int k = 2;
         float cutOff = 0.5f; 
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
         double tLow = 0.1;
         double tHigh = 0.3;
+        boolean increaseKIfNeeded = true;
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, 
+            tLow, tHigh);
     }
     
     /**
@@ -207,7 +210,9 @@ public class PhaseCongruencyDetector {
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
-       * 
+       @param increaseKIfNeeded if the number of points in the thinned pc
+       * is very high, this allows k to be increased, pc to be recalculated,
+       * and a result of smaller number of points in the thinned image.
      * @return 
        <pre>
        NOTE: the return products use notation a[row][col]
@@ -229,7 +234,7 @@ public class PhaseCongruencyDetector {
       </pre>
      */    
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
-        final int nScale, final float k) {
+        final int nScale, int k, boolean increaseKIfNeeded) {
         
         int minWavelength = 3;        
         float mult = 2.1f;
@@ -242,7 +247,7 @@ public class PhaseCongruencyDetector {
         double tHigh = 0.3;
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
     }
     
     /**
@@ -260,6 +265,9 @@ public class PhaseCongruencyDetector {
      * @param k number of standard deviations of the noise energy beyond the 
      * mean at which we set the noise threshold point.  You may want to vary this
        up to a value of 10 or 20 for noisy images.
+       @param increaseKIfNeeded if the number of points in the thinned pc
+       * is very high, this allows k to be increased, pc to be recalculated,
+       * and a result of smaller number of points in the thinned image.
      * @param cutOff The fractional measure of frequency spread below which phase 
      * congruency values get penalized
      * @param g Controls the sharpness of the transition in the sigmoid function 
@@ -298,10 +306,16 @@ public class PhaseCongruencyDetector {
      */    
     public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
         final int nScale, final int minWavelength, final float mult,
-        final float sigmaOnf, final float k, final float cutOff,
+        final float sigmaOnf, int k, final boolean increaseKIfNeeded,
+        final float cutOff,
         final float g, final float deviationGain, final int noiseMethod,
         final double tLow, final double tHigh) {
               
+        if (increaseKIfNeeded && (noiseMethod >= 0)) {
+            throw new IllegalArgumentException(
+                "if noiseMethod > -1, there is no dependency on k");
+        }
+        
         int nCols = img.getWidth();
         int nRows = img.getHeight();
                 
@@ -639,8 +653,8 @@ public class PhaseCongruencyDetector {
             double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
             double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
 
-            threshold = Math.max(EstNoiseEnergyMean + k * EstNoiseEnergySigma, 
-                epsilon);
+            threshold = Math.max(EstNoiseEnergyMean 
+                + ((float)k) * EstNoiseEnergySigma, epsilon);
         } 
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
@@ -655,21 +669,71 @@ public class PhaseCongruencyDetector {
         }
                 
         PhaseCongruencyProducts products = new PhaseCongruencyProducts(pc, 
-            orientation, ft, threshold);
+            orientation, ft, threshold);      
         
-{
-GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
-for (int i = 0; i < nCols; ++i) {
-    for (int j = 0; j < nRows; ++j) {
-        tmp.setValue(i, j, (int)(255.*pc[j][i]));
-    }
-}
-MiscDebug.writeImage(tmp, "_PC_");
-}        
-        //TODO: need default option to automatically increase k for
-        //   a large number of points, then recacl threshold and then pc
+        NonMaximumSuppression ns = new NonMaximumSuppression();
+        
+        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
+            products.getOrientation(), 1.0, false, new HashSet<PairInt>());  
+        
+        // NOTE: limit does not scale with resolution, so user may want to
+        // pre-process images to a common resolution or size depending upon goal
+        if (increaseKIfNeeded) {
+            
+            // count number edge points
+            int nEdgePoints = countEdgePoints(products, thinnedPC, tLow, tHigh);
+            
+            System.out.println("nEdgePoints=" + nEdgePoints);
+        
+            int limit = 15000;
+            int lastK = k;
+            while (nEdgePoints > limit) {
+                
+                // k can be as high as 20
+                int deltaK = Math.round(0.333f * (20 - lastK));
+                if (deltaK == 0) {
+                    deltaK = 1;
+                }
+                k = lastK + deltaK;
+                
+                if (k >= 20) {
+                    break;
+                }
+                
+                lastK = k;
+                
+                if (noiseMethod < 0) {
+                    
+                    double totalTau = tau * (1. - Math.pow((1./mult), nScale))/(1. - (1./mult));
+                    double EstNoiseEnergyMean = totalTau * Math.sqrt(Math.PI/2.);
+                    double EstNoiseEnergySigma = totalTau * Math.sqrt((4. - Math.PI)/2.);
+                    threshold = Math.max(EstNoiseEnergyMean 
+                        + ((float)k) * EstNoiseEnergySigma, epsilon);
+                }
+                
+                for (int row = 0; row < nRows; ++row) {
+                    for (int col = 0; col < nCols; ++col) {
+                        double eDiv = Math.acos(energy[row][col] / (sumAn[row][col] + epsilon));
+                        pc[row][col] = weight[row][col]
+                            * Math.max(1. - deviationGain * eDiv, 0)
+                            * Math.max(energy[row][col] - threshold, 0)
+                            / (energy[row][col] + epsilon);
+                    }
+                }
 
-        createEdges(products, tLow, tHigh);
+                products = new PhaseCongruencyProducts(pc, orientation, ft, 
+                    threshold);
+
+                thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
+                    products.getOrientation(), 1.0, false, new HashSet<PairInt>());
+
+                nEdgePoints = countEdgePoints(products, thinnedPC, tLow, tHigh);
+                
+                System.out.println("nEdgePoints=" + nEdgePoints);
+            }
+        }
+        
+        createEdges(products, thinnedPC, tLow, tHigh);
                 
 {        
 GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
@@ -746,15 +810,16 @@ MiscDebug.writeImage(tmp, "_EDGES_");
                 
                 if (Math.abs(curvature) > 0.05) {// should not set above 0.07...
                                         
-                    cornerMap.put(new PairInt(Math.round(ca.getX(idx)),
+                    cornerMap.put(
+                        new PairInt(Math.round(ca.getX(idx)),
                         Math.round(ca.getY(idx))), 
                         Float.valueOf(ca.getCurvature(idx)));
                 }
             }
         }        
         
-        // both theEdges and corners are now in reference frame of image
-        //   with columns being first axis
+        // theEdges, corners, and junctions are now in reference frame of
+        // GreyscaleImage instance
         cornerMaker.useHoughTransformationToFilterCornersForOrdered(theEdges, 
             cornerMap, junctions, products.getHoughLines(),
             nCols, nRows);        
@@ -762,6 +827,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         Set<PairInt> outputCorners = new HashSet<PairInt>(cornerMap.keySet());
         outputCorners.addAll(junctions);
         
+        // this sets the edges, junctions and corners in the GreyscaleImage reference frame
         products.setEdges(theEdges);
         products.setJunctions(junctions);
         products.setCorners(outputCorners);
@@ -803,32 +869,9 @@ MiscDebug.writeImage(tmp, "_EDGES_");
      * @param tLow
      * @param tHigh 
      */
-    private void createEdges(PhaseCongruencyProducts products, double tLow, double tHigh) {
+    private void createEdges(PhaseCongruencyProducts products, 
+        double[][] thinnedPC, double tLow, double tHigh) {
         
-        NonMaximumSuppression ns = new NonMaximumSuppression();
-        
-        Set<PairInt> r = new HashSet<PairInt>();
-
-        double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.0, false, r);  
-        
-{
-    int nRows = thinnedPC.length;
-    int nCols = thinnedPC[0].length;
-    GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
-    for (PairInt p : r) {
-        int x = p.getX();
-        int y = p.getY();
-        if (products.getPhaseCongruency()[x][y] > tLow) {
-            tmp.setValue(y, x, 255);
-        }
-    }
-    MiscDebug.writeImage(tmp, "_REMOVED_");
-}
-
-        // not applying 2 layer filter:
-        //int[][] binaryImage = applyHysThresh(thinnedPC, t1, t2, true);
-
         double[][] phaseAngle = products.getPhaseAngle();
         
         int nRows = phaseAngle.length;
@@ -921,6 +964,11 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         }
         pltc.correctForLineHatHoriz(points, nRows, nCols);
         pltc.correctForLineHatVert(points, nRows, nCols);
+        
+        // there are a very small number of clumps thicker than 1 pixel.
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(points, 0, nRows - 1, 0, nCols - 1);
+        
         for (int i = 0; i < nRows; ++i) {
             Arrays.fill(thinned[i], 0);
         }
@@ -929,6 +977,34 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         }
         
         products.setThinnedImage(thinned);
+    }
+    
+    /**
+     * creating edges using thinned phase angle image.
+     * @param products
+     * @param tLow
+     * @param tHigh 
+     */
+    private int countEdgePoints(PhaseCongruencyProducts products, 
+        double[][] thinnedPC, double tLow, double tHigh) {
+        
+        double[][] phaseAngle = products.getPhaseAngle();
+        
+        int nRows = phaseAngle.length;
+        int nCols = phaseAngle[0].length;
+ 
+        int count = 0;
+                            
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {                
+                if (thinnedPC[row][col] < tLow) {
+                    continue;
+                }
+                count++;
+            }
+        }
+        
+        return count;
     }
 
     /**
@@ -943,7 +1019,9 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         Set<PairInt> points = new HashSet<PairInt>();
         for (int i = 0; i < thinned.length; ++i) {
             for (int j = 0; j < thinned[i].length; ++j) {
-                points.add(new PairInt(i, j));
+                if (thinned[i][j] > 0) {
+                    points.add(new PairInt(i, j));
+                }
             }
         }
         
@@ -1158,8 +1236,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
 
         /**
          * get the corners found in the edges as set of points that are in the
-         * reference frame of the GreyscaleImage instance.  Note that the 
-         * junction points are included in here.
+         * reference frame of the GreyscaleImage instance.
          * @return the corners
          */
         public Set<PairInt> getCorners() {
@@ -1168,9 +1245,9 @@ MiscDebug.writeImage(tmp, "_EDGES_");
 
         /**
            a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the coordinates
-         * in the key are using the same notation as the thinnedImage, that is,
-         * a[row][col], but pairint.x is row, and pairint.y is col.
+         * the theta and radius for the hough line.  Note that the
+         * setter has placed the coordinates into the coordinate reference
+         * frame of the GreyscaleImage instance.
          * @param lines 
          */
         public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
