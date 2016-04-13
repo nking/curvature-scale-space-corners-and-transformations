@@ -22,7 +22,7 @@ public class ScaleSpaceCurve {
 
     /*
     x and y points of the curve.  the color field in xy can be used to indicate
-    a closed curve.
+    a closed curve and ordered points.
     */
     private final PairIntArrayWithColor xy;
 

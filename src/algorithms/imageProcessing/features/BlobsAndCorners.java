@@ -6,6 +6,7 @@ import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
 import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.MiscDebug;
+import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -187,6 +188,7 @@ public class BlobsAndCorners  {
      * @param imageWidth
      * @param imageHeight
      * @return scale space maps for each edge
+     * @deprecated 
      */
     protected static Map<Integer, List<CornerRegion> >
         findCornersInScaleSpaceMaps(final List<PairIntArray> theEdges, 
@@ -199,15 +201,41 @@ public class BlobsAndCorners  {
         cornerMaker.increaseFactorForCurvatureMinimum(
             factorIncreaseForCurvatureMinimum);
         
-        // an empty map to allow re-use of method which uses junctions if given
-        Map<Integer, Set<PairIntWithIndex>> noJunctions = 
-            new HashMap<Integer, Set<PairIntWithIndex>>();
+        // for each edge, the item is a map of scale space curves
+        List<Map<SIGMA, ScaleSpaceCurve>> outEdgeScaleSpaceMaps =
+            new ArrayList<Map<SIGMA, ScaleSpaceCurve>>();
         
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > sMap =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, noJunctions,
-                outputCorners); 
+        //NOTE: this method is not efficient because it is expected the use
+        // of CornerRegions will be obsolete after the next major refactoring.
+        List<CornerArray> cornersList = cornerMaker.findCornersInScaleSpaceMaps(
+            theEdges, outEdgeScaleSpaceMaps);
         
-        return cornerMaker.getEdgeCornerRegionMap();        
+        Map<Integer, List<CornerRegion>> edgeCRMap = 
+            new HashMap<Integer, List<CornerRegion>>();
+        
+        for (int edgeListIdx = 0; edgeListIdx < theEdges.size(); ++edgeListIdx) {
+            
+            CornerArray ca = cornersList.get(edgeListIdx);
+            
+            SIGMA sigma = ca.getSIGMA();
+            
+            ScaleSpaceCurve scaleSpace = outEdgeScaleSpaceMaps.get(edgeListIdx)
+                .get(sigma);
+            
+            List<CornerRegion> crList = new ArrayList<CornerRegion>();
+            
+            for (int cIdx = 0; cIdx < ca.getN(); ++cIdx) {
+            
+                CornerRegion cr = CSSCornerMaker.createCornerRegion(edgeListIdx,
+                    cIdx, scaleSpace, imageWidth, imageHeight);
+                
+                crList.add(cr);
+            }
+            
+            edgeCRMap.put(Integer.valueOf(edgeListIdx), crList);
+        }
+        
+        return edgeCRMap;        
     }
 
 }

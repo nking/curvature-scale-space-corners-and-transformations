@@ -3,16 +3,20 @@ package algorithms.imageProcessing.scaleSpace;
 import algorithms.imageProcessing.scaleSpace.*;
 import algorithms.imageProcessing.Gaussian1D;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import algorithms.misc.MiscMath;
+import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,32 +67,24 @@ public class CSSCornerMakerTest extends TestCase {
         
         detector.initialize();
         
-        PairIntArray outputCorners = new PairIntArray();
-        Map<Integer, Set<PairIntWithIndex>> emptyJunctionsMap = 
-            new HashMap<Integer, Set<PairIntWithIndex>>();
-        
         CSSCornerMaker cornerMaker = new CSSCornerMaker(imageWidth, imageHeight);
         
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
-            cornerMaker.findCornersInScaleSpaceMaps(detector.getEdges(), 
-                emptyJunctionsMap, outputCorners);
+        List<Map<SIGMA, ScaleSpaceCurve>> outEdgeScaleSpaceMaps =
+            new ArrayList<Map<SIGMA, ScaleSpaceCurve>>();
         
-        Iterator<Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > > iter = 
-            map.entrySet().iterator();
+        //NOTE: this method is not efficient because it is expected the use
+        // of CornerRegions will be obsolete after the next major refactoring.
+        List<CornerArray> cornersList = cornerMaker.findCornersInScaleSpaceMaps(
+            detector.getEdges(), outEdgeScaleSpaceMaps);
         
         PolygonAndPointPlotter plotterC = new PolygonAndPointPlotter();
         PolygonAndPointPlotter plotterX = new PolygonAndPointPlotter();
         PolygonAndPointPlotter plotterY = new PolygonAndPointPlotter();
         
-        while (iter.hasNext()) {
-            
-            Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > entry = iter.next();
-            
-            PairIntArray edge = entry.getKey();
-            
+        for (Map<SIGMA, ScaleSpaceCurve> mapOfScaleSpacesForAnEdge : outEdgeScaleSpaceMaps) {
+                                    
             //======== draw the sigma=4  k vs t figure, x vs t, and y vs t ======
             
-            Map<SIGMA, ScaleSpaceCurve> mapOfScaleSpacesForAnEdge = entry.getValue();
             ScaleSpaceCurve scaleSpaceCurveSigma = 
                 mapOfScaleSpacesForAnEdge.get(SIGMA.FOUR);
             
@@ -173,28 +169,34 @@ public class CSSCornerMakerTest extends TestCase {
         
         CurvatureScaleSpaceCornerDetector detector = new
             CurvatureScaleSpaceCornerDetector(img);
-                        
-        detector.useLineDrawingMode();
-        
+                                
         detector.initialize();
         
-        PairIntArray outputCorners = new PairIntArray();
-        Map<Integer, Set<PairIntWithIndex>> emptyJunctionsMap = 
-            new HashMap<Integer, Set<PairIntWithIndex>>();
+       /* List<PairIntArray> edges = detector.getEdgesInOriginalReferenceFrame();
+        Image img2 = img.copyImage();
+        ImageIOHelper.addAlternatingColorCurvesToImage(edges, "_lab_EDGES_", false, img2);
+        MiscDebug.writeImage(img2, "_lab_EDGES_");
+        */
         
         CSSCornerMaker cornerMaker = new CSSCornerMaker(imageWidth, imageHeight);
         
-        Map<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > map = 
-            cornerMaker.findCornersInScaleSpaceMaps(detector.getEdges(), 
-                emptyJunctionsMap, outputCorners);
+        List<Map<SIGMA, ScaleSpaceCurve>> outEdgeScaleSpaceMaps =
+            new ArrayList<Map<SIGMA, ScaleSpaceCurve>>();
         
-        int xTest = 0;
-        int yTest = 0;
+        //NOTE: this method is not efficient because it is expected the use
+        // of CornerRegions will be obsolete after the next major refactoring.
+        List<CornerArray> cornersList = cornerMaker.findCornersInScaleSpaceMaps(
+            detector.getEdges(), outEdgeScaleSpaceMaps);
         
-        for (Entry<PairIntArray, Map<SIGMA, ScaleSpaceCurve> > entry : 
-            map.entrySet()) {
-                            
-            PairIntArray edge = entry.getKey();
+        int xTest = 95;
+        int yTest = 299;
+        
+        for (int lIdx = 0; lIdx < outEdgeScaleSpaceMaps.size(); ++lIdx) {
+             
+            Map<SIGMA, ScaleSpaceCurve> mapOfScaleSpacesForAnEdge = 
+                outEdgeScaleSpaceMaps.get(lIdx);
+                
+            PairIntArray edge = detector.getEdges().get(lIdx);
             
             boolean found = false;
             for (int i = 0; i < edge.getN(); ++i) {
@@ -206,21 +208,33 @@ public class CSSCornerMakerTest extends TestCase {
             if (!found) {
                 continue;
             }
-                                    
+            
+            CornerArray ca = cornersList.get(lIdx);
+                          
             /*
             need to print i (x,y) sigma k
             */
-            for (Entry<SIGMA, ScaleSpaceCurve> entry2 : entry.getValue().entrySet()) {
+            for (Entry<SIGMA, ScaleSpaceCurve> entry2 : mapOfScaleSpacesForAnEdge.entrySet()) {
                 SIGMA sigma = entry2.getKey();
                 ScaleSpaceCurve scaleSpaceCurve = entry2.getValue();
                 
                 for (int i = 0; i < scaleSpaceCurve.getT().length; ++i) {
-                    String str = String.format("", 0);
+                    
+                    float k = scaleSpaceCurve.getK(i);
+                    
+                    if (Math.abs(k) < 0.002) {
+                        continue;
+                    }
+                    
+                    String str = String.format("(%d,%d) k=%.4f sigma=%.3f", 
+                        Math.round(scaleSpaceCurve.getX(i)),
+                        Math.round(scaleSpaceCurve.getY(i)), k, 
+                        SIGMA.getValue(sigma));
                     
                     System.out.println(str);
                 }
             }
-            
+            System.out.flush();
             break;
         }
     }

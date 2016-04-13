@@ -101,13 +101,11 @@ public class CurvatureScaleSpaceCornerDetector extends
         */
         // changing to use hough transforms to clean the lines of corners 
         // created by line rendering
-        Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
-            = new HashMap<Integer,Set<PairIntWithIndex>>();
                 
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
         List<CornerArray> cornerList =
-            cornerMaker.findCornersInScaleSpaceMaps(edges, emptyJunctionsMap);
+            cornerMaker.findCornersInScaleSpaceMaps(edges);
         
         /*
         filter out small curvature:

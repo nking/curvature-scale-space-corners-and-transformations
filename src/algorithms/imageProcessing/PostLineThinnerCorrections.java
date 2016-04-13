@@ -3,7 +3,6 @@ package algorithms.imageProcessing;
 import algorithms.CountingSort;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
-import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;

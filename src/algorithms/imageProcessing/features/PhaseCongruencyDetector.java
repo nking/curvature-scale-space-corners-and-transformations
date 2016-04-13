@@ -798,13 +798,10 @@ MiscDebug.writeImage(tmp, "_EDGES_");
             }
         }
         
-        Map<Integer,Set<PairIntWithIndex>> emptyJunctionsMap 
-            = new HashMap<Integer,Set<PairIntWithIndex>>();
-                
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
         List<CornerArray> cornerList =
-            cornerMaker.findCornersInScaleSpaceMaps(theEdges, emptyJunctionsMap);
+            cornerMaker.findCornersInScaleSpaceMaps(theEdges);
         
         /*
         filter out small curvature:

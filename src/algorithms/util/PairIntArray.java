@@ -199,6 +199,25 @@ public class PairIntArray {
             y[idx2] = swap;
         }
     }
+    
+    public void insert(int index, int xPoint, int yPoint) {
+        if (index < 0 || (index > n)) {
+            throw new IllegalArgumentException("index is out of bounds of arrays");
+        }
+        
+        expandIfNeeded(n + 1);
+                
+        // move everything at index thru n-1 to higher index
+        for (int i = n; i > index; i--) {
+            x[i] = x[i - 1];
+            y[i] = y[i - 1];
+        }
+        
+        x[index] = xPoint;
+        y[index] = yPoint;
+        
+        n++;
+    }
 
     public void insertAll(int insertAtIndex, PairIntArray insert) {
         

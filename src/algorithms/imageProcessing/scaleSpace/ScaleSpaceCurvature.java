@@ -4,6 +4,7 @@ import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.Gaussian1DSecondDeriv;
 import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import java.util.logging.Logger;
@@ -31,12 +32,32 @@ public class ScaleSpaceCurvature {
      */
     public ScaleSpaceCurve computeCurvature(PairIntArray curve, 
         SIGMA kernelSigma, float resultingSigma) {
-        
+                
         float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);
 
         float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);
  
         return computeCurvature(curve, resultingSigma, gFirstDeriv, 
+            gSecondDeriv);
+    }
+    
+    /**
+     * compute scale space metrics of curve without calculating and storing
+     * inflection point information.
+     * @param curve the x,y pairs of points for which to calculate the scale 
+     * space metrics
+     * @param kernelSigma the sigma of the Gaussian kernel to convolve the curve
+     * with.
+     * @return  
+     */
+    public CornerArray computeCurvature2(PairIntArray curve, 
+        SIGMA kernelSigma) {
+                
+        float[] gFirstDeriv = Gaussian1DFirstDeriv.getKernel(kernelSigma);
+
+        float[] gSecondDeriv = Gaussian1DSecondDeriv.getKernel(kernelSigma);
+ 
+        return computeCurvature2(curve, kernelSigma, gFirstDeriv, 
             gSecondDeriv);
     }
     
@@ -120,7 +141,7 @@ public class ScaleSpaceCurvature {
                 : numerator / denominator;
            
             scaleSpaceCurve.setK(i, (float)curvature);
-            
+                      
             /*
             if using ScaleSpaceCurve2 to capture the 2nd derivatives, set
             them here.
@@ -132,6 +153,72 @@ public class ScaleSpaceCurvature {
         return scaleSpaceCurve;
     }
      
+    /**
+     * compute scale space metrics of curve, given sigma, without calculating
+     * and storing the inflection points.
+     * @param curve the x,y pairs of points for which to calculate the scale 
+     * space metrics
+     * @param sigma
+     * @param gFirstDeriv the first derivative kernel to use in convolution
+     * @param gSecondDeriv the second derivative kernel to use in convolution
+     * 
+     * @return  
+     */
+    public CornerArray computeCurvature2(PairIntArray curve, 
+        SIGMA sigma, float[] gFirstDeriv, float[] gSecondDeriv) {
+
+        int n = curve.getN();
+               
+        boolean isClosedCurved = (curve instanceof PairIntArrayWithColor)
+            && (((PairIntArrayWithColor) curve).isClosedCurve());
+        
+        CornerArray output = new CornerArray(sigma, n);
+        
+        if (isClosedCurved) {
+            output.setIsClosedCurve();
+        }
+
+        /*
+                  X_dot(t,o~) * Y_dot_dot(t,o~) - Y_dot(t,o~) * X_dot_dot(t,o~) 
+        k(t,o~) = -------------------------------------------------------------
+                               (X_dot^2(t,o~) + Y_dot^2(t,o~))^1.5
+        */
+ 
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        for (int i = 0; i < n; i++) {
+
+            double xFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(
+                curve, i, gFirstDeriv, true);
+            
+            double yFirstDerivInteg = kernel1DHelper.convolvePointWithKernel(
+                curve, i, gFirstDeriv, false);
+            
+            double xSecondDerivInteg = kernel1DHelper.convolvePointWithKernel(
+                curve, i, gSecondDeriv, true);
+            
+            double ySecondDerivInteg = kernel1DHelper.convolvePointWithKernel(
+                curve, i, gSecondDeriv, false);
+    
+            double denominator = Math.pow(
+                ((xFirstDerivInteg * xFirstDerivInteg) +
+                (yFirstDerivInteg * yFirstDerivInteg)), 1.5);
+            
+            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -
+                (yFirstDerivInteg * xSecondDerivInteg));
+            
+            double curvature = (denominator == 0)  ? 
+                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY
+                : numerator / denominator;
+           
+            output.add(curve.getX(i), curve.getY(i), (float)curvature, 
+                 (float)xFirstDerivInteg, (float)xSecondDerivInteg, 
+                 (float)yFirstDerivInteg, (float)ySecondDerivInteg, i);
+        }
+        
+        return output;
+    }
+    
     private boolean isZeroCrossing(final float kPrev, final float k) {
         if (k <= 0) {
             if (kPrev >= 0) {
