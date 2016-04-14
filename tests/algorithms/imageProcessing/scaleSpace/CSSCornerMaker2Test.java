@@ -1,8 +1,11 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.scaleSpace;
 
+import algorithms.imageProcessing.EdgeExtractorSimple;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
-import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
-import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
@@ -133,7 +136,7 @@ public class CSSCornerMaker2Test extends TestCase {
         assertTrue(s2 >= 1);
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
         
         String fileName = "small_shapes_for_line_thinners.png";
 
