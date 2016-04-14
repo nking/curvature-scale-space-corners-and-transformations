@@ -1143,6 +1143,8 @@ public class CSSCornerMaker {
             }
         }
         
+        double sqrt2 = Math.sqrt(2.);
+        
         for (int i = startIdx; i < stopIdx; ++i) {
             if (i == (stopIdx - 1)) {
                 output.add(corners.getX(i), corners.getY(i),
@@ -1154,17 +1156,26 @@ public class CSSCornerMaker {
                     corners.getInt(i));
                 continue;
             }
-    //TODO: add check for diagonal adjacent and then cal avg if so        
             int idx1 = corners.getInt(i);
             int idx2 = corners.getInt(i + 1);
             if (idx2 > (idx1 + 1)) {
-                output.add(corners.getX(i), corners.getY(i),
-                    corners.getCurvature(i),
-                    corners.getXFirstDeriv(i),
-                    corners.getXSecondDeriv(i),
-                    corners.getYFirstDeriv(i),
-                    corners.getYSecondDeriv(i),
-                    corners.getInt(i));                
+                // checking for adjacent diagonal that need to be averaged,
+                // else can add the isolated corner
+                /*int x1 = corners.getX(i);
+                int y1 = corners.getY(i);
+                int x2 = corners.getX(i + 1);
+                int y2 = corners.getY(i + 1);
+                int diffx = x2 - x1;
+                int diffy = y2 - y1;
+                double dist = Math.sqrt(diffx*diffx + diffy*diffy);
+                if (dist > sqrt2) { */               
+                    output.add(corners.getX(i), corners.getY(i),
+                        corners.getCurvature(i),
+                        corners.getXFirstDeriv(i),
+                        corners.getXSecondDeriv(i),
+                        corners.getYFirstDeriv(i),
+                        corners.getYSecondDeriv(i),
+                        corners.getInt(i));
             } else {
                 float k1 = corners.getCurvature(i);
                 float k2 = corners.getCurvature(i + 1);

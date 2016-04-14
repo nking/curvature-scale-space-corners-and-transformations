@@ -30,7 +30,7 @@ public class CSSCornerMaker2Test extends TestCase {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
         
-         float cutOff = 0.5f;//0.3f;//0.5f;
+        float cutOff = 0.5f;//0.3f;//0.5f;
         int nScale = 5;//5;
         int minWavelength = nScale;//3;
         float mult = 2.1f;
@@ -99,6 +99,35 @@ public class CSSCornerMaker2Test extends TestCase {
         ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, tmp, 0);
         
         MiscDebug.writeImage(tmp, "_EDGES_");
+        
+        int s0 = 0;
+        int s1 = 0;
+        int s2 = 0;
+        // assert min number of corners
+        for (int ii = 0; ii < cornerList.size(); ++ii) {
+            
+            CornerArray corners = cornerList.get(ii);
+            PairIntArray edge = theEdges.get(ii);
+            
+            for (int i = 0; i < edge.getN(); ++i) {
+                int x = edge.getX(i);
+                int y = edge.getY(i);
+                if (x==22 && y==88) {
+                    s0 = corners.getN();
+                    break;
+                } else if (x==20 && y==20) {
+                    s1 = corners.getN();
+                    break;
+                } else if (x==61 && y==50) {
+                    s2 = corners.getN();
+                    break;
+                }
+            }
+        }
+        
+        assertTrue(s0 >= 4);
+        assertTrue(s1 >= 3);
+        assertTrue(s2 >= 1);
     }
     
 }

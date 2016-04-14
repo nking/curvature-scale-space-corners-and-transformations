@@ -93,6 +93,8 @@ public class EdgeExtractorSimple {
         findConnectedPoints();
         
         joinEdges();
+        
+        joinEdgesWithLJunctionSeparators();
                 
         setEdgesAsOrdered();
         
@@ -207,8 +209,8 @@ public class EdgeExtractorSimple {
      */
     private void joinEdges() {
         
-        Map<PairInt, Integer> endpointMap = new HashMap<PairInt, Integer>();
-        
+        Map<PairInt, Integer> endpointMap = createEndpointMap();
+                
         /*
          * for each edge:
               if endpoint is not a junction, store in endpoint map
@@ -220,32 +222,7 @@ public class EdgeExtractorSimple {
                      update the index for the other line endpoint in the map
                      clear other line in edges
             vist edges in reverse order and remove the empty entries.
-         */
-        
-        for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
-            
-            PairIntArray edge = theEdges.get(edgeIdx);
-            
-            int n = edge.getN();
-            
-            if (n == 0) {
-                continue;
-            }
-                        
-            PairInt p0 = new PairInt(edge.getX(0), edge.getY(0));
-            
-            PairInt p1 = new PairInt(edge.getX(n - 1), edge.getY(n - 1));
-            
-            Integer index = Integer.valueOf(edgeIdx);
-            
-            if (!junctions.contains(p0)) {
-                endpointMap.put(p0, index);
-            }
-            
-            if (!junctions.contains(p1)) {
-                endpointMap.put(p1, index);
-            }
-        }
+        */
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -456,6 +433,165 @@ public class EdgeExtractorSimple {
             theEdges.set(i, e2);
         }
         
+    }
+
+    private void joinEdgesWithLJunctionSeparators() {
+        
+        /*
+        goal: for junctions that only have 2 adjacent edges,
+            connect those edges and the junction between them.   
+        
+        place edges endpoints in a hashmap
+        
+        for each point in junctions
+            iterate ofver 8 neighbor coords and store the edge number
+               if adjacent.
+            if there are 2 adjcent edges
+               choose eord and append them all
+               and update the endpoint hash map
+               and set the appended edge to a new empty one
+        
+        iterate over all edges backwards to remove the empty ones
+        
+        */
+
+        Map<PairInt, Integer> endpointMap = createEndpointMap();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Set<PairInt> removeJunctions = new HashSet<PairInt>();
+        
+        for (PairInt p : junctions) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            PairInt pEP1 = null;
+            Integer index1 = null;
+            PairInt pEP2 = null;
+            Integer index2= null;
+            boolean doNotMerge = false;
+            for (int k = 0; k < dxs.length;  ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                
+                PairInt p2 = new PairInt(x2, y2);
+                
+                Integer edge2Index = endpointMap.get(p2);
+                
+                if (edge2Index != null) {
+                    if (pEP1 == null) {
+                        pEP1 = p2;
+                        index1 = edge2Index;
+                    } else if (pEP2 == null) {
+                        pEP2 = p2;
+                        index2 = edge2Index;
+                    } else {
+                        doNotMerge = true;
+                        break;
+                    }
+                }
+            }
+            if (doNotMerge || (pEP2 == null)) {
+                continue;
+            }
+            
+            PairIntArray edge1 = theEdges.get(index1.intValue());
+            int n1 = edge1.getN();
+            PairIntArray edge2 = theEdges.get(index2.intValue());
+            int n2 = edge2.getN();
+            
+            boolean p1IsStart = (edge1.getX(0) == pEP1.getX() && 
+                edge1.getY(0) == pEP1.getY());
+                
+            boolean p2IsStart = (edge2.getX(0) == pEP2.getX() && 
+                edge2.getY(0) == pEP2.getY());
+            
+            /*
+            cases:
+                [ 0  edge1 ... n-1]  J  [ 0  edge2 ... n-1] 
+                [ 0  edge1 ... n-1]  J  [ n-1 ... edge2  0] 
+                [ n-1 ... edge1  0]  J  [ 0  edge2 ... n-1]
+                [ n-1 ... edge1  0]  J  [ n-1 ... edge2  0] 
+            */
+            
+            if (!p1IsStart && p2IsStart) {
+                // [ 0  edge1 ... n-1]  J  [ 0  edge2 ... n-1] 
+                
+                edge1.add(x, y);
+                edge1.addAll(edge2);
+                
+            } else if (!p1IsStart && !p2IsStart) {
+                //[ 0  edge1 ... n-1]  J  [ n-1 ... edge2  0] 
+                
+                edge1.add(x, y);
+                edge2.reverse();
+                edge1.addAll(edge2);
+               
+            } else if (p1IsStart && p2IsStart) {
+                //[ n-1 ... edge1  0]  J  [ 0  edge2 ... n-1]
+                
+                edge1.reverse();
+                edge1.add(x, y);
+                edge1.addAll(edge2);
+                
+            } else {
+                //[ n-1 ... edge1  0]  J  [ n-1 ... edge2  0] 
+                
+                edge1.reverse();
+                edge1.add(x, y);
+                edge2.reverse();
+                edge1.addAll(edge2);
+            }
+             
+            theEdges.set(index2.intValue(), new PairIntArray());
+
+            n1 = edge1.getN();
+
+            endpointMap.remove(pEP1);
+            endpointMap.remove(pEP2);
+            PairInt ep2 = new PairInt(edge1.getX(n1 - 1), edge1.getY(n1 - 1));
+            endpointMap.remove(ep2);
+            endpointMap.put(ep2, index1);
+            
+            removeJunctions.add(p);
+        }
+        
+        junctions.removeAll(removeJunctions);
+        
+    }
+
+    private Map<PairInt, Integer> createEndpointMap() {
+        
+        Map<PairInt, Integer> endpointMap = new HashMap<PairInt, Integer>();
+        
+        for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
+            
+            PairIntArray edge = theEdges.get(edgeIdx);
+            
+            int n = edge.getN();
+            
+            if (n == 0) {
+                continue;
+            }
+                        
+            PairInt p0 = new PairInt(edge.getX(0), edge.getY(0));
+            
+            PairInt p1 = new PairInt(edge.getX(n - 1), edge.getY(n - 1));
+            
+            Integer index = Integer.valueOf(edgeIdx);
+            
+            if (!junctions.contains(p0)) {
+                endpointMap.put(p0, index);
+            }
+            
+            if (!junctions.contains(p1)) {
+                endpointMap.put(p1, index);
+            }
+        }
+        
+        return endpointMap;
     }
     
 }

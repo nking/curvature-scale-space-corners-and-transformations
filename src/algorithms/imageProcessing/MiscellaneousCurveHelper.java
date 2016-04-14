@@ -1771,6 +1771,10 @@ public class MiscellaneousCurveHelper {
     }
 
     public boolean isAdjacent(PairIntArray edge, int idx1, int idx2) {
+        
+        if (idx2 < 0) {
+            return false;
+        }
 
         int x1 = edge.getX(idx1);
         int y1 = edge.getY(idx1);
