@@ -2,12 +2,15 @@ package algorithms.imageProcessing;
 
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
+import algorithms.imageProcessing.scaleSpace.ScaleSpaceCurve;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -128,6 +131,113 @@ public class CSSCornerMaker2Test extends TestCase {
         assertTrue(s0 >= 4);
         assertTrue(s1 >= 3);
         assertTrue(s2 >= 1);
+    }
+    
+    public void test1() throws Exception {
+        
+        String fileName = "small_shapes_for_line_thinners.png";
+
+        String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+        GreyscaleImage img = ImageIOHelper.readImage(filePath).copyToGreyscale(); 
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+        
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;//5;
+        int minWavelength = nScale;//3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 5;//10;//2;
+        float g = 10; 
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.1;
+        double tHigh = 0.3;
+        boolean increaseKIfNeeded = false;
+        PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts products =
+            phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
+                sigmaOnf, k, increaseKIfNeeded,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        assertNotNull(products);
+        
+        EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(
+            products.getThinned());
+        edgeExtractor.extractEdges();
+                
+        List<PairIntArray> theEdges = edgeExtractor.getEdges();
+        // put edges in ref frame of image
+        for (int i = 0; i < theEdges.size(); ++i) {
+            PairIntArray edge = theEdges.get(i);
+            PairIntArray edge2 = new PairIntArray(edge.getN());
+            for (int j = 0; j < edge.getN(); ++j) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                edge2.add(y, x);
+            }
+            theEdges.set(i, edge2);
+        }
+        
+        CSSCornerMaker cornerMaker = new CSSCornerMaker(nCols, nRows);
+        
+        List<Map<SIGMA, ScaleSpaceCurve>> outEdgeScaleSpaceMaps =
+            new ArrayList<Map<SIGMA, ScaleSpaceCurve>>();
+        
+        //NOTE: this method is not efficient because it is expected the use
+        // of CornerRegions will be obsolete after the next major refactoring.
+        List<CornerArray> cornersList = cornerMaker.findCornersInScaleSpaceMaps(
+            theEdges, outEdgeScaleSpaceMaps);
+                
+        int xTest = 29;
+        int yTest = 88;
+        
+        for (int lIdx = 0; lIdx < outEdgeScaleSpaceMaps.size(); ++lIdx) {
+             
+            Map<SIGMA, ScaleSpaceCurve> mapOfScaleSpacesForAnEdge = 
+                outEdgeScaleSpaceMaps.get(lIdx);
+                
+            PairIntArray edge = theEdges.get(lIdx);
+            
+            boolean found = false;
+            for (int i = 0; i < edge.getN(); ++i) {
+                if ((Math.abs(xTest - edge.getX(i)) < 5) && Math.abs(yTest - edge.getY(i)) < 5) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                continue;
+            }
+            
+            CornerArray ca = cornersList.get(lIdx);
+                          
+            /*
+            need to print i (x,y) sigma k
+            */
+            for (Map.Entry<SIGMA, ScaleSpaceCurve> entry2 : mapOfScaleSpacesForAnEdge.entrySet()) {
+                SIGMA sigma = entry2.getKey();
+                ScaleSpaceCurve scaleSpaceCurve = entry2.getValue();
+                
+                for (int i = 0; i < scaleSpaceCurve.getT().length; ++i) {
+                    
+                    float curvature = scaleSpaceCurve.getK(i);
+                    
+                    if (Math.abs(curvature) < 0.002) {
+                        continue;
+                    }
+                    
+                    String str = String.format("(%d,%d) k=%.4f sigma=%.3f", 
+                        Math.round(scaleSpaceCurve.getX(i)),
+                        Math.round(scaleSpaceCurve.getY(i)), curvature, 
+                        SIGMA.getValue(sigma));
+                    
+                    System.out.println(str);
+                }
+            }
+            System.out.flush();
+            break;
+        }
     }
     
 }

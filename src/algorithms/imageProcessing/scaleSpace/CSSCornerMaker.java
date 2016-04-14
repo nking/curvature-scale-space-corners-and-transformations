@@ -201,29 +201,49 @@ public class CSSCornerMaker {
     public List<CornerArray> findCornersInScaleSpaceMaps(final PairIntArray 
         edge) {
         
-        // ordered from max sigma to min sigma:
+        // ordered from min sigma to max sigma:
         final List<CornerArray> scaleSpaceCurvesList  =
             createLowUpperThresholdScaleSpaceMaps2(edge);
        
         if (scaleSpaceCurvesList.isEmpty()) {
             return scaleSpaceCurvesList;
         }
-        
+                
         List<CornerArray> output = new ArrayList<CornerArray>();
-    
-        for (int i = 0; i < scaleSpaceCurvesList.size(); ++i) {
+        
+        /*
+        find the candidate corners in the largest sigma scale space
+           then filter the smaller sigma scale space curves to keep
+           those same points.
+        */
+        
+        CornerArray scaleSpaceCurve = scaleSpaceCurvesList.get(
+            scaleSpaceCurvesList.size() - 1);
+        CornerArray maxCorners = findCornersInScaleSpaceCurve(scaleSpaceCurve);
+        //maxCorners = pruneCloseCorners(maxCorners, scaleSpaceCurve.getN());
+        output.add(maxCorners);
+        
+        for (int i = 0; i < scaleSpaceCurvesList.size() - 1; ++i) {
             
-            CornerArray scaleSpace = scaleSpaceCurvesList.get(i);
+            scaleSpaceCurve = scaleSpaceCurvesList.get(i);
             
-            // NOTE: used to refine the coordinates starting from 
-            // maxScaleCorners with refinePrimaryCoordinates,
-            // but since am storing the orignal edge coords for each sigma,
-            // and since am choosing one scale sigma out of all,
-            // this does not seem necessary now (as it is for inflection points)
+            CornerArray corners = new CornerArray(scaleSpaceCurve.getSIGMA(), 
+                 maxCorners.getN());
+            if (scaleSpaceCurve.isFromAClosedCurve()) {
+                corners.setIsClosedCurve();
+            }
             
-            CornerArray corners = findCornersInScaleSpaceCurve(scaleSpace);
-            
-            corners = pruneCloseCorners(corners, scaleSpace.getN());
+            for (int j = 0; j < maxCorners.getN(); ++j) {
+                
+                int idx = maxCorners.getInt(j);
+                
+                corners.add(scaleSpaceCurve.getX(idx), scaleSpaceCurve.getY(idx),
+                    scaleSpaceCurve.getCurvature(idx), 
+                    scaleSpaceCurve.getXFirstDeriv(idx),
+                    scaleSpaceCurve.getXSecondDeriv(idx),
+                    scaleSpaceCurve.getYFirstDeriv(idx),
+                    scaleSpaceCurve.getYSecondDeriv(idx), idx);
+            }
             
             output.add(corners);
         }
@@ -753,7 +773,7 @@ public class CSSCornerMaker {
 
         // find peaks where k[ii] is > factorAboveMin* adjacent local minima
 
-        float factorAboveMin = curvatureFactor2 * 2.5f;//3.5f;// 10 misses some corners
+        float factorAboveMin = curvatureFactor2 * 2.0f;//3.5f;// 10 misses some corners
 
         //log.fine("using factorAboveMin=" + factorAboveMin);
 
