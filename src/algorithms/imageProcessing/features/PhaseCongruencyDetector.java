@@ -14,7 +14,6 @@ import algorithms.imageProcessing.PeriodicFFT;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.scaleSpace.CSSCornerMaker;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;

@@ -4,7 +4,6 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.NearestPoints;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
-import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.util.CornerArray;

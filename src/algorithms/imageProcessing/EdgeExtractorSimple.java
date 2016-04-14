@@ -252,7 +252,15 @@ public class EdgeExtractorSimple {
 
         PairInt[] eps = new PairInt[2];
         
-        for (int edgeIdx = 0; edgeIdx < theEdges.size(); ++edgeIdx) {
+        Stack<Integer> stack = new Stack<Integer>();
+        for (int edgeIdx = (theEdges.size() - 1); edgeIdx > -1; --edgeIdx) {
+            stack.add(Integer.valueOf(edgeIdx));
+        }
+        
+        while (!stack.isEmpty()) {
+            
+            Integer edgeIndex = stack.pop();
+            int edgeIdx = edgeIndex.intValue();
             
             PairIntArray edge = theEdges.get(edgeIdx);
             
@@ -266,7 +274,7 @@ public class EdgeExtractorSimple {
             
             eps[1] = (n == 1) ? null : new PairInt(edge.getX(n - 1), edge.getY(n - 1));
             
-            Integer index = Integer.valueOf(edgeIdx);
+            Set<Integer> addBackToStack = new HashSet<Integer>();
             
             for (PairInt ep : eps) {
                 
@@ -283,7 +291,7 @@ public class EdgeExtractorSimple {
 
                     Integer index2 = endpointMap.get(p2);
 
-                    if (index2 == null || index.equals(index2)) {
+                    if (index2 == null || edgeIndex.equals(index2)) {
                         continue;
                     }
 
@@ -319,8 +327,10 @@ public class EdgeExtractorSimple {
                             theEdges.set(index2.intValue(), new PairIntArray());
 
                             if (!junctions.contains(otherEndpoint)) {
-                                endpointMap.put(otherEndpoint, index);
+                                endpointMap.put(otherEndpoint, edgeIndex);
                             }
+                            
+                            addBackToStack.add(edgeIndex);
 
                         } else {
                             // edge2 join is end
@@ -348,8 +358,10 @@ public class EdgeExtractorSimple {
                             theEdges.set(index2.intValue(), new PairIntArray());
 
                             if (!junctions.contains(otherEndpoint)) {
-                                endpointMap.put(otherEndpoint, index);
+                                endpointMap.put(otherEndpoint, edgeIndex);
                             }
+                            
+                            addBackToStack.add(edgeIndex);
                         }
 
                     } else {
@@ -378,9 +390,11 @@ public class EdgeExtractorSimple {
                             theEdges.set(index2.intValue(), new PairIntArray());
 
                             if (!junctions.contains(otherEndpoint)) {
-                                endpointMap.put(otherEndpoint, index);
+                                endpointMap.put(otherEndpoint, edgeIndex);
                             }
 
+                            addBackToStack.add(edgeIndex);
+                            
                         } else {
 
                             // edge2 join is end
@@ -406,12 +420,16 @@ public class EdgeExtractorSimple {
                             theEdges.set(index2.intValue(), new PairIntArray());
 
                             if (!junctions.contains(otherEndpoint)) {
-                                endpointMap.put(otherEndpoint, index);
+                                endpointMap.put(otherEndpoint, edgeIndex);
                             }
+                            
+                            addBackToStack.add(edgeIndex);
                         }
                     }
                 }
             }
+            
+            stack.addAll(addBackToStack);
         }
         
         for (int i = (theEdges.size() - 1); i > -1; --i) {

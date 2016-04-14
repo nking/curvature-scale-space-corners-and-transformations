@@ -6,6 +6,7 @@ import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageStatisticsHelper;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;
@@ -103,7 +104,7 @@ public class CSSCornerMaker {
         // for each edge, an item is a list of the corners for a sigm odered 
         // from max to min sigma
         List<List<CornerArray>> edgeCornerLists = new ArrayList<List<CornerArray>>();
-        
+       
         for (PairIntArray edge : theEdges) {
             List<CornerArray> scaleSpaceCorners = findCornersInScaleSpaceMaps(edge);
             edgeCornerLists.add(scaleSpaceCorners);
@@ -203,13 +204,13 @@ public class CSSCornerMaker {
         // ordered from max sigma to min sigma:
         final List<CornerArray> scaleSpaceCurvesList  =
             createLowUpperThresholdScaleSpaceMaps2(edge);
-        
+       
         if (scaleSpaceCurvesList.isEmpty()) {
             return scaleSpaceCurvesList;
         }
         
         List<CornerArray> output = new ArrayList<CornerArray>();
-        
+    
         for (int i = 0; i < scaleSpaceCurvesList.size(); ++i) {
             
             CornerArray scaleSpace = scaleSpaceCurvesList.get(i);
@@ -222,7 +223,7 @@ public class CSSCornerMaker {
             
             CornerArray corners = findCornersInScaleSpaceCurve(scaleSpace);
             
-            pruneCloseCorners(corners);
+            corners = pruneCloseCorners(corners, scaleSpace.getN());
             
             output.add(corners);
         }
@@ -332,6 +333,10 @@ public class CSSCornerMaker {
     private List<CornerArray> createLowUpperThresholdScaleSpaceMaps2(
         final PairIntArray edge) {
 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        boolean isClosedCurve = curveHelper.isAdjacent(edge, 0, 
+            edge.getN() - 1);
+        
         ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();
 
         List<CornerArray> output = new ArrayList<CornerArray>();
@@ -346,6 +351,10 @@ public class CSSCornerMaker {
         while (sigma.compareTo(maxSIGMA) < 1) {
 
             CornerArray curve = scaleSpaceHelper.computeCurvature2(edge, sigma);
+            
+            if (isClosedCurve) {
+                curve.setIsClosedCurve();
+            }
             
             output.add(curve);
 
@@ -391,6 +400,9 @@ public class CSSCornerMaker {
 
         CornerArray xy = new CornerArray(scaleSpaceCurve.getSIGMA(), 
             maxCandidateCornerIndexes.size());
+        if (scaleSpaceCurve.isFromAClosedCurve()) {
+            xy.setIsClosedCurve();
+        }
 
         if (maxCandidateCornerIndexes.isEmpty()) {
             return xy;
@@ -432,7 +444,7 @@ public class CSSCornerMaker {
     public static List<Integer> findMinimaAndMaximaInCurvature(float[] k,
         float[] outputLowThreshold) {
 
-        if ((k == null) || (k.length == 0)) {
+        if ((k == null) || (k.length < 5)) {
             return new ArrayList<Integer>();
         }
 
@@ -445,18 +457,32 @@ public class CSSCornerMaker {
         if (k.length < 3) {
             return new ArrayList<Integer>();
         }
-        
-        float[] kQuartiles = ImageStatisticsHelper.getQuartiles(k);
+ 
+        // get quartiles of non-zero values
+        int nz = 0;
+        for (float ki : k) {
+            if (ki > 0) {
+                nz++;
+            }
+        }
+        if (nz < 4) {
+            return new ArrayList<Integer>();
+        }
+        float[] kNZ = new float[nz];
+        nz = 0;
+        for (float ki : k) {
+            if (ki > 0) {
+                kNZ[nz] = ki;
+                nz++;
+            }
+        }
+        float[] kQuartiles = ImageStatisticsHelper.getQuartiles(kNZ);
 
-        //log.fine("quartiles=" + Arrays.toString(kQuartiles));
-
-        //float kMax = MiscMath.findMax(k);
-
-        // determine float lowThresh
+        // determine lowThresh
         HistogramHolder h = Histogram.calculateSturgesHistogram(
             0, 2 * kQuartiles[2], k, Errors.populateYErrorsBySqrt(k));
 
-        if (h.getXHist().length < 3) {
+        if (h.getXHist().length < 2) {
             return new ArrayList<Integer>();
         }
 
@@ -737,7 +763,7 @@ public class CSSCornerMaker {
         // filter alone is good for all size scale corners, and adding this
         // limit biases the results.  may want to only use this bias if
         // the some amount of curvature points are >= 0.2
-        float kLowerLimit = 0.05f;
+        float kLowerLimit = 0.005f;
 
         List<Integer> cornerCandidates = new ArrayList<Integer>();
 
@@ -751,7 +777,7 @@ public class CSSCornerMaker {
                 // this is maximum
 
                 boolean found = false;
-
+                
                 // compare to preceding minimum
                 for (int iii = (ii - 1); iii > -1; iii--) {
                     int idx2 = minMaxIndexes.get(iii).intValue();
@@ -768,7 +794,8 @@ public class CSSCornerMaker {
                         break;
                     }
                 }
-                if (found) {
+                
+                if (found && (ii > 0)) {
                     continue;
                 }
 
@@ -1087,9 +1114,84 @@ public class CSSCornerMaker {
         return (diffX * diffX) + (diffY * diffY);
     }
 
-    private void pruneCloseCorners(CornerArray corners) {
+    private CornerArray pruneCloseCorners(CornerArray corners, int curveLength) {
         
-        //NOT Yet implemented
+        int n = corners.getN();
+        
+        if (n < 2) {
+            return corners;
+        }
+        
+        boolean isClosedCurve = corners.isFromAClosedCurve();
+        
+        CornerArray output = new CornerArray(corners.getSIGMA());
+        if (isClosedCurve) {
+            output.setIsClosedCurve();
+        }
+        
+        int startIdx = 0;
+        int stopIdx = n;
+        if (isClosedCurve & (corners.getInt(0) == 0)) {
+            if (corners.getInt(n - 1) == (curveLength - 1)) {
+                float k0 = corners.getCurvature(0);
+                float kn1 = corners.getCurvature(n - 1);
+                if (k0 >= kn1) {
+                    stopIdx--;
+                } else {
+                    startIdx++;
+                }
+            }
+        }
+        
+        for (int i = startIdx; i < stopIdx; ++i) {
+            if (i == (stopIdx - 1)) {
+                output.add(corners.getX(i), corners.getY(i),
+                    corners.getCurvature(i),
+                    corners.getXFirstDeriv(i),
+                    corners.getXSecondDeriv(i),
+                    corners.getYFirstDeriv(i),
+                    corners.getYSecondDeriv(i),
+                    corners.getInt(i));
+                continue;
+            }
+    //TODO: add check for diagonal adjacent and then cal avg if so        
+            int idx1 = corners.getInt(i);
+            int idx2 = corners.getInt(i + 1);
+            if (idx2 > (idx1 + 1)) {
+                output.add(corners.getX(i), corners.getY(i),
+                    corners.getCurvature(i),
+                    corners.getXFirstDeriv(i),
+                    corners.getXSecondDeriv(i),
+                    corners.getYFirstDeriv(i),
+                    corners.getYSecondDeriv(i),
+                    corners.getInt(i));                
+            } else {
+                float k1 = corners.getCurvature(i);
+                float k2 = corners.getCurvature(i + 1);
+                if (k1 >= k2) {
+                    // store this and skip next
+                    output.add(corners.getX(i), corners.getY(i),
+                        corners.getCurvature(i),
+                        corners.getXFirstDeriv(i),
+                        corners.getXSecondDeriv(i),
+                        corners.getYFirstDeriv(i),
+                        corners.getYSecondDeriv(i),
+                        corners.getInt(i));
+                    ++i;
+                } else {
+                    // store next and skip next
+                    ++i;
+                    output.add(corners.getX(i), corners.getY(i),
+                        corners.getCurvature(i),
+                        corners.getXFirstDeriv(i),
+                        corners.getXSecondDeriv(i),
+                        corners.getYFirstDeriv(i),
+                        corners.getYSecondDeriv(i),
+                        corners.getInt(i));
+                }
+            }
+        }
+        return output;
     }
 
 }

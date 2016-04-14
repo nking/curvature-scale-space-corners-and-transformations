@@ -2,7 +2,9 @@ package algorithms;
 
 import algorithms.imageProcessing.util.PairIntWithIndex0;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -237,6 +239,41 @@ public class QuickSortTest extends TestCase {
             prev = a[i];
         }
     }
+     
+     public void testDescendingSort1() {
+         
+         List<Float> a = new ArrayList<Float>();
+         a.add(4f);
+         a.add(5f);
+         a.add(9f);
+         a.add(0f);
+         a.add(3f);
+         a.add(1f);
+         a.add(6f);
+         a.add(2f);
+         a.add(7f);
+         a.add(8f);
+         List<Float> b = new ArrayList<Float>();
+         b.add(5f);
+         b.add(4f);
+         b.add(0f);
+         b.add(9f);
+         b.add(6f);
+         b.add(8f);
+         b.add(3f);
+         b.add(7f);
+         b.add(2f);
+         b.add(1f);
+         QuickSort.descendingSort(a, b);
+
+         float prev = a.get(0).floatValue();
+         for (int i = 0; i < a.size(); i++) {
+             assertTrue(Math.abs(i - b.get(i).floatValue()) < 0.01);
+             assertTrue(a.get(i).floatValue() <= prev);
+             prev = a.get(i).floatValue();
+         }
+     }
+     
      
      public void testDescendingSort2() {
                           

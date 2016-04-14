@@ -1,29 +1,17 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.imageProcessing.scaleSpace.*;
-import algorithms.imageProcessing.Gaussian1D;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageDisplayer;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.util.PairIntWithIndex;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import algorithms.misc.MiscMath;
 import algorithms.util.CornerArray;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import junit.framework.TestCase;
 
 /**
@@ -45,7 +33,7 @@ public class CSSCornerMakerTest extends TestCase {
         super.tearDown();
     }
      
-    public void estScaleSpaceImagesFigure2() throws Exception {
+    public void testScaleSpaceImagesFigure2() throws Exception {
         
         System.out.println("testScaleSpaceImagesFigure2");
                                 
@@ -187,7 +175,7 @@ public class CSSCornerMakerTest extends TestCase {
         // of CornerRegions will be obsolete after the next major refactoring.
         List<CornerArray> cornersList = cornerMaker.findCornersInScaleSpaceMaps(
             detector.getEdges(), outEdgeScaleSpaceMaps);
-        
+                
         int xTest = 95;
         int yTest = 299;
         
