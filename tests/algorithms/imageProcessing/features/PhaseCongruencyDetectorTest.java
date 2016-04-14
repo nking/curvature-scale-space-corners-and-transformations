@@ -19,18 +19,13 @@ public class PhaseCongruencyDetectorTest extends TestCase {
     }
     
     public void test0() throws Exception {
-        
-        //String fileName = "blox.gif";
-        //String fileName = "lab.gif";
-        String fileName = "house.gif";
-        //String fileName = "seattle.jpg";
-        //String fileName = "merton_college_I_001.jpg";
-        //String fileName = "susan-in_plus.png";
-        //String fileName = "lena.jpg";
-        String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
-        GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-        
+
+        String[] fileNames = new String[]{
+            "blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
+            "susan-in_plus.png", "lena.jpg",
+            "campus_010.jpg"
+        };
+
         float cutOff = 0.5f;//0.3f;//0.5f;
         int nScale = 5;
         int minWavelength = 3;
@@ -42,117 +37,34 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         int noiseMethod = -1;
         double tLow = 0.05;
         double tHigh = 0.3;
-        boolean increaseKIfNeeded = false;
-        PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
-        phaseCDetector.setToCreateCorners();                
-        PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
+        boolean increaseKIfNeeded = true;
+
+        for (String fileName : fileNames) {
+        
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+            GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+        
+            PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
+            phaseCDetector.setToCreateCorners();                
+            PhaseCongruencyDetector.PhaseCongruencyProducts products =
+                phaseCDetector.phaseCongMono(img, nScale, minWavelength, mult, 
                 sigmaOnf, k, increaseKIfNeeded,
                 cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-        
-        assertNotNull(products);
-                
-        double[][] pc = products.getPhaseCongruency();
-        double[][] orientation = products.getOrientation();
-        double[][] phaseAngle = products.getPhaseAngle();
-        
-        int[][] thinned = products.getThinned();
-                
-        GreyscaleImage out = img.createWithDimensions();
-        for (int i = 0; i < out.getWidth(); ++i) {
-            for (int j = 0; j < out.getHeight(); ++j) {
-                out.setValue(i, j, (int)(255.*pc[j][i]));
-            }
-        }
-        MiscDebug.writeImage(out, "_phase_congruency_");
-        
-        out = img.createWithDimensions();
-        double maxV = Double.MIN_VALUE;
-        double minV = Double.MAX_VALUE;
-        double[] scaled = new double[out.getNPixels()];
-        for (int i = 0; i < out.getWidth(); ++i) {
-            for (int j = 0; j < out.getHeight(); ++j) {
-                double v = orientation[j][i];
-                if (v < minV) {
-                    minV = v;
-                }
-                if (v > maxV) {
-                    maxV = v;
-                }
-                int idx = out.getInternalIndex(i, j);
-                scaled[idx] = v;
-            }
-        }
-        System.out.println("orientation minV=" + minV + " maxV=" + maxV);
-        int[] scaled2 = MiscMath.rescale(scaled, 0, 255);
-        for (int i = 0; i < out.getNPixels(); ++i) {
-            int v = scaled2[i];
-            out.setValue(i, v);                
-        }
-        MiscDebug.writeImage(out, "_orientation_");
-        
-        out = img.createWithDimensions();
-        maxV = Double.MIN_VALUE;
-        minV = Double.MAX_VALUE;
-        scaled = new double[out.getNPixels()];
-        for (int i = 0; i < out.getWidth(); ++i) {
-            for (int j = 0; j < out.getHeight(); ++j) {
-                double v = phaseAngle[j][i];
-                if (v < minV) {
-                    minV = v;
-                }
-                if (v > maxV) {
-                    maxV = v;
-                }
-                int idx = out.getInternalIndex(i, j);
-                scaled[idx] = v;
-            }
-        }
-        System.out.println("phase angle minV=" + minV + " maxV=" + maxV);
-        scaled2 = MiscMath.rescale(scaled, 0, 255);
-        for (int i = 0; i < out.getNPixels(); ++i) {
-            int v = scaled2[i];
-            out.setValue(i, v);                
-        }
-        MiscDebug.writeImage(out, "_phase_angle_");
-        
-        System.out.println("threshold=" + products.getThreshold());
-                
-        out = img.createWithDimensions();
-        for (int i = 0; i < out.getWidth(); ++i) {
-            for (int j = 0; j < out.getHeight(); ++j) {
-                out.setValue(i, j, thinned[j][i]);
-            }
-        }
-        MiscDebug.writeImage(out, "_filtered_hysteresis_" + cutOff + "_");  
-        
-        Image out2 = img.copyToColorGreyscale();
-        ImageIOHelper.addCurveToImage(products.getCorners(), out2, 
-            2, 255, 0, 0);
-        MiscDebug.writeImage(out2, "_corners_");
-                
-        String[] fileNames = new String[]{
-            "blox.gif", "lab.gif", "house.gif", "checkerboard_01.jpg", 
-            "merton_college_I_001.jpg", "seattle.jpg", "campus_010.jpg"
-        };
-        for (String fn : fileNames) {
-            
-            System.out.println("fileName=" + fn);
-            
-            filePath = ResourceFinder.findFileInTestResources(fn);
 
-            // ---- compare to CannyEdgeFilter ----
-            img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
-
-            CannyEdgeFilterAdaptive canny1 = new CannyEdgeFilterAdaptive();
-            canny1.setToUseHigherThresholdIfNeeded();
-            canny1.applyFilter(img);
-            for (int i = 0; i < img.getNPixels(); ++i) {
-                if (img.getValue(i) > 0) {
-                    img.setValue(i, 255);
+            assertNotNull(products);
+            double[][] pc = products.getPhaseCongruency();
+            double[][] orientation = products.getOrientation();
+            double[][] phaseAngle = products.getPhaseAngle();
+            int[][] thinned = products.getThinned();
+                
+            GreyscaleImage out = img.createWithDimensions();
+            for (int i = 0; i < out.getWidth(); ++i) {
+                for (int j = 0; j < out.getHeight(); ++j) {
+                    out.setValue(i, j, thinned[j][i]);
                 }
             }
-            MiscDebug.writeImage(img, "_canny_" + fn);
+            MiscDebug.writeImage(out, "_thinned_" + cutOff + "_" + fileName + "_");  
         }
     }
     
