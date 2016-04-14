@@ -988,10 +988,8 @@ public class IntensityFeatures {
      * @param x
      * @param y
      * @return
-     * @throws algorithms.imageProcessing.CornerRegion.CornerRegionDegneracyException 
      */
-    public Integer calculateOrientation(int x, int y) throws 
-        CornerRegion.CornerRegionDegneracyException {
+    public Integer calculateOrientation(int x, int y) {
         
         if (gXY == null || theta == null) {
             throw new IllegalArgumentException("gradient image is null, so use"

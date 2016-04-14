@@ -300,19 +300,16 @@ public class EuclideanSegmentFeatureMatcher2 extends AbstractFeatureMatcher {
             for (int i = (stats.size() - 1); i > -1; --i) {
                 FeatureComparisonStat stat = stats.get(i);
                 PairInt p1 = stat.getImg1Point();
-                try {
-                    if (features1.removeDueToLocalization(img1, p1.getX(), p1.getY(),
-                        features1.calculateOrientation(p1.getX(), p1.getY()))) {
-                        stats.remove(i);
-                        continue;
-                    }
-                    PairInt p2 = stat.getImg2Point();
-                    if (features2.removeDueToLocalization(img2, p2.getX(), p2.getY(),
-                        features2.calculateOrientation(p2.getX(), p2.getY()))) {
-                        stats.remove(i);
-                        continue;
-                    }
-                } catch (CornerRegion.CornerRegionDegneracyException ex) {
+                if (features1.removeDueToLocalization(img1, p1.getX(), p1.getY(),
+                    features1.calculateOrientation(p1.getX(), p1.getY()))) {
+                    stats.remove(i);
+                    continue;
+                }
+                PairInt p2 = stat.getImg2Point();
+                if (features2.removeDueToLocalization(img2, p2.getX(), p2.getY(),
+                    features2.calculateOrientation(p2.getX(), p2.getY()))) {
+                    stats.remove(i);
+                    continue;
                 }
             }
             if (stats.isEmpty()) {

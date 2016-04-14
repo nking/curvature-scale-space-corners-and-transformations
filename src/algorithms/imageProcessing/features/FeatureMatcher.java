@@ -92,12 +92,7 @@ public class FeatureMatcher {
         
         FeatureComparisonStat best = null;
         
-        int rot2;
-        try {
-            rot2 = features2.calculateOrientation(x2, y2);
-        } catch (CornerRegionDegneracyException e) {
-            return null;
-        }
+        int rot2 = features2.calculateOrientation(x2, y2);
         
         IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
         
@@ -116,12 +111,8 @@ public class FeatureMatcher {
                     continue;
                 }
                 
-                int rot1;
-                try {
-                    rot1 = features1.calculateOrientation(x1d, y1d);
-                } catch (CornerRegionDegneracyException e) {
-                    continue;
-                }
+                int rot1 = features1.calculateOrientation(x1d, y1d);
+                
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
                 rotations[0] = rot1;
@@ -563,13 +554,8 @@ public class FeatureMatcher {
         
         FeatureComparisonStat best = null;
         
-        int rot2;
-        try {
-            rot2 = features2.calculateOrientation(x2, y2);
-        } catch (CornerRegionDegneracyException e) {
-            return null;
-        }
-        
+        int rot2 = features2.calculateOrientation(x2, y2);
+       
         IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
         
         if (desc2 == null) {
@@ -587,12 +573,8 @@ public class FeatureMatcher {
                     continue;
                 }
                 
-                int rot1;
-                try {
-                    rot1 = features1.calculateOrientation(x1d, y1d);
-                } catch (CornerRegionDegneracyException e) {
-                    continue;
-                }
+                int rot1 = features1.calculateOrientation(x1d, y1d);
+                
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
                 rotations[0] = rot1;
@@ -672,12 +654,7 @@ public class FeatureMatcher {
         
         FeatureComparisonStat best = null;
         
-        int rot2;
-        try {
-            rot2 = features2.calculateOrientation(x2, y2);
-        } catch (CornerRegionDegneracyException e) {
-            return null;
-        }
+        int rot2 = features2.calculateOrientation(x2, y2);
         
         IntensityDescriptor desc2 = features2.extractIntensity(img2, x2, y2, rot2);
      
@@ -701,12 +678,8 @@ public class FeatureMatcher {
                     continue;
                 }
                 
-                int rot1;
-                try {
-                    rot1 = features1.calculateOrientation(x1d, y1d);
-                } catch (CornerRegionDegneracyException e) {
-                    continue;
-                }
+                int rot1 = features1.calculateOrientation(x1d, y1d);
+                
                 // fetch rotation for this point (x1d, y1d) and try this
                 // rotation and -20, -10, +10 and +20
                 rotations[0] = rot1;

@@ -531,14 +531,11 @@ public abstract class AbstractFeatureMatcher {
         for (int i = 0; i < corners.size(); ++i) {
             CornerRegion cr = corners.get(i);
             
-            try {
-                int x = cr.getX()[cr.getKMaxIdx()];
-                int y = cr.getY()[cr.getKMaxIdx()];
-                if (f.removeDueToLocalization(img, x, y,
-                    f.calculateOrientation(x, y))) {
-                    remove.add(Integer.valueOf(i));
-                }
-            } catch (CornerRegion.CornerRegionDegneracyException ex) {
+            int x = cr.getX()[cr.getKMaxIdx()];
+            int y = cr.getY()[cr.getKMaxIdx()];
+            if (f.removeDueToLocalization(img, x, y,
+                f.calculateOrientation(x, y))) {
+                remove.add(Integer.valueOf(i));
             }
         }
         

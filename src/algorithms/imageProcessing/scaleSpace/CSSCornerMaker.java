@@ -185,8 +185,10 @@ public class CSSCornerMaker {
                 output.add(new CornerArray(selectedSigma));
             }
         }
+            
+        output = filterCornersForMinResolvable(output);
         
-        //rm zero curvature and perhpas filter below a value dependent upon selectedSigma
+        output = filterCornersUsing2ndDerivatives(output);
         
         return output;
     }
@@ -246,9 +248,7 @@ public class CSSCornerMaker {
             
             output.add(corners);
         }
-        
-        output = filterCorners(output);
-        
+                
         return output;
     }
     
@@ -1202,7 +1202,7 @@ public class CSSCornerMaker {
         return output;
     }
 
-    private List<CornerArray> filterCorners(List<CornerArray> cList) {
+    private List<CornerArray> filterCornersForMinResolvable(List<CornerArray> cList) {
         
         if (cList.isEmpty()) {
             return cList;
@@ -1253,6 +1253,9 @@ public class CSSCornerMaker {
             
             SIGMA sigma = corners.getSIGMA();
             CornerArray corners2 = new CornerArray(sigma);
+            if (corners.isFromAClosedCurve()) {
+                corners2.setIsClosedCurve();
+            }
             
             double h = 2.35 * SIGMA.getValue(sigma);
             double w = 3.*h;
@@ -1278,4 +1281,73 @@ public class CSSCornerMaker {
         return output;
     }
 
+    private List<CornerArray> filterCornersUsing2ndDerivatives(List<CornerArray> cList) {
+        
+        if (cList.isEmpty()) {
+            return cList;
+        }
+        
+        /*
+        filtering using the property derived by Harris and Stephens 
+        R = det(G) − k(tr(G))^2 here k = 0.04
+        
+        and G is the matrix | I_x*I_x  I_x*I_y |
+                            | I_x*I_y  I_y*I_y |
+        where I_x and I_y are the 2nd derivtives of the intensity.
+        see Eqn (11) in "Phase Congruency Detects Corners and Edges"
+        by Kovesi.
+        
+        Note that the limit to use with this value is sensitive to image
+        contrast, so one may prefer to use a related, but different
+        measure of localizability that takes the measurements along the
+        major and minor axes of the feature orienation.
+        See FeatureHelper.filterByLocalizability(...)
+        
+        */
+        
+        List<CornerArray> output = new ArrayList<CornerArray>();
+        for (CornerArray corners : cList) {
+         
+            if (corners.getN() == 0) {
+                output.add(corners);
+                continue;
+            }
+            
+            SIGMA sigma = corners.getSIGMA();
+            CornerArray corners2 = new CornerArray(sigma);
+            if (corners.isFromAClosedCurve()) {
+                corners2.setIsClosedCurve();
+            }
+            
+            for (int i = 0; i < corners.getN(); ++i) {
+                
+                float x2d = corners.getXSecondDeriv(i);
+                float y2d = corners.getYSecondDeriv(i);
+                
+                float dxdx = x2d*x2d;
+                float dydy = y2d*y2d;
+                float dxdy = x2d*x2d;
+                
+                float det = dxdx * dydy - dxdy * dxdy;
+                
+                float trace = dxdx + dydy;
+                
+                float r = Math.abs(det - 0.04f * (trace * trace));
+                
+                if (r > 2) {
+                    corners2.add(
+                        corners.getX(i), corners.getY(i),
+                        corners.getCurvature(i),
+                        corners.getXFirstDeriv(i),
+                        corners.getXSecondDeriv(i),
+                        corners.getYFirstDeriv(i),
+                        corners.getYSecondDeriv(i), corners.getInt(i));
+                }
+            }
+            
+            output.add(corners2);
+        }
+        
+        return output;
+    }
 }
