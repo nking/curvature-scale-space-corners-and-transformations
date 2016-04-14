@@ -64,9 +64,6 @@ public class CSSCornerMaker {
 
     protected final int height;
 
-    private Map<Integer, List<CornerRegion>> edgeCornerRegionMap = new
-        HashMap<Integer, List<CornerRegion>>();
-
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     public CSSCornerMaker(int imageWidth, int imageHeight) {
@@ -189,6 +186,8 @@ public class CSSCornerMaker {
             }
         }
         
+        //rm zero curvature and perhpas filter below a value dependent upon selectedSigma
+        
         return output;
     }
     
@@ -247,6 +246,8 @@ public class CSSCornerMaker {
             
             output.add(corners);
         }
+        
+        output = filterCorners(output);
         
         return output;
     }
@@ -715,23 +716,6 @@ public class CSSCornerMaker {
         
         return cr;
     }
-    
-    private boolean storeCornerRegion(int edgeNumber, int cornerIdx,
-        ScaleSpaceCurve scaleSpace) {
-
-        CornerRegion cr = createCornerRegion(edgeNumber, cornerIdx, scaleSpace, 
-            width, height);
-        
-        Integer key = Integer.valueOf(edgeNumber);
-        List<CornerRegion> list = edgeCornerRegionMap.get(key);
-        if (list == null) {
-            list = new ArrayList<CornerRegion>();
-            edgeCornerRegionMap.put(key, list);
-        }
-        list.add(cr);
-
-        return true;
-    }
 
     /**
      * maxSigma is defined by the ECSS algorithm in:
@@ -764,7 +748,7 @@ public class CSSCornerMaker {
      * @param k
      * @param minMaxIndexes
      * @param lowThreshold
-     * @param curvatureFactor2 factor which is multiplied by 2.5 to result
+     * @param curvatureFactor2 factor which is multiplied by 2.0 to result
      * in the factor above minimum for a value to be significant.
      * @return
      */
@@ -838,13 +822,6 @@ public class CSSCornerMaker {
         }
 
         return cornerCandidates;
-    }
-
-    /**
-     * @return the edgeCornerRegionMap
-     */
-    public Map<Integer, List<CornerRegion>> getEdgeCornerRegionMap() {
-        return edgeCornerRegionMap;
     }
 
     /**
@@ -1222,6 +1199,82 @@ public class CSSCornerMaker {
                 }
             }
         }
+        return output;
+    }
+
+    private List<CornerArray> filterCorners(List<CornerArray> cList) {
+        
+        if (cList.isEmpty()) {
+            return cList;
+        }
+        
+        /*
+        filtering by the minimum detectable angle and hence curvature for it.
+        
+         solid angle where r = radius of curvature.  k=1/r.
+                   .
+                  /|\
+                 / | \
+                / r-h \r
+               /   |   \
+              .----|----.
+                   -     bottom portion is a triangle           w
+                                                        .----.-----.
+                                                          .  |h .
+                                                             .
+         the curvature is too small to determine slopes from neighboring
+         points when h is less than 1 pixel and w is 3 or more.
+       
+         limit to k for h=1.0 and w=3:
+       
+              r^2 = (r-h)^2 + w^2
+       
+              r^2 = r^2 - 2*r*h + h^2 + w^2
+              2*r*h = h^2 + w^2
+                r = (h^2 + w^2)/(2*h)
+                r = 5  which is k = 0.2 for no bluring
+        
+        gaussian bluring results in FWHM of size 2.35 * sigma.
+        
+        so with a sigma=1
+        
+        h = 1.0 * 2.35 * 1 = 2.35
+        w = 3.0 * 2.35 * 1 = 7.05
+        r = 11.75, so min absolute curvature = 1/r = 0.085
+        */
+        
+        List<CornerArray> output = new ArrayList<CornerArray>();
+        for (CornerArray corners : cList) {
+         
+            if (corners.getN() == 0) {
+                output.add(corners);
+                continue;
+            }
+            
+            SIGMA sigma = corners.getSIGMA();
+            CornerArray corners2 = new CornerArray(sigma);
+            
+            double h = 2.35 * SIGMA.getValue(sigma);
+            double w = 3.*h;
+            
+            double minCurvature = (2. * h)/(h * h + w * w);
+            
+            for (int i = 0; i < corners.getN(); ++i) {
+                double k = Math.abs(corners.getCurvature(i));
+                if (k >= minCurvature) {
+                    corners2.add(
+                        corners.getX(i), corners.getY(i),
+                        corners.getCurvature(i),
+                        corners.getXFirstDeriv(i),
+                        corners.getXSecondDeriv(i),
+                        corners.getYFirstDeriv(i),
+                        corners.getYSecondDeriv(i), corners.getInt(i));
+                }
+            }
+            
+            output.add(corners2);
+        }
+        
         return output;
     }
 
