@@ -39,7 +39,7 @@ public class CSSCornerMaker2Test extends TestCase {
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
-        double tLow = 0.025;
+        double tLow = 0.1;
         double tHigh = 0.3;
         boolean increaseKIfNeeded = false;
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();

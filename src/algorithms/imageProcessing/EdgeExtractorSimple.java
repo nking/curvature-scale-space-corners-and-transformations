@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 
@@ -444,17 +445,18 @@ public class EdgeExtractorSimple {
         place edges endpoints in a hashmap
         
         for each point in junctions
-            iterate ofver 8 neighbor coords and store the edge number
+            iterate over 8 neighbor coords and store the edge number
                if adjacent.
             if there are 2 adjcent edges
-               choose eord and append them all
+               append them all
                and update the endpoint hash map
                and set the appended edge to a new empty one
         
         iterate over all edges backwards to remove the empty ones
-        
         */
 
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
         Map<PairInt, Integer> endpointMap = createEndpointMap();
         
         int[] dxs = Misc.dx8;
@@ -467,11 +469,7 @@ public class EdgeExtractorSimple {
             int x = p.getX();
             int y = p.getY();
             
-            PairInt pEP1 = null;
-            Integer index1 = null;
-            PairInt pEP2 = null;
-            Integer index2= null;
-            boolean doNotMerge = false;
+            Map<Integer, Set<PairInt>> indexPointMap = new HashMap<Integer, Set<PairInt>>();
             for (int k = 0; k < dxs.length;  ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
@@ -481,26 +479,90 @@ public class EdgeExtractorSimple {
                 Integer edge2Index = endpointMap.get(p2);
                 
                 if (edge2Index != null) {
-                    if (pEP1 == null) {
-                        pEP1 = p2;
-                        index1 = edge2Index;
-                    } else if (pEP2 == null) {
-                        pEP2 = p2;
-                        index2 = edge2Index;
-                    } else {
-                        doNotMerge = true;
-                        break;
+                    Set<PairInt> indexPoints = indexPointMap.get(edge2Index);
+                    if (indexPoints == null) {
+                        indexPoints = new HashSet<PairInt>();
+                        indexPointMap.put(edge2Index, indexPoints);
                     }
+                    indexPoints.add(p2);
                 }
             }
-            if (doNotMerge || (pEP2 == null)) {
+            if (indexPointMap.size() < 2) {
                 continue;
             }
             
+            PairInt pEP1 = null;
+            Integer index1 = null;
+            PairInt pEP2 = null;
+            Integer index2 = null;
+            for (Entry<Integer, Set<PairInt>> entry : indexPointMap.entrySet()) {
+                Integer cIndex = entry.getKey();
+                Set<PairInt> cPoints = entry.getValue();
+                PairInt cPoint = null;
+                if (cPoints.size() == 1) {
+                    cPoint = cPoints.iterator().next();
+                } else {
+                    // choose closest and make sure it is on the end of its edge
+                    PairIntArray cEdge = theEdges.get(cIndex.intValue());
+                    double minDistSq = Double.MAX_VALUE;
+                    PairInt minDistP = null;
+                    for (PairInt p3 : cPoints) {
+                        int diffX = p3.getX() - x;
+                        int diffY = p3.getY() - y;
+                        double distSq = diffX*diffX + diffY*diffY;
+                        if (distSq < minDistSq) {
+                            minDistSq = distSq;
+                            minDistP = p3;
+                        }
+                    }
+                    int nc = cEdge.getN();
+                    if ( (minDistP.getX() == cEdge.getX(0) && minDistP.getY() == cEdge.getY(0)) ||
+                        (minDistP.getX() == cEdge.getX(nc - 1) && minDistP.getY() == cEdge.getY(nc - 1))) {
+                        // points are ordered as needed
+                        cPoint = minDistP;
+                    } else {
+                        if ( (minDistP.getX() == cEdge.getX(1) && minDistP.getY() == cEdge.getY(1))) {
+                            // can swap 1 w/ 0 if  2 is adjacent to 0
+                            if (curveHelper.isAdjacent(cEdge, 0, 2)) {
+                                int x0 = cEdge.getX(0);
+                                int y0 = cEdge.getY(0);
+                                int x1 = cEdge.getX(1);
+                                int y1 = cEdge.getY(1);
+                                cEdge.set(0, x1, y1);
+                                cEdge.set(1, x0, y0);
+                                cPoint = minDistP;
+                            }
+                        } else if (minDistP.getX() == cEdge.getX(nc - 2) && minDistP.getY() == cEdge.getY(nc - 2)) {
+                            // can swap (n-2) w/ (n-1) if  (n-3) is adjacent to (n-1)
+                            if (curveHelper.isAdjacent(cEdge, nc - 1, nc - 3)) {
+                                int x0 = cEdge.getX(nc - 1);
+                                int y0 = cEdge.getY(nc - 1);
+                                int x1 = cEdge.getX(nc - 3);
+                                int y1 = cEdge.getY(nc - 3);
+                                cEdge.set(nc - 1, x1, y1);
+                                cEdge.set(nc - 3, x0, y0);
+                                cPoint = minDistP;
+                            }
+                        }
+                    }
+                }
+                if (cPoint == null) {
+                    // junction is more complex and needs special handling
+                    continue;
+                }
+                
+                if (index1 == null) {
+                    pEP1 = cPoint;
+                    index1 = cIndex;
+                } else {
+                    pEP2 = cPoint;
+                    index2 = cIndex;
+                }
+            }
+            
             PairIntArray edge1 = theEdges.get(index1.intValue());
-            int n1 = edge1.getN();
+            int nEdge1 = edge1.getN();
             PairIntArray edge2 = theEdges.get(index2.intValue());
-            int n2 = edge2.getN();
             
             boolean p1IsStart = (edge1.getX(0) == pEP1.getX() && 
                 edge1.getY(0) == pEP1.getY());
@@ -547,11 +609,11 @@ public class EdgeExtractorSimple {
              
             theEdges.set(index2.intValue(), new PairIntArray());
 
-            n1 = edge1.getN();
+            nEdge1 = edge1.getN();
 
             endpointMap.remove(pEP1);
             endpointMap.remove(pEP2);
-            PairInt ep2 = new PairInt(edge1.getX(n1 - 1), edge1.getY(n1 - 1));
+            PairInt ep2 = new PairInt(edge1.getX(nEdge1 - 1), edge1.getY(nEdge1 - 1));
             endpointMap.remove(ep2);
             endpointMap.put(ep2, index1);
             
@@ -560,6 +622,14 @@ public class EdgeExtractorSimple {
         
         junctions.removeAll(removeJunctions);
         
+        for (int i = (theEdges.size() - 1); i > -1; --i) {
+            
+            PairIntArray edge = theEdges.get(i);
+            
+            if (edge.getN() == 0) {
+                theEdges.remove(i);
+            }
+        }
     }
 
     private Map<PairInt, Integer> createEndpointMap() {
