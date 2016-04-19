@@ -8519,6 +8519,370 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         */
         
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts products =
+            phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
+            sigmaOnf, k, increaseKIfNeeded,
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int[][] thinned = products.getThinned();
+        {
+            GreyscaleImage out2 = gsImg.createWithDimensions();
+            for (int i = 0; i < thinned.length; ++i) {
+                for (int j = 0; j < thinned[i].length; ++j) {
+                    if (thinned[i][j] > 0) {
+                        out2.setValue(j, i, 255);
+                    }
+                }
+            }
+            MiscDebug.writeImage(out2, "_EDGES_0");
+        }
+        
+        /*
+        trying sparse calculations of o1 gradient and orientation to extend
+            curves for the goal of making closed curves.
+        */
+                
+        EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
+        extractor.extractEdges();
+        List<PairIntArray> edgeList = extractor.getEdges();
+        Set<PairInt> junctions = extractor.getJunctions();
+        
+        Map<PairInt, Integer> edgeIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < edgeList.size(); ++i) {
+            PairIntArray curve = edgeList.get(i);
+            Integer index = Integer.valueOf(i);
+            for (int j = 0; j < curve.getN(); ++j) {
+                int x = curve.getX(j);
+                int y = curve.getY(j);
+                curve.set(j, y, x);
+                PairInt p = new PairInt(y, x);
+                edgeIndexMap.put(p, index);
+            }
+        }
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        final int w = img.getWidth();
+        final int h = img.getHeight();
+           
+        // half width of neighbor region
+        final int hN = 2;//3;
+        
+        final float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(SIGMA.ZEROPOINTFIVE);
+        final int[] dxs = Misc.dx8;
+        final int[] dys = Misc.dy8;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        Map<PairInt, Float> sparseValueMap = new HashMap<PairInt, Float>();
+        Map<PairInt, Integer> orientationMap = new HashMap<PairInt, Integer>();
+        Map<PairInt, Float> gradientXMap = new HashMap<PairInt, Float>();
+        Map<PairInt, Float> gradientYMap = new HashMap<PairInt, Float>();
+        Map<PairInt, Float> gradientMap = new HashMap<PairInt, Float>();
+        
+        // looking for largest gradient and similar orientation, first for
+        // o1 (clrIdx==0), then for labA (clrIdx==1)
+        for (int clrIdx = 0; clrIdx < 2; ++clrIdx) {
+            orientationMap.clear();
+            gradientMap.clear();
+            gradientXMap.clear();
+            gradientYMap.clear();
+            sparseValueMap.clear();
+            
+            Set<PairInt> visited = new HashSet<PairInt>();
+            Stack<PairInt> stack = new Stack<PairInt>();
+            for (PairIntArray curve : edgeList) {
+                if ((curve instanceof PairIntArrayWithColor)
+                    && ((PairIntArrayWithColor) curve).isClosedCurve()) {
+                    continue;
+                }
+                if (curve.getN() > 4) {
+                    int n = curve.getN();
+                    PairInt p = new PairInt(curve.getX(0), curve.getY(0));
+                    //if (!neighborIsInSet(junctions, p)) {
+                        stack.add(p);
+                    //}
+                    p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
+                    //if (!neighborIsInSet(junctions, p)) {
+                        stack.add(p);
+                    //}
+                }
+            }
+            
+            while (!stack.isEmpty()) {
+                PairInt p = stack.pop();
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                Integer index = edgeIndexMap.get(p);
+                final int x = p.getX();
+                final int y = p.getY();
+                // quick check to see if this point is adjacent to another edge.
+                // and if so, do not process further.
+                // also, if any point is out of bounds, can skip processing
+                boolean found = false;
+                boolean outOfBounds = false;
+                for (int dy = -hN; dy <= hN; ++dy) {
+                    int y2 = y + dy;
+                    if ((y2 < 0) || (y2 > (h - 1))) {
+                        outOfBounds = true;
+                        break;
+                    }
+                    if (outOfBounds) {
+                        break;
+                    }
+                    for (int dx = -hN; dx <= hN; ++dx) {
+                        int x2 = x + dx;
+                        if ((x2 < 0) || (x2 > (w - 1))) {
+                            outOfBounds = true;
+                            break;
+                        }
+                        PairInt p2 = new PairInt(x2, y2);
+                        Integer index2 = edgeIndexMap.get(p2);
+                        if ((index2 != null) && !index2.equals(index)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (outOfBounds || found) {
+                        break;
+                    }
+                }
+                if (outOfBounds || found) {
+                    continue;
+                }
+                // calculate the labA and o1 associated values for the surrounding
+                // hN x hN region
+                for (int dy = -hN; dy <= hN; ++dy) {
+                    int y2 = y + dy;
+                    for (int dx = -hN; dx <= hN; ++dx) {
+                        int x2 = x + dx;
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (sparseValueMap.containsKey(p2)) {
+                            continue;
+                        }
+                        float value;
+                        if (clrIdx == 0) {
+                            value = img.getR(x2, y2) - img.getG(x2, y2);
+                        } else {
+                            value = img.getCIELAB(x2, y2)[1];
+                        }
+                        sparseValueMap.put(p2, Float.valueOf(value));
+                    }
+                }
+                // convolve with sobel over region of size one less than previous block
+                // and determine orientation too.
+                int hN2 = hN - 1;
+                boolean calcForX = true;
+                for (int dy = -hN2; dy <= hN2; ++dy) {
+                    int y2 = y + dy;
+                    for (int dx = -hN2; dx <= hN2; ++dx) {
+                        int x2 = x + dx;
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (gradientXMap.containsKey(p2)) {
+                            continue;
+                        }
+                        float convolvedLabA = imageProcessor.convolve1D(sparseValueMap,
+                            x2, y2, kernel, calcForX);
+                        gradientXMap.put(p2, Float.valueOf(convolvedLabA));
+                    }
+                }
+                float[] lab = img.getCIELAB(x, y);
+                calcForX = false;
+                for (int dy = -hN2; dy <= hN2; ++dy) {
+                    int y2 = y + dy;
+                    //sb.append(String.format("         %d : ", y2));
+                    for (int dx = -hN2; dx <= hN2; ++dx) {
+                        int x2 = x + dx;
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (orientationMap.containsKey(p2)) {
+                            continue;
+                        }
+                        float convolvedY = imageProcessor.convolve1D(
+                            sparseValueMap, x2, y2, kernel, calcForX);
+                        gradientYMap.put(p2, Float.valueOf(convolvedY));
+                        float convolvedX = gradientXMap.get(p2).intValue();
+                        double gradient = Math.sqrt(convolvedX * convolvedX
+                            + convolvedY * convolvedY);
+                        gradientMap.put(p2, Float.valueOf((float) gradient));
+
+                        double orientation = Math.atan2(convolvedY, convolvedX);
+                        if (orientation < 0) {
+                            orientation += Math.PI;
+                        }
+                        orientation *= (180. / Math.PI);
+
+                        int or = Integer.valueOf((int) Math.round(orientation));
+                        orientationMap.put(p2, or);
+                    }
+                }
+                // in the 8 neighbor region, look for closest in orientation
+                // and strongest gradient
+                int minDiffOr = Integer.MAX_VALUE;
+                float minDiffGrad = Float.MAX_VALUE;
+                PairInt minDiffOrP = null;
+                PairInt minDiffGradP = null;
+                float maxGrad = Float.MIN_VALUE;
+                PairInt maxGradP = null;
+                
+                float grad = gradientMap.get(p).floatValue();
+                int or = orientationMap.get(p).intValue();
+                int tmpOr = (or > 90) ? 180 - or : -1;
+            
+                for (int kIdx = 0; kIdx < dxs.length; ++kIdx) {
+                    int x2 = x + dxs[kIdx];
+                    int y2 = y + dys[kIdx];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (edgeIndexMap.containsKey(p2)) {
+                        continue;
+                    }
+                    int count = 0;
+                    for (int jj = 0; jj < dxs.length; ++jj) {
+                        PairInt p3 = new PairInt(p2.getX() + dxs[jj],
+                            p2.getY() + dys[jj]);
+                        if (edgeIndexMap.containsKey(p3)) {
+                            count++;
+                        }
+                    }
+                    if (count > 2) {
+                        continue;
+                    }
+                    int or2 = orientationMap.get(p2).intValue();
+                    int tmpOr2 = (or2 > 90) ? 180 - or2 : -1;
+
+                    int diffOr = Math.abs(or - or2);
+                    if (tmpOr != -1 && tmpOr2 == -1) {
+                        int tmp = tmpOr + or2;
+                        if (tmp < diffOr) {
+                            diffOr = tmp;
+                        }
+                    } else if (tmpOr == -1 && tmpOr2 != -1) {
+                        int tmp = tmpOr2 + or;
+                        if (tmp < diffOr) {
+                            diffOr = tmp;
+                        }
+                    }
+                    if (diffOr < minDiffOr) {
+                        minDiffOr = diffOr;
+                        minDiffOrP = p2;
+                    }
+                    
+                    float grad2 = gradientMap.get(p2).floatValue();
+
+                    float diffLabAGrad = Math.abs(grad2 - grad);
+
+                    if (diffLabAGrad < minDiffGrad) {
+                        minDiffGrad = diffLabAGrad;
+                        minDiffGradP = p2;
+                    }
+                    grad2 = Math.abs(grad2);
+                    if (grad2 > maxGrad) {
+                        maxGrad = grad2;
+                        maxGradP = p2;
+                    }
+                }
+                if (minDiffOrP == null) {
+                    continue;
+                }
+                
+                PairInt pToAdd = null;
+                                
+                if (clrIdx == 0) {
+                    // o1 : range of abs values would be 0 to 255
+                    if ((maxGrad > 16) && (minDiffOr < 20)) {
+                        pToAdd = maxGradP;
+                    } else if ((minDiffOr < 20) && (minDiffGrad <= 16)) {
+                        pToAdd = minDiffOrP;
+                        if ((minDiffGradP != null) && !minDiffOrP.equals(minDiffGradP)) {
+                            int z = 1;
+                        }
+                    }
+                } else {
+                    // labA : range of value before gradient is in 
+                    // range of values should be 0 to 3.276
+                    if ((maxGrad > 0.2) && (minDiffOr < 20)) {
+                        pToAdd = maxGradP;
+                    } else if ((minDiffOr < 20) && (minDiffGrad <= 0.2)) {
+                        pToAdd = minDiffOrP;
+                        if ((minDiffGradP != null) && !minDiffOrP.equals(minDiffGradP)) {
+                            int z = 1;
+                        }
+                    }
+                }
+                if (pToAdd == null) {
+                    continue;
+                }
+                
+                edgeIndexMap.put(pToAdd, index);
+                added.add(pToAdd);
+                stack.add(pToAdd);
+
+                // find the index where to insert this point in current edge
+                PairIntArray edge = edgeList.get(index.intValue());
+                int nE = edge.getN();
+                if (curveHelper.isAdjacent(edge, 0, pToAdd.getX(), pToAdd.getY())) {
+                    edge.insert(0, pToAdd.getX(), pToAdd.getY());
+                } else if (curveHelper.isAdjacent(edge, nE - 1, pToAdd.getX(), 
+                    pToAdd.getY())) {
+                    edge.add(pToAdd.getX(), pToAdd.getY());
+                }
+            }
+            System.out.println("number of points added = " + added.size());
+        }
+        
+        if (added.size() > 0) {
+            System.out.println("number of points added = " + added.size());
+            int[][] edgeArray = copy(thinned);
+            for (PairInt p : added) {
+                int x = p.getX();
+                int y = p.getY();
+                edgeArray[y][x] = 1;
+            }
+            GreyscaleImage edgeImg = gsImg.createWithDimensions();
+            for (int i = 0; i < edgeArray.length; ++i) {
+                for (int j = 0; j < edgeArray[i].length; ++j) {
+                    if (edgeArray[i][j] > 0) {
+                        edgeImg.setValue(j, i, 255);
+                    }
+                }
+            }
+            MiscDebug.writeImage(edgeImg, "_EDGES_2_");
+        }
+        
+        return null;
+    }
+    
+    public PhaseCongruencyDetector.PhaseCongruencyProducts createColorEdges_2(
+        ImageExt img) {
+        
+        GreyscaleImage gsImg = img.copyBlueToGreyscale();
+
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;// 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 5;//2;
+        float g = 10; 
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.0001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = true;
+        
+        /*
+        trying two different method:
+           (1) phase congruency on grey and on o1 and add results,
+                then add sparse calculation of best additions of labA
+           (2) phase congruency on grey
+                then add sparse calculation of best addition of o1
+                then add sparse calculation of best addition of labA
+        */
+        
+        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
         //phaseDetector.setToCreateCorners();                
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
