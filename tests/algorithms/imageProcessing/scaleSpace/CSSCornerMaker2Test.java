@@ -5,6 +5,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.features.FeatureHelper;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.misc.MiscDebug;
 import algorithms.util.CornerArray;
@@ -29,6 +30,8 @@ public class CSSCornerMaker2Test extends TestCase {
     public void test0() throws Exception {
         
         String fileName = "small_shapes_for_line_thinners.png";
+        //String fileName = "merton_college_I_001.jpg";
+        //String fileName = "house.gif";
 
         String filePath = ResourceFinder.findFileInTestResources(fileName);
         
@@ -56,11 +59,17 @@ public class CSSCornerMaker2Test extends TestCase {
         assertNotNull(products);
         
         Image tmp = new Image(nCols, nRows);
+        GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
+        GreyscaleImage thetaImg = new GreyscaleImage(nCols, nRows);
         for (int i = 0; i < nRows; ++i) {
             for (int j = 0; j < nCols; ++j) {
                 if (products.getThinned()[i][j] > 0) {
                     tmp.setRGB(j, i, 255, 255, 255);
                 }
+                pcImg.setValue(j, i, 
+                    (int)Math.round(255. * products.getPhaseCongruency()[i][j]));
+                thetaImg.setValue(j, i, 
+                    (int)Math.round(products.getOrientation()[i][j]));
             }
         }
         
@@ -82,14 +91,28 @@ public class CSSCornerMaker2Test extends TestCase {
             }
             theEdges.set(i, edge2);
         }
-        
+        //FeatureHelper.filterByLocalizability
         CSSCornerMaker cornerMaker = new CSSCornerMaker(nCols, nRows);
         List<CornerArray> cornerList = cornerMaker.findCornersInScaleSpaceMaps(theEdges);
        
         for (CornerArray corners : cornerList) {
+
+            float blurPix = 2.35f * SIGMA.getValue(corners.getSIGMA());            
+            System.out.println("sigma=" + corners.getSIGMA() + " blurPix=" + blurPix);
+            
             for (int i = 0; i < corners.getN(); ++i) {
                 ImageIOHelper.addPointToImage(corners.getX(i), corners.getY(i), 
                     tmp, 0, 255, 0, 0);
+                
+                int x = corners.getX(i);
+                int y = corners.getY(i);
+                
+                corners.set(i, y, x, 
+                    corners.getCurvature(i),
+                    corners.getXFirstDeriv(i),
+                    corners.getXSecondDeriv(i),
+                    corners.getYFirstDeriv(i),
+                    corners.getYSecondDeriv(i), corners.getInt(i));
             }
         }
         
@@ -105,6 +128,9 @@ public class CSSCornerMaker2Test extends TestCase {
         ImageIOHelper.addAlternatingColorCurvesToImage(theEdges, tmp, 0);
         
         MiscDebug.writeImage(tmp, "_EDGES_");
+        
+        cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg, 
+            cornerList);
         
         int s0 = 0;
         int s1 = 0;

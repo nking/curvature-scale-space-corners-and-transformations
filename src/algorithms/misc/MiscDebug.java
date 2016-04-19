@@ -985,16 +985,22 @@ public class MiscDebug {
         }
     }
     
-    public static void writeImage(GreyscaleImage img, String fileNameSuffix) {
+    public static String writeImage(GreyscaleImage img, String fileNameSuffix) {
+        
+        String str = "";
         
         try {
             String dirPath = ResourceFinder.findDirectory("bin");
             ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
                 + ".png", img);
+            str = "wrote to fle " +  dirPath + "/img" + fileNameSuffix 
+                + ".png";
         } catch (Exception e) {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
         }
+        
+        return str;
     }
 
     public static void plotCorners(GreyscaleImage imgGrey, PairIntArray corners, 

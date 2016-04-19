@@ -9,12 +9,10 @@ import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -213,6 +211,76 @@ public class ImageProcessor {
             }
         }
     }
+    
+    public int[][] applyKernel(int[][] a, int[][] b) {
+        
+        final int na0 = a.length;
+        final int na1 = a[0].length;
+        final int nb0 = b.length;
+        final int nb1 = b[0].length;
+        
+        if (nb1 > nb0) {
+            throw new IllegalArgumentException("expecting first argument to be " 
+            + " data and the 2nd to be the kernel to convolve the data with");
+        }
+
+        int nbmid0 = (nb0 - 1)/2;
+        int nbmid1 = (nb1 - 1)/2;
+        
+        int[][] output = new int[na0][na1];
+        
+        for (int i = 0; i < na0; i++) {
+
+            output[i] = new int[na1];
+
+            for (int j = 0; j < na1; j++) {
+
+                int sum = 0;
+
+                for (int col = 0; col < nb0; col++) {
+
+                    int x = col - nbmid0;
+
+                    int imgX = i + x;
+
+                    // edge corrections.  use replication
+                    if (imgX < 0) {
+                        imgX = -1 * imgX - 1;
+                    } else if (imgX >= na0) {
+                        int diff = imgX - na0;
+                        imgX = na0 - diff - 1;
+                    }
+
+                    for (int row = 0; row < nb1; row++) {
+
+                        int y = row - nbmid1;
+
+                        int imgY = j + y;
+
+                        // edge corrections.  use replication
+                        if (imgY < 0) {
+                            imgY = -1 * imgY - 1;
+                        } else if (imgY >= na1) {
+                            int diff = imgY - na1;
+                            imgY = na1 - diff - 1;
+                        }
+
+                        int k = b[col][row];
+
+                        sum += k * a[imgX][imgY];
+                    }
+                }
+if (sum > 511) {
+    int z = 1;//  59, 125
+}
+                
+                output[i][j] = sum;
+            }
+        }
+
+        return output;
+    }
+
 
     /**
      * apply kernel to input. NOTE, that because the image is composed of
@@ -4511,6 +4579,52 @@ public class ImageProcessor {
         return output;
     }
 
+    /**
+     * convolve (x, y) with 1D kernel using sparseValueMap, but user must assert
+     * that (x,y) += half kernel size is all contained within the sparseValueMap
+     * because no approximations are made when a value is not in the map
+     * and the results will not be normalized correctly.
+     * 
+     * @param sparseValueMap
+     * @param x
+     * @param y
+     * @param kernel
+     * @param calcX if true, convolve for x, else for y
+     * @return 
+     */
+    public float convolve1D(Map<PairInt, ? extends Number> sparseValueMap, int x, int y, 
+        float[] kernel, boolean calcX) {
+        
+        int h = (kernel.length - 1) >> 1;
+        
+        float sum = 0;
+        for (int g = 0; g < kernel.length; g++) {
+            float gg = kernel[g];
+            if (gg == 0) {
+                continue;
+            }
+            int x2, y2;
+            if (calcX) {
+                x2 = x + g - h;
+                y2 = y;
+            } else {
+                y2 = y + g - h;
+                x2 = x;
+            }
+            
+            Number v = sparseValueMap.get(new PairInt(x2, y2));
+            
+            if (v == null) {
+                throw new IllegalArgumentException(
+                    "x,y += half kernel length is not in map");
+            }
+              
+            sum += (gg * v.floatValue());
+        }
+        
+        return sum;
+    }
+    
     public static class Colors {
         private final float[] colors;
         public Colors(float[] theColors) {
@@ -4785,5 +4899,103 @@ public class ImageProcessor {
         }
         
         return output;
+    }
+    
+    /**
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage[] createLabAandB(ImageExt img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        long t0 = System.currentTimeMillis();
+
+        float[] labA = new float[w * h];
+        float[] labB = new float[w * h];
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            float[] lab = img.getCIELAB(i);
+            labA[i] = lab[1];
+            labB[i] = lab[2];
+        }
+        
+        labA = MiscMath.rescale(labA, 0, 255);
+        labB = MiscMath.rescale(labB, 0, 255);
+        
+        GreyscaleImage labAImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        GreyscaleImage labBImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        for (int i = 0; i < labA.length; ++i) {
+            labAImg.setValue(i, Math.round(labA[i]));
+            labBImg.setValue(i, Math.round(labB[i]));
+        }
+
+        return new GreyscaleImage[]{labAImg, labBImg};
+    }
+    
+    /**
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage createO1(ImageExt img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        float[] o1 = new float[w * h];
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int r = img.getR(i);
+            int g = img.getG(i);
+            o1[i] = (r - g);
+        }
+        
+        GreyscaleImage o1Img = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        o1 = MiscMath.rescale(o1, 0, 255);
+            
+        for (int i = 0; i < o1.length; ++i) {
+            o1Img.setValue(i, Math.round(o1[i]));
+        }
+
+        return o1Img;
+    }
+
+    /**
+     * 
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage createGMinusB(ImageExt img) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        float[] gb = new float[w * h];
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int b = img.getB(i);
+            int g = img.getG(i);
+            gb[i] = (g - b);
+        }
+        
+        GreyscaleImage gbImg = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        gb = MiscMath.rescale(gb, 0, 255);
+            
+        for (int i = 0; i < gb.length; ++i) {
+            gbImg.setValue(i, Math.round(gb[i]));
+        }
+
+        return gbImg;
     }
 }

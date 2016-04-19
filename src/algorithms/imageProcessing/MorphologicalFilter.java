@@ -53,7 +53,7 @@ public class MorphologicalFilter {
                        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
     
     /**
-     * adapted from Octave's bwmorph "thin" algorithm (please see method comments
+     * adapted from Octave's bwmorph "thin" algorithm (see method comments
      * for copyright by Monas and Draug, GNU GPL).
      
       For a binary image bImg, performs the morphological operation,
@@ -224,7 +224,7 @@ public class MorphologicalFilter {
             for (int row = 0; row < f[col].length; ++row) {
                 int idx = f[col][row];
                 int v = lut[idx];
-                f[col][row] = v;
+                f[col][row] = v;///801 x 256
             }
         }
         
@@ -232,7 +232,7 @@ public class MorphologicalFilter {
     }
     
     /**
-     * apply the filter w to image bImg
+     * Apply the 2-D FIR filter w to the matrix bImg
      * 
      * adapted from Octave
      * https://sourceforge.net/p/octave/signal/ci/b40e74b9814bfcbcd770b9a12a852fd12e611995/tree/filter2.m?format=raw
@@ -287,6 +287,7 @@ public class MorphologicalFilter {
         for (int i = 0; i < nCols; ++i) {
             w180[i] = Arrays.copyOf(w[nCols - i - 1], nRows);
         }
+        //  results in w180:
         //  [4, 2, 1]]
         //  [32, 16, 8],
         //  [256, 128, 64],
@@ -308,8 +309,11 @@ public class MorphologicalFilter {
         //  [64. 128, 256]]        
         
         // the values in y are the indexes of lut
-        int[][] y = conv2(bImg, w180);
+        //int[][] y = conv2(bImg, w180);
         
+        ImageProcessor imageProcessor = new ImageProcessor();
+        int[][] y = imageProcessor.applyKernel(bImg, w180);
+
         return y;
     }
     
@@ -322,44 +326,54 @@ public class MorphologicalFilter {
         * Do what you like with this code as long as you
         *     leave this copyright in place.
         * 
-     * @param w
-     * @param bImg
+     * @param a the image to be convolved
+     * @param b the convolution kernel
      * @return 
      */
     private int[][] conv2(int[][] a, int[][] b) {
         
-        int Am = a.length;
-        int An = a[0].length;
-        int Bm = b.length;
-        int Bn = b[0].length;
+        final int na0 = a.length;
+        final int na1 = a[0].length;
+        final int nb0 = b.length;
+        final int nb1 = b[0].length;
 
-        int outM = Am;
-        int outN = An;
-        int edgM = (Bm - 1)/2;
-        int edgN = (Bn - 1)/2;
+        int nbmid0 = (nb0 - 1)/2;
+        int nbmid1 = (nb1 - 1)/2;
         
-        int[][] output = new int[outM][outN];
-        for (int oi = 0; oi < outM; oi++) {
+        int[][] output = new int[na0][na1];
+        for (int oi = 0; oi < na0; oi++) {
             
-            output[oi] = new int[outN];
+            output[oi] = new int[na1];
             
-            for (int oj = 0; oj < outN; oj++) {
+            for (int oj = 0; oj < na1; oj++) {
                 
                 int sum = 0;
+                // oi=0  oj=0: bj=3-1-1  =1   aj=0
+                //       bi=
+                // oj=1: bj=3-1-(0)=2   aj=0
+                // oj=2: bj=3-1-(0)=2   aj=1
+                //
+                // 
                 
-                for(int bj = Bn - 1 - Math.max(0, edgN-oj), 
-                    aj = Math.max(0, oj-edgN); bj >= 0 && aj < An; bj--, aj++) {
+                for(int bj = nb1 - 1 - Math.max(0, nbmid1-oj), 
+                    aj = Math.max(0, oj-nbmid1); 
+                    bj >= 0 && aj < na1; 
+                    bj--, 
+                    aj++) {
                     
-                    int bi = Bm - 1 - Math.max(0, edgM - oi);
-                    int ai = Math.max(0, oi - edgM); 
+                    int bi = nb0 - 1 - Math.max(0, nbmid0 - oi);
+                    int ai = Math.max(0, oi - nbmid0); 
                     
-                    for ( ; bi >= 0 && ai < Am; bi--, ai++) {
+                    for ( ; bi >= 0 && ai < na0; 
+                        bi--, ai++
+                        ) {
                         //sum += (*Ad) * (*Bd);    
                         // Comment: it seems to be 2.5 x faster than this:
                         //        sum+= A(ai,aj) * B(bi,bj);
                         sum += a[ai][aj] * b[bi][bj];
                     }
                 }
+
                 output[oi][oj] = sum;
             }
         }

@@ -498,14 +498,14 @@ public class CannyEdgeFilterAdaptive {
         gradientXY.resetTo(img2);
         
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_2layer_before_pltc_");
+            MiscDebug.writeImage(gradientXY, "_after_2layer_before_pltc_");
         }
 
         applyPostLineThinningCorrections(gradientXY, 
             gradientCopyBeforeThinning);
 
         if (debug) {
-            MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_1_");
+            MiscDebug.writeImage(gradientXY, "_after_linethinning_1_");
         }
         
         if (restoreJunctions) {
@@ -541,14 +541,14 @@ public class CannyEdgeFilterAdaptive {
             }
      
             if (debug) {
-                MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_restore_junctions_");
+                MiscDebug.writeImage(gradientXY, "_after_restore_junctions_");
             }
             
             applyPostLineThinningCorrections(gradientXY, 
                 gradientCopyBeforeThinning);
             
             if (debug) {
-                MiscDebug.writeImage(filterProducts.getGradientXY(), "_after_linethinning_2_");
+                MiscDebug.writeImage(gradientXY, "_after_linethinning_2_");
             }
         }
     }

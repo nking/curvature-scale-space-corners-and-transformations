@@ -154,11 +154,14 @@ public class PhaseCongruencyDetector {
         int minWavelength = 3;        
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 2;
+        int k = 5;
         float cutOff = 0.5f; 
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
+        double tLow = 0.0001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = true;
      * </pre>
      * @param img
      * @return 
@@ -187,13 +190,13 @@ public class PhaseCongruencyDetector {
         int minWavelength = 3;        
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 2;
+        int k = 5;//2;
         float cutOff = 0.5f; 
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
-        double tLow = 0.1;
-        double tHigh = 0.3;
+        double tLow = 0.0001;;//0.1;
+        double tHigh = 0.1;//0.3;
         boolean increaseKIfNeeded = true;
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
@@ -247,6 +250,18 @@ public class PhaseCongruencyDetector {
         
         return phaseCongMono(img, nScale, minWavelength, mult, sigmaOnf, k, 
             increaseKIfNeeded, cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+    }
+    
+    public PhaseCongruencyProducts phaseCongMono(GreyscaleImage img,
+        PhaseCongruencyParameters theParameters) {
+        
+        return phaseCongMono(img, theParameters.getNScale(), 
+            theParameters.getMinWavelength(), theParameters.getMult(), 
+            theParameters.getSigmaOnf(), theParameters.getK(), 
+            theParameters.doIncreaseKIfNeeded(), 
+            theParameters.getCutOff(), theParameters.getG(),
+            theParameters.getDeviationGain(), theParameters.getNoiseMethod(),
+            theParameters.gettLow(), theParameters.gettHigh());
     }
     
     /**
@@ -673,17 +688,7 @@ public class PhaseCongruencyDetector {
         NonMaximumSuppression ns = new NonMaximumSuppression();
         
         double[][] thinnedPC = ns.nonmaxsup(products.getPhaseCongruency(), 
-            products.getOrientation(), 1.2, new HashSet<PairInt>());  
-        
-{
-GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
-for (int i = 0; i < nCols; ++i) {
-    for (int j = 0; j < nRows; ++j) {
-        tmp.setValue(i, j, (int)(255.*thinnedPC[j][i]));
-    }
-}
-MiscDebug.writeImage(tmp, "_THINNED_PC_");
-}        
+            products.getOrientation(), 1.2, new HashSet<PairInt>());         
         
         // NOTE: limit does not scale with resolution, so user may want to
         // pre-process images to a common resolution or size depending upon goal
@@ -694,13 +699,13 @@ MiscDebug.writeImage(tmp, "_THINNED_PC_");
             
             System.out.println("nEdgePoints=" + nEdgePoints);
         
-            int limit = 15000;
+            int limit = 50000;
             int lastK = k;
             while (nEdgePoints > limit) {
                 
                 // k can be as high as 20
                 int deltaK = Math.round(0.333f * (20 - lastK));
-                if (deltaK == 0) {
+                if (deltaK < 1) {
                     deltaK = 1;
                 }
                 k = lastK + deltaK;
@@ -741,6 +746,9 @@ MiscDebug.writeImage(tmp, "_THINNED_PC_");
                 System.out.println("nEdgePoints=" + nEdgePoints);
             }
         }
+        
+        products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
+            g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
         
         createEdges(products, thinnedPC, tLow, tHigh);
                 
@@ -797,10 +805,29 @@ MiscDebug.writeImage(tmp, "_EDGES_");
             }
         }
         
+        // ----corners are then in the coordinate reference frame of images -------
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
         List<CornerArray> cornerList =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges);
+        
+        /*
+        // quick addition of filter for localizability
+        {
+            GreyscaleImage pcImg = new GreyscaleImage(nCols, nRows);
+            GreyscaleImage thetaImg = new GreyscaleImage(nCols, nRows);
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    pcImg.setValue(j, i, 
+                        (int)Math.round(255. * products.getPhaseCongruency()[i][j]));
+                    thetaImg.setValue(j, i, 
+                        (int)Math.round(products.getOrientation()[i][j]));
+                }
+            }
+            cornerList = FeatureHelper.filterByLocalizability(img, pcImg, thetaImg, 
+                cornerList);            
+        }
+        */
         
         /*
         filter out small curvature:
@@ -945,6 +972,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
             }
         }
         
+        /*
         int[][] thinned = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinned[i] = new int[nCols];
@@ -954,9 +982,32 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         }
         stepPoints = null;
         gaps = null;
+        */
+        
+        double[][] thinned1 = new double[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            thinned1[i] = new double[nCols];
+        }
+        for (PairInt p : stepPoints) {
+            thinned1[p.getX()][p.getY()] = products.getPhaseCongruency()[p.getX()][p.getY()];
+        }
+        stepPoints = null;
+        gaps = null;
+        
+        int[][] thinned = applyHysThresh(thinned1, tLow, tHigh, true);
+        
+        int[][] thinnedbw = new int[nRows][nCols];
+        for (int i = 0; i < nRows; ++i) {
+            thinnedbw[i] = new int[nCols];
+            for (int j = 0; j < nCols; ++j) {
+                if (thinned[i][j] > 0) {
+                    thinnedbw[i][j] = 1;
+                }
+            }
+        }
         
         MorphologicalFilter mFilter = new MorphologicalFilter();
-        int[][] skel = mFilter.bwMorphThin(thinned, Integer.MAX_VALUE);
+        int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);
 
         Set<PairInt> points = new HashSet<PairInt>();
         for (int i = 0; i < nRows; ++i) {
@@ -1069,7 +1120,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         
         products.setHoughLines(transformedLines);        
     }
-
+    
     public class PhaseCongruencyProducts {
         
         /**
@@ -1111,6 +1162,8 @@ MiscDebug.writeImage(tmp, "_EDGES_");
          * a[row][col], but pairint.x is row, and pairint.y is col.
          */
         private Map<Set<PairInt>, PairInt> houghLines = null;
+        
+        private PhaseCongruencyParameters parameters = null;
         
         public PhaseCongruencyProducts(double[][] pc, double[][] or, 
             double[][] ft, double thr) {
@@ -1248,13 +1301,17 @@ MiscDebug.writeImage(tmp, "_EDGES_");
         public Set<PairInt> getCorners() {
             return corners;
         }
+        
+        public PhaseCongruencyParameters getParameters() {
+            return parameters;
+        }
 
         /**
-           a map with key being a hough line set of points and value being
-         * the theta and radius for the hough line.  Note that the
-         * setter has placed the coordinates into the coordinate reference
-         * frame of the GreyscaleImage instance.
-         * @param lines 
+         a map with key being a hough line set of points and value being
+         the theta and radius for the hough line.  Note that the
+         setter has placed the coordinates into the coordinate reference
+         frame of the GreyscaleImage instance.
+         @param lines 
          */
         public void setHoughLines(Map<Set<PairInt>, PairInt> lines) {
             
@@ -1270,6 +1327,17 @@ MiscDebug.writeImage(tmp, "_EDGES_");
          */
         public Map<Set<PairInt>, PairInt> getHoughLines() {
             return houghLines;
+        }
+
+        private void setParameters(int nScale, int minWavelength, float mult, 
+            float sigmaOnf, int k, float cutOff, float g, float deviationGain, 
+            int noiseMethod, double tLow, double tHigh, boolean increaseKIfNeeded) {
+            
+            this.parameters = new PhaseCongruencyParameters();
+            
+            parameters.setParameters(nScale, minWavelength, mult, sigmaOnf, k,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh, 
+                increaseKIfNeeded);            
         }
         
     }
@@ -1294,7 +1362,7 @@ MiscDebug.writeImage(tmp, "_EDGES_");
     }
     
     /**
-     * adapted from Kovesis phasecongmono.m as documented in class comments above.
+    adapted from Kovesis phasecongmono.m as documented in class comments above.
        
       Mode is computed by forming a histogram of the data over 50 bins and then
       finding the maximum value in the histogram.  Mean and standard deviation

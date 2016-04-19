@@ -1001,6 +1001,19 @@ public class GreyscaleImage {
         
         return output;
     }
+    
+    public int[][] extractAsDoubleArray() {
+        
+        int[][] out = new int[width][];
+        for (int i = 0; i < width; ++i) {
+            out[i] = new int[height];
+            for (int j = 0; j < height; ++j) {
+                out[i][j] = getValue(i, j);
+            }
+        }
+        
+        return out;
+    }
 
     public int[] getValues() {
         int[] v = new int[nPixels];
