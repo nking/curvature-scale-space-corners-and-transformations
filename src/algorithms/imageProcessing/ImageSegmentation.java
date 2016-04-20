@@ -8789,12 +8789,13 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 }
                 
                 PairInt pToAdd = null;
-                                
+
+                int orLimit = 23;  
                 if (clrIdx == 0) {
                     // o1 : range of abs values would be 0 to 255
-                    if ((maxGrad > 16) && (minDiffOr < 20)) {
+                    if ((maxGrad > 16) && (minDiffOr < orLimit)) {
                         pToAdd = maxGradP;
-                    } else if ((minDiffOr < 20) && (minDiffGrad <= 16)) {
+                    } else if ((minDiffOr < orLimit) && (minDiffGrad <= 16)) {
                         pToAdd = minDiffOrP;
                         if ((minDiffGradP != null) && !minDiffOrP.equals(minDiffGradP)) {
                             int z = 1;
@@ -8803,9 +8804,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 } else {
                     // labA : range of value before gradient is in 
                     // range of values should be 0 to 3.276
-                    if ((maxGrad > 0.2) && (minDiffOr < 20)) {
+                    if ((maxGrad > 0.2) && (minDiffOr < orLimit)) {
                         pToAdd = maxGradP;
-                    } else if ((minDiffOr < 20) && (minDiffGrad <= 0.2)) {
+                    } else if ((minDiffOr < orLimit) && (minDiffGrad <= 0.2)) {
                         pToAdd = minDiffOrP;
                         if ((minDiffGradP != null) && !minDiffOrP.equals(minDiffGradP)) {
                             int z = 1;
