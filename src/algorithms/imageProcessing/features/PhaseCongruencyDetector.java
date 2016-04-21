@@ -18,7 +18,6 @@ import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
@@ -140,7 +139,7 @@ public class PhaseCongruencyDetector {
     final private static double epsilon = 1E-4;
     
     private boolean determineCorners = false;
-    
+        
     public void setToCreateCorners() {
         this.determineCorners = true;
     }
@@ -324,6 +323,8 @@ public class PhaseCongruencyDetector {
         final float cutOff,
         final float g, final float deviationGain, final int noiseMethod,
         final double tLow, final double tHigh) {
+        
+        long t0 = System.currentTimeMillis();
               
         if (increaseKIfNeeded && (noiseMethod >= 0)) {
             throw new IllegalArgumentException(
@@ -751,18 +752,6 @@ public class PhaseCongruencyDetector {
             g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
         
         createEdges(products, thinnedPC, tLow, tHigh);
-                
-{        
-GreyscaleImage tmp = new GreyscaleImage(nCols, nRows);
-for (int i = 0; i < nRows; ++i) {
-    for (int j = 0; j < nCols; ++j) {
-        if (products.getThinned()[i][j] > 0) {
-            tmp.setValue(j, i, 255);
-        }
-    }
-}
-MiscDebug.writeImage(tmp, "_EDGES_");
-}
 
         if (determineCorners) {
             
@@ -770,6 +759,10 @@ MiscDebug.writeImage(tmp, "_EDGES_");
                                                 
             calculateCorners(products, img);
         }
+        
+        long t1 = System.currentTimeMillis();
+        
+        System.out.println(((t1 - t0)*1E-3) + " seconds for phasecongmono");
         
         return products;
     }

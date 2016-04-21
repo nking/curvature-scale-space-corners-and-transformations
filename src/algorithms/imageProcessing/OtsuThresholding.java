@@ -1,7 +1,10 @@
 package algorithms.imageProcessing;
 
 import algorithms.misc.Histogram;
+import algorithms.util.PairInt;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * binary thresholding with Otsu's method attempts to separate the pixel values
@@ -16,7 +19,7 @@ public class OtsuThresholding {
      * find the binary threshold assuming the image is filled with values 
      * between 0 and 255, inclusive.
      * 
-     * The implementation follows the one dimiensional code from wikiepedia
+     * The implementation follows the one dimensional code from wikipedia
      * at https://en.wikipedia.org/wiki/Otsu%27s_method#cite_note-zhu2009fast-9
 
      * The runtime complexity is O(N_pixels).
@@ -29,6 +32,27 @@ public class OtsuThresholding {
         int nPix = img.getNPixels();
         
         int[] h = Histogram.createHistogram(img, 0, 255, 256);
+        
+        return calculateBinaryThreshold256(h, nPix);
+    }
+    
+    /**
+     * find the binary threshold for the given points assuming the image is 
+     * filled with values between 0 and 255, inclusive.
+     * 
+     * The implementation follows the one dimensional code from wikipedia
+     * at https://en.wikipedia.org/wiki/Otsu%27s_method#cite_note-zhu2009fast-9
+
+     * The runtime complexity is O(N_pixels).
+     * 
+     * @param pointValues
+     * @return 
+     */
+    public int calculateBinaryThreshold256(Map<PairInt, Integer> pointValues) {
+        
+        int nPix = pointValues.size();
+        
+        int[] h = Histogram.createHistogram(pointValues, 0, 255, 256);
         
         return calculateBinaryThreshold256(h, nPix);
     }

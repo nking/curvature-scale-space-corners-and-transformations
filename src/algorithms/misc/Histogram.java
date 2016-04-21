@@ -1373,4 +1373,35 @@ public class Histogram {
         
         return h;
     }
+    
+    /**
+     * 
+     * @param pointValues
+     * @param minBin first bin's pixel value, inclusive
+     * @param maxBin last bin's pixel value, inclusive.
+     * @param nBins
+     * @return 
+     */
+    public static int[] createHistogram(Map<PairInt, Integer> pointValues,
+        int minBin, int maxBin, int nBins) {
+        
+        int[] h = new int[nBins];
+        
+        // (255 - 0 + 1)/256
+        int binWidth = (maxBin - minBin + 1)/nBins;
+        
+        for (Entry<PairInt, Integer> entry : pointValues.entrySet()) {
+            
+            int v = entry.getValue().intValue();
+            
+            int binNumber = (v - minBin)/binWidth;
+            
+            //assert(binNumber >= 0);
+            //assert(binNumber < maxBin);
+            
+            h[binNumber]++;
+        }
+        
+        return h;
+    }
 }

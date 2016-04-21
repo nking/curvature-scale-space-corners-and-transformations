@@ -7530,14 +7530,20 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         }
     }
 
-    private void calculateMinMaxData(
-        Map<PairInt, Integer> orientationMap, Map<PairInt, Float> gradientMap,
-        CEData ceData1, CEData ceData2,
-        CEData ceData1_2, int x, int y, Map<PairInt, Integer> edgeIndexMap,
-        float grad, int or, int tmpOr) {
-
+    private FixedSizeSortedVector<CEData> populate(ImageExt img, int x, int y, 
+        int or, Map<PairInt, Integer> orientationMap, 
+        Map<PairInt, Float> gradientMap, Map<PairInt, Integer> edgeIndexMap) {
+        
+        int tmpOr = (or > 90) ? 180 - or : -1;
+            
+        FixedSizeSortedVector<CEData> sorted = new FixedSizeSortedVector<CEData>(
+            4, CEData.class);
+        
         final int[] dxs = Misc.dx8;
         final int[] dys = Misc.dy8;
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        float[] lab = img.getCIELAB(x, y);
         
         for (int kIdx = 0; kIdx < dxs.length; ++kIdx) {
             int x2 = x + dxs[kIdx];
@@ -7557,12 +7563,16 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             if (count > 2) {
                 continue;
             }
+                        
+            CEData data = new CEData();
+            data.p = p2;
+            data.absDeltaE = Math.abs(cieC.calcDeltaECIE2000(lab, 
+                img.getCIELAB(x2, y2)));
+            
+            data.gradient = gradientMap.get(p2).floatValue();
             int or2 = orientationMap.get(p2).intValue();
             int tmpOr2 = (or2 > 90) ? 180 - or2 : -1;
             int diffOr = Math.abs(or - or2);
-            float grad2 = gradientMap.get(p2).floatValue();
-            float diffGrad = Math.abs(grad2 - grad);
-
             if (tmpOr != -1 && tmpOr2 == -1) {
                 int tmp = tmpOr + or2;
                 if (tmp < diffOr) {
@@ -7574,215 +7584,12 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     diffOr = tmp;
                 }
             }
-            if (count == 1) {
-                if (diffOr == ceData1.minDiffOr) {
-                    // ceData1_2 is for count=1 ties for best params
-                    ceData1_2.minDiffOr = diffOr;
-                    ceData1_2.minDiffOrP = p2;
-                } else if (diffOr < ceData1.minDiffOr) {
-                    ceData1.minDiffOr = diffOr;
-                    ceData1.minDiffOrP = p2;
-                }            
-                if (diffGrad == ceData1.minDiffGrad) {
-                    // ceData1_2 is for count=1 ties for best params
-                    ceData1_2.minDiffGrad = diffGrad;
-                    ceData1_2.minDiffGradP = p2;
-                } else if (diffGrad < ceData1.minDiffGrad) {
-                    ceData1.minDiffGrad = diffGrad;
-                    ceData1.minDiffGradP = p2;
-                }
-                grad2 = Math.abs(grad2);
-                if (grad2 == ceData1.maxGrad) {
-                    ceData1_2.maxGrad = grad2;
-                    ceData1_2.maxGradP = p2;
-                } else if (grad2 > ceData1.maxGrad) {
-                    ceData1.maxGrad = grad2;
-                    ceData1.maxGradP = p2;
-                }
-            } else {
-                // count == 2
-                if (diffOr < ceData2.minDiffOr) {
-                    ceData2.minDiffOr = diffOr;
-                    ceData2.minDiffOrP = p2;
-                }
-                if (diffGrad < ceData2.minDiffGrad) {
-                    ceData2.minDiffGrad = diffGrad;
-                    ceData2.minDiffGradP = p2;
-                }
-                grad2 = Math.abs(grad2);
-                if (grad2 > ceData2.maxGrad) {
-                    ceData2.maxGrad = grad2;
-                    ceData2.maxGradP = p2;
-                }
-            }
-                
-            /*
-            if (x == 569 && y == 179) {
-                double distFromPrevPtSq = (diffX * diffX) + (diffY * diffY);
-                String str = String.format("(%d,%d) diffOr=%.3f  diffGrad=%.3f  grad2=%.3f  count=%d  or0=%.0f  or2=%.0f",
-                    x2, y2, (float) diffOr, (float) diffGrad, (float) grad2, count, 
-                    (float) or, (float) or2);
-                System.out.println(str);
-                int z = 1; // prefer (568, 178) //or=65, count=1 for this and 569,178 and 570,178
-            }
-            */
-        }
-    }
-
-    private boolean resolveTieWithNextStep(ImageExt img, 
-        Map<PairInt, Float> sparseValueMap, 
-        Map<PairInt, Integer> orientationMap, 
-        Map<PairInt, Float> gradientXMap, 
-        Map<PairInt, Float> gradientYMap, 
-        Map<PairInt, Float> gradientMap, int orLimit,
-        Map<PairInt, Integer> edgeIndexMap, 
-        Integer index, int clrIdx, PairInt tieP, PairInt tieP2, 
-        Set<PairInt> visited, int hN, int hN2, int w, int h, float[] kernel) {
-        
-        // calculate next step w/ verbose calc and let the
-        // best between the ties decide the poit to add here.
-        // NOTE: this may require a path algorithm as noted above.
-        if (visited.contains(tieP) || 
-            (aMemberIsOutOfBounds(tieP.getX(), tieP.getY(), hN, w, h)) 
-            || foundAdjacentEdge(tieP.getX(), tieP.getY(), 
-            edgeIndexMap, index, hN)) {
-            return true;
-        } else if (visited.contains(tieP2) || 
-            (aMemberIsOutOfBounds(tieP2.getX(), tieP2.getY(), hN, w, h)) 
-            || foundAdjacentEdge(tieP2.getX(), tieP2.getY(), 
-            edgeIndexMap, index, hN)) {
-            return false;
+            data.diffOrientation = diffOr;
+            
+            sorted.add(data);
         }
         
-        calculateGradientAndOrientation(img, clrIdx, tieP.getX(), tieP.getY(),
-            sparseValueMap, orientationMap, gradientXMap, gradientYMap,
-            gradientMap, hN, hN2, kernel);
-
-        calculateGradientAndOrientation(img, clrIdx, tieP2.getX(), tieP2.getY(),
-            sparseValueMap, orientationMap, gradientXMap, gradientYMap,
-            gradientMap, hN, hN2, kernel);
-
-        CEData t1ceData1 = new CEData();
-        CEData t1ceData1_2 = new CEData();
-        CEData t1ceData2 = new CEData();
-        float tgrad1 = gradientMap.get(tieP).floatValue();
-        int tor1 = orientationMap.get(tieP).intValue();
-        int ttmpOr1 = (tor1 > 90) ? 180 - tor1 : -1;
-        calculateMinMaxData(orientationMap, gradientMap,
-            t1ceData1, t1ceData2, t1ceData1_2, tieP.getX(), tieP.getY(),
-            edgeIndexMap, tgrad1, tor1, ttmpOr1);
-
-        CEData t2ceData1 = new CEData();
-        CEData t2ceData1_2 = new CEData();
-        CEData t2ceData2 = new CEData();
-        float tgrad2 = gradientMap.get(tieP2).floatValue();
-        int tor2 = orientationMap.get(tieP2).intValue();
-        int ttmpOr2 = (tor2 > 90) ? 180 - tor2 : -1;
-        calculateMinMaxData(orientationMap, gradientMap,
-            t2ceData1, t2ceData2, t2ceData1_2, tieP2.getX(), tieP2.getY(),
-            edgeIndexMap, tgrad2, tor2, ttmpOr2);
-
-        if (clrIdx == 0) {
-            //clrIdx == 0 uses gradient range for O1 values
-            if (t1ceData1.maxGradP != null) {
-                // o1 : range of abs values would be 0 to 255
-                if ((t1ceData1.maxGrad > 16) && (t1ceData1.minDiffOr < orLimit)) {
-                    // compare to 2nd point if exists
-                    if ((t2ceData1.maxGradP != null) && (t2ceData1.maxGrad > 16) 
-                    && (t2ceData1.minDiffOr < orLimit)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                } else if ((t1ceData1.minDiffOr < orLimit) && (t1ceData1.minDiffGrad <= 16)) {
-                    if ((t2ceData1.minDiffOrP != null) 
-                    && (t2ceData1.minDiffOr < orLimit) && (t2ceData1.minDiffGrad <= 16)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            } else {
-                // use the count==2 parameters
-                if ((t1ceData2.maxGrad > 16) && (t1ceData2.minDiffOr < orLimit)) {
-                    if ((t2ceData1.maxGradP != null) 
-                    && (t2ceData2.maxGrad > 16) && (t2ceData2.minDiffOr < orLimit)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                } else if ((t1ceData2.minDiffOr < orLimit) && (t1ceData2.minDiffGrad <= 16)) {
-                    if ((t2ceData1.minDiffOrP != null) 
-                    && (t2ceData2.minDiffOr < orLimit) && (t2ceData2.minDiffGrad <= 16)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            }
-        } else {
-            // labA : range of value before gradient is in 
-            // range of values should be 0 to 3.276
-            if (t1ceData1.maxGradP != null) {
-                if ((t1ceData1.maxGrad > 0.2) && (t1ceData1.minDiffOr < orLimit)) {
-                    if ((t2ceData1.maxGradP != null) && (t2ceData1.maxGrad > 0.2) && 
-                        (t2ceData1.minDiffOr < orLimit)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                } else if ((t1ceData1.minDiffOr < orLimit) && (t1ceData1.minDiffGrad <= 0.2)) {
-                    if ((t2ceData1.maxGradP != null) && (t2ceData1.minDiffOr < orLimit) && 
-                        (t2ceData1.minDiffGrad <= 0.2)) {
-                        if (t1ceData1.maxGrad >= t2ceData1.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            } else {
-                // use count=2 fields
-                if ((t1ceData2.maxGrad > 0.2) && (t1ceData2.minDiffOr < orLimit)) {
-                    if ((t2ceData2.maxGradP != null) && (t2ceData2.maxGrad > 0.2) && 
-                        (t2ceData2.minDiffOr < orLimit)) {
-                        if (t1ceData2.maxGrad >= t2ceData2.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true;                   
-                } else if ((t1ceData2.minDiffOr < orLimit) && (t1ceData2.minDiffGrad <= 0.2)) {
-                    if ((t2ceData2.maxGradP != null) && (t2ceData2.minDiffOr < orLimit) 
-                        && (t2ceData2.minDiffGrad <= 0.2)) {
-                        if (t1ceData2.maxGrad >= t2ceData2.maxGrad) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    return true; 
-                }
-            }
-        }
-        return true;
+        return sorted;
     }
 
     public static class BoundingRegions {
@@ -8883,9 +8690,19 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         }
     }
     
-    public PhaseCongruencyDetector.PhaseCongruencyProducts createColorEdges(
-        ImageExt img) {
-        
+    /**
+     * NOT READY FOR USE.
+     * create edges for img using phase congruency edges and then sparse color 
+     * gradients (O1 and lab A).  
+     * Note that the returned result contains values 0 or 255 for
+     * easier display.  This returned format in the future will likely hold 
+     * just binary 0 or 1 in a more compact internal structure in the 
+     * GreyscaleImage.
+     * @param img
+     * @return edge image holding values 0 or 255
+     */
+    public GreyscaleImage createColorEdges(ImageExt img) {
+      
         GreyscaleImage gsImg = img.copyBlueToGreyscale();
 
         float cutOff = 0.5f;//0.3f;//0.5f;
@@ -8901,22 +8718,11 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         double tHigh = 0.1;
         boolean increaseKIfNeeded = true;
         
-        /*
-        trying two different method:
-           (1) phase congruency on grey and on o1 and add results,
-                then add sparse calculation of best additions of labA
-           (2) phase congruency on grey
-                then add sparse calculation of best addition of o1
-                then add sparse calculation of best addition of labA
-        */
-        
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
             sigmaOnf, k, increaseKIfNeeded,
             cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-
-        ImageProcessor imageProcessor = new ImageProcessor();
         
         int[][] thinned = products.getThinned();
         {
@@ -8930,12 +8736,36 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             }
             MiscDebug.writeImage(out2, "_EDGES_0");
         }
-        
-        /*
-        trying sparse calculations of o1 gradient and orientation to extend
-            curves for the goal of making closed curves.
-        */
                 
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        phaseDetector = new PhaseCongruencyDetector();
+        products = phaseDetector.phaseCongMono(imageProcessor.createO1(img), 
+            nScale, minWavelength, mult, sigmaOnf, k, increaseKIfNeeded,
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        int[][] thinnedO1 = products.getThinned();
+        for (int i = 0; i < thinned.length; ++i) {
+            for (int j = 0; j < thinned[i].length; ++j) {
+                if (thinnedO1[i][j] > 0) {
+                    thinned[i][j] = 1;
+                }
+            }
+        }
+        thinnedO1 = null;
+        products = null;
+        
+        {
+            GreyscaleImage out2 = gsImg.createWithDimensions();
+            for (int i = 0; i < thinned.length; ++i) {
+                for (int j = 0; j < thinned[i].length; ++j) {
+                    if (thinned[i][j] > 0) {
+                        out2.setValue(j, i, 255);
+                    }
+                }
+            }
+            MiscDebug.writeImage(out2, "_EDGES_1");
+        }
+        
         EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
         extractor.extractEdges();
         List<PairIntArray> edgeList = extractor.getEdges();
@@ -8963,14 +8793,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         // convolve with sobel over region of size one less than previous block
         // and determine orientation too.
         final int hN2 = hN - 1;
-        
+                
         final float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(SIGMA.ZEROPOINTFIVE);
-        final int[] dxs = Misc.dx8;
-        final int[] dys = Misc.dy8;
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
+                
         Map<PairInt, Float> sparseValueMap = new HashMap<PairInt, Float>();
         Map<PairInt, Integer> orientationMap = new HashMap<PairInt, Integer>();
         Map<PairInt, Float> gradientXMap = new HashMap<PairInt, Float>();
@@ -8978,236 +8803,153 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         Map<PairInt, Float> gradientMap = new HashMap<PairInt, Float>();
                 
         // looking for largest gradient and similar orientation, first for
-        // o1 (clrIdx==0), then for labA (clrIdx==1)
-        for (int clrIdx = 0; clrIdx < 2; ++clrIdx) {
-            orientationMap.clear();
-            gradientMap.clear();
-            gradientXMap.clear();
-            gradientYMap.clear();
-            sparseValueMap.clear();
+        Set<PairInt> visited = new HashSet<PairInt>();
+        Stack<PairInt> stack = new Stack<PairInt>();
+        for (PairIntArray curve : edgeList) {
+            if ((curve instanceof PairIntArrayWithColor)
+                && ((PairIntArrayWithColor) curve).isClosedCurve()) {
+                continue;
+            }
+            if (curve.getN() > 4) {
+                int n = curve.getN();
+                PairInt p = new PairInt(curve.getX(0), curve.getY(0));
+                stack.add(p);
+                p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
+                stack.add(p);
+            }
+        }
             
-            Set<PairInt> visited = new HashSet<PairInt>();
-            Stack<PairInt> stack = new Stack<PairInt>();
-            for (PairIntArray curve : edgeList) {
-                if ((curve instanceof PairIntArrayWithColor)
-                    && ((PairIntArrayWithColor) curve).isClosedCurve()) {
-                    continue;
-                }
-                if (curve.getN() > 4) {
-                    int n = curve.getN();
-                    PairInt p = new PairInt(curve.getX(0), curve.getY(0));
-                    //if (!neighborIsInSet(junctions, p)) {
-                        stack.add(p);
-                    //}
-                    p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
-                    //if (!neighborIsInSet(junctions, p)) {
-                        stack.add(p);
-                    //}
-                }
+        while (!stack.isEmpty()) {
+            PairInt p = stack.pop();
+            if (visited.contains(p)) {
+                continue;
+            }
+            visited.add(p);
+            Integer index = edgeIndexMap.get(p);
+            final int x = p.getX();
+            final int y = p.getY();
+            // quick check to see if this point is adjacent to another edge.
+            // and if so, do not process further.
+            // also, if any point is out of bounds, can skip processing
+
+            if (aMemberIsOutOfBounds(x, y, hN, w, h)) {
+                continue;
+            }
+            if (foundAdjacentEdge(x, y, edgeIndexMap, index, hN)) {
+                continue;
+            }
+
+            // clrIdx 0 is O1, and clrIdx 1 is LabA
+            int clrIdx = 1;
+            calculateGradientAndOrientation(img, clrIdx, x, y,
+                sparseValueMap, orientationMap, gradientXMap,
+                gradientYMap, gradientMap, hN, hN2, kernel);
+           
+            /*
+             wanting to find the maximum gradient within a small deltaE
+             and a similar orientation
+             while avoiding doubling back on the current edge.
+            */
+
+            int or = orientationMap.get(p).intValue();
+                        
+            FixedSizeSortedVector<CEData> sorted = populate(img, x, y, or, 
+                orientationMap, gradientMap, edgeIndexMap);
+            
+            if (sorted.getNumberOfItems() == 0) {
+                continue;
             }
             
-            while (!stack.isEmpty()) {
-                PairInt p = stack.pop();
-                if (visited.contains(p)) {
-                    continue;
-                }
-                visited.add(p);
-                Integer index = edgeIndexMap.get(p);
-                final int x = p.getX();
-                final int y = p.getY();
-                // quick check to see if this point is adjacent to another edge.
-                // and if so, do not process further.
-                // also, if any point is out of bounds, can skip processing
-                
-                if (aMemberIsOutOfBounds(x, y, hN, w, h)) {
-                    continue;
-                }
-                if (foundAdjacentEdge(x, y, edgeIndexMap, index, hN)) {
-                    continue;
-                }
-                                
-                calculateGradientAndOrientation(img, clrIdx, x, y, 
-                    sparseValueMap, orientationMap, gradientXMap, gradientYMap,
-                    gradientMap, hN, hN2, kernel);
-                
-                // find the index where to insert this point in current edge
-                PairIntArray edge = edgeList.get(index.intValue());
-                int nE = edge.getN();
-                boolean currentIsIndex0 = false;
-                PairInt prevOrNextPoint = null;
-                if (curveHelper.isAdjacent(edge, 0, x, y)) {
-                    currentIsIndex0 = true;
-                    prevOrNextPoint = new PairInt(edge.getX(0), edge.getY(0));
-                } else {
-                    prevOrNextPoint = new PairInt(edge.getX(nE - 1), 
-                        edge.getY(nE - 1));
-                }
-                
-                /*
-                wanting to find the maximum gradient and a similar orientation
-                while avoiding doubling back on the current edge.
-                
-                for that reason, calculating min and max status for neighbors
-                which have neigbhorhood count=1 and count=2, separately,
-                and adding a peek forward in case of ties for best.
-                Note that the "ties" for best, if many in number, would be 
-                better solved by a path algorithm here with min distance 
-                replaced by large number - max gradient (within orientation limit)
-                with same rules for stopping addition to a curve when reach 
-                another.
-                The tie looks rare, so will prefer simpler solution for now.
-                */
-               
-                CEData ceData1 = new CEData();
-                CEData ceData1_2 = new CEData();
-                CEData ceData2 = new CEData();
-                
-                float grad = gradientMap.get(p).floatValue();
-                int or = orientationMap.get(p).intValue();
-                int tmpOr = (or > 90) ? 180 - or : -1;
-                                   
-                calculateMinMaxData(orientationMap, gradientMap, 
-                    ceData1, ceData2, ceData1_2, x, y, 
-                    edgeIndexMap, grad, or, tmpOr);
-        
-                if (ceData1.minDiffOrP == null && ceData2.minDiffOrP == null) {
-                    continue;
-                }
-                
-                // prefer the count=1 results to prefer a line moving forward
-                // (without needing to do parallel angle calculations.
-                
-                PairInt pToAdd = null;
-if (x==569 && y==179) {
-int z = 1; // prefer (568, 178) //or=65, or2=90, grad2=4.5
-// clrIdx=0: maxGrad=17.2, minDiffGrad=2.04, minDiffOr=11, 
-// clrIdx=1: maxGrad=, minDiffGrad=, minDiffOr=, or= , grad=
-}
-                int orLimit = 30; 
-                PairInt tieP = null;
-                PairInt tieP2 = null;
-                if (clrIdx == 0) {
-                    //clrIdx == 0 uses gradient range for O1 values
-                    if (ceData1.maxGradP != null) {
-                        // o1 : range of abs values would be 0 to 255
-                        if ((ceData1.maxGrad > 16) && (ceData1.minDiffOr < orLimit)) {
-                            if (ceData1_2.maxGrad == ceData1.maxGrad 
-                                && ceData1_2.minDiffOr == ceData1.minDiffOr) {
-                                tieP = ceData1.maxGradP;
-                                tieP2 = ceData1_2.maxGradP;
-                            } else {
-                                pToAdd = ceData1.maxGradP;
-                            }
-                        } else if ((ceData1.minDiffOr < orLimit) && (ceData1.minDiffGrad <= 16)) {
-                            if (ceData1_2.minDiffOr == ceData1.minDiffOr 
-                                && ceData1_2.minDiffGrad == ceData1.minDiffGrad) {
-                                tieP = ceData1.minDiffOrP;
-                                tieP2 = ceData1_2.minDiffOrP;
-                            } else {
-                                pToAdd = ceData1.minDiffOrP;
-                            }
-                        }
-                    } else {
-                        // use the count==2 parameters
-                        if ((ceData2.maxGrad > 16) && (ceData2.minDiffOr < orLimit)) {
-                            pToAdd = ceData2.maxGradP;
-                        } else if ((ceData2.minDiffOr < orLimit) && (ceData2.minDiffGrad <= 16)) {
-                            pToAdd = ceData2.maxGradP;
-                        }
-                    }
-                } else {
-                    // labA : range of value before gradient is in 
-                    // range of values should be 0 to 3.276
-                    if (ceData1.maxGradP != null) {
-                        if ((ceData1.maxGrad > 0.2) && (ceData1.minDiffOr < orLimit)) {
-                            if (ceData1_2.maxGrad == ceData1.maxGrad 
-                                && ceData1_2.minDiffOr == ceData1.minDiffOr) {
-                                tieP = ceData1.maxGradP;
-                                tieP2 = ceData1_2.maxGradP;
-                            } else {
-                                pToAdd = ceData1.maxGradP;
-                            }
-                        } else if ((ceData1.minDiffOr < orLimit) && (ceData1.minDiffGrad <= 0.2)) {
-                            if (ceData1_2.minDiffOr == ceData1.minDiffOr 
-                                && ceData1_2.minDiffGrad == ceData1.minDiffGrad) {
-                                tieP = ceData1.minDiffOrP;
-                                tieP2 = ceData1_2.minDiffOrP;
-                            } else {
-                                pToAdd = ceData1.minDiffOrP;
-                            }
-                        }
-                    } else {
-                       if ((ceData2.maxGrad > 0.2) && (ceData2.minDiffOr < orLimit)) {
-                            pToAdd = ceData2.maxGradP;
-                        } else if ((ceData2.minDiffOr < orLimit) && (ceData2.minDiffGrad <= 0.2)) {
-                            pToAdd = ceData2.minDiffOrP;
-                        }
-                    }
-                }
-                if (tieP != null) {
-                    boolean useFirst = resolveTieWithNextStep(img,
-                        sparseValueMap, orientationMap, gradientXMap, gradientYMap,
-                        gradientMap, orLimit, edgeIndexMap, index,
-                        clrIdx, tieP, tieP2,
-                        visited, hN, hN2, w, h, kernel);
-                    if (useFirst) {
-                        pToAdd = tieP;
-                    } else {
-                        pToAdd = tieP2;
-                    }
-                }
-                if (pToAdd == null) {
-                    continue;
-                }
-                
+            double deltaELmit = 4.0;
+            int orLimit = 30;
+            
+            PairInt pToAdd = sorted.getArray()[0].p;
+            if (pToAdd != null) {
                 edgeIndexMap.put(pToAdd, index);
                 added.add(pToAdd);
                 stack.add(pToAdd);
+            } 
+            
+            /*if (sorted.getNumberOfItems() > 1) {
+                pToAdd = sorted.getArray()[1].p;
+                if (pToAdd != null) {
+                    edgeIndexMap.put(pToAdd, index);
+                    added.add(pToAdd);
+                    stack.add(pToAdd);
+                }
+            }*/
+            
+if (x==587 && y==271) {
+int z = 1;
+}
 
-                // find the index where to insert this point in current edge
-                if (curveHelper.isAdjacent(edge, 0, pToAdd.getX(), pToAdd.getY())) {
-                    edge.insert(0, pToAdd.getX(), pToAdd.getY());
-                } else if (curveHelper.isAdjacent(edge, nE - 1, pToAdd.getX(), 
-                    pToAdd.getY())) {
-                    edge.add(pToAdd.getX(), pToAdd.getY());
-                }
-            }
-            System.out.println("number of points added = " + added.size());
+        }
+        System.out.println("number of points added = " + added.size());
+                
+        for (PairInt p : added) {
+            int x = p.getX();
+            int y = p.getY();
+            thinned[y][x] = 1;
         }
         
-        if (added.size() > 0) {
-            System.out.println("number of points added = " + added.size());
-            int[][] edgeArray = copy(thinned);
-            for (PairInt p : added) {
-                int x = p.getX();
-                int y = p.getY();
-                edgeArray[y][x] = 1;
-            }
-            GreyscaleImage edgeImg = gsImg.createWithDimensions();
-            for (int i = 0; i < edgeArray.length; ++i) {
-                for (int j = 0; j < edgeArray[i].length; ++j) {
-                    if (edgeArray[i][j] > 0) {
-                        edgeImg.setValue(j, i, 255);
-                    }
+        GreyscaleImage edgeImg = gsImg.createWithDimensions();
+        for (int i = 0; i < thinned.length; ++i) {
+            for (int j = 0; j < thinned[i].length; ++j) {
+                if (thinned[i][j] > 0) {
+                    edgeImg.setValue(j, i, 255);
                 }
             }
-            MiscDebug.writeImage(edgeImg, "_EDGES_2_");
         }
-        
-        return null;
+MiscDebug.writeImage(edgeImg, "_EDGES_2_");
+
+        return edgeImg;
     }
     
-    private class CEData {
-        int minDiffOr = Integer.MAX_VALUE;
-        float minDiffGrad = Float.MAX_VALUE;
-        PairInt minDiffOrP = null;
-        PairInt minDiffGradP = null;
-        float maxGrad = Float.MIN_VALUE;
-        PairInt maxGradP = null;
+    private class CEData implements Comparable<CEData> {
+        double absDeltaE;
+        float gradient;
+        PairInt p;
+        int diffOrientation;
+        @Override
+        public int compareTo(CEData other) {
+            /*
+            not clear yet the combination of small deltaE and largest
+            gradient to produce best results, espec for junctions.
+            
+            prefer largest gradient, but comparison is within ranges
+               of deltaE
+            
+            will use comparison bins for deltaE
+                compare any with deltaE < 4
+            else compare any with deltaE < 6
+            else compare by deltaE
+            
+            */
+            
+            int db = (absDeltaE < 4) ? 0 :
+                (absDeltaE < 7) ? 1 : 2;
+            
+            int dbOther = (other.absDeltaE < 4) ? 0 :
+                (other.absDeltaE < 7) ? 1 : 2;
+            
+            if (db == dbOther) {
+                return Double.compare(gradient, other.gradient);
+            } else {
                 
-        float grad;
-        int or;
-        int tmpOr;
+                int f = Math.abs(db - dbOther) + 1;
+                if (gradient > f * other.gradient) {
+                    return -1;
+                } else if (other.gradient > f * gradient) {
+                    return 1;
+                }
+                if (db < dbOther) {
+                    return -1;
+                } else if (db > dbOther) {
+                    return 1;
+                }
+            }
+            return 0;
+        }
     }
     
     public PhaseCongruencyDetector.PhaseCongruencyProducts createColorEdges_2(

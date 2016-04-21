@@ -55,7 +55,6 @@ public class ImageProcessor {
         applyKernels(input, kernelX, kernelY, normX, normY);
     }
 
-
     public void applySobelKernel(GreyscaleImage input) {
 
         IKernel kernel = new SobelX();
@@ -69,6 +68,37 @@ public class ImageProcessor {
         float normY = kernel.getNormalizationFactor();
 
         applyKernels(input, kernelX, kernelY, normX, normY);
+    }
+    
+    public Map<PairInt, Integer> applySobelKernel(GreyscaleImage input, 
+        Set<PairInt> points) {
+       
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
+            SIGMA.ZEROPOINTSEVENONE);
+
+        return applyKernel(input, points, kernel);
+    }
+    
+    /**
+     * apply a sobel kernel (gaussian first derivative, binomial approx 
+     * for sigma=sqrt(2)/2) to the points in the region bounded by
+     * (xLL, yLL) to (xUR, yUR), inclusive and return the results as a map.
+     * @param pointValues values for points in the bounding region
+     * @param xLL lower left corner x coordinate of bounding box.  xLL is less than xUR.
+     * @param yLL lower left corner y coordinate of bounding box.  yLL is less than yUR.
+     * @param xUR upper right corner x coordinate of bounding box.  xUR is larger than xLL.
+     * @param yUR upper right corner y coordinate of bounding box.  yUR is larger than yLL.
+     * @param outputGradientValues
+     */
+    public void applySobelKernel(Map<PairInt, Integer> pointValues,
+        int xLL, int yLL, int xUR, int yUR,
+        Map<PairInt, Integer> outputGradientValues) {
+       
+        float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(
+            SIGMA.ZEROPOINTSEVENONE);
+
+        applyKernel(pointValues, xLL, yLL, xUR, yUR, kernel, 
+            outputGradientValues);
     }
 
     public void applyLaplacianKernel(GreyscaleImage input) {
@@ -132,6 +162,68 @@ public class ImageProcessor {
         GreyscaleImage img2 = combineConvolvedImages(imgX, imgY);
 
         input.resetTo(img2);
+    }
+
+    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input, 
+        Set<PairInt> points, float[] kernel) {
+
+        /*
+        assumes that kernelX is applied to a copy of the img
+        and kernelY is applied to a separate copy of the img and
+        then they are added in quadrature for the final result.
+        */
+
+        Map<PairInt, Integer> convX = applyKernel(input, points, kernel, true);
+
+        Map<PairInt, Integer> convY = applyKernel(input, points, kernel, false);
+        
+        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
+        
+        for (PairInt p : points) {
+            
+            int vX = convX.get(p).intValue();
+            
+            int vY = convY.get(p).intValue();
+            
+            int v = (int)Math.round(Math.sqrt(vX * vX + vY * vY));
+            
+            output.put(p, Integer.valueOf(v));
+        }
+        
+        return output;
+    }
+
+    protected void applyKernel(Map<PairInt, Integer> pointValues, 
+        int xLL, int yLL, int xUR, int yUR, float[] kernel,
+        Map<PairInt, Integer> outputGradientValues) {
+
+        /*
+        assumes that kernelX is applied to a copy of the img
+        and kernelY is applied to a separate copy of the img and
+        then they are added in quadrature for the final result.
+        */
+
+        Map<PairInt, Integer> convX = applyKernel(pointValues, xLL, yLL, xUR, yUR,
+            kernel, true);
+
+        Map<PairInt, Integer> convY = applyKernel(pointValues, xLL, yLL, xUR, yUR,
+            kernel, false);
+                
+        for (int xp = xLL; xp <= xUR; ++xp) {
+            
+            for (int yp = yLL; yp <= yUR; ++yp) {
+                
+                PairInt p = new PairInt(xp, yp);
+                
+                int vX = convX.get(p).intValue();
+
+                int vY = convY.get(p).intValue();
+                
+                int v = (int) Math.round(Math.sqrt(vX * vX + vY * vY));
+
+                outputGradientValues.put(p, Integer.valueOf(v));
+            }
+        }        
     }
 
     public Image combineConvolvedImages(Image imageX, Image imageY) {
@@ -281,7 +373,6 @@ if (sum > 511) {
         return output;
     }
 
-
     /**
      * apply kernel to input. NOTE, that because the image is composed of
      * vectors that should have values between 0 and 255, inclusive, if the
@@ -385,6 +476,134 @@ if (sum > 511) {
         }
 
         input.resetTo(output);
+    }
+    
+    /**
+     * apply kernel to input for pixels in points.
+     * @param input
+     * @param points
+     * @param kernel
+     * @param calcForX
+     * @return 
+     */
+    protected Map<PairInt, Integer> applyKernel(GreyscaleImage input, 
+        Set<PairInt> points, float[] kernel, boolean calcForX) {
+
+        int h = (kernel.length - 1) >> 1;
+
+        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
+
+        for (PairInt p : points) {
+            
+            int i = p.getX();
+            int j = p.getY();
+
+            float sum = 0;
+
+            // apply the kernel to pixels centered in (i, j)
+            for (int g = 0; g < kernel.length; g++) {
+                float gg = kernel[g];
+                if (gg == 0) {
+                    continue;
+                }
+                
+                int x2, y2;
+                if (calcForX) {
+                    int delta = g - h;
+                    x2 = i + delta;
+                    y2 = j;
+                    // edge corrections.  use replication
+                    if (x2 < 0) {
+                        x2 = -1 * x2 - 1;
+                    } else if (x2 >= input.getWidth()) {
+                        int diff = x2 - input.getWidth();
+                        x2 = input.getWidth() - diff - 1;
+                    }
+                } else {
+                    int delta = g - h;
+                    y2 = j + delta;
+                    x2 = i;
+                    // edge corrections.  use replication
+                    if (y2 < 0) {
+                        y2 = -1 * y2 - 1;
+                    } else if (y2 >= input.getHeight()) {
+                        int diff = y2 - input.getHeight();
+                        y2 = input.getHeight() - diff - 1;
+                    }
+                }
+                
+                int v = input.getValue(x2, y2);
+
+                sum += gg * v;
+            }
+            
+            output.put(p, Integer.valueOf((int) sum));
+        }
+
+        return output;
+    }
+
+    protected Map<PairInt, Integer> applyKernel(
+        Map<PairInt, Integer> pointValues, int xLL, int yLL, int xUR, int yUR,
+        float[] kernel, boolean calcForX) {
+
+        int h = (kernel.length - 1) >> 1;
+
+        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
+
+        for (int xp = xLL; xp <= xUR; ++xp) {
+            
+            for (int yp = yLL; yp <= yUR; ++yp) {
+                
+                PairInt p = new PairInt(xp, yp);
+                
+                float sum = 0;
+
+                // apply the kernel to pixels centered in (i, j)
+                for (int g = 0; g < kernel.length; g++) {
+                    float gg = kernel[g];
+                    if (gg == 0) {
+                        continue;
+                    }
+
+                    int x2, y2;
+                    if (calcForX) {
+                        int delta = g - h;
+                        x2 = xp + delta;
+                        y2 = yp;
+                        // edge corrections.  use replication
+                        if (x2 < 0) {
+                            x2 = -1 * x2 - 1;
+                        } else if (x2 > xUR) {
+                            if (!pointValues.containsKey(new PairInt(x2, y2))) {
+                                x2 = xUR;
+                            }
+                        }
+                    } else {
+                        int delta = g - h;
+                        y2 = yp + delta;
+                        x2 = xp;
+                        // edge corrections.  use replication
+                        if (y2 < 0) {
+                            y2 = -1 * y2 - 1;
+                        } else if (y2 > yUR) {
+                            if (!pointValues.containsKey(new PairInt(x2, y2))) {
+                                y2 = yUR;
+                            }
+                        }
+                    }
+                    
+                    int v = pointValues.get(new PairInt(x2, y2)).intValue();
+
+                    sum += gg * v;
+                    
+                } // end sum over kernl for a pixel
+                
+                output.put(p, Integer.valueOf((int) sum));
+            }
+        }
+
+        return output;
     }
 
     /**

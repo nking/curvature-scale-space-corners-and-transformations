@@ -4510,7 +4510,14 @@ public class PostLineThinnerCorrections {
         }
     
         points.clear();
-        points.addAll(editedPoints);
+        try {
+            points.addAll(editedPoints);
+        } catch (UnsupportedOperationException ex) {
+            points.clear();
+            for (PairInt p : editedPoints) {
+                points.add(p);
+            }
+        }
         
         log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
             Integer.toString(nCorrections));

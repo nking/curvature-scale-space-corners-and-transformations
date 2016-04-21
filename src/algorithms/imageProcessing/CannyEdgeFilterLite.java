@@ -4,7 +4,12 @@ import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.util.Errors;
-import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -98,6 +103,57 @@ public class CannyEdgeFilterLite {
                 input.setValue(i, 0);
             }
         }
+    }
+    
+    /**
+     * apply the canny edge filter only to the region with bounding box
+     * lower left corner (xLL, yLL) to upper right corner (xUR, yUR) where
+     * xUR > yLL and yUR > yLL and only to pixels which hold a sentinel value
+     * in the output (to avoid repeating a calculation).
+     * It's the user's responsibility to make sure that all points in the region
+     * are present in the input.
+     * @param input values from image for the bounded region (xLL, yLL) to (xUR, yUR).
+     * @param output image of edges calculated for the given bounding box points.
+     * @param xLL lower left corner x coordinate of bounding box.  xLL is less than xUR.
+     * @param yLL lower left corner y coordinate of bounding box.  yLL is less than yUR.
+     * @param xUR upper right corner x coordinate of bounding box.  xUR is larger than xLL.
+     * @param yUR upper right corner y coordinate of bounding box.  yUR is larger than yLL.
+     */
+    public void applyFilterToRegion(final Map<PairInt, Integer> input,
+        final GreyscaleImage output, int xLL, int yLL, int xUR, int yUR) {
+        
+        if (!(xLL < xUR)) {
+            throw new IllegalArgumentException("xLL must be less than xUR");
+        }
+        if (!(yLL < yUR)) {
+            throw new IllegalArgumentException("yLL must be less than yUR");
+        }
+        
+        Map<PairInt, Integer> gradientValues = new HashMap<PairInt, Integer>();
+        if (overrideToUseSobel) {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.applySobelKernel(input,
+                xLL, yLL, xUR, yUR, gradientValues);
+        } else if (useDiffOfGauss) {
+            createDiffOfGaussians(input, xLL, yLL, xUR, yUR, gradientValues);
+        } else {
+            createGradient(input, xLL, yLL, xUR, yUR, gradientValues);
+        }
+                     
+        apply2LayerFilter(gradientValues, xLL, yLL, xUR, yUR,
+            output.getWidth(), output.getHeight());
+        
+        for (int x = xLL; x <= xUR; ++x) {
+            for (int y = yLL; y < yUR; ++y) {
+                PairInt p = new PairInt(x, y);
+                Integer v = gradientValues.get(p);
+                if (v != null) {
+                    output.setValue(p.getX(), p.getY(), v.intValue());
+                }
+            }
+        }
+        
+        gradientXY = output;
     }
    
     /*
@@ -231,6 +287,98 @@ public class CannyEdgeFilterLite {
         }
 
         input.resetTo(img3);
+    }
+    
+    /**
+     * note that settings for lowThreshold, lowThresholdApplied2Layer, and
+     * highThreshold are not used because otsu's threshold algorithm is used
+     * instead.
+     * 
+     */
+    protected void apply2LayerFilter(Map<PairInt, Integer> gradientValues,
+        int xLL, int yLL, int xUR, int yUR, int width, int height) {
+        
+        float otsuScaleFactor = 0.75f;
+        float factorBelowHighThreshold = 2.f;
+        
+        OtsuThresholding ot = new OtsuThresholding();
+        float tHigh = tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(
+            gradientValues);
+        float tLow = tHigh/factorBelowHighThreshold;
+        
+        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (int x = xLL; x <= xUR; ++x) {
+            for (int y = yLL; y <= yUR; ++y) {
+                
+                PairInt p = new PairInt(x, y);
+        
+                Integer v = gradientValues.get(p);
+                
+                if (v < tLow) {
+                    continue;
+                } else if (v > tHigh) {
+                    output.put(p, v);
+                    continue;
+                }
+            
+                boolean foundHigh = false;
+                boolean foundMid = false;
+
+                for (int k = 0; k < dxs.length; ++k) {                
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    Integer v2 = gradientValues.get(p2);
+                    if (v2 == null) {
+                        continue;
+                    }
+                    if (v2.intValue() > tHigh) {
+                        foundHigh = true;
+                        break;
+                    } else if (v2.intValue() > tLow) {
+                        foundMid = true;
+                    }
+                }
+                if (foundHigh) {
+                    output.put(p, v);
+                    continue;
+                }
+                if (!foundMid) {
+                    continue;
+                }
+                // search the 5 by 5 region for a "sure edge" pixel
+                for (int dx = -2; dx <= 2; ++dx) {
+                    int x2 = x + dx;
+                    for (int dy = -2; dy <= 2; ++dy) {
+                        int y2 = y + dy;
+                        if (x2 == x && y2 == y) {
+                            continue;
+                        }
+                        PairInt p2 = new PairInt(x2, y2);
+                        Integer v2 = gradientValues.get(p2);
+                        if (v2 == null) {
+                            continue;
+                        }
+                        if (v2.intValue() > tHigh) {
+                            output.put(p, v);
+                            foundHigh = true;
+                            break;
+                        }
+                    }
+                    if (foundHigh) {
+                        break;
+                    }
+                }
+            }
+        }
+                
+        gradientValues.clear();
+        
+        gradientValues.putAll(output);
     }
     
     /**
@@ -465,6 +613,19 @@ public class CannyEdgeFilterLite {
         return g;
     }
 
+    protected void createGradient(final Map<PairInt, 
+        Integer> input, int xLL, int yLL, int xUR, int yUR,
+        Map<PairInt, Integer> outputGradientValues) {
+            
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        float[] kernel = Gaussian1DFirstDeriv.getKernel(
+            SIGMA.ZEROPOINTFIVE);
+        
+        imageProcessor.applyKernel(input, xLL, yLL, xUR, yUR, kernel,
+            outputGradientValues);
+    }
+    
     protected GreyscaleImage createDiffOfGaussians(final GreyscaleImage img) {
         
         GreyscaleImage gX, gY, g;
@@ -482,6 +643,33 @@ public class CannyEdgeFilterLite {
         g = imageProcessor.combineConvolvedImages(gX, gY);
         
         return g;
+    }
+    
+    protected void createDiffOfGaussians(final Map<PairInt, Integer> input,
+        int xLL, int yLL, int xUR, int yUR,
+        Map<PairInt, Integer> outputGradientValue
+        ) {
+                
+        Map<PairInt, Integer> gX = createGradientFromDiffOfGauss(input,
+            xLL, yLL, xUR, yUR, true);
+
+        Map<PairInt, Integer> gY = createGradientFromDiffOfGauss(input,
+            xLL, yLL, xUR, yUR, false);
+        
+        for (int x = xLL; x <= xUR; ++x) {
+            for (int y = yLL; y < yUR; ++y) {
+                
+                PairInt p = new PairInt(x, y);
+                
+                int vX = gX.get(p).intValue();
+
+                int vY = gY.get(p).intValue();
+                
+                int v = (int) Math.round(Math.sqrt(vX * vX + vY * vY));
+
+                outputGradientValue.put(p, Integer.valueOf(v));
+            }
+        }        
     }
     
     private GreyscaleImage createGradientFromDiffOfGauss(
@@ -516,6 +704,55 @@ public class CannyEdgeFilterLite {
         GreyscaleImage g = ImageProcessor.subtractImages(g1, g0);
         
         return g;
+    }
+    
+    private Map<PairInt, Integer> createGradientFromDiffOfGauss(
+        final Map<PairInt, Integer> pointValues,
+        int xLL, int yLL, int xUR, int yUR, 
+        boolean calculateForX) {
+        
+        /*
+        what looks really good is computationally too long:
+            g1 is convolved by a kernel > 1000*g0 kernel which uses sigma=1
+        */
+        
+        /* 
+        for line drawings, use sigma1 = 0.42466090014400953f and sigma2 = 2*sigma1
+        */
+        
+        float resultOne = 0.42466090014400953f;
+        
+        float sigma = 1.f * resultOne;
+        
+        float[] kernel0 = Gaussian1D.getKernel(sigma);
+
+        float[] kernel2 = Gaussian1D.getKernel(sigma * 1.6f);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        Map<PairInt, Integer> c0 = imageProcessor.applyKernel(pointValues,
+            xLL, yLL, xUR, yUR,
+            kernel0, calculateForX);
+                    
+        Map<PairInt, Integer> c2 = imageProcessor.applyKernel(pointValues,
+            xLL, yLL, xUR, yUR, 
+            kernel2, calculateForX);
+        
+        // subtract the two
+        Map<PairInt, Integer> output = new HashMap<PairInt, Integer>();
+        
+        for (int xp = xLL; xp <= xUR; ++xp) {
+            for (int yp = yLL; yp <= yUR; ++yp) {
+                
+                PairInt p = new PairInt(xp, yp);
+                
+                int v0 = c0.get(p).intValue();
+                int v2 = c2.get(p).intValue();
+                output.put(p, v2 - v0);
+            }
+        }
+            
+        return output;
     }
     
     private HistogramHolder createImageHistogram(final GreyscaleImage input) {

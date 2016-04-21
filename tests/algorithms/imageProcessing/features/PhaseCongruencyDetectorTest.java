@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -133,9 +134,8 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             String filePath = ResourceFinder.findFileInTestResources(fileName);
         
             ImageExt img = ImageIOHelper.readImageExt(filePath);
-        
-            PhaseCongruencyDetector.PhaseCongruencyProducts products =
-                imageSegmentation.createColorEdges(img);
+            
+            GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
 
         }
     }

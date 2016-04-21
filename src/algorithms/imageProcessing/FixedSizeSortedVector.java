@@ -176,7 +176,8 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
     /**
      * get the internal array for the sorted list.  note this is not a copy in
      * order to keep the use small, so do not edit it and continue to use
-     * the add method.
+     * the add method.  Note that the returned size may be smaller than
+     * capacity if the vector was not completely filled.
      *
      * runtime complexity is O(1)
      *
