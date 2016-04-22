@@ -8881,7 +8881,14 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 for (int yp = startY; yp <= endY; ++yp) {
                     //values[count] = img.getCIELAB(xp, yp)[1];
                     //values[count] = gsImg.getValue(xp, yp);
-                    values[count] = img.getR(xp, yp) - img.getG(xp, yp);
+                    //values[count] = img.getR(xp, yp) - img.getG(xp, yp);
+                    
+                    if (img.getG(xp, yp) == 0) {
+                        values[count] = 256;
+                    } else {
+                        values[count] = img.getR(xp, yp) / img.getG(xp, yp);
+                    }
+                    
                     count++;
                 }
             }
@@ -9000,7 +9007,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                         continue;
                     }
                     int v2 = outputLabAGradients.getValue(x2, y2);
-                    if (v2 > max) {
+                    if ((v2 > 0) && (v2 > max)) {
                         max = v2;
                         maxP = p2;
                     }
