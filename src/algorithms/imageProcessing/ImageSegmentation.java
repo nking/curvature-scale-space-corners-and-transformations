@@ -8748,27 +8748,88 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 edgeIndexMap.put(p, index);
             }
         }
+        {
+            // junctions are using format a[row][col] so change to GreyscaleImage col, row
+            Set<PairInt> tmp = new HashSet<PairInt>();
+            for (PairInt p : junctions) {
+                int x = p.getX();
+                int y = p.getY();
+                tmp.add(new PairInt(y, x));
+            }
+            junctions.clear();
+            junctions.addAll(tmp);
+        }
+        
         Set<PairInt> added = new HashSet<PairInt>();
+        
+        // to avoid processing some of the noise, there's a minimum line 
+        // length for curves used to initialize the stack,
+        // but because the edgeextractorsimple prefers to keep curves with
+        // junctions separated by the junction, those curves adjacent to 
+        // junctions, even when small in length, should be processed.
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+   
+        Set<Integer> adjToJunction = new HashSet<Integer>();
+        for (int i = 0; i < edgeList.size(); ++i) {
+            PairIntArray curve = edgeList.get(i);
+            if ((curve instanceof PairIntArrayWithColor)
+                && ((PairIntArrayWithColor) curve).isClosedCurve()) {
+                continue;
+            }
+            int n = curve.getN();
+            boolean foundJunction = false;
+            for (int j = 0; j < 2; ++j) {
+                PairInt p = (j == 0) ? 
+                    new PairInt(curve.getX(0), curve.getY(0)) :
+                    new PairInt(curve.getX(n - 1), curve.getY(n - 1));
+                for (int dIdx = 0; dIdx < dxs.length; ++dIdx) {
+                    int x2 = p.getX() + dxs[dIdx];
+                    int y2 = p.getY() + dys[dIdx];
+                    PairInt p2 = new PairInt(x2, y2);                    
+                    if (junctions.contains(p2)) {
+                        adjToJunction.add(Integer.valueOf(i));
+                        foundJunction = true;
+                        break;
+                    } else {
+                        Integer index2 = edgeIndexMap.get(p2);
+                        if (index2 != null && index2.intValue() != i) {
+                            adjToJunction.add(Integer.valueOf(i));
+                            foundJunction = true;
+                            break;
+                        }
+                    }
+                }
+                if (foundJunction) {
+                    break;
+                }
+            }
+        }
         
         final int w = img.getWidth();
         final int h = img.getHeight();
            
         // half width of neighbor region
         final int hN = 2;//3;
-                                
+        
         Set<PairInt> visited = new HashSet<PairInt>();
         Stack<PairInt> stack = new Stack<PairInt>();
-        for (PairIntArray curve : edgeList) {
+        for (int i = 0; i < edgeList.size(); ++i) {
+            PairIntArray curve = edgeList.get(i);
+
             if ((curve instanceof PairIntArrayWithColor)
                 && ((PairIntArrayWithColor) curve).isClosedCurve()) {
                 continue;
             }
-            if (curve.getN() > 4) {
-                int n = curve.getN();
+            int n = curve.getN();  
+            if ((n > 4) || adjToJunction.contains(Integer.valueOf(i))) {
                 PairInt p = new PairInt(curve.getX(0), curve.getY(0));
                 stack.add(p);
-                p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
-                stack.add(p);
+                if (n > 1) {
+                    p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
+                    stack.add(p);
+                }
             }
         }
             
@@ -8777,6 +8838,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 
         while (!stack.isEmpty()) {
             PairInt p = stack.pop();
+            
             if (visited.contains(p)) {
                 continue;
             }
@@ -8808,7 +8870,6 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
 
             CannyEdgeFilterLite cnf = new CannyEdgeFilterLite();
 
-
             int len = (2 * (sz + kHL)) + 1;
             float[] values = new float[len * len];
             int count = 0;
@@ -8818,11 +8879,13 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             int endY = (y + sz + kHL);
             for (int xp = startX; xp <= endX; ++xp) {
                 for (int yp = startY; yp <= endY; ++yp) {
-                    values[count] = img.getCIELAB(xp, yp)[1];
+                    //values[count] = img.getCIELAB(xp, yp)[1];
+                    //values[count] = gsImg.getValue(xp, yp);
+                    values[count] = img.getR(xp, yp) - img.getG(xp, yp);
                     count++;
                 }
             }
-            MiscMath.rescale(values, 0, 255);
+            values = MiscMath.rescale(values, 0, 255);
             Map<PairInt, Integer> labAScaledValues = new HashMap<PairInt, Integer>();
             count = 0;
             for (int xp = startX; xp <= endX; ++xp) {
@@ -8836,9 +8899,8 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             cnf.applyFilterToRegion(labAScaledValues, outputLabAGradients,
                 x - sz, y - sz, x + sz, y + sz);
 
-            /* debugging...
-            if ((x == 68 && y == 346) || ((x < 80) && (x > 68) && (y > 346)
-                && (y < 356))) {
+            // debugging...
+            if (false && (x < 82) && (x > 65) && (y > 330) && (y < 380)) {
 
                 for (int i = 0; i < outputLabAGradients.getNPixels(); ++i) {
                     int v = outputLabAGradients.getValue(i);
@@ -8848,13 +8910,78 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 }
                 MiscDebug.writeImage(outputLabAGradients,
                     "_lab_A_LOCAL_edges_" + x + "_" + y);
-            }*/
+                
+                // make gradients for grey and o1 to look at too.
+                // should they be added?
+                {
+                    float[] o1Values = new float[len * len];
+                    float[] greyValues = new float[len * len];
+                    count = 0;
+                    for (int xp = startX; xp <= endX; ++xp) {
+                        for (int yp = startY; yp <= endY; ++yp) {
+                            o1Values[count] = img.getR(xp, yp) - img.getG(xp, yp);
+                            greyValues[count] = gsImg.getValue(xp, yp);
+                            count++;
+                        }
+                    }
+                    o1Values = MiscMath.rescale(o1Values, 0, 255);
+                    Map<PairInt, Integer> greyScaledValues = new HashMap<PairInt, Integer>();
+                    Map<PairInt, Integer> o1ScaledValues = new HashMap<PairInt, Integer>();
+                    count = 0;
+                    for (int xp = startX; xp <= endX; ++xp) {
+                        for (int yp = startY; yp <= endY; ++yp) {
+                            int v = Math.round(greyValues[count]);
+                            greyScaledValues.put(new PairInt(xp, yp), v);
+                            v = Math.round(o1Values[count]);
+                            o1ScaledValues.put(new PairInt(xp, yp), v);
+                            count++;
+                        }
+                    }
+
+                    GreyscaleImage outputGreyGradients = gsImg.createFullRangeIntWithDimensions();
+                    outputGreyGradients.fill(-1);
+                    GreyscaleImage outputO1Gradients = gsImg.createFullRangeIntWithDimensions();
+                    outputO1Gradients.fill(-1);
+                    
+                    cnf.applyFilterToRegion(greyScaledValues, outputGreyGradients,
+                        x - sz, y - sz, x + sz, y + sz);
+                    
+                    cnf.applyFilterToRegion(o1ScaledValues, outputO1Gradients,
+                        x - sz, y - sz, x + sz, y + sz);
+                    
+                    for (int i = 0; i < outputGreyGradients.getNPixels(); ++i) {
+                        int v = outputGreyGradients.getValue(i);
+                        if (v < 0) {
+                            outputGreyGradients.setValue(i, 0);
+                        }
+                    }
+                    for (int i = 0; i < outputO1Gradients.getNPixels(); ++i) {
+                        int v = outputO1Gradients.getValue(i);
+                        if (v < 0) {
+                            outputO1Gradients.setValue(i, 0);
+                        }
+                    }
+                    
+                    GreyscaleImage combined = gsImg.createWithDimensions();
+                    for (int i = 0; i < combined.getNPixels(); ++i) {
+                        int v0 = outputGreyGradients.getValue(i);
+                        //int v1 = outputO1Gradients.getValue(i);
+                        int v2 = outputLabAGradients.getValue(i);
+                        int v = (v0 + v2)/2;
+                        combined.setValue(i, v);
+                    }
+                
+                    //MiscDebug.writeImage(outputGreyGradients,
+                    //    "_grey_LOCAL_edges_" + x + "_" + y);
+                    //MiscDebug.writeImage(outputO1Gradients,
+                    //    "_o1_LOCAL_edges_" + x + "_" + y);
+                    MiscDebug.writeImage(combined,
+                        "_combined_LOCAL_edges_" + x + "_" + y);
+                }
+            }
 
             Stack<PairInt> stack2 = new Stack<PairInt>();
             stack2.add(new PairInt(x, y));
-
-            int[] dxs = Misc.dx8;
-            int[] dys = Misc.dy8;
 
             PairInt lastPAdded = null;
 

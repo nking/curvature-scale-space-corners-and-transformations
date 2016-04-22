@@ -133,4 +133,45 @@ public class EdgeExtractorSimpleTest extends TestCase {
         assertTrue(line2.isEmpty());
         assertTrue(line3.isEmpty());
     }
+    
+    public void test1() {
+        /*
+        64,339
+        64,340
+                 65,341  66,341  67,341
+                        *66,342          68,342
+                         66,343
+                                 67,344
+                                         68,345
+                                         68,346
+        */
+        
+        int[][] edgeImage = new int[450][];
+        for (int i = 0; i < edgeImage.length; ++i) {
+            edgeImage[i] = new int[80];
+        }
+        
+        // [row][col]
+        edgeImage[339][64] = 1;
+        edgeImage[340][64] = 1;
+        edgeImage[341][65] = 1;
+        edgeImage[341][66] = 1;
+        edgeImage[341][67] = 1;
+        edgeImage[342][66] = 1;
+        edgeImage[342][68] = 1;
+        edgeImage[343][66] = 1;
+        edgeImage[344][67] = 1;
+        edgeImage[345][68] = 1;
+        edgeImage[346][68] = 1;
+        
+        EdgeExtractorSimple edgeExtractor = new EdgeExtractorSimple(edgeImage);
+        edgeExtractor.extractEdges();
+        
+        Set<PairInt> junctions = edgeExtractor.getJunctions();
+        
+        List<PairIntArray> edges = edgeExtractor.getEdges();
+        
+        assertTrue(junctions.contains(new PairInt(342, 66)));
+    }
+    
 }
