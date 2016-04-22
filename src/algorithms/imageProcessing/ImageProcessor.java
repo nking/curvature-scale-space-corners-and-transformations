@@ -5159,6 +5159,40 @@ if (sum > 511) {
     }
     
     /**
+     * create a color difference image equivalent to grey - o1,
+     * r + g + b - (r - g) = 2*g + b
+     * @param img
+     * @return 
+     */
+    public GreyscaleImage createGPlusB(ImageExt img) {
+        
+        // consider scaling them by a set range of minimum and maximum possible
+        // instead of minimum and maximum present
+        // r + g + b - (r - g)--> 2*g + b
+        int w = img.getWidth();
+        int h = img.getHeight();
+
+        float[] values = new float[w * h];
+        
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int g = img.getG(i);
+            int b = img.getB(i);
+            values[i] = 2*g + b;
+        }
+        
+        GreyscaleImage out = new GreyscaleImage(w, h,
+            GreyscaleImage.Type.Bits32FullRangeInt);
+        
+        values = MiscMath.rescale(values, 0, 255);
+            
+        for (int i = 0; i < values.length; ++i) {
+            out.setValue(i, Math.round(values[i]));
+        }
+
+        return out;
+    }
+    
+    /**
      * 
      * @param img
      * @return 
@@ -5187,7 +5221,7 @@ if (sum > 511) {
 
         return o1Img;
     }
-
+    
     /**
      * 
      * @param img

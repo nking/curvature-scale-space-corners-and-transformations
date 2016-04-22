@@ -7530,66 +7530,20 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         }
     }
 
-    private FixedSizeSortedVector<CEData> populate(ImageExt img, int x, int y, 
-        int or, Map<PairInt, Integer> orientationMap, 
-        Map<PairInt, Float> gradientMap, Map<PairInt, Integer> edgeIndexMap) {
+    private int countNeighbors(Map<PairInt, Integer> pointMap, int x, int y) {
         
-        int tmpOr = (or > 90) ? 180 - or : -1;
-            
-        FixedSizeSortedVector<CEData> sorted = new FixedSizeSortedVector<CEData>(
-            4, CEData.class);
-        
-        final int[] dxs = Misc.dx8;
-        final int[] dys = Misc.dy8;
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-        float[] lab = img.getCIELAB(x, y);
-        
-        for (int kIdx = 0; kIdx < dxs.length; ++kIdx) {
-            int x2 = x + dxs[kIdx];
-            int y2 = y + dys[kIdx];
-            PairInt p2 = new PairInt(x2, y2);
-            if (edgeIndexMap.containsKey(p2)) {
-                continue;
+        int count = 0;
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+                
+        for (int jj = 0; jj < dxs.length; ++jj) {
+            PairInt p3 = new PairInt(x + dxs[jj], y + dys[jj]);
+            if (pointMap.containsKey(p3)) {
+                count++;
             }
-            int count = 0;
-            for (int jj = 0; jj < dxs.length; ++jj) {
-                PairInt p3 = new PairInt(p2.getX() + dxs[jj],
-                    p2.getY() + dys[jj]);
-                if (edgeIndexMap.containsKey(p3)) {
-                    count++;
-                }
-            }
-            if (count > 2) {
-                continue;
-            }
-                        
-            CEData data = new CEData();
-            data.p = p2;
-            data.absDeltaE = Math.abs(cieC.calcDeltaECIE2000(lab, 
-                img.getCIELAB(x2, y2)));
-            
-            data.gradient = gradientMap.get(p2).floatValue();
-            int or2 = orientationMap.get(p2).intValue();
-            int tmpOr2 = (or2 > 90) ? 180 - or2 : -1;
-            int diffOr = Math.abs(or - or2);
-            if (tmpOr != -1 && tmpOr2 == -1) {
-                int tmp = tmpOr + or2;
-                if (tmp < diffOr) {
-                    diffOr = tmp;
-                }
-            } else if (tmpOr == -1 && tmpOr2 != -1) {
-                int tmp = tmpOr2 + or;
-                if (tmp < diffOr) {
-                    diffOr = tmp;
-                }
-            }
-            data.diffOrientation = diffOr;
-            
-            sorted.add(data);
         }
         
-        return sorted;
+        return count;
     }
 
     public static class BoundingRegions {
@@ -8734,7 +8688,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     }
                 }
             }
-            MiscDebug.writeImage(out2, "_EDGES_0");
+            MiscDebug.writeImage(out2, "_EDGES_grey_");
         }
                 
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -8744,6 +8698,17 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             nScale, minWavelength, mult, sigmaOnf, k, increaseKIfNeeded,
             cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
         int[][] thinnedO1 = products.getThinned();
+        {
+            GreyscaleImage out2 = gsImg.createWithDimensions();
+            for (int i = 0; i < thinnedO1.length; ++i) {
+                for (int j = 0; j < thinnedO1[i].length; ++j) {
+                    if (thinnedO1[i][j] > 0) {
+                        out2.setValue(j, i, 255);
+                    }
+                }
+            }
+            MiscDebug.writeImage(out2, "_EDGES_O1_");
+        }
         for (int i = 0; i < thinned.length; ++i) {
             for (int j = 0; j < thinned[i].length; ++j) {
                 if (thinnedO1[i][j] > 0) {
@@ -8763,7 +8728,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                     }
                 }
             }
-            MiscDebug.writeImage(out2, "_EDGES_1");
+            MiscDebug.writeImage(out2, "_EDGES_grey_plus_o1_");
         }
         
         EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
@@ -8790,19 +8755,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
            
         // half width of neighbor region
         final int hN = 2;//3;
-        // convolve with sobel over region of size one less than previous block
-        // and determine orientation too.
-        final int hN2 = hN - 1;
-                
-        final float[] kernel = Gaussian1DFirstDeriv.getBinomialKernel(SIGMA.ZEROPOINTFIVE);
-                
-        Map<PairInt, Float> sparseValueMap = new HashMap<PairInt, Float>();
-        Map<PairInt, Integer> orientationMap = new HashMap<PairInt, Integer>();
-        Map<PairInt, Float> gradientXMap = new HashMap<PairInt, Float>();
-        Map<PairInt, Float> gradientYMap = new HashMap<PairInt, Float>();
-        Map<PairInt, Float> gradientMap = new HashMap<PairInt, Float>();
-                
-        // looking for largest gradient and similar orientation, first for
+                                
         Set<PairInt> visited = new HashSet<PairInt>();
         Stack<PairInt> stack = new Stack<PairInt>();
         for (PairIntArray curve : edgeList) {
@@ -8819,6 +8772,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             }
         }
             
+        GreyscaleImage outputLabAGradients = gsImg.createFullRangeIntWithDimensions();
+        outputLabAGradients.fill(-1);
+                
         while (!stack.isEmpty()) {
             PairInt p = stack.pop();
             if (visited.contains(p)) {
@@ -8838,51 +8794,106 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             if (foundAdjacentEdge(x, y, edgeIndexMap, index, hN)) {
                 continue;
             }
-
-            // clrIdx 0 is O1, and clrIdx 1 is LabA
-            int clrIdx = 1;
-            calculateGradientAndOrientation(img, clrIdx, x, y,
-                sparseValueMap, orientationMap, gradientXMap,
-                gradientYMap, gradientMap, hN, hN2, kernel);
-           
-            /*
-             wanting to find the maximum gradient within a small deltaE
-             and a similar orientation
-             while avoiding doubling back on the current edge.
-            */
-
-            int or = orientationMap.get(p).intValue();
                         
-            FixedSizeSortedVector<CEData> sorted = populate(img, x, y, or, 
-                orientationMap, gradientMap, edgeIndexMap);
-            
-            if (sorted.getNumberOfItems() == 0) {
+            int sz = 3;
+            int kHL = 3;
+
+            if ((x < (sz + kHL)) || (y < (sz + kHL)) || 
+                (x > (img.getWidth() - 1 - (sz + kHL))) ||
+                (y > (img.getHeight() - 1 - (sz + kHL)))) {
+                // TODO: need to adjust the sparse gradient method 
+                // to handle points ner image boundaries
                 continue;
             }
-            
-            double deltaELmit = 4.0;
-            int orLimit = 30;
-            
-            PairInt pToAdd = sorted.getArray()[0].p;
-            if (pToAdd != null) {
-                edgeIndexMap.put(pToAdd, index);
-                added.add(pToAdd);
-                stack.add(pToAdd);
-            } 
-            
-            /*if (sorted.getNumberOfItems() > 1) {
-                pToAdd = sorted.getArray()[1].p;
-                if (pToAdd != null) {
-                    edgeIndexMap.put(pToAdd, index);
-                    added.add(pToAdd);
-                    stack.add(pToAdd);
-                }
-            }*/
-            
-if (x==587 && y==271) {
-int z = 1;
-}
 
+            CannyEdgeFilterLite cnf = new CannyEdgeFilterLite();
+
+
+            int len = (2 * (sz + kHL)) + 1;
+            float[] values = new float[len * len];
+            int count = 0;
+            int startX = (x - sz - kHL);
+            int endX = (x + sz + kHL);
+            int startY = (y - sz - kHL);
+            int endY = (y + sz + kHL);
+            for (int xp = startX; xp <= endX; ++xp) {
+                for (int yp = startY; yp <= endY; ++yp) {
+                    values[count] = img.getCIELAB(xp, yp)[1];
+                    count++;
+                }
+            }
+            MiscMath.rescale(values, 0, 255);
+            Map<PairInt, Integer> labAScaledValues = new HashMap<PairInt, Integer>();
+            count = 0;
+            for (int xp = startX; xp <= endX; ++xp) {
+                for (int yp = startY; yp <= endY; ++yp) {
+                    int v = Math.round(values[count]);
+                    labAScaledValues.put(new PairInt(xp, yp), v);
+                    count++;
+                }
+            }
+
+            cnf.applyFilterToRegion(labAScaledValues, outputLabAGradients,
+                x - sz, y - sz, x + sz, y + sz);
+
+            /* debugging...
+            if ((x == 68 && y == 346) || ((x < 80) && (x > 68) && (y > 346)
+                && (y < 356))) {
+
+                for (int i = 0; i < outputLabAGradients.getNPixels(); ++i) {
+                    int v = outputLabAGradients.getValue(i);
+                    if (v < 0) {
+                        outputLabAGradients.setValue(i, 0);
+                    }
+                }
+                MiscDebug.writeImage(outputLabAGradients,
+                    "_lab_A_LOCAL_edges_" + x + "_" + y);
+            }*/
+
+            Stack<PairInt> stack2 = new Stack<PairInt>();
+            stack2.add(new PairInt(x, y));
+
+            int[] dxs = Misc.dx8;
+            int[] dys = Misc.dy8;
+
+            PairInt lastPAdded = null;
+
+            while (!stack2.isEmpty()) {
+                PairInt pG = stack2.pop();
+                int max = Integer.MIN_VALUE;
+                PairInt maxP = null;
+                for (int dIdx = 0; dIdx < dxs.length; ++dIdx) {
+                    int x2 = pG.getX() + dxs[dIdx];
+                    int y2 = pG.getY() + dys[dIdx];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (edgeIndexMap.containsKey(p2)) {
+                        continue;
+                    }
+                    if (countNeighbors(edgeIndexMap, x2, y2) > 2) {
+                        continue;
+                    }
+                    int v2 = outputLabAGradients.getValue(x2, y2);
+                    if (v2 > max) {
+                        max = v2;
+                        maxP = p2;
+                    }
+                }
+                if (maxP != null) {
+                    edgeIndexMap.put(maxP, index);
+                    added.add(maxP);
+                    lastPAdded = maxP;
+
+                    // if a point on the boundary of gradient region is found, exit now
+                    if ((Math.abs(maxP.getX() - x) == (sz - 1)) || 
+                        (Math.abs(maxP.getY() - y) == (sz - 1))) {
+                        break;
+                    }
+                    stack2.add(maxP);
+                }
+            }
+            if (lastPAdded != null) {
+                stack.add(lastPAdded);
+            }
         }
         System.out.println("number of points added = " + added.size());
                 
@@ -8903,53 +8914,6 @@ int z = 1;
 MiscDebug.writeImage(edgeImg, "_EDGES_2_");
 
         return edgeImg;
-    }
-    
-    private class CEData implements Comparable<CEData> {
-        double absDeltaE;
-        float gradient;
-        PairInt p;
-        int diffOrientation;
-        @Override
-        public int compareTo(CEData other) {
-            /*
-            not clear yet the combination of small deltaE and largest
-            gradient to produce best results, espec for junctions.
-            
-            prefer largest gradient, but comparison is within ranges
-               of deltaE
-            
-            will use comparison bins for deltaE
-                compare any with deltaE < 4
-            else compare any with deltaE < 6
-            else compare by deltaE
-            
-            */
-            
-            int db = (absDeltaE < 4) ? 0 :
-                (absDeltaE < 7) ? 1 : 2;
-            
-            int dbOther = (other.absDeltaE < 4) ? 0 :
-                (other.absDeltaE < 7) ? 1 : 2;
-            
-            if (db == dbOther) {
-                return Double.compare(gradient, other.gradient);
-            } else {
-                
-                int f = Math.abs(db - dbOther) + 1;
-                if (gradient > f * other.gradient) {
-                    return -1;
-                } else if (other.gradient > f * gradient) {
-                    return 1;
-                }
-                if (db < dbOther) {
-                    return -1;
-                } else if (db > dbOther) {
-                    return 1;
-                }
-            }
-            return 0;
-        }
     }
     
     public PhaseCongruencyDetector.PhaseCongruencyProducts createColorEdges_2(

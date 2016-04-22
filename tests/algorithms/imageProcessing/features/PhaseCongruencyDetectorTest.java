@@ -124,19 +124,28 @@ public class PhaseCongruencyDetectorTest extends TestCase {
              "android_statues_02.jpg", 
             //"android_statues_03.jpg", "android_statues_04.jpg"
         };
-
+        
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-                
+                     
         for (String fileName : fileNames) {
             
             System.out.println("fileName=" + fileName);
         
             String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-            ImageExt img = ImageIOHelper.readImageExt(filePath);
+            ImageExt img = ImageIOHelper.readImageExt(filePath);            
             
             GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
 
+            /*
+            ImageProcessor imageProcessor = new ImageProcessor();
+            GreyscaleImage labAImg = imageProcessor.createLabAandB(img)[1];
+            GreyscaleImage gsImg = img.copyToGreyscale();
+            GreyscaleImage o1Img = imageProcessor.createO1(img);
+            MiscDebug.writeImage(labAImg, "_laba_A_");
+            MiscDebug.writeImage(gsImg, "_grey_");
+            MiscDebug.writeImage(o1Img, "_o1_");
+            */
         }
     }
 }

@@ -2171,11 +2171,11 @@ public class MiscMath {
     }
     
     /**
-     * rscale a to values between vi and vf, inclusive.  the input array a is
+     * rescale a to values between vi and vf, inclusive.  the input array a is
      * not modified.
      * @param a
-     * @param vi
-     * @param vf
+     * @param vi start of range to scale the values to
+     * @param vf stop, inclusive, of range to scale the values to
      * @return 
      */
     public static float[] rescale(float[] a, int vi, int vf) {
@@ -2201,6 +2201,31 @@ public class MiscMath {
         for (int i = 0; i < a.length; ++i) {
                         
             scaled[i] = (a[i] - minV) * scale;
+        }
+        
+        return scaled;
+    }
+    
+    /**
+     * rescale a to values between vi and vf, inclusive.  the input array a is
+     * not modified.
+     * @param a
+     * @param vi start of range to scale the values to
+     * @param vf stop, inclusive, of range to scale the values to
+     * @return 
+     */
+    public static float[] rescale(float[] a, float minPossibleA, float maxPossibleA,
+        int vi, int vf) {
+        
+        float range = maxPossibleA - minPossibleA;
+        
+        float scale = ((float)(vf - vi))/range;
+         
+        float[] scaled = new float[a.length];
+        
+        for (int i = 0; i < a.length; ++i) {
+                        
+            scaled[i] = (a[i] - minPossibleA) * scale;
         }
         
         return scaled;
