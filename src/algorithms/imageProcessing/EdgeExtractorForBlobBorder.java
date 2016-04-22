@@ -391,7 +391,8 @@ MiscDebug.writeImage(img2, "before_single_curve_extraction_" + ts);
         Note that the algorithm could be redesigned to look for such regions
         first and discard the smaller half with a warning.
         */
-        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+        if (!curveHelper.isAdjacent(out, 0, out.getN() - 1) &&
+            (out.getN() > 2)) {
    
 if (debug) {        
 Image img3 = new Image(imageWidth, imageHeight);
@@ -416,7 +417,8 @@ img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
 MiscDebug.writeImage(img3, "border_before_reorder_endpoints");
 }
 
-            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+            if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)
+                && (out.getN() > 2)) {
                                 
                 extractor.reorderEndpointsIfNeeded(out);
                 
@@ -430,7 +432,8 @@ img3.setRGB(out.getX(out.getN() - 1), out.getY(out.getN() - 1), 255, 255, 0);
 MiscDebug.writeImage(img3, "border_after_reorder_endpoints");
 }               
 
-                if (!curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+                if (!curveHelper.isAdjacent(out, 0, out.getN() - 1) &&
+                    (out.getN() > 2)) {
                     
                     trimForMultipleClosedCurves(extractor, out, img.getWidth(), 
                         img.getHeight());
@@ -459,7 +462,7 @@ int z = 1;
             out.set(i, x, y);
         }
 
-        if (curveHelper.isAdjacent(out, 0, out.getN() - 1)) {
+        if (curveHelper.isAdjacent(out, 0, out.getN() - 1) && (out.getN() > 2)) {
             boolean isCW = curveHelper.curveIsOrderedClockwise2(out);
             if (isCW) {
                 out.reverse();

@@ -340,6 +340,7 @@ if (imgHelper.isInDebugMode()) {
             PairIntArray closedEdge = extractor.extractAndOrderTheBorder0(blob,
                 width, height, discardWhenCavityIsSmallerThanBorder);
 
+            //TODO: consider whether should require closedEdge.getN() > 2 too:
             if ((closedEdge != null) && (curveHelper.isAdjacent(closedEdge, 0,
                 closedEdge.getN() - 1))) {
 

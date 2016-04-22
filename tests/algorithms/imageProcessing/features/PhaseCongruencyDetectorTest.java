@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -120,9 +119,9 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
             // "susan-in_plus.png", "lena.jpg",
             // "campus_010.jpg", 
-            // "android_statues_01.jpg", 
-             "android_statues_02.jpg", 
-            //"android_statues_03.jpg", "android_statues_04.jpg"
+            "android_statues_01.jpg", 
+            "android_statues_02.jpg", 
+            "android_statues_03.jpg", "android_statues_04.jpg"
         };
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();

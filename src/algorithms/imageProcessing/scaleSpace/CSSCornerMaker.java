@@ -356,7 +356,7 @@ public class CSSCornerMaker {
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         boolean isClosedCurve = curveHelper.isAdjacent(edge, 0, 
-            edge.getN() - 1);
+            edge.getN() - 1) && (edge.getN() > 2);
         
         ScaleSpaceCurvature scaleSpaceHelper = new ScaleSpaceCurvature();
 

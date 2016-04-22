@@ -1901,7 +1901,8 @@ MiscDebug.writeImage(img2, "output_after_merges_" + MiscDebug.getCurrentTimeForm
 
         reorderEndpointsIfNeeded(out);
                 
-        boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1);
+        boolean isAdjacent = curveHelper.isAdjacent(out, 0, out.getN() - 1) &&
+            (out.getN() > 2);
         
         if (isAdjacent) {
             PairIntArrayWithColor p = new PairIntArrayWithColor(out);
@@ -2587,9 +2588,11 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                 //     endpoints so we try to reorder points to make the
                 //     curves joinable sequentially
 
-                boolean edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1);
+                boolean edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1)
+                    && (edge1.getN() > 2);
 
-                boolean edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1);
+                boolean edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1)
+                    && (edge2.getN() > 2);
 
                 int nReversed = 0;
 
@@ -2611,7 +2614,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                             if (edge1BLoc.getY() > edge1EndIdx) {
                                 edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1EndIdx - 1);
                             }
-                            edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1);
+                            edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1)
+                                && (edge1.getN() > 2);
                             nReversed++;
 
                         } else {
@@ -2626,7 +2630,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                         edge1BLoc.setY(edge1EndIdx - 1 - edge1BLoc.getY());
                                     }
                                     nReversed++;
-                                    edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1);
+                                    edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1)
+                                        && (edge1.getN() > 1);
                                 }
                             }
                         }
@@ -2645,7 +2650,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                 if (edge1BLoc.getY() < edge1BeginIdx) {
                                     edge1BLoc.setY(edge1BeginIdx - edge1BLoc.getY());
                                 }
-                                edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1);
+                                edge1IsClosed = curveHelper.isAdjacent(edge1, 0, 
+                                    edge1.getN() - 1) && (edge1.getN() > 2);
                                 nReversed++;
                             } else {
 
@@ -2658,7 +2664,9 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                             edge1BLoc.setY(edge1.getN() - edge1BLoc.getY() + edge1BeginIdx);
                                         }
                                         nReversed++;
-                                        edge1IsClosed = curveHelper.isAdjacent(edge1, 0, edge1.getN() - 1);
+                                        edge1IsClosed = curveHelper.isAdjacent(
+                                            edge1, 0, edge1.getN() - 1) && 
+                                            (edge1.getN() > 2);
                                     }
                                 }
                             }
@@ -2684,7 +2692,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                             if (edge2BLoc.getY() > edge2EndIdx) {
                                 edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2EndIdx - 1);
                             }
-                            edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1);
+                            edge2IsClosed = curveHelper.isAdjacent(edge2, 0, 
+                                edge2.getN() - 1) && (edge2.getN() > 2);
                             nReversed++;
                         } else {
 
@@ -2698,7 +2707,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                         edge2BLoc.setY(edge2EndIdx - 1 - edge2BLoc.getY());
                                     }
                                     nReversed++;
-                                    edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1);
+                                    edge2IsClosed = curveHelper.isAdjacent(edge2, 
+                                        0, edge2.getN() - 1) && (edge2.getN() > 2);
                                 }
                             }
                         }
@@ -2717,7 +2727,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                 if (edge2BLoc.getY() < edge2BeginIdx) {
                                     edge2BLoc.setY(edge2BeginIdx - edge2BLoc.getY());
                                 }
-                                edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1);
+                                edge2IsClosed = curveHelper.isAdjacent(edge2, 0, 
+                                    edge2.getN() - 1) && (edge2.getN() > 2);
                                 nReversed++;
                             } else {
                                 if (edge2BeginIdx > (edge2.getN()/2)) {
@@ -2729,7 +2740,9 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
                                             edge2BLoc.setY(edge2.getN() - edge2BLoc.getY() + edge2BeginIdx);
                                         }
                                         nReversed++;
-                                        edge2IsClosed = curveHelper.isAdjacent(edge2, 0, edge2.getN() - 1);
+                                        edge2IsClosed = curveHelper.isAdjacent(
+                                            edge2, 0, edge2.getN() - 1) && 
+                                            (edge2.getN() > 2);
                                     }
                                 }
                             }
@@ -2821,7 +2834,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        boolean isAdjacent = curveHelper.isAdjacent(edge, 0, cIdx + 1);
+        boolean isAdjacent = curveHelper.isAdjacent(edge, 0, cIdx + 1)
+            && (edge.getN() > 2);
 
         if (isAdjacent) {
 
@@ -2844,7 +2858,8 @@ MiscDebug.writeImage(img2, "output_after_reorder_endpoints_"
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        boolean isAdjacent = curveHelper.isAdjacent(edge, cIdx - 1, edge.getN() - 1);
+        boolean isAdjacent = curveHelper.isAdjacent(edge, cIdx - 1, 
+            edge.getN() - 1) && (edge.getN() > 2);
 
         if (isAdjacent) {
 

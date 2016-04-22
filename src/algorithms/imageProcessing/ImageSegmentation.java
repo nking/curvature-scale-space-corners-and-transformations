@@ -8744,6 +8744,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 int x = curve.getX(j);
                 int y = curve.getY(j);
                 curve.set(j, y, x);
+
                 PairInt p = new PairInt(y, x);
                 edgeIndexMap.put(p, index);
             }
@@ -8817,12 +8818,12 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         Stack<PairInt> stack = new Stack<PairInt>();
         for (int i = 0; i < edgeList.size(); ++i) {
             PairIntArray curve = edgeList.get(i);
+            int n = curve.getN(); 
 
             if ((curve instanceof PairIntArrayWithColor)
                 && ((PairIntArrayWithColor) curve).isClosedCurve()) {
                 continue;
             }
-            int n = curve.getN();  
             if ((n > 4) || adjToJunction.contains(Integer.valueOf(i))) {
                 PairInt p = new PairInt(curve.getX(0), curve.getY(0));
                 stack.add(p);
@@ -8838,7 +8839,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 
         while (!stack.isEmpty()) {
             PairInt p = stack.pop();
-            
+                        
             if (visited.contains(p)) {
                 continue;
             }
@@ -8853,7 +8854,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             if (aMemberIsOutOfBounds(x, y, hN, w, h)) {
                 continue;
             }
-            if (foundAdjacentEdge(x, y, edgeIndexMap, index, hN)) {
+            if (foundAdjacentEdge(x, y, edgeIndexMap, index, 1)) {
                 continue;
             }
                         
@@ -8907,7 +8908,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 x - sz, y - sz, x + sz, y + sz);
 
             // debugging...
-            if (false && (x < 82) && (x > 65) && (y > 330) && (y < 380)) {
+            if (false && (x < 95) && (x > 85) && (y > 363) && (y < 371)) {
 
                 for (int i = 0; i < outputLabAGradients.getNPixels(); ++i) {
                     int v = outputLabAGradients.getValue(i);
@@ -8978,10 +8979,10 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                         combined.setValue(i, v);
                     }
                 
-                    //MiscDebug.writeImage(outputGreyGradients,
-                    //    "_grey_LOCAL_edges_" + x + "_" + y);
-                    //MiscDebug.writeImage(outputO1Gradients,
-                    //    "_o1_LOCAL_edges_" + x + "_" + y);
+                    MiscDebug.writeImage(outputGreyGradients,
+                        "_grey_LOCAL_edges_" + x + "_" + y);
+                    MiscDebug.writeImage(outputO1Gradients,
+                        "_o1_LOCAL_edges_" + x + "_" + y);
                     MiscDebug.writeImage(combined,
                         "_combined_LOCAL_edges_" + x + "_" + y);
                 }

@@ -97,8 +97,8 @@ public class EdgeExtractorSimple {
         
         joinEdgesWithLJunctionSeparators();
                 
-        setEdgesAsOrdered();
-        
+        setEdgesAsOrderedAndClosed();
+                
         finished = true;
     }
 
@@ -421,7 +421,9 @@ public class EdgeExtractorSimple {
         
     }
 
-    private void setEdgesAsOrdered() {
+    private void setEdgesAsOrderedAndClosed() {
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         for (int i = 0; i < theEdges.size(); ++i) {
             
@@ -430,6 +432,12 @@ public class EdgeExtractorSimple {
             PairIntArrayWithColor e2 = new PairIntArrayWithColor(edge);
             
             e2.setAsOrderedCurve();
+            
+            if (e2.getN() > 2) {
+                if (curveHelper.isAdjacent(edge, 0, edge.getN() - 1)) {
+                    e2.setAsClosedCurve();
+                }
+            }
             
             theEdges.set(i, e2);
         }
@@ -663,5 +671,5 @@ public class EdgeExtractorSimple {
         
         return endpointMap;
     }
-    
+
 }
