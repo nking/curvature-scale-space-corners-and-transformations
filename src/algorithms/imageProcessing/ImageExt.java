@@ -307,6 +307,14 @@ public class ImageExt extends Image {
         extPopulated[idx] = true;
     }
     
+    @Override
+    public ImageExt createWithDimensions() {
+       
+        ImageExt img2 = new ImageExt(width, height, is64Bit);
+        
+        return img2;
+    }
+    
     public void calculateColorIncludingNeighbors(int idx, int neighborRadius) {
         
         if (neighborRadius == 0) {
@@ -338,6 +346,14 @@ public class ImageExt extends Image {
         }
     }
 
+    @Override
+    public ImageExt createWithDimensions(int theWidth, int theHeight) {
+       
+        ImageExt img2 = new ImageExt(theWidth, theHeight, is64Bit);
+        
+        return img2;
+    }
+    
     @Override
     public Image copyImage() {
     

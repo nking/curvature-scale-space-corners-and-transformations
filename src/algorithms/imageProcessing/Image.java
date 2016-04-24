@@ -783,6 +783,13 @@ public class Image {
         return img2;
     }
     
+    public Image createWithDimensions(int theWidth, int theHeight) {
+       
+        Image img2 = new Image(theWidth, theHeight, is64Bit);
+        
+        return img2;
+    }
+    
     /**
      * convenience method to fill image with the red, reen, and blue values
      * which are between 0 and 255 inclusive.

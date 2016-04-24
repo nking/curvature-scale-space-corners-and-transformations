@@ -74,7 +74,8 @@ public class HoughTransform {
         Map<Integer, Double> sineMap = Misc.getSineThetaMapForTwoPI();
         
         boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &&
-            (((PairIntArrayWithColor)edge).isClosedCurve());
+            (((PairIntArrayWithColor)edge).isClosedCurve()) &&
+            (edge.getN() > 2);
 
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
                     
@@ -186,7 +187,8 @@ public class HoughTransform {
             int nEdge = edge.getN();
             
             boolean curveIsClosed = (edge instanceof PairIntArrayWithColor) &&
-                (((PairIntArrayWithColor)edge).isClosedCurve());
+                (((PairIntArrayWithColor)edge).isClosedCurve()) &&
+                (edge.getN() > 2);
 
             List<CornerRegion> cornerList = cornerLists.get(cIdx);
             
@@ -643,8 +645,13 @@ public class HoughTransform {
                     continue;
                 }
                 
-                System.out.println("t=" + trMeanStDev[0] + " r=" + trMeanStDev[1] + 
-                    " mn=" + trMeanStDev[2] + " stdv=" + trMeanStDev[3]);
+ //TODO: revisit here.   elsewhere using only 0 to 180 degrees. 
+                if (trMeanStDev[0] > 179.99999f) {
+                    trMeanStDev[0] = 180.f - trMeanStDev[0];
+                }
+                
+                //System.out.println("t=" + trMeanStDev[0] + " r=" + trMeanStDev[1] + 
+                //    " mn=" + trMeanStDev[2] + " stdv=" + trMeanStDev[3]);
                 
                 PairInt tr = new PairInt((int)trMeanStDev[0], 
                     Math.round(trMeanStDev[1]));

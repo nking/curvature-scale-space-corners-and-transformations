@@ -4707,7 +4707,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         return tmpImg2;
     }
 
-    GreyscaleImage fillInGapsOf1(GreyscaleImage img,
+    public GreyscaleImage fillInGapsOf1(GreyscaleImage img,
         Set<PairInt> outputAddedGaps, int value) {
 
         int w = img.getWidth();
@@ -6264,7 +6264,15 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
 
     }
 
-    private List<Set<PairInt>> performSegmentationWithColorEdges(ImageExt input,
+    /**
+     * NOT READY FOR USE
+     * @param input
+     * @param greyGradient
+     * @param mt
+     * @param debugTag
+     * @return 
+     */
+    public List<Set<PairInt>> performSegmentationWithColorEdges(ImageExt input,
         GreyscaleImage greyGradient, SegmentationMergeThreshold mt,
         String debugTag) {
 
@@ -6275,9 +6283,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         
         Set<PairInt> mask = new HashSet<PairInt>();
 
-        List<Set<PairInt>> segmentedCellList = findContiguousCells(255,
+        List<Set<PairInt>> segmentedCellList = findContiguousCells(0,
             greyGradient, mask);
-
+ 
         if (fineDebug && debugTag != null && !debugTag.equals("")) {
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_before_" + debugTag);
@@ -6290,7 +6298,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         boolean useAvgCellColor;
 
         unassigned = createZerosSet(segmentedCellList, w, h, mask);
-
+        
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -6300,6 +6308,8 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             }
         }
 
+// TODO: edit performSegmentationWithColorEdges
+        
         useAvgCellColor = true;
         useDeltaE2000 = true;
         deltaELimit = 4;
@@ -8655,7 +8665,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
      * @param img
      * @return edge image holding values 0 or 255
      */
-    public GreyscaleImage createColorEdges(ImageExt img) {
+    public GreyscaleImage createColorEdges(Image img) {
       
         GreyscaleImage gsImg = img.copyBlueToGreyscale();
 
