@@ -6,7 +6,9 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
+import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**
@@ -119,9 +121,10 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
             // "susan-in_plus.png", "lena.jpg",
             // "campus_010.jpg", 
-            "android_statues_01.jpg", 
-            "android_statues_02.jpg", 
-            "android_statues_03.jpg", "android_statues_04.jpg"
+            //"android_statues_01.jpg", 
+            //"android_statues_02.jpg", 
+            //"android_statues_03.jpg", 
+            "android_statues_04.jpg"
         };
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -135,16 +138,257 @@ public class PhaseCongruencyDetectorTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath);            
             
             GreyscaleImage edgeImage = imageSegmentation.createColorEdges(img);
-
-            /*
-            ImageProcessor imageProcessor = new ImageProcessor();
-            GreyscaleImage labAImg = imageProcessor.createLabAandB(img)[1];
-            GreyscaleImage gsImg = img.copyToGreyscale();
-            GreyscaleImage o1Img = imageProcessor.createO1(img);
-            MiscDebug.writeImage(labAImg, "_laba_A_");
-            MiscDebug.writeImage(gsImg, "_grey_");
-            MiscDebug.writeImage(o1Img, "_o1_");
-            */
         }
+    }
+    
+    public void est2() throws Exception {
+
+        String[] fileNames = new String[]{
+            //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
+            // "susan-in_plus.png", "lena.jpg",
+            // "campus_010.jpg", 
+            //"android_statues_01.jpg", 
+            //"android_statues_02.jpg", 
+            //"android_statues_03.jpg", 
+            "android_statues_04.jpg"
+        };
+        
+        /*
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;// 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 10;//2;
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.0001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = true;
+        */
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;//4
+        int minWavelength = 3;//nScale;// 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 10;//2;
+        float g = 10;
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = false;
+                     
+        for (String fileName : fileNames) {
+            
+            System.out.println("fileName=" + fileName);
+        
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+            ImageExt img = ImageIOHelper.readImageExt(filePath);            
+            
+            /*
+            0 grey
+            1 r-g
+            2 b-g
+            3 r-b
+            */
+            int x0 = 600;
+            int x1 = 1200;
+            int y0 = 150;
+            int y1 = 750;
+            int width = x1 - x0;
+            int height = y1 - y0;
+            final int sz = 100;
+            
+            GreyscaleImage combined = new GreyscaleImage(width, height);
+            for (int xOff = 0; xOff < width; xOff += sz) {
+                if (xOff > 0) {
+                    xOff -= 10;
+                }
+                for (int yOff = 0; yOff < height; yOff += sz) {
+                    if (yOff > 0) {
+                        yOff -= 10;
+                    }
+                    for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+
+                        float[] values = null;
+                        String lbl = "";
+                        int count = 0;
+                        if (clrIdx == 0) {
+                            lbl = "_grey_";
+                            values = read_R_G_B(img, x0 + xOff, x0 + xOff + sz, y0 + yOff, y0 + yOff + sz);
+                        } else if (clrIdx == 1) {
+                            lbl = "_r-g_";
+                            values = read_R_minus_G(img, x0 + xOff, x0 + xOff + sz, y0 + yOff, y0 + yOff + sz);
+                        } else if (clrIdx == 2) {
+                            lbl = "_b-g_";
+                            values = read_B_minus_G(img, x0 + xOff, x0 + xOff + sz, y0 + yOff, y0 + yOff + sz);
+                        } else if (clrIdx == 3) {
+                            lbl = "_r-b_";
+                            values = read_R_minus_B(img, x0 + xOff, x0 + xOff + sz, y0 + yOff, y0 + yOff + sz);
+                        }
+                        values = MiscMath.rescale(values, 0, 255);
+
+                        GreyscaleImage img2 = new GreyscaleImage(sz, sz);
+                        count = 0;
+                        int e0 = sz;
+                        if ((x0 + xOff + sz) > x1) {
+                            e0 = x1 - x0 - xOff;//sz - (x0 + xOff + sz - x1);
+                        }
+                        int e1 = sz;
+                        if ((y0 + yOff + sz) > y1) {
+                            e1 = sz - (y0 + yOff + sz - y1);
+                        }
+                        for (int i = 0; i < e0; ++i) {
+                            for (int j = 0; j < e1; ++j) {
+                                int v = Math.round(values[count]);
+                                img2.setValue(i, j, v);
+                                count++;
+                            }
+                        }
+
+                        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+                        PhaseCongruencyDetector.PhaseCongruencyProducts products
+                            = phaseDetector.phaseCongMono(img2, nScale, minWavelength, mult,
+                                sigmaOnf, k, increaseKIfNeeded,
+                                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+                        int[][] thinned = products.getThinned();
+                        assert(thinned.length == sz);
+                        assert(thinned[0].length == sz);
+                        for (int j = 0; j < thinned.length; ++j) {
+                            for (int i = 0; i < thinned[j].length; ++i) {
+                                if (((i + xOff) > (combined.getWidth() - 1)) ||
+                                    ((j + yOff) > (combined.getHeight() - 1))) {
+                                    continue;
+                                }
+                                if (thinned[j][i] > 0) {
+                                    combined.setValue(i + xOff, j + yOff, 255);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            MiscDebug.writeImage(combined, "_COMBINED_EDGES_");
+        }
+    }
+    
+    private float[] read_R_G_B(ImageExt img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int g = img.getG(x, y);
+                int b = img.getB(x, y);
+                values[count] = r + g + b;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_R_minus_B(ImageExt img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int b = img.getB(x, y);
+                values[count] = r - b;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_B_minus_G(ImageExt img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int g = img.getG(x, y);
+                int b = img.getB(x, y);
+                values[count] = b - g;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_R_minus_G(ImageExt img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int g = img.getG(x, y);
+                values[count] = r - g;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
     }
 }
