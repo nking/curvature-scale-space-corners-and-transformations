@@ -8680,7 +8680,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
            
         // half width of neighbor region
         final int hN = 2;//3;
-   
+
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 

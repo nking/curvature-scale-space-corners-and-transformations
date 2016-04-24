@@ -1,10 +1,12 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.imageProcessing.CannyEdgeFilterLite;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.ResourceFinder;
@@ -115,7 +117,7 @@ public class PhaseCongruencyDetectorTest extends TestCase {
         }
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
 
         String[] fileNames = new String[]{
             //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
@@ -272,6 +274,147 @@ public class PhaseCongruencyDetectorTest extends TestCase {
                 }
             }
             MiscDebug.writeImage(combined, "_COMBINED_EDGES_");
+            
+        }
+    }
+       
+    public void test3() throws Exception {
+
+        String[] fileNames = new String[]{
+            //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", "merton_college_I_001.jpg",
+            // "susan-in_plus.png", "lena.jpg",
+            // "campus_010.jpg", 
+            //"android_statues_01.jpg", 
+            //"android_statues_02.jpg", 
+            //"android_statues_03.jpg", 
+            "android_statues_04.jpg"
+        };
+        
+        /*
+        a look at O(N) patterns to make a single combined image for input to
+        phase conguency that would result in closed curves for the main objects.
+        */
+                     
+        for (String fileName : fileNames) {
+            
+            System.out.println("fileName=" + fileName);
+        
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+        
+            ImageExt img = ImageIOHelper.readImageExt(filePath);            
+            
+            GreyscaleImage[] gradients = new GreyscaleImage[4];
+            GreyscaleImage[] masks = new GreyscaleImage[4];
+            String[] labels = new String[4];
+            /*
+            0 grey    min:    0    max: 255
+            1 r-g     min: -255    max: 255
+            2 b-g       "
+            3 r-b       "
+            */
+            for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+                masks[clrIdx] = new GreyscaleImage(img.getWidth(), 
+                    img.getHeight());
+                gradients[clrIdx] = new GreyscaleImage(img.getWidth(), 
+                    img.getHeight(), GreyscaleImage.Type.Bits32FullRangeInt);
+                if (clrIdx == 0) {
+                    labels[clrIdx] = "_grey_";
+                    for (int i = 0; i < img.getNPixels(); ++i) {
+                        int v = (img.getR(i) + img.getG(i) + img.getB(i))/3;
+                        gradients[clrIdx].setValue(i, v);
+                    }
+                } else if (clrIdx == 1) {
+                    labels[clrIdx] = "_r-g_";
+                    for (int i = 0; i < img.getNPixels(); ++i) {
+                        int v = img.getR(i) - img.getG(i);
+                        v = (v + 255)/2;
+                        gradients[clrIdx].setValue(i, v);
+                    }
+                } else if (clrIdx == 2) {
+                    labels[clrIdx] = "_b-g_";
+                    for (int i = 0; i < img.getNPixels(); ++i) {
+                        int v = img.getB(i) - img.getG(i);
+                        v = (v + 255)/2;
+                        gradients[clrIdx].setValue(i, v);
+                    }
+                } else if (clrIdx == 3) {
+                    labels[clrIdx] = "_r-b_";
+                    for (int i = 0; i < img.getNPixels(); ++i) {
+                        int v = img.getR(i) - img.getB(i);
+                        v = (v + 255)/2;
+                        gradients[clrIdx].setValue(i, v);
+                    }
+                }                 
+                CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+                filter.setToUseSobel();
+                filter.applyFilter(gradients[clrIdx]);
+            }
+            
+            GreyscaleImage combined =  new GreyscaleImage(img.getWidth(), 
+                img.getHeight(), GreyscaleImage.Type.Bits32FullRangeInt);
+            for (int i = 0; i < img.getNPixels(); ++i) {
+                int gradientMax = Integer.MIN_VALUE;
+                int maxClrIdx = -1;
+                for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+                    int v = gradients[clrIdx].getValue(i);
+                    if (v > gradientMax) {
+                        gradientMax = v;
+                        maxClrIdx = clrIdx;
+                    }
+                }
+                combined.setValue(i, gradientMax);
+                masks[maxClrIdx].setValue(i, 255);
+            }
+            
+            MiscDebug.writeImage(combined, "_MAX_SOBEL_EDGES_");
+            
+           // for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+           //     MiscDebug.writeImage(masks[clrIdx], "_mask_" + labels[clrIdx]);
+           // }
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.blur(combined, SIGMA.ONE);
+            
+            float[] values = new float[img.getNPixels()];
+            GreyscaleImage gsImg = img.copyToGreyscale();
+            for (int i = 0; i < img.getNPixels(); ++i) {
+                values[i] = gsImg.getValue(i) + 5*combined.getValue(i);
+            }
+            values = MiscMath.rescale(values, 0, 255);
+            
+            for (int i = 0; i < img.getNPixels(); ++i) {
+                gsImg.setValue(i, Math.round(values[i]));
+            }
+            MiscDebug.writeImage(gsImg, "_greyscale_plus_edges_");
+            
+            float cutOff = 0.5f;//0.3f;//0.5f;
+            int nScale = 5;//4
+            int minWavelength = 3;//nScale;// 3;
+            float mult = 2.1f;
+            float sigmaOnf = 0.55f;
+            int k = 10;//2;
+            float g = 10;
+            float deviationGain = 1.5f;
+            int noiseMethod = -1;
+            double tLow = 0.00001;
+            double tHigh = 0.1;
+            boolean increaseKIfNeeded = false;
+            
+            PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+            PhaseCongruencyDetector.PhaseCongruencyProducts products
+                = phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult,
+                    sigmaOnf, k, increaseKIfNeeded,
+                    cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+            int[][] thinned = products.getThinned();
+            for (int j = 0; j < thinned.length; ++j) {
+                for (int i = 0; i < thinned[j].length; ++i) {
+                    int v = 0;
+                    if (thinned[j][i] > 0) {
+                        v = 255;
+                    }
+                    gsImg.setValue(i, j, v);
+                }
+            }
+            MiscDebug.writeImage(gsImg, "_greyscale_plus_edges_PC_");
         }
     }
     

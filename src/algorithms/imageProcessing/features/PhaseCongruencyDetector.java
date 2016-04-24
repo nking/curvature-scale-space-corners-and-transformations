@@ -133,6 +133,15 @@ import java.util.Set;
 %
 %     Peter Kovesi, "Phase Congruency Detects Corners and Edges". Proceedings
 %     DICTA 2003, Sydney Dec 10-12
+  
+     runtime complexity of majority of algorithm is a constant factor, that 
+     depends upon parameters chosen, times O(N*lg_2(N)),
+     but each operation uses a transendental function.
+
+     the advantage to using phase congruency is that it's possible to produce
+     consistent clean edges with less noise and representing a wide range of 
+     intensity contrast.
+
  */
 public class PhaseCongruencyDetector {
     
