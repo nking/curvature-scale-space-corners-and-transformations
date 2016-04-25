@@ -6416,7 +6416,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             + " n4DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" +div);
         
         //TODO: may need a setting for moderate contrast and then set deltaELimit=0.5 here
-        deltaELimit = 1.;
+        deltaELimit = 0.25;//1.;
         mergeAdjacentIfSimilar(input, segmentedCellList, deltaELimit,
             useDeltaE2000, debugTag);
 
@@ -6441,6 +6441,10 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
             MiscDebug.writeAlternatingColor(input.copyImage(),
                 segmentedCellList, "_tmp_6_" + debugTag);
         }
+        
+        if (mt.equals(SegmentationMergeThreshold.DEFAULT)) {
+            return segmentedCellList;
+        }        
 
         int n5 = segmentedCellList.size();
 
@@ -6458,7 +6462,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         div = (n2Andn8[0] == 0) ? Float.MAX_VALUE : (float)n2Andn8[1]/(float)n2Andn8[0];
         log.info(debugTag + " n7DeltaE < 2 = " + n2Andn8[0] 
             + " n7DeltaE > 2 and < 8 = " + n2Andn8[1] + " div=" + div);
-        deltaELimit = 0.5;
+        deltaELimit = 0.25;
         boolean lower = true;
         if ((n2Andn8[0] > n2Andn8[1]) && (div <= 0.5)) {
             lower = false;
@@ -6543,26 +6547,6 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 segmentedCellList, "_tmp_9_" + debugTag);
         }
 
-        /*
-        this level of merging preserves boundaries to semi-low contrast,
-        that is, should not result in merging of snowy and rocky mountain tops
-        with bluish skies, and should not merge icecream with a tan background.
-        */
-        if (mt.equals(SegmentationMergeThreshold.DEFAULT)) {
-            pointIndexMap = new HashMap<PairInt, Integer>();
-            for (int i = 0; i < segmentedCellList.size(); ++i) {
-                Set<PairInt> set = segmentedCellList.get(i);
-                Integer key = Integer.valueOf(i);
-                for (PairInt p : set) {
-                    pointIndexMap.put(p, key);
-                }
-            }
-            deltaELimit = 0.5;//0.25
-            mergeAdjacentIfSimilar2(input, segmentedCellList, pointIndexMap,
-                deltaELimit, useDeltaE2000, debugTag);
-            return segmentedCellList;
-        }
-        
         pointIndexMap = new HashMap<PairInt, Integer>();
         for (int i = 0; i < segmentedCellList.size(); ++i) {
             Set<PairInt> set = segmentedCellList.get(i);
@@ -8657,7 +8641,9 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
     /**
      * NOT READY FOR USE.
      * create edges for img using phase congruency edges and then sparse color 
-     * gradients (O1 and lab A).  
+     * gradients (b-g, g-b, and r-b) to complete the curves.  The results 
+     * contain closed curves, but need to be followed by merging similar color
+     * cells.
      * Note that the returned result contains values 0 or 255 for
      * easier display.  This returned format in the future will likely hold 
      * just binary 0 or 1 in a more compact internal structure in the 
@@ -8712,45 +8698,6 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
                 
         ImageProcessor imageProcessor = new ImageProcessor();
 
- /*       
-        phaseDetector = new PhaseCongruencyDetector();
-        products = phaseDetector.phaseCongMono(imageProcessor.createO1(img), 
-            nScale, minWavelength, mult, sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-        int[][] thinnedO1 = products.getThinned();
-        {
-            GreyscaleImage out2 = gsImg.createWithDimensions();
-            for (int i = 0; i < thinnedO1.length; ++i) {
-                for (int j = 0; j < thinnedO1[i].length; ++j) {
-                    if (thinnedO1[i][j] > 0) {
-                        out2.setValue(j, i, 255);
-                    }
-                }
-            }
-            MiscDebug.writeImage(out2, "_EDGES_O1_");
-        }
-        for (int i = 0; i < thinned.length; ++i) {
-            for (int j = 0; j < thinned[i].length; ++j) {
-                if (thinnedO1[i][j] > 0) {
-                    thinned[i][j] = 1;
-                }
-            }
-        }
-        thinnedO1 = null;
-        products = null;
-        
-        {
-            GreyscaleImage out2 = gsImg.createWithDimensions();
-            for (int i = 0; i < thinned.length; ++i) {
-                for (int j = 0; j < thinned[i].length; ++j) {
-                    if (thinned[i][j] > 0) {
-                        out2.setValue(j, i, 255);
-                    }
-                }
-            }
-            MiscDebug.writeImage(out2, "_EDGES_grey_plus_o1_");
-        }
-  */
         GreyscaleImage edgeImg = null;
        
         /*
@@ -8992,331 +8939,315 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         return edgeImg;
     }
     
-    public GreyscaleImage createColorEdges_2(ImageExt img) {
-      
-        GreyscaleImage gsImg = img.copyBlueToGreyscale();
-
+    /**
+     * NOT READY FOR USE.
+     * create edges for img using phase congruency edges for grey 
+     * (b-g, g-b, and r-b).
+     * 
+     * Note that the returned result contains values 0 or 255 for
+     * easier display.  This returned format in the future will likely hold 
+     * just binary 0 or 1 in a more compact internal structure in the 
+     * GreyscaleImage.
+     * @param img
+     * @param cellSize if 0 or less is full image, else cellSize is the 
+     * length in x and the length in y to perform phase congruency on in a 
+     * tiled, overlapping manner.
+     * @return edge image holding values 0 or 255
+     */
+    public GreyscaleImage createColorEdges_1(Image img, int cellSize) {
+        
         float cutOff = 0.5f;//0.3f;//0.5f;
-        int nScale = 5;
+        int nScale = 5;//4
         int minWavelength = 3;//nScale;// 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 5;//2;
-        float g = 10; 
+        int k = 10;//2;
+        float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
-        double tLow = 0.0001;
+        double tLow = 0.001;
         double tHigh = 0.1;
-        boolean increaseKIfNeeded = true;
+        boolean increaseKIfNeeded = false;
         
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int width = img.getWidth();
+        int height = img.getHeight();
+        int x0 = 0;
+        int x1 = width;
+        int y0 = 0;
+        int y1 = height;
+
+        int szX, szY, dXOff, dYOff;
+        if (cellSize < 1) {
+            szX = width;
+            szY = height;
+            dXOff = 0;
+            dYOff = 0;
+        } else {
+            szX = cellSize;
+            szY = cellSize;
+            dXOff = 15;
+            dYOff = 15;
+        }
         
-        final int w = img.getWidth();
-        final int h = img.getHeight();
-           
-        // half width of neighbor region
-        final int hN = 2;//3;
-   
-        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
-        PhaseCongruencyDetector.PhaseCongruencyProducts products =
-            phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
-            sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-        
-        int[][] thinned = products.getThinned();
-        {
-            GreyscaleImage out2 = gsImg.createWithDimensions();
-            for (int i = 0; i < thinned.length; ++i) {
-                for (int j = 0; j < thinned[i].length; ++j) {
-                    if (thinned[i][j] > 0) {
-                        out2.setValue(j, i, 255);
+        GreyscaleImage combined = new GreyscaleImage(width, height);
+        for (int xOff = 0; xOff < width; xOff += szX) {
+            if (xOff > 0) {
+                xOff -= dXOff;
+            }
+            for (int yOff = 0; yOff < height; yOff += szY) {
+                if (yOff > 0) {
+                    yOff -= dYOff;
+                }
+                for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+                    float[] values = null;
+                    int count = 0;
+                    if (clrIdx == 0) {
+                        values = read_R_G_B(img, x0 + xOff, x0 + xOff + szX, 
+                            y0 + yOff, y0 + yOff + szY);
+                    } else if (clrIdx == 1) {
+                        values = read_R_minus_G(img, x0 + xOff, x0 + xOff + szX, 
+                            y0 + yOff, y0 + yOff + szY);
+                    } else if (clrIdx == 2) {
+                        values = read_B_minus_G(img, x0 + xOff, x0 + xOff + szX, 
+                            y0 + yOff, y0 + yOff + szY);
+                    } else if (clrIdx == 3) {
+                        values = read_R_minus_B(img, x0 + xOff, x0 + xOff + szX, 
+                            y0 + yOff, y0 + yOff + szY);
                     }
-                }
-            }
-            MiscDebug.writeImage(out2, "_EDGES_grey_");
-        }
-                
-        ImageProcessor imageProcessor = new ImageProcessor();
+                    values = MiscMath.rescale(values, 0, 255);
 
- /*       
-        phaseDetector = new PhaseCongruencyDetector();
-        products = phaseDetector.phaseCongMono(imageProcessor.createO1(img), 
-            nScale, minWavelength, mult, sigmaOnf, k, increaseKIfNeeded,
-            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
-        int[][] thinnedO1 = products.getThinned();
-        {
-            GreyscaleImage out2 = gsImg.createWithDimensions();
-            for (int i = 0; i < thinnedO1.length; ++i) {
-                for (int j = 0; j < thinnedO1[i].length; ++j) {
-                    if (thinnedO1[i][j] > 0) {
-                        out2.setValue(j, i, 255);
+                    GreyscaleImage img2 = new GreyscaleImage(szX, szY);
+                    count = 0;
+                    int e0 = szX;
+                    if ((x0 + xOff + szX) > x1) {
+                        e0 = x1 - x0 - xOff;//sz - (x0 + xOff + sz - x1);
                     }
-                }
-            }
-            MiscDebug.writeImage(out2, "_EDGES_O1_");
-        }
-        for (int i = 0; i < thinned.length; ++i) {
-            for (int j = 0; j < thinned[i].length; ++j) {
-                if (thinnedO1[i][j] > 0) {
-                    thinned[i][j] = 1;
-                }
-            }
-        }
-        thinnedO1 = null;
-        products = null;
-        
-        {
-            GreyscaleImage out2 = gsImg.createWithDimensions();
-            for (int i = 0; i < thinned.length; ++i) {
-                for (int j = 0; j < thinned[i].length; ++j) {
-                    if (thinned[i][j] > 0) {
-                        out2.setValue(j, i, 255);
+                    int e1 = szY;
+                    if ((y0 + yOff + szY) > y1) {
+                        e1 = szY - (y0 + yOff + szY - y1);
                     }
-                }
-            }
-            MiscDebug.writeImage(out2, "_EDGES_grey_plus_o1_");
-        }
-  */
-        GreyscaleImage edgeImg = null;
-       
-        /*
-        sparse color gradients:
-            0  r-g
-            1  b-g
-            2  r-b
-        */
-        for (int clrIdx = 0; clrIdx < 3; ++clrIdx) {
-        
-            EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
-            extractor.extractEdges();
-            List<PairIntArray> edgeList = extractor.getEdges();
-            Set<PairInt> junctions = extractor.getJunctions();
+                    for (int i = 0; i < e0; ++i) {
+                        for (int j = 0; j < e1; ++j) {
+                            int v = Math.round(values[count]);
+                            img2.setValue(i, j, v);
+                            count++;
+                        }
+                    }
 
-            Map<PairInt, Integer> edgeIndexMap = new HashMap<PairInt, Integer>();
-            for (int i = 0; i < edgeList.size(); ++i) {
-                PairIntArray curve = edgeList.get(i);
-                Integer index = Integer.valueOf(i);
-                for (int j = 0; j < curve.getN(); ++j) {
-                    int x = curve.getX(j);
-                    int y = curve.getY(j);
-                    curve.set(j, y, x);
-
-                    PairInt p = new PairInt(y, x);
-                    edgeIndexMap.put(p, index);
-                }
-            }
-            {
-                // junctions are using format a[row][col] so change to GreyscaleImage col, row
-                Set<PairInt> tmp = new HashSet<PairInt>();
-                for (PairInt p : junctions) {
-                    int x = p.getX();
-                    int y = p.getY();
-                    tmp.add(new PairInt(y, x));
-                }
-                junctions.clear();
-                junctions.addAll(tmp);
-            }
-
-            Set<PairInt> added = new HashSet<PairInt>();
-
-            // to avoid processing some of the noise, there's a minimum line 
-            // length for curves used to initialize the stack,
-            // but because the edgeextractorsimple prefers to keep curves with
-            // junctions separated by the junction, those curves adjacent to 
-            // junctions, even when small in length, should be processed.
-
-            Set<Integer> adjToJunction = new HashSet<Integer>();
-            for (int i = 0; i < edgeList.size(); ++i) {
-                PairIntArray curve = edgeList.get(i);
-                if ((curve instanceof PairIntArrayWithColor)
-                    && ((PairIntArrayWithColor) curve).isClosedCurve()) {
-                    continue;
-                }
-                int n = curve.getN();
-                boolean foundJunction = false;
-                for (int j = 0; j < 2; ++j) {
-                    PairInt p = (j == 0) ? 
-                        new PairInt(curve.getX(0), curve.getY(0)) :
-                        new PairInt(curve.getX(n - 1), curve.getY(n - 1));
-                    for (int dIdx = 0; dIdx < dxs.length; ++dIdx) {
-                        int x2 = p.getX() + dxs[dIdx];
-                        int y2 = p.getY() + dys[dIdx];
-                        PairInt p2 = new PairInt(x2, y2);                    
-                        if (junctions.contains(p2)) {
-                            adjToJunction.add(Integer.valueOf(i));
-                            foundJunction = true;
-                            break;
-                        } else {
-                            Integer index2 = edgeIndexMap.get(p2);
-                            if (index2 != null && index2.intValue() != i) {
-                                adjToJunction.add(Integer.valueOf(i));
-                                foundJunction = true;
-                                break;
+                    PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+                    PhaseCongruencyDetector.PhaseCongruencyProducts products
+                        = phaseDetector.phaseCongMono(img2, nScale, minWavelength, mult,
+                            sigmaOnf, k, increaseKIfNeeded,
+                            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+                    int[][] thinned = products.getThinned();
+                    assert(thinned.length == szX);
+                    assert(thinned[0].length == szY);
+                    for (int j = 0; j < thinned.length; ++j) {
+                        for (int i = 0; i < thinned[j].length; ++i) {
+                            if (((i + xOff) > (combined.getWidth() - 1)) ||
+                                ((j + yOff) > (combined.getHeight() - 1))) {
+                                continue;
+                            }
+                            if (thinned[j][i] > 0) {
+                                combined.setValue(i + xOff, j + yOff, 255);
                             }
                         }
                     }
-                    if (foundJunction) {
-                        break;
-                    }
                 }
-            }
-        
-            Set<PairInt> visited = new HashSet<PairInt>();
-            Stack<PairInt> stack = new Stack<PairInt>();
-            for (int i = 0; i < edgeList.size(); ++i) {
-                PairIntArray curve = edgeList.get(i);
-                int n = curve.getN(); 
-
-                if ((curve instanceof PairIntArrayWithColor)
-                    && ((PairIntArrayWithColor) curve).isClosedCurve()) {
-                    continue;
-                }
-                if ((n > 4) || adjToJunction.contains(Integer.valueOf(i))) {
-                    PairInt p = new PairInt(curve.getX(0), curve.getY(0));
-                    stack.add(p);
-                    if (n > 1) {
-                        p = new PairInt(curve.getX(n - 1), curve.getY(n - 1));
-                        stack.add(p);
-                    }
-                }
-            }
-
-            GreyscaleImage outputGradients = gsImg.createFullRangeIntWithDimensions();
-            outputGradients.fill(-1);
-
-            int sz = 3;
-            int kHL = 3;
-
-            while (!stack.isEmpty()) {
-                PairInt p = stack.pop();
-
-                if (visited.contains(p)) {
-                    continue;
-                }
-                visited.add(p);
-                Integer index = edgeIndexMap.get(p);
-                final int x = p.getX();
-                final int y = p.getY();
-                // quick check to see if this point is adjacent to another edge.
-                // and if so, do not process further.
-                // also, if any point is out of bounds, can skip processing
-
-                if (aMemberIsOutOfBounds(x, y, hN, w, h)) {
-                    continue;
-                }
-                if (foundAdjacentEdge(x, y, edgeIndexMap, index, 1)) {
-                    continue;
-                }
-
-                if ((x < (sz + kHL)) || (y < (sz + kHL)) || 
-                    (x > (img.getWidth() - 1 - (sz + kHL))) ||
-                    (y > (img.getHeight() - 1 - (sz + kHL)))) {
-                    // TODO: need to adjust the sparse gradient method 
-                    // to handle points ner image boundaries
-                    continue;
-                }
-
-                CannyEdgeFilterLite cnf = new CannyEdgeFilterLite();
-
-                int len = (2 * (sz + kHL)) + 1;
-                float[] values = new float[len * len];
-                int count = 0;
-                int startX = (x - sz - kHL);
-                int endX = (x + sz + kHL);
-                int startY = (y - sz - kHL);
-                int endY = (y + sz + kHL);
-                for (int xp = startX; xp <= endX; ++xp) {
-                    for (int yp = startY; yp <= endY; ++yp) {
-                        if (clrIdx == 0) {
-                            values[count] = img.getR(xp, yp) - img.getG(xp, yp);
-                        } else if (clrIdx == 1) {
-                            values[count] = img.getB(xp, yp) - img.getG(xp, yp);
-                        } else if (clrIdx == 2) {
-                            values[count] = img.getR(xp, yp) - img.getB(xp, yp);
-                        }
-
-                        count++;
-                    }
-                }
-                values = MiscMath.rescale(values, 0, 255);
-                Map<PairInt, Integer> scaledValues = new HashMap<PairInt, Integer>();
-                count = 0;
-                for (int xp = startX; xp <= endX; ++xp) {
-                    for (int yp = startY; yp <= endY; ++yp) {
-                        int v = Math.round(values[count]);
-                        scaledValues.put(new PairInt(xp, yp), v);
-                        count++;
-                    }
-                }
-
-                cnf.applyFilterToRegion(scaledValues, outputGradients,
-                    x - sz, y - sz, x + sz, y + sz);
-              
-                Stack<PairInt> stack2 = new Stack<PairInt>();
-                stack2.add(new PairInt(x, y));
-
-                PairInt lastPAdded = null;
-
-                while (!stack2.isEmpty()) {
-                    PairInt pG = stack2.pop();
-                    int max = Integer.MIN_VALUE;
-                    PairInt maxP = null;
-                    for (int dIdx = 0; dIdx < dxs.length; ++dIdx) {
-                        int x2 = pG.getX() + dxs[dIdx];
-                        int y2 = pG.getY() + dys[dIdx];
-                        PairInt p2 = new PairInt(x2, y2);
-                        if (edgeIndexMap.containsKey(p2)) {
-                            continue;
-                        }
-                        if (countNeighbors(edgeIndexMap, x2, y2) > 2) {
-                            continue;
-                        }
-                        int v2 = outputGradients.getValue(x2, y2);
-                        if ((v2 > 0) && (v2 > max)) {
-                            max = v2;
-                            maxP = p2;
-                        }
-                    }
-                    if (maxP != null) {
-                        edgeIndexMap.put(maxP, index);
-                        added.add(maxP);
-                        lastPAdded = maxP;
-
-                        // if a point on the boundary of gradient region is found, exit now
-                        if ((Math.abs(maxP.getX() - x) == (sz - 1)) || 
-                            (Math.abs(maxP.getY() - y) == (sz - 1))) {
-                            break;
-                        }
-                        stack2.add(maxP);
-                    }
-                }
-                if (lastPAdded != null) {
-                    stack.add(lastPAdded);
-                }
-            }
-            System.out.println("number of points added = " + added.size());
-
-            for (PairInt p : added) {
-                int x = p.getX();
-                int y = p.getY();
-                thinned[y][x] = 1;
-            }
-            
-            {
-                edgeImg = gsImg.createWithDimensions();
-                for (int i = 0; i < thinned.length; ++i) {
-                    for (int j = 0; j < thinned[i].length; ++j) {
-                        if (thinned[i][j] > 0) {
-                            edgeImg.setValue(j, i, 255);
-                        }
-                    }
-                }
-                MiscDebug.writeImage(edgeImg, "_EDGES_2_" + clrIdx + "_");
             }
         }
         
-        return edgeImg;
+        return combined;
+    }
+    
+    /**
+     * NOT READY FOR USE.
+     * create edges for img the maximum of sobel edges that are grey 
+     * (b-g, g-b, and r-b).
+     * 
+     * Note that the returned result contains values 0 or 255 for
+     * easier display.  This returned format in the future will likely hold 
+     * just binary 0 or 1 in a more compact internal structure in the 
+     * GreyscaleImage.
+     * @param img
+     * @return edge image holding values 0 or 255
+     */
+    public GreyscaleImage createColorEdges_2(Image img) {
+        
+        GreyscaleImage[] gradients = new GreyscaleImage[4];
+          
+        /*
+        0 grey    min:    0    max: 255 
+        1 r-g     min: -255    max: 255 
+        2 b-g       "
+        3 r-b       "
+        */
+        for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+            gradients[clrIdx] = new GreyscaleImage(img.getWidth(), 
+                img.getHeight(), GreyscaleImage.Type.Bits32FullRangeInt);
+            if (clrIdx == 0) {
+                for (int i = 0; i < img.getNPixels(); ++i) {
+                    int v = (img.getR(i) + img.getG(i) + img.getB(i))/3;
+                    gradients[clrIdx].setValue(i, v);
+                }
+            } else if (clrIdx == 1) {
+                for (int i = 0; i < img.getNPixels(); ++i) {
+                    int v = img.getR(i) - img.getG(i);
+                    v = (v + 255)/2;
+                    gradients[clrIdx].setValue(i, v);
+                }
+            } else if (clrIdx == 2) {
+                for (int i = 0; i < img.getNPixels(); ++i) {
+                    int v = img.getB(i) - img.getG(i);
+                    v = (v + 255)/2;
+                    gradients[clrIdx].setValue(i, v);
+                }
+            } else if (clrIdx == 3) {
+                for (int i = 0; i < img.getNPixels(); ++i) {
+                    int v = img.getR(i) - img.getB(i);
+                    v = (v + 255)/2;
+                    gradients[clrIdx].setValue(i, v);
+                }
+            }               
+            CannyEdgeFilterLite filter = new CannyEdgeFilterLite();
+            filter.setToUseSobel();
+            filter.setToUseOtsu();
+            filter.applyFilter(gradients[clrIdx]);            
+        }
+
+        GreyscaleImage combined =  new GreyscaleImage(img.getWidth(), 
+            img.getHeight(), GreyscaleImage.Type.Bits32FullRangeInt);
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int gradientMax = Integer.MIN_VALUE;
+            int maxClrIdx = -1;
+            for (int clrIdx = 0; clrIdx < 4; ++clrIdx) {
+                int v = gradients[clrIdx].getValue(i);
+                if (Math.abs(v) > Math.abs(gradientMax)) {
+                    gradientMax = v;
+                    maxClrIdx = clrIdx;
+                }
+            }
+            combined.setValue(i, gradientMax);
+        }
+        
+        return combined;
+    }
+    
+    private float[] read_R_G_B(Image img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int g = img.getG(x, y);
+                int b = img.getB(x, y);
+                values[count] = r + g + b;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_R_minus_B(Image img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int b = img.getB(x, y);
+                values[count] = r - b;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_B_minus_G(Image img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int g = img.getG(x, y);
+                int b = img.getB(x, y);
+                values[count] = b - g;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
+    }
+    
+    private float[] read_R_minus_G(Image img, int x0, int x1, int y0, int y1) {
+        
+        int nx = x1 - x0;
+        int ny = y1 - y0;
+        
+        float[] values = new float[nx * ny];
+        
+        int count = 0;
+        
+        for (int x = x0; x < x1; ++x) {
+            if (x > (img.getWidth() - 1)) {
+                break;
+            }
+            for (int y = y0; y < y1; ++y) {
+                if (y > (img.getHeight() - 1)) {
+                    break;
+                }
+                int r = img.getR(x, y);
+                int g = img.getG(x, y);
+                values[count] = r - g;
+                count++;
+            }
+        }
+        if (count < nx * ny) {
+            values = Arrays.copyOf(values, count);
+        }
+        return values;
     }
     
     private int[][] copy(int[][] a) {

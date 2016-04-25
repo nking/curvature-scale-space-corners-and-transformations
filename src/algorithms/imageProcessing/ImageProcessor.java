@@ -2419,7 +2419,6 @@ if (sum > 511) {
         return out;
     }
 
-
     public GreyscaleImage expandBy2UsingBilinearInterp(GreyscaleImage input) {
 
         if (input == null) {
@@ -2492,7 +2491,7 @@ if (sum > 511) {
 
         return out;
     }
-
+    
     public GreyscaleImage unbinImage(GreyscaleImage input, int binFactor) {
 
         if (input == null) {
@@ -3234,8 +3233,7 @@ if (sum > 511) {
     }
 
     /**
-     * apply 2D FFT transform using the efficient iterative power of 2 method
-     * that uses the butterfly operation.
+     * apply 2D FFT transform .
      *
      * @param input
      * @param doNormalize perform FFT normalization if true
@@ -5251,4 +5249,102 @@ if (sum > 511) {
 
         return gbImg;
     }
+    
+    public void apply2LayerFilterOtsu(GreyscaleImage input) {
+     
+        apply2LayerFilterOtsu(input, 0.75f, 2.f);
+    }
+    
+    public void apply2LayerFilterOtsu(GreyscaleImage input, float otsuFactor,
+        float lowToHighFactor) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        if (w < 3 || h < 3) {
+            throw new IllegalArgumentException("images should be >= 3x3 in size");
+        }
+    
+        OtsuThresholding ot = new OtsuThresholding();
+            
+        float tHigh = tHigh = otsuFactor * ot.calculateBinaryThreshold256(input);
+        float tLow = tHigh/lowToHighFactor;
+            
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int n = input.getNPixels();
+        
+        GreyscaleImage img2 = input.createWithDimensions();
+        
+        for (int i = 0; i < img2.getNPixels(); ++i) {
+            
+            int v = input.getValue(i);
+            
+            if (v < tLow) {
+                continue;
+            } else if (v > tHigh) {
+                img2.setValue(i, v);
+                continue;
+            }
+            
+            int x = input.getCol(i);
+            int y = input.getRow(i);
+            
+            boolean foundHigh = false;
+            boolean foundMid = false;
+            
+            for (int k = 0; k < dxs.length; ++k) {                
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if ((x2 < 0) || (y2 < 0) || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                    continue;
+                }
+                int v2 = input.getValue(x2, y2);
+                if (v2 > tHigh) {
+                    foundHigh = true;
+                    break;
+                } else if (v2 > tLow) {
+                    foundMid = true;
+                }
+            }
+            if (foundHigh) {
+                img2.setValue(i, v);
+                continue;
+            }
+            if (!foundMid) {
+                continue;
+            }
+            // search the 5 by 5 region for a "sure edge" pixel
+            for (int dx = -2; dx <= 2; ++dx) {
+                int x2 = x + dx;
+                if ((x2 < 0) || (x2 > (w - 1))) {
+                    continue;
+                }
+                for (int dy = -2; dy <= 2; ++dy) {
+                    int y2 = y + dy;
+                    if ((y2 < 0) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    if (x2 == x && y2 == y) {
+                        continue;
+                    }
+                    int v2 = input.getValue(x2, y2);
+                    if (v2 > tHigh) {
+                        img2.setValue(i, v);
+                        foundHigh = true;
+                        break;
+                    }
+                }
+                if (foundHigh) {
+                    break;
+                }
+            }
+        }
+        
+        input.resetTo(img2);
+        
+        // apply post thinning corrections?
+    }
+
 }

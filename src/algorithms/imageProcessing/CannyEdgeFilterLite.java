@@ -51,11 +51,17 @@ public class CannyEdgeFilterLite {
     
     protected int[] shrinkToSize = null;
     
+    protected boolean useOtsu = false;
+    
     public CannyEdgeFilterLite() {        
     }
     
     public void setToUseSobel() {
         this.overrideToUseSobel = true;
+    }
+    
+    public void setToUseOtsu() {
+        this.useOtsu = true;
     }
        
     public void setLineThinnerClass(Class<? extends ILineThinner> cls) {
@@ -184,34 +190,40 @@ public class CannyEdgeFilterLite {
             throw new IllegalArgumentException("images should be >= 3x3 in size");
         }
         
+        if (useOtsu) {
+            ImageProcessor imageProcessor = new ImageProcessor();
+            imageProcessor.apply2LayerFilterOtsu(input);
+            return;
+        }
+        
         HistogramHolder imgHistogram = createImageHistogram(input);
-        
+
         LowIntensityRemovalFilter filter2 = new LowIntensityRemovalFilter();
-        
+
         if (lowThreshold != defaultLowThreshold) {
             filter2.overrideLowThresholdFactor(lowThreshold);
         }
-        
+
         ImageStatistics stats = filter2.removeLowIntensityPixels(input,
             imgHistogram);
-        
+
         lowThresholdApplied2Layer = stats.getLowThresholdApplied();
-                
+
         log.info("2-layer filter: low thresh=" + lowThresholdApplied2Layer);
-        
+
         double threshold2 = lowThresholdApplied2Layer * highThreshold;
-        
+
         // count number of pixels between lowThresh and threshold2 and
         // above threshold2.  the later should help scale highThreshold
         // factor from 3 to 5 when needed.
         int n0 = ImageStatisticsHelper.countPixels(input, (int)lowThresholdApplied2Layer, 
             (int)threshold2);
-        
+
         int n1 = ImageStatisticsHelper.countPixels(input,
             (int)threshold2, 255);
-        
+
         double r = (double)n1/(double)n0;
-        
+
         /*
         NOTE: if wanted the final result to include slightly lower intensity
         pixels w/o changing the noise level, these parameters seem to give the
@@ -770,4 +782,5 @@ public class CannyEdgeFilterLite {
         return hist;
     }
 
+    
 }
