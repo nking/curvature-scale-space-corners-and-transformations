@@ -5,6 +5,8 @@ import algorithms.imageProcessing.EdgeExtractorSimple;
 import algorithms.imageProcessing.FilterGrid;
 import algorithms.imageProcessing.FilterGrid.FilterGridProducts;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.LowPassFilter;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -18,6 +20,7 @@ import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
+import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.CornerArray;
 import algorithms.util.Errors;
@@ -547,7 +550,7 @@ public class PhaseCongruencyDetector {
                     }
                 }
             }
-                    
+            
             /*
             Form weighting that penalizes frequency distributions that are
             particularly narrow.  Calculate fractional 'width' of the frequencies
@@ -572,7 +575,7 @@ public class PhaseCongruencyDetector {
                     weight[row][col] = 1./(1. + v);
                 }
             }
-        }  // end for each scale
+        } // end for each scale
         
         /*
         Automatically determine noise threshold
@@ -760,7 +763,10 @@ public class PhaseCongruencyDetector {
         products.setParameters(nScale, minWavelength, mult, sigmaOnf, k, cutOff,
             g, deviationGain, noiseMethod, tLow, tHigh, increaseKIfNeeded);
         
-        createEdges(products, thinnedPC, tLow, tHigh);
+        int[][] thinned = createEdges(products.getPhaseCongruency(), thinnedPC, 
+            products.getPhaseAngle(), tLow, tHigh);
+        
+        products.setThinnedImage(thinned);
 
         if (determineCorners) {
             
@@ -900,14 +906,15 @@ public class PhaseCongruencyDetector {
 
     /**
      * creating edges using thinned phase angle image.
-     * @param products
+     * @param pc
+     * @param thinnedPC
+     * @param phaseAngle
      * @param tLow
      * @param tHigh 
+     * @return  
      */
-    private void createEdges(PhaseCongruencyProducts products, 
-        double[][] thinnedPC, double tLow, double tHigh) {
-        
-        double[][] phaseAngle = products.getPhaseAngle();
+    public int[][] createEdges(double[][] pc, double[][] thinnedPC, 
+        double[][] phaseAngle, double tLow, double tHigh) {
         
         int nRows = phaseAngle.length;
         int nCols = phaseAngle[0].length;
@@ -916,8 +923,8 @@ public class PhaseCongruencyDetector {
         Set<PairInt> darkLinePoints = new HashSet<PairInt>();
         Set<PairInt> stepPoints = new HashSet<PairInt>();
                     
-        double piDiv2 = Math.PI/2.;
-        double piDiv4 = piDiv2/2.;
+        double piDiv4 = Math.PI/4.;
+        double tolerance = piDiv4/2.;
         
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
@@ -925,46 +932,52 @@ public class PhaseCongruencyDetector {
                 if (thinnedPC[row][col] < tLow) {
                     continue;
                 }
-                // placing values closer to -pi/2 than 0 into img0,
-                //         values closer to +p1/2 than 0 into img2,
-                //         else they are closer to 0 and in img1
-                // TODO: when see the results, might consider a smaller tolerance
-                //        than piDiv4 for steps
+                // placing values closer to -pi/2 than 0 are darklines
+                //         values closer to +p1/2 than 0 are brightlines
+                //         else they are closer to 0 are steps
                 double v = phaseAngle[row][col];
-                if (v < 0) {
-                    if (Math.abs(v - -piDiv2) < piDiv4) {
-                        brightLinePoints.add(new PairInt(row, col));
-                    } else {
-                        stepPoints.add(new PairInt(row, col));
-                    }
-                } else if (v == 0) {
-                    stepPoints.add(new PairInt(row, col));
+                if (Math.abs(-piDiv4 - v) < tolerance) {
+                    darkLinePoints.add(new PairInt(row, col));
+                } else if (Math.abs(piDiv4 - v) < tolerance) {
+                    brightLinePoints.add(new PairInt(row, col));
                 } else {
-                    if (Math.abs(v - piDiv2) < piDiv4) {
-                        stepPoints.add(new PairInt(row, col));
-                    } else {
-                        stepPoints.add(new PairInt(row, col));
-                    }
+                    stepPoints.add(new PairInt(row, col));
                 }
             }
         }
         
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc.correctForIsolatedPixels(brightLinePoints, nRows, nCols);
-        pltc.correctForIsolatedPixels(darkLinePoints, nRows, nCols);
+        //DEBUG
+        {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (PairInt p : brightLinePoints) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    0, 255, 0);
+            }
+            for (PairInt p : stepPoints) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    255, 0, 0);
+            }
+            for (PairInt p : darkLinePoints) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    127, 0, 255);
+            }
+            MiscDebug.writeImage(paImage, "_phase_angle_components_" +
+                MiscDebug.getCurrentTimeFormatted());
+        }
         
         stepPoints.addAll(brightLinePoints);
         stepPoints.addAll(darkLinePoints);
         
-        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
-        pltc.correctForLine2SpurHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLine2SpurVert(stepPoints, nRows, nCols);
-        pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
-        pltc.correctForLineHatVert(stepPoints, nRows, nCols);
-        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         
         // ---- complete the edges where possible ----
-        double[][] pc = products.getPhaseCongruency();
         Set<PairInt> gaps = pltc.findGapsOf1(stepPoints, nRows, nCols);
         for (PairInt p : gaps) {
             int x = p.getX();
@@ -974,29 +987,49 @@ public class PhaseCongruencyDetector {
             }
         }
         
-        /*
-        int[][] thinned = new int[nRows][nCols];
-        for (int i = 0; i < nRows; ++i) {
-            thinned[i] = new int[nCols];
+        //DEBUG
+        {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (PairInt p : stepPoints) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    255, 0, 0);
+            }
+            MiscDebug.writeImage(paImage, "_phase_angle_components_2_" +
+                MiscDebug.getCurrentTimeFormatted());
         }
-        for (PairInt p : stepPoints) {
-            thinned[p.getX()][p.getY()] = 1;
-        }
-        stepPoints = null;
-        gaps = null;
-        */
         
+        pltc.correctForIsolatedPixels(stepPoints, nRows, nCols);
+
         double[][] thinned1 = new double[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
             thinned1[i] = new double[nCols];
         }
         for (PairInt p : stepPoints) {
-            thinned1[p.getX()][p.getY()] = products.getPhaseCongruency()[p.getX()][p.getY()];
+            thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];
         }
         stepPoints = null;
         gaps = null;
         
         int[][] thinned = applyHysThresh(thinned1, tLow, tHigh, true);
+        
+        //DEBUG
+        {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (int i = 0; i < nRows; ++i) {
+                for (int j = 0; j < nCols; ++j) {
+                    if (thinned[i][j] > 0) {
+                        ImageIOHelper.addPointToImage(j, i, paImage, nExtraForDot, 
+                            255, 0, 0);
+                    }
+                }
+            }
+            MiscDebug.writeImage(paImage, "_phase_angle_components_3_" +
+                MiscDebug.getCurrentTimeFormatted());
+        }
         
         int[][] thinnedbw = new int[nRows][nCols];
         for (int i = 0; i < nRows; ++i) {
@@ -1021,8 +1054,23 @@ public class PhaseCongruencyDetector {
                 }
             }
         }
-        pltc.correctForLineHatHoriz(points, nRows, nCols);
-        pltc.correctForLineHatVert(points, nRows, nCols);
+        
+        //DEBUG
+        {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (PairInt p : points) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    255, 0, 0);
+            }
+            MiscDebug.writeImage(paImage, "_phase_angle_components_4_" +
+                MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        //pltc.correctForLineHatHoriz(points, nRows, nCols);
+        //pltc.correctForLineHatVert(points, nRows, nCols);
         
         // there are a very small number of clumps thicker than 1 pixel.
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
@@ -1035,7 +1083,21 @@ public class PhaseCongruencyDetector {
             thinned[p.getX()][p.getY()] = 255;
         }
         
-        products.setThinnedImage(thinned);
+        //DEBUG
+        {
+            Image paImage = new Image(nCols, nRows);
+            int nExtraForDot = 0;
+            for (PairInt p : points) {
+                int x = p.getY();
+                int y = p.getX();
+                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot, 
+                    255, 0, 0);
+            }
+            MiscDebug.writeImage(paImage, "_phase_angle_components_5_" +
+                MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        return thinned;
     }
     
     /**

@@ -129,10 +129,14 @@ public class PhaseCongruencyDetectorTest extends TestCase {
     public void test1() throws Exception {
 
         String[] fileNames = new String[]{
-            //"blox.gif", "lab.gif", "house.gif", "seattle.jpg", 
-            "merton_college_I_001.jpg",
-            // "susan-in_plus.png", "lena.jpg",
-            // "campus_010.jpg", 
+            //"blox.gif", 
+            //"lab.gif", 
+            "house.gif", 
+            //"seattle.jpg", 
+            //"merton_college_I_001.jpg",
+            // "susan-in_plus.png", 
+            //"lena.jpg",
+            //"campus_010.jpg", 
             //"android_statues_01.jpg", 
             //"android_statues_02.jpg", 
             //"android_statues_03.jpg", 

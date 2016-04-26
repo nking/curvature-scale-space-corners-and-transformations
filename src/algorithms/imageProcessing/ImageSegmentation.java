@@ -3461,6 +3461,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         SegmentationMergeThreshold mt, String debugTag) {
 
+        /*
+        TODO: replace this method with a use of phase congruency on greyscale
+        image, then a gathering of color properties of edges, clustering and
+        merging of those and then using those as seeds for region growing.
+        Summarized in Jie and Peng-fei 2003
+        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
+        
+        the method here will allow use of hsv or deltaE to compare results.
+        */
+        
+        
         boolean fineDebug = true;
 
         int w = input.getWidth();
@@ -8666,7 +8677,7 @@ exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
         int noiseMethod = -1;
         double tLow = 0.0001;
         double tHigh = 0.1;
-        boolean increaseKIfNeeded = true;
+        boolean increaseKIfNeeded = false;//true;
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
