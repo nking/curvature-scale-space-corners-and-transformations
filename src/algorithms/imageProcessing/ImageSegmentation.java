@@ -3725,26 +3725,58 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int clrSpace = 0;
         
         populateEdgeLists(input, edges, clusterPoints, clusterDescriptors, clrSpace);
-
+        
+        int tLen = 20;
+        List<Integer> longEdgeIndexes = new ArrayList<Integer>();
+        List<Integer> shortEdgeIndexes = new ArrayList<Integer>();
+        populateEdgeLengthLists(clusterDescriptors, tLen, longEdgeIndexes,
+            shortEdgeIndexes);
+        
+        final long heapKeyFactor = 1000000l;
+        Heap longEdgesHeap = new Heap();  
+        Map<PairInt, ColorDiffNode> pairEdgePindexNodes = new HashMap<PairInt, ColorDiffNode>();
+        populateColorDiffHeap(clusterPoints, clusterDescriptors, clrSpace,
+            longEdgeIndexes, longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
+            
+        // merge edges in the heap for pairs with diff < tColot
+        // NOTE that the moved sets modify the dsta structures :
+        //    clusterPoints may contain empty items
+        //    clusterDescriptors may contain null items
+        //    both clusterPoints and clusterDescriptor non- null and non empty 
+        //       items are updated for merges
+        double tColor;
+        if (clrSpace == 0) {
+            // JND for deltaE is ~2.3
+            tColor = 5;
+        } else {
+            // what is JND for HSV (a.k.a. HSB) ?
+            tColor = Double.MAX_VALUE;
+        }
+        mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
+            longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
+        
+        {
+            // DEBUG
+            List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
+            for (Set<PairInt> set : clusterPoints) {
+                if (!set.isEmpty()) {
+                    tmp.add(set);
+                }
+            }
+            int nExtraForDot = 1;
+            Image img2 = input.copyImage();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
+                nExtraForDot, img2);
+            MiscDebug.writeImage(img2, "_longEdges_meerged_");
+        }
+        
         throw new UnsupportedOperationException("not yet implemented");
         
         /*
-        for each edge i descriptor C_i = {h, s, v, percent, cenX, cenY}
-              with 8 neighbors too
-        
-        for those with percent > tLen
-            calculate pairs of color distances
-        
-        map<pairint, node>  key=i,j  value=node  where node holds diff between pair
-        
-        starting from the pairs with shortest distances,
-            if pair distance < tColor
-                merge the pair and update the affected remaining pair infomation
-        
         then the short edge lines (those with percent < tLen)
             calculate pairs of color differences
                and store by their distances.
-            the closest pair for and edge is always merged if the color difference is
+            the closest pair for an edge is always merged if the color difference is
             within threshold.  (no distance threshold apparaently).
         
      *** the number of clusters is then the k used for kmeans clustering over
@@ -3766,6 +3798,44 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             certain percentage of the total number of image pixels is also
             merged into the most similar neighbor region.
         */
+        
+    }
+
+    /**
+     * if pair distance < tColor
+                merge the pair and update the affected data structures.
+      NOTE that the moved sets modify the dsta structures :
+      clusterPoints may contain empty items, 
+      clusterDescriptors may contain null items,
+      both clusterPoints and clusterDescriptor non-null and non-empty 
+      items are updated for merges
+     * @param clusterPoints
+     * @param clusterDescriptors
+     * @param clrSpace
+     * @param tColor
+     * @param longEdgesHeap
+     * @param heapKeyFactor
+     * @param pairEdgePindexNodes 
+     */
+    private void mergeEdges(List<Set<PairInt>> clusterPoints, 
+        float[][] clusterDescriptors, int clrSpace, double tColor, 
+        Heap longEdgesHeap, long heapKeyFactor, 
+        Map<PairInt, ColorDiffNode> pairEdgePindexNodes) {
+        
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    private void populateEdgeLengthLists(float[][] clusterDescriptors, int tLen, List<Integer> longEdgeIndexes, List<Integer> shortEdgeIndexes) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    private void populateColorDiffHeap(List<Set<PairInt>> clusterPoints, float[][] clusterDescriptors, int clrSpace, List<Integer> longEdgeIndexes, Heap longEdgesHeap, long heapKeyFactor, Map<PairInt, ColorDiffNode> pairEdgePindexNodes) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+    
+    class ColorDiffNode extends HeapNode {
+        // key is the difference in color times a factor to use long instead of double
+        // data is the PairInt holding the indexes compared
         
     }
 

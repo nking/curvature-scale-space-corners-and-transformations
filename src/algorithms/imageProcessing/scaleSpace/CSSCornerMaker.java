@@ -1090,17 +1090,12 @@ public class CSSCornerMaker {
             junctions.remove(p);
         }
        
-        try {
-            Image out = new Image(imageWidth, imageHeight);
-            ImageIOHelper.addAlternatingColorPointSetsToImage(
-                new ArrayList<Set<PairInt>>(lines.keySet()),
-                0, 0, 2, out);
-            MiscDebug.writeImage(out, "_HOUGH_LINES_" 
-                + MiscDebug.getCurrentTimeFormatted());  
-        } catch (IOException ex) {
-            Logger.getLogger(CSSCornerMaker.class.getName()).log(Level.SEVERE, null, ex);
-        }
-              
+        Image out = new Image(imageWidth, imageHeight);
+        ImageIOHelper.addAlternatingColorPointSetsToImage(
+            new ArrayList<Set<PairInt>>(lines.keySet()),
+            0, 0, 2, out);
+        MiscDebug.writeImage(out, "_HOUGH_LINES_" 
+            + MiscDebug.getCurrentTimeFormatted()); 
     }
 
     private int distSq(int x, int y, PairInt p) {

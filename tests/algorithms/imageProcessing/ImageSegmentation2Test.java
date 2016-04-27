@@ -34,7 +34,7 @@ public class ImageSegmentation2Test extends TestCase {
     public void test0() throws Exception {
 
         String[] fileNames = new String[]{
-            add the test images from their paper...should be findable on berkely site i think
+  //add the test images from their paper...should be findable on berkely site i think
            // "blox.gif", "lab.gif", "house.gif", "seattle.jpg", 
             "merton_college_I_001.jpg",
            // "susan-in_plus.png", "lena.jpg",
@@ -51,12 +51,12 @@ public class ImageSegmentation2Test extends TestCase {
         
             String filePath = ResourceFinder.findFileInTestResources(fileName);
         
-            GreyscaleImage img = ImageIOHelper.readImageAsGrayScale(filePath).copyToGreyscale();
+            ImageExt img = ImageIOHelper.readImageExt(filePath);
         
             List<Set<PairInt>> segmentedCells = 
                 imageSegmentation.createColorEdgeSegmentation(img);
             
-            Image img2 = ImageIOHelper.readImage(filePath);
+            ImageExt img2 = ImageIOHelper.readImageExt(filePath);
             
             ImageIOHelper.addAlternatingColorPointSetsToImage(segmentedCells, 
                 0, 0, 2, img2);

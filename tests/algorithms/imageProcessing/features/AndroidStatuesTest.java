@@ -255,8 +255,7 @@ public class AndroidStatuesTest extends TestCase {
             ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
 
             List<Set<PairInt>> segmentedCellList
-                = imageSegmentation.createColorEdgeSegmentation(img1Binned,
-                    mt, "_" + fileName1Root + "_1_binned");
+                = imageSegmentation.createColorEdgeSegmentation(img1Binned );
             
             MiscDebug.writeAlternatingColor(img1Binned, 
                 segmentedCellList, "_final_" + fileName1Root);

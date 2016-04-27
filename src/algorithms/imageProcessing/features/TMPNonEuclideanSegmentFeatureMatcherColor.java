@@ -385,15 +385,10 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 
         if (settings.debug()) {
             ImageExt imgCp = (ImageExt) img.copyImage();
-            try {
-                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
-                    0, 0, 2, imgCp);
-                MiscDebug.writeImage(imgCp, "_points_in_larger_bounds_" + lbl + "_" + 
-                settings.getDebugTag() + "_" + ts);
-                
-            } catch (IOException ex) {
-                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
-            }
+            ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
+                0, 0, 2, imgCp);
+            MiscDebug.writeImage(imgCp, "_points_in_larger_bounds_" + lbl + "_" + 
+            settings.getDebugTag() + "_" + ts);       
         }
 
         // filter by atrous based sementation only for highly textured regions (high density and large area)
@@ -401,15 +396,10 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
         
         if (settings.debug()) {
             ImageExt imgCp = (ImageExt) img.copyImage();
-            try {
-                ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
-                    0, 0, 2, imgCp);
-                MiscDebug.writeImage(imgCp, "_points_filtered_textures_" + lbl + "_" + 
-                settings.getDebugTag() + "_" + ts);
-                
-            } catch (IOException ex) {
-                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
-            }
+            ImageIOHelper.addAlternatingColorPointSetsToImage(pixelSetList,
+                0, 0, 2, imgCp);
+            MiscDebug.writeImage(imgCp, "_points_filtered_textures_" + lbl + "_" + 
+            settings.getDebugTag() + "_" + ts);
         }
         
         return kpab;

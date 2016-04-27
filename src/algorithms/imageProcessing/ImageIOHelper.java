@@ -1506,7 +1506,7 @@ int z1 = 1;
     
     public static void addAlternatingColorPointSetsToImage(
         List<Set<PairInt>> pointSets, int xOffset, int yOffset, 
-        int nExtraForDot, Image input) throws IOException {
+        int nExtraForDot, Image input) {
         
         if (pointSets == null || input == null) {
             return;
@@ -1575,8 +1575,7 @@ int z1 = 1;
     public static <T extends Collection<PairInt>> void addToImage(
         T points, int xOffsetToApply, 
         int yOffsetToApply, Image input, int nExtraForDot,
-        int rClr, int gClr, int bClr) throws 
-        IOException {
+        int rClr, int gClr, int bClr) {
         
         if (points == null || input == null) {
             return;
