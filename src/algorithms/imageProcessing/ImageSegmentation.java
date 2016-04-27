@@ -3729,13 +3729,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int tLen = 20;
         List<Integer> longEdgeIndexes = new ArrayList<Integer>();
         List<Integer> shortEdgeIndexes = new ArrayList<Integer>();
-        populateEdgeLengthLists(clusterDescriptors, tLen, longEdgeIndexes,
-            shortEdgeIndexes);
+        populateEdgeLengthLists(clusterDescriptors, (float)tLen/(float)n, 
+            longEdgeIndexes, shortEdgeIndexes);
         
         final long heapKeyFactor = 1000000l;
         Heap longEdgesHeap = new Heap();  
-        Map<PairInt, ColorDiffNode> pairEdgePindexNodes = new HashMap<PairInt, ColorDiffNode>();
-        populateColorDiffHeap(clusterPoints, clusterDescriptors, clrSpace,
+        Map<PairInt, HeapNode> pairEdgePindexNodes = new HashMap<PairInt, HeapNode>();
+        populateColorDiffHeap(clusterDescriptors, clrSpace,
             longEdgeIndexes, longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
             
         // merge edges in the heap for pairs with diff < tColot
@@ -3825,20 +3825,68 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 
-    private void populateEdgeLengthLists(float[][] clusterDescriptors, int tLen, List<Integer> longEdgeIndexes, List<Integer> shortEdgeIndexes) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    private void populateEdgeLengthLists(float[][] clusterDescriptors, 
+        float tLenFraction, List<Integer> longEdgeIndexes, 
+        List<Integer> shortEdgeIndexes) {
+        
+        //C_i = {h, s, v, percent, cenX, cenY}
+        for (int i = 0; i < clusterDescriptors.length; ++i) {
+            Integer key = Integer.valueOf(i);
+            float percent = clusterDescriptors[i][3];
+            if (percent < tLenFraction) {
+                shortEdgeIndexes.add(key);
+            } else {
+                longEdgeIndexes.add(key);
+            }
+        }
     }
 
-    private void populateColorDiffHeap(List<Set<PairInt>> clusterPoints, float[][] clusterDescriptors, int clrSpace, List<Integer> longEdgeIndexes, Heap longEdgesHeap, long heapKeyFactor, Map<PairInt, ColorDiffNode> pairEdgePindexNodes) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    private void populateColorDiffHeap(
+        float[][] clusterDescriptors, int clrSpace, 
+        List<Integer> longEdgeIndexes, Heap longEdgesHeap, 
+        long heapKeyFactor, Map<PairInt, HeapNode> pairEdgePindexNodes) {
+        
+        // for heap nodes:
+        //     key is the difference in color times a factor to use long instead of double
+        //     data is the PairInt holding the indexes compared
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        for (int i = 0; i < longEdgeIndexes.size(); ++i) {
+            
+            int idx1 = longEdgeIndexes.get(i).intValue();
+            float[] desc1 = clusterDescriptors[idx1];
+            
+            for (int j = (i + 1); j < longEdgeIndexes.size(); ++j) {
+                
+                int idx2 = longEdgeIndexes.get(j).intValue();
+                float[] desc2 = clusterDescriptors[idx2];
+                                
+                double diff;
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        desc1[0], desc1[1], desc1[2], 
+                        desc2[0], desc2[1], desc2[2]));
+                } else {
+                    double diff1 = desc1[0] - desc2[0];
+                    double diff2 = desc1[1] - desc2[1];
+                    double diff3 = desc1[2] - desc2[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
+                }
+                
+                PairInt p12 = new PairInt(idx1, idx2);
+                
+                long heapKey = (long)(heapKeyFactor * diff);
+                HeapNode node = new HeapNode(heapKey);
+                node.setData(p12);
+                
+                longEdgesHeap.insert(node);
+                
+                pairEdgePindexNodes.put(p12, node);
+            }
+        }
     }
     
-    class ColorDiffNode extends HeapNode {
-        // key is the difference in color times a factor to use long instead of double
-        // data is the PairInt holding the indexes compared
-        
-    }
-
     /**
      *
      * @param input
