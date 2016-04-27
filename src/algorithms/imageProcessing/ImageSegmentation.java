@@ -3457,152 +3457,316 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         return ws;
     }
-
-    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
-        SegmentationMergeThreshold mt, String debugTag) {
-
+    
+    /**
+     * given the list of edges, populate the output arrays with color informaion
+     * from the edge points and their 8 neighbor regions.
+     * note that any points in more than one output list originally because of
+     * being a junction, are corrected and placed in the most similar list.
+     * 
+     * @param img
+     * @param edges
+     * @param junctions
+     * @param outputPoints
+     * @param outputDescripors
+     * @param clrSpace color space to fill the descriptors with: 0 is lab, 1 is hsv 
+     */
+    private void populateEdgeLists(ImageExt img,
+        List<PairIntArray> edges, 
+        List<Set<PairInt>> outputPoints, float[][] outputDescripors,
+        int clrSpace) {
+               
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        // ----- gather edge points and their 8 neighbors into edge point sets ----
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        for (int i = 0; i < edges.size(); ++i) {
+            PairIntArray edge = edges.get(i);
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int j = 0; j < edge.getN(); ++j) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                set.add(new PairInt(x, y));
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                        continue;
+                    }
+                    PairInt p2 = new PairInt(x2, y2);
+                    set.add(p2);
+                }
+            }
+            outputPoints.add(set);
+        }
+        
+        float n = img.getNPixels();
+        
+        // ----- calculate descriptors of the color and location of the edge points -----
+        
         /*
-        TODO: replace this method with a use of phase congruency on greyscale
-        image, then a gathering of color properties of edges, clustering and
-        merging of those and then using those as seeds for region growing.
-        Summarized in Jie and Peng-fei 2003
-        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
-        
-        the method here will allow use of hsv or deltaE to compare results.
+        the descriptors are
+             C_i = {h, s, v, percent, cenX, cenY}
         */
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
+        for (int i = 0; i < outputPoints.size(); ++i) {
+            
+            Set<PairInt> edgePoints = outputPoints.get(i);
+            
+            outputDescripors[i] = new float[6];
+            
+            float percent = (float)edgePoints.size()/n;
+            
+            double[] xyCen = curveHelper.calculateXYCentroids(edgePoints);
+            
+            double c1Sum = 0;
+            double c2Sum = 0;
+            double c3Sum = 0;
+            for (PairInt p : edgePoints) {
+                
+                int x = p.getX();
+                int y = p.getY();
+                
+                if (clrSpace == 0) {
+                    float[] lab = img.getCIELAB(x, y);
+                    c1Sum += lab[0];
+                    c2Sum += lab[1];
+                    c3Sum += lab[2];
+                } else {
+                    // hsv
+                    c1Sum += img.getHue(x, y);
+                    c2Sum += img.getSaturation(x, y);
+                    c3Sum += img.getBrightness(x, y);
+                }
+            }
+            c1Sum /= (float)edgePoints.size();
+            c2Sum /= (float)edgePoints.size();
+            c3Sum /= (float)edgePoints.size();
+            
+            //C_i = {h, s, v, percent, cenX, cenY}
+            outputDescripors[i][0] = (float)c1Sum;
+            outputDescripors[i][1] = (float)c2Sum;
+            outputDescripors[i][2] = (float)c3Sum;
+            outputDescripors[i][3] = percent;
+            outputDescripors[i][4] = (float)xyCen[0];
+            outputDescripors[i][5] = (float)xyCen[1];
+        }
         
-        boolean fineDebug = true;
-
-        int w = input.getWidth();
-        int h = input.getHeight();
-
-        long t0 = System.currentTimeMillis();
-
-        GreyscaleImage o1Img = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
-        float[] labA = new float[w * h];
-        float[] labB = new float[w * h];
+        // ======= correct for any points in more than one list ======
         
-        GreyscaleImage greyGradient = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-
-        int maxGrey = Integer.MIN_VALUE;
-        for (int i = 0; i < input.getNPixels(); ++i) {
-
-            int r = input.getR(i);
-            int g = input.getG(i);
-            int b = input.getB(i);
-            o1Img.setValue(i, (r - g));
-
-            float[] lab = input.getCIELAB(i);
-            labA[i] = lab[1];
-            labB[i] = lab[2];
-
-            int grey = Math.round(((float)(r + g + b))/3.f);
-            greyGradient.setValue(i, grey);
-            if (grey > maxGrey) {
-                maxGrey = grey;
+        // --- map the list indexes that a point is in --------
+        Map<PairInt, Set<Integer>> pointIndexes = new HashMap<PairInt, Set<Integer>>();
+        
+        for (int i = 0; i < outputPoints.size(); ++i) {
+            Integer key = Integer.valueOf(i);
+            Set<PairInt> edgePoints = outputPoints.get(i);
+            for (PairInt p : edgePoints) {
+                Set<Integer> indexes = pointIndexes.get(p);
+                if (p == null) {
+                    indexes = new HashSet<Integer>();
+                    pointIndexes.put(p, indexes);
+                }
+                indexes.add(key);
             }
         }
         
-        GreyscaleImage labAImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        labA = MiscMath.rescale(labA, 0, 255);
-        for (int i = 0; i < labA.length; ++i) {
-            labAImg.setValue(i, Math.round(labA[i]));
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        // ---- when a point is in more than one list, choose to keep it in the
+        //      list with smallest difference from it in color and remove it from others.
+        
+        for (Entry<PairInt, Set<Integer>> entry : pointIndexes.entrySet()) {
+            Set<Integer> indexes = entry.getValue();
+            if (indexes.size() == 1) {
+                continue;
+            }
+            PairInt p = entry.getKey();
+            int x = p.getX();
+            int y = p.getY();
+            float c1, c2, c3;
+            if (clrSpace == 0) {
+                float[] lab = img.getCIELAB(x, y);
+                c1 = lab[0];
+                c2 = lab[1];
+                c3 = lab[2];
+            } else {
+                // hsv
+                c1 = img.getHue(x, y);
+                c2 = img.getSaturation(x, y);
+                c3 = img.getBrightness(x, y);
+            }
+            double minColorDiff = Double.MAX_VALUE;
+            Integer minColorDiffIndex = null;
+            for (Integer index : indexes) {
+                //C_i = {h, s, v, percent, cenX, cenY}
+                float[] desc = outputDescripors[index.intValue()];
+                double diff;
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(c1, c2, c3, 
+                        desc[0], desc[1], desc[2]));
+                } else {
+                    double diff1 = c1 - desc[0];
+                    double diff2 = c2 - desc[1];
+                    double diff3 = c3 - desc[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
+                }
+                if (diff < minColorDiff) {
+                    minColorDiff = diff;
+                    minColorDiffIndex = index;
+                }
+            }
+            assert(minColorDiffIndex != null);
+            
+            // update the lists to remove point
+            for (Integer index : indexes) {
+                if (index.equals(minColorDiffIndex)) {
+                    continue;
+                }
+                
+                Set<PairInt> set = outputPoints.get(index.intValue());
+                float nBefore = set.size();
+                set.remove(p);
+                float nAfter = set.size();
+                
+                ////C_i = {h, s, v, percent, cenX, cenY}
+                float[] desc = outputDescripors[index.intValue()];
+                desc[0] = ((desc[0] * nBefore) - c1)/nAfter;
+                desc[1] = ((desc[1] * nBefore) - c2)/nAfter;
+                desc[2] = ((desc[2] * nBefore) - c3)/nAfter;
+                desc[3] = ((desc[3] * nBefore) - 1)/nAfter;
+                desc[4] = ((desc[4] * nBefore) - x)/nAfter;
+                desc[5] = ((desc[5] * nBefore) - y)/nAfter;
+            }
+        }
+    }
+
+    /**
+     * create segmented image by creating edges with phase congruence,
+     * then using the edge color properties to form clusters and seeds
+     * of regions to grow, then using color histograms to further merge
+     * regions.
+     * The algorithm follows the general outline given by
+     * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
+       http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
+     * @param input
+     * @return 
+     */
+    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input) {
+
+        GreyscaleImage gsImg = input.copyBlueToGreyscale();
+
+        float cutOff = 0.5f;//0.3f;//0.5f;
+        int nScale = 5;
+        int minWavelength = 3;//nScale;// 3;
+        float mult = 2.1f;
+        float sigmaOnf = 0.55f;
+        int k = 10;//5;//2;
+        float g = 10; 
+        float deviationGain = 1.5f;
+        int noiseMethod = -1;
+        double tLow = 0.0001;
+        double tHigh = 0.1;
+        boolean increaseKIfNeeded = false;//true;
+        
+        final int w = input.getWidth();
+        final int h = input.getHeight();
+        final int n = input.getNPixels();
+           
+        PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts products =
+            phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
+            sigmaOnf, k, increaseKIfNeeded,
+            cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
+        
+        int[][] thinned = products.getThinned();
+        {
+            GreyscaleImage out2 = gsImg.createWithDimensions();
+            for (int i = 0; i < thinned.length; ++i) {
+                for (int j = 0; j < thinned[i].length; ++j) {
+                    if (thinned[i][j] > 0) {
+                        out2.setValue(j, i, 255);
+                    }
+                }
+            }
+            MiscDebug.writeImage(out2, "_EDGES_grey_");
+        }
+                
+        EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
+        extractor.extractEdges();
+        List<PairIntArray> edges = extractor.getEdges();
+        Set<PairInt> junctions = extractor.getJunctions();
+        // put in framework of images
+        for (int i = 0; i < edges.size(); ++i) {
+            PairIntArray edge = edges.get(i);
+            for (int j = 0; j < edge.getN(); ++j) {
+                int x = edge.getX(j);
+                int y = edge.getY(j);
+                edge.set(j, y, x);
+            }
+        }
+        {
+            Set<PairInt> tmp = new HashSet<PairInt>();
+            for (PairInt p : junctions) {
+                tmp.add(new PairInt(p.getY(), p.getX()));
+            }
+            junctions.clear();
+            junctions.addAll(tmp);
         }
         
-        GreyscaleImage labBImg = new GreyscaleImage(w, h,
-            GreyscaleImage.Type.Bits32FullRangeInt);
-        labB = MiscMath.rescale(labB, 0, 255);
-        for (int i = 0; i < labB.length; ++i) {
-            labBImg.setValue(i, Math.round(labB[i]));
-        }
+        int nEdges = edges.size();
+        List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
+        float[][] clusterDescriptors = new float[nEdges][];
+        
+        // 0 for LAB, 1 for HSV
+        int clrSpace = 0;
+        
+        populateEdgeLists(input, edges, clusterPoints, clusterDescriptors, clrSpace);
 
-        long t1 = System.currentTimeMillis();
-        long t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to create color images");
-
-        ImageProcessor imageProcessor = new ImageProcessor();
+        throw new UnsupportedOperationException("not yet implemented");
         
         /*
-        imageProcessor.blur(o1Img, SIGMA.ONE);
-        imageProcessor.blur(labAImg, SIGMA.ONE);
-        imageProcessor.blur(labBImg, SIGMA.ONE);
-        imageProcessor.blur(greyGradient, SIGMA.ONE);
+        for each edge i descriptor C_i = {h, s, v, percent, cenX, cenY}
+              with 8 neighbors too
+        
+        for those with percent > tLen
+            calculate pairs of color distances
+        
+        map<pairint, node>  key=i,j  value=node  where node holds diff between pair
+        
+        starting from the pairs with shortest distances,
+            if pair distance < tColor
+                merge the pair and update the affected remaining pair infomation
+        
+        then the short edge lines (those with percent < tLen)
+            calculate pairs of color differences
+               and store by their distances.
+            the closest pair for and edge is always merged if the color difference is
+            within threshold.  (no distance threshold apparaently).
+        
+     *** the number of clusters is then the k used for kmeans clustering over
+            the entire image
+        
+        region growing:
+           unallocated pixels adjacent to allocated edge pixels are added to
+              the edge pixel cluster if the color distance is < tColor (or tP is notation in paper)
+           the short edge merged clusters are treated as a single pixel and
+               merged similarly if adjacent and within color tolerance.
+        
+        color histograms of any two neighboring regions are calculated
+            and stored in a distance table.
+            The pair of regions with the minimum distance is merged together. 
+            The color feature vector for the new region is calculated and the 
+            distance table is updated along with the neighboring relationships. 
+            The process continues until a maximum threshold Tr for the distance 
+            is reached. Moreover, any region that has fewer pixels than a 
+            certain percentage of the total number of image pixels is also
+            merged into the most similar neighbor region.
         */
         
-        greyGradient = imageProcessor.createSmallFirstDerivGaussian(greyGradient);
-
-        t0 = System.currentTimeMillis();
-
-        createEdges02(greyGradient, debugTag);
-        MiscDebug.writeImage(greyGradient, "_grey_gradient_" + debugTag);
-
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make grey gradient edges");
-
-        t0 = System.currentTimeMillis();
-greyGradient = 
-exploreCombiningImages(o1Img, labAImg, labBImg, greyGradient, debugTag);
-
-        invertImage(greyGradient);
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make combined input image for segmentation");
-        
-        /*
-        t0 = System.currentTimeMillis();
-        
-        createEdges01(o1Img, "o1_" + debugTag);
-        //createEdges03(o1Img, "o1_" + debugTag);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(o1Img, "_o1_before_" + debugTag);
-        }
-        removeSmallBubblesFromEdges(o1Img, 0, 255, "o1_" + debugTag);
-
-        boolean useO1 = true;
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make O1 edges");
-        if (fineDebug && useO1 && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(o1Img, "_o1_" + debugTag);
-        }
-
-        // -------
-        
-        createEdges01(labBImg, "labB_" + debugTag);
-        
-        t0 = System.currentTimeMillis();
-        createEdges01(labAImg, "labA_" + debugTag);
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labAImg, "_labA_before_" + debugTag);
-        }
-        removeSmallBubblesFromEdges(labAImg, 0, 255, "labA_" + debugTag);
-        t1 = System.currentTimeMillis();
-        t1Sec = (t1 - t0)/1000;
-        log.info(t1Sec + " sec to make lab A edges");
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(labAImg, "_labA_" + debugTag);
-        }
-
-        //TODO: could use a compressed image representation of 0's and 1's for this:
-        
-        imageProcessor.applyAdaptiveMeanThresholding(greyGradient, 1);
-        
-        addAdjacentEdges(greyGradient, 0, new GreyscaleImage[]{o1Img, labAImg}, 0);
-        
-        greyGradient = fillInGapsOf1(greyGradient, new HashSet<PairInt>(), 0);
-       */
-
-        if (fineDebug && debugTag != null && !debugTag.equals("")) {
-            MiscDebug.writeImage(greyGradient, "_input_edges_" + debugTag);
-        }
-
-        return performSegmentationWithColorEdges(input, greyGradient, mt, debugTag);
     }
 
     /**
