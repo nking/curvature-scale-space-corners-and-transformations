@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
 import algorithms.compGeometry.NearestPoints1D;
 import algorithms.compGeometry.NearestPointsInLists;
@@ -7989,7 +7990,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         populateColorDiffHeap(clusterDescriptors, clrSpace,
             longEdgeIndexes, longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
 
-        // ---- make a map to finde and update merged data structures ------
+        // ---- make a map to find and update merged data structures ------
         Map<Integer, Set<Integer>> indexToIndexMap = new HashMap<Integer, Set<Integer>>();
         for (PairInt p : pairEdgePindexNodes.keySet()) {
             
@@ -8112,31 +8113,258 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     private void mergeEdges2(List<Set<PairInt>> clusterPoints, 
         float[][] clusterDescriptors, int clrSpace, double tColor, 
         List<Integer> longEdgeIndexes) {
+        
+        final long keyFactor = 1000000l;
+        
+        // inserts are O(1) and remove by node reference is O(1)
+        DoubleLinkedCircularList queue = populateQueueByAscendingPairDifferences(
+            clusterDescriptors, clrSpace, longEdgeIndexes, keyFactor);
 
-        /*
-        for each pair in longEdgeIndexes,
-            calculate differences
-            store in double array and write indexes in int array
-        sort be ascending difference
-        
-        store in a DoubleLinkedCircularList
-             insert by key or node is O!1)
-             remove by node        is O(1)
-        
-        visit pattern is iterate over linked list
-            merge if pass criteria
-               update affected descriptors and affected nodes
-               remove affected nodes 
-               insert affected nodes
-                  (note that will add one improvement: 
-                   if updated diff is close to the
-                   current diff before merge, 
-                   instead of inserting at the end of the linked list,
-                   traverse the first several nodes and if new diff is smaller,
-                   insert after last smaller node).
-        
-        */
+        // ---- make a map to find and update merged data structures ------
+        Map<Integer, List<HeapNode>> indexToNodesMap = new HashMap<Integer, List<HeapNode>>();
+        {
+            int count = 0;
+            long nQ = queue.getNumberOfNodes();
+            HeapNode node = node = queue.getSentinel();
+            while (count < nQ) {
+                
+                node = node.getLeft();
+                count++;
+                
+                PairInt p12 = (PairInt)((DataHeapNode)node).data;
 
+                Integer index1 = Integer.valueOf(p12.getX());
+                Integer index2 = Integer.valueOf(p12.getY());
+
+                List<HeapNode> nodes = indexToNodesMap.get(index1);
+                if (nodes == null) {
+                    nodes = new ArrayList<HeapNode>();
+                    indexToNodesMap.put(index1, nodes);
+                }
+                nodes.add(node);
+
+                nodes = indexToNodesMap.get(index2);
+                if (nodes == null) {
+                    nodes = new ArrayList<HeapNode>();
+                    indexToNodesMap.put(index2, nodes);
+                }
+                nodes.add(node);
+            }
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        HeapNode node = queue.getSentinel();
+        
+        while(queue.getNumberOfNodes() > 0) {
+            
+            node = node.getLeft();
+            queue.remove(node);
+            
+            float diff = (float)node.getKey() / (float)keyFactor;
+            
+            if (diff > tColor) {
+                continue;
+            }
+            
+            PairInt p12 = (PairInt)((DataHeapNode)node).data;
+            
+            int idx1 = p12.getX();
+            int idx2 = p12.getY();
+
+            Set<PairInt> set1 = clusterPoints.get(idx1);
+            Set<PairInt> set2 = clusterPoints.get(idx2);
+
+            if (set1.isEmpty() || set2.isEmpty()) {
+                continue;
+            }
+            
+            if (set2.size() > set1.size()) {
+                idx1 = p12.getY();
+                idx2 = p12.getX();
+                set1 = set2;
+                set2 = clusterPoints.get(idx2);
+            }
+
+            // set1 is largest
+
+            float[] desc1 = clusterDescriptors[idx1];
+            float[] desc2 = clusterDescriptors[idx2];
+            float n1 = set1.size();
+            float n2 = set2.size();
+            float nTot = n1 + n2;
+            
+            //{h, s, v, percent, cenX, cenY}
+            // update desc1 contents for contents in desc2
+            for (int k = 0; k < desc1.length; ++k) {
+                desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2))/nTot;
+            }
+            clusterDescriptors[idx2] = null;
+            set1.addAll(set2);
+            set2.clear();
+
+            n1 = set1.size();
+            
+            Integer index1 = Integer.valueOf(idx1);
+            List<HeapNode> updated = new ArrayList<HeapNode>();
+            List<HeapNode> nodes = indexToNodesMap.get(index1);
+            for (HeapNode node3 : nodes) {
+                
+                PairInt p13 = (PairInt)((DataHeapNode)node3).data;
+                
+                int idx3;
+                if (p13.getX() == idx1) {
+                    idx3 = p13.getY();
+                } else {
+                    idx3 = p13.getX();
+                }
+                
+                Set<PairInt> set3 = clusterPoints.get(idx3);
+                if (set3.isEmpty()) {
+                    continue;
+                }
+                int n3 = set3.size();
+                float[] desc3 = clusterDescriptors[idx3];
+                float nTot3 = n1 + n3;
+                for (int k = 0; k < desc3.length; ++k) {
+                    desc3[k] = ((desc3[k] * n3) + (desc2[k] * n2))/nTot3;
+                }
+
+                queue.remove(node3);
+                
+                double diffUpdate;
+                if (clrSpace == 0) {
+                    diffUpdate = Math.abs(cieC.calcDeltaECIE2000(
+                        desc1[0], desc1[1], desc1[2],
+                        desc3[0], desc3[1], desc3[2]));
+                } else {
+                    double diff1 = desc1[0] - desc3[0];
+                    double diff2 = desc1[1] - desc3[1];
+                    double diff3 = desc1[2] - desc3[2];
+                    diffUpdate = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
+                }
+
+                long key = (long)(keyFactor * diffUpdate);
+                node3 = new HeapNode(key);
+                node.setData(p13);
+                
+                updated.add(node3);
+                
+                //TODO: add here a small scan from top if updatedDiff is close to diff
+                // scan forward by small amount.  length tolerance is 20, so
+                //    all edges here will have O(lg2(N)) > 4.3, so the small
+                //    scan is still better than O(lg2(N)) if remain near that
+                boolean doScan = false;
+                if (clrSpace == 0) {
+                    if (Math.abs(diffUpdate - diff) < 0.5) {
+                        doScan = true;
+                    }
+                } else {
+                    // need HSV values to compare
+                }
+                
+                HeapNode insertAfter = null;
+                if (doScan) {
+                    HeapNode qNode = node;
+                    HeapNode prevNode = node;
+                    for (int ii = 0; ii < 4; ++ii) {
+                        qNode = qNode.getLeft();
+                        float qDiff = (float)qNode.getKey()/(float)keyFactor;
+                        if (qDiff > diffUpdate) {
+                            insertAfter = prevNode;
+                            break;
+                        }
+                        prevNode = qNode;
+                    }
+                }
+                
+                if (insertAfter != null) {
+                    queue.insertAfter(insertAfter, node3);
+                } else {
+                    queue.insert(node3);
+                }
+            }
+                        
+            indexToNodesMap.put(index1, updated);
+        }
+        
+    }
+
+    class DataHeapNode extends HeapNode {
+        Object data;
+    }
+    
+    /**
+     * populate doubly linked circular list with nodes holding the differences
+     * between pairs of edge descriptor colors, ordered by increasing difference.
+     * The nodes in the list have a data field which contains the indexes
+     * of the pair as x an y and the key holds the value of the difference 
+     * multiplied by keyFactor.
+     * @param clusterDescriptors
+     * @param clrSpace
+     * @param longEdgeIndexes
+     * @param keyFactor a large number that is multiplied by the floating point
+     * difference of colors to result in a long key for the node.
+     * @return 
+     */
+    private DoubleLinkedCircularList populateQueueByAscendingPairDifferences(
+        float[][] clusterDescriptors, int clrSpace, 
+        List<Integer> longEdgeIndexes, final long keyFactor) {
+
+        int n = longEdgeIndexes.size();
+        int nComb = (n * (n-1))/2;// n!/(2!*(n-2)! = (n * (n-1))/2
+        
+        PairInt[] indexes = new PairInt[nComb];
+        float[] diffs = new float[nComb];
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        int count = 0;
+        for (int i = 0; i < n; ++i) {
+            
+            int idx1 = longEdgeIndexes.get(i).intValue();
+            float[] desc1 = clusterDescriptors[idx1];
+            
+            for (int j = (i + 1); j < n; ++j) {
+                
+                int idx2 = longEdgeIndexes.get(j).intValue();
+                float[] desc2 = clusterDescriptors[idx2];
+                
+                double diff;
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        desc1[0], desc1[1], desc1[2],
+                        desc2[0], desc2[1], desc2[2]));
+                } else {
+                    double diff1 = desc1[0] - desc2[0];
+                    double diff2 = desc1[1] - desc2[1];
+                    double diff3 = desc1[2] - desc2[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
+                }
+                
+                indexes[count] = new PairInt(idx1, idx2);
+                diffs[count] = (float)diff;
+                count++;
+            }
+        }
+        
+        assert(nComb == count);
+        
+        QuickSort.sortBy1stArg(diffs, indexes);
+        
+        DoubleLinkedCircularList queue = new DoubleLinkedCircularList();
+        
+        for (int i = 0; i < indexes.length; ++i) {
+            PairInt p12 = indexes[i];
+            float diff = diffs[i];
+            long key = (long)(diff * keyFactor);
+            HeapNode node = new DataHeapNode();
+            node.setKey(key);
+            ((DataHeapNode)node).data = p12;
+            queue.insert(node);
+        }
+
+        return queue;
     }
 
     public static class BoundingRegions {
