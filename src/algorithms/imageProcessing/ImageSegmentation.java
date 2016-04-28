@@ -3743,7 +3743,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 3;
+            tColor = 1.25;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?
             tColor = Double.MAX_VALUE;
@@ -3879,7 +3879,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         while (!longEdgesHeap.isEmpty()) {
             
             HeapNode node = longEdgesHeap.extractMin();
-            double diff = (double)node.getKey()/(double)heapKeyFactor;
+            double diff = ((double)node.getKey())/((double)heapKeyFactor);
             
             if (diff > tColor) {
                 break;
@@ -3961,7 +3961,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
                 }
                 
-                long heapKey = (long)(heapKeyFactor * diff);
+                long heapKey = (long)(diff * (double)heapKeyFactor);
                 node3 = new HeapNode(heapKey);
                 node3.setData(p13);
                 longEdgesHeap.insert(node3);
@@ -4024,7 +4024,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 // note that idx1 is always smaller than idx2
                 PairInt p12 = new PairInt(idx1, idx2);
                 
-                long heapKey = (long)(heapKeyFactor * diff);
+                long heapKey = (long)((double)heapKeyFactor * diff);
                 HeapNode node = new HeapNode(heapKey);
                 node.setData(p12);
                 
@@ -8018,7 +8018,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         while (!longEdgesHeap.isEmpty()) {
             
             HeapNode node = longEdgesHeap.extractMin();
-            double diff = (double)node.getKey()/(double)heapKeyFactor;
+            double diff = ((double)node.getKey())/((double)heapKeyFactor);
             
             if (diff > tColor) {
                 break;
@@ -8100,7 +8100,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
                 }
                 
-                long heapKey = (long)(heapKeyFactor * diff);
+                long heapKey = (long)((double)heapKeyFactor * diff);
                 node3 = new HeapNode(heapKey);
                 node3.setData(p13);
                 longEdgesHeap.insert(node3);
@@ -8162,7 +8162,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             node = node.getLeft();
             queue.remove(node);
             
-            double diff = (double)node.getKey() / (double)keyFactor;
+            double diff = ((double)node.getKey()) / ((double)keyFactor);
             
             if (diff > tColor) {
                 continue;
@@ -8245,7 +8245,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     diffUpdate = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
                 }
 
-                long key = (long)(keyFactor * diffUpdate);
+                long key = (long)((double)keyFactor * diffUpdate);
                 node3 = new HeapNode(key);
                 node3.setData(p13);
                 
@@ -8270,7 +8270,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     HeapNode prevNode = node;
                     for (int ii = 0; ii < 4; ++ii) {
                         qNode = qNode.getLeft();
-                        double qDiff = (double)qNode.getKey()/(double)keyFactor;
+                        double qDiff = ((double)qNode.getKey())/((double)keyFactor);
                         if (qDiff > diffUpdate) {
                             insertAfter = prevNode;
                             break;
@@ -8358,7 +8358,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         for (int i = 0; i < indexes.length; ++i) {
             PairInt p12 = indexes[i];
             float diff = diffs[i];
-            long key = (long)(diff * keyFactor);
+            long key = (long)(diff * (double)keyFactor);
             HeapNode node = new DataHeapNode();
             node.setKey(key);
             ((DataHeapNode)node).data = p12;
