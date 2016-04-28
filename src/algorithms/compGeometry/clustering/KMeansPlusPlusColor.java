@@ -2,6 +2,9 @@ package algorithms.compGeometry.clustering;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.Image;
+import algorithms.search.KDTree;
+import algorithms.search.KDTreeNode;
+import algorithms.util.PairInt;
 import algorithms.util.TrioInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -88,16 +91,22 @@ public class KMeansPlusPlusColor {
         // [r' or g'][index]
         int[][] seeds = createStartSeeds(img);
         
+// TODO: error in crete start seeds        
+        
         int[] imgSeedIndexes = null;
 
         boolean hasConverged = false;
 
+        int nIter2 = 0;
+        
         while (!hasConverged && (nIter < nMaxIter) ) {
 
             imgSeedIndexes = binPoints(img, seeds);
 
             seeds = calculateMeanOfSeedPoints(img, imgSeedIndexes);
 
+            nIter2++;
+            
             if (seeds == null) {
                 nIter = 0;
                 seeds = createStartSeeds(img);
@@ -143,8 +152,10 @@ public class KMeansPlusPlusColor {
             seed[0][nSeedsChosen] = 0;
             seed[1][nSeedsChosen] = 0;
         } else {
-            seed[0][nSeedsChosen] = Math.round(integerFactor * (float)img.getR(index)/(float)rgbSum);
-            seed[1][nSeedsChosen] = Math.round(integerFactor * (float)img.getG(index)/(float)rgbSum);
+            seed[0][nSeedsChosen] = 
+                Math.round(integerFactor * (float)img.getR(index)/(float)rgbSum);
+            seed[1][nSeedsChosen] = 
+                Math.round(integerFactor * (float)img.getG(index)/(float)rgbSum);
         }
    
         indexes[nSeedsChosen] = index;
@@ -162,31 +173,31 @@ public class KMeansPlusPlusColor {
 
             int minAllDist = Integer.MAX_VALUE;
 
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+            for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
                 
-                if (contains(indexes, nSeedsChosen, xyIndex)) {
+                if (contains(indexes, nSeedsChosen, pixIdx)) {
                     continue;
                 }
                 
-                int rPt = img.getR(xyIndex);
-                int gPt = img.getG(xyIndex);
-                int bPt = img.getB(xyIndex);
+                int rPt = img.getR(pixIdx);
+                int gPt = img.getG(pixIdx);
+                int bPt = img.getB(pixIdx);
                 int sumPt = (rPt + gPt + bPt);
-                int rPrimtPt, gPrimtPt;
+                int rPrimePt, gPrimePt;
                 if (sumPt == 0) {
-                    rPrimtPt = 0;
-                    gPrimtPt = 0;
+                    rPrimePt = 0;
+                    gPrimePt = 0;
                 } else {
-                    rPrimtPt = Math.round(integerFactor * (float)rPt/(float)sumPt);
-                    gPrimtPt = Math.round(integerFactor * (float)gPt/(float)sumPt);
+                    rPrimePt = Math.round(integerFactor * (float)rPt/(float)sumPt);
+                    gPrimePt = Math.round(integerFactor * (float)gPt/(float)sumPt);
                 }
                 
                 int minDist = Integer.MAX_VALUE;
 
                 for (int seedIndex = 0; seedIndex < nSeedsChosen; seedIndex++) {
                     
-                    int diffR = rPrimtPt - seed[0][seedIndex];
-                    int diffG = gPrimtPt - seed[1][seedIndex];
+                    int diffR = rPrimePt - seed[0][seedIndex];
+                    int diffG = gPrimePt - seed[1][seedIndex];
                     
                     int dist = (int)Math.round(Math.sqrt(
                         diffR * diffR + diffG * diffG));
@@ -196,8 +207,8 @@ public class KMeansPlusPlusColor {
                     }
                 }
                                 
-                distOfSeeds[xyIndex] = minDist;
-                indexOfDistOfSeeds[xyIndex] = xyIndex;
+                distOfSeeds[pixIdx] = minDist;
+                indexOfDistOfSeeds[pixIdx] = pixIdx;
 
                 if (minDist < minAllDist) {
                     minAllDist = minDist;
@@ -258,13 +269,13 @@ public class KMeansPlusPlusColor {
         }
         int[] nSum = new int[nSeeds];
 
-        for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
 
-            int seedIndex = imgSeedIndexes[xyIndex];
+            int seedIndex = imgSeedIndexes[pixIdx];
 
-            int r = img.getR(xyIndex);
-            int g = img.getG(xyIndex);
-            int b = img.getB(xyIndex);
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
             int rgbSum = r + g + b;
             if (rgbSum == 0) {
                 sum[0][seedIndex] = 0;
@@ -441,61 +452,43 @@ public class KMeansPlusPlusColor {
             throw new IllegalArgumentException("seed cannot be null");
         }
         
-        //TODO: review to improve this:
-
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        
+        int nc = seed[0].length;
+        int[] xc = new int[nc];
+        int[] yc = new int[nc];
+        for (int i = 0; i < nc; ++i) {
+            xc[i] = seed[0][i];
+            yc[i] = seed[1][i];
+            pointIndexMap.put(new PairInt(xc[i], yc[i]), Integer.valueOf(i));
+        }
+        
+        KDTree kdTree = new KDTree(xc, yc);
+        
         int[] seedNumber = new int[img.getNPixels()];
+        
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
 
-        for (int seedIndex = 0; seedIndex < seed.length; seedIndex++) {
-
-            int bisectorBelow0 = ((seedIndex - 1) > -1) ?
-                ((seed[0][seedIndex - 1] + seed[0][seedIndex])/2) : 0;
-            
-            int bisectorAbove0 = ((seedIndex + 1) > (seed[0].length - 1)) ?
-                255 : ((seed[0][seedIndex + 1] + seed[0][seedIndex])/2);
-            
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
-
-                int r = img.getR(xyIndex);
-                int g = img.getG(xyIndex);
-                int b = img.getB(xyIndex);
-                int rgbSum = r + g + b;
-                int rPrime, gPrime;
-                if (rgbSum == 0) {
-                    rPrime = 0;
-                    gPrime = 0;
-                } else {
-                    rPrime = Math.round(integerFactor * (float)r/(float)rgbSum);
-                    gPrime = Math.round(integerFactor * (float)g/(float)rgbSum);
-                }
-            
-                boolean isInCell = (rPrime >= bisectorBelow0) 
-                    &&  (rPrime <= bisectorAbove0);
-
-                if (isInCell) {
-                    
-                    /*
-                    if adjacent bins have same first dimension
-                    value, look at second dimension to furthr locate 
-                    correct bin                        
-                    */
-//TODO: this is not correct                    
- //TODO: revisit this for the 2nd dimension
-                    
-                    int bisectorBelow1 = ((seedIndex - 1) > -1)
-                        ? ((seed[1][seedIndex - 1] + seed[1][seedIndex]) / 2) : 0;
-
-                    int bisectorAbove1 = ((seedIndex + 1) > (seed[1].length - 1))
-                        ? 255 : ((seed[1][seedIndex + 1] + seed[1][seedIndex]) / 2);
-
-                    isInCell = (gPrime >= bisectorBelow1) 
-                        &&  (gPrime <= bisectorAbove1);
-                }
-                
-                if (isInCell) {
-                    seedNumber[xyIndex] = seedIndex;
-                    //break;
-                }
+            int r = img.getR(pixIdx);
+            int g = img.getG(pixIdx);
+            int b = img.getB(pixIdx);
+            int rgbSum = r + g + b;
+            int rPrime, gPrime;
+            if (rgbSum == 0) {
+                rPrime = 0;
+                gPrime = 0;
+            } else {
+                rPrime = Math.round(integerFactor * (float)r/(float)rgbSum);
+                gPrime = Math.round(integerFactor * (float)g/(float)rgbSum);
             }
+            
+            KDTreeNode node = kdTree.findNearestNeighbor(rPrime, gPrime);
+            
+            Integer index = pointIndexMap.get(new PairInt(node.getX(), node.getY()));
+            
+            assert(index != null);
+            
+            seedNumber[pixIdx] = index.intValue();
         }
 
         return seedNumber;
