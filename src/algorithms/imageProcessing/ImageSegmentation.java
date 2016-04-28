@@ -3480,7 +3480,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                
         int w = img.getWidth();
         int h = img.getHeight();
-        
+                
         // ----- gather edge points and their 8 neighbors into edge point sets ----
         
         int[] dxs = Misc.dx8;
@@ -3743,7 +3743,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 1.25;
+            tColor = 4.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?
             tColor = Double.MAX_VALUE;
@@ -3931,12 +3931,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (set3.isEmpty()) {
                     continue;
                 }
-                int n3 = set3.size();
                 float[] desc3 = clusterDescriptors[idx3];
-                float nTot3 = n1 + n3;
-                for (int k = 0; k < desc3.length; ++k) {
-                    desc3[k] = ((desc3[k] * n3) + (desc2[k] * n2))/nTot3;
-                }
                 
                 //keys in pairEdgePindexNodes have smaller index in x
                 PairInt p13;
@@ -4027,7 +4022,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 long heapKey = (long)((double)heapKeyFactor * diff);
                 HeapNode node = new HeapNode(heapKey);
                 node.setData(p12);
-                
+                        
                 longEdgesHeap.insert(node);
                 
                 pairEdgePindexNodes.put(p12, node);
@@ -7985,6 +7980,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float[][] clusterDescriptors, int clrSpace, double tColor,
         List<Integer> longEdgeIndexes) {
         
+        System.out.println(longEdgeIndexes.size() + " long edges");
+        
         final long heapKeyFactor = 1000000l;
         Heap longEdgesHeap = new Heap();  
         Map<PairInt, HeapNode> pairEdgePindexNodes = new HashMap<PairInt, HeapNode>();
@@ -8070,13 +8067,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (set3.isEmpty()) {
                     continue;
                 }
-                int n3 = set3.size();
-                float[] desc3 = clusterDescriptors[idx3];
-                float nTot3 = n1 + n3;
-                for (int k = 0; k < desc3.length; ++k) {
-                    desc3[k] = ((desc3[k] * n3) + (desc2[k] * n2))/nTot3;
-                }
-                
                 //keys in pairEdgePindexNodes have smaller index in x
                 PairInt p13;
                 if (idx1 < idx3) {
@@ -8084,23 +8074,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 } else {
                     p13 = new PairInt(idx3, idx1);
                 }
+                
+                float[] desc3 = clusterDescriptors[idx3];
+               
                 HeapNode node3 = pairEdgePindexNodes.get(p13);
                 assert(node3 != null);
                 
                 longEdgesHeap.remove(node3);
-                
+            
+                double diffUpdated;
                 if (clrSpace == 0) {
-                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                    diffUpdated = Math.abs(cieC.calcDeltaECIE2000(
                         desc1[0], desc1[1], desc1[2], 
                         desc3[0], desc3[1], desc3[2]));
                 } else {
                     double diff1 = desc1[0] - desc3[0];
                     double diff2 = desc1[1] - desc3[1];
                     double diff3 = desc1[2] - desc3[2];
-                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
+                    diffUpdated = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
                 }
                 
-                long heapKey = (long)((double)heapKeyFactor * diff);
+                long heapKey = (long)((double)heapKeyFactor * diffUpdated);
                 node3 = new HeapNode(heapKey);
                 node3.setData(p13);
                 longEdgesHeap.insert(node3);
@@ -8108,7 +8102,35 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             
             // pairs having set2 will be skipped because of the empty set at beginning of while loop
-        }            
+        }
+        
+        {
+            //DEBUG
+            int nEdges = 0;
+            for (Integer index : longEdgeIndexes) {
+                Set<PairInt> set = clusterPoints.get(index.intValue());
+                if (set.size() > 0) {
+                    nEdges++;
+                    
+                    // what index pairs were not merged?
+                    Set<Integer> indexes2 = indexToIndexMap.get(index);
+                    for (Integer index2 : indexes2) {
+                        Set<PairInt> set2 = clusterPoints.get(index2.intValue());
+                        if (set2.size() > 0) {
+                            PairInt p12;
+                            if (index.intValue() < index2.intValue()) {
+                                p12 = new PairInt(index.intValue(), index2.intValue());
+                            } else {
+                                p12 = new PairInt(index2.intValue(), index.intValue());
+                            }
+                            HeapNode node = pairEdgePindexNodes.get(p12);
+                            double diff = ((double)node.getKey())/((double)heapKeyFactor);
+                        }
+                    }
+                }
+            }
+            System.out.println(nEdges + " edges after merge long edges");
+        }
     }
 
     private void mergeEdges2(List<Set<PairInt>> clusterPoints, 
@@ -8224,12 +8246,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 if (set3.isEmpty()) {
                     continue;
                 }
-                int n3 = set3.size();
                 float[] desc3 = clusterDescriptors[idx3];
-                float nTot3 = n1 + n3;
-                for (int k = 0; k < desc3.length; ++k) {
-                    desc3[k] = ((desc3[k] * n3) + (desc2[k] * n2))/nTot3;
-                }
 
                 queue.remove(node3);
                 

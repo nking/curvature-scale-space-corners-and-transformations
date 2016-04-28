@@ -976,6 +976,10 @@ public class PhaseCongruencyDetector {
         stepPoints.addAll(darkLinePoints);
         
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForLineHatHoriz(stepPoints, nRows, nCols);
+        pltc.correctForLineHatVert(stepPoints, nRows, nCols);
+        pltc.correctForLineSpurHoriz(stepPoints, nRows, nCols);
+        pltc.correctForLineSpurVert(stepPoints, nRows, nCols);
         
         // ---- complete the edges where possible ----
         Set<PairInt> gaps = pltc.findGapsOf1(stepPoints, nRows, nCols);
