@@ -1,5 +1,7 @@
 package algorithms.imageProcessing;
 
+import java.util.ArrayList;
+import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -22,6 +24,22 @@ public class DoubleLinkedCircularListTest extends TestCase {
         String data1 = "data1";
         String data2 = "data2";
 
+        /*
+        
+        sentinel -> 1234 -> [ sentinel.right ]
+        sentinel <- 1234 <- [ sentinel.right ]
+        
+        sentinel -> 5678 -> 1234 -> [ sentinel.right ]
+        sentinel <- 5678 <- 1234 <- [ sentinel.right ]
+        
+        HeapNode rightOfSentinel = sentinel.getRight();
+        node.setRight(rightOfSentinel);
+        rightOfSentinel.setLeft(node);
+        sentinel.setRight(node);
+        node.setLeft(sentinel);
+        number++;
+        */
+        
         HeapNode node = new HeapNode(key);
         node.setData(data1);
         
@@ -155,5 +173,55 @@ public class DoubleLinkedCircularListTest extends TestCase {
         assertNotNull(rNode2);
         assertTrue(node2.equals(rNode2));
         assertEquals(rNode2.getData(), data2);
+    }
+    
+    public void testInsertAfter() {
+        
+        /*
+        sentinel -> 2nd inserted -> 1st inserted -> [ sentinel.right ]
+        sentinel <- 2nd inserted <- 1st inserted <- [ sentinel.right ]
+        *
+        * subsequent traversal by FIFO should use :
+        *    sentinel.getRight().getLeft() and proceed left for n=number items
+        * 
+        * subsequent traversal by LIFO should use :
+        *    sentinel.getRight() and proceed right for n=number items
+        */
+        
+        DoubleLinkedCircularList dlcl = new DoubleLinkedCircularList();
+        
+        assertEquals(0, dlcl.getNumberOfNodes());
+        
+        List<HeapNode> nodes = new ArrayList<HeapNode>();
+        List<Long> expectedFIFOKeys = new ArrayList<Long>();
+        for (int i = 0; i < 10; i += 2) {
+            HeapNode node = new HeapNode(i);
+            dlcl.insert(node);
+            nodes.add(node);
+            expectedFIFOKeys.add(Long.valueOf(i));
+        }
+        
+        assertEquals(nodes.size(), dlcl.getNumberOfNodes());
+        assertEquals(expectedFIFOKeys.size(), dlcl.getNumberOfNodes());
+        
+        // check LIFO traversal has expected keys
+        
+        HeapNode node = dlcl.getSentinel();
+        for (int i = 0; i < dlcl.getNumberOfNodes(); ++i) {
+            node = node.getLeft();
+            assertEquals(expectedFIFOKeys.get(i).longValue(), node.getKey());
+        }
+
+        HeapNode insertNode = new HeapNode(1);
+        dlcl.insertAfter(nodes.get(0), insertNode);
+        expectedFIFOKeys.add(1, Long.valueOf(1));
+        
+        assertEquals(expectedFIFOKeys.size(), dlcl.getNumberOfNodes());
+        node = dlcl.getSentinel();
+        for (int i = 0; i < dlcl.getNumberOfNodes(); ++i) {
+            node = node.getLeft();
+            assertEquals(expectedFIFOKeys.get(i).longValue(), node.getKey());
+        }
+        
     }
 }

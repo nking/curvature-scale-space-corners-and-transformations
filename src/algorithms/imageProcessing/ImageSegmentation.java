@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -3732,12 +3733,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         populateEdgeLengthLists(clusterDescriptors, (float)tLen/(float)n, 
             longEdgeIndexes, shortEdgeIndexes);
         
-        final long heapKeyFactor = 1000000l;
-        Heap longEdgesHeap = new Heap();  
-        Map<PairInt, HeapNode> pairEdgePindexNodes = new HashMap<PairInt, HeapNode>();
-        populateColorDiffHeap(clusterDescriptors, clrSpace,
-            longEdgeIndexes, longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
-            
         // merge edges in the heap for pairs with diff < tColot
         // NOTE that the moved sets modify the dsta structures :
         //    clusterPoints may contain empty items
@@ -3752,9 +3747,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             // what is JND for HSV (a.k.a. HSB) ?
             tColor = Double.MAX_VALUE;
         }
-        mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
-            longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
         
+        // use min fibonacci eap OR a queue with bfs traversal
+        boolean useFibonacci = true;
+        if (useFibonacci) {
+            
+            mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
+                longEdgeIndexes);
+                
+        } else {
+            
+            mergeEdges2(clusterPoints, clusterDescriptors, clrSpace, tColor,
+                longEdgeIndexes);
+        }
+
         {
             // DEBUG
             List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
@@ -3802,13 +3808,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     /**
-     * if pair distance < tColor
+    if pair distance < tColor
                 merge the pair and update the affected data structures.
       NOTE that the moved sets modify the dsta structures :
       clusterPoints may contain empty items, 
       clusterDescriptors may contain null items,
       both clusterPoints and clusterDescriptor non-null and non-empty 
-      items are updated for merges
+      items are updated for merges.
+      * This method uses a queue and bfs traversal pattern instead of a 
+      * min fibonacci heap, so is faster than mergeEdges(...) but has the
+      * possibility of a cluster's average properties wandering from
+      * center of approach in mergeEdges(...).
+      * 
      * @param clusterPoints
      * @param clusterDescriptors
      * @param clrSpace
@@ -3817,7 +3828,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param heapKeyFactor
      * @param pairEdgePindexNodes 
      */
-    private void mergeEdges(List<Set<PairInt>> clusterPoints, 
+    private void mergeEdges2(List<Set<PairInt>> clusterPoints, 
         float[][] clusterDescriptors, int clrSpace, double tColor, 
         Heap longEdgesHeap, long heapKeyFactor, 
         Map<PairInt, HeapNode> pairEdgePindexNodes) {
@@ -3844,17 +3855,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             indexes.add(index1);
         }
         
+        
         /*
-        TODO: make an alternative method which uses a stack to store the
+        TODO: make an alternative method which uses a queue to store the
         pair difference indexes.
-           the stack is initialized with the pairs ordered by increasing 
+           the queue is initialized with the pairs ordered by increasing 
            color difference, but thereafter is populated using a bfs
            style traversal (indexes that are merged into are added to the
            queue and visited after the smallest within threshold in the 
-           initial stack are visited).
-        The stack queue should be faster because each update would be O(1) 
+           initial queue are visited).
+        The queue should be faster because each update would be O(1) 
             rather than O(lg2(N_pairs)) and removals are O(1) instead of
             O(lg2(N_pairs)).
+        Note that the min heap pattern in this method should lead to more stable
+        average properties, but not sure that the results would not be
+        similar for most images.
         */
         
         CIEChromaticity cieC = new CIEChromaticity();
@@ -3954,7 +3969,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             // pairs having set2 will be skipped because of the empty set at beginning of while loop
         }        
     }
-
+    
     private void populateEdgeLengthLists(float[][] clusterDescriptors, 
         float tLenFraction, List<Integer> longEdgeIndexes, 
         List<Integer> shortEdgeIndexes) {
@@ -7962,6 +7977,166 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return count;
+    }
+
+    private void mergeEdges(List<Set<PairInt>> clusterPoints, 
+        float[][] clusterDescriptors, int clrSpace, double tColor,
+        List<Integer> longEdgeIndexes) {
+        
+        final long heapKeyFactor = 1000000l;
+        Heap longEdgesHeap = new Heap();  
+        Map<PairInt, HeapNode> pairEdgePindexNodes = new HashMap<PairInt, HeapNode>();
+        populateColorDiffHeap(clusterDescriptors, clrSpace,
+            longEdgeIndexes, longEdgesHeap, heapKeyFactor, pairEdgePindexNodes);
+
+        // ---- make a map to finde and update merged data structures ------
+        Map<Integer, Set<Integer>> indexToIndexMap = new HashMap<Integer, Set<Integer>>();
+        for (PairInt p : pairEdgePindexNodes.keySet()) {
+            
+            Integer index1 = Integer.valueOf(p.getX());
+            Integer index2 = Integer.valueOf(p.getY());
+            
+            Set<Integer> indexes = indexToIndexMap.get(index1);
+            if (indexes == null) {
+                indexes = new HashSet<Integer>();
+                indexToIndexMap.put(index1, indexes);
+            }
+            indexes.add(index2);
+            
+            indexes = indexToIndexMap.get(index2);
+            if (indexes == null) {
+                indexes = new HashSet<Integer>();
+                indexToIndexMap.put(index2, indexes);
+            }
+            indexes.add(index1);
+        }
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        while (!longEdgesHeap.isEmpty()) {
+            
+            HeapNode node = longEdgesHeap.extractMin();
+            double diff = (double)node.getKey()/(double)heapKeyFactor;
+            
+            if (diff > tColor) {
+                break;
+            }
+            
+            PairInt p12 = (PairInt)node.getData();
+            
+            int idx1 = p12.getX();
+            int idx2 = p12.getY();
+            
+            Set<PairInt> set1 = clusterPoints.get(idx1);
+            Set<PairInt> set2 = clusterPoints.get(idx2);
+            
+            if (set1.isEmpty() || set2.isEmpty()) {
+                continue;
+            }
+            
+            if (set2.size() > set1.size()) {
+                idx1 = p12.getY();
+                idx2 = p12.getX();
+                set1 = set2;
+                set2 = clusterPoints.get(idx2);
+            }
+            
+            // set1 is largest
+            
+            float[] desc1 = clusterDescriptors[idx1];
+            float[] desc2 = clusterDescriptors[idx2];
+            float n1 = set1.size();
+            float n2 = set2.size();
+            float nTot = n1 + n2;
+            
+            //{h, s, v, percent, cenX, cenY}
+            // update desc1 contents for contents in desc2
+            for (int k = 0; k < desc1.length; ++k) {
+                desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2))/nTot;
+            }
+            clusterDescriptors[idx2] = null;
+            set1.addAll(set2);
+            set2.clear();
+            
+            n1 = set1.size();
+            
+            // update all pairs having set 1
+            Set<Integer> indexes2 = indexToIndexMap.get(Integer.valueOf(idx1));
+            for (Integer index2 : indexes2) {
+                int idx3 = index2.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);            
+                if (set3.isEmpty()) {
+                    continue;
+                }
+                int n3 = set3.size();
+                float[] desc3 = clusterDescriptors[idx3];
+                float nTot3 = n1 + n3;
+                for (int k = 0; k < desc3.length; ++k) {
+                    desc3[k] = ((desc3[k] * n3) + (desc2[k] * n2))/nTot3;
+                }
+                
+                //keys in pairEdgePindexNodes have smaller index in x
+                PairInt p13;
+                if (idx1 < idx3) {
+                    p13 = new PairInt(idx1, idx3);
+                } else {
+                    p13 = new PairInt(idx3, idx1);
+                }
+                HeapNode node3 = pairEdgePindexNodes.get(p13);
+                assert(node3 != null);
+                
+                longEdgesHeap.remove(node3);
+                
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        desc1[0], desc1[1], desc1[2], 
+                        desc3[0], desc3[1], desc3[2]));
+                } else {
+                    double diff1 = desc1[0] - desc3[0];
+                    double diff2 = desc1[1] - desc3[1];
+                    double diff3 = desc1[2] - desc3[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2*diff2 + diff3*diff3);
+                }
+                
+                long heapKey = (long)(heapKeyFactor * diff);
+                node3 = new HeapNode(heapKey);
+                node.setData(p13);
+                longEdgesHeap.insert(node3);
+                pairEdgePindexNodes.put(p13, node3);                
+            }
+            
+            // pairs having set2 will be skipped because of the empty set at beginning of while loop
+        }            
+    }
+
+    private void mergeEdges2(List<Set<PairInt>> clusterPoints, 
+        float[][] clusterDescriptors, int clrSpace, double tColor, 
+        List<Integer> longEdgeIndexes) {
+
+        /*
+        for each pair in longEdgeIndexes,
+            calculate differences
+            store in double array and write indexes in int array
+        sort be ascending difference
+        
+        store in a DoubleLinkedCircularList
+             insert by key or node is O!1)
+             remove by node        is O(1)
+        
+        visit pattern is iterate over linked list
+            merge if pass criteria
+               update affected descriptors and affected nodes
+               remove affected nodes 
+               insert affected nodes
+                  (note that will add one improvement: 
+                   if updated diff is close to the
+                   current diff before merge, 
+                   instead of inserting at the end of the linked list,
+                   traverse the first several nodes and if new diff is smaller,
+                   insert after last smaller node).
+        
+        */
+
     }
 
     public static class BoundingRegions {

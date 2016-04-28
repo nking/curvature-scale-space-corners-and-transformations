@@ -38,17 +38,20 @@ public class DoubleLinkedCircularList {
     }
 
     /**
-    * insert new key into circular doubly linked list to the 
-    * right<-- change> of the sentinel
-    * runtime is O(1)
-    *
+    * insert new key into circular doubly linked list,
+    * runtime is O(1),
+    * 
     * Example:
     *
-    *   --------------------------/\
-    *   |                          |
-    *   -->[sentinel] --> [9] --> [1]
-    *   <--           <--     <--
+        sentinel -> 2nd inserted -> 1st inserted -> [ sentinel.right ]
+        sentinel <- 2nd inserted <- 1st inserted <- [ sentinel.right ]
     *
+    * subsequent traversal by FIFO should use :
+    *    sentinel and proceed left n=number of items
+    * 
+    * subsequent traversal by LIFO should use :
+    *    sentinel and proceed right n=number of times
+    * 
     * @param node
     * @return inserted child node instance
     */
@@ -99,6 +102,46 @@ public class DoubleLinkedCircularList {
         node.setLeft(node.getRight());
                 
         number--;
+    }
+    
+    /**
+     * insert insertNode to a place after existingNode.  The method does not
+     * preserve left right relationships of insertNode, but preserves those of 
+     * existingNode.  It expects that existingNode is part of this instance's
+     * members and updates the number of items, for later use in traversals.
+     * 
+     * Internally the insertNode is to the left of existingNode using the 
+     * convention of this class.
+     * 
+     * subsequent traversal by FIFO should use :
+    *    sentinel and proceed left n=number of items
+    * 
+    * subsequent traversal by LIFO should use :
+    *    sentinel and proceed right n=number of times
+     * 
+     * @param existingNode
+     * @param insertNode 
+     */
+    public void insertAfter(HeapNode existingNode, HeapNode insertNode) {
+        
+        if (insertNode.getLeft() != null || insertNode.getRight() != null) {
+            throw new IllegalArgumentException("insertNode's existing left or "
+                + " right are written over, so remove those before using this "
+                + "method for clearer correct use");
+        }
+                
+        HeapNode left = existingNode.getLeft();
+        
+        left.setRight(insertNode);
+        insertNode.setLeft(left);
+        
+        existingNode.setLeft(insertNode);
+        
+        number++;
+    }
+    
+    public long getNumberOfNodes() {
+        return number;
     }
    
     public HeapNode search(long key) {
