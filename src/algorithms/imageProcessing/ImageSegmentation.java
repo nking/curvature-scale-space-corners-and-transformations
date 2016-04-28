@@ -3568,7 +3568,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Set<PairInt> edgePoints = outputPoints.get(i);
             for (PairInt p : edgePoints) {
                 Set<Integer> indexes = pointIndexes.get(p);
-                if (p == null) {
+                if (indexes == null) {
                     indexes = new HashSet<Integer>();
                     pointIndexes.put(p, indexes);
                 }
@@ -3771,7 +3771,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
             int nExtraForDot = 1;
-            Image img2 = input.copyImage();
+            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
             MiscDebug.writeImage(img2, "_longEdges_meerged_");
@@ -3962,7 +3962,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 long heapKey = (long)(heapKeyFactor * diff);
                 node3 = new HeapNode(heapKey);
-                node.setData(p13);
+                node3.setData(p13);
                 longEdgesHeap.insert(node3);
                 pairEdgePindexNodes.put(p13, node3);                
             }
@@ -8101,7 +8101,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 long heapKey = (long)(heapKeyFactor * diff);
                 node3 = new HeapNode(heapKey);
-                node.setData(p13);
+                node3.setData(p13);
                 longEdgesHeap.insert(node3);
                 pairEdgePindexNodes.put(p13, node3);                
             }
@@ -8246,7 +8246,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
                 long key = (long)(keyFactor * diffUpdate);
                 node3 = new HeapNode(key);
-                node.setData(p13);
+                node3.setData(p13);
                 
                 updated.add(node3);
                 
