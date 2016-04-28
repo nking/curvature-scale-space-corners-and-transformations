@@ -10,4 +10,25 @@ public class KDTreeNode {
 	int y = -1;
 	int key = -1; // median value
 	int nChildren = 0;
+
+    /**
+     * @return the x
+     */
+    public int getX() {
+        return x;
+    }
+
+    /**
+     * @return the y
+     */
+    public int getY() {
+        return y;
+    }
+
+    /**
+     * @return the key
+     */
+    public int getKey() {
+        return key;
+    }
 }

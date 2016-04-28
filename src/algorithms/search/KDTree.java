@@ -1,6 +1,5 @@
 package algorithms.search;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.util.PairInt;
 import java.util.HashSet;
@@ -251,7 +250,7 @@ public class KDTree {
 			return tree;
 		}
 		
-		int medianValue = tree.key;
+		int medianValue = tree.getKey();
 		
 		KDTreeNode subTree;
 		
@@ -281,13 +280,13 @@ public class KDTree {
 	}
 	private void printTree(KDTreeNode node, String preString) {
 		if (node.left != null) {
-		    printTree(node.left, preString + ":LEFT " + node.key);
+		    printTree(node.left, preString + ":LEFT " + node.getKey());
 		}
 		if (node.right != null) {
-		    printTree(node.right, preString + ":RIGHT " + node.key);
+		    printTree(node.right, preString + ":RIGHT " + node.getKey());
 		}
 		if (node.left == null && node.right == null) {
-			System.out.println(preString + node.key + "(" + node.x + "," + node.y + ")");
+			System.out.println(preString + node.getKey() + "(" + node.getX() + "," + node.getY() + ")");
 			return;
 		}
 	}

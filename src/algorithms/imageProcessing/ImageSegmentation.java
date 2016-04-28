@@ -26,6 +26,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.KDTree;
+import algorithms.search.KDTreeNode;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -85,7 +86,8 @@ public class ImageSegmentation {
         KMeansPlusPlusColor instance = new KMeansPlusPlusColor();
         instance.computeMeans(kBands, input);
         
-        assignToNearestCluster(input, instance.getCenters());
+        assignToNearestCluster(input, instance.getCenters(),
+            instance.getChromaFactor());
     }
 
     /**
@@ -220,7 +222,8 @@ public class ImageSegmentation {
      * @param input
      * @param binCenters
      */
-    public void assignToNearestCluster(Image input, int[][] binCenters) {
+    public void assignToNearestCluster(Image input, int[][] binCenters, 
+        int chromaFactor) {
 
         int nc = binCenters[0].length;
         int[] xc = new int[nc];
@@ -231,11 +234,7 @@ public class ImageSegmentation {
         }
         
         KDTree kdTree = new KDTree(xc, yc);
-        
-        throw new UnsupportedOperationException("not yet implemented");
-        /*
-        NearestPoints1D np = new NearestPoints2D(binCenters);
-
+                
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
@@ -245,10 +244,10 @@ public class ImageSegmentation {
                 int bPt = input.getB(col, row);
                 int sumPt = (rPt + gPt + bPt);
                 
-                int rPrimtPt = (sumPt == 0) ? 0 : rPt/sumPt;
-                int gPrimtPt = (sumPt == 0) ? 0 : gPt/sumPt;
+                int rPrimePt = (sumPt == 0) ? 0 : rPt/sumPt;
+                int gPrimePt = (sumPt == 0) ? 0 : gPt/sumPt;
                 
-                int[] vc = np.findClosestValue(rPrimePt, gPrimePt);
+                KDTreeNode v = kdTree.findNearestNeighbor(rPrimePt, gPrimePt);
                 
                 //r / (r + g + b) = rP
                 //g / (r + g + b) = gP
@@ -259,21 +258,18 @@ public class ImageSegmentation {
                 
                 //b = (1 - rP - gP) * g / bP
                 
-                //since have lost the luminance information,
-                //adopting a value for the total luminosity of 3*255/2 = 382.
+                //NOTE: have lost the luminance information,
                                 
-                int rgbTrSum = 382;
+                int bvc = 3 * chromaFactor - v.getX() - v.getY();
                 
-                int bvc = 1 - vc[0] - vc[1];
-                
-                int rTr = vc[0] * rgbTrSum;
-                int gTr = vc[1] * rgbTrSum;
-                int bTr = bvc * rgbTrSum;
+                int rTr = v.getX();
+                int gTr = v.getY();
+                int bTr = bvc;
 
                 input.setRGB(col, row, rTr, gTr, bTr);
             }
         }
-        */
+       
     }
 
     public List<Set<PairInt>> assignToNearestPolarCIECluster(

@@ -24,7 +24,10 @@ import java.util.logging.Logger;
  * The characteristic clustered in this implementation is the intensity of the
  * pixel rather than the location so distance is the difference between 
  * intensities.  It's tailored for image segmentation.
- * Note that this color kmeans internally uses r/(r+g+b) and g/(r+g+b).
+ * Note that this color kmeans internally uses chromaticity, that is 
+ * r/(r+g+b) and g/(r+g+b) and multiplies both vectors by a factor 
+ * integerFactor = 255 to
+ * keep the values in integers.
  * 
  * Useful reading:
  * http://en.wikipedia.org/wiki/K-means_clustering
@@ -34,6 +37,8 @@ import java.util.logging.Logger;
 public class KMeansPlusPlusColor {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
+    
+    protected int integerFactor = 255;
     
     /**
      * final solution for centers of groups (== seed centers)
@@ -134,8 +139,13 @@ public class KMeansPlusPlusColor {
         int nSeedsChosen = 0;
         
         int rgbSum = img.getR(index) + img.getG(index) + img.getB(index);
-        seed[0][nSeedsChosen] = (rgbSum == 0) ? 0 : img.getR(index)/rgbSum;
-        seed[1][nSeedsChosen] = (rgbSum == 0) ? 0 : img.getG(index)/rgbSum;
+        if (rgbSum == 0) {
+            seed[0][nSeedsChosen] = 0;
+            seed[1][nSeedsChosen] = 0;
+        } else {
+            seed[0][nSeedsChosen] = Math.round(integerFactor * (float)img.getR(index)/(float)rgbSum);
+            seed[1][nSeedsChosen] = Math.round(integerFactor * (float)img.getG(index)/(float)rgbSum);
+        }
    
         indexes[nSeedsChosen] = index;
         
@@ -162,9 +172,14 @@ public class KMeansPlusPlusColor {
                 int gPt = img.getG(xyIndex);
                 int bPt = img.getB(xyIndex);
                 int sumPt = (rPt + gPt + bPt);
-                
-                int rPrimtPt = (sumPt == 0) ? 0 : rPt/sumPt;
-                int gPrimtPt = (sumPt == 0) ? 0 : gPt/sumPt;
+                int rPrimtPt, gPrimtPt;
+                if (sumPt == 0) {
+                    rPrimtPt = 0;
+                    gPrimtPt = 0;
+                } else {
+                    rPrimtPt = Math.round(integerFactor * (float)rPt/(float)sumPt);
+                    gPrimtPt = Math.round(integerFactor * (float)gPt/(float)sumPt);
+                }
                 
                 int minDist = Integer.MAX_VALUE;
 
@@ -180,7 +195,7 @@ public class KMeansPlusPlusColor {
                         minDist = dist;
                     }
                 }
-                
+                                
                 distOfSeeds[xyIndex] = minDist;
                 indexOfDistOfSeeds[xyIndex] = xyIndex;
 
@@ -195,13 +210,18 @@ public class KMeansPlusPlusColor {
             int r2 = img.getR(index);
             int g2 = img.getG(index);
             int b2 = img.getB(index);
-            int rgbSum2 = r2 + g2 + b2;
-            seed[0][nSeedsChosen] = (rgbSum2 == 0) ? 0 : r2/rgbSum2;
-            seed[1][nSeedsChosen] = (rgbSum2 == 0) ? 0 : g2/rgbSum2;
+            int rgbSum2 = r2 + g2 + b2;            
+            if (rgbSum2 == 0) {
+                seed[0][nSeedsChosen] = 0;
+                seed[1][nSeedsChosen] = 0;
+            } else {
+                seed[0][nSeedsChosen] = Math.round(integerFactor * (float)r2/(float)rgbSum2);
+                seed[1][nSeedsChosen] = Math.round(integerFactor * (float)g2/(float)rgbSum2);
+            }
             indexes[nSeedsChosen] = index;
 
-            log.fine(String.format("choose seed %d) %d", nSeedsChosen, 
-                seed[nSeedsChosen]));
+            log.fine(String.format("choose seed %d) r'=%d  g'=%d", nSeedsChosen, 
+                seed[0][nSeedsChosen], seed[1][nSeedsChosen]));
             
             nSeedsChosen++;
         }
@@ -246,11 +266,13 @@ public class KMeansPlusPlusColor {
             int g = img.getG(xyIndex);
             int b = img.getB(xyIndex);
             int rgbSum = r + g + b;
-            int rPrime = (rgbSum == 0) ? 0 : r/rgbSum;
-            int gPrime = (rgbSum == 0) ? 0 : g/rgbSum;
-            
-            sum[0][seedIndex] += rPrime;
-            sum[1][seedIndex] += gPrime;
+            if (rgbSum == 0) {
+                sum[0][seedIndex] = 0;
+                sum[1][seedIndex] = 0;
+            } else {
+                sum[0][seedIndex] = Math.round(integerFactor * (float)r/(float)rgbSum);
+                sum[1][seedIndex] = Math.round(integerFactor * (float)g/(float)rgbSum);
+            }
             
             nSum[seedIndex]++;
         }
@@ -264,8 +286,8 @@ public class KMeansPlusPlusColor {
                 sum[1][i] /= nSum[i];
             }
 
-            log.fine(String.format("seed mean = %d) %d number of points=%d", 
-                i, sum[i], nSum[i]));
+            log.fine(String.format("seed mean = %d) r'=%d g'=%d number of points=%d", 
+                i, sum[0][i], sum[1][i], nSum[i]));
             
         }
 
@@ -305,9 +327,15 @@ public class KMeansPlusPlusColor {
             int g = img.getG(xyIndex);
             int b = img.getB(xyIndex);
             int rgbSum = r + g + b;
-            int rPrime = (rgbSum == 0) ? 0 : r/rgbSum;
-            int gPrime = (rgbSum == 0) ? 0 : g/rgbSum;
-
+            int rPrime, gPrime;
+            if (rgbSum == 0) {
+                rPrime = 0;
+                gPrime = 0;
+            } else {
+                rPrime = Math.round(integerFactor * (float)r/(float)rgbSum);
+                gPrime = Math.round(integerFactor * (float)g/(float)rgbSum);
+            }
+            
             int diffR = rPrime - seed[0][seedIndex];
             int diffG = gPrime - seed[1][seedIndex];
             
@@ -360,8 +388,14 @@ public class KMeansPlusPlusColor {
             int g = img.getG(xyIndex);
             int b = img.getB(xyIndex);
             int rgbSum = r + g + b;
-            int rPrime = (rgbSum == 0) ? 0 : r/rgbSum;
-            int gPrime = (rgbSum == 0) ? 0 : g/rgbSum;
+            int rPrime, gPrime;
+            if (rgbSum == 0) {
+                rPrime = 0;
+                gPrime = 0;
+            } else {
+                rPrime = Math.round(integerFactor * (float)r/(float)rgbSum);
+                gPrime = Math.round(integerFactor * (float)g/(float)rgbSum);
+            }
 
             int diffR = rPrime - center[0][seedIndex];
             int diffG = gPrime - center[1][seedIndex];
@@ -384,8 +418,8 @@ public class KMeansPlusPlusColor {
             }
             seedVariances[i] = sumStDev[i];
 
-            log.fine(String.format("seed %d) %d stDev=%.2f number of points=%d", 
-                i, center[i], seedVariances[i], nSumStDev[i]));
+            log.fine(String.format("seed %d) r'=%d g'=%d stDev=%.2f number of points=%d", 
+                i, center[0][i], center[1][i], seedVariances[i], nSumStDev[i]));
             
         }
 
@@ -425,8 +459,14 @@ public class KMeansPlusPlusColor {
                 int g = img.getG(xyIndex);
                 int b = img.getB(xyIndex);
                 int rgbSum = r + g + b;
-                int rPrime = (rgbSum == 0) ? 0 : r/rgbSum;
-                int gPrime = (rgbSum == 0) ? 0 : g/rgbSum;
+                int rPrime, gPrime;
+                if (rgbSum == 0) {
+                    rPrime = 0;
+                    gPrime = 0;
+                } else {
+                    rPrime = Math.round(integerFactor * (float)r/(float)rgbSum);
+                    gPrime = Math.round(integerFactor * (float)g/(float)rgbSum);
+                }
             
                 boolean isInCell = (rPrime >= bisectorBelow0) 
                     &&  (rPrime <= bisectorAbove0);
@@ -438,8 +478,8 @@ public class KMeansPlusPlusColor {
                     value, look at second dimension to furthr locate 
                     correct bin                        
                     */
-                    
-                    //TODO: revisit this for the 2nd dimension
+//TODO: this is not correct                    
+ //TODO: revisit this for the 2nd dimension
                     
                     int bisectorBelow1 = ((seedIndex - 1) > -1)
                         ? ((seed[1][seedIndex - 1] + seed[1][seedIndex]) / 2) : 0;
@@ -503,7 +543,7 @@ public class KMeansPlusPlusColor {
         }
         
         if (nDistDistr < 1) {
-            throw new IllegalStateException("distOfSeeds is in error: " + 
+            throw new IllegalStateException("distOfSeeds is in error:]n" + 
                 Arrays.toString(distOfSeeds));
         }
                 
@@ -532,10 +572,16 @@ public class KMeansPlusPlusColor {
     public float[] getStandardDeviationsFromCenters() {
         return this.seedVariances;
     }
+    
+    public int getChromaFactor() {
+        return integerFactor;
+    }
 
     /**
      * dimension 0 is rPrime values where rPrime is r/(r + g + b)
      * and dimension 1 is gPrime values where gPrime is g/(r + g + b)
+     * and both values have been multiplied by 
+     * integerFactor = 255 to keep them in integer range.
      * @return 
      */
     public int[][] getCenters() {
