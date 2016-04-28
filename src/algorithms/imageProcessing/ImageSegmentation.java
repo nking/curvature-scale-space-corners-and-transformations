@@ -3743,7 +3743,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 5;
+            tColor = 3;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?
             tColor = Double.MAX_VALUE;
@@ -3765,7 +3765,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         {
             // DEBUG
             List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
-            for (Set<PairInt> set : clusterPoints) {
+            for (Integer index : longEdgeIndexes) {
+                Set<PairInt> set = clusterPoints.get(index.intValue());
                 if (!set.isEmpty()) {
                     tmp.add(set);
                 }
@@ -3774,7 +3775,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_longEdges_meerged_");
+            MiscDebug.writeImage(img2, "_longEdges_merged_long_" +  clrSpace);
         }
         
         throw new UnsupportedOperationException("not yet implemented");
@@ -8161,7 +8162,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             node = node.getLeft();
             queue.remove(node);
             
-            float diff = (float)node.getKey() / (float)keyFactor;
+            double diff = (double)node.getKey() / (double)keyFactor;
             
             if (diff > tColor) {
                 continue;
@@ -8269,7 +8270,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     HeapNode prevNode = node;
                     for (int ii = 0; ii < 4; ++ii) {
                         qNode = qNode.getLeft();
-                        float qDiff = (float)qNode.getKey()/(float)keyFactor;
+                        double qDiff = (double)qNode.getKey()/(double)keyFactor;
                         if (qDiff > diffUpdate) {
                             insertAfter = prevNode;
                             break;
