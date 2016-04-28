@@ -8,6 +8,7 @@ import algorithms.compGeometry.NearestPoints1D;
 import algorithms.compGeometry.NearestPointsInLists;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.features.BlobMedialAxes;
@@ -24,6 +25,7 @@ import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
+import algorithms.search.KDTree;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -74,6 +76,15 @@ public class ImageSegmentation {
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(kBands, input);
 
+        assignToNearestCluster(input, instance.getCenters());
+    }
+    
+    public void applyUsingKMPP(Image input, int kBands) throws IOException, 
+        NoSuchAlgorithmException {
+        
+        KMeansPlusPlusColor instance = new KMeansPlusPlusColor();
+        instance.computeMeans(kBands, input);
+        
         assignToNearestCluster(input, instance.getCenters());
     }
 
@@ -202,6 +213,67 @@ public class ImageSegmentation {
                 input.setValue(col, row, vc);
             }
         }
+    }
+    
+     /**
+     * places points by their proximity to cluster centers
+     * @param input
+     * @param binCenters
+     */
+    public void assignToNearestCluster(Image input, int[][] binCenters) {
+
+        int nc = binCenters[0].length;
+        int[] xc = new int[nc];
+        int[] yc = new int[nc];
+        for (int i = 0; i < nc; ++i) {
+            xc[i] = binCenters[0][i];
+            yc[i] = binCenters[1][i];
+        }
+        
+        KDTree kdTree = new KDTree(xc, yc);
+        
+        throw new UnsupportedOperationException("not yet implemented");
+        /*
+        NearestPoints1D np = new NearestPoints2D(binCenters);
+
+        for (int col = 0; col < input.getWidth(); col++) {
+
+            for (int row = 0; row < input.getHeight(); row++) {
+
+                int rPt = input.getR(col, row);
+                int gPt = input.getG(col, row);
+                int bPt = input.getB(col, row);
+                int sumPt = (rPt + gPt + bPt);
+                
+                int rPrimtPt = (sumPt == 0) ? 0 : rPt/sumPt;
+                int gPrimtPt = (sumPt == 0) ? 0 : gPt/sumPt;
+                
+                int[] vc = np.findClosestValue(rPrimePt, gPrimePt);
+                
+                //r / (r + g + b) = rP
+                //g / (r + g + b) = gP
+                
+                //rP + gP + bP = 1
+                
+                //b = (1 - rP - gP) * g / bP
+                
+                //b = (1 - rP - gP) * g / bP
+                
+                //since have lost the luminance information,
+                //adopting a value for the total luminosity of 3*255/2 = 382.
+                                
+                int rgbTrSum = 382;
+                
+                int bvc = 1 - vc[0] - vc[1];
+                
+                int rTr = vc[0] * rgbTrSum;
+                int gTr = vc[1] * rgbTrSum;
+                int bTr = bvc * rgbTrSum;
+
+                input.setRGB(col, row, rTr, gTr, bTr);
+            }
+        }
+        */
     }
 
     public List<Set<PairInt>> assignToNearestPolarCIECluster(
@@ -3666,7 +3738,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int minWavelength = 3;//nScale;// 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 10;//5;//2;
+        int k = 5;//10;//5;//2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
@@ -3743,7 +3815,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 4.5;
+            tColor = 5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?
             tColor = Double.MAX_VALUE;
@@ -3776,6 +3848,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
             MiscDebug.writeImage(img2, "_longEdges_merged_long_" +  clrSpace);
+            
+            ImageProcessor imageProcessor = new ImageProcessor();
+            //imageProcessor.
         }
         
         throw new UnsupportedOperationException("not yet implemented");
