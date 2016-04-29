@@ -342,7 +342,7 @@ public class KMeansPlusPlusColor {
                         
             int diffR = img.getR(xyIndex) - seed[0][seedIndex];
             int diffG = img.getG(xyIndex) - seed[1][seedIndex];
-            int diffB = img.getB(xyIndex) - seed[1][seedIndex];
+            int diffB = img.getB(xyIndex) - seed[2][seedIndex];
             
             int d = diffR * diffR + diffG * diffG + diffB * diffB;
             
@@ -443,7 +443,7 @@ public class KMeansPlusPlusColor {
         for (int i = 0; i < nc; ++i) {
             xc[i] = seed[0][i];
             yc[i] = seed[1][i];
-            zc[i] = seed[1][i];
+            zc[i] = seed[2][i];
         }        
            
         int[] seedNumber = new int[img.getNPixels()];
