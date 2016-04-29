@@ -3,6 +3,7 @@ package algorithms.imageProcessing;
 import algorithms.imageProcessing.features.BlobPerimeterCornerHelper;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
@@ -353,6 +354,48 @@ public class ImageSegmentationTest extends TestCase {
         }
         
         int z = 1;
+    }
+    
+    public void testKMPP_image() throws IOException, Exception {
+        String[] fileNames1 = new String[]{
+            //"tmp2.png",
+             "brown_lowe_2003_image1.jpg",
+             "venturi_mountain_j6_0001.png",
+             "books_illum3_v0_695x555.png"
+         };
+         String[] fileNames2 = new String[]{
+             "brown_lowe_2003_image2.jpg",
+             "venturi_mountain_j6_0010.png",
+             "books_illum3_v6_695x555.png"
+         };
+         
+         for (int i = 0; i < 1/*fileNames1.length*/; ++i) {
+             String fileName1 = fileNames1[i];
+             String fileName2 = fileNames2[i];
+             
+             int idx = fileName1.lastIndexOf(".");
+             String fileNameRoot = fileName1.substring(0, idx);
+             
+             log.info("fileName=" + fileNameRoot);
+             
+             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+             String filePath2 = ResourceFinder.findFileInTestResources(fileName2);
+                          
+             ImageSegmentation imageSegmentation = new ImageSegmentation();
+             String bin = ResourceFinder.findDirectory("bin");
+             
+             ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+             ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
+             
+             //GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
+             //GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath2);
+             
+             imageSegmentation.applyUsingKMPP(img1, 8);
+             MiscDebug.writeImage(img1, "_kmpp_" + fileName1);
+             
+             imageSegmentation.applyUsingKMPP(img2, 8);             
+             MiscDebug.writeImage(img2, "_kmpp_" + fileName2);
+         }
     }
     
      public void estApplyColorSegmentation2() throws Exception {
