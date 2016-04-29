@@ -2,9 +2,6 @@ package algorithms.compGeometry.clustering;
 
 import algorithms.compGeometry.NearestPoints1D;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.search.KDTree;
-import algorithms.search.KDTreeNode;
-import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -389,6 +386,7 @@ public class KMeansPlusPlus {
 
         int chosenIndex = -1;
         
+        // TODO: this could be improved by storing the sums at large intervals 
         long nDistDistr = 0;
         for (int i = 0; i < distOfSeeds.length; i++) {            
             int nValues = distOfSeeds[i];

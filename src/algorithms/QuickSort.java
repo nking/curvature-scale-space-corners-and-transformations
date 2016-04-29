@@ -716,7 +716,7 @@ public class QuickSort {
      * used to decide order.
      * @param a 
      */
-    public static void sortByDimension1Then2(int[][] a) {
+    public static void sortByDimension1FirstSecond(int[][] a) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
         }
@@ -726,7 +726,7 @@ public class QuickSort {
         if (a[0].length < 2) {
             return;
         }
-        sortByDimension1Then2(a, 0, a[0].length - 1);
+        sortByDimension1FirstSecond(a, 0, a[0].length - 1);
     }
     
     /**
@@ -736,7 +736,7 @@ public class QuickSort {
      * @param idxLo the first index in [0][index] to sort
      * @param idxHi the last index in [0][index] to sort, inclusive
      */
-    public static void sortByDimension1Then2(int[][] a, int idxLo, int idxHi) {
+    public static void sortByDimension1FirstSecond(int[][] a, int idxLo, int idxHi) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
         }
@@ -747,13 +747,14 @@ public class QuickSort {
             return;
         }
         if (idxLo < idxHi) {
-            int idxMid = partitionByDimension1Then2(a, idxLo, idxHi);
-            sortByDimension1Then2(a, idxLo, idxMid - 1);
-            sortByDimension1Then2(a, idxMid + 1, idxHi);
+            int idxMid = partitionByDimension1FirstSecond(a, idxLo, idxHi);
+            sortByDimension1FirstSecond(a, idxLo, idxMid - 1);
+            sortByDimension1FirstSecond(a, idxMid + 1, idxHi);
         }
     }
     
-    private static int partitionByDimension1Then2(int[][] a, int idxLo, int idxHi) {
+    private static int partitionByDimension1FirstSecond(int[][] a, int idxLo, 
+        int idxHi) {
         
         int x = a[0][idxHi];
         int store = idxLo - 1;
@@ -786,6 +787,85 @@ public class QuickSort {
         swap = a[1][store];
         a[1][store] = a[1][idxHi];
         a[1][idxHi] = swap;
+        return store;
+    }
+    
+    /**
+     * sorts along [0][index] and if there is a tie the value [1][index] is
+     * used to decide order.
+     * @param a 
+     */
+    public static void sortByDimension1FirstSecondThird(int[][] a) {
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length != 3) {
+            throw new IllegalArgumentException("a first dimension length must be 3");
+        }
+        if (a[0].length < 2) {
+            return;
+        }
+        sortByDimension1FirstSecondThird(a, 0, a[0].length - 1);
+    }
+    
+    /**
+     * sorts along [0][index] and if there is a tie the value [1][index] is
+     * used to decide order.
+     * @param a 
+     * @param idxLo the first index in [0][index] to sort
+     * @param idxHi the last index in [0][index] to sort, inclusive
+     */
+    public static void sortByDimension1FirstSecondThird(int[][] a, int idxLo, int idxHi) {
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.length != 3) {
+            throw new IllegalArgumentException("a first dimension length must be 3");
+        }
+        if (a[0].length < 2) {
+            return;
+        }
+        if (idxLo < idxHi) {
+            int idxMid = partitionByDimension1FirstSecondThird(a, idxLo, idxHi);
+            sortByDimension1FirstSecondThird(a, idxLo, idxMid - 1);
+            sortByDimension1FirstSecondThird(a, idxMid + 1, idxHi);
+        }
+    }
+    
+    private static int partitionByDimension1FirstSecondThird(int[][] a, int idxLo, 
+        int idxHi) {
+        
+        int x = a[0][idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a[0][i] < x) {
+                doSwap = true;
+            } else if (a[0][i] == x) {
+                if (a[1][i] < a[1][idxHi]) {
+                    doSwap = true;
+                } else if (a[1][i] == x) {
+                    if (a[2][i] <= a[2][idxHi]) {
+                        doSwap = true;
+                    }
+                }
+            }
+            if (doSwap) {
+                store++;
+                for (int k = 0; k < 3; ++k) {
+                    int swap = a[k][store];
+                    a[k][store] = a[k][i];
+                    a[k][i] = swap;
+                }
+            }
+        }
+        store++;
+        for (int k = 0; k < 3; ++k) {
+            int swap = a[k][store];
+            a[k][store] = a[k][idxHi];
+            a[k][idxHi] = swap;
+        }
         return store;
     }
     

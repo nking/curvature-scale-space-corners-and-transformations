@@ -5,6 +5,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.search.KDTree;
 import algorithms.search.KDTreeNode;
 import algorithms.util.PairInt;
+import algorithms.util.TrioInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -28,10 +29,7 @@ import java.util.logging.Logger;
  * The characteristic clustered in this implementation is the intensity of the
  * pixel rather than the location so distance is the difference between 
  * intensities.  It's tailored for image segmentation.
- * Note that this color kmeans internally uses chromaticity, that is 
- * r/(r+g+b) and g/(r+g+b) and multiplies both vectors by a factor 
- * integerFactor = 255 to
- * keep the values in integers.
+ * Note that this color kmeans internally uses r, g, b.
  * 
  * Useful reading:
  * http://en.wikipedia.org/wiki/K-means_clustering
@@ -41,18 +39,17 @@ import java.util.logging.Logger;
 public class KMeansPlusPlusColor {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
-    
-    protected int integerFactor = 51;//255;
-    
+            
     /**
      * final solution for centers of groups (== seed centers)
-     * in [0][index where 0 is for rPrime and [1][index] where 1 is for gPrime
+     * in [0][index where 0 is for r and [1][index] where 1 is for g
+     * and [2][index] is for b
      */
     protected int[][] center = null;
     protected int[] numberOfPointsPerSeedCell = null;
     
     protected int[] lastImgSeedIndexes = null;
-    
+        
     /**
      * this is k and is chosen by the user
      */
@@ -68,8 +65,8 @@ public class KMeansPlusPlusColor {
     
     protected int imgModeIdx = -1;
     
-    // key = r,g chromaticity and value = number of pixels with key
-    protected Map<PairInt, Integer> countsMap = null;
+    // key = r,g, b colors and value = number of pixels with key
+    protected Map<TrioInt, Integer> countsMap = null;
     
     private final ThreadLocalRandom sr;
     
@@ -97,9 +94,9 @@ public class KMeansPlusPlusColor {
         init(k);
         
         // starter seeds, sorted by increasing value
-        // [r' or g'][index]
+        // [r,g,b][index]
         int[][] seeds = createStartSeeds(img);
-         
+
         int[] imgSeedIndexes = null;
 
         boolean hasConverged = false;
@@ -150,22 +147,23 @@ public class KMeansPlusPlusColor {
      */
     private int[][] createStartSeeds(Image img) throws NoSuchAlgorithmException {
 
-        // [r/(r+g+b), g/(r+g+b)][index]
-        int[][] seed = new int[2][nSeeds];
-        for (int i = 0; i < 2; ++i) {
+        // [(r,g, or b)][index]
+        int[][] seed = new int[3][nSeeds];
+        for (int i = 0; i < 3; ++i) {
             seed[i] = new int[nSeeds];
         }
         
         int[] indexes = new int[nSeeds];
         
-        PairInt[] indexColors = new PairInt[nSeeds];
+        TrioInt[] indexColors = new TrioInt[nSeeds];
         
         int selectedPixIdx = getModeIdx(img);
 
         int nSeedsChosen = 0;
-        PairInt clr = calculateRGChromaticity(img, selectedPixIdx);
+        TrioInt clr = calculateRGB(img, selectedPixIdx);
         seed[0][nSeedsChosen] = clr.getX();
         seed[1][nSeedsChosen] = clr.getY();
+        seed[2][nSeedsChosen] = clr.getZ();
    
         indexes[nSeedsChosen] = selectedPixIdx;
         indexColors[nSeedsChosen] = clr;
@@ -174,35 +172,51 @@ public class KMeansPlusPlusColor {
             seed[0][nSeedsChosen], seed[1][nSeedsChosen]));
         
         nSeedsChosen++;
+        
+        int nPix = img.getNPixels();
       
         for (int n = 1; n < nSeeds; n++) {
             
-            int[] distOfSeeds = new int[img.getNPixels()];
-            int[] indexOfDistOfSeeds = new int[img.getNPixels()];
-
             int[] xs = new int[nSeedsChosen];
             int[] ys = new int[nSeedsChosen];
+            int[] zs = new int[nSeedsChosen];
             for (int seedIndex = 0; seedIndex < nSeedsChosen; seedIndex++) {
                 xs[seedIndex] = seed[0][seedIndex];
                 ys[seedIndex] = seed[1][seedIndex];
+                zs[seedIndex] = seed[2][seedIndex];
             }
             
-            populateDistanceArrays(img, xs, ys, distOfSeeds, indexOfDistOfSeeds);
+            int[] distOfSeedsX = new int[nPix];
+            int[] distOfSeedsY = new int[nPix];
+            int[] distOfSeedsZ = new int[nPix];
+            int[] indexOfDistOfSeedsX = new int[nPix];
+            int[] indexOfDistOfSeedsY = new int[nPix];
+            int[] indexOfDistOfSeedsZ = new int[nPix];
+            
+            populateDistanceArrays(img, xs, ys, zs, 
+                distOfSeedsX, indexOfDistOfSeedsX,
+                distOfSeedsY, indexOfDistOfSeedsY,
+                distOfSeedsZ, indexOfDistOfSeedsZ
+            );
             
             selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(img,
-                distOfSeeds, 
-                indexOfDistOfSeeds, indexes, indexColors, nSeedsChosen);
+                distOfSeedsX, indexOfDistOfSeedsX,
+                distOfSeedsY, indexOfDistOfSeedsY,
+                distOfSeedsZ, indexOfDistOfSeedsZ,
+                indexes, indexColors, nSeedsChosen);
             
-            PairInt selectedPixIdxColors = calculateRGChromaticity(img, selectedPixIdx);
+            TrioInt selectedPixIdxColors = calculateRGB(img, selectedPixIdx);
      
             while (contains(indexes, nSeedsChosen, selectedPixIdx, 
                 indexColors, selectedPixIdxColors)) {
                 
                 selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(img,
-                    distOfSeeds, 
-                    indexOfDistOfSeeds, indexes, indexColors, nSeedsChosen);
+                    distOfSeedsX, indexOfDistOfSeedsX,
+                    distOfSeedsY, indexOfDistOfSeedsY,
+                    distOfSeedsZ, indexOfDistOfSeedsZ,
+                    indexes, indexColors, nSeedsChosen);
                 
-                selectedPixIdxColors = calculateRGChromaticity(img, selectedPixIdx);
+                selectedPixIdxColors = calculateRGB(img, selectedPixIdx);
             }
             
             indexes[nSeedsChosen] = selectedPixIdx;
@@ -214,13 +228,13 @@ public class KMeansPlusPlusColor {
             nSeedsChosen++;
         }
         
-        QuickSort.sortByDimension1Then2(seed);
+        QuickSort.sortByDimension1FirstSecondThird(seed);
     
         return seed;
     }
     
     protected boolean contains(int[] array, int nArray, int value,
-        PairInt[] arrayColors, PairInt valueColors) {
+        TrioInt[] arrayColors, TrioInt valueColors) {
         
         for (int i = 0; i < nArray; i++) {
             if ((array[i] == value) || 
@@ -246,8 +260,8 @@ public class KMeansPlusPlusColor {
     protected int[][] calculateMeanOfSeedPoints(final Image img, 
         final int[] imgSeedIndexes, Set<Integer> outputZeroSums) {
 
-        int[][] sum = new int[2][nSeeds];
-        for (int i = 0; i < 2; ++i) {
+        int[][] sum = new int[3][nSeeds];
+        for (int i = 0; i < 3; ++i) {
             sum[i] = new int[nSeeds];
         }
         int[] nSum = new int[nSeeds];
@@ -256,9 +270,10 @@ public class KMeansPlusPlusColor {
 
             int seedIndex = imgSeedIndexes[pixIdx];
 
-            PairInt clr = calculateRGChromaticity(img, pixIdx);
+            TrioInt clr = calculateRGB(img, pixIdx);
             sum[0][seedIndex] = clr.getX();
             sum[1][seedIndex] = clr.getY();
+            sum[2][seedIndex] = clr.getZ();
         
             nSum[seedIndex]++;
         }
@@ -270,6 +285,7 @@ public class KMeansPlusPlusColor {
             } else {
                 sum[0][i] /= nSum[i];
                 sum[1][i] /= nSum[i];
+                sum[2][i] /= nSum[i];
             }
 
             log.fine(String.format("seed mean = %d) r'=%d g'=%d number of points=%d", 
@@ -319,15 +335,12 @@ public class KMeansPlusPlusColor {
         for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
 
             int seedIndex = imgSeedIndexes[xyIndex];
+                        
+            int diffR = img.getR(xyIndex) - seed[0][seedIndex];
+            int diffG = img.getG(xyIndex) - seed[1][seedIndex];
+            int diffB = img.getB(xyIndex) - seed[1][seedIndex];
             
-            PairInt clr = calculateRGChromaticity(img, xyIndex);
-            int rPrime = clr.getX();
-            int gPrime = clr.getY();
-            
-            int diffR = rPrime - seed[0][seedIndex];
-            int diffG = gPrime - seed[1][seedIndex];
-            
-            int d = diffR * diffR + diffG * diffG;
+            int d = diffR * diffR + diffG * diffG + diffB * diffB;
             
             sumVariance[seedIndex] += d;
             
@@ -356,6 +369,8 @@ public class KMeansPlusPlusColor {
             
             seedVariances[i] = sumVariance[i];
         }
+        
+        lastImgSeedIndexes = imgSeedIndexes;
 
         return allAreBelowCriticalLimit;
     }
@@ -370,16 +385,13 @@ public class KMeansPlusPlusColor {
 
             int seedIndex = imgSeedIndexes[xyIndex];
 
-            PairInt clr = calculateRGChromaticity(img, xyIndex);
-            int rPrime = clr.getX();
-            int gPrime = clr.getY();
-
-            int diffR = rPrime - center[0][seedIndex];
-            int diffG = gPrime - center[1][seedIndex];
+            int diffR = img.getR(xyIndex) - center[0][seedIndex];
+            int diffG = img.getG(xyIndex) - center[1][seedIndex];
+            int diffB = img.getB(xyIndex) - center[2][seedIndex];
             
-            int d = (int)Math.round(Math.sqrt(diffR * diffR + diffG * diffG));
-                        
-            sumStDev[seedIndex] += (d * d);
+            int d = diffR * diffR + diffG * diffG + diffB * diffB;
+            
+            sumStDev[seedIndex] += d;
             
             nSumStDev[seedIndex]++;
         }
@@ -417,43 +429,27 @@ public class KMeansPlusPlusColor {
         if (seed == null) {
             throw new IllegalArgumentException("seed cannot be null");
         }
-        
-        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
-        
+                
         int nc = seed[0].length;
         int[] xc = new int[nc];
         int[] yc = new int[nc];
+        int[] zc = new int[nc];
         for (int i = 0; i < nc; ++i) {
             xc[i] = seed[0][i];
             yc[i] = seed[1][i];
-            pointIndexMap.put(new PairInt(xc[i], yc[i]), Integer.valueOf(i));
-        }
-        
-        KDTree kdTree = null;
-        if (nc > 2) {
-            kdTree = new KDTree(xc, yc);
-        }
-                    
+            zc[i] = seed[1][i];
+        }        
+           
         int[] seedNumber = new int[img.getNPixels()];
         
         for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
 
-            PairInt clr = calculateRGChromaticity(img, pixIdx);
-            int rPrime = clr.getX();
-            int gPrime = clr.getY();
+            TrioInt clr = calculateRGB(img, pixIdx);
+
+            int seedIdx = findNearestNeighbor(xc, yc, zc, clr.getX(), clr.getY(),
+                clr.getZ());
             
-            KDTreeNode node;
-            if (kdTree != null) {
-                node = kdTree.findNearestNeighbor(rPrime, gPrime);
-            } else {
-                node = findNearestNeighborBruteForce(xc, yc, rPrime, gPrime);
-            }
-            
-            Integer index = pointIndexMap.get(new PairInt(node.getX(), node.getY()));
-            
-            assert(index != null);
-            
-            seedNumber[pixIdx] = index.intValue();
+            seedNumber[pixIdx] = seedIdx;
         }
 
         return seedNumber;
@@ -477,12 +473,12 @@ public class KMeansPlusPlusColor {
      * @return 
      */
     int chooseRandomlyFromNumbersPresentByProbability(Image img,
-        int[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, int[] indexesAlreadyChosen, 
-        PairInt[] indexColors, int nIndexesAlreadyChosen) {
-        
-        //TODO: update these notes. 
-        
+        int[] distOfSeedsX, int[] indexOfDistOfSeedsX,
+        int[] distOfSeedsY, int[] indexOfDistOfSeedsY,
+        int[] distOfSeedsZ, int[] indexOfDistOfSeedsZ,
+        int[] indexesAlreadyChosen, 
+        TrioInt[] indexColors, int nIndexesAlreadyChosen) {
+                
         // we want to choose randomly from the indexes based upon probabilities 
         // that scale by distance
         // so create an array that represents by number, the probability of a 
@@ -490,30 +486,74 @@ public class KMeansPlusPlusColor {
         //  we'd have 
         //  distIndexDistr={0,0,1,1,1,2,2,2,2}
         // and then randomly choose from that.
-        // here, we skip storing every value in a large array and instead,
+        // here, we skip storing every value in a potentially very large array 
+        // and instead,
         // find the value for the position once the position has been 
         // drawn randomly
 
         int chosenIndex = -1;
         
-        long nDistDistr = 0;
-        for (int i = 0; i < distOfSeeds.length; i++) {            
-            int nValues = distOfSeeds[i];
+        // ****TODO: this could be improved by storing the sums at large intervals *****
+        long nDistDistrX = 0;
+        for (int i = 0; i < distOfSeedsX.length; i++) {            
+            int nValues = distOfSeedsX[i];
             // value should be present nValues number of times
-            nDistDistr += nValues;
+            nDistDistrX += nValues;
+        }
+        long nDistDistrY = 0;
+        for (int i = 0; i < distOfSeedsY.length; i++) {            
+            int nValues = distOfSeedsY[i];
+            nDistDistrY += nValues;
+        }
+        long nDistDistrZ = 0;
+        for (int i = 0; i < distOfSeedsZ.length; i++) {            
+            int nValues = distOfSeedsZ[i];
+            nDistDistrZ += nValues;
         }
         
-        if (nDistDistr < 1) {
+        if (nDistDistrX < 1) {
             throw new IllegalStateException("distOfSeeds is in error:]n" + 
-                Arrays.toString(distOfSeeds));
+                Arrays.toString(distOfSeedsX));
         }
-        
-        PairInt chosenIndexColors = (chosenIndex == -1) ? null :
-            calculateRGChromaticity(img, chosenIndex);
+        if (nDistDistrY < 1) {
+            throw new IllegalStateException("distOfSeeds is in error:]n" + 
+                Arrays.toString(distOfSeedsX));
+        }
+        if (nDistDistrZ < 1) {
+            throw new IllegalStateException("distOfSeeds is in error:]n" + 
+                Arrays.toString(distOfSeedsX));
+        }
+                
+        TrioInt chosenIndexColors = (chosenIndex == -1) ? null :
+            calculateRGB(img, chosenIndex);
                 
         while ((chosenIndex == -1) || 
             contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex,
                 indexColors, chosenIndexColors)) {
+            
+            long nDistDistr;
+            int[] distOfSeeds;
+            int[] indexOfDistOfSeeds;
+            
+            int xYZ = sr.nextInt(3);
+            
+            switch (xYZ) {
+                case 0:
+                    nDistDistr = nDistDistrX;
+                    distOfSeeds = distOfSeedsX;
+                    indexOfDistOfSeeds = indexOfDistOfSeedsX;
+                    break;
+                case 1:
+                    nDistDistr = nDistDistrY;
+                    distOfSeeds = distOfSeedsY;
+                    indexOfDistOfSeeds = indexOfDistOfSeedsY;
+                    break;
+                default:
+                    nDistDistr = nDistDistrZ;
+                    distOfSeeds = distOfSeedsZ;
+                    indexOfDistOfSeeds = indexOfDistOfSeedsZ;
+                    break;
+            }
                         
             long chosen = sr.nextLong(nDistDistr);
 
@@ -522,10 +562,9 @@ public class KMeansPlusPlusColor {
             for (int i = 0; i < distOfSeeds.length; i++) {            
                 int nValues = distOfSeeds[i];
                 // value should be present nValues number of times
-                
                 if ((chosen >= n) && (chosen < (n + nValues))) {
                     chosenIndex = indexOfDistOfSeeds[i];
-                    chosenIndexColors = calculateRGChromaticity(img, chosenIndex);
+                    chosenIndexColors = calculateRGB(img, chosenIndex);
                     break;
                 }
                 n += nValues;
@@ -539,15 +578,9 @@ public class KMeansPlusPlusColor {
         return this.seedVariances;
     }
     
-    public int getChromaFactor() {
-        return integerFactor;
-    }
-
     /**
-     * dimension 0 is rPrime values where rPrime is r/(r + g + b)
-     * and dimension 1 is gPrime values where gPrime is g/(r + g + b)
-     * and both values have been multiplied by 
-     * integerFactor = 255 to keep them in integer range.
+     * accessed s [0,1,2][seedIndex] where the first dimension 0, 1 and 2 hold
+     * r, g, and b, respectively.
      * @return 
      */
     public int[][] getCenters() {
@@ -564,13 +597,13 @@ public class KMeansPlusPlusColor {
             return imgModeIdx;
         }
         
-        Map<PairInt, Integer> counts = new HashMap<PairInt, Integer>();
+        Map<TrioInt, Integer> counts = new HashMap<TrioInt, Integer>();
         int maxCounts = 0;
         int maxCountsIdx = -1;
         
         for (int idx = 0; idx < img.getNPixels(); idx++) {
             
-            PairInt clr = calculateRGChromaticity(img, idx);
+            TrioInt clr = calculateRGB(img, idx);
             
             Integer value = counts.get(clr);
             int f = (value == null) ? 1 : (value.intValue() + 1);
@@ -597,29 +630,6 @@ public class KMeansPlusPlusColor {
         return maxCountsIdx;
     }
 
-    private KDTreeNode findNearestNeighborBruteForce(int[] xs, int[] ys, 
-        int x, int y) {
-        
-        int minDistSq = Integer.MAX_VALUE;
-        int minDistIdx = -1;
-        
-        for (int i = 0; i < xs.length; ++i) {
-            int diffX = xs[i] - x;
-            int diffY = ys[i] - y;
-            int distSq = diffX * diffX + diffY * diffY;
-            if (distSq < minDistSq) {
-                minDistSq = distSq;
-                minDistIdx = i;
-            }
-        }
-        
-        KDTreeNode node = new KDTreeNode();
-        node.setX(xs[minDistIdx]);
-        node.setY(ys[minDistIdx]);
-        
-        return node;
-    }
-
     private int[][] replaceZeroSumIndexes(Image img, int[][] seeds, 
         Set<Integer> zeroSumIndexes) {
         
@@ -637,23 +647,19 @@ public class KMeansPlusPlusColor {
                 current.add(index);
             }
         }
-        
-  if (current.size() == 0) {
-      int z = 1;
-  }
   
         assert(current.size() == (nSeeds - zeroSumIndexes.size()));
        
+        int nPix = img.getNPixels();
+        
         for (Integer seedIndex : zeroSumIndexes) {
             
-            int[] distOfSeeds = new int[img.getNPixels()];
-            int[] indexOfDistOfSeeds = new int[img.getNPixels()];
-
-            PairInt[] currentSeedColors = new PairInt[current.size()];
+            TrioInt[] currentSeedColors = new TrioInt[current.size()];
             int[] currentSeedIndexes = new int[current.size()];
             
             int[] xs = new int[current.size()];
             int[] ys = new int[current.size()];
+            int[] zs = new int[current.size()];
             int count = 0;
             for (int i = 0; i < seeds[0].length; ++i) {
                 Integer index = Integer.valueOf(i);
@@ -661,94 +667,142 @@ public class KMeansPlusPlusColor {
                 if (current.contains(index)) {
                     xs[count] = seeds[0][idx];
                     ys[count] = seeds[1][idx];
+                    zs[count] = seeds[2][idx];
                     
                     currentSeedIndexes[count] = idx;
-                    currentSeedColors[count] = calculateRGChromaticity(img, idx);
+                    currentSeedColors[count] = calculateRGB(img, idx);
                         
                     count++;
                 }
             }
             
-            populateDistanceArrays(img, xs, ys, distOfSeeds, indexOfDistOfSeeds);
-           
-            int selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(
-                img, distOfSeeds, indexOfDistOfSeeds, 
+            int[] distOfSeedsX = new int[nPix];
+            int[] distOfSeedsY = new int[nPix];
+            int[] distOfSeedsZ = new int[nPix];
+            int[] indexOfDistOfSeedsX = new int[nPix];
+            int[] indexOfDistOfSeedsY = new int[nPix];
+            int[] indexOfDistOfSeedsZ = new int[nPix];
+            
+            populateDistanceArrays(img, xs, ys, zs, 
+                distOfSeedsX, indexOfDistOfSeedsX,
+                distOfSeedsY, indexOfDistOfSeedsY,
+                distOfSeedsZ, indexOfDistOfSeedsZ
+            );
+            
+            int selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(img,
+                distOfSeedsX, indexOfDistOfSeedsX,
+                distOfSeedsY, indexOfDistOfSeedsY,
+                distOfSeedsZ, indexOfDistOfSeedsZ,
                 currentSeedIndexes, currentSeedColors, current.size());
             
-            PairInt selectedPixIdxColors = calculateRGChromaticity(img, selectedPixIdx);
+            TrioInt selectedPixIdxColors = calculateRGB(img, selectedPixIdx);
             
             while (contains(currentSeedIndexes, current.size(), selectedPixIdx,
                 currentSeedColors, selectedPixIdxColors)) {
                 
-                selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(
-                    img, distOfSeeds, indexOfDistOfSeeds, 
+                selectedPixIdx = chooseRandomlyFromNumbersPresentByProbability(img,
+                    distOfSeedsX, indexOfDistOfSeedsX,
+                    distOfSeedsY, indexOfDistOfSeedsY,
+                    distOfSeedsZ, indexOfDistOfSeedsZ,
                     currentSeedIndexes, currentSeedColors, current.size());
-                
-                selectedPixIdxColors = calculateRGChromaticity(img, selectedPixIdx);
+
+                selectedPixIdxColors = calculateRGB(img, selectedPixIdx);
             }
             
             seeds[0][seedIndex.intValue()] = selectedPixIdxColors.getX();
             seeds[1][seedIndex.intValue()] = selectedPixIdxColors.getY();
+            seeds[2][seedIndex.intValue()] = selectedPixIdxColors.getZ();
             
             current.add(seedIndex);
         }
         
         assert(current.size() == nSeeds);
         
-        QuickSort.sortByDimension1Then2(seeds);
+        QuickSort.sortByDimension1FirstSecondThird(seeds);
         
         return seeds;
     }
 
-    private void populateDistanceArrays(Image img, int[] xs, int[] ys, 
-        int[] distOfSeeds, int[] indexOfDistOfSeeds) {
+    private void populateDistanceArrays(Image img, int[] xs, int[] ys, int[] zs,
+        int[] distOfSeedsX, int[] indexOfDistOfSeedsX,
+        int[] distOfSeedsY, int[] indexOfDistOfSeedsY,
+        int[] distOfSeedsZ, int[] indexOfDistOfSeedsZ) {
+                    
+        /*        
+        to randomly sample from cumulative probability distributions made
+        separately for distance in x, y, and z,
+        one way would be to first select randomly from 0, 1, 2 (for x-axis,
+            y-axis, or z-axis),
+            then choose a point randomly within that chosen distribution.
+            All three cumulative distributions result in different lengths 
+            and do not have the same values (pixel indexes) as a relationship.
         
-        KDTree kdTree = null;
-        if (xs.length > 2) {
-            kdTree = new KDTree(xs, ys);
-        }
-
+                pt1       pt2
+            X:  ---       --------------
+            Y   -------   --------
+            Z   ---       --------------
+            
+        */
+        
         for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
             
-            PairInt clr = calculateRGChromaticity(img, pixIdx);
-            int rPrime = clr.getX();
-            int gPrime = clr.getY();
+            TrioInt clr = calculateRGB(img, pixIdx);
             
-            KDTreeNode seedNode;
-            if (kdTree != null) {
-                seedNode = kdTree.findNearestNeighbor(rPrime, gPrime);
-            } else {
-                seedNode = findNearestNeighborBruteForce(xs, ys, rPrime, gPrime);
-            }
+            int seedIdx = findNearestNeighbor(xs, ys, zs, clr.getX(), 
+                clr.getY(), clr.getZ());
 
-            int diffR = rPrime - seedNode.getX();
-            int diffG = gPrime - seedNode.getY();
+            int diffR = clr.getX() - xs[seedIdx];
+            int diffG = clr.getY() - ys[seedIdx];
+            int diffB = clr.getZ() - zs[seedIdx];
 
-            int distSq = diffR * diffR + diffG * diffG;
-
-            distOfSeeds[pixIdx] = distSq;
-
-            indexOfDistOfSeeds[pixIdx] = pixIdx;
+            distOfSeedsX[pixIdx] = diffR * diffR;
+            distOfSeedsY[pixIdx] = diffG * diffG;
+            distOfSeedsZ[pixIdx] = diffB * diffB;
+            
+            indexOfDistOfSeedsX[pixIdx] = pixIdx;
+            indexOfDistOfSeedsY[pixIdx] = pixIdx;
+            indexOfDistOfSeedsZ[pixIdx] = pixIdx;
         }
             
     }
 
-    private PairInt calculateRGChromaticity(Image img, int pixIdx) {
+    private TrioInt calculateRGB(Image img, int pixIdx) {
         
         int r = img.getR(pixIdx);
         int g = img.getG(pixIdx);
         int b = img.getB(pixIdx);
-        int rgbSum = r + g + b;
-        int rPrime, gPrime;
-        if (rgbSum == 0) {
-            rPrime = 0;
-            gPrime = 0;
-        } else {
-            rPrime = Math.round(integerFactor * (float) r / (float) rgbSum);
-            gPrime = Math.round(integerFactor * (float) g / (float) rgbSum);
-        }
 
-        return new PairInt(rPrime, gPrime);
+        return new TrioInt(r, g, b);
     }
 
+    private int findNearestNeighbor(int[] x, int[] y, 
+        int[] z, int xs, int ys, int zs) {
+        
+        //TODO: adapt the KD-Tree to three dimensions
+        return findNearestNeighborBruteForce(x, y, z, xs, ys, zs);
+    }
+    
+    private int findNearestNeighborBruteForce(int[] x, int[] y, 
+        int[] z, int xs, int ys, int zs) {
+        
+        long minDistSq = Long.MAX_VALUE;
+        int minDistIdx = -1;
+        
+        for (int i = 0; i < x.length; ++i) {
+            int diffX = x[i] - xs;
+            int diffY = y[i] - ys;
+            int diffZ = z[i] - zs;
+            long distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                minDistIdx = i;
+            }
+        }
+        
+        return minDistIdx;
+    }
+
+    public int[] getImgPixelSeedIndexes() {
+        return lastImgSeedIndexes;
+    }
 }

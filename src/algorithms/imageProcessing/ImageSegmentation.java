@@ -97,8 +97,20 @@ public class ImageSegmentation {
         KMeansPlusPlusColor instance = new KMeansPlusPlusColor();
         instance.computeMeans(kBands, input);
         
-        assignToNearestCluster(input, instance.getCenters(),
-            instance.getChromaFactor());
+        int[][] seeds = instance.getCenters();
+        
+        int[] imgSeedIndexAssignments = instance.getImgPixelSeedIndexes();
+        
+        for (int pixIdx = 0; pixIdx < input.getNPixels(); ++pixIdx) {
+
+            int seedIdx = imgSeedIndexAssignments[pixIdx];
+
+            int r = seeds[0][seedIdx];
+            int g = seeds[1][seedIdx];
+            int b = seeds[2][seedIdx];
+            
+            input.setRGB(pixIdx, r, g, b);
+        }
     }
 
     /**
@@ -227,70 +239,7 @@ public class ImageSegmentation {
             }
         }
     }
-    
-     /**
-     * places points by their proximity to cluster centers
-     * @param input
-     * @param binCenters
-     */
-    public void assignToNearestCluster(Image input, int[][] binCenters, 
-        int chromaFactor) {
-
-        int nc = binCenters[0].length;
-        int[] xc = new int[nc];
-        int[] yc = new int[nc];
-        for (int i = 0; i < nc; ++i) {
-            xc[i] = binCenters[0][i];
-            yc[i] = binCenters[1][i];
-        }
                 
-        KDTree kdTree = null;
-        if (nc > 2) {
-            kdTree = new KDTree(xc, yc);
-        }
-                
-        for (int col = 0; col < input.getWidth(); col++) {
-
-            for (int row = 0; row < input.getHeight(); row++) {
-
-                int rPt = input.getR(col, row);
-                int gPt = input.getG(col, row);
-                int bPt = input.getB(col, row);
-                int sumPt = (rPt + gPt + bPt);
-                
-                int rPrimePt = (sumPt == 0) ? 0 : rPt/sumPt;
-                int gPrimePt = (sumPt == 0) ? 0 : gPt/sumPt;
-                
-                KDTreeNode v;
-                if (kdTree != null) {
-                    v = kdTree.findNearestNeighbor(rPrimePt, gPrimePt);
-                } else {
-                    v = findNearestNeighborBruteForce(xc, yc, rPrimePt, gPrimePt);
-                }
-                
-                //r / (r + g + b) = rP
-                //g / (r + g + b) = gP
-                
-                //rP + gP + bP = 1
-                
-                //b = (1 - rP - gP) * g / bP
-                
-                //b = (1 - rP - gP) * g / bP
-                
-                //NOTE: have lost the luminance information,
-                                
-                int bvc = 3 * chromaFactor - v.getX() - v.getY();
-                
-                int rTr = v.getX();
-                int gTr = v.getY();
-                int bTr = bvc;
-
-                input.setRGB(col, row, rTr, gTr, bTr);
-            }
-        }
-       
-    }
-    
     private KDTreeNode findNearestNeighborBruteForce(int[] xs, int[] ys, 
         int x, int y) {
         

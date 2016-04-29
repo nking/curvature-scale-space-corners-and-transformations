@@ -289,7 +289,7 @@ public class QuickSortTest extends TestCase {
         }
     }
  
-    public void testSortByDimension1Then2() {
+    public void testSortByDimension1FirstSecond() {
 
         int[][] a = new int[2][4];
         a[0] = new int[4];
@@ -305,10 +305,39 @@ public class QuickSortTest extends TestCase {
         a[1][2] = 2;
         a[1][3] = 1;        
 
-        QuickSort.sortByDimension1Then2(a);
+        QuickSort.sortByDimension1FirstSecond(a);
         
         for (int i = 0; i < 4; ++i) {
             assertEquals(i + 1, a[1][i]);
+        }
+    }
+
+    public void testSortByDimension1FirstSecondThird() {
+
+        int[][] a = new int[3][4];
+        a[0] = new int[4];
+        a[1] = new int[4];
+        a[2] = new int[4];
+        
+        a[0][0] = 4;
+        a[0][1] = 3;
+        a[0][2] = 1;
+        a[0][3] = 1;
+        
+        a[1][0] = 4;
+        a[1][1] = 3;
+        a[1][2] = 1;
+        a[1][3] = 1; 
+        
+        a[2][0] = 4;
+        a[2][1] = 3;
+        a[2][2] = 2;
+        a[2][3] = 1;        
+
+        QuickSort.sortByDimension1FirstSecondThird(a);
+        
+        for (int i = 0; i < 4; ++i) {
+            assertEquals(i + 1, a[2][i]);
         }
     }
 
