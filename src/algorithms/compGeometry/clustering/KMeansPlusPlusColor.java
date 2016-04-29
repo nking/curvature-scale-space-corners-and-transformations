@@ -1,5 +1,6 @@
 package algorithms.compGeometry.clustering;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.Image;
 import algorithms.search.KDTree;
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
@@ -59,14 +61,14 @@ public class KMeansPlusPlusColor {
     // instead of variances
     protected float[] seedVariances = null;
     
-    protected final static int nMaxIter = 20;
+    protected final static int nMaxIter = 100;
     protected final static int nMaxIter2 = 200;
     protected int nIter = 0;
     
     protected int imgModeIdx = -1;
     
-    // key = r,g, b colors and value = number of pixels with key
-    protected Map<TrioInt, Integer> countsMap = null;
+    protected TrioInt[] imageColorsAscending = null;
+    protected int[] imageColorsAscendingCounts = null;
     
     private final ThreadLocalRandom sr;
     
@@ -116,11 +118,13 @@ public class KMeansPlusPlusColor {
                 nIter2++;
                 nIter = 0;
                 lastImgSeedIndexes = null;
-                if ((nIter2 % nSeeds) == 0) {
+                //if ((nIter2 % nSeeds) == 0) {
                     seeds = createStartSeeds(img);
-                } else {
+                /*} else if (nIter2 < 50) {
                     seeds = replaceZeroSumIndexes(img, seeds, zeroSumIndexes);
-                }
+                } else {
+                    seeds = replaceZeroSumIndexesUsingFrequencyMap(img, seeds, zeroSumIndexes);
+                }*/
                 continue;
             }
             
@@ -412,6 +416,8 @@ public class KMeansPlusPlusColor {
             
         }
 
+        lastImgSeedIndexes = imgSeedIndexes;
+        
         numberOfPointsPerSeedCell = nSumStDev;
     }
     
@@ -574,6 +580,74 @@ public class KMeansPlusPlusColor {
         return chosenIndex;
     }
     
+    /**
+     * an algorithm to choose randomly from values using a probability 
+     * function based upon the value.  In other words, if the values were
+     * [2, 3, 4] their presence in a bin to choose from using their indexes
+     * as the bin values would be [0, 0, 1, 1, 1, 2, 2, 2, 2] and choosing
+     * '2' from the bin would be more likely and '2' is the index so the result
+     * would more often be values[2] = 4.
+     * The additional arguments are present for uses specific to KMeansPlusPlus
+     * where one doesn't want two similar seeds as a result.
+     * @param distOfSeeds
+     * @param indexOfDistOfSeeds
+     * @param indexColors the colors of the pixels at indexOfDistOfSeeds
+     * @param sr
+     * @param indexesAlreadyChosen
+     * @param nIndexesAlreadyChosen
+     * @return 
+     */
+    TrioInt chooseRandomlyFromNumbersPresentByProbability(Image img,
+        int[] counts, TrioInt[] colors,
+        Set<TrioInt> colorsAlreadyChosen, int nIndexesAlreadyChosen) {
+               
+        // we want to choose randomly from the indexes based upon probabilities 
+        // that scale by distance
+        // so create an array that represents by number, the probability of a 
+        //  value.  for example, distOfSeeds={2,3,4}
+        //  we'd have 
+        //  distIndexDistr={0,0,1,1,1,2,2,2,2}
+        // and then randomly choose from that.
+        // here, we skip storing every value in a potentially very large array 
+        // and instead,
+        // find the value for the position once the position has been 
+        // drawn randomly
+        
+        // ****TODO: this could be improved by storing the sums at large intervals *****
+        long nCountDistr = 0;
+        for (int i = 0; i < counts.length; i++) {            
+            int nValues = counts[i];
+            // value should be present nValues number of times
+            nCountDistr += nValues;
+        }
+        
+        if (nCountDistr < 1) {
+            throw new IllegalStateException("distOfSeeds is in error:]n");
+        }
+       
+        TrioInt chosenIndexColor = null;
+        
+        while ((chosenIndexColor == null) || 
+            colorsAlreadyChosen.contains(chosenIndexColor)) {
+            
+            long chosen = sr.nextLong(nCountDistr);
+
+            // walk thru same iteration to obtain the chosen index
+            long n = 0;
+            for (int i = 0; i < counts.length; i++) {            
+                int nValues = counts[i];
+                // value should be present nValues number of times
+                if ((chosen >= n) && (chosen < (n + nValues))) {
+                    chosenIndexColor = colors[i];
+                    break;
+                }
+                n += nValues;
+            }
+        }
+        
+        return chosenIndexColor;
+    }
+    
     public float[] getStandardDeviationsFromCenters() {
         return this.seedVariances;
     }
@@ -622,7 +696,18 @@ public class KMeansPlusPlusColor {
         
         imgModeIdx = maxCountsIdx;
         
-        countsMap = counts;
+        int[] colorCounts = new int[counts.size()];
+        TrioInt[] colors = new TrioInt[counts.size()];
+        int count = 0;
+        for (Entry<TrioInt, Integer> entry : counts.entrySet()) {
+            colorCounts[count] = entry.getValue();
+            colors[count] = entry.getKey();
+            count++;
+        }
+        QuickSort.sortBy1stArg(colorCounts, colors);
+        
+        this.imageColorsAscending = colors;
+        this.imageColorsAscendingCounts = colorCounts;
         
         // can return any of the pixels with mode colors since he algorithm
         // uses distance from colors rather than location in x,y coordinates.
@@ -712,6 +797,64 @@ public class KMeansPlusPlusColor {
             seeds[0][seedIndex.intValue()] = selectedPixIdxColors.getX();
             seeds[1][seedIndex.intValue()] = selectedPixIdxColors.getY();
             seeds[2][seedIndex.intValue()] = selectedPixIdxColors.getZ();
+            
+            current.add(seedIndex);
+        }
+        
+        assert(current.size() == nSeeds);
+        
+        QuickSort.sortByDimension1FirstSecondThird(seeds);
+        
+        return seeds;
+    }
+
+    private int[][] replaceZeroSumIndexesUsingFrequencyMap(Image img, int[][] seeds, 
+        Set<Integer> zeroSumIndexes) {
+        
+        if (zeroSumIndexes.size() == 0) {
+            throw new IllegalStateException("zeroSumIndexes should not be"
+                + " empty");
+        }
+        
+        assert(seeds[0].length == nSeeds);
+        
+        Set<Integer> current = new HashSet<Integer>();
+        for (int i = 0; i < nSeeds; ++i) {
+            Integer index = Integer.valueOf(i);
+            if (!zeroSumIndexes.contains(index)) {
+                current.add(index);
+            }
+        }
+  
+        assert(current.size() == (nSeeds - zeroSumIndexes.size()));
+       
+        int nPix = img.getNPixels();
+        
+        for (Integer seedIndex : zeroSumIndexes) {
+            
+            Set<TrioInt> selectedColorsSet = new HashSet<TrioInt>();
+            for (int i = 0; i < seeds[0].length; ++i) {
+                Integer index = Integer.valueOf(i);
+                int idx = index.intValue();
+                if (current.contains(index)) {                    
+                    selectedColorsSet.add(calculateRGB(img, idx));
+                }
+            }
+        
+            TrioInt selectedColor = chooseRandomlyFromNumbersPresentByProbability(img,
+                imageColorsAscendingCounts, imageColorsAscending,
+                selectedColorsSet, current.size());
+                        
+            while (selectedColorsSet.contains(selectedColor)) {
+                
+                selectedColor = chooseRandomlyFromNumbersPresentByProbability(img,
+                    imageColorsAscendingCounts, imageColorsAscending,
+                    selectedColorsSet, current.size());
+            }
+            
+            seeds[0][seedIndex.intValue()] = selectedColor.getX();
+            seeds[1][seedIndex.intValue()] = selectedColor.getY();
+            seeds[2][seedIndex.intValue()] = selectedColor.getZ();
             
             current.add(seedIndex);
         }
