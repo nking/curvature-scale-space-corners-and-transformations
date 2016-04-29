@@ -232,8 +232,11 @@ public class ImageSegmentation {
             xc[i] = binCenters[0][i];
             yc[i] = binCenters[1][i];
         }
-        
-        KDTree kdTree = new KDTree(xc, yc);
+                
+        KDTree kdTree = null;
+        if (nc > 2) {
+            kdTree = new KDTree(xc, yc);
+        }
                 
         for (int col = 0; col < input.getWidth(); col++) {
 
@@ -247,7 +250,12 @@ public class ImageSegmentation {
                 int rPrimePt = (sumPt == 0) ? 0 : rPt/sumPt;
                 int gPrimePt = (sumPt == 0) ? 0 : gPt/sumPt;
                 
-                KDTreeNode v = kdTree.findNearestNeighbor(rPrimePt, gPrimePt);
+                KDTreeNode v;
+                if (kdTree != null) {
+                    v = kdTree.findNearestNeighbor(rPrimePt, gPrimePt);
+                } else {
+                    v = findNearestNeighborBruteForce(xc, yc, rPrimePt, gPrimePt);
+                }
                 
                 //r / (r + g + b) = rP
                 //g / (r + g + b) = gP
@@ -270,6 +278,29 @@ public class ImageSegmentation {
             }
         }
        
+    }
+    
+    private KDTreeNode findNearestNeighborBruteForce(int[] xs, int[] ys, 
+        int x, int y) {
+        
+        int minDistSq = Integer.MAX_VALUE;
+        int minDistIdx = -1;
+        
+        for (int i = 0; i < xs.length; ++i) {
+            int diffX = xs[i] - x;
+            int diffY = ys[i] - y;
+            int distSq = diffX * diffX + diffY * diffY;
+            if (distSq < minDistSq) {
+                minDistSq = distSq;
+                minDistIdx = i;
+            }
+        }
+        
+        KDTreeNode node = new KDTreeNode();
+        node.setX(xs[minDistIdx]);
+        node.setY(ys[minDistIdx]);
+        
+        return node;
     }
 
     public List<Set<PairInt>> assignToNearestPolarCIECluster(

@@ -50,6 +50,8 @@ public class KMeansPlusPlus {
     protected final static int nMaxIter = 20;
     protected int nIter = 0;
     
+    protected int imgModeIdx = -1;
+    
     private final ThreadLocalRandom sr;
     
     public KMeansPlusPlus() {
@@ -457,6 +459,10 @@ public class KMeansPlusPlus {
 
     private int getModeIdx(GreyscaleImage img) {
         
+        if (imgModeIdx > -1) {
+            return imgModeIdx;
+        }
+        
         Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
         int maxCounts = 0;
         int maxCountsIdx = -1;
@@ -472,6 +478,8 @@ public class KMeansPlusPlus {
                 maxCountsIdx = idx;
             }
         }
+        
+        imgModeIdx = maxCountsIdx;
         
         return maxCountsIdx;
     }

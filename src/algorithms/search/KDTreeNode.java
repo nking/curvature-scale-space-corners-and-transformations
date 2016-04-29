@@ -17,12 +17,26 @@ public class KDTreeNode {
     public int getX() {
         return x;
     }
+    
+    /**
+     * @param theX
+     */
+    public void setX(int theX) {
+        x = theX;
+    }
 
     /**
      * @return the y
      */
     public int getY() {
         return y;
+    }
+    
+    /**
+     * @param theY
+     */
+    public void setY(int theY) {
+        y = theY;
     }
 
     /**
