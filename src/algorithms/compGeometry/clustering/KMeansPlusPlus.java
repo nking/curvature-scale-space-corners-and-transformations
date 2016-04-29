@@ -1,11 +1,17 @@
 package algorithms.compGeometry.clustering;
 
+import algorithms.compGeometry.NearestPoints1D;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.search.KDTree;
+import algorithms.search.KDTreeNode;
+import algorithms.util.PairInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
@@ -53,6 +59,7 @@ public class KMeansPlusPlus {
     protected int imgModeIdx = -1;
     
     private final ThreadLocalRandom sr;
+    private int[] imgPixelSeedIndexes = null;
     
     public KMeansPlusPlus() {
          sr = ThreadLocalRandom.current();
@@ -138,37 +145,11 @@ public class KMeansPlusPlus {
             int[] distOfSeeds = new int[img.getNPixels()];
             int[] indexOfDistOfSeeds = new int[img.getNPixels()];
 
-            int minAllDist = Integer.MAX_VALUE;
-
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
-                
-                if (contains(indexes, nSeedsChosen, xyIndex)) {
-                    continue;
-                }
-                
-                int pt = img.getValue(xyIndex);
-                
-                int minDist = Integer.MAX_VALUE;
-
-                for (int seedIndex = 0; seedIndex < nSeedsChosen; seedIndex++) {
-                    
-                    int dist = Math.abs(pt - seed[seedIndex]);
-                    
-                    if (dist < minDist) {
-                        minDist = dist;
-                    }
-                }
-                
-                distOfSeeds[xyIndex] = minDist;
-                indexOfDistOfSeeds[xyIndex] = xyIndex;
-
-                if (minDist < minAllDist) {
-                    minAllDist = minDist;
-                }
-            }
-            
-            index = chooseRandomlyFromNumbersPresentByProbability(distOfSeeds, 
-                indexOfDistOfSeeds, indexes, nSeedsChosen);
+            populateDistanceArrays(img, seed, nSeedsChosen, distOfSeeds, indexOfDistOfSeeds);
+ 
+            index = chooseRandomlyFromNumbersPresentByProbability(img,
+                distOfSeeds, 
+                indexOfDistOfSeeds, seed, indexes, nSeedsChosen);
 
             seed[nSeedsChosen] = img.getValue(index);
             indexes[nSeedsChosen] = index;
@@ -329,6 +310,8 @@ public class KMeansPlusPlus {
                 i, center[i], seedVariances[i], nSumStDev[i]));
             
         }
+        
+        imgPixelSeedIndexes = imgSeedIndexes;
 
         numberOfPointsPerSeedCell = nSumStDev;
     }
@@ -341,40 +324,28 @@ public class KMeansPlusPlus {
      */
     protected int[] binPoints(final GreyscaleImage img,
         int[] seed) throws IOException {
-
-        if (img == null) {
-            throw new IllegalArgumentException("img cannot be null");
-        }
-        if (seed == null) {
-            throw new IllegalArgumentException("seed cannot be null");
+        
+        int nc = seed.length;
+        int[] values = new int[nc];
+        for (int i = 0; i < nc; ++i) {
+            values[i] = seed[i];
         }
         
-        //TODO: review to improve this:
-
+        NearestPoints1D np = new NearestPoints1D(values);
+                    
         int[] seedNumber = new int[img.getNPixels()];
+        
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
 
-        for (int seedIndex = 0; seedIndex < seed.length; seedIndex++) {
-
-            int bisectorBelow = ((seedIndex - 1) > -1) ?
-                ((seed[seedIndex - 1] + seed[seedIndex])/2) : 0;
-                
-            int bisectorAbove = ((seedIndex + 1) > (seed.length - 1)) ?
-                255 : ((seed[seedIndex + 1] + seed[seedIndex])/2);
-                       
-            for (int xyIndex = 0; xyIndex < img.getNPixels(); xyIndex++) {
-
-                int pt = img.getValue(xyIndex);
-
-                boolean isInCell = (pt >= bisectorBelow) &&  (pt <= bisectorAbove);
-
-                if (isInCell) {
-                    seedNumber[xyIndex] = seedIndex;
-                    //break;
-                }
-            }
+            int v = img.getValue(pixIdx);
+            
+            int seedIdx = np.findClosestValueIndex(v);
+                                    
+            seedNumber[pixIdx] = seedIdx;
         }
 
         return seedNumber;
+                
     }
     
     /**
@@ -393,8 +364,15 @@ public class KMeansPlusPlus {
      * @param nIndexesAlreadyChosen
      * @return 
      */
-    int chooseRandomlyFromNumbersPresentByProbability(int[] distOfSeeds, 
-        int[] indexOfDistOfSeeds, int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
+    int chooseRandomlyFromNumbersPresentByProbability(GreyscaleImage img,
+        int[] distOfSeeds, 
+        int[] indexOfDistOfSeeds, int[] valuesAlreadyChosen, 
+        int[] indexesAlreadyChosen, int nIndexesAlreadyChosen) {
+        
+        Set<Integer> chosenValues = new HashSet<Integer>();
+        for (int i = 0; i < nIndexesAlreadyChosen; ++i) {
+            chosenValues.add(Integer.valueOf(valuesAlreadyChosen[i]));
+        }
         
         //TODO: update these notes. 
         
@@ -424,7 +402,11 @@ public class KMeansPlusPlus {
         }
                 
         while ((chosenIndex == -1) || 
-            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)) {
+            contains(indexesAlreadyChosen, nIndexesAlreadyChosen, chosenIndex)
+            || ((chosenIndex > -1) &&
+                chosenValues.contains(
+                    Integer.valueOf(img.getValue(chosenIndex))))
+            ) {
             
             long chosen = sr.nextLong(nDistDistr);
 
@@ -451,6 +433,10 @@ public class KMeansPlusPlus {
 
     public int[] getCenters() {
         return this.center;
+    }
+    
+    public int[] getImgPixelSeedIndexes() {
+        return imgPixelSeedIndexes;
     }
 
     public int[] getNumberOfPointsPerSeedCell() {
@@ -482,6 +468,25 @@ public class KMeansPlusPlus {
         imgModeIdx = maxCountsIdx;
         
         return maxCountsIdx;
+    }
+
+    private void populateDistanceArrays(GreyscaleImage img, int[] seeds, 
+        int nSeedsChosen, int[] distOfSeeds, int[] indexOfDistOfSeeds) {
+        
+        NearestPoints1D np = new NearestPoints1D(seeds, nSeedsChosen);
+         
+        for (int pixIdx = 0; pixIdx < img.getNPixels(); pixIdx++) {
+            
+            int v = img.getValue(pixIdx);
+            
+            int seedIdx = np.findClosestValueIndex(v);
+            
+            int diff = v - seeds[seedIdx];
+
+            distOfSeeds[pixIdx] = (diff * diff);
+
+            indexOfDistOfSeeds[pixIdx] = pixIdx;
+        }
     }
 
 }

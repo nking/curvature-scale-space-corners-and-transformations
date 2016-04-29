@@ -76,8 +76,19 @@ public class ImageSegmentation {
 
         KMeansPlusPlus instance = new KMeansPlusPlus();
         instance.computeMeans(kBands, input);
+        
+        int[] seeds = instance.getCenters();
+        
+        int[] imgSeedIndexAssignments = instance.getImgPixelSeedIndexes();
 
-        assignToNearestCluster(input, instance.getCenters());
+        for (int pixIdx = 0; pixIdx < input.getNPixels(); ++pixIdx) {
+
+            int seedIdx = imgSeedIndexAssignments[pixIdx];
+
+            int seedValue = seeds[seedIdx];
+
+            input.setValue(pixIdx, seedValue);
+        }
     }
     
     public void applyUsingKMPP(Image input, int kBands) throws IOException, 

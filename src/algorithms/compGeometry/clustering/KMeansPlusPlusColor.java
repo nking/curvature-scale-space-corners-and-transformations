@@ -42,7 +42,7 @@ public class KMeansPlusPlusColor {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
-    protected int integerFactor = 255;
+    protected int integerFactor = 51;//255;
     
     /**
      * final solution for centers of groups (== seed centers)
@@ -50,6 +50,8 @@ public class KMeansPlusPlusColor {
      */
     protected int[][] center = null;
     protected int[] numberOfPointsPerSeedCell = null;
+    
+    protected int[] lastImgSeedIndexes = null;
     
     /**
      * this is k and is chosen by the user
@@ -61,6 +63,7 @@ public class KMeansPlusPlusColor {
     protected float[] seedVariances = null;
     
     protected final static int nMaxIter = 20;
+    protected final static int nMaxIter2 = 200;
     protected int nIter = 0;
     
     protected int imgModeIdx = -1;
@@ -101,8 +104,10 @@ public class KMeansPlusPlusColor {
 
         boolean hasConverged = false;
         
-        while (!hasConverged && (nIter < nMaxIter) ) {
-
+        int nIter2 = 0;
+        
+        while (!hasConverged && (nIter < nMaxIter) && (nIter2 < nMaxIter2)) {
+            
             imgSeedIndexes = binPoints(img, seeds);
             
             Set<Integer> zeroSumIndexes = new HashSet<Integer>();
@@ -111,9 +116,14 @@ public class KMeansPlusPlusColor {
                 zeroSumIndexes);
             
             if (tmpSeeds == null) {
+                nIter2++;
                 nIter = 0;
-                // instead of creating all new seeds, just replacing those with nSum==0
-                seeds = replaceZeroSumIndexes(img, seeds, zeroSumIndexes);
+                lastImgSeedIndexes = null;
+                if ((nIter2 % nSeeds) == 0) {
+                    seeds = createStartSeeds(img);
+                } else {
+                    seeds = replaceZeroSumIndexes(img, seeds, zeroSumIndexes);
+                }
                 continue;
             }
             
@@ -286,15 +296,23 @@ public class KMeansPlusPlusColor {
      */
     protected boolean calculateVarianceFromSeedCenters(final Image img,
         int[][] seed, int[] imgSeedIndexes) {
-
-        /*
-        calculate stdev or variance of points within each seed
-        calculate that solution has converged by comparing for each seed:
-        that changes are very little to none compared to previous solution.
-        can define this as something like change change in variation should be
-        be very small, near zero.
-        */
- 
+        
+        if (lastImgSeedIndexes == null) {
+            lastImgSeedIndexes = imgSeedIndexes;
+            return false;
+        }
+        
+        boolean hasChanged = false;
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {
+                hasChanged = true;
+                break;
+            }
+        }
+        if (!hasChanged) {
+            return true;
+        }
+        
         float[] sumVariance = new float[nSeeds];
         int[] nSumVariance = new int[nSeeds];
 
@@ -309,9 +327,9 @@ public class KMeansPlusPlusColor {
             int diffR = rPrime - seed[0][seedIndex];
             int diffG = gPrime - seed[1][seedIndex];
             
-            int d = (int)Math.round(Math.sqrt(diffR * diffR + diffG * diffG));
+            int d = diffR * diffR + diffG * diffG;
             
-            sumVariance[seedIndex] += (d * d);
+            sumVariance[seedIndex] += d;
             
             nSumVariance[seedIndex]++;
         }
@@ -329,14 +347,10 @@ public class KMeansPlusPlusColor {
         boolean allAreBelowCriticalLimit = true;
 
         for (int i = 0; i < nSeeds; i++) {
+            
             float diff = seedVariances[i] - sumVariance[i];
-            if (diff < 0) {
-                diff *= -1;
-            }
- // TODO:  may want to change the critical factor
-            if (diff > 0.0*seedVariances[i]) {
-
-            //if (diff > 0.0*seedVariances[i]) {
+            
+            if (diff < 0 ) {
                 allAreBelowCriticalLimit = false;
             }
             

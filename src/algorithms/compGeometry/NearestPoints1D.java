@@ -36,6 +36,23 @@ public class NearestPoints1D {
         QuickSort.sortBy1stArg(a, originalIndexes);
     }
     
+    public NearestPoints1D(int[] values, int length) {
+        
+        if (values == null) {
+            throw new IllegalStateException("values cannot be null");
+        }
+        
+        int n = length;
+        a = new int[n];
+        originalIndexes = new int[n];
+        
+        for (int i = 0; i < n; ++i) {
+            a[i] = values[i];
+            originalIndexes[i] = i;
+        }
+        QuickSort.sortBy1stArg(a, originalIndexes);
+    }
+    
     /**
      * find values within tolerance of value in the contained points.
      * @param value
@@ -111,6 +128,37 @@ public class NearestPoints1D {
         }
         
         return a[idx];
+    }
+    
+    public int findClosestValueIndex(int value) {
+        
+        // O(lg2(N))
+        int idx = Arrays.binarySearch(a, value);
+                    
+        // if it's negative, (-(insertion point) - 1)
+        if (idx < 0) {
+            // idx = -*idx2 - 1
+            idx = -1*(idx + 1);
+        }
+        if (idx > (a.length - 1)) {
+            idx = a.length - 1;
+        }
+        
+        // the answer may be in the bin below, so check both
+        if (idx > 0) {
+            
+            int diff0 = Math.abs(a[idx] - value);
+        
+            int diff1 = Math.abs(a[idx - 1] - value);
+            
+            if (diff1 < diff0) {
+                return originalIndexes[idx - 1];
+            }
+        }
+        
+        int origIdx = originalIndexes[idx];
+        
+        return origIdx;
     }
     
     /**

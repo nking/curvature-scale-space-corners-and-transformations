@@ -27,9 +27,10 @@ public class KMeansPlusPlusTest extends TestCase {
         super.tearDown();
     }
     
+    /*
     public void testChooseRandomlyFromNumbersPresentByProbability() throws 
         Exception {
-        
+                
         int[] distOfSeeds = new int[]{5, 25, 125};
         int[] indexOfDistOfSeeds = new int[] {0,1,2};
 
@@ -54,7 +55,7 @@ public class KMeansPlusPlusTest extends TestCase {
 
             countsOfIndexes[chosenIndex]++;
         }
-        
+    */    
         /*
          *                                | df |^2               | df |^2         df   df
          *      (sigma_f)^2 =  (sigma_a)^2|----|   +  (sigma_b)^2|----|    +  2 * -- * -- * cov_ab
@@ -69,6 +70,7 @@ public class KMeansPlusPlusTest extends TestCase {
                      for aError, approximating with sqrt(a)
                                  ...similar for bError
         */
+    /*
         // roughly check proportions
         int totalChosenCount = 0;
         float totalDist = 0;
@@ -79,14 +81,6 @@ public class KMeansPlusPlusTest extends TestCase {
 
         for (int i = 0; i < distOfSeeds.length; i++) {
 
-            /*
-            float a = (float)countsOfIndexes[i];
-            float b = (float)totalChosenCount;            
-            float t = a/b;
-            double errsq = (a*1./(b*b)) + (a*a/Math.pow(b, 3));            
-            double se = Math.sqrt(errsq);
-            */
-            
             float a = (float)distOfSeeds[i];
             float b = totalDist;
             double expected = a/b;
@@ -105,7 +99,7 @@ public class KMeansPlusPlusTest extends TestCase {
             //TODO: revisit the main class and expected errors
             //assertTrue((t >= lower) && (t <= upper));
         }
-    }
+    }*/
 
     public void test0() throws Exception {
 
