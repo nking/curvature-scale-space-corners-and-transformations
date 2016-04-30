@@ -59,7 +59,6 @@ public class KMeansPlusPlus {
     protected int imgModeIdx = -1;
     
     private final ThreadLocalRandom sr;
-    private int[] imgPixelSeedIndexes = null;
     
     public KMeansPlusPlus() {
          sr = ThreadLocalRandom.current();
@@ -306,7 +305,7 @@ public class KMeansPlusPlus {
             
         }
         
-        imgPixelSeedIndexes = imgSeedIndexes;
+        lastImgSeedIndexes = imgSeedIndexes;
 
         numberOfPointsPerSeedCell = nSumStDev;
     }
@@ -421,7 +420,7 @@ public class KMeansPlusPlus {
     }
     
     public int[] getImgPixelSeedIndexes() {
-        return imgPixelSeedIndexes;
+        return lastImgSeedIndexes;
     }
 
     public int[] getNumberOfPointsPerSeedCell() {

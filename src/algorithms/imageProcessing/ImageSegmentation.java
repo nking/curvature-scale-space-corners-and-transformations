@@ -8210,13 +8210,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         {
             int count = 0;
             long nQ = queue.getNumberOfNodes();
-            HeapNode node = node = queue.getSentinel();
+            HeapNode node = queue.getSentinel();
             while (count < nQ) {
                 
                 node = node.getLeft();
                 count++;
                 
-                PairInt p12 = (PairInt)((DataHeapNode)node).data;
+                PairInt p12 = (PairInt)(node.getData());
 
                 Integer index1 = Integer.valueOf(p12.getX());
                 Integer index2 = Integer.valueOf(p12.getY());
@@ -8241,9 +8241,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         HeapNode node = queue.getSentinel();
         
+//TODO: error here in queue number.  add tests for this
+        
         while(queue.getNumberOfNodes() > 0) {
             
             node = node.getLeft();
+            
+            if (node.getKey() == queue.getSentinel().getKey()) {
+                break;
+            }
+            
             queue.remove(node);
             
             double diff = ((double)node.getKey()) / ((double)keyFactor);
@@ -8252,7 +8259,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 continue;
             }
             
-            PairInt p12 = (PairInt)((DataHeapNode)node).data;
+            PairInt p12 = (PairInt)(node.getData());
             
             int idx1 = p12.getX();
             int idx2 = p12.getY();
@@ -8295,7 +8302,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             List<HeapNode> nodes = indexToNodesMap.get(index1);
             for (HeapNode node3 : nodes) {
                 
-                PairInt p13 = (PairInt)((DataHeapNode)node3).data;
+                PairInt p13 = (PairInt)(node3.getData());
                 
                 int idx3;
                 if (p13.getX() == idx1) {
@@ -8370,10 +8377,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
     }
 
-    class DataHeapNode extends HeapNode {
-        Object data;
-    }
-    
     /**
      * populate doubly linked circular list with nodes holding the differences
      * between pairs of edge descriptor colors, ordered by increasing difference.
@@ -8438,9 +8441,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             PairInt p12 = indexes[i];
             float diff = diffs[i];
             long key = (long)(diff * (double)keyFactor);
-            HeapNode node = new DataHeapNode();
-            node.setKey(key);
-            ((DataHeapNode)node).data = p12;
+            HeapNode node = new HeapNode(key);
+            node.setData(p12);
             queue.insert(node);
         }
 

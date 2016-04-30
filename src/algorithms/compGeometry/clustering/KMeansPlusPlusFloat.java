@@ -36,6 +36,8 @@ public class KMeansPlusPlusFloat {
     protected float[] center = null;
     protected int[] numberOfPointsPerSeedCell = null;
     
+    protected int[] lastImgSeedIndexes = null;
+    
     /**
      * this is k and is chosen by the user
      */
@@ -96,6 +98,7 @@ public class KMeansPlusPlusFloat {
 
             if (seeds == null) {
                 nIter = 0;
+                lastImgSeedIndexes = null;
                 seeds = createStartSeeds(values);
                 continue;
             }
@@ -250,14 +253,22 @@ public class KMeansPlusPlusFloat {
     protected boolean calculateVarianceFromSeedCenters(final float[] values,
         float[] seed, int[] imgSeedIndexes) {
 
-        /*
-        calculate stdev or variance of points within each seed
-        calculate that solution has converged by comparing for each seed:
-        that changes are very little to none compared to previous solution.
-        can define this as something like change change in variation should be
-        be very small, near zero.
-        */
- 
+        if (lastImgSeedIndexes == null) {
+            lastImgSeedIndexes = imgSeedIndexes;
+            return false;
+        }
+        
+        boolean hasChanged = false;
+        for (int i = 0; i < values.length; ++i) {
+            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {
+                hasChanged = true;
+                break;
+            }
+        }
+        if (!hasChanged) {
+            return true;
+        }
+         
         float[] sumVariance = new float[nSeeds];
         int[] nSumVariance = new int[nSeeds];
 
@@ -286,17 +297,15 @@ public class KMeansPlusPlusFloat {
 
         for (int i = 0; i < nSeeds; i++) {
             float diff = seedVariances[i] - sumVariance[i];
-            if (diff < 0) {
-                diff *= -1;
-            }
-            // TODO:  may want to change the critical factor
-            if (diff > 0.0*seedVariances[i]) {
+            if (diff < 0 ) {
                 allAreBelowCriticalLimit = false;
             }
             
             seedVariances[i] = sumVariance[i];
         }
 
+        lastImgSeedIndexes = imgSeedIndexes;
+        
         return allAreBelowCriticalLimit;
     }
     
@@ -333,6 +342,8 @@ public class KMeansPlusPlusFloat {
             
         }
 
+        lastImgSeedIndexes = imgSeedIndexes;
+        
         numberOfPointsPerSeedCell = nSumStDev;
     }
     
@@ -450,6 +461,10 @@ public class KMeansPlusPlusFloat {
 
     public float[] getCenters() {
         return this.center;
+    }
+    
+    public int[] getImgPixelSeedIndexes() {
+        return lastImgSeedIndexes;
     }
 
     public int[] getNumberOfPointsPerSeedCell() {

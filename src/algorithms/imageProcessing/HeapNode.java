@@ -11,14 +11,14 @@ public class HeapNode {
     private HeapNode parent;
     private DoubleLinkedCircularList children;
     
+    /* field to carry data  */
+    private Object data = null;
+
     /**
      * a.k.a. degree
      */
     private int numberOfChildren = 0;
     private boolean mark = false;
-
-    /* field to carry data  */
-    private Object data = null;
 
     public HeapNode() {
     }

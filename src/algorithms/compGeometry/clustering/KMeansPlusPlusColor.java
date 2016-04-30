@@ -488,6 +488,12 @@ public class KMeansPlusPlusColor {
             
             int xYZ = sr.nextInt(3);
             
+            /*
+            NOTE: could choose randomly from all three and chose the one
+            among them that is more frequent in the frequency data stored
+            from getModeIdx method.
+            */
+            
             switch (xYZ) {
                 case 0:
                     nDistDistr = nDistDistrX;
