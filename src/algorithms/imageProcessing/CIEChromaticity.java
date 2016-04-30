@@ -346,7 +346,8 @@ public class CIEChromaticity {
      * uses http://en.wikipedia.org/wiki/CIE_1931_color_space#Experimental_results:_the_CIE_RGB_color_space
      * and http://en.wikipedia.org/wiki/Lab_color_space#Forward_transformation
      * 
-     * range of return values is (0,0,0) to (28.512 3.276 2.146)
+     * range of return values is (0,0,0) to (28.51 3.28 2.15).
+     * 
      * @param r
      * @param g
      * @param b
@@ -625,7 +626,7 @@ public class CIEChromaticity {
      * 
      * Note that the "Just noticeable difference", JND, begins at E_ab ~ 2.3.
      * 
-     * The range of resulting values is 0 to 19.21. 
+     * The range of resulting values is 0 to 19.22. 
      * 
      * @return deltaE 
      */
