@@ -134,8 +134,8 @@ public class DoubleLinkedCircularList {
         
         left.setRight(insertNode);
         insertNode.setLeft(left);
-        
         existingNode.setLeft(insertNode);
+        insertNode.setRight(existingNode);
         
         number++;
     }

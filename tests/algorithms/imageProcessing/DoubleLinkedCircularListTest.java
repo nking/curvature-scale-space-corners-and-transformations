@@ -1,7 +1,11 @@
 package algorithms.imageProcessing;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import junit.framework.TestCase;
 
 /**
@@ -224,4 +228,107 @@ public class DoubleLinkedCircularListTest extends TestCase {
         }
         
     }
+    
+    public void testInsertRemoveGetNumberOfNodes() {
+        
+        Set<HeapNode> nodes = new HashSet<HeapNode>();
+        
+        DoubleLinkedCircularList linkedList = new DoubleLinkedCircularList();
+        
+        for (int i = 0; i < 100000; ++i) {
+            HeapNode node = new HeapNode(i);
+            linkedList.insert(node);
+            nodes.add(node);
+        }
+        
+        int nRemaining = nodes.size();
+        for (HeapNode node : nodes) {
+            
+            assertEquals(nRemaining, linkedList.getNumberOfNodes());
+            
+            linkedList.remove(node);
+            
+            nRemaining--;
+        }
+        
+        assertEquals(0, nRemaining);
+        
+        assertEquals(nRemaining, linkedList.getNumberOfNodes());
+    }
+    
+    public void testInsertRemoveGetNumberOfNodes2() {
+        
+        Set<HeapNode> nodes = new HashSet<HeapNode>();
+        
+        DoubleLinkedCircularList linkedList = new DoubleLinkedCircularList();
+        
+        for (int i = 0; i < 1000; ++i) {
+            HeapNode node = new HeapNode(i);
+            linkedList.insert(node);
+            nodes.add(node);            
+        }
+        
+        Set<HeapNode> removed = new HashSet<HeapNode>();
+        int nRemaining = nodes.size();
+        for (HeapNode node : nodes) {
+            
+            assertEquals(nRemaining, linkedList.getNumberOfNodes());
+            
+            linkedList.remove(node);
+            
+            removed.add(node);
+                        
+            nRemaining--;
+            
+            if (nRemaining == (nodes.size()/2)) {
+                break;
+            }
+        }
+        nodes.removeAll(removed);        
+        removed.clear();
+        
+        Random r = new Random();
+        for (int i = 0; i < 10; ++i) {
+            
+            HeapNode node = new HeapNode(i + 1000000);
+            
+            if ((i & 1) == 1) {
+                
+                // choose an existing node from nodes
+                int nIter = r.nextInt(100) + 1;
+                int n = 0;
+                Iterator<HeapNode> iter = nodes.iterator();
+                HeapNode existingNode = null;
+                while (n < nIter) {
+                    existingNode = iter.next();
+                    n++;
+                }
+
+                linkedList.insertAfter(existingNode, node);
+                
+            } else {
+                
+                linkedList.insert(node);
+            }
+            
+            nodes.add(node);            
+        }
+
+        nRemaining = nodes.size();
+        for (HeapNode node : nodes) {
+            
+            assertEquals(nRemaining, linkedList.getNumberOfNodes());
+            
+            linkedList.remove(node);
+            
+            removed.add(node);
+                        
+            nRemaining--;
+        }
+              
+        assertEquals(0, nRemaining);
+        
+        assertEquals(nRemaining, linkedList.getNumberOfNodes());
+    }
+
 }
