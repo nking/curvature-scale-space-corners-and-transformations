@@ -3529,7 +3529,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param edges
      * @param junctions
      * @param outputPoints
-     * @param outputDescripors access as [edgeListIndex][(h, s, v, percent, cenX, cenY)]
+     * @param outputDescripors access as [edgeListIndex][(h, s, v, nPix, cenX, cenY)]
      * @param clrSpace color space to fill the descriptors with: 0 is lab, 1 is hsv 
      */
     private void populateEdgeLists(ImageExt img,
@@ -3579,9 +3579,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Set<PairInt> edgePoints = outputPoints.get(i);
             
             outputDescripors[i] = new float[6];
-            
-            float percent = (float)edgePoints.size()/n;
-            
+                        
             double[] xyCen = curveHelper.calculateXYCentroids(edgePoints);
             
             double c1Sum = 0;
@@ -3612,7 +3610,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             outputDescripors[i][0] = (float)c1Sum;
             outputDescripors[i][1] = (float)c2Sum;
             outputDescripors[i][2] = (float)c3Sum;
-            outputDescripors[i][3] = percent;
+            outputDescripors[i][3] = edgePoints.size();
             outputDescripors[i][4] = (float)xyCen[0];
             outputDescripors[i][5] = (float)xyCen[1];
         }
@@ -3663,7 +3661,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             double minColorDiff = Double.MAX_VALUE;
             Integer minColorDiffIndex = null;
             for (Integer index : indexes) {
-                //C_i = {h, s, v, percent, cenX, cenY}
+                //C_i = {h, s, v, nPix, cenX, cenY}
                 float[] desc = outputDescripors[index.intValue()];
                 double diff;
                 if (clrSpace == 0) {
@@ -3693,7 +3691,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 set.remove(p);
                 float nAfter = set.size();
                 
-                ////C_i = {h, s, v, percent, cenX, cenY}
+                ////C_i = {h, s, v, nPix, cenX, cenY}
                 float[] desc = outputDescripors[index.intValue()];
                 desc[0] = ((desc[0] * nBefore) - c1)/nAfter;
                 desc[1] = ((desc[1] * nBefore) - c2)/nAfter;
@@ -3735,7 +3733,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         final int w = input.getWidth();
         final int h = input.getHeight();
-        final int n = input.getNPixels();
+        final int nPix = input.getNPixels();
            
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
@@ -3790,7 +3788,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int tLen = 20;
         List<Integer> longEdgeIndexes = new ArrayList<Integer>();
         List<Integer> shortEdgeIndexes = new ArrayList<Integer>();
-        populateEdgeLengthLists(clusterDescriptors, (float)tLen/(float)n, 
+        populateEdgeLengthLists(clusterDescriptors, tLen, 
             longEdgeIndexes, shortEdgeIndexes);
         
         // merge edges in the heap for pairs with diff < tColot
@@ -3814,9 +3812,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
                 longEdgeIndexes);
-                
+  
         } else {
-            
+           
+            // this shows the min heap approach is necessary in contrast:
             mergeEdges2(clusterPoints, clusterDescriptors, clrSpace, tColor,
                 longEdgeIndexes);
         }
@@ -3834,11 +3833,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_longEdges_merged_long_" +  clrSpace);
-            
-            ImageProcessor imageProcessor = new ImageProcessor();
-            //imageProcessor.
+            MiscDebug.writeImage(img2, "_longEdges_merged_long_" +  clrSpace);            
         }
+        
+        {
+            // DEBUG
+            List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
+            for (Integer index : shortEdgeIndexes) {
+                Set<PairInt> set = clusterPoints.get(index.intValue());
+                if (!set.isEmpty()) {
+                    tmp.add(set);
+                }
+            }
+            int nExtraForDot = 1;
+            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
+                nExtraForDot, img2);
+            MiscDebug.writeImage(img2, "_shortedges_before_merge_" +  clrSpace);            
+        }
+        
+     //   mergeShortEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
+     //       shortEdgeIndexes);
         
         throw new UnsupportedOperationException("not yet implemented");
         
@@ -4030,14 +4045,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
     
     private void populateEdgeLengthLists(float[][] clusterDescriptors, 
-        float tLenFraction, List<Integer> longEdgeIndexes, 
+        int tLen, List<Integer> longEdgeIndexes, 
         List<Integer> shortEdgeIndexes) {
         
-        //C_i = {h, s, v, percent, cenX, cenY}
+        //C_i = {h, s, v, nPix, cenX, cenY}
         for (int i = 0; i < clusterDescriptors.length; ++i) {
             Integer key = Integer.valueOf(i);
-            float percent = clusterDescriptors[i][3];
-            if (percent < tLenFraction) {
+            float nPix = clusterDescriptors[i][3];
+            if (nPix < tLen) {
                 shortEdgeIndexes.add(key);
             } else {
                 longEdgeIndexes.add(key);
@@ -8110,7 +8125,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             float n2 = set2.size();
             float nTot = n1 + n2;
             
-            //{h, s, v, percent, cenX, cenY}
+            assert(Math.abs(n1 - desc1[3]) < 0.1);
+            assert(Math.abs(n2 - desc2[3]) < 0.1);
+            
+            //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
             for (int k = 0; k < desc1.length; ++k) {
                 desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2))/nTot;
@@ -8240,9 +8258,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         CIEChromaticity cieC = new CIEChromaticity();
         
         HeapNode node = queue.getSentinel();
-        
-//TODO: error here in queue number.  add tests for this
-        
+                
         while(queue.getNumberOfNodes() > 0) {
             
             node = node.getLeft();
@@ -8286,7 +8302,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             float n2 = set2.size();
             float nTot = n1 + n2;
             
-            //{h, s, v, percent, cenX, cenY}
+            assert(Math.abs(n1 - desc1[3]) < 0.1);
+            assert(Math.abs(n2 - desc2[3]) < 0.1);
+            
+            //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
             for (int k = 0; k < desc1.length; ++k) {
                 desc1[k] = ((desc1[k] * n1) + (desc2[k] * n2))/nTot;
