@@ -3874,7 +3874,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
 
         // the number of clusters in long edges could be used in kmeans++ 
-assert(assertDescriptorCounts(clusterPoints, clusterDescriptors)); 
+
         // ------ region growing -------
         growEdges(input, clusterPoints, clusterDescriptors, clrSpace, tColor,
             shortEdgeIndexes, longEdgeIndexes);

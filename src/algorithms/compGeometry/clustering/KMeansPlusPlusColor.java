@@ -446,22 +446,27 @@ public class KMeansPlusPlusColor {
         // find the value for the position once the position has been 
         // drawn randomly
         
-        // ****TODO: this could be improved by storing the sums at large intervals *****
         long nDistDistrX = 0;
+        long[] nDistrXC = new long[distOfSeedsX.length];
         for (int i = 0; i < distOfSeedsX.length; i++) {            
             int nValues = distOfSeedsX[i];
             // value should be present nValues number of times
             nDistDistrX += nValues;
+            nDistrXC[i] = nDistDistrX;
         }
         long nDistDistrY = 0;
+        long[] nDistrYC = new long[distOfSeedsY.length];
         for (int i = 0; i < distOfSeedsY.length; i++) {            
             int nValues = distOfSeedsY[i];
             nDistDistrY += nValues;
+            nDistrYC[i] = nDistDistrY;
         }
         long nDistDistrZ = 0;
+        long[] nDistrZC = new long[distOfSeedsZ.length];
         for (int i = 0; i < distOfSeedsZ.length; i++) {            
             int nValues = distOfSeedsZ[i];
             nDistDistrZ += nValues;
+            nDistrZC[i] = nDistDistrZ;
         }
         
         if (nDistDistrX < 1) {
@@ -485,6 +490,7 @@ public class KMeansPlusPlusColor {
             long nDistDistr;
             int[] distOfSeeds;
             int[] indexOfDistOfSeeds;
+            long[] nDistrC;
             
             int xYZ = sr.nextInt(3);
             
@@ -499,33 +505,27 @@ public class KMeansPlusPlusColor {
                     nDistDistr = nDistDistrX;
                     distOfSeeds = distOfSeedsX;
                     indexOfDistOfSeeds = indexOfDistOfSeedsX;
+                    nDistrC = nDistrXC;
                     break;
                 case 1:
                     nDistDistr = nDistDistrY;
                     distOfSeeds = distOfSeedsY;
                     indexOfDistOfSeeds = indexOfDistOfSeedsY;
+                    nDistrC = nDistrYC;
                     break;
                 default:
                     nDistDistr = nDistDistrZ;
                     distOfSeeds = distOfSeedsZ;
                     indexOfDistOfSeeds = indexOfDistOfSeedsZ;
+                    nDistrC = nDistrZC;
                     break;
             }
-                        
+            
             long chosen = sr.nextLong(nDistDistr);
 
-            // walk thru same iteration to obtain the chosen index
-            long n = 0;
-            for (int i = 0; i < distOfSeeds.length; i++) {            
-                int nValues = distOfSeeds[i];
-                // value should be present nValues number of times
-                if ((chosen >= n) && (chosen < (n + nValues))) {
-                    int chosenIndex = indexOfDistOfSeeds[i];
-                    chosenIndexColors = calculateRGB(img, chosenIndex);
-                    break;
-                }
-                n += nValues;
-            }
+            int chosenIdx = findChosen(nDistrC, chosen);
+            int pixIdx = indexOfDistOfSeeds[chosenIdx];
+            chosenIndexColors = calculateRGB(img, pixIdx);            
         }
         
         return chosenIndexColors;
@@ -563,13 +563,15 @@ public class KMeansPlusPlusColor {
         // and instead,
         // find the value for the position once the position has been 
         // drawn randomly
-        
-        // ****TODO: this could be improved by storing the sums at large intervals *****
+       
+        // make the cumulative array.
         long nCountDistr = 0;
+        long[] nDistrC = new long[counts.length];
         for (int i = 0; i < counts.length; i++) {            
             int nValues = counts[i];
             // value should be present nValues number of times
             nCountDistr += nValues;
+            nDistrC[i] = nCountDistr;
         }
         
         if (nCountDistr < 1) {
@@ -583,17 +585,9 @@ public class KMeansPlusPlusColor {
             
             long chosen = sr.nextLong(nCountDistr);
 
-            // walk thru same iteration to obtain the chosen index
-            long n = 0;
-            for (int i = 0; i < counts.length; i++) {            
-                int nValues = counts[i];
-                // value should be present nValues number of times
-                if ((chosen >= n) && (chosen < (n + nValues))) {
-                    chosenIndexColor = colors[i];
-                    break;
-                }
-                n += nValues;
-            }
+            int chosenIdx = findChosen(nDistrC, chosen);
+            
+            chosenIndexColor = colors[chosenIdx];
         }
         
         return chosenIndexColor;
@@ -887,6 +881,40 @@ public class KMeansPlusPlusColor {
         
         return minDistClr;
     }
+    
+    private int findChosen(long[] nDistrC, long chosen) {
+        
+        // find bin where cosen is found.
+        // the next bin is too high in value
+        
+        int idx = Arrays.binarySearch(nDistrC, chosen);
+        
+        //nDistrC is ordered by increasing value, but there may be more than
+        // one sequential item with same value (if a point is a seed, for
+        // example, it's distance is 0, so cumulative sum is same).
+        // so need to search before found bin also to find earliest bin.
+        
+        // if it's negative, (-(insertion point) - 1)
+        if (idx < 0) {
+            // idx = -*idx2 - 1
+            idx = -1*(idx + 1);
+        }
+        if (idx > (nDistrC.length - 1)) {
+            idx = nDistrC.length - 1;
+        }
+        
+        long v = nDistrC[idx];
+        for (int i = (idx - 1); idx > -1; --idx) {
+            if (nDistrC[i] == v) {
+                idx = i;
+            } else {
+                break;
+            }
+        }
+        
+        return idx;
+    }
+    
     
     public int[] getImgPixelSeedIndexes() {
         return lastImgSeedIndexes;

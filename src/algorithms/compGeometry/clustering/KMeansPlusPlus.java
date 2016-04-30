@@ -339,7 +339,6 @@ public class KMeansPlusPlus {
         }
 
         return seedNumber;
-                
     }
     
     /**
@@ -373,12 +372,14 @@ public class KMeansPlusPlus {
         // find the value for the position once the position has been 
         // drawn randomly
         
-        // TODO: this could be improved by storing the sums at large intervals 
+        // make the cumulative array.
         long nDistDistr = 0;
+        long[] nDistrC = new long[distOfSeeds.length];
         for (int i = 0; i < distOfSeeds.length; i++) {            
             int nValues = distOfSeeds[i];
             // value should be present nValues number of times
             nDistDistr += nValues;
+            nDistrC[i] = nDistDistr;
         }
         
         if (nDistDistr < 1) {
@@ -386,29 +387,19 @@ public class KMeansPlusPlus {
                 Arrays.toString(distOfSeeds));
         }
         
-        Integer chosenValue = null;
+        int chosenValue = -1;
                 
-        while ((chosenValue == null) || 
+        while ((chosenValue == -1) || 
             alreadyChosenValues.contains(chosenValue)) {
             
             long chosen = sr.nextLong(nDistDistr);
 
-            // walk thru same iteration to obtain the chosen index
-            long n = 0;
-            for (int i = 0; i < distOfSeeds.length; i++) {            
-                int nValues = distOfSeeds[i];
-                // value should be present nValues number of times
-                
-                if ((chosen >= n) && (chosen < (n + nValues))) {
-                    int chosenIndex = indexOfDistOfSeeds[i];
-                    chosenValue = Integer.valueOf(img.getValue(chosenIndex));
-                    break;
-                }
-                n += nValues;
-            }
+            int chosenIdx = findChosen(nDistrC, chosen);
+            int pixIdx = indexOfDistOfSeeds[chosenIdx];
+            chosenValue = img.getValue(pixIdx);
         }
         
-        return chosenValue.intValue();
+        return chosenValue;
     }
     
     public float[] getStandardDeviationsFromCenters() {
@@ -487,6 +478,39 @@ public class KMeansPlusPlus {
         }
         
         return minDistV;
+    }
+
+    private int findChosen(long[] nDistrC, long chosen) {
+        
+        // find bin where cosen is found.
+        // the next bin is too high in value
+        
+        int idx = Arrays.binarySearch(nDistrC, chosen);
+        
+        //nDistrC is ordered by increasing value, but there may be more than
+        // one sequential item with same value (if a point is a seed, for
+        // example, it's distance is 0, so cumulative sum is same).
+        // so need to search before found bin also to find earliest bin.
+        
+        // if it's negative, (-(insertion point) - 1)
+        if (idx < 0) {
+            // idx = -*idx2 - 1
+            idx = -1*(idx + 1);
+        }
+        if (idx > (nDistrC.length - 1)) {
+            idx = nDistrC.length - 1;
+        }
+        
+        long v = nDistrC[idx];
+        for (int i = (idx - 1); idx > -1; --idx) {
+            if (nDistrC[i] == v) {
+                idx = i;
+            } else {
+                break;
+            }
+        }
+        
+        return idx;
     }
     
 }

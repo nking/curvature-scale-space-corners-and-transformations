@@ -384,21 +384,25 @@ public class ImageSegmentationTest extends TestCase {
              ImageSegmentation imageSegmentation = new ImageSegmentation();
              String bin = ResourceFinder.findDirectory("bin");
              
+             int k = 4;
+             
              ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
              ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
-             
-             //GreyscaleImage img1 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
-             //GreyscaleImage img2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath2);
-             
-             imageSegmentation.applyUsingKMPP(img1, 8);
+             imageSegmentation.applyUsingKMPP(img1, k);
              MiscDebug.writeImage(img1, "_kmpp_" + fileName1);
-             
-             imageSegmentation.applyUsingKMPP(img2, 8);             
+             imageSegmentation.applyUsingKMPP(img2, k);             
              MiscDebug.writeImage(img2, "_kmpp_" + fileName2);
+             
+             GreyscaleImage gsImg1 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath1);
+             GreyscaleImage gsImg2 = ImageIOHelper.readImageAsGrayScaleAvgRGB(filePath2);
+             imageSegmentation.applyUsingKMPP(gsImg1, k);
+             MiscDebug.writeImage(gsImg1, "_gs_kmpp_" + fileName1);
+             imageSegmentation.applyUsingKMPP(gsImg2, k);             
+             MiscDebug.writeImage(gsImg2, "_gs_kmpp_" + fileName2);            
          }
     }
     
-     public void estApplyColorSegmentation2() throws Exception {
+    public void estApplyColorSegmentation2() throws Exception {
         
          String[] fileNames1 = new String[]{
              "brown_lowe_2003_image1.jpg",
@@ -411,7 +415,7 @@ public class ImageSegmentationTest extends TestCase {
              "books_illum3_v6_695x555.png"
          };
          
-         for (int i = 0; i < 1/*fileNames1.length*/; ++i) {
+         for (int i = 0; i < fileNames1.length; ++i) {
              String fileName1 = fileNames1[i];
              String fileName2 = fileNames2[i];
              
@@ -429,7 +433,7 @@ public class ImageSegmentationTest extends TestCase {
              ImageSegmentation imageSegmentation = new ImageSegmentation();
              String bin = ResourceFinder.findDirectory("bin");
              
-             for (int j = 0; j < 20; ++j) {
+             for (int j = 6; j < 7; ++j) {
                  ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
                  ImageExt img2 = ImageIOHelper.readImageExt(filePath2);
                  log.info("   j=" + j);

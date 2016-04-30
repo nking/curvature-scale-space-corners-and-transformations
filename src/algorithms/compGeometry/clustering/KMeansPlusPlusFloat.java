@@ -25,6 +25,7 @@ import java.util.logging.Logger;
  * http://en.wikipedia.org/wiki/K-means_clustering
  * 
  * @author nichole
+ * @deprecated 
  */
 public class KMeansPlusPlusFloat {
     
