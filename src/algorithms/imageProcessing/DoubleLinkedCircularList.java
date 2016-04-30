@@ -46,12 +46,15 @@ public class DoubleLinkedCircularList {
         sentinel -> 2nd inserted -> 1st inserted -> [ sentinel.right ]
         sentinel <- 2nd inserted <- 1st inserted <- [ sentinel.right ]
     *
+    * <pre>
     * subsequent traversal by FIFO should use :
     *    sentinel and proceed left n=number of items
     * 
     * subsequent traversal by LIFO should use :
     *    sentinel and proceed right n=number of times
     * 
+    * runtime complexity is O(1).
+    * </pre>
     * @param node
     * @return inserted child node instance
     */
@@ -76,12 +79,24 @@ public class DoubleLinkedCircularList {
         return node;
     }
 
+    /**
+     * remove first found node with key.
+     * runtime complexity is O(n).
+     * @param key
+     * @return 
+     */
     public boolean remove(long key) {
         HeapNode cn = search(key);
         remove(cn);
         return (cn != null);
     }
     
+    /**
+     * remove node by connecting it's relationships to one another and removing
+     * self.
+     * runtime complexity is O(1).
+     * @param node 
+     */
     public void remove(HeapNode node) {
     	if (node == null) {
     		return;
@@ -109,7 +124,7 @@ public class DoubleLinkedCircularList {
      * preserve left right relationships of insertNode, but preserves those of 
      * existingNode.  It expects that existingNode is part of this instance's
      * members and updates the number of items, for later use in traversals.
-     * 
+     * <pre>
      * Internally the insertNode is to the left of existingNode using the 
      * convention of this class.
      * 
@@ -119,6 +134,8 @@ public class DoubleLinkedCircularList {
     * subsequent traversal by LIFO should use :
     *    sentinel and proceed right n=number of times
      * 
+     * runtime complexity is O(1).
+     * </pre>
      * @param existingNode
      * @param insertNode 
      */
@@ -144,6 +161,13 @@ public class DoubleLinkedCircularList {
         return number;
     }
    
+    /**
+     * runtime complexity is up to O(n), so if this method is often used,
+     * should choose another data structure for the logic.
+     * 
+     * @param key
+     * @return 
+     */
     public HeapNode search(long key) {
         
         HeapNode cn = sentinel.getRight();
