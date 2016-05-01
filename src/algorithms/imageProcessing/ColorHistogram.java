@@ -105,19 +105,19 @@ public class ColorHistogram {
             
             float[] lab = img.getCIELAB(x, y);
             
-            int binNumberL = Math.round(lab[0]/binWidthL);
+            int binNumberL = Math.abs(Math.round(lab[0]/binWidthL));
             if (binNumberL > (nBins - 1)) {
                 binNumberL = nBins - 1;
             }
             hist[0][binNumberL]++;
             
-            int binNumberA = Math.round(lab[1]/binWidthA);
+            int binNumberA = Math.abs(Math.round(lab[1]/binWidthA));
             if (binNumberA > (nBins - 1)) {
                 binNumberA = nBins - 1;
             }
             hist[1][binNumberA]++;
             
-            int binNumberB = Math.round(lab[2]/binWidthB);
+            int binNumberB = Math.abs(Math.round(lab[2]/binWidthB));
             if (binNumberB > (nBins - 1)) {
                 binNumberB = nBins - 1;
             }
@@ -128,14 +128,12 @@ public class ColorHistogram {
     }
     
     /**
-     * summation over colors of the differences between the
-     * two histograms (note that the histograms are each normalized internally
-     * by their total number of counts so that a difference can be calculated).
+     * summation over color histograms of the property min(h_i, h_j)
      * @param hist0
      * @param hist1
      * @return 
      */
-    public float similarity(int[][] hist0, int[][] hist1) {
+    public float intersection(int[][] hist0, int[][] hist1) {
         
         if ((hist0.length != hist1.length)) {
             throw new IllegalArgumentException(
@@ -158,17 +156,15 @@ public class ColorHistogram {
                 n1[i] += hist1[i][j];
             }
         }
+        
+        //summation over each bin min(a_i, b_i)
             
         float sum = 0;
         for (int i = 0; i < hist0.length; ++i) {
             for (int j = 0; j < hist0[i].length; ++j) {
                 float y0 = (float)hist0[i][j]/(float)n0[i];
                 float y1 = (float)hist1[i][j]/(float)n1[i];
-                float yDiff = y1 - y0;
-                if (yDiff < 0) {
-                    yDiff *= -1;
-                }
-                sum += yDiff;
+                sum += Math.min(y0, y1);                
             }
         }
         

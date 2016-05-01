@@ -3908,24 +3908,31 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         // ------ merge by color histograms ------
+                
+        double tR = 0.3;
+        
+        /*mergeByColorHistograms(input, clusterPoints, clrSpace, tR);
+        
+        {
+            // DEBUG
+            int nExtraForDot = 1;
+            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
+                nExtraForDot, img2);
+            MiscDebug.writeImage(img2, "_after_clr_hist_merge_" +  clrSpace);            
+        }*/
+        
+        /*
+        TODO:
+        ** for the clusters which are smaller than the limit tNumber,
+            either merge them ith the closest cluster.
+        
+        ** handle any unallocated pixels here too
+        */
         
         int tNumber = Math.round(0.01f * nPix);
         
-        mergeByColorHistograms(input, clusterPoints, clrSpace, tColor, tNumber);
-        
         throw new UnsupportedOperationException("not yet implemented");
-        
-        /*
-        color histograms of any two neighboring regions are calculated
-            and stored in a distance table.
-            The pair of regions with the minimum distance is merged together. 
-            The color feature vector for the new region is calculated and the 
-            distance table is updated along with the neighboring relationships. 
-            The process continues until a maximum threshold Tr for the distance 
-            is reached. Moreover, any region that has fewer pixels than a 
-            certain percentage of the total number of image pixels is also
-            merged into the most similar neighbor region.
-        */
         
     }
 
@@ -8919,53 +8926,173 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     private void mergeByColorHistograms(ImageExt input, 
-        List<Set<PairInt>> clusterPoints, int clrSpace, double tColor, 
-        int tNumber) {
-        
+        List<Set<PairInt>> clusterPoints, int clrSpace, double tR) {
+                
         int[][][] colorHistograms = calculateColorHistograms(input, 
             clusterPoints, clrSpace);
         
-        Map<Integer, Set<Integer>> adjacencyMap = new HashMap<Integer, Set<Integer>>();
+        Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
+            clusterPoints);
         
-        /*        
-        calculate the color histograms of each cluster:
-             int[][] hist = ColorHistogram.histogramCIELAB(img, points)
+        // key is index1, index2 where index1 < index2
+        Map<PairInt, HeapNode> nodesMap = new HashMap<PairInt, HeapNode>();
         
-        determine which clusters are adjacent
-            for each set, visit all points and store neighbors
-               store for all indexes involved in map with key = index, 
-               value = set of indexes
+        Heap heap = new Heap();
         
-        create a map to hold the fibonacci heap nodes. key = index, value = node
+        ColorHistogram ch = new ColorHistogram();
         
-        crate a fibnoacci heap
+        //looking at max and min values of "histogram intersection" to know 
+        // size that heap key must be to convert floats to long and retain
+        // significant information.
+        //   during similarity calc, each histogram is normalized by number
+        //   of points in the histogram, so then the sum of all normalized = 1;
+        //   the difference between two normalized histograms is 0 if they
+        //   are the same.  if they are completely different, but still populated,
+        //   the sum of the differences ~< 1.  3 colors are then <= 3.
+        //      presumably, would want a key large enough to make some number
+        //      of counts in a histogram bin in the largest cluster significant.
+        //      at least 10 percent of maxClustersize/(16 bins)
+        //      1./(((0.1*max)/16.)/max) is a small key factor
+        //      can see that its safe to use the number of pixels in the
+        //      image as the key factor.
+        long heapKeyFactor = input.getNPixels();
+                
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
             
-        for each adjacent cluster
-            calculate "histogram intersection" 
-            create a node holding the value
-            put the node in the node map and in the heap
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            
+            int[][] hist1 = colorHistograms[idx1];
+            
+            Set<Integer> indexes2 = entry.getValue();
+            
+            for (Integer index2 : indexes2) {
+                
+                int idx2 = index2.intValue();
+                
+                assert(idx1 != idx2);
+                
+                int[][] hist2 = colorHistograms[index2.intValue()];
+                
+                float similarity = ch.intersection(hist1, hist2);
+                
+                PairInt p12;
+                if (idx1 < idx2) {
+                    p12 = new PairInt(idx1, idx2);
+                } else {
+                    p12 = new PairInt(idx2, idx1);
+                }
+                
+                long key = (long)(similarity * (double)heapKeyFactor);
+                HeapNode node = new HeapNode(key);
+                node.setData(p12);
+                heap.insert(node);
+                nodesMap.put(p12, node);
+            }
+        }
         
-        while heap is not empty:
-            node = extractMax
-            if node key is > critical value
-               break
+        int nMerged = 0;
         
-            merge the 2 clusters:
-                update the histograms of affected cells after each merge.
-                -- adjacency map gets updated
-                -- histogram for index1 gets updated
-                   -- histogram for index2 is set to null
-                -- for each
-                -- set1 gets set2 added
-                   -- set2 is cleared
+        while(!heap.isEmpty()) {
+            
+            HeapNode node = heap.extractMin();
+            
+            double diff = ((double)node.getKey())/((double)heapKeyFactor);
+            
+            if (diff > tR) {
+                break;
+            }
+            
+            PairInt p12 = (PairInt)node.getData();
+            
+            int idx1 = p12.getX();
+            int idx2 = p12.getY();
+            
+            Set<PairInt> set1 = clusterPoints.get(idx1);
+            Set<PairInt> set2 = clusterPoints.get(idx2);
+
+            if (set1.isEmpty() || set2.isEmpty()) {
+                continue;
+            }
+
+            if (set2.size() > set1.size()) {
+                idx1 = p12.getY();
+                idx2 = p12.getX();
+                set1 = set2;
+                set2 = clusterPoints.get(idx2);
+            }
+
+            // set1 is largest
+            
+            int[][] hist1 = colorHistograms[idx1];
+            ch.add2To1(hist1, colorHistograms[idx2]);
+            colorHistograms[idx2] = null;
+            
+            float n1 = set1.size();
+            float n2 = set2.size();
+            float nTot = n1 + n2;
+            
+            set1.addAll(set2);
+            set2.clear();
+            n1 = set1.size();
+            
+            Integer index1 = Integer.valueOf(idx1);
+            Integer index2 = Integer.valueOf(idx2);
+            
+            //update adjacency map
+            Set<Integer> adj2 = adjacencyMap.get(index2);
+            for (Integer index3 : adj2) {
+                if (!index3.equals(index1)) {
+                    adjacencyMap.get(index3).remove(index2);
+                    adjacencyMap.get(index3).add(index1);
+                }
+            }
+            adjacencyMap.get(index1).addAll(adj2);
+            adjacencyMap.get(index1).remove(index2);
+            adjacencyMap.remove(index2);
+            
+            nMerged++;
+            
+            // update all pairs having set 1
+            Set<Integer> indexes2 = adjacencyMap.get(index1);
+            for (Integer index3 : indexes2) {
+                int idx3 = index3.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);
+                if (set3.isEmpty()) {
+                    continue;
+                }
+                int[][] hist3 = colorHistograms[idx3];
+                
+                //keys in pairEdgePindexNodes have smaller index in x
+                PairInt p13;
+                if (idx1 < idx3) {
+                    p13 = new PairInt(idx1, idx3);
+                } else {
+                    p13 = new PairInt(idx3, idx1);
+                }
+                
+                HeapNode node3 = nodesMap.get(p13);
+                assert(node3 != null);
+
+                heap.remove(node3);
+                
+                float similarity3 = ch.intersection(hist1, hist3);
+                
+                long key3 = (long)(similarity3 * (double)heapKeyFactor);
+                node3 = new HeapNode(key3);
+                node3.setData(p13);
+                heap.insert(node3);
+                nodesMap.put(p13, node3);
+            }
+        }
         
-        ** for the clusters which are smaller than the limit tNumber,
-            either merge them ith the closest cluster.
-        
-        ** handle any unallocated pixels here too
-        */
-        
-        <
+        for (int i = (clusterPoints.size() - 1); i > -1; --i) {
+            if (clusterPoints.get(i).isEmpty()) {
+                clusterPoints.remove(i);
+            }
+        }
+       
+        System.out.println("color histogram nMerged=" + nMerged);
     }
 
     private int[][][] calculateColorHistograms(ImageExt input, 
@@ -8995,6 +9122,69 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return hist;
+    }
+
+    private Map<Integer, Set<Integer>> createAdjacencyMap(List<Set<PairInt>> 
+        clusterPoints) {
+        
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        
+        for (int i = 0; i < clusterPoints.size(); ++i) {
+            Set<PairInt> set = clusterPoints.get(i);
+            Integer index = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, index);
+            }
+        }
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        Map<Integer, Set<Integer>> adjMap = new HashMap<Integer, Set<Integer>>();
+        
+        for (int i = 0; i < clusterPoints.size(); ++i) {
+            
+            Set<PairInt> set = clusterPoints.get(i);
+            
+            Set<Integer> indexes2 = new HashSet<Integer>();
+            
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    Integer index2 = pointIndexMap.get(p2);
+                    if (index2 == null || index2.intValue() == i) {
+                        continue;
+                    }                    
+                    indexes2.add(index2);
+                }
+            }
+            
+            if (indexes2.isEmpty()) {
+                continue;
+            }
+            
+            // add these to all point sets in adjacency map
+            
+            indexes2.add(Integer.valueOf(i));
+            
+            for (Integer key : indexes2) {
+                Set<Integer> v = new HashSet<Integer>(indexes2);
+                v.remove(key);
+                
+                Set<Integer> mapV = adjMap.get(key);
+                if (mapV == null) {
+                    adjMap.put(key, v);
+                } else {
+                    mapV.addAll(v);
+                }
+            }
+        }
+        
+        return adjMap;
     }
 
     public static class BoundingRegions {

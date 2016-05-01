@@ -49,9 +49,9 @@ public class ColorHistogramTest extends TestCase {
         assertEquals(9, hist1[0][5]);
         assertEquals(9, hist1[1][5]);
         
-        float sim = ch.similarity(hist0, hist1);
+        float sim = ch.intersection(hist0, hist1);
                 
-        float expected = 4.f*(3.f/9.f);
+        float expected = 2.f*(6.f/9.f);
                 
         assertTrue(Math.abs(sim - expected) < 0.1);
     }
