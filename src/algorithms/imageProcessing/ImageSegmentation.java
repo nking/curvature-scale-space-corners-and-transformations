@@ -3570,7 +3570,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         /*
         the descriptors are
-             C_i = {h, s, v, percent, cenX, cenY}
+             C_i = {h, s, v, nPix, cenX, cenY}  or labL, labA, labB for colorSpace = 0
         */
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -3753,6 +3753,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             MiscDebug.writeImage(out2, "_EDGES_grey_");
         }
+        //TODO: copy and used data from phaseDetector to release memory
+        phaseDetector = null;
                 
         EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
         extractor.extractEdges();
@@ -3776,6 +3778,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             junctions.addAll(tmp);
         }
         
+        //TODO: copy any used data from extractor to release memory
+        extractor = null;
+        
         int nEdges = edges.size();
         List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
         float[][] clusterDescriptors = new float[nEdges][];
@@ -3793,7 +3798,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             longEdgeIndexes, shortEdgeIndexes); 
 
         // merge edges in the heap for pairs with diff < tColot
-        // NOTE that the moved sets modify the dsta structures :
+        // NOTE that the moved sets modify the data structures :
         //    clusterPoints may contain empty items
         //    clusterDescriptors may contain null items
         //    both clusterPoints and clusterDescriptor non- null and non empty 
@@ -3878,7 +3883,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // ------ region growing -------
         growEdges(input, clusterPoints, clusterDescriptors, clrSpace, tColor,
             shortEdgeIndexes, longEdgeIndexes);
-assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));         
+
+        assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));         
+        
         {
             // DEBUG
             int nExtraForDot = 1;
@@ -3887,6 +3894,24 @@ assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));
                 nExtraForDot, img2);
             MiscDebug.writeImage(img2, "_after_rgo_" +  clrSpace);            
         }
+        
+        // -- release some of the datastructures and condense the clusters ---
+        clusterDescriptors = null;
+        longEdgeIndexes = null;
+        shortEdgeIndexes = null;
+        
+        for (int i = (clusterPoints.size() - 1); i > -1; --i) {
+            Set<PairInt> set = clusterPoints.get(i);
+            if (set.isEmpty()) {
+                clusterPoints.remove(i);
+            }
+        }
+        
+        // ------ merge by color histograms ------
+        
+        int tNumber = Math.round(0.01f * nPix);
+        
+        mergeByColorHistograms(input, clusterPoints, clrSpace, tColor, tNumber);
         
         throw new UnsupportedOperationException("not yet implemented");
         
@@ -8889,7 +8914,87 @@ assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));
             float diff = Math.abs(n - clusterDescriptors[i][3]);
             assert(diff < 0.1);
         }
+        
         return true;
+    }
+
+    private void mergeByColorHistograms(ImageExt input, 
+        List<Set<PairInt>> clusterPoints, int clrSpace, double tColor, 
+        int tNumber) {
+        
+        int[][][] colorHistograms = calculateColorHistograms(input, 
+            clusterPoints, clrSpace);
+        
+        Map<Integer, Set<Integer>> adjacencyMap = new HashMap<Integer, Set<Integer>>();
+        
+        /*        
+        calculate the color histograms of each cluster:
+             int[][] hist = ColorHistogram.histogramCIELAB(img, points)
+        
+        determine which clusters are adjacent
+            for each set, visit all points and store neighbors
+               store for all indexes involved in map with key = index, 
+               value = set of indexes
+        
+        create a map to hold the fibonacci heap nodes. key = index, value = node
+        
+        crate a fibnoacci heap
+            
+        for each adjacent cluster
+            calculate "histogram intersection" 
+            create a node holding the value
+            put the node in the node map and in the heap
+        
+        while heap is not empty:
+            node = extractMax
+            if node key is > critical value
+               break
+        
+            merge the 2 clusters:
+                update the histograms of affected cells after each merge.
+                -- adjacency map gets updated
+                -- histogram for index1 gets updated
+                   -- histogram for index2 is set to null
+                -- for each
+                -- set1 gets set2 added
+                   -- set2 is cleared
+        
+        ** for the clusters which are smaller than the limit tNumber,
+            either merge them ith the closest cluster.
+        
+        ** handle any unallocated pixels here too
+        */
+        
+        <
+    }
+
+    private int[][][] calculateColorHistograms(ImageExt input, 
+        List<Set<PairInt>> clusterPoints, int clrSpace) {
+        
+        if (clrSpace > 0) {
+            throw new UnsatisfiedLinkError("only clrSpace=0 has been implemented");
+        }
+        
+        int n = clusterPoints.size();
+        
+        int[][][] hist = new int[n][][];
+        
+        ColorHistogram ch = new ColorHistogram();
+        
+        for (int i = 0; i < n; ++i) {
+            
+            Set<PairInt> set = clusterPoints.get(i);
+            
+            if (set.isEmpty()) {
+                continue;
+            }
+            
+            if (clrSpace == 0) {
+                hist[i] = ch.histogramCIELAB(input, set);
+            }
+        }
+        
+        return hist;
     }
 
     public static class BoundingRegions {

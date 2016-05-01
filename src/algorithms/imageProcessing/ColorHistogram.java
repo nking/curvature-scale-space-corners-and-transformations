@@ -8,6 +8,10 @@ import java.util.Set;
  */
 public class ColorHistogram {
     
+    private static float maxL = 28.51f;
+    private static float maxA = 3.28f;
+    private static float maxB = 2.15f;
+        
     /**
      * histogram of 16 bins each of r' = r/(r+g+b) and g' = g/(r+g+b).
      * 
@@ -61,6 +65,15 @@ public class ColorHistogram {
         return hist;
     }
     
+    public void add2To1(int[][] hist1, int[][] hist2) {
+        
+        for (int i = 0; i < hist1.length; ++i) {
+            for (int j = 0; j < hist1[i].length; ++j) {
+                hist1[i][j] += hist2[i][j];
+            }
+        }
+    }
+    
     /**
      * histogram of 16 bins each of CIE LAB colors where the bins
      * of each color are taken to be in the range of min and max
@@ -82,10 +95,6 @@ public class ColorHistogram {
             hist[i] = new int[nBins];
         }
         
-        float maxL = 28.51f;
-        float maxA = 3.28f;
-        float maxB = 2.15f;
-       
         float binWidthL = maxL/(float)nBins;
         float binWidthA = maxA/(float)nBins;
         float binWidthB = maxB/(float)nBins;
