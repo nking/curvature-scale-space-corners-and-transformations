@@ -8964,6 +8964,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int idx1 = index1.intValue();
             
             int[][] hist1 = colorHistograms[idx1];
+            assert(hist1 != null);
             
             Set<Integer> indexes2 = entry.getValue();
             
@@ -8974,6 +8975,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 assert(idx1 != idx2);
                 
                 int[][] hist2 = colorHistograms[index2.intValue()];
+                assert(hist2 != null);
                 
                 float similarity = ch.intersection(hist1, hist2);
 
@@ -8983,12 +8985,18 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 } else {
                     p12 = new PairInt(idx2, idx1);
                 }
+
+                if (nodesMap.containsKey(p12)) {
+                    continue;
+                }
                 
                 long key = (long)(similarity * (double)heapKeyFactor);
                 HeapNode node = new HeapNode(key);
                 node.setData(p12);
                 heap.insert(node);
                 nodesMap.put(p12, node);
+
+                assert(heap.getNumberOfNodes() == nodesMap.size());
             }
         }
         
