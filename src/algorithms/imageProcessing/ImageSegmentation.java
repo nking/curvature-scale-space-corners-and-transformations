@@ -3680,7 +3680,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         // 0 is CIE LAB, 1 is HSV
         int clrSpace = 1;
+        
         int tLen = 20;
+        
+        boolean reduceNoise = false;
         
         double tColor;
         if (clrSpace == 0) {
@@ -3700,12 +3703,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             // not tested yet
             tR = 0.6*3.0;
         }
-                     
+        
         return createColorEdgeSegmentation(input, clrSpace, tLen,
-            tColor, tR, debugTag);
+            tColor, tR, reduceNoise, debugTag);
     }
     
-    public List<PairIntArray> extractEdges(Image img, String debugTag) {
+    public List<PairIntArray> extractEdges(Image img, 
+        boolean reduceNoise, String debugTag) {
         
         if (debugTag == null) {
             debugTag = "";
@@ -3718,7 +3722,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int minWavelength = 3;//nScale;// 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 5;//10;//2;
+        int k;
+        if (reduceNoise) {
+            k = 5;
+        } else {
+            k = 2;
+        }
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
@@ -3774,7 +3783,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @return 
      */
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
-        int clrSpace, int tLen, double tColor, double tR,
+        int clrSpace, int tLen, double tColor, double tR, boolean reduceNoise,
         String debugTag) {
         
         if (debugTag == null) {
@@ -3785,7 +3794,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         final int h = input.getHeight();
         final int nPix = input.getNPixels();
        
-        List<PairIntArray> edges = extractEdges(input, debugTag);
+        List<PairIntArray> edges = extractEdges(input, reduceNoise, debugTag);
         
         int nEdges = edges.size();
         List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
@@ -3873,16 +3882,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             shortEdgeIndexes, longEdgeIndexes, tLen);
         
         // cluster descriptors not updated for unassigned pixel additions at this point
-        
-        {
-            // DEBUG
-            int nExtraForDot = 1;
-            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
-                nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_after_rgo_" +  debugTag + "_" + clrSpace);            
-        }
-        
         // -- release some of the datastructures and condense the clusters ---
         clusterDescriptors = null;
         longEdgeIndexes = null;
@@ -3893,6 +3892,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             if (set.isEmpty()) {
                 clusterPoints.remove(i);
             }
+        }
+        
+        {
+            // DEBUG
+            int nExtraForDot = 1;
+            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
+                nExtraForDot, img2);
+            MiscDebug.writeImage(img2, "_after_rgo_" +  debugTag + "_" + clrSpace);            
         }
         
         // ------ merge by color histograms ------
@@ -3908,17 +3916,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(img2, "_FINAL_" +  debugTag + "_" + clrSpace);            
         }
         
+        int tNumber = Math.round(0.01f * nPix);
+        
         /*
         TODO:
         ** for the clusters which are smaller than the limit tNumber,
             either merge them ith the closest cluster.        
         */
-        
-        int tNumber = Math.round(0.01f * nPix);
-        
-        return null;
+                
+        return clusterPoints;
        // throw new UnsupportedOperationException("not yet implemented");
-        
     }
 
     /**
@@ -8240,78 +8247,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
-    /**
-     * populate doubly linked circular list with nodes holding the differences
-     * between pairs of edge descriptor colors, ordered by increasing difference.
-     * The nodes in the list have a data field which contains the indexes
-     * of the pair as x an y and the key holds the value of the difference 
-     * multiplied by keyFactor.
-     * @param clusterDescriptors
-     * @param clrSpace
-     * @param longEdgeIndexes
-     * @param keyFactor a large number that is multiplied by the floating point
-     * difference of colors to result in a long key for the node.
-     * @return 
-     */
-    private DoubleLinkedCircularList populateQueueByAscendingPairDifferences(
-        float[][] clusterDescriptors, int clrSpace, 
-        List<Integer> longEdgeIndexes, final long keyFactor) {
-
-        int n = longEdgeIndexes.size();
-        int nComb = (n * (n-1))/2;// n!/(2!*(n-2)! = (n * (n-1))/2
-        
-        PairInt[] indexes = new PairInt[nComb];
-        float[] diffs = new float[nComb];
-        
-        CIEChromaticity cieC = new CIEChromaticity();
-
-        int count = 0;
-        for (int i = 0; i < n; ++i) {
-            
-            int idx1 = longEdgeIndexes.get(i).intValue();
-            float[] desc1 = clusterDescriptors[idx1];
-            
-            for (int j = (i + 1); j < n; ++j) {
-                
-                int idx2 = longEdgeIndexes.get(j).intValue();
-                float[] desc2 = clusterDescriptors[idx2];
-                
-                double diff;
-                if (clrSpace == 0) {
-                    diff = Math.abs(cieC.calcDeltaECIE2000(
-                        desc1[0], desc1[1], desc1[2],
-                        desc2[0], desc2[1], desc2[2]));
-                } else {
-                    double diff1 = desc1[0] - desc2[0];
-                    double diff2 = desc1[1] - desc2[1];
-                    double diff3 = desc1[2] - desc2[2];
-                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
-                }
-                
-                indexes[count] = new PairInt(idx1, idx2);
-                diffs[count] = (float)diff;
-                count++;
-            }
-        }
-        
-        assert(nComb == count);
-        
-        QuickSort.sortBy1stArg(diffs, indexes);
-        
-        DoubleLinkedCircularList queue = new DoubleLinkedCircularList();
-        
-        for (int i = 0; i < indexes.length; ++i) {
-            PairInt p12 = indexes[i];
-            float diff = diffs[i];
-            long key = (long)(diff * (double)keyFactor);
-            HeapNode node = new HeapNode(key);
-            node.setData(p12);
-            queue.insert(node);
-        }
-
-        return queue;
-    }
-
     private void growEdges(ImageExt img,
         List<Set<PairInt>> clusterPoints, 
         float[][] clusterDescriptors, int clrSpace, double tColor, 
@@ -8589,87 +8524,128 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 queue.offer(p2);
             }
         }
-    /*    
+        /*    
         // --------- handle the unassigned pixels ------
-        List<Set<PairInt>> unassignedClusters = new ArrayList<Set<PairInt>>();
+        find the unassigned pixels, noting the cluster indexes they are adjacent
+        to if any.
+        order the points by increasing number of adjacent indexes and add them
+        to a stack (then when popped, those adjacent to more are visited first).
+            for each stack point, add to the adjacent cluster which is closest
+                in color.
+                -- add all of the point's neighbors to the stack.
+        A visited set is used to avoi processing a point more than once.
+        */
         
-        float[][] unassignedDescriptors = 
-            findAndMergeUnassignedPixels(img, pointIndexMap, 
-                unassignedClusters, clrSpace, tLen, tColor);
-        
+        // key = unassigned point, value = indexes of clusters that the point is
+        // adjacent to.
+        Map<PairInt, Set<Integer>> unassignedAndIndexes = 
+            findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);
+                    
         {   // DEBUG
             int nExtraForDot = 1;
             Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(unassignedClusters, 0, 0, 
-                nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_unassigned_clustered_" +  clrSpace);            
+            Set<PairInt> points = unassignedAndIndexes.keySet();
+            ImageIOHelper.addCurveToImage(points, img2, nExtraForDot, 255, 0, 0);
+            MiscDebug.writeImage(img2, "_unassigned_clustered_0_" +  clrSpace);            
         }
-                
-        // merge by proximity, but if there is more than one adjacent cluster
-        // from pointIndexMap, choose then closest in color.
-        for (int idx = 0; idx < unassignedClusters.size(); ++idx) {
-            Set<PairInt> set = unassignedClusters.get(idx);
+        
+        PairInt[] unassigned = new PairInt[unassignedAndIndexes.size()];
+        int[] nAdjIndexes = new int[unassigned.length];
+        int count = 0;
+        for (Entry<PairInt, Set<Integer>> entry : 
+            unassignedAndIndexes.entrySet()) {
+            unassigned[count] = entry.getKey();
+            nAdjIndexes[count] = entry.getValue().size();
+            count++;
+        }
+        QuickSort.sortBy1stArg(nAdjIndexes, unassigned);
+        
+        Stack<PairInt> stack = new Stack<PairInt>();
+        for (int i = 0; i < unassigned.length; ++i) {
+            stack.add(unassigned[i]);
+        }
+        
+        visited = new HashSet<PairInt>();
+        
+        while (!stack.isEmpty()) {
             
-            float[] desc1 = unassignedDescriptors[idx];
+            PairInt p = stack.pop();
+            if (visited.contains(p)) {
+                continue;
+            }
+            
+            unassignedAndIndexes.remove(p);
+            visited.add(p);
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            float[] clrs1 = getColors(img, x, y, clrSpace);
             
             double minDiff = Double.MAX_VALUE;
             Integer minDiffIndex = null;
-            for (PairInt p : set) {
-                int x = p.getX();
-                int y = p.getY();
-                for (int k = 0; k < dxs.length; ++k) {
-                    int x2 = x + dxs[k];
-                    int y2 = y + dys[k];
-                    PairInt p2 = new PairInt(x2, y2);
-                    Integer index2 = pointIndexMap.get(p2);
-                    if (index2 == null) {
-                        continue;
-                    }
-                    float[] desc2 = clusterDescriptors[index2.intValue()];
-                    assert(desc2 != null);
-                    double  diff;
-                    if (clrSpace == 0) {
-                        diff = Math.abs(cieC.calcDeltaECIE2000(
-                            desc1[0], desc1[1], desc1[2], desc2[0], desc2[1], desc2[2]));
-                    } else {
-                        double diff1 = desc1[0] - desc2[0];
-                        double diff2 = desc1[1] - desc2[1];
-                        double diff3 = desc1[2] - desc2[2];
-                        diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
-                    }
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        minDiffIndex = index2;
-                    }
-                }
-            }
-            if (minDiffIndex == null) {
-                clusterPoints.add(set);
- 
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-System.out.println("unassigned embedded? " 
-+ Arrays.toString(curveHelper.calculateXYCentroids(set)));
-
-            } else {
-                for (PairInt p3 : set) {
-                    pointIndexMap.put(p3, minDiffIndex);
-                }
-                // add set to cluster minDiffIndex, but do not update the descriptors
-                clusterPoints.get(minDiffIndex.intValue()).addAll(set);
-            }
-        }
-        
-        {   // DEBUG
-            int nExtraForDot = 1;
-            Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
-                nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_all_merged_" +  clrSpace);   
             
-            System.out.println("pointIndexMap.size() = " + pointIndexMap.size()
-                + " nPix=" + img.getNPixels());
+            Set<PairInt> unassignedNeighbors = new HashSet<PairInt>();
+            
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (unassignedAndIndexes.containsKey(p2)) {
+                    unassignedNeighbors.add(p2);
+                }
+                Integer index2 = pointIndexMap.get(p2);
+                if (index2 == null) {
+                    continue;
+                }
+                float[] desc2 = clusterDescriptors[index2.intValue()];
+                assert(desc2 != null);
+                double  diff;
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        clrs1[0], clrs1[1], clrs1[2], desc2[0], desc2[1], desc2[2]));
+                } else {
+                    double diff1 = clrs1[0] - desc2[0];
+                    double diff2 = clrs1[1] - desc2[1];
+                    double diff3 = clrs1[2] - desc2[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
+                }
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    minDiffIndex = index2;
+                }
+            }
+            
+            for (PairInt p2 : unassignedNeighbors) {
+                stack.add(p2);
+            } 
+            
+            assert(minDiffIndex != null);
+            
+            assert(clusterPoints.get(minDiffIndex.intValue()) != null);
+            
+            pointIndexMap.put(p, minDiffIndex);
+            
+            System.out.println("minDiffIndex = " + minDiffIndex);
+                            
+            Set<PairInt> set2 = clusterPoints.get(minDiffIndex.intValue());            
+            
+            // update descriptor
+            float[] desc2 = clusterDescriptors[minDiffIndex.intValue()];
+            assert(desc2 != null);
+            
+            int n2 = set2.size();
+            set2.add(p);
+            int nTot = set2.size();
+            
+            //{h, s, v, nPix, cenX, cenY}
+            desc2[0] = ((desc2[0] * n2) - clrs1[0]) / nTot;
+            desc2[1] = ((desc2[1] * n2) - clrs1[1]) / nTot;
+            desc2[2] = ((desc2[2] * n2) - clrs1[2]) / nTot;
+            desc2[3]++;
+            desc2[4] = ((desc2[4] * n2) - x) / nTot;
+            desc2[5] = ((desc2[5] * n2) - y) / nTot;
         }
-        */
     }
 
     private void mergeShortEdges(List<Set<PairInt>> clusterPoints, 
@@ -8966,9 +8942,9 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
                 
                 HeapNode node3 = nodesMap.get(p13);
                 assert(node3 != null);
-             
+try {                
                 heap.remove(node3);
-
+} catch (Throwable t) {}
                 float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);
@@ -9100,26 +9076,6 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
         return adjMap;
     }
 
-    private Set<PairInt> findUnassigned(ImageExt img, Map<PairInt, Integer>
-        pointIndexMap) {
-        
-        Set<PairInt> unassigned = new HashSet<PairInt>();
-        
-        int w = img.getWidth();
-        int h = img.getHeight();
-        
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                PairInt p = new PairInt(i, j);
-                if (!pointIndexMap.containsKey(p)) {
-                    unassigned.add(p);
-                }
-            }
-        }
-        
-        return unassigned;
-    }
-
     private List<Set<PairInt>> findContiguous(Set<PairInt> points) {
         
         DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
@@ -9135,64 +9091,41 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
         return sets;
     }
 
-    private float[][] findAndMergeUnassignedPixels(ImageExt img, 
-        Map<PairInt, Integer> pointIndexMap, 
-        List<Set<PairInt>> outputUnassignedClusters, int clrSpace, int tLen,
-        double tColor) {
+    private Map<PairInt, Set<Integer>> findUnassignedPixelsAndAdjacentIndexes(
+        ImageExt img, Map<PairInt, Integer> pointIndexMap) {
         
-        // assign unassigned pixels to adjacent clusters.
-        Set<PairInt> unassigned = findUnassigned(img, pointIndexMap);
+        Map<PairInt, Set<Integer>> unassignedAndIndexes = 
+            new HashMap<PairInt, Set<Integer>>();
         
-        outputUnassignedClusters.addAll(findContiguous(unassigned));
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
         
-        {   // DEBUG
-            int nExtraForDot = 1;
-            Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(outputUnassignedClusters, 0, 0, 
-                nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_unassigned_clustered_0_" +  clrSpace);            
-        }
+        int w = img.getWidth();
+        int h = img.getHeight();
         
-        // treating the unassigned as did the long and short edges
-        //the descriptors are
-        //     C_i = {h, s, v, nPix, cenX, cenY}  or labL, labA, labB for colorSpace = 0
-        
-        float[][] descriptors = new float[outputUnassignedClusters.size()][];
-        populateDescriptors(img, outputUnassignedClusters, descriptors, clrSpace);
-        
-        List<Integer> largeSetIndexes = new ArrayList<Integer>();
-        List<Integer> smallSetIndexes = new ArrayList<Integer>();
-        populateEdgeLengthLists(descriptors, tLen, 
-            largeSetIndexes, smallSetIndexes); 
-
-        mergeEdges(outputUnassignedClusters, descriptors, clrSpace, tColor,
-            largeSetIndexes);
-  
-        mergeShortEdges(outputUnassignedClusters, descriptors, clrSpace, tColor,
-            smallSetIndexes);
-        
-        //seperate the clusters into contiguous groups
-        List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
-        for (int i = 0; i < outputUnassignedClusters.size(); ++i) {
-            Set<PairInt> set = outputUnassignedClusters.get(i);
-            if (set.isEmpty()) {
-                continue;
-            }
-            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-            finder.setMinimumNumberInCluster(1);
-            finder.findConnectedPointGroups(set);
-            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
-                Set<PairInt> set2 = finder.getXY(j);
-                tmp.add(set2);
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                PairInt p = new PairInt(i, j);
+                if (pointIndexMap.containsKey(p)) {
+                    continue;
+                }
+                Set<Integer> adjIndexes = new HashSet<Integer>();
+                int x = p.getX();
+                int y = p.getY();
+                for (int k = 0; i < dxs.length; ++i) {
+                    int x2 = x + dxs[k];
+                    int y2 = y + dys[k];
+                    PairInt p2 = new PairInt(x2, y2);
+                    Integer index2 = pointIndexMap.get(p2);
+                    if (index2 != null) {
+                        adjIndexes.add(index2);
+                    }
+                }
+                unassignedAndIndexes.put(p, adjIndexes);
             }
         }
-        outputUnassignedClusters.clear();
-        outputUnassignedClusters.addAll(tmp);
         
-        descriptors = new float[outputUnassignedClusters.size()][];
-        populateDescriptors(img, outputUnassignedClusters, descriptors, clrSpace);
-        
-        return descriptors;
+        return unassignedAndIndexes;
     }
 
     private void populateDescriptors(ImageExt img, 
