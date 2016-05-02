@@ -3767,10 +3767,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 4.;//5.5;
+            tColor = 3.5;//4.;//5.5;
         } else {
-            // what is JND for HSV (a.k.a. HSB) ?
-            tColor = Double.MAX_VALUE;
+            // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
+            tColor = 0.2;//0.288;
         }
         
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
@@ -3860,14 +3860,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         // ------ merge by color histograms ------
-        
-        clrSpace = 1;
-        
+                
         double tR;
         if (clrSpace == 0) {
-            tR = 0.85*3.0;
+            tR = 0.8*3.0; //0.6*3.0;
         } else if (clrSpace == 1) {
-            tR = 0.6*3.0;
+            tR = 0.6*3.0; //0.6*3.0;
         } else {
             // not tested yet
             tR = 0.6*3.0;
@@ -8564,7 +8562,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 queue.offer(p2);
             }
         }
-        
+    /*    
         // --------- handle the unassigned pixels ------
         List<Set<PairInt>> unassignedClusters = new ArrayList<Set<PairInt>>();
         
@@ -8644,6 +8642,7 @@ System.out.println("unassigned embedded? "
             System.out.println("pointIndexMap.size() = " + pointIndexMap.size()
                 + " nPix=" + img.getNPixels());
         }
+        */
     }
 
     private void mergeShortEdges(List<Set<PairInt>> clusterPoints, 
@@ -8940,9 +8939,9 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
                 
                 HeapNode node3 = nodesMap.get(p13);
                 assert(node3 != null);
-                
+try {                
                 heap.remove(node3);
-
+} catch (Throwable t) {}
                 float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);
