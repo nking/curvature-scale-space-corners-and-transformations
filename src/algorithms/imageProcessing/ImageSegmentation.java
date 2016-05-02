@@ -3664,7 +3664,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
     }
 
-    /**
+     /**
      * create segmented image by creating edges with phase congruence,
      * then using the edge color properties to form clusters and seeds
      * of regions to grow, then using color histograms to further merge
@@ -3675,16 +3675,50 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param input
      * @return 
      */
-    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input) {
-
-        GreyscaleImage gsImg = input.copyBlueToGreyscale();
+    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
+        String debugTag) {
+        
+        // 0 is CIE LAB, 1 is HSV
+        int clrSpace = 1;
+        int tLen = 20;
+        
+        double tColor;
+        if (clrSpace == 0) {
+            // JND for deltaE is ~2.3
+            tColor = 3.5;//4.;//5.5;
+        } else {
+            // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
+            tColor = 0.2;//0.288;
+        }
+        
+        double tR;
+        if (clrSpace == 0) {
+            tR = 0.8*3.0; //0.6*3.0;
+        } else if (clrSpace == 1) {
+            tR = 0.6*3.0; //0.6*3.0;
+        } else {
+            // not tested yet
+            tR = 0.6*3.0;
+        }
+                     
+        return createColorEdgeSegmentation(input, clrSpace, tLen,
+            tColor, tR, debugTag);
+    }
+    
+    public List<PairIntArray> extractEdges(Image img, String debugTag) {
+        
+        if (debugTag == null) {
+            debugTag = "";
+        }
+        
+        GreyscaleImage gsImg = img.copyBlueToGreyscale();
 
         float cutOff = 0.5f;//0.3f;//0.5f;
         int nScale = 5;
         int minWavelength = 3;//nScale;// 3;
         float mult = 2.1f;
         float sigmaOnf = 0.55f;
-        int k = 5;//10;//5;//2;
+        int k = 5;//10;//2;
         float g = 10; 
         float deviationGain = 1.5f;
         int noiseMethod = -1;
@@ -3692,10 +3726,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tHigh = 0.1;
         boolean increaseKIfNeeded = false;//true;
         
-        final int w = input.getWidth();
-        final int h = input.getHeight();
-        final int nPix = input.getNPixels();
-           
         PhaseCongruencyDetector phaseDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
             phaseDetector.phaseCongMono(gsImg, nScale, minWavelength, mult, 
@@ -3712,47 +3742,58 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                 }
             }
-            MiscDebug.writeImage(out2, "_EDGES_grey_");
+            MiscDebug.writeImage(out2, "_EDGES_grey_" + debugTag);
         }
-        //TODO: copy and used data from phaseDetector to release memory
-        phaseDetector = null;
-                
+       
         EdgeExtractorSimple extractor = new EdgeExtractorSimple(thinned);
         extractor.extractEdges();
-        List<PairIntArray> edges = extractor.getEdges();
-        Set<PairInt> junctions = extractor.getJunctions();
+        List<PairIntArray> edges = new ArrayList<PairIntArray>();
         // put in framework of images
-        for (int i = 0; i < edges.size(); ++i) {
-            PairIntArray edge = edges.get(i);
+        for (int i = 0; i < extractor.getEdges().size(); ++i) {
+            PairIntArray edge = extractor.getEdges().get(i).copy();
             for (int j = 0; j < edge.getN(); ++j) {
                 int x = edge.getX(j);
                 int y = edge.getY(j);
                 edge.set(j, y, x);
             }
-        }
-        {
-            Set<PairInt> tmp = new HashSet<PairInt>();
-            for (PairInt p : junctions) {
-                tmp.add(new PairInt(p.getY(), p.getX()));
-            }
-            junctions.clear();
-            junctions.addAll(tmp);
+            edges.add(edge);
         }
         
-        //TODO: copy any used data from extractor to release memory
-        extractor = null;
+        return edges;
+    }
+    
+    /**
+     * create segmented image by creating edges with phase congruence,
+     * then using the edge color properties to form clusters and seeds
+     * of regions to grow, then using color histograms to further merge
+     * regions.
+     * The algorithm follows the general outline given by
+     * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
+       http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
+     * @param input
+     * @return 
+     */
+    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
+        int clrSpace, int tLen, double tColor, double tR,
+        String debugTag) {
+        
+        if (debugTag == null) {
+            debugTag = "";
+        }
+
+        final int w = input.getWidth();
+        final int h = input.getHeight();
+        final int nPix = input.getNPixels();
+       
+        List<PairIntArray> edges = extractEdges(input, debugTag);
         
         int nEdges = edges.size();
         List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
         float[][] clusterDescriptors = new float[nEdges][];
         
-        // 0 for LAB, 1 for HSV
-        int clrSpace = 0;
-        
         populateEdgeLists(input, edges, clusterPoints, clusterDescriptors, 
             clrSpace);        
         
-        int tLen = 20;
         List<Integer> longEdgeIndexes = new ArrayList<Integer>();
         List<Integer> shortEdgeIndexes = new ArrayList<Integer>();
         populateEdgeLengthLists(clusterDescriptors, tLen, 
@@ -3764,14 +3805,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //    clusterDescriptors may contain null items
         //    both clusterPoints and clusterDescriptor non- null and non empty 
         //       items are updated for merges
-        double tColor;
-        if (clrSpace == 0) {
-            // JND for deltaE is ~2.3
-            tColor = 3.5;//4.;//5.5;
-        } else {
-            // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor = 0.2;//0.288;
-        }
         
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             longEdgeIndexes);
@@ -3789,7 +3822,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_longEdges_merged_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_longEdges_merged_" +  debugTag + "_" 
+                + clrSpace);            
         }
         
         {
@@ -3805,7 +3839,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_shortedges_before_merge_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_shortedges_before_merge_" +  debugTag + "_" 
+                + clrSpace);                       
         }
         
         // ---- merge short edges (which are usually textures) ------
@@ -3825,7 +3860,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_shortedges_merged_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_shortedges_merged_" +  debugTag + 
+                "_" + clrSpace);            
         }
 
         // the number of clusters in long edges could be used in kmeans++ 
@@ -3844,7 +3880,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_after_rgo_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_after_rgo_" +  debugTag + "_" + clrSpace);            
         }
         
         // -- release some of the datastructures and condense the clusters ---
@@ -3861,16 +3897,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         // ------ merge by color histograms ------
                 
-        double tR;
-        if (clrSpace == 0) {
-            tR = 0.8*3.0; //0.6*3.0;
-        } else if (clrSpace == 1) {
-            tR = 0.6*3.0; //0.6*3.0;
-        } else {
-            // not tested yet
-            tR = 0.6*3.0;
-        }
-             
         mergeByColorHistograms(input, clusterPoints, clrSpace, tR);
         
         {
@@ -3879,7 +3905,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_FINEAL_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_FINAL_" +  debugTag + "_" + clrSpace);            
         }
         
         /*
@@ -3890,7 +3916,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         int tNumber = Math.round(0.01f * nPix);
         
-        throw new UnsupportedOperationException("not yet implemented");
+        return null;
+       // throw new UnsupportedOperationException("not yet implemented");
         
     }
 
@@ -8939,9 +8966,9 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
                 
                 HeapNode node3 = nodesMap.get(p13);
                 assert(node3 != null);
-try {                
+             
                 heap.remove(node3);
-} catch (Throwable t) {}
+
                 float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);

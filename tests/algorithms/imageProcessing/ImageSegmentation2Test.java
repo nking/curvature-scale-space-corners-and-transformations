@@ -9,6 +9,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,13 +35,15 @@ public class ImageSegmentation2Test extends TestCase {
     public void test0() throws Exception {
 
         String[] fileNames = new String[]{
-  //add the test images from their paper...should be findable on berkely site i think
-           // "blox.gif", "lab.gif", "house.gif", "seattle.jpg", 
-            "merton_college_I_001.jpg",
-           // "susan-in_plus.png", "lena.jpg",
-           // "campus_010.jpg", 
-           //"android_statues_01.jpg", 
-           //"android_statues_02.jpg", "android_statues_03.jpg", "android_statues_04.jpg"
+           "seattle.jpg", 
+           "tmp2.png",
+           //"susan-in_plus.png", 
+           "lena.jpg",
+           "campus_010.jpg", 
+           "android_statues_01.jpg", 
+           "android_statues_02.jpg", 
+            "android_statues_03.jpg", 
+            "android_statues_04.jpg"
         };
 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -51,10 +54,34 @@ public class ImageSegmentation2Test extends TestCase {
         
             String filePath = ResourceFinder.findFileInTestResources(fileName);
         
+            String fileNameRoot = fileName.substring(0, fileName.lastIndexOf("."));
+            
             ImageExt img = ImageIOHelper.readImageExt(filePath);
+            
+            int w = img.getWidth();
+            int h = img.getHeight();
+            List<ImageExt> transformed = null;
+            int selectIdx = -1;
+            int minDimension = 512;
+            if (w > minDimension || h > minDimension) {                
+                MedianTransform mt = new MedianTransform();
+                transformed = new ArrayList<ImageExt>();
+                mt.<ImageExt>multiscalePyramidalMedianTransform2(img, transformed);
+                for (int j = 0; j < transformed.size(); ++j) {
+                    ImageExt tr = transformed.get(j);
+                    if (selectIdx == -1) {
+                        if (tr.getWidth() <= minDimension && tr.getHeight() <= minDimension) {
+                            selectIdx = j;
+                            img = transformed.get(selectIdx);
+                            break;
+                        }
+                    }
+                }                
+            }
         
             List<Set<PairInt>> segmentedCells = 
-                imageSegmentation.createColorEdgeSegmentation(img);
+                imageSegmentation.createColorEdgeSegmentation(img,
+                    fileNameRoot);
             
             ImageExt img2 = ImageIOHelper.readImageExt(filePath);
             
