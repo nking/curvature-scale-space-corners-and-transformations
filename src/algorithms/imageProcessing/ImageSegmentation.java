@@ -33,6 +33,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
@@ -3859,11 +3860,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         // ------ merge by color histograms ------
-                
-        // 10% is 0.1 for one hist, then times 3 for all colors=0.3.  15% is 0.45
-        double tR = 0.45;
-      
-       /* mergeByColorHistograms(input, clusterPoints, clrSpace, tR);
+        
+        clrSpace = 1;
+        
+        double tR;
+        if (clrSpace == 0) {
+            tR = 0.85*3.0;
+        } else if (clrSpace == 1) {
+            tR = 0.6*3.0;
+        } else {
+            // not tested yet
+            tR = 0.6*3.0;
+        }
+             
+        mergeByColorHistograms(input, clusterPoints, clrSpace, tR);
         
         {
             // DEBUG
@@ -3873,7 +3883,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nExtraForDot, img2);
             MiscDebug.writeImage(img2, "_FINEAL_" +  clrSpace);            
         }
-        */
         
         /*
         TODO:
@@ -8610,10 +8619,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
             if (minDiffIndex == null) {
-                continue;
+                clusterPoints.add(set);
+ 
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+System.out.println("unassigned embedded? " 
++ Arrays.toString(curveHelper.calculateXYCentroids(set)));
+
+            } else {
+                for (PairInt p3 : set) {
+                    pointIndexMap.put(p3, minDiffIndex);
+                }
+                // add set to cluster minDiffIndex, but do not update the descriptors
+                clusterPoints.get(minDiffIndex.intValue()).addAll(set);
             }
-            // add set to cluster minDiffIndex, but do not update the descriptors
-            clusterPoints.get(minDiffIndex.intValue()).addAll(set);
         }
         
         {   // DEBUG
@@ -8621,7 +8639,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
             ImageIOHelper.addAlternatingColorPointSetsToImage(clusterPoints, 0, 0, 
                 nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_all_merged_" +  clrSpace);            
+            MiscDebug.writeImage(img2, "_all_merged_" +  clrSpace);   
+            
+            System.out.println("pointIndexMap.size() = " + pointIndexMap.size()
+                + " nPix=" + img.getNPixels());
         }
     }
 
@@ -8763,9 +8784,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
         int[][][] colorHistograms = calculateColorHistograms(input, 
             clusterPoints, clrSpace);
-        
+/*        
+int t0 = -1;
+int t1 = -1;
+for (int i = 0; i < clusterPoints.size(); ++i ) {
+    Set<PairInt> set = clusterPoints.get(i);
+    if (set.contains(new PairInt(172, 158))) {
+        t0 = i;
+    }
+    if (set.contains(new PairInt(156, 170))) {
+        t1 = i;
+    }
+}
+System.out.println("---> " + t0 + " ----> " + t1);       
+*/      
         Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
             clusterPoints);
+        
+        System.out.println(adjacencyMap.size() + " adjacenct clusters");
         
         // key is index1, index2 where index1 < index2
         Map<PairInt, HeapNode> nodesMap = new HashMap<PairInt, HeapNode>();
@@ -8774,22 +8810,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         ColorHistogram ch = new ColorHistogram();
         
-        //looking at max and min values of "histogram intersection" to know 
-        // size that heap key must be to convert floats to long and retain
-        // significant information.
-        //   during similarity calc, each histogram is normalized by number
-        //   of points in the histogram, so then the sum of all normalized = 1;
-        //   the difference between two normalized histograms is 0 if they
-        //   are the same.  if they are completely different, but still populated,
-        //   the sum of the differences ~< 1.  3 colors are then <= 3.
-        //      presumably, would want a key large enough to make some number
-        //      of counts in a histogram bin in the largest cluster significant.
-        //      at least 10 percent of maxClustersize/(16 bins)
-        //      1./(((0.1*max)/16.)/max) is a small key factor
-        //      can see that its safe to use the number of pixels in the
-        //      image as the key factor.
+        // the histogram intersection range of values is 0 : nColors * 1
+        // so for 3 colors, expect that max similarity is 3.0.
+        // need to merge by higher similarity, so need to invert the keys.
+        // 3 - similairty bcomes the new key.
+        // a tR of 0.7*3.0 = 2.1 becomes 0.9 and any values larger than
+        //    that are less similar.
+        double tRInv = 3.0 - tR;
+        
         long heapKeyFactor = input.getNPixels();
-                
+
         for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
             
             Integer index1 = entry.getKey();
@@ -8805,12 +8835,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 int idx2 = index2.intValue();
                 
                 assert(idx1 != idx2);
-                
-                int[][] hist2 = colorHistograms[index2.intValue()];
-                assert(hist2 != null);
-                
-                float similarity = ch.intersection(hist1, hist2);
-
                 PairInt p12;
                 if (idx1 < idx2) {
                     p12 = new PairInt(idx1, idx2);
@@ -8822,6 +8846,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     continue;
                 }
                 
+                int[][] hist2 = colorHistograms[index2.intValue()];
+                assert(hist2 != null);
+                
+                float similarity = 3.0f - ch.intersection(hist1, hist2);
+/*
+//  14: (85.8, 36.1)  9: (17, 166)   diff=2.14
+MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+double[] xyCen1 = curveHelper.calculateXYCentroids(clusterPoints.get(idx1));
+double[] xyCen2 = curveHelper.calculateXYCentroids(clusterPoints.get(idx2));
+System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx2,
+(float)xyCen1[0], (float)xyCen1[1],  (float)xyCen2[0], (float)xyCen2[1])
++ " diff=" + similarity + " tRInv=" + tRInv);               
+*/      
                 long key = (long)(similarity * (double)heapKeyFactor);
                 HeapNode node = new HeapNode(key);
                 node.setData(p12);
@@ -8840,9 +8877,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             nodesMap.remove((PairInt)node.getData());
             
+            // this is 3.0 - similarity
             double diff = ((double)node.getKey())/((double)heapKeyFactor);
-            
-            if (diff > tR) {
+
+            if (diff > tRInv) {
                 break;
             }
             
@@ -8887,7 +8925,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             for (Integer index3 : indexes3) {
                 int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);
-                if (set3.isEmpty()) {
+                if (set3.isEmpty() || idx1 == idx3) {
                     continue;
                 }
                 int[][] hist3 = colorHistograms[idx3];
@@ -8902,18 +8940,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 HeapNode node3 = nodesMap.get(p13);
                 assert(node3 != null);
-
-                heap.remove(node3);
                 
-                float similarity3 = ch.intersection(hist1, hist3);
+                heap.remove(node3);
+
+                float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);
                 node3 = new HeapNode(key3);
                 node3.setData(p13);
+                
                 heap.insert(node3);
                 nodesMap.put(p13, node3);
                 
                 assert(heap.getNumberOfNodes() == nodesMap.size());
+             
             }
 
             //update adjacency map
@@ -8924,8 +8964,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     adjacencyMap.get(index3).add(index1);
                 }
             }
-            adjacencyMap.get(index1).addAll(adj2);
-            adjacencyMap.get(index1).remove(index2);
+            indexes3.addAll(adj2);
+            indexes3.remove(index2);
             adjacencyMap.remove(index2);
             
             nMerged++;
@@ -8943,9 +8983,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     private int[][][] calculateColorHistograms(ImageExt input, 
         List<Set<PairInt>> clusterPoints, int clrSpace) {
         
-        if (clrSpace > 0) {
-            throw new UnsatisfiedLinkError("only clrSpace=0 has been implemented");
-        }
+        //0 == cie lab,  1 = hsv, 2 = rgb
         
         int n = clusterPoints.size();
         
@@ -8963,6 +9001,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             if (clrSpace == 0) {
                 hist[i] = ch.histogramCIELAB(input, set);
+            } else if (clrSpace == 1) {
+                hist[i] = ch.histogramHSV(input, set);
+            } if (clrSpace == 2) {
+                hist[i] = ch.histogramRGB(input, set);
             }
         }
         

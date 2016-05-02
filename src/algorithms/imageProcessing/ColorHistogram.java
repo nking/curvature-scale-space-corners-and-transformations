@@ -170,5 +170,91 @@ public class ColorHistogram {
         
         return sum;
     }
+
+    public int[][] histogramRGB(ImageExt img, Set<PairInt> points) {
+        
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        
+        float binWidth = 256.f/(float)nBins;
+
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            float r = img.getR(x, y);
+            float g = img.getG(x, y);
+            float b = img.getB(x, y);
+            
+            int binNumberR = Math.abs(Math.round(r/binWidth));
+            if (binNumberR > (nBins - 1)) {
+                binNumberR = nBins - 1;
+            }
+            hist[0][binNumberR]++;
+            
+            int binNumberG = Math.abs(Math.round(g/binWidth));
+            if (binNumberG > (nBins - 1)) {
+                binNumberG = nBins - 1;
+            }
+            hist[1][binNumberG]++;
+            
+            int binNumberB = Math.abs(Math.round(b/binWidth));
+            if (binNumberB > (nBins - 1)) {
+                binNumberB = nBins - 1;
+            }
+            hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
+    
+    public int[][] histogramHSV(ImageExt img, Set<PairInt> points) {
+        
+        // range of Color values of h, s, b are 0:1 for all
+        
+        int nBins = 16;
+        
+        int[][] hist = new int[3][];
+        for (int i = 0; i < 3; ++i) {
+            hist[i] = new int[nBins];
+        }
+        
+        float binWidth = 1.f/(float)nBins;
+
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            float h = img.getHue(x, y);
+            float s = img.getSaturation(x, y);
+            float b = img.getBrightness(x, y);
+            
+            int binNumberH = Math.abs(Math.round(h/binWidth));
+            if (binNumberH > (nBins - 1)) {
+                binNumberH = nBins - 1;
+            }
+            hist[0][binNumberH]++;
+            
+            int binNumberS = Math.abs(Math.round(s/binWidth));
+            if (binNumberS > (nBins - 1)) {
+                binNumberS = nBins - 1;
+            }
+            hist[1][binNumberS]++;
+            
+            int binNumberB = Math.abs(Math.round(b/binWidth));
+            if (binNumberB > (nBins - 1)) {
+                binNumberB = nBins - 1;
+            }
+            hist[2][binNumberB]++;
+        }
+        
+        return hist;
+    }
     
 }
