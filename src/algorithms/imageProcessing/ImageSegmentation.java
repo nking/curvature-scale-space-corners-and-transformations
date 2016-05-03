@@ -8539,8 +8539,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // key = unassigned point, value = indexes of clusters that the point is
         // adjacent to.
         Map<PairInt, Set<Integer>> unassignedAndIndexes = 
-            findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);
-                    
+            findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);     
+
         {   // DEBUG
             int nExtraForDot = 1;
             Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
@@ -8625,9 +8625,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             assert(clusterPoints.get(minDiffIndex.intValue()) != null);
             
             pointIndexMap.put(p, minDiffIndex);
-            
-            System.out.println("minDiffIndex = " + minDiffIndex);
-                            
+                                        
             Set<PairInt> set2 = clusterPoints.get(minDiffIndex.intValue());            
             
             // update descriptor
@@ -9103,16 +9101,14 @@ try {
         int w = img.getWidth();
         int h = img.getHeight();
         
-        for (int i = 0; i < w; ++i) {
-            for (int j = 0; j < h; ++j) {
-                PairInt p = new PairInt(i, j);
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                PairInt p = new PairInt(x, y);
                 if (pointIndexMap.containsKey(p)) {
                     continue;
                 }
                 Set<Integer> adjIndexes = new HashSet<Integer>();
-                int x = p.getX();
-                int y = p.getY();
-                for (int k = 0; i < dxs.length; ++i) {
+                for (int k = 0; k < dxs.length; ++k) {
                     int x2 = x + dxs[k];
                     int y2 = y + dys[k];
                     PairInt p2 = new PairInt(x2, y2);
@@ -9125,6 +9121,8 @@ try {
             }
         }
         
+        assert(pointIndexMap.size() + unassignedAndIndexes.size() == img.getNPixels());
+
         return unassignedAndIndexes;
     }
 
