@@ -3679,7 +3679,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         String debugTag) {
         
         // 0 is CIE LAB, 1 is HSV
-        int clrSpace = 0;
+        int clrSpace = 1;
         
         int tLen = 20;
         
@@ -3688,7 +3688,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 3.5;//4.;//5.5;
+            tColor = 2.5;//4.;//5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
             tColor = 0.2;//0.288;
@@ -3696,7 +3696,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         double tR;
         if (clrSpace == 0) {
-            tR = 0.8*3.0; //0.6*3.0;
+            tR = 0.9*3.0; //0.6*3.0;
         } else if (clrSpace == 1) {
             tR = 0.6*3.0; //0.6*3.0;
         } else {
@@ -3704,8 +3704,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             tR = 0.6*3.0;
         }
         
-        return createColorEdgeSegmentation(input, clrSpace, tLen,
-            tColor, tR, reduceNoise, debugTag);
+        double tSmallMerge = 0.01;
+        
+        return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
+            reduceNoise, tSmallMerge, debugTag);
     }
     
     public List<PairIntArray> extractEdges(Image img, 
@@ -3784,7 +3786,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      */
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         int clrSpace, int tLen, double tColor, double tR, boolean reduceNoise,
-        String debugTag) {
+        double tSmallMerge, String debugTag) {
+           
+        boolean doPlot = true;
         
         if (debugTag == null) {
             debugTag = "";
@@ -3801,14 +3805,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float[][] clusterDescriptors = new float[nEdges][];
         
         populateEdgeLists(input, edges, clusterPoints, clusterDescriptors, 
-            clrSpace);        
+            clrSpace);
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
         
         List<Integer> longEdgeIndexes = new ArrayList<Integer>();
         List<Integer> shortEdgeIndexes = new ArrayList<Integer>();
-        populateEdgeLengthLists(clusterDescriptors, tLen, 
-            longEdgeIndexes, shortEdgeIndexes); 
-
-        // merge edges in the heap for pairs with diff < tColot
+        populateEdgeLengthLists(clusterDescriptors, tLen, longEdgeIndexes, 
+            shortEdgeIndexes); 
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        // ----------- merge long edges ----------
+        
         // NOTE that the moved sets modify the data structures :
         //    clusterPoints may contain empty items
         //    clusterDescriptors may contain null items
@@ -3818,7 +3827,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             longEdgeIndexes);
   
-        {
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        if (doPlot) {
             // DEBUG
             List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
             for (Integer index : longEdgeIndexes) {
@@ -3834,29 +3845,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(img2, "_longEdges_merged_" +  debugTag + "_" 
                 + clrSpace);            
         }
-        
-        {
-            // DEBUG
-            List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
-            for (Integer index : shortEdgeIndexes) {
-                Set<PairInt> set = clusterPoints.get(index.intValue());
-                if (!set.isEmpty()) {
-                    tmp.add(set);
-                }
-            }
-            int nExtraForDot = 1;
-            Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
-            ImageIOHelper.addAlternatingColorPointSetsToImage(tmp, 0, 0, 
-                nExtraForDot, img2);
-            MiscDebug.writeImage(img2, "_shortedges_before_merge_" +  debugTag + "_" 
-                + clrSpace);                       
-        }
-        
+                   
         // ---- merge short edges (which are usually textures) ------
+        
         mergeShortEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             shortEdgeIndexes);
-         
-        {
+ 
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        if (doPlot) {
             // DEBUG
             List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
             for (Integer index : shortEdgeIndexes) {
@@ -3877,24 +3874,25 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));  
         
-        // ------ region growing -------
-        growEdges(input, clusterPoints, clusterDescriptors, clrSpace, tColor,
-            shortEdgeIndexes, longEdgeIndexes, tLen);
-        
-        // cluster descriptors not updated for unassigned pixel additions at this point
-        // -- release some of the datastructures and condense the clusters ---
-        clusterDescriptors = null;
-        longEdgeIndexes = null;
-        shortEdgeIndexes = null;
-        
-        for (int i = (clusterPoints.size() - 1); i > -1; --i) {
-            Set<PairInt> set = clusterPoints.get(i);
-            if (set.isEmpty()) {
-                clusterPoints.remove(i);
+        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
+        for (int i = 0; i < clusterPoints.size(); ++i) {
+            Set<PairInt> set = clusterPoints.get(i);            
+            Integer index = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, index);
             }
         }
         
-        {
+        // ------ region growing -------
+        growEdges(input, clusterPoints, clusterDescriptors, pointIndexMap,
+            clrSpace, tColor, shortEdgeIndexes, longEdgeIndexes);
+ 
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        longEdgeIndexes = null;
+        shortEdgeIndexes = null;
+        
+        if (doPlot) {
             // DEBUG
             int nExtraForDot = 1;
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
@@ -3904,10 +3902,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         // ------ merge by color histograms ------
-                
-        mergeByColorHistograms(input, clusterPoints, clrSpace, tR);
         
-        {
+        clusterDescriptors = condenseAndUpdate(clusterPoints, 
+            clusterDescriptors, pointIndexMap);
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
+            clusterPoints);
+                
+        mergeByColorHistograms(input, clusterPoints, adjacencyMap,
+            clrSpace, tR);
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        if (doPlot) {
             // DEBUG
             int nExtraForDot = 1;
             Image img2 = input.copyImage().copyToGreyscale().copyToColorGreyscale();
@@ -3916,16 +3925,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(img2, "_FINAL_" +  debugTag + "_" + clrSpace);            
         }
         
-        int tNumber = Math.round(0.01f * nPix);
+        // ----- merge smallest clusters into adjacent larger --------
+        int tNumber = (int)Math.round(tSmallMerge * nPix);
         
-        /*
-        TODO:
-        ** for the clusters which are smaller than the limit tNumber,
-            either merge them ith the closest cluster.        
-        */
-                
+        clusterDescriptors = condenseAndUpdate(clusterPoints, 
+            clusterDescriptors, pointIndexMap);
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
+        mergeSmallClusters(input, clusterPoints, clusterDescriptors, 
+            clrSpace, tNumber, debugTag);
+        
+        assert(clusterPoints.size() == clusterDescriptors.length);
+        
         return clusterPoints;
-       // throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
@@ -8164,6 +8177,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
             
             // set1 is largest
+
+            Integer index1 = Integer.valueOf(idx1);
+            Integer index2 = Integer.valueOf(idx2);
             
             float[] desc1 = clusterDescriptors[idx1];
             float[] desc2 = clusterDescriptors[idx2];
@@ -8173,7 +8189,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
            
             assert(Math.abs(n1 - desc1[3]) < 0.1);
             assert(Math.abs(n2 - desc2[3]) < 0.1);
-            
+
             //{h, s, v, nPix, cenX, cenY}
             // update desc1 contents for contents in desc2
             for (int k = 0; k < desc1.length; ++k) {
@@ -8188,13 +8204,70 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             set2.clear();
             
             n1 = set1.size();
-                        
-            // update all pairs having set 1
-            Set<Integer> indexes2 = indexToIndexMap.get(Integer.valueOf(idx1));
-            for (Integer index2 : indexes2) {
-                int idx3 = index2.intValue();
+
+            // remove the idx1 --> set<integer> pairs from map and heap
+            // remove the idx2 --> set<integer> pairs from map and heap
+
+            Set<Integer> indexes3 = indexToIndexMap.get(index1);
+            for (Integer index3 : indexes3) {
+                int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);            
-                if (set3.isEmpty()) {
+                if (set3.isEmpty() || idx1 == idx3) {
+                    continue;
+                }
+                //keys in pairEdgePindexNodes have smaller index in x
+                PairInt p13;
+                if (idx1 < idx3) {
+                    p13 = new PairInt(idx1, idx3);
+                } else {
+                    p13 = new PairInt(idx3, idx1);
+                }
+                HeapNode node3 = pairEdgePindexNodes.get(p13);
+                assert(node3 != null);
+                heap.remove(node3);
+                pairEdgePindexNodes.remove(p13);
+            }
+
+            indexes3 = indexToIndexMap.get(index2);
+            for (Integer index3 : indexes3) {
+                int idx3 = index3.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);            
+                if (set3.isEmpty() || idx1 == idx3) {
+                    continue;
+                }
+                PairInt p23;
+                if (idx2 < idx3) {
+                    p23 = new PairInt(idx2, idx3);
+                } else {
+                    p23 = new PairInt(idx3, idx2);
+                }
+                HeapNode node3 = pairEdgePindexNodes.get(p23);
+                assert(node3 != null);
+                heap.remove(node3);
+                pairEdgePindexNodes.remove(p23);
+            }
+
+            // update the indexToIndexMap
+            Set<Integer> iim = new HashSet<Integer>(indexToIndexMap.get(index2));
+            for (Integer index3 : iim) {
+                if (!index3.equals(index1)) {
+                    Set<Integer> indexes4 = indexToIndexMap.get(index3);
+                    if (indexes4 != null) {
+                        indexes4.remove(index2);
+                        indexes4.add(index1);
+                    }
+                }
+            }
+            indexes3.addAll(iim);
+            indexes3.remove(index2);
+            indexToIndexMap.remove(index2);
+
+            // add node for updated idx1 ---> set<integer> to map and node
+            indexes3 = indexToIndexMap.get(Integer.valueOf(idx1));
+            for (Integer index3 : indexes3) {
+                int idx3 = index3.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);            
+                if (set3.isEmpty() || idx1 == idx3) {
                     continue;
                 }
                 //keys in pairEdgePindexNodes have smaller index in x
@@ -8207,11 +8280,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 
                 float[] desc3 = clusterDescriptors[idx3];
                
-                HeapNode node3 = pairEdgePindexNodes.get(p13);
-                assert(node3 != null);
-                
-                heap.remove(node3);
-            
                 double diffUpdated;
                 if (clrSpace == 0) {
                     diffUpdated = Math.abs(cieC.calcDeltaECIE2000(
@@ -8225,46 +8293,26 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
                 
                 long heapKey = (long)((double)heapKeyFactor * diffUpdated);
-                node3 = new HeapNode(heapKey);
+                HeapNode node3 = new HeapNode(heapKey);
                 node3.setData(p13);
                 heap.insert(node3);
-                pairEdgePindexNodes.put(p13, node3);                
+                pairEdgePindexNodes.put(p13, node3); 
             }
-            
+
             // pairs having set2 will be skipped because of the empty set at beginning of while loop
-        }
-        
-        {
-            //DEBUG
-            int nEdges = 0;
-            for (Integer index : edgeIndexes) {
-                Set<PairInt> set = clusterPoints.get(index.intValue());
-                if (set.size() > 0) {
-                    nEdges++;
-                }
-            }
-            System.out.println(nEdges + " edges after merge edges");
         }
     }
 
     private void growEdges(ImageExt img,
         List<Set<PairInt>> clusterPoints, 
-        float[][] clusterDescriptors, int clrSpace, double tColor, 
-        List<Integer> shortEdgeIndexes, List<Integer> longEdgeIndexes,
-        int tLen) {
+        float[][] clusterDescriptors, 
+        Map<PairInt, Integer> pointIndexMap, int clrSpace, double tColor, 
+        List<Integer> shortEdgeIndexes, List<Integer> longEdgeIndexes) {
         
         // for each edge, use bfs traversal of neighbors to add those with diff < tColor
         //    if an adjacent pixel is part of a short edge cluster,
         //    then all of that short edge is added to the cluster
         
-        Map<PairInt, Integer> pointIndexMap = new HashMap<PairInt, Integer>();
-        for (int i = 0; i < clusterPoints.size(); ++i) {
-            Set<PairInt> set = clusterPoints.get(i);            
-            Integer index = Integer.valueOf(i);
-            for (PairInt p : set) {
-                pointIndexMap.put(p, index);
-            }
-        }
         Set<PairInt> shortEdgePoints = new HashSet<PairInt>();
         for (Integer index : shortEdgeIndexes) {
             int idx = index.intValue();
@@ -8524,6 +8572,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 queue.offer(p2);
             }
         }
+        
         /*    
         // --------- handle the unassigned pixels ------
         find the unassigned pixels, noting the cluster indexes they are adjacent
@@ -8541,14 +8590,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         Map<PairInt, Set<Integer>> unassignedAndIndexes = 
             findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap);     
 
-        {   // DEBUG
-            int nExtraForDot = 1;
-            Image img2 = img.copyImage().copyToGreyscale().copyToColorGreyscale();
-            Set<PairInt> points = unassignedAndIndexes.keySet();
-            ImageIOHelper.addCurveToImage(points, img2, nExtraForDot, 255, 0, 0);
-            MiscDebug.writeImage(img2, "_unassigned_clustered_0_" +  clrSpace);            
-        }
-        
         PairInt[] unassigned = new PairInt[unassignedAndIndexes.size()];
         int[] nAdjIndexes = new int[unassigned.length];
         int count = 0;
@@ -8643,7 +8684,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             desc2[3]++;
             desc2[4] = ((desc2[4] * n2) - x) / nTot;
             desc2[5] = ((desc2[5] * n2) - y) / nTot;
-        }
+        }        
     }
 
     private void mergeShortEdges(List<Set<PairInt>> clusterPoints, 
@@ -8780,29 +8821,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     private void mergeByColorHistograms(ImageExt input, 
-        List<Set<PairInt>> clusterPoints, int clrSpace, double tR) {
+        List<Set<PairInt>> clusterPoints, 
+        Map<Integer, Set<Integer>> adjacencyMap,
+        int clrSpace, double tR) {
                 
         int[][][] colorHistograms = calculateColorHistograms(input, 
             clusterPoints, clrSpace);
-/*        
-int t0 = -1;
-int t1 = -1;
-for (int i = 0; i < clusterPoints.size(); ++i ) {
-    Set<PairInt> set = clusterPoints.get(i);
-    if (set.contains(new PairInt(172, 158))) {
-        t0 = i;
-    }
-    if (set.contains(new PairInt(156, 170))) {
-        t1 = i;
-    }
-}
-System.out.println("---> " + t0 + " ----> " + t1);       
-*/      
-        Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
-            clusterPoints);
-        
-        System.out.println(adjacencyMap.size() + " adjacenct clusters");
-        
+    
         // key is index1, index2 where index1 < index2
         Map<PairInt, HeapNode> nodesMap = new HashMap<PairInt, HeapNode>();
         
@@ -8850,15 +8875,7 @@ System.out.println("---> " + t0 + " ----> " + t1);
                 assert(hist2 != null);
                 
                 float similarity = 3.0f - ch.intersection(hist1, hist2);
-/*
-//  14: (85.8, 36.1)  9: (17, 166)   diff=2.14
-MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-double[] xyCen1 = curveHelper.calculateXYCentroids(clusterPoints.get(idx1));
-double[] xyCen2 = curveHelper.calculateXYCentroids(clusterPoints.get(idx2));
-System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx2,
-(float)xyCen1[0], (float)xyCen1[1],  (float)xyCen2[0], (float)xyCen2[1])
-+ " diff=" + similarity + " tRInv=" + tRInv);               
-*/      
+      
                 long key = (long)(similarity * (double)heapKeyFactor);
                 HeapNode node = new HeapNode(key);
                 node.setData(p12);
@@ -8875,7 +8892,9 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
             
             HeapNode node = heap.extractMin();
             
-            nodesMap.remove((PairInt)node.getData());
+            PairInt p12 = (PairInt)node.getData();
+            
+            nodesMap.remove(p12);
             
             // this is 3.0 - similarity
             double diff = ((double)node.getKey())/((double)heapKeyFactor);
@@ -8883,8 +8902,6 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
             if (diff > tRInv) {
                 break;
             }
-            
-            PairInt p12 = (PairInt)node.getData();
             
             int idx1 = p12.getX();
             int idx2 = p12.getY();
@@ -8915,17 +8932,76 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
             
             set1.addAll(set2);
             set2.clear();
-            n1 = set1.size();
             
             Integer index1 = Integer.valueOf(idx1);
             Integer index2 = Integer.valueOf(idx2);
-            
-            // update all pairs having set 1
+
+            // remove the idx1 --> set<integer> pairs from map and heap
+            // remove the idx2 --> set<integer> pairs from map and heap
+            // update the adjacencyMap
+            //   add node for updated idx1 ---> set<integer> to map and node
+
             Set<Integer> indexes3 = adjacencyMap.get(index1);
             for (Integer index3 : indexes3) {
                 int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);
                 if (set3.isEmpty() || idx1 == idx3) {
+                    continue;
+                }
+                PairInt p13;
+                if (idx1 < idx3) {
+                    p13 = new PairInt(idx1, idx3);
+                } else {
+                    p13 = new PairInt(idx3, idx1);
+                }
+                HeapNode node3 = nodesMap.get(p13);
+                assert(node3 != null);
+                heap.remove(node3);
+                nodesMap.remove(p13);
+                assert(heap.getNumberOfNodes() == nodesMap.size());
+            }
+            indexes3 = adjacencyMap.get(index2);
+            for (Integer index3 : indexes3) {
+                int idx3 = index3.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);
+                if (set3.isEmpty() || idx1 == idx3 || idx2 == idx3) {
+                    continue;
+                }
+                PairInt p23;
+                if (idx2 < idx3) {
+                    p23 = new PairInt(idx2, idx3);
+                } else {
+                    p23 = new PairInt(idx3, idx2);
+                }
+                HeapNode node3 = nodesMap.get(p23);
+                assert(node3 != null);
+                heap.remove(node3);
+                nodesMap.remove(p23);
+                assert(heap.getNumberOfNodes() == nodesMap.size());
+            }
+
+            //update adjacency map
+            Set<Integer> adj2 = new HashSet<Integer>(adjacencyMap.get(index2));
+            for (Integer index3 : adj2) {
+                if (!index3.equals(index1)) {
+                    Set<Integer> indexes4 = adjacencyMap.get(index2);
+                    if (indexes4 != null) {
+                        indexes4.remove(index2);
+                        indexes4.add(index1);
+                    }
+                }
+            }
+            indexes3.addAll(adj2);
+            indexes3.remove(index2);
+            adjacencyMap.remove(index2);
+
+            // add nodes back into heap and map for the updated idx1 --> set<integer>
+            indexes3 = adjacencyMap.get(index1);
+            for (Integer index3 : indexes3) {
+                int idx3 = index3.intValue();
+                Set<PairInt> set3 = clusterPoints.get(idx3);
+                assert(idx1 != idx3);
+                if (set3.isEmpty()) {
                     continue;
                 }
                 int[][] hist3 = colorHistograms[idx3];
@@ -8938,43 +9014,18 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
                     p13 = new PairInt(idx3, idx1);
                 }
                 
-                HeapNode node3 = nodesMap.get(p13);
-                assert(node3 != null);
-         
-                heap.remove(node3);
-
                 float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);
-                node3 = new HeapNode(key3);
+                HeapNode node3 = new HeapNode(key3);
                 node3.setData(p13);
                 
                 heap.insert(node3);
                 nodesMap.put(p13, node3);
-                
                 assert(heap.getNumberOfNodes() == nodesMap.size());
-             
             }
 
-            //update adjacency map
-            Set<Integer> adj2 = new HashSet<Integer>(adjacencyMap.get(index2));
-            for (Integer index3 : adj2) {
-                if (!index3.equals(index1)) {
-                    adjacencyMap.get(index3).remove(index2);
-                    adjacencyMap.get(index3).add(index1);
-                }
-            }
-            indexes3.addAll(adj2);
-            indexes3.remove(index2);
-            adjacencyMap.remove(index2);
-            
             nMerged++;
-        }
-        
-        for (int i = (clusterPoints.size() - 1); i > -1; --i) {
-            if (clusterPoints.get(i).isEmpty()) {
-                clusterPoints.remove(i);
-            }
         }
        
         System.out.println("color histogram nMerged=" + nMerged);
@@ -9176,6 +9227,118 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
             outputDescripors[i][4] = (float)xyCen[0];
             outputDescripors[i][5] = (float)xyCen[1];
         }        
+    }
+
+    private float[][] condenseAndUpdate(List<Set<PairInt>> clusterPoints, 
+        float[][] clusterDescriptors, Map<PairInt, Integer> pointIndexMap) {
+
+        int nNonNull = 0;
+        for (Set<PairInt> set : clusterPoints) {
+            if (!set.isEmpty()) {
+                nNonNull++;
+            }
+        }
+        
+        List<Set<PairInt>> tmp = new ArrayList<Set<PairInt>>();
+        
+        float[][] outputDescriptors = new float[nNonNull][];
+        
+        for (int i = 0; i < clusterPoints.size(); ++i) {
+            Set<PairInt> set = clusterPoints.get(i);
+            if (!set.isEmpty()) {
+                outputDescriptors[tmp.size()] = clusterDescriptors[i];
+                tmp.add(set);
+            }
+        }
+        clusterPoints.clear();
+        clusterPoints.addAll(tmp);
+        
+        pointIndexMap.clear();
+        for (int i = 0; i < clusterPoints.size(); ++i) {
+            Set<PairInt> set = clusterPoints.get(i);            
+            Integer index = Integer.valueOf(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, index);
+            }
+        }
+        
+        return outputDescriptors;
+    }
+
+    private void mergeSmallClusters(ImageExt img, 
+        List<Set<PairInt>> clusterPoints, float[][] clusterDescriptors, 
+        int clrSpace, int tNumber, String debugTag) {
+
+        Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
+            clusterPoints);
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            
+            int idx1 = index1.intValue();
+            
+            Set<PairInt> set1 = clusterPoints.get(idx1);
+            
+            if ((set1.size() > tNumber) || set1.isEmpty()) {
+                continue;
+            }
+            
+            Set<Integer> indexes2 = entry.getValue();
+            
+            // merge with closest in color
+            
+            float[] desc1 = clusterDescriptors[idx1];
+            
+            double minDiff = Double.MAX_VALUE;
+            Integer minDiffIndex = null;
+
+            for (Integer index2 : indexes2) {
+                int idx2 = index2.intValue();
+                Set<PairInt> set2 = clusterPoints.get(idx2);
+                if (set2.isEmpty()) {
+                    continue;
+                }
+                float[] desc2 = clusterDescriptors[idx2];
+                double diff;
+                if (clrSpace == 0) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        desc1[0], desc1[1], desc1[2], desc2[0], desc2[1], desc2[2]));
+                } else {
+                    double diff1 = desc1[0] - desc2[0];
+                    double diff2 = desc1[1] - desc2[1];
+                    double diff3 = desc1[2] - desc2[2];
+                    diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
+                }
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    minDiffIndex = index2;
+                }
+            }
+            
+            if (minDiffIndex == null) {
+                continue;
+            }
+            int idx2 = minDiffIndex.intValue();
+            Set<PairInt> set2 = clusterPoints.get(idx2);
+            assert(!set2.isEmpty());
+            float[] desc2 = clusterDescriptors[idx2];
+            int n2 = set2.size();
+            int n1 = set1.size();
+            set2.addAll(set1);
+            int nTot = set2.size();
+            set1.clear();
+            
+            //{h, s, v, nPix, cenX, cenY}
+            for (int ii = 0; ii < desc1.length; ++ii) {
+                desc2[ii] = ((desc2[ii] * n2) - desc1[ii] * n1) / nTot;
+            }
+            desc2[3] = nTot;
+            
+            clusterDescriptors[idx1] = null;
+        }
     }
 
     public static class BoundingRegions {
