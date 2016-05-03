@@ -3679,7 +3679,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         String debugTag) {
         
         // 0 is CIE LAB, 1 is HSV
-        int clrSpace = 1;
+        int clrSpace = 0;
         
         int tLen = 20;
         
@@ -8940,9 +8940,9 @@ System.out.println( String.format("%d, %d  (%.1f, %.1f) (%.1f, %.1f)", idx1, idx
                 
                 HeapNode node3 = nodesMap.get(p13);
                 assert(node3 != null);
-try {                
+         
                 heap.remove(node3);
-} catch (Throwable t) {}
+
                 float similarity3 = 3.0f - ch.intersection(hist1, hist3);
                 
                 long key3 = (long)(similarity3 * (double)heapKeyFactor);

@@ -89,6 +89,17 @@ public class ImageSegmentation2Test extends TestCase {
                 0, 0, 2, img2);
             
             MiscDebug.writeImage(img2, "_segmented_");
+            
+            /*
+            TODO: here, need an evaluator to compare most f the content
+             of descrptors with expected.
+            
+            the code that finds the best parameters to minimize the difference
+            between expected and found will use centroids and number of points
+            of segmented cell list.  (might add color terms later if that 
+            helps move the evaluator towards better solution faster).
+            
+            */
         }
     }
     
