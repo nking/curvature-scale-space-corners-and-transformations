@@ -250,7 +250,7 @@
             </classpath>
         </iajc>
 
-        <junit fork="yes" showoutput="false" filtertrace="off" printsummary="yes" 
+        <junit fork="true" showoutput="false" filtertrace="off" printsummary="yes" 
            haltonerror="true" haltonfailure="true">
         	<jvmarg line="-javaagent:${lib.dir}/aspectjweaver-1.8.0.jar"/>
             
@@ -276,7 +276,7 @@
 
             <!-- avoiding classpath clashes with tests in the submodule by
             limiting the tests run here -->
-            <batchtest fork="yes" todir="${tests.out.dir}">
+            <batchtest fork="true" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*CurvatureTest.class"/>
                 	<exclude name= "**/*$*.class"/>
@@ -457,7 +457,7 @@
     <target name="runTests" if="junit.present" depends="prepare,clean,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="debug"/>
         <echo message="running tests, output is in ${tests.out.dir}" />
-        <junit fork="yes" showoutput="true" filtertrace="off" 
+        <junit fork="true" showoutput="true" filtertrace="off" 
             printsummary="yes" haltonerror="true" haltonfailure="true">
             
             <assertions enablesystemassertions="true">
@@ -476,7 +476,7 @@
 
             <jvmarg value="-enableassertions" />
             
-            <batchtest fork="yes" todir="${tests.out.dir}">
+            <batchtest fork="true" todir="${tests.out.dir}">
                 <fileset dir="${tests.out.dir}">
                     <include name="**/*Test.class"/>
                	    <exclude name= "**/*$*.class"/>
@@ -494,7 +494,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <junit fork="no" filtertrace="on" printsummary="yes" 
+        <junit fork="true" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="true">
             
             <assertions enablesystemassertions="true">
@@ -513,7 +513,7 @@
             <jvmarg value="-enableassertions" />
 
             <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
-            <test name="${test}" fork="no" haltonfailure="yes">
+            <test name="${test}" fork="true" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
             
@@ -526,7 +526,7 @@
         <fail unless="test">
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
-        <junit fork="yes" showoutput="true" filtertrace="off">
+        <junit fork="true" showoutput="true" filtertrace="off">
             <!--<jvmarg value="-ea"/>-->
             <assertions enablesystemassertions="true">
                 <enable/>
@@ -539,7 +539,7 @@
                 <pathelement location="${tests.out.dir}"/>
                 <path refid="test.classpath"/>
             </classpath>
-            <test name="${test}" fork="yes" haltonfailure="yes">
+            <test name="${test}" fork="true" haltonfailure="yes">
                 <formatter type="plain" usefile="false"/>
             </test>
         </junit>
@@ -651,7 +651,7 @@
         
         <echo message="making jDepend report"/>
         
-        <java classname="jdepend.xmlui.JDepend" fork="yes">
+        <java classname="jdepend.xmlui.JDepend" fork="true">
             <classpath refid="jdepend.classpath"/>
             <arg value="-file"/>
             <arg value="${jdepend.docs.dir}/jdepend-report.xml"/>
