@@ -3824,6 +3824,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //    both clusterPoints and clusterDescriptor non- null and non empty 
         //       items are updated for merges
         
+        // the authors consider this min-heap merging within a radius of color
+        // a kmeans method as it updates the descriptors upon each
+        // merge, but the minimum distance ordering is an improvement over
+        // standard kmeans.
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             longEdgeIndexes);
   
@@ -3845,7 +3849,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(img2, "_longEdges_merged_" +  debugTag + "_" 
                 + clrSpace);            
         }
-                   
+        
         // ---- merge short edges (which are usually textures) ------
         
         mergeShortEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
@@ -3869,8 +3873,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             MiscDebug.writeImage(img2, "_shortedges_merged_" +  debugTag + 
                 "_" + clrSpace);            
         }
-
-        // the number of clusters in long edges could be used in kmeans++ 
 
         assert(assertDescriptorCounts(clusterPoints, clusterDescriptors));  
         
@@ -9040,7 +9042,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     private void populateDescriptors(ImageExt img, 
-        List<Set<PairInt>> outputPoints, 
+        List<Set<PairInt>> pointSets, 
         float[][] outputDescripors, int clrSpace) {
         
         /*
@@ -9049,9 +9051,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         */
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
-        for (int i = 0; i < outputPoints.size(); ++i) {
+        for (int i = 0; i < pointSets.size(); ++i) {
             
-            Set<PairInt> edgePoints = outputPoints.get(i);
+            Set<PairInt> edgePoints = pointSets.get(i);
             
             outputDescripors[i] = new float[6];
                         
