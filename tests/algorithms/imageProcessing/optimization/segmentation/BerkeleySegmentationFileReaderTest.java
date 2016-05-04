@@ -57,5 +57,11 @@ public class BerkeleySegmentationFileReaderTest extends TestCase {
         ImageIOHelper.addAlternatingColorPointSetsToImage(sets, 0, 0, 0, img);
         
         MiscDebug.writeImage(img, fileRoot + "_seg_");
+        
+        int[][] xyCenN = reader.readCentroids(segFilePath);
+        assertEquals(3, xyCenN.length);
+        assertEquals(17, xyCenN[0].length);
+        assertEquals(17, xyCenN[1].length);
+        assertEquals(17, xyCenN[2].length);
     }
 }

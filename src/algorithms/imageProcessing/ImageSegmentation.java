@@ -8308,6 +8308,39 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float[][] clusterDescriptors, 
         Map<PairInt, Integer> pointIndexMap, int clrSpace, double tColor, 
         List<Integer> shortEdgeIndexes, List<Integer> longEdgeIndexes) {
+    
+        /*
+        TODO: 
+        
+        change traversal pattern to one that better fills points connected to
+        clusterPoints first.
+        
+        traverse all image points to make a map of unassigned pixels and the
+            cluster indexes they are adjacent to if any.
+            --> O(N)
+        
+        initialize an outer queue with the unassigned which have nIndexes > 0
+           and sort them by descending number of adjacenct indexes
+           --> O(N_i * lg2(N_i))
+        
+        create an inner queue
+        
+        --> O(|V| + |E|)
+        visit each outer queue member, adding it to adjacent cluster
+           which has most similar color.
+           update the cluster's descriptor
+           add each of the 8 neighbors which aren't assigned to the inner
+              queue.
+           add the point to the visited set.
+        when all outer queue members have been visited, fill the outer queue
+            with the inner queue and empty the inner queue.
+            (could sort again here for more precise growing)
+        continue in this manner until the inner queue is empty and hence outer
+            queue is empty.
+            assert that visited.size == unassigned map.size
+        
+        The same pattern should be applied elsewhere too
+        */
         
         // for each edge, use bfs traversal of neighbors to add those with diff < tColor
         //    if an adjacent pixel is part of a short edge cluster,

@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,6 +17,46 @@ import java.util.Set;
 public class BerkeleySegmentationFileReader {
     
     public BerkeleySegmentationFileReader() {
+    }
+    
+    /**
+     * read the file and calculate the segmented region centroids and return double
+     * array of int[0][segmentNumber] = x centroid, 
+     * int[1][segmentNumber] = y centroid, int[2][segmentNumber] = number of 
+     * points in segmented region.
+     *  
+     * @param filePath
+     * @return
+     * @throws IOException 
+     */
+    public int[][] readCentroids(String filePath) throws IOException {
+        
+        List<Set<PairInt>> sets = readFile(filePath);
+        
+        int n = sets.size();
+        
+        int[][] xyCenN = new int[3][n];
+        
+        for (int i = 0; i < 3; ++i) {
+            xyCenN[i] = new int[n];
+        }
+        
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        for (int i = 0; i < n; ++i) {
+            
+            Set<PairInt> set = sets.get(i);
+            
+            double[] xyCen = curveHelper.calculateXYCentroids(set);
+            
+            xyCenN[0][i] = (int)Math.round(xyCen[0]);
+            
+            xyCenN[1][i] = (int)Math.round(xyCen[1]);
+            
+            xyCenN[2][i] = set.size();
+        }
+        
+        return xyCenN;
     }
     
     public List<Set<PairInt>> readFile(String filePath) throws IOException {
