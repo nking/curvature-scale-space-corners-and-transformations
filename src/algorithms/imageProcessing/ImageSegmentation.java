@@ -3824,12 +3824,17 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //    both clusterPoints and clusterDescriptor non- null and non empty 
         //       items are updated for merges
         
-        // the authors consider this min-heap merging within a radius of color
-        // a kmeans method as it updates the descriptors upon each
-        // merge, but the minimum distance ordering is an improvement over
-        // standard kmeans.
+        // the authors consider this algorithm of min-heap merging within a 
+        // radius of color, a kmeans method as it updates the descriptors upon
+        // each merge, but the minimum distance ordering is an improvement over
+        // standard kmeans if one can use it as one can here 
+        // (pairs results in outer loop iteration of approx O(N^2), 
+        // specifically (N*(N-1)/2)), while kmeans ordering by index uses O(N)) 
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             longEdgeIndexes);
+        
+        //TODO: consider a number limit to use a kmeans as an alternate here when
+        //  n edges is a lage number
   
         assert(clusterPoints.size() == clusterDescriptors.length);
         
