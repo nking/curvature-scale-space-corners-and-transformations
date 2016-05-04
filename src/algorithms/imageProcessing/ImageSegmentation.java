@@ -3833,8 +3833,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         mergeEdges(clusterPoints, clusterDescriptors, clrSpace, tColor,
             longEdgeIndexes);
         
-        //TODO: consider a number limit to use a kmeans as an alternate here when
-        //  n edges is a lage number
+        //TODO: consider a number limit to use an alternate here when
+        //  n edges is a large number.  determine a fixed k and use kmeans.
+        //  can roughly determine a fixed k from 
+        //  a color histogram with bin size being color tolerance
+        //  and counting the number of peaks.
   
         assert(clusterPoints.size() == clusterDescriptors.length);
         
