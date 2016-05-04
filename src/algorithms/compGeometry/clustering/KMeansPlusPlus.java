@@ -2,7 +2,6 @@ package algorithms.compGeometry.clustering;
 
 import algorithms.compGeometry.NearestPoints1D;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.util.TrioInt;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -42,6 +41,9 @@ public class KMeansPlusPlus {
     protected int[] center = null;
     protected int[] numberOfPointsPerSeedCell = null;
     
+    /**
+     * assignments of pixels to center bins
+     */
     protected int[] lastImgSeedIndexes = null;
     
     /**
@@ -482,7 +484,7 @@ public class KMeansPlusPlus {
 
     private int findChosen(long[] nDistrC, long chosen) {
         
-        // find bin where cosen is found.
+        // find bin where chosen is found.
         // the next bin is too high in value
         
         int idx = Arrays.binarySearch(nDistrC, chosen);
