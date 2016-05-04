@@ -3782,12 +3782,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
        
-     The runtime comolexity is _______, so for images larger than 512 or so in
-     * either dimension, consider using pyramidal decimation first to reduce the
-     * size.
-     * TODO: make a wrapper method for decimation of input image and subsequent
-     * corrections of output for full frame data after parameters have been optimized.
-     * 
+     The runtime complexity is _______, so for images larger than 512 or so in
+     either dimension, consider using pyramidal decimation first to reduce the
+     size.
+     TODO: make a wrapper method for decimation of input image and subsequent
+     corrections of output for full frame data after parameters have been optimized.
+      
      * @param input
      * @return 
      */
