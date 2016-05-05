@@ -151,7 +151,9 @@ public class PhaseCongruencyDetector {
     final private static double epsilon = 1E-4;
     
     private boolean determineCorners = false;
-        
+    
+    private boolean doPlot = false;
+    
     public void setToCreateCorners() {
         this.determineCorners = true;
     }
@@ -947,7 +949,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : brightLinePoints) {
@@ -992,7 +994,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : stepPoints) {
@@ -1020,7 +1022,7 @@ public class PhaseCongruencyDetector {
         int[][] thinned = applyHysThresh(thinned1, tLow, tHigh, true);
         
         //DEBUG
-        {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (int i = 0; i < nRows; ++i) {
@@ -1060,7 +1062,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : points) {
@@ -1088,7 +1090,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        {
+        if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : points) {

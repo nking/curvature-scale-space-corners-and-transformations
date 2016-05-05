@@ -6,9 +6,4 @@ package algorithms.imageProcessing.optimization.segmentation;
  */
 public class SegmentationNN {
     
-    public static class BData {
-        public String dirPath;
-        public String imaFileName;
-        public String segFileName;
-    }
 }

@@ -3681,9 +3681,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // 0 is CIE LAB, 1 is HSV
         int clrSpace = 1;
         
-        int tLen = 20;
+        int tLen = 5;//25;
         
-        boolean reduceNoise = false;
+        boolean reduceNoise = true;//false;
         
         double tColor;
         if (clrSpace == 0) {
@@ -3691,20 +3691,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             tColor = 2.5;//4.;//5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor = 0.2;//0.288;
+            tColor = 0.1;//0.288;
         }
         
         double tR;
         if (clrSpace == 0) {
             tR = 0.9*3.0; //0.6*3.0;
         } else if (clrSpace == 1) {
-            tR = 0.8*3.0; //0.6*3.0;
+            tR = 0.7*3.0; //0.6*3.0;
         } else {
             // not tested yet
             tR = 0.6*3.0;
         }
-        
-        double tSmallMerge = 0.01;
+        //
+        double tSmallMerge = 0.06;
         
         return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
             reduceNoise, tSmallMerge, debugTag);
@@ -3794,8 +3794,37 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
         int clrSpace, int tLen, double tColor, double tR, boolean reduceNoise,
         double tSmallMerge, String debugTag) {
+        
+        List<PairIntArray> edges = extractEdges(input, reduceNoise, debugTag);
+        
+        return createColorEdgeSegmentation(input, edges,
+            clrSpace, tLen, tColor, tR, reduceNoise, tSmallMerge, debugTag);
+    }
+    
+    /**
+     * create segmented image by creating edges with phase congruence,
+     * then using the edge color properties to form clusters and seeds
+     * of regions to grow, then using color histograms to further merge
+     * regions.
+     * The algorithm follows the general outline given by
+     * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
+       http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
+       
+     The runtime complexity is _______, so for images larger than 512 or so in
+     either dimension, consider using pyramidal decimation first to reduce the
+     size.
+     TODO: make a wrapper method for decimation of input image and subsequent
+     corrections of output for full frame data after parameters have been optimized.
+     
+     * @param input
+     * @return 
+     */
+    public List<Set<PairInt>> createColorEdgeSegmentation(ImageExt input,
+        List<PairIntArray> edges,
+        int clrSpace, int tLen, double tColor, double tR, boolean reduceNoise,
+        double tSmallMerge, String debugTag) {
            
-        boolean doPlot = true;
+        boolean doPlot = false;
         
         if (debugTag == null) {
             debugTag = "";
@@ -3804,9 +3833,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         final int w = input.getWidth();
         final int h = input.getHeight();
         final int nPix = input.getNPixels();
-       
-        List<PairIntArray> edges = extractEdges(input, reduceNoise, debugTag);
-        
+               
         int nEdges = edges.size();
         List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
         float[][] clusterDescriptors = new float[nEdges][];
@@ -3903,7 +3930,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         // ------ region growing -------
         growEdges(input, clusterPoints, clusterDescriptors, pointIndexMap,
             clrSpace, tColor, shortEdgeIndexes, longEdgeIndexes);
- 
+        
         assert(clusterPoints.size() == clusterDescriptors.length);
         
         longEdgeIndexes = null;
@@ -8565,7 +8592,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         assert(pointIndexMap.size() == img.getNPixels());
     }
-
+    
     private void mergeShortEdges(List<Set<PairInt>> clusterPoints, 
         float[][] clusterDescriptors, int clrSpace, double tColor, 
         List<Integer> shortEdgeIndexes) {
@@ -9220,6 +9247,43 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             clusterDescriptors[idx1] = null;
         }
+    }
+
+    private Integer findMostSimilarColorWithinTolerance(int clrSpace, 
+        float[] clrs1, float[][] clusterDescriptors, List<Integer> seedIndexes, 
+        double tColor) {
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        double minDiff = Double.MAX_VALUE;
+        Integer minDiffIndex = null;
+        
+        for (Integer index : seedIndexes) {
+            double diff;
+            float[] desc2 = clusterDescriptors[index.intValue()];
+            if (desc2 == null) {
+                ///may have already been merged into other set
+                continue;
+            }
+            if (clrSpace == 0) {
+                diff = Math.abs(cieC.calcDeltaECIE2000(
+                    clrs1[0], clrs1[1], clrs1[2], desc2[0], desc2[1], desc2[2]));
+            } else {
+                double diff1 = clrs1[0] - desc2[0];
+                double diff2 = clrs1[1] - desc2[1];
+                double diff3 = clrs1[2] - desc2[2];
+                diff = Math.sqrt(diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
+            }
+            if (diff > tColor) {
+                continue;
+            }
+            if (diff < minDiff) {
+                minDiff = diff;
+                minDiffIndex = index;
+            }
+        }
+        
+        return minDiffIndex;
     }
 
     public static class BoundingRegions {
