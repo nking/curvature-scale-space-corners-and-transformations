@@ -74,10 +74,10 @@ public class SegmentationResults {
      * different sizes of solutions.  Note that if the number of items
      * in the solution is large, this method needs to be altered to 
      * determine when to use a greedy O(N^2) method.
-     * @param other
+     * @param expected
      * @return 
      */
-    public double calculateDifference(SegmentationResults other) {
+    public double calculateDifference(SegmentationResults expected) {
         
         boolean doNormalize = false;
         
@@ -101,11 +101,46 @@ public class SegmentationResults {
         // item
         
         int n1 = this.xCentroids.length;
-        int n2 = other.xCentroids.length;
+        int n2 = expected.xCentroids.length;
         
         if (n1 == 0 || n2 == 0) {
             return Double.MAX_VALUE;
         }
+        double nSum = 0;
+        double[] weights = new double[n2];
+        for (int i = 0; i < n2; ++i) {
+            weights[i] += expected.nPoints[i];
+            nSum += weights[i];
+        }
+        /*
+        // weights that normalize by number of points inversely
+        double tot = 0;
+        for (int i = 0; i < n2; ++i) {
+            double div = (nSum - weights[i]) / ((n2 - 1.) * nSum);
+            weights[i] = (float) div;
+            tot += div;
+        }*/
+        // weights that iven items with larger number of points a higher proportion of difference
+        double tot = 0;
+        for (int i = 0; i < n2; ++i) {
+            weights[i] /= nSum;
+            tot += weights[i];
+        }
+        
+        /*
+        2
+        3
+        5    
+        wanting the portion of "5"'s results to be 5/10 of the total differences
+            and if "5"'s results are missing in this instance, then 
+            it should be counted as it's maximum differnce * npoints["5"]
+            where it's maximum difference will be approximated using it's x an y values.
+        
+        2 d=1   
+        3 d=1
+        5 d=1
+            nSum=10  (2./10.)*1 + (3./10.)*1 + (5./10)*1.
+        */
         
         float[][] cost = new float[n1][n2];
         for (int i1 = 0; i1 < n1; ++i1) {
@@ -118,8 +153,8 @@ public class SegmentationResults {
             
             for (int i2 = 0; i2 < n2; ++i2) {
                 
-                int x2 = other.xCentroids[i2];
-                int y2 = other.yCentroids[i2];
+                int x2 = expected.xCentroids[i2];
+                int y2 = expected.yCentroids[i2];
                                 
                 int diffX = x1 - x2;
                 int diffY = y1 - y2;
@@ -139,6 +174,9 @@ public class SegmentationResults {
         
         double diffSum = 0;
         double maxDiff = Double.MIN_VALUE;
+        int maxDiffIdx2 = -1;
+        
+        boolean[] matched = new boolean[n2];
         
         for (int i = 0; i < match.length; i++) {
             int idx1 = match[i][0];
@@ -150,16 +188,20 @@ public class SegmentationResults {
                 int swap = idx1;
                 idx1 = idx2;
                 idx2 = swap;
-            }
+            }            
             int x1 = xCentroids[idx1];
             int y1 = yCentroids[idx1];
-            int x2 = other.xCentroids[idx2];
-            int y2 = other.yCentroids[idx2];
+            int x2 = expected.xCentroids[idx2];
+            int y2 = expected.yCentroids[idx2];
+            
+            matched[idx2] = true;
                                 
             int diffX = x1 - x2;
             int diffY = y1 - y2;
                 
             double diff = Math.sqrt(diffX * diffX + diffY * diffY);
+            
+            diff *= weights[idx2];
             
             diffSum += diff;
             
@@ -168,16 +210,25 @@ public class SegmentationResults {
             }
         }
         
+        // for missing expected items, estimating a cost as the centroid times
+        // the number of point
+        int nc = 0;
+        for (int i = 0; i < n2; ++i) {
+            if (!matched[i]) {
+                int x2 = expected.xCentroids[i];
+                int y2 = expected.yCentroids[i];
+                double diff = Math.sqrt(x2 * x2 + y2 * y2) * expected.nPoints[i]/2.;
+                diff *= weights[i];
+                diffSum += diff;
+                nc++;
+            }
+        }
+        
         //TODO: may revise this.  penalty is the difference in number of items,
         // times max difference in matched items.
-        double penalty = Math.abs(n1 - n2) * maxDiff;
+        double penalty = Math.abs(n1 - (n2 - nc)) * maxDiff;
         
         diffSum += penalty;
-            
-        if (doNormalize) {
-            double n = Math.max(n1, n2);
-            diffSum /= n;
-        }
         
         return diffSum;
     }

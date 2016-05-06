@@ -74,6 +74,8 @@ public class SequentialBisectorSolver {
         
         Parameter[] parameters = new Parameter[]{
             tLen, tColor, tR, tSmallMerge};
+        
+        int np = 1 << parameters.length;
     
         boolean hasConverged = false;
         
@@ -86,64 +88,101 @@ public class SequentialBisectorSolver {
         while (!hasConverged) {
             
             double minDiff = Double.MAX_VALUE;
-            double maxDiff = Double.MIN_VALUE;
+
+            boolean[] minDiffIsLow = new boolean[parameters.length];
             
-            //TODO: change this to try all 2^4 low, high invocations in one
-            //    iteration and choose the smallest cost among all of those
-            //    to change the parameters.
-            //    the sequential solution is not as robust.
+            for (int p0 = 0; p0 < 2; ++p0) {
+                int lowIdx0 = parameters[p0].lowIdx;
+                int highIdx0 = parameters[p0].highIdx;
+                int midIdx0 = (highIdx0 + lowIdx0) >> 1;
+                int tIdx0;
+                if (p0 == 0) {
+                    tIdx0 = (midIdx0 + lowIdx0) >> 1;
+                } else {
+                    tIdx0 = (midIdx0 + highIdx0) >> 1;
+                }
+                for (int p1 = 0; p1 < 2; ++p1) {
+                    int lowIdx1 = parameters[p1].lowIdx;
+                    int highIdx1 = parameters[p1].highIdx;
+                    int midIdx1 = (highIdx1 + lowIdx1) >> 1;
+                    int tIdx1;
+                    if (p1 == 0) {
+                        tIdx1 = (midIdx1 + lowIdx1) >> 1;
+                    } else {
+                        tIdx1 = (midIdx1 + highIdx1) >> 1;
+                    }
+                    for (int p2 = 0; p2 < 2; ++p2) {
+                        int lowIdx2 = parameters[p2].lowIdx;
+                        int highIdx2 = parameters[p2].highIdx;
+                        int midIdx2 = (highIdx2 + lowIdx2) >> 1;
+                        int tIdx2;
+                        if (p2 == 0) {
+                            tIdx2 = (midIdx2 + lowIdx2) >> 1;
+                        } else {
+                            tIdx2 = (midIdx2 + highIdx2) >> 1;
+                        }
+                        for (int p3 = 0; p3 < 2; ++p3) {
+                            int lowIdx3 = parameters[p3].lowIdx;
+                            int highIdx3 = parameters[p3].highIdx;
+                            int midIdx3 = (highIdx3 + lowIdx3) >> 1;
+                            int tIdx3;
+                            if (p3 == 0) {
+                                tIdx3 = (midIdx3 + lowIdx3) >> 1;
+                            } else {
+                                tIdx3 = (midIdx3 + highIdx3) >> 1;
+                            }
+                            double diff = invoke(
+                                parameters[0].getValue(tIdx0),
+                                parameters[1].getValue(tIdx1),
+                                parameters[2].getValue(tIdx2),
+                                parameters[3].getValue(tIdx3),
+                                expected, edgesList);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                minDiffIsLow[0] = (p0 == 0);
+                                minDiffIsLow[1] = (p1 == 0);
+                                minDiffIsLow[2] = (p2 == 0);
+                                minDiffIsLow[3] = (p3 == 0);
+                            }
+                        }
+                    }
+                }
+            }
             
             for (int pIdx = 0; pIdx < parameters.length; ++pIdx) {
                 int lowIdx = parameters[pIdx].lowIdx;
                 int highIdx = parameters[pIdx].highIdx;
-                if (lowIdx != highIdx) {
-                    int midIdx = (highIdx + lowIdx) >> 1;
-                    // invoke for mid above and below and adjust indexes for the better
-                    int tIdx1 = (midIdx + lowIdx) >> 1;
-                    int tIdx2 = (midIdx + highIdx) >> 1;
-                    double[] sumDiffs = invoke(pIdx, tIdx1, tIdx2, parameters, 
-                        expected, edgesList);
-                    if (sumDiffs[0] == 0) {
-                        parameters[pIdx].lowIdx = tIdx1;
-                        parameters[pIdx].highIdx = tIdx1;
-                        lastDifference = 0;
-                        break;
-                    } else if (sumDiffs[1] == 0) {
-                        parameters[pIdx].lowIdx = tIdx2;
-                        parameters[pIdx].highIdx = tIdx2;
-                        lastDifference = 0;
-                        break;
-                    } else if (sumDiffs[0] < sumDiffs[1]) {
-                        if (highIdx == tIdx1) {
-                            highIdx--;
-                        } else {
-                            highIdx = tIdx1;
-                        }
-                        lastDifference = sumDiffs[0];
-                    } else if (sumDiffs[0] > sumDiffs[1]) {
-                        if (lowIdx == tIdx2) {
-                            lowIdx++;
-                        } else {
-                            lowIdx = tIdx2;
-                        }
-                        lastDifference = sumDiffs[1];
+                int midIdx = (highIdx + lowIdx) >> 1;
+                if (minDiffIsLow[pIdx]) {
+                    int tIdx = (midIdx + lowIdx) >> 1;
+                    if (minDiff == 0) {
+                        lowIdx = tIdx;
+                        highIdx = tIdx;
+                    } else if (highIdx == tIdx) {
+                        highIdx--;
                     } else {
-                        lowIdx = tIdx1;
-                        highIdx = tIdx2;
-                        lastDifference = sumDiffs[0];
+                        highIdx = tIdx;
                     }
-                    parameters[pIdx].lowIdx = lowIdx;
-                    parameters[pIdx].highIdx = highIdx;
-                                        
-                    if (lastDifference < minDiff) {
-                        minDiff = lastDifference;
-                    } 
-                    if (lastDifference > maxDiff) {
-                        maxDiff = lastDifference;
+                } else {
+                    int tIdx = (midIdx + highIdx) >> 1;
+                    if (minDiff == 0) {
+                        lowIdx = tIdx;
+                        highIdx = tIdx;
+                    } else if (lowIdx == tIdx) {
+                        lowIdx++;
+                    } else {
+                        lowIdx = tIdx;
                     }
                 }
+                parameters[pIdx].lowIdx = lowIdx;
+                parameters[pIdx].highIdx = highIdx;
             }
-            System.out.println("minDiff=" + minDiff + " maxDiff=" + maxDiff);
+           
+            lastDifference = minDiff;
+            
+            if (minDiff == 0) {
+                break;
+            }                              
             // check for convergence
             hasConverged = true;
             for (int pIdx = 0; pIdx < parameters.length; ++pIdx) {
@@ -154,6 +193,7 @@ public class SequentialBisectorSolver {
                 }
             }
         }
+        
         return lastDifference;
     }
 

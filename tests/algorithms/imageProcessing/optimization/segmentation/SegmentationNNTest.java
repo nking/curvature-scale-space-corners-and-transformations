@@ -53,36 +53,13 @@ public class SegmentationNNTest extends TestCase {
         SData[] data = getDetailedTrainingData();
         
         SequentialBisectorSolver solver = new SequentialBisectorSolver(true, 
-            false, data);
+            true, data);
         
         double diff = solver.solve();
         
         System.out.println(
-            "hsv, reduceNoise=false, difference=" + diff +
-            "  params=" + Arrays.toString(solver.getParameters()));
-        
-        // true, false: 
-        // tLen, tColor, tR, tSmallMerge [31.0, 5.65, 1.5, 0.04]
-        
-        // --------------
-        solver = new SequentialBisectorSolver(true, 
-            true, data);
-        
-        diff = solver.solve();
-        
-        System.out.println(
             "hsv, reduceNoise=true, difference=" + diff +
-            "  parmaeters=" + Arrays.toString(solver.getParameters()));
-        
-        // --------
-        solver = new SequentialBisectorSolver(false, 
-            false, data);
-        
-        diff = solver.solve();
-        
-        System.out.println(
-            "cie, reduceNoise=false, difference=" + diff +
-            "  parmaeters=" + Arrays.toString(solver.getParameters()));
+            "  params=" + Arrays.toString(solver.getParameters()));
         
         // --------
         solver = new SequentialBisectorSolver(false, 
@@ -96,12 +73,9 @@ public class SegmentationNNTest extends TestCase {
         
         /*
         normalize = false:
-        *   hsv, reduceNoise=false, difference=59726.16915535849  parmaeters=[11.0, 0.2, 1.5, 0.01]
-            hsv, reduceNoise=true, difference=66372.35685612044  parmaeters=[71.0, 0.1, 1.5, 0.02]
-        *   lab, reduceNoise=false, difference=73601.00780644309  parmaeters=[71.0, 2.5, 1.5, 0.059999995]
-            lab, reduceNoise=true, difference=57695.890655868294  parmaeters=[1.0, 2.5, 1.5, 0.02]
-        normalize = true
-            
+            hsv, reduceNoise=true, difference=33097.4442013048  params=[6.0, 0.05, 1.5, 0.005]
+
+            cie, reduceNoise=true, difference=2397540.564264881  parmaeters=[1.0, 2.5, 1.5, 0.005]
         */
     }
     
