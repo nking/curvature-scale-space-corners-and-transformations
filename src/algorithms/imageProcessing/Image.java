@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.util.PairInt;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 
@@ -335,6 +336,34 @@ public class Image {
         
         return (int)byteValue;
     }
+    
+    /**
+     * get r value at image location col, row
+     * @param p
+     * @return 
+     */
+    public int getR(PairInt p) {
+        return getR(p.getX(), p.getY());
+    }
+    
+    /**
+     * get g value at image location col, row
+     * @param p
+     * @return 
+     */
+    public int getG(PairInt p) {
+        return getG(p.getX(), p.getY());
+    }
+    
+    /**
+     * get b value at image location col, row
+     * @param p
+     * @return 
+     */
+    public int getB(PairInt p) {
+        return getB(p.getX(), p.getY());
+    }
+    
     
     /**
      * get r value at image location col, row

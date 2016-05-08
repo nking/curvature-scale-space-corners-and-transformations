@@ -1,4 +1,5 @@
 https://code.google.com/p/efficient-java-matrix-library/
+https://github.com/lessthanoptimal/ejml/blob/master/LICENSE-2.0.txt
 http://ejml.org/javadoc/
 
                                  Apache License

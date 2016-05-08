@@ -8893,7 +8893,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             Set<Integer> adj2 = new HashSet<Integer>(adjacencyMap.get(index2));
             for (Integer index3 : adj2) {
                 if (!index3.equals(index1)) {
-                    Set<Integer> indexes4 = adjacencyMap.get(index2);
+                    Set<Integer> indexes4 = adjacencyMap.get(index3);
                     if (indexes4 != null) {
                         indexes4.remove(index2);
                         indexes4.add(index1);

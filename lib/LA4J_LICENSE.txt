@@ -1,0 +1,3 @@
+http://github.com/vkostyukov/la4j/blob/master/LICENSE
+
+Apache 2.0 license

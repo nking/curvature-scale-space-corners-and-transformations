@@ -79,6 +79,11 @@ public class SegmentationResults {
      */
     public double calculateDifference(SegmentationResults expected) {
         
+        /*
+        TODO: the cost function needs to use the dimensions of the cells
+           or define a difference between perimeters for optimization.
+        */
+        
         boolean doNormalize = false;
         
         /*
