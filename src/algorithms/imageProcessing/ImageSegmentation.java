@@ -8850,8 +8850,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             // update the adjacencyMap
             //   add node for updated idx1 ---> set<integer> to map and node
 
-            Set<Integer> indexes3 = adjacencyMap.get(index1);
-            for (Integer index3 : indexes3) {
+            Set<Integer> indexes1 = adjacencyMap.get(index1);
+            for (Integer index3 : indexes1) {
                 int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);
                 if (set3.isEmpty() || idx1 == idx3) {
@@ -8869,8 +8869,8 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 nodesMap.remove(p13);
                 assert(heap.getNumberOfNodes() == nodesMap.size());
             }
-            indexes3 = adjacencyMap.get(index2);
-            for (Integer index3 : indexes3) {
+            Set<Integer> indexes2 = adjacencyMap.get(index2);
+            for (Integer index3 : indexes2) {
                 int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);
                 if (set3.isEmpty() || idx1 == idx3 || idx2 == idx3) {
@@ -8890,8 +8890,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
 
             //update adjacency map
-            Set<Integer> adj2 = new HashSet<Integer>(adjacencyMap.get(index2));
-            for (Integer index3 : adj2) {
+            for (Integer index3 : indexes2) {
                 if (!index3.equals(index1)) {
                     Set<Integer> indexes4 = adjacencyMap.get(index3);
                     if (indexes4 != null) {
@@ -8900,13 +8899,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                 }
             }
-            indexes3.addAll(adj2);
-            indexes3.remove(index2);
+            indexes1.addAll(indexes2);
+            indexes1.remove(index1);
+            indexes1.remove(index2);
             adjacencyMap.remove(index2);
 
             // add nodes back into heap and map for the updated idx1 --> set<integer>
-            indexes3 = adjacencyMap.get(index1);
-            for (Integer index3 : indexes3) {
+            for (Integer index3 : indexes1) {
                 int idx3 = index3.intValue();
                 Set<PairInt> set3 = clusterPoints.get(idx3);
                 assert(idx1 != idx3);
