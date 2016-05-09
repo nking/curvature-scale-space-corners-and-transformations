@@ -131,7 +131,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 for (int k = 0; k < dxNbrs.length; ++k) {
                     int col2 = col + dxNbrs[k];
                     int row2 = row + dyNbrs[k];
-                    if ((col2 > (imageWidth - 1)) || (row2 > (imageHeight - 1))) {
+                    if ((col2 > (imageWidth - 1)) || (row2 > (imageHeight - 1))
+                        || (col2 < 0) || (row2 < 0)) {
                         continue;
                     }
                     int idx2 = calculatePixelIndex(row2, col2); 
@@ -204,7 +205,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 for (int k = 0; k < dxNbrs.length; ++k) {
                     final int col2 = col + dxNbrs[k];
                     final int row2 = row + dyNbrs[k];
-                    if ((col2 > (nCols - 1)) || (row2 > (nRows - 1))) {
+                    if ((col2 > (nCols - 1)) || (row2 > (nRows - 1))
+                        || (col2 < 0) || (row2 < 0)) {
                         continue;
                     }
                     int r2 = img.getR(col2, row2);
