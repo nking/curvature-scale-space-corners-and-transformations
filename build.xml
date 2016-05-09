@@ -131,12 +131,14 @@
     <target name="compile" depends="prepare" description="Compile Java classes">
         <record name="${logfile}" append="yes" loglevel="info"/>
         <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
-        <javac srcdir="${src.dir}"
+        <javac srcdir="${src.dir}" fork="true"
             destdir="${src.out.dir}"
             source="${compile.target}"
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
+            memoryInitialSize="1024m"
+            memoryMaximumSize="2048m"
             optimize="${compile.optimize}" >
             <classpath refid="compile.classpath"/>
             <include name="**/*.java"/>
@@ -239,7 +241,6 @@
             <inpath>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/la4j-0.6.0.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -326,7 +327,6 @@
         	<inpath>
       		<pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/la4j-0.6.0.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -390,7 +390,6 @@
             <inpath>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
-                <pathelement location="${lib.dir}/la4j-0.6.0.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -575,7 +574,6 @@
         <unjar src="${lib.dir}/ejml-0.29.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
-        <unjar src="${lib.dir}/la4j-0.6.0.jar" dest=${classes.dir}/tmp"/>
         
         <!-- jfree needs the servlet jar -->
         <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
@@ -586,7 +584,6 @@
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
             <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
-            <fileset dir="${lib.dir}" includes="LA4J_LICENSE.txt"/>
             <fileset dir="${lib.dir}" includes="JFREECHART_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>

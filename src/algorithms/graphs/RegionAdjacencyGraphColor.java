@@ -7,8 +7,7 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.awt.Color;
 import java.util.Set;
-import org.la4j.matrix.SparseMatrix;
-import org.la4j.matrix.sparse.CRSMatrix;
+import org.ejml.simple.SimpleMatrix;
 
 /**
  *
@@ -58,7 +57,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     any 2 pixel indexes.
     
     */
-    protected SparseMatrix diffOrSim = null;
+    protected SimpleMatrix diffOrSim = null;
     
     protected static final int[] dxNbrs = new int[]{1, 1, 0};
     protected static final int[] dyNbrs = new int[]{0, 1, 1};
@@ -68,7 +67,17 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     protected final ImageExt img;
     
      /**
-     * constructor
+     * constructor.  Note that the similarity matrix created is nPix X nPix
+       in size, and currently the data structure is limited in size to max value of
+       an integer, so that means images with fewer than 46340 pixels can be processed
+       with this.
+       A 250 X 180 image will need at least 2.75 GB of memory.
+       In the future, this method might create an overlapping tiling handling to handle larger
+       images and use a compact data structure (espec since normalized cuts does not need 
+       a high significance in digits for edge weights).  
+       
+       Currently, best use would be pre-shrinking the image using pyramidal decimation or other binning
+       to reduce the image to size closer to 100 x 100 pixels or smaller.
      * @param img 
      * @param labels double array of labels for each pixel using the convention
      * labels[col][row].  Note that the largest label must be less than 
@@ -79,14 +88,17 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         super(img, labels);  
         
         this.img = img;
+
+        if (img.getNPixels() > 46340) {
+            throw new IllegalStateException("an internal data structure is limited by " 
+            + "max integer size currently.  Please reduce image size to less than " 
+            + "46340 pixels and try again.");
+        }
+        
     }
    
     public void populateEdgesWithColorSimilarity(ColorSpace clrSpace) {
         
-        if (diffOrSim == null) {
-            throw new IllegalStateException("this method is expected to be inoked only once");
-        }
-                
         populatePairDifferences(clrSpace);
 
         double sigma;
@@ -132,20 +144,28 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         
     }
     
-    private int calculatePixelIndex(int row, int col) {
+    public boolean isWithinImageBounds(int col, int row) {
+        if ((col > (imageWidth - 1)) || (row > (imageHeight - 1)) ||
+            (col < 0) || (row < 0)) {
+            return false;
+        }
+        return true;
+    }
+    
+    public int calculatePixelIndex(int row, int col) {
         return (row * imageWidth) + col;
     }
-    private int getRowFromPixelIndex(int pixIdx) {
+    public int getRowFromPixelIndex(int pixIdx) {
         return pixIdx/imageWidth;
     }
-    private int getColFromPixelIndex(int pixIdx) {
+    public int getColFromPixelIndex(int pixIdx) {
         int row = pixIdx/imageWidth;
         return pixIdx - (row * imageWidth);
     }
         
     private void populatePairDifferences(ColorSpace clrSpace) {
         
-        if (diffOrSim == null) {
+        if (diffOrSim != null) {
             throw new IllegalStateException("this method is expected to be inoked only once");
         }
         
@@ -154,22 +174,29 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         int nPix = img.getNPixels();
         int nCols = img.getWidth();
         int nRows = img.getHeight();
+
+        // this project is built for single threaded use, so using UJMP
+        //    may be slower due to use of mutexes and synchronization needed
+        //    for multi-threaded use,
+        //    but need an API which handles memory well,
+        //    so trying it 
         
-        diffOrSim = new CRSMatrix(nPix, nPix);
+        diffOrSim = new SimpleMatrix(nPix, nPix);
         
         CIEChromaticity cieC = new CIEChromaticity();
         
         // offsets for neighbors of each pixel to calculate: (+1,0), (+1,+1), (0,+1)
-        
+
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
                 int r1 = img.getR(col, row);
                 int g1 = img.getG(col, row);
                 int b1 = img.getB(col, row);
                 int idx1 = calculatePixelIndex(row, col);                
+
                 for (int k = 0; k < dxNbrs.length; ++k) {
-                    int col2 = col + dxNbrs[k];
-                    int row2 = row + dyNbrs[k];
+                    final int col2 = col + dxNbrs[k];
+                    final int row2 = row + dyNbrs[k];
                     if ((col2 > (nCols - 1)) || (row2 > (nRows - 1))) {
                         continue;
                     }
@@ -212,7 +239,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     }
                     
                     int idx2 = calculatePixelIndex(row2, col2); 
-                    
+
                     if (idx1 < idx2) {
                         diffOrSim.set(idx1, idx2, dist);
                     } else {
@@ -349,7 +376,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
      * 
      * @return 
      */
-    public SparseMatrix getEdgeMatrix() {
+    public SimpleMatrix getEdgeMatrix() {
         return diffOrSim;
     }
 }
