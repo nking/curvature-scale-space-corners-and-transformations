@@ -41,13 +41,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     For each pixel in img, the color difference or similarity to it's adjacent 
     pixels are calculated.  
     For each pixel, using a pattern of only calculating the neighbors for
-    offsets (+1,0), (+1,+1), (0,+1) calculates the edge without repeating
+    offsets (+1,0), (+1,+1), (0,+1), (-1, +1) calculates the edge without repeating
     a pair.
-    
-    For example, calculating the edges for points involves these 3 neighbors:
-            0,0 --> (1,0), (1,1), (0,1),
-            1,0 --> (2,0), (2,1), (0,2),
-            1,1 --> (2,1), (2,2), (1,3),
     
     The conversion from col, row to a single index will use the convention in 
     Image.java which is index = (row * width) + col.
@@ -59,8 +54,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     */
     protected SimpleMatrix diffOrSim = null;
     
-    protected static final int[] dxNbrs = new int[]{1, 1, 0};
-    protected static final int[] dyNbrs = new int[]{0, 1, 1};
+    protected static final int[] dxNbrs = new int[]{1, 1, 0, -1};
+    protected static final int[] dyNbrs = new int[]{0, 1, 1,  1};
         
     protected ColorSpace colorSpace = null;
     
@@ -78,6 +73,18 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
        
        Currently, best use would be pre-shrinking the image using pyramidal decimation or other binning
        to reduce the image to size closer to 100 x 100 pixels or smaller.
+       
+       (Note that if the statement in the normalized cuts paper regarding bit significance
+       is followed, I should be able to factor the doubles to integers.
+        in that case, can use compression as I do in Image.java and
+        find a linear algebra eigen solver which will use the get and set methods
+        of my image class to keep the data small.
+        Also note, that instead of using an eigen solver, could alternatively,
+        use my two-point clustering code for the remaining logic.  the distance transform
+        and histograms make the remaining logic very fast, but it is dependent upon
+        the bounds of the data (that is maximum values of data points which would be
+        differences here converted to integers).
+       
      * @param img 
      * @param labels double array of labels for each pixel using the convention
      * labels[col][row].  Note that the largest label must be less than 

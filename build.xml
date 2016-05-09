@@ -241,6 +241,7 @@
             <inpath>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
+                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -327,6 +328,7 @@
         	<inpath>
       		<pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
+                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -390,6 +392,7 @@
             <inpath>
                 <pathelement location="${src.out.dir}"/>
                 <pathelement location="${lib.dir}/ejml-0.29.jar"/>
+                <pathelement location="${lib.dir}/LAML-1.6.2.jar"/>
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
@@ -572,6 +575,7 @@
         <unjar src="${lib.dir}/com.climbwithyourfeet.clustering.jar" dest="${classes.dir}/tmp"/>
         <move file="${classes.dir}/tmp/LICENSE.txt" tofile="${classes.dir}/tmp/Clustering_LICENSE.txt"/>
         <unjar src="${lib.dir}/ejml-0.29.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/LAML-1.6.2.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
         
@@ -584,6 +588,7 @@
             <fileset dir="${basedir}" includes="LICENSE.txt"/>
             <fileset dir="${basedir}" includes="README.txt"/>
             <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
+            <fileset dir="${lib.dir}" includes="LAML_LICENSE.txt"/>
             <fileset dir="${lib.dir}" includes="JFREECHART_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>
