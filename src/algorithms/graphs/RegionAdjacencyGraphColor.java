@@ -7,7 +7,8 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.awt.Color;
 import java.util.Set;
-import org.ejml.simple.SimpleMatrix;
+import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
+import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
 /**
  *
@@ -19,18 +20,6 @@ import org.ejml.simple.SimpleMatrix;
 public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     
     /*
-    the edge weights between 2 points need 1/2 of npixel X npixel storage,
-    so need to use compressed data structures.
-    
-    The ia4j api has CRS matrix and array implementations.
-        Matrix a = Matrices.CRS_FACTORY.createMatrix(100000, 100000);
-    
-    There is also LAML, but I could not find a benchmark results including it.
-    http://web.engr.illinois.edu/~mqian2/upload/projects/java/LAML/doc/index.html
-    
-    The convention adopted here is to always access the values for a pair of
-    points by the smallest index first.
-    
        4     
        3
        2       
@@ -47,12 +36,11 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     The conversion from col, row to a single index will use the convention in 
     Image.java which is index = (row * width) + col.
     
-    Also note that the convention used with sparse matrix diffOrSim will be to
-    to place the smallest index first: [smallestIndex][largerIndex] for
-    any 2 pixel indexes.
+    Also note that the normalized cuts class using the sparse matrix diffOrSim
+    needs a symmetric matrix, so the pairs are stored in both [i][j] and [j][i].
     
     */
-    protected SimpleMatrix diffOrSim = null;
+    protected FlexCompColMatrix diffOrSim = null;
     
     protected static final int[] dxNbrs = new int[]{1, 1, 0, -1};
     protected static final int[] dyNbrs = new int[]{0, 1, 1,  1};
@@ -62,23 +50,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     protected final ImageExt img;
     
      /**
-     * constructor.  Note that the similarity matrix created is nPix X nPix
-       in size, and currently the data structure is limited in size to max value of
-       an integer, so that means images with fewer than 46340 pixels can be processed
-       with this.
-       A 250 X 180 image will need at least 2.75 GB of memory.
-       In progress is a change to use a sparse matrix (and sparse eigensolver in using code).
+     * constructor.  
+     * 
        
-       (Note that if the statement in the normalized cuts paper regarding bit significance
-       is followed, I should be able to factor the doubles to integers.
-        in that case, can use compression as I do in Image.java and
-        find a linear algebra eigen solver which will use the get and set methods
-        of my image class to keep the data small.
-        Also note, that instead of using an eigen solver, could alternatively,
-        use my two-point clustering code for the remaining logic.  the distance transform
-        and histograms make the remaining logic very fast, but it is dependent upon
-        the bounds of the data (that is maximum values of data points which would be
-        differences here converted to integers).
        
      * @param img 
      * @param labels double array of labels for each pixel using the convention
@@ -91,11 +65,19 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         
         this.img = img;
 
-        if (img.getNPixels() > 46340) {
-            throw new IllegalStateException("an internal data structure is limited by " 
-            + "max integer size currently.  Please reduce image size to less than " 
-            + "46340 pixels and try again.");
-        }
+        /*
+        may make some improvements:
+        (if the statement in the normalized cuts paper regarding bit significance
+       is followed, I should be able to factor the doubles to integers.
+        in that case, can use compression as I do in Image.java and
+        find a linear algebra eigen solver which will use the get and set methods
+        of my image class to keep the data small.
+        Also note, that instead of using an eigen solver, could alternatively,
+        use my two-point clustering code for the remaining logic.  the distance transform
+        and histograms make the remaining logic very fast, but it is dependent upon
+        the bounds of the data (that is maximum values of data points which would be
+        differences here converted to integers).
+        */
         
     }
    
@@ -132,15 +114,12 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     }
                     int idx2 = calculatePixelIndex(row2, col2); 
                     
-                    if (idx1 < idx2) {
-                        double d = diffOrSim.get(idx1, idx2);
-                        double similarity = Math.exp(-1*d*d/sigma);
-                        diffOrSim.set(idx1, idx2, similarity);
-                    } else {
-                        double d = diffOrSim.get(idx2, idx1);
-                        double similarity = Math.exp(-1*d*d/sigma);
-                        diffOrSim.set(idx2, idx1, similarity);
-                    }
+                    // set both [i][j] and [j][i] to make symmetric matrix
+                    double d = diffOrSim.get(idx1, idx2);
+                    assert(d == diffOrSim.get(idx2, idx1));
+                    double similarity = Math.exp(-1*d*d/sigma);
+                    diffOrSim.set(idx1, idx2, similarity);
+                    diffOrSim.set(idx2, idx1, similarity);
                 }
             }
         }
@@ -178,7 +157,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
 
-        diffOrSim = new SimpleMatrix(nPix, nPix);
+        diffOrSim = new FlexCompColMatrix(nPix, nPix);
         
         CIEChromaticity cieC = new CIEChromaticity();
         
@@ -238,11 +217,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     
                     int idx2 = calculatePixelIndex(row2, col2); 
 
-                    if (idx1 < idx2) {
-                        diffOrSim.set(idx1, idx2, dist);
-                    } else {
-                        diffOrSim.set(idx2, idx1, dist);
-                    }
+                    // set both [i][j] and [j][i] to make matrix symetric
+                    diffOrSim.set(idx1, idx2, dist);
+                    diffOrSim.set(idx2, idx1, dist);
                 }
             }
         }
@@ -355,11 +332,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     continue;
                 }
                 int idx2 = calculatePixelIndex(y2, x2);
-                if (idx1 < idx2) {
-                    sum += diffOrSim.get(idx1, idx2);
-                } else {
-                    sum += diffOrSim.get(idx2, idx1);
-                }
+                sum += diffOrSim.get(idx1, idx2);
             }
         }
         
@@ -368,13 +341,10 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     
     /**
      * get the edge weights matrix of differences or similarity between 
-     * image pixels.  Note that it has to be be accessed using convention
-     * (smallestIndex, largerIndex).  Also note that the matrix is not copied,
-     * so any modifications will be present in this instance's too.
-     * 
+     * image pixels as a sparse symmetric matrix. 
      * @return 
      */
-    public SimpleMatrix getEdgeMatrix() {
+    public FlexCompColMatrix getEdgeMatrix() {
         return diffOrSim;
     }
 }

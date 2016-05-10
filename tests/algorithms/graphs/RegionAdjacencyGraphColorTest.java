@@ -1,5 +1,6 @@
 package algorithms.graphs;
 
+import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
@@ -8,6 +9,7 @@ import algorithms.misc.Misc;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import org.ejml.simple.SimpleEVD;
 import org.ejml.simple.SimpleMatrix;
 
@@ -106,8 +108,9 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
     
     public void testLinAlg() throws IOException, Exception {
         
-        String fileName = "tmp3.png";
-                    
+        //String fileName = "tmp3.png";
+        String fileName = "android_statues_02.jpg";
+                 
         System.out.println("fileName=" + fileName);
         
         String filePath = ResourceFinder.findFileInTestResources(fileName);
@@ -115,11 +118,15 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         String fileNameRoot = fileName.substring(0, fileName.lastIndexOf("."));
             
         ImageExt img = ImageIOHelper.readImageExt(filePath);
-          
+        
+        // use a faster cluster code here for inital seeds
+        
         int k = 150;
-        KMeansPlusPlusColor kmpp = new KMeansPlusPlusColor();
-        kmpp.computeMeans(k, img);
+        KMeansPlusPlus kmpp = new KMeansPlusPlus();
+        kmpp.computeMeans(k, img.copyToGreyscale());
         int[] pixAssignements = kmpp.getImgPixelSeedIndexes();
+        
+        System.out.println("have initial labels (super pixels)");
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -138,10 +145,10 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(img, labels);
         rag.populateEdgesWithColorSimilarity(ColorSpace.HSV);
         
-        SimpleMatrix weights = rag.getEdgeMatrix();
-        SimpleMatrix diag = createD(weights, rag, n);
+        FlexCompColMatrix weights = rag.getEdgeMatrix();
+        FlexCompColMatrix diag = createD(weights, rag, n);
         
-        SimpleMatrix d2 = diag.copy();
+        FlexCompColMatrix d2 = diag.copy();
         for (int i = 0; i < n; ++i) {
             double v = d2.get(i, i);
             v = 1./Math.sqrt(v);
@@ -150,23 +157,24 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
 
         //D^(-1/2)(D - W)D^(-1/2)z = lamdba z;
 
+        /*
         SimpleMatrix tmp = diag.minus(w);
         tmp = d2.mult(tmp).mult(d2);
 
         SimpleEVD eigVD = tmp.eig();
         
         System.out.println("n eigenvalues=" + eigVD.getNumberOfEigenvalues());
-        
+        */
         int z = 1;
     }
     
-    private SimpleMatrix createD(SimpleMatrix w, RegionAdjacencyGraphColor rag,
+    private FlexCompColMatrix createD(FlexCompColMatrix w, RegionAdjacencyGraphColor rag,
         int nPix) {
 
         //D is an N X N diagonal matrix with d on the diagonal
         //    d(i) = summation over j of w(i, j) where w is "weight" of the edge
         //    and j is over all nodes
-        SimpleMatrix d = new SimpleMatrix(nPix, nPix);
+        FlexCompColMatrix d = new FlexCompColMatrix(nPix, nPix);
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -184,11 +192,8 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
                     continue;
                 }
                 int idx2 = rag.calculatePixelIndex(row2, col2);
-                if (i < idx2) {
-                    dISum += w.get(i, idx2);
-                } else {
-                    dISum += w.get(idx2, i);
-                }
+                
+                dISum += w.get(i, idx2);
             }
 
             d.set(i, i, dISum);

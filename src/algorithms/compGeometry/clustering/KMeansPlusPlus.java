@@ -504,7 +504,7 @@ public class KMeansPlusPlus {
         }
         
         long v = nDistrC[idx];
-        for (int i = (idx - 1); idx > -1; --idx) {
+        for (int i = (idx - 1); i > -1; --i) {
             if (nDistrC[i] == v) {
                 idx = i;
             } else {

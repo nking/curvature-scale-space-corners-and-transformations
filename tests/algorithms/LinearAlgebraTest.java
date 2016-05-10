@@ -1,6 +1,10 @@
 package algorithms;
 
+import java.util.Map;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseVectorSub;
+import no.uib.cipr.matrix.sparse.ArpackSym;
+import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import org.ejml.interfaces.decomposition.EigenDecomposition;
 import org.ejml.simple.SimpleEVD;
 import org.ejml.simple.SimpleMatrix;
@@ -164,6 +168,45 @@ public class LinearAlgebraTest extends TestCase {
         } catch (java.lang.RuntimeException e) {
             fail(e.getMessage());
         }
+    }
+    
+    public void testEig1_MTJ() {
+        
+        // javadocs are at http://www.javadoc.io/doc/com.googlecode.matrix-toolkits-java/mtj/1.0.4
+        
+        /*
+        ArpackSym 
+           ARPACK is designed to compute a subset of eigenvalues/eigenvectors
+               ArpackSym(Matrix matrix) 
+               Map<Double,DenseVectorSub>	solve(int eigenvalues, ArpackSym.Ritz ritz)
+                   Solve the eigensystem for the number of eigenvalues requested.
+            The two relevant Ritz enums for normalized cuts are
+                SA - compute the NEV smallest (algebraic) eigenvalues.
+                SM - compute the NEV smallest (in magnitude) eigenvalues.
+                     *this is what scipy is using 'SM'
+        
+        CompColMatrix uses compressed column storage format
+        
+        CompDiagMatrix uses Compressed diagonal storage (CDS) matrix
+        
+        FlexCompRowMatrix is a Matrix stored row-wise into sparse vectors
+        
+        */
+                
+        // results in faster solution, but are lookup times increased?
+        //LinkedSparseMatrix a = new LinkedSparseMatrix(data.length, data[0].length);
+        
+        FlexCompColMatrix colM = new FlexCompColMatrix(2, 2);
+        colM.add(0, 0, 2);
+        colM.add(1, 1, 2);
+        
+        ArpackSym arpackSym = new ArpackSym(colM);
+        Map<Double, DenseVectorSub> rMap = arpackSym.solve(1, ArpackSym.Ritz.SM);
+        
+        for (Map.Entry<Double, DenseVectorSub> result : rMap.entrySet()) {           
+            System.out.println("resulting eigenvalue=" + result.getKey().toString());
+            System.out.println("resulting eigenvector=" + result.getValue().toString());
+        }        
     }
     
     // this is from JAMA matrix test http://math.nist.gov/javanumerics/jama/
