@@ -1,0 +1,3 @@
+https://github.com/fommil/matrix-toolkits-java/blob/master/LICENSE
+
+license is GLGPL

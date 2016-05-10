@@ -1,6 +1,5 @@
 package algorithms.graphs;
 
-import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;

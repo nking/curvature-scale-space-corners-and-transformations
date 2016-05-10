@@ -3695,11 +3695,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int tLen = 30;//5;
         double tR;
         if (clrSpace == 0) {
-            tR = 0.9*3.0; //0.6*3.0;
-            tLen = 6;
-        } else if (clrSpace == 1) {
-            tR = 0.5*3.0; //0.6*3.0;
+            tR = 0.5*3.0; //0.5*3.0;
             tLen = 1;
+        } else if (clrSpace == 1) {
+            tR = 0.5*3.0; //0.5*3.0;
+            tLen = 6;
         } else {
             // not tested yet
             tR = 0.6*3.0;

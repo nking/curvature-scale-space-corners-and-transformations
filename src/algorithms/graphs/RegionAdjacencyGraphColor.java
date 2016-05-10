@@ -31,17 +31,17 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     The convention adopted here is to always access the values for a pair of
     points by the smallest index first.
     
-       4
+       4     
        3
-       2
-       1  
-       0  
-         0  1  2  3
+       2       
+       1      \|/_
+       0 |/_  \|/_\|
+         0  1  2   3
     
     For each pixel in img, the color difference or similarity to it's adjacent 
     pixels are calculated.  
     For each pixel, using a pattern of only calculating the neighbors for
-    offsets (+1,0), (+1,+1), (0,+1), (-1, +1) calculates the edge without repeating
+    offsets (+1,0), (+1,+1), (0,+1), (-1,+1) calculates the edge without repeating
     a pair.
     
     The conversion from col, row to a single index will use the convention in 
@@ -183,12 +183,6 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
 
-        // this project is built for single threaded use, so using UJMP
-        //    may be slower due to use of mutexes and synchronization needed
-        //    for multi-threaded use,
-        //    but need an API which handles memory well,
-        //    so trying it 
-        
         diffOrSim = new SimpleMatrix(nPix, nPix);
         
         CIEChromaticity cieC = new CIEChromaticity();
