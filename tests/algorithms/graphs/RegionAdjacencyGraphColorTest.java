@@ -5,11 +5,18 @@ import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseVectorSub;
+import no.uib.cipr.matrix.MatrixEntry;
+import no.uib.cipr.matrix.sparse.ArpackSym;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
+import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import org.ejml.simple.SimpleEVD;
 import org.ejml.simple.SimpleMatrix;
 
@@ -108,8 +115,8 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
     
     public void testLinAlg() throws IOException, Exception {
         
-        //String fileName = "tmp3.png";
-        String fileName = "android_statues_02.jpg";
+        String fileName = "tmp3.png";
+        //String fileName = "android_statues_02.jpg";
                  
         System.out.println("fileName=" + fileName);
         
@@ -121,12 +128,13 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         
         // use a faster cluster code here for inital seeds
         
-        int k = 150;
+        int k = 15;//150;
         KMeansPlusPlus kmpp = new KMeansPlusPlus();
         kmpp.computeMeans(k, img.copyToGreyscale());
         int[] pixAssignements = kmpp.getImgPixelSeedIndexes();
         
         System.out.println("have initial labels (super pixels)");
+        System.out.flush();
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -145,18 +153,71 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(img, labels);
         rag.populateEdgesWithColorSimilarity(ColorSpace.HSV);
         
-        FlexCompColMatrix weights = rag.getEdgeMatrix();
-        FlexCompColMatrix diag = createD(weights, rag, n);
+        System.out.println("created region agency graph and similarity matrix");
+        System.out.flush();
+        FlexCompRowMatrix weights = rag.getEdgeMatrix();
+        FlexCompRowMatrix diag = createD(weights, rag, n);
         
-        FlexCompColMatrix d2 = diag.copy();
-        for (int i = 0; i < n; ++i) {
-            double v = d2.get(i, i);
+        FlexCompRowMatrix d2 = (FlexCompRowMatrix) diag.copy();
+        Iterator<MatrixEntry> iter = diag.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            int col = entry.column();
+            int row = entry.row();
+            double v = entry.get();
             v = 1./Math.sqrt(v);
-            d2.set(i, i, v);
+            d2.set(col, row, v);
         }
-
+        
+        System.out.println("weight matrix " + 
+            " nRowsXCols=" + (weights.numRows() * weights.numColumns())
+            + " number of nodes=" + MatrixUtil.countNodes(weights)
+        );
+        
         //D^(-1/2)(D - W)D^(-1/2)z = lamdba z;
-
+        // tmp = diag - w
+        // tmp = d2 mult tmp mult d2
+        FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(diag, weights);
+        
+        System.out.println("tmp matrix after subtract " + 
+            " nRowsXCols=" + (tmp.numRows() * tmp.numColumns())
+            + " number of nodes=" + MatrixUtil.countNodes(tmp)
+        );
+        
+        tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);
+        
+        System.out.println("tmp matrix after multiply " + 
+            " nRowsXCols=" + (tmp.numRows() * tmp.numColumns())
+            + " number of nodes=" + MatrixUtil.countNodes(tmp)
+        );
+        
+        tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);
+ 
+        // PRECISION CORRECTIONS needed for perfectly symmetric matrix
+        FlexCompRowMatrix tmp2 = (FlexCompRowMatrix) tmp.copy();
+        //matrix is not symetric
+        iter = tmp2.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            int col = entry.column();
+            int row = entry.row();
+            double v = entry.get();
+            tmp.set(col, row, v);
+            tmp.set(row, col, v);
+        }
+                
+        int m = weights.numRows();
+        int nEig = Math.min(100, m - 2);
+        ArpackSym arpackSym = new ArpackSym(tmp);
+        Map<Double, DenseVectorSub> rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);
+        
+        assertNotNull(rMap);
+        assertTrue(rMap.size() > 1);
+        /*for (Map.Entry<Double, DenseVectorSub> result : rMap.entrySet()) {           
+            System.out.println("resulting eigenvalue=" + result.getKey().toString());
+            System.out.println("resulting eigenvector=" + result.getValue().toString());
+        }*/
+        
         /*
         SimpleMatrix tmp = diag.minus(w);
         tmp = d2.mult(tmp).mult(d2);
@@ -165,16 +226,15 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         
         System.out.println("n eigenvalues=" + eigVD.getNumberOfEigenvalues());
         */
-        int z = 1;
     }
     
-    private FlexCompColMatrix createD(FlexCompColMatrix w, RegionAdjacencyGraphColor rag,
+    private FlexCompRowMatrix createD(FlexCompRowMatrix w, RegionAdjacencyGraphColor rag,
         int nPix) {
 
         //D is an N X N diagonal matrix with d on the diagonal
         //    d(i) = summation over j of w(i, j) where w is "weight" of the edge
         //    and j is over all nodes
-        FlexCompColMatrix d = new FlexCompColMatrix(nPix, nPix);
+        FlexCompRowMatrix d = new FlexCompRowMatrix(nPix, nPix);
 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;

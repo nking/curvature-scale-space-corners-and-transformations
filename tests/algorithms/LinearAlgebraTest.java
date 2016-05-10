@@ -5,6 +5,7 @@ import junit.framework.TestCase;
 import no.uib.cipr.matrix.DenseVectorSub;
 import no.uib.cipr.matrix.sparse.ArpackSym;
 import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
+import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import org.ejml.interfaces.decomposition.EigenDecomposition;
 import org.ejml.simple.SimpleEVD;
 import org.ejml.simple.SimpleMatrix;
@@ -196,7 +197,7 @@ public class LinearAlgebraTest extends TestCase {
         // results in faster solution, but are lookup times increased?
         //LinkedSparseMatrix a = new LinkedSparseMatrix(data.length, data[0].length);
         
-        FlexCompColMatrix colM = new FlexCompColMatrix(2, 2);
+        FlexCompRowMatrix colM = new FlexCompRowMatrix(2, 2);
         colM.add(0, 0, 2);
         colM.add(1, 1, 2);
         

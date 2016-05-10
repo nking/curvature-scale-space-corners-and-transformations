@@ -7,7 +7,6 @@ import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import java.awt.Color;
 import java.util.Set;
-import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
 /**
@@ -40,7 +39,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     needs a symmetric matrix, so the pairs are stored in both [i][j] and [j][i].
     
     */
-    protected FlexCompColMatrix diffOrSim = null;
+    protected FlexCompRowMatrix diffOrSim = null;
     
     protected static final int[] dxNbrs = new int[]{1, 1, 0, -1};
     protected static final int[] dyNbrs = new int[]{0, 1, 1,  1};
@@ -157,7 +156,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         int nCols = img.getWidth();
         int nRows = img.getHeight();
 
-        diffOrSim = new FlexCompColMatrix(nPix, nPix);
+        diffOrSim = new FlexCompRowMatrix(nPix, nPix);
         
         CIEChromaticity cieC = new CIEChromaticity();
         
@@ -344,7 +343,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
      * image pixels as a sparse symmetric matrix. 
      * @return 
      */
-    public FlexCompColMatrix getEdgeMatrix() {
+    public FlexCompRowMatrix getEdgeMatrix() {
         return diffOrSim;
     }
 }
