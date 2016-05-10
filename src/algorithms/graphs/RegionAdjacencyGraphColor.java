@@ -67,12 +67,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
        an integer, so that means images with fewer than 46340 pixels can be processed
        with this.
        A 250 X 180 image will need at least 2.75 GB of memory.
-       In the future, this method might create an overlapping tiling handling to handle larger
-       images and use a compact data structure (espec since normalized cuts does not need 
-       a high significance in digits for edge weights).  
-       
-       Currently, best use would be pre-shrinking the image using pyramidal decimation or other binning
-       to reduce the image to size closer to 100 x 100 pixels or smaller.
+       In progress is a change to use a sparse matrix (and sparse eigensolver in using code).
        
        (Note that if the statement in the normalized cuts paper regarding bit significance
        is followed, I should be able to factor the doubles to integers.
