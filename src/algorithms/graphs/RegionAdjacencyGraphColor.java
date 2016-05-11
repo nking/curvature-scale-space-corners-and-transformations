@@ -2,10 +2,11 @@ package algorithms.graphs;
 
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
-import algorithms.misc.Misc;
 import algorithms.util.PairInt;
-import java.awt.Color;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
@@ -41,22 +42,16 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     */
     protected FlexCompRowMatrix diffOrSim = null;
     
-    protected static final int[] dxNbrs = new int[]{1, 1, 0, -1};
-    protected static final int[] dyNbrs = new int[]{0, 1, 1,  1};
-        
     protected ColorSpace colorSpace = null;
     
     protected final ImageExt img;
     
      /**
      * constructor.  
-     * 
-       
-       
+     *        
      * @param img 
      * @param labels double array of labels for each pixel using the convention
-     * labels[col][row].  Note that the largest label must be less than 
-     * the number of pixels in the image.
+     * labels[col][row]. Note that the labeled regions must be contiguous.
      */
     public RegionAdjacencyGraphColor(ImageExt img, int[][] labels) {
 
@@ -85,11 +80,11 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         populatePairDifferences(clrSpace);
 
         double sigma;
-        if (clrSpace.equals(clrSpace.HSV)) {
+        if (clrSpace.equals(ColorSpace.HSV)) {
             // max possible = sqrt(1*1 + 1*1 + 1*1) = sqrt3
             sigma = 1.7320508;
 
-        } else if (clrSpace.equals(clrSpace.CIELAB)) {
+        } else if (clrSpace.equals(ColorSpace.CIELAB)) {
             // max possible deltaE2000 = 19.22
             sigma = 19.22;
 
@@ -99,30 +94,33 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             sigma = 441.6729559;
         }
         
-        // offsets for neighbors of each pixel to calculate: (+1,0), (+1,+1), (0,+1)
+        Set<PairInt> added = new HashSet<PairInt>();
         
-        for (int row = 0; row < imageHeight; ++row) {
-            for (int col = 0; col < imageWidth; ++col) {
-                int idx1 = calculatePixelIndex(row, col);                
-                for (int k = 0; k < dxNbrs.length; ++k) {
-                    int col2 = col + dxNbrs[k];
-                    int row2 = row + dyNbrs[k];
-                    if ((col2 > (imageWidth - 1)) || (row2 > (imageHeight - 1))
-                        || (col2 < 0) || (row2 < 0)) {
-                        continue;
-                    }
-                    int idx2 = calculatePixelIndex(row2, col2); 
-                    
-                    // set both [i][j] and [j][i] to make symmetric matrix
-                    double d = diffOrSim.get(idx1, idx2);
-                    assert(d == diffOrSim.get(idx2, idx1));
-                    double similarity = Math.exp(-1*d*d/sigma);
-                    diffOrSim.set(idx1, idx2, similarity);
-                    diffOrSim.set(idx2, idx1, similarity);
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
                 }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // set both [i][j] and [j][i] to make symmetric matrix
+                double d = diffOrSim.get(idx1, idx2);
+                assert(d == diffOrSim.get(idx2, idx1));
+                double similarity = Math.exp(-1*d*d/sigma);
+                diffOrSim.set(idx1, idx2, similarity);
+                diffOrSim.set(idx2, idx1, similarity);
             }
         }
-        
     }
     
     public boolean isWithinImageBounds(int col, int row) {
@@ -131,6 +129,13 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             return false;
         }
         return true;
+    }
+    
+    public int getImageWith() {
+        return imageWidth;
+    }
+    public int getImageHeight() {
+        return imageHeight;
     }
     
     public int calculatePixelIndex(int row, int col) {
@@ -152,190 +157,100 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         
         this.colorSpace = clrSpace;
         
-        int nPix = img.getNPixels();
+        int nNodes = regions.size();
         int nCols = img.getWidth();
         int nRows = img.getHeight();
 
-        diffOrSim = new FlexCompRowMatrix(nPix, nPix);
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+                
+        // calculate the average colors for each node
+        float[][] nodeColors = new float[3][nNodes];
+        for (int i = 0; i < 3; ++i) {
+            nodeColors[i] = new float[nNodes];
+        }
+        int[] count = new int[nNodes];
+        
+        for (int row = 0; row < nRows; ++row) {
+            for (int col = 0; col < nCols; ++col) {
+                int label = labels[col][row];
+                nodeColors[0][label] += img.getR(col, row);
+                nodeColors[1][label] += img.getG(col, row);
+                nodeColors[2][label] += img.getB(col, row);
+                count[label]++;
+            }
+        }
+        for (int i = 0; i < nNodes; ++i) {
+            nodeColors[0][i] /= (float)count[i];
+            nodeColors[1][i] /= (float)count[i];
+            nodeColors[2][i] /= (float)count[i];
+        }
+        
+        // calculate pairwise differences for adjacent nodes (similarity or distance edgeS)
         
         CIEChromaticity cieC = new CIEChromaticity();
         
-        // offsets for neighbors of each pixel to calculate: (+1,0), (+1,+1), (0,+1)
-
-        for (int row = 0; row < nRows; ++row) {
-            for (int col = 0; col < nCols; ++col) {
-                int r1 = img.getR(col, row);
-                int g1 = img.getG(col, row);
-                int b1 = img.getB(col, row);
-                int idx1 = calculatePixelIndex(row, col);                
-
-                for (int k = 0; k < dxNbrs.length; ++k) {
-                    final int col2 = col + dxNbrs[k];
-                    final int row2 = row + dyNbrs[k];
-                    if ((col2 > (nCols - 1)) || (row2 > (nRows - 1))
-                        || (col2 < 0) || (row2 < 0)) {
-                        continue;
-                    }
-                    int r2 = img.getR(col2, row2);
-                    int g2 = img.getG(col2, row2);
-                    int b2 = img.getB(col2, row2);
-                    
-                    double dist;
-                    
-                    if (clrSpace.equals(clrSpace.HSV)) {
-
-                        float[] hsb1 = new float[3];
-                        Color.RGBtoHSB(r1, g1, b1, hsb1);
-
-                        float[] hsb2 = new float[3];
-                        Color.RGBtoHSB(r2, g2, b2, hsb2);
-
-                        float sumDiff = 0;
-                        for (int m = 0; m < hsb1.length; ++m) {
-                            float diff = hsb1[m] - hsb2[m];
-                            sumDiff += (diff * diff);
-                        }
-                        dist = Math.sqrt(sumDiff);
-
-                    } else if (clrSpace.equals(clrSpace.CIELAB)) {
-
-                        float[] cieLAB1 = cieC.rgbToCIELAB(r1, g1, b1);
-
-                        float[] cieLAB2 = cieC.rgbToCIELAB(r2, g2, b2);
-
-                        dist = Math.abs(cieC.calcDeltaECIE2000(cieLAB1, cieLAB2));
-
-                    } else {
-
-                        //RGB
-                        int diffR = r1 - r2;
-                        int diffG = g1 - g2;
-                        int diffB = b1 - b2;
-                        dist = Math.sqrt(diffR * diffR + diffG * diffG + diffB * diffB);
-                    }
-                    
-                    int idx2 = calculatePixelIndex(row2, col2); 
-
-                    // set both [i][j] and [j][i] to make matrix symetric
-                    diffOrSim.set(idx1, idx2, dist);
-                    diffOrSim.set(idx2, idx1, dist);
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
                 }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                double diff;
+                if (clrSpace.equals(ColorSpace.HSV)) {
+                    float sumDiff = 0;
+                    for (int m = 0; m < 3; ++m) {
+                        float d = nodeColors[m][idx1] - nodeColors[m][idx2];
+                        sumDiff += (d * d);
+                    }
+                    diff = Math.sqrt(sumDiff);
+                } else if (clrSpace.equals(ColorSpace.CIELAB)) {
+                    diff = Math.abs(cieC.calcDeltaECIE2000(
+                        nodeColors[0][idx1], nodeColors[1][idx1], nodeColors[2][idx1],
+                        nodeColors[0][idx2], nodeColors[1][idx2], nodeColors[2][idx2]
+                    ));
+                } else {
+                    //RGB
+                    float diffR = nodeColors[0][idx1] - nodeColors[0][idx2];
+                    float diffG = nodeColors[1][idx1] - nodeColors[1][idx2];
+                    float diffB = nodeColors[2][idx1] - nodeColors[2][idx2];
+                    diff = Math.sqrt(diffR * diffR + diffG * diffG + diffB * diffB);
+                }
+                // set both [i][j] and [j][i] to make matrix symmetric
+                diffOrSim.set(idx1, idx2, diff);
+                diffOrSim.set(idx2, idx1, diff);
             }
-        }
+        }                                       
     }
     
-    /**
-     * calculate the normalized cute between regions regionIndex1 and
-     * regionIndex2 using
-     * normalized_cut(A, B) = 2 - normalized_assoc(A, B);
-     * 
-     * @param regionIndex1
-     * @param regionIndex2
-     * @return 
-     */
-    public double calculateNormalizedCut(int regionIndex1, int regionIndex2) {
-        
-        double sum = calculateNormalizedAssoc(regionIndex1) + 
-            calculateNormalizedAssoc(regionIndex2);
-        
-        return 2 - sum;
-    }
-    
-    /**
-     <pre>
+    /*
+       calculate the normalized cute between regions regionIndex1 and
+       regionIndex2 using
+       normalized_cut(A, B) = 2 - normalized_assoc(A, B);
+     
                                assoc(A, A) 
          normalized_assoc(A) = ----------- 
                                assoc(A, V)
-     </pre>
-     * @param regionIndex1
-     * @param regionIndex2
-     * @return 
-     */
-    double calculateNormalizedAssoc(int regionIndex) {
-        double sum0 = calculateSelfAssoc(regionIndex);
-        double sum1 = calculateAssocOfRegion(regionIndex);
-        if (sum1 == 0) {
-            return 0;
-        }
-        return sum0/sum1;
-    }
+                               
+         where assoc(A, A) is the sum of all edges within region A
+         and assoc(A, V) is the sum of all edges from A to another region.
+    */
     
-    /**
-     * calculate the sum of all of regionIndex's edge's for nodes within 
-     * regionIndex.
-     * @param regionIndex
-     * @return 
-     */
-    double calculateSelfAssoc(int regionIndex) {
-        
-        Region region = regions.get(regionIndex);
-        
-        Set<PairInt> points = region.getPoints();
-        
-        // uniquely adding relationships by only
-        // adding the neighbors (+1,0), (+1,+1), (0,+1)
-        // after testing that it exists within points
-        double sum = 0;
-        for (PairInt p : points) {
-            int x = p.getX();
-            int y = p.getY();
-            int idx1 = calculatePixelIndex(y, x);
-            for (int k = 0; k < dxNbrs.length; ++k) {
-                int x2 = x + dxNbrs[k];
-                int y2 = y + dyNbrs[k];
-                PairInt p2 = new PairInt(x2, y2);
-                if (points.contains(p2)) {
-                    int idx2 = calculatePixelIndex(y2, x2);
-                    if (idx1 < idx2) {
-                        sum += diffOrSim.get(idx1, idx2);
-                    } else {
-                        sum += diffOrSim.get(idx2, idx1);
-                    }
-                }
-            }
-        }
-        return sum;
-    }
-    
-    /**
-     * calculate the sum of all of regionIndex's edge's for all nodes it is
-     * adjacent to.
-     * @param regionIndex
-     * @return 
-     */
-    double calculateAssocOfRegion(int regionIndex) {
-        
-        double sum = calculateSelfAssoc(regionIndex);
-        
-        Region region = regions.get(regionIndex);
-        
-        Set<PairInt> points = region.getPoints();
-        
-        Set<PairInt> perimeter = region.getPerimeter();
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        for (PairInt p : perimeter) {
-            int x = p.getX();
-            int y = p.getY();
-            int idx1 = calculatePixelIndex(y, x);
-            for (int k = 0; k < dxs.length; ++k) {
-                int x2 = x + dxs[k];
-                int y2 = y + dys[k];
-                if (x2 < 0 || y2 < 0 || (x2 > (imageWidth - 1)) || (y2 > (imageHeight - 1))) {
-                    continue;
-                }
-                PairInt p2 = new PairInt(x2, y2);
-                if (points.contains(p2)) {
-                    continue;
-                }
-                int idx2 = calculatePixelIndex(y2, x2);
-                sum += diffOrSim.get(idx1, idx2);
-            }
-        }
-        
-        return sum;
+    public double[] calculateCentroidOfRegion(int regionIndex) {
+        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        return curveHelper.calculateXYCentroids(regions.get(regionIndex).getPoints());
     }
     
     /**
@@ -346,4 +261,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     public FlexCompRowMatrix getEdgeMatrix() {
         return diffOrSim;
     }
+    
+    public Set<PairInt> getRegionPoints(int regionIndex) {
+        return regions.get(regionIndex).getPoints();
+    }
+    
 }

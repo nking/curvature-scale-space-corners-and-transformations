@@ -166,18 +166,18 @@ public class RegionAdjacencyGraph {
         
         Map<Integer, Set<PairInt>> map = createRegionsMap(img, labels);
         
-        List<Region> regions = new ArrayList<Region>();
-        for (int i = 0; i < maxLabel; ++i) {
+        List<Region> regionList = new ArrayList<Region>();
+        for (int i = 0; i <= maxLabel; ++i) {
             Integer label = Integer.valueOf(i);
             Set<PairInt> set = map.get(label);
             if (set == null) {
-                regions.add(new Region(new HashSet<PairInt>()));
+                regionList.add(new Region(new HashSet<PairInt>()));
             } else {
-                regions.add(new Region(set));
+                regionList.add(new Region(set));
             }
         }
         
-        return regions;
+        return regionList;
     }
     
     private Map<Integer, Set<PairInt>> createRegionsMap(ImageExt img, int[][] labels) {

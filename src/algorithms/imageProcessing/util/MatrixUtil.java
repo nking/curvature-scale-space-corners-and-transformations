@@ -12,12 +12,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
-import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
-import no.uib.cipr.matrix.sparse.SparseVector;
 import org.ejml.simple.*;
 
 /**
@@ -274,8 +271,8 @@ public class MatrixUtil {
     }
     
     /**
-     * for sparse matrices m and n (which re same size), subtract them sparsely
-     * and return a sparse result.
+     * for sparse matrices m and n (which are same size), subtract them sparsely
+     * and return the sparse result.
      * @param m
      * @param n
      * @return 
@@ -360,9 +357,9 @@ public class MatrixUtil {
     }
     
     /**
-     * multiplies m by n and returns result in a sparse matrix.
-     * iterates over full size of nRows X nCols, but only writes non-zero values
-     * to a sparse matrix output.
+     * multiply m by n and returns result in a sparse matrix.
+     * iterates over nearly full size of nRows X nCols, but only writes non-zero values
+     * to a sparse matrix result.
      * @param m
      * @param n
      * @return 
@@ -414,7 +411,9 @@ public class MatrixUtil {
                 while (iter.hasNext()) {
                     VectorEntry entry = iter.next();
                     int mcol = entry.index();
-                    sum += (entry.get() * n.get(mcol, ncol));
+                    double vm = entry.get();
+                    double vn = n.get(mcol, ncol);
+                    sum += (vm * vn);
                 }
                 //for (int mcol = 0; mcol < mcols; mcol++) {
                 //    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    
