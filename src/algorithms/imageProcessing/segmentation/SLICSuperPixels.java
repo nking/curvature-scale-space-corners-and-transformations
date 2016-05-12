@@ -37,26 +37,43 @@ public class SLICSuperPixels {
     
     protected final int s;
     
+    protected final int nXs;
+    
+    protected final int nYs;
+    
     protected final float[][] seedDescriptors;
     
     protected final ImageExt img;
     
     protected final double threshold;
     
-    // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15)
-    protected static final double maxClr = 28.78;
+    // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15);  sqrt(sum sq) = 28.78
+    // paper recommends using value between 1 and 40
+    protected static final double maxCIELAB = 10;//28.78;
     
+    /**
+     * constructor for the super-pixel algorithm SLIC that uses the default
+     * color space of CIE LAB and creates approximately nClusters (a.k.a. 
+     * super-pixels).
+     * 
+     * @param img
+     * @param nClusters 
+     */
     public SLICSuperPixels(ImageExt img, int nClusters) {
         
         //TOOD: after have an implementation as authors suggest,
         //  change to use deltaE instead of sqrt sum diffs of CIE lab
         //  and compare differences in results and runtime (many more flops...)
-        
-        this.k = nClusters;
-        
-        double sampling = Math.sqrt(( (float)img.getNPixels()/(float)k));
+                
+        double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));
         
         this.s = (sampling < 1) ? 1 : (int)Math.round(sampling);
+        
+        nXs = Math.round((float)img.getWidth()/(float)s);
+        nYs = Math.round((float)img.getHeight()/(float)s);
+        this.k = nXs * nYs;
+        
+        log.info("k = " + k);
         
         this.img = img;
         
@@ -67,11 +84,37 @@ public class SLICSuperPixels {
         }
         
         // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
-        double maxError = (maxClr * maxClr * k) + (s*s/2) * k;
+        double maxError = (maxCIELAB * maxCIELAB * k) + (s*s/2) * k;
         maxError = Math.sqrt(maxError);
-        threshold = 0.1 * maxError;
+        threshold = 0;//0.01 * maxError;
     }
     
+     public void calculate() {
+        
+        init();
+        
+        int nIterMax = 20;
+        
+        int nIter = 0;
+        
+        while (nIter < nIterMax) {
+         
+            assignPixelsNearSeeds();
+            
+            double l2Norm = adjustClusterCenters();
+            
+            log.info("l2Norm=" + l2Norm + " nIter=" + nIter);
+            
+            if (l2Norm < threshold) {
+                break;
+            }
+            
+            nIter++;
+        }
+        
+        assignTheUnassigned();
+    }
+
     protected void init() {
         
         if (labels != null) {
@@ -109,23 +152,22 @@ public class SLICSuperPixels {
         int h = img.getHeight();
         
         // determine the centers of each s x s cell within search range of 3x3 in gradient
-        int nX = Math.round((float)w/(float)s);
-        int nY = Math.round((float)h/(float)s);
-        
-        int sHalf = s/2;
-        
+                
+        final int sHalf = s/2;
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
         // kCurrent = (iNy * nX) + iNx;
-        for (int iNx = 0; iNx < nX; ++iNx) {
-            int x1 = sHalf * iNx*s;
-            for (int iNy = 0; iNy < nY; ++iNy) {
+        for (int iNy = 0; iNy < nYs; ++iNy) {
+        
+            int y1 = sHalf + iNy*s;
+            
+            for (int iNx = 0; iNx < nXs; ++iNx) {
+            
+                final int x1 = sHalf + iNx*s;            
                 
-                int kCurrent = (iNy * nX) + iNx;
-                
-                int y1 = sHalf * iNy*s;
-                
+                int kCurrent = (iNy * nXs) + iNx;
+                                
                 // find smallest gradient within range (x1, y1) +-1 to set center for seed
                 double minG = Double.MAX_VALUE;
                 int minX2 = -1;
@@ -143,12 +185,18 @@ public class SLICSuperPixels {
                         minY2 = y2;
                     }
                 }
+                                
                 // [l, a, b, x, y]
+                float[] lab = img.getCIELAB(minX2, minY2);
+                System.arraycopy(lab, 0, seedDescriptors[kCurrent], 0, 3);
                 seedDescriptors[kCurrent][3] = minX2;
                 seedDescriptors[kCurrent][4] = minY2;
                 
-                float[] lab = img.getCIELAB(minX2, minY2);
-                System.arraycopy(lab, 0, seedDescriptors[kCurrent], 0, 3);
+                int pixIdx2 = img.getInternalIndex(minX2, minY2);
+                labels[pixIdx2] = kCurrent;
+                distances[pixIdx2] = 0;
+                
+                log.info("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
             }
         }        
     }
@@ -236,48 +284,26 @@ public class SLICSuperPixels {
        return gradient;
    }
     
-    public void calculate() {
-        
-        init();
-        
-        int nIterMax = 20;
-        
-        int nIter = 0;
-        
-        while (nIter < nIterMax) {
-         
-            assignPixelsNearSeeds();
-            
-            double l2Norm = adjustClusterCenters();
-            
-            System.out.println("l2Norm=" + l2Norm + " nIter=" + nIter);
-            
-            if (l2Norm < threshold) {
-                break;
-            }
-            
-            nIter++;
-        }
-        
-        assignTheUnassigned();
-    }
-
     private void assignPixelsNearSeeds() {
 
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
         for (int kCurrent = 0; kCurrent < k; ++kCurrent) {
 
-            int x1 = (int) seedDescriptors[kCurrent][3];
-            int y1 = (int) seedDescriptors[kCurrent][4];
-
+            float[] desc1 = seedDescriptors[kCurrent];
+            int x1 = (int) desc1[3];
+            int y1 = (int) desc1[4];
+            
             for (int x2 = (x1 - s); x2 <= (x1 + s); ++x2) {
                 for (int y2 = (y1 - s); y2 <= (y1 + s); ++y2) {
-                    if (x1 == x2 && y1 == y2) {
+                    
+                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                         continue;
                     }
                     int pixIdx2 = img.getInternalIndex(x2, y2);
 
-                    double dist = calcDist(img, seedDescriptors[kCurrent],
-                        x2, y2);
+                    double dist = calcDist(desc1, img.getCIELAB(x2, y2), x2, y2);
 
                     if (dist < distances[pixIdx2]) {
                         distances[pixIdx2] = dist;
@@ -303,7 +329,11 @@ public class SLICSuperPixels {
         int[] count = new int[k];
         
         for (int i = 0; i < img.getNPixels(); ++i) {
-            int label = labels[i];         
+            int label = labels[i]; 
+            if (label == -1) {
+                // this is still unassigned
+                continue;
+            }
             int x = img.getCol(i);
             int y = img.getRow(i);
             float[] lab = img.getCIELAB(i);
@@ -320,9 +350,11 @@ public class SLICSuperPixels {
         double[] sqDiffSum = new double[5];
         
         double diff;
-        for (int kCurrent = 0; kCurrent < k; ++kCurrent) {            
+        for (int kCurrent = 0; kCurrent < k; ++kCurrent) {  
+            assert(count[kCurrent] > 0);
+            float nc = count[kCurrent];
             for (int m = 0; m < 5; ++m) {
-                meanDescriptors[kCurrent][m] /= (float)count[kCurrent];
+                meanDescriptors[kCurrent][m] /= nc;
                 diff = meanDescriptors[kCurrent][m] - seedDescriptors[kCurrent][m];
                 sqDiffSum[m] += (diff * diff);
             }
@@ -344,22 +376,21 @@ public class SLICSuperPixels {
         return l2Norm;
     }
 
-    private double calcDist(ImageExt img, float[] desc1, int x2, int y2) {
-        
-        float[] lab2 = img.getCIELAB(x2, y2);
-        
-        double dClr = 0;
+    private double calcDist(float[] desc1, float[] lab2, int x2, int y2) {
+            
+        double dClrSq = 0;
         for (int i = 0; i < 3; ++i) {
             float diff = desc1[i] - lab2[i];
-            dClr += (diff * diff);
+            dClrSq += (diff * diff);
         }
-        dClr = Math.sqrt(dClr)/maxClr;
         
         float diffX = desc1[3] - x2;
         float diffY = desc1[4] - y2;
-        double dXY = Math.sqrt(diffX * diffX + diffY * diffY)/(double)s;
+        double dXYSq = diffX * diffX + diffY * diffY;
         
-        double dComb = Math.sqrt(dClr*dClr + dXY * dXY);
+        double dComb = dClrSq + (dXYSq * maxCIELAB * maxCIELAB)/((float)s * s);
+        
+        dComb = Math.sqrt(dComb);
         
         return dComb;
     }
@@ -378,26 +409,8 @@ public class SLICSuperPixels {
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 int pixIdx = img.getInternalIndex(i, j);
-                if (labels[pixIdx] == -1) {
-                    PairInt p = new PairInt(i, j);
-                    
-                    Set<Integer> adjLabels = unassignedMap.get(p);
-                    if (adjLabels == null) {
-                        adjLabels = new HashSet<Integer>();
-                        unassignedMap.put(p, adjLabels);
-                    }
-                    
-                    for (int m = 0; m < dxs.length; ++m) {
-                        int x2 = i + dxs[m];
-                        int y2 = j + dys[m];
-                        if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                            continue;
-                        }
-                        int pixIdx2 = img.getInternalIndex(x2, y2);
-                        if (labels[pixIdx2] > -1) {
-                            adjLabels.add(Integer.valueOf(labels[pixIdx2]));
-                        }
-                    }
+                if (labels[pixIdx] == -1) {                    
+                    addNeighobLabelsForPoint(unassignedMap, i, j, dxs, dys);
                 }
             }
         }
@@ -406,22 +419,40 @@ public class SLICSuperPixels {
         
         ArrayDeque<PairInt> queue1 = new ArrayDeque<PairInt>();
         
+        int nIter = 0;
+        
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
         while (true) {
         
             while (!queue0.isEmpty()) {
 
                 PairInt p = queue0.poll();
+                
+                if (visited.contains(p)) {
+                    continue;
+                }
+                visited.add(p);
+                
+                int x1 = p.getX();
+                int y1 = p.getY();
 
-                Set<Integer> adjLabels = unassignedMap.get(p);
-                assert(adjLabels != null);
+                Set<Integer> adjLabels;
+                if (nIter == 0) {
+                    adjLabels = unassignedMap.get(p);
+                    assert(adjLabels != null);
+                } else {
+                    adjLabels = new HashSet<Integer>();
+                    addNeighobLabelsForPoint(adjLabels, x1, y1, dxs, dys);
+                }
 
                 double minD = Double.MAX_VALUE;
                 Integer minLabel2 = null;
 
                 for (Integer label2 : adjLabels) {
 
-                    double dist = calcDist(img, seedDescriptors[label2.intValue()], 
-                        p.getX(), p.getY());
+                    double dist = calcDist(seedDescriptors[label2.intValue()], 
+                        img.getCIELAB(x1, y1), x1, y1);
 
                     if (dist < minD) {
                         minD = dist;
@@ -446,6 +477,7 @@ public class SLICSuperPixels {
                         queue1.add(new PairInt(x2, y2));
                     }
                 }
+                nIter++;
             }
             if (queue1.isEmpty()) {
                 break;
@@ -487,5 +519,47 @@ public class SLICSuperPixels {
         }
         
         return queue;
+    }
+    
+    public int[] getLabels() {
+        return labels;
+    }
+
+    private void addNeighobLabelsForPoint(Map<PairInt, Set<Integer>> unassignedMap, 
+        int i, int j, int[] dxs, int[] dys) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        PairInt p = new PairInt(i, j);
+
+        Set<Integer> adjLabels = unassignedMap.get(p);
+        if (adjLabels == null) {
+            adjLabels = new HashSet<Integer>();
+            unassignedMap.put(p, adjLabels);
+        }
+        
+        addNeighobLabelsForPoint(adjLabels, i, j, dxs, dys);
+    }
+    
+    private void addNeighobLabelsForPoint(Set<Integer> adjLabels, 
+        int i, int j, int[] dxs, int[] dys) {
+        
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        PairInt p = new PairInt(i, j);
+
+        for (int m = 0; m < dxs.length; ++m) {
+            int x2 = i + dxs[m];
+            int y2 = j + dys[m];
+            if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                continue;
+            }
+            int pixIdx2 = img.getInternalIndex(x2, y2);
+            if (labels[pixIdx2] > -1) {
+                adjLabels.add(Integer.valueOf(labels[pixIdx2]));
+            }
+        }
     }
 }

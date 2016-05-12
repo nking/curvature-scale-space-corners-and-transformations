@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1209,6 +1210,37 @@ int z1 = 1;
         }
         
         addAlternatingColorCurvesToImage(c, fileName, writeImage, input);
+    }
+    
+    public static void addAlternatingColorLabelsToRegion(Image img, int[] labels) {
+    
+        int nPixels = img.getNPixels();
+        
+        if (labels.length != nPixels) {
+            throw new IllegalArgumentException(
+                "labels.length should == img.nPixels");
+        }
+        
+        Map<Integer, Integer> labelColorMap = new HashMap<Integer, Integer>();
+        
+        int count = 0;
+        
+        for (int i = 0; i < nPixels; ++i) {
+            
+            int label = labels[i];
+            
+            Integer key = Integer.valueOf(label);            
+            
+            Integer clr = labelColorMap.get(key);
+            
+            if (clr == null) {
+                clr = Integer.valueOf(getNextColorRGB(count));
+                labelColorMap.put(key, clr);
+                count++;
+            }
+            
+            img.setRGB(img.getCol(i), img.getRow(i), clr);
+        }
     }
     
     public static void addAlternatingColorPointsToImages(
