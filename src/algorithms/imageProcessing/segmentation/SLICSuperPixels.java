@@ -84,9 +84,9 @@ public class SLICSuperPixels {
         }
         
         // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
-        double maxError = (maxCIELAB * maxCIELAB * k) + (s*s/2) * k;
+        double maxError = 2*(maxCIELAB * maxCIELAB * k);
         maxError = Math.sqrt(maxError);
-        threshold = 0;//0.01 * maxError;
+        threshold = 0.01 * maxError;
     }
     
      public void calculate() {
