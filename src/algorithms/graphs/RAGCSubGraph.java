@@ -19,17 +19,13 @@ public class RAGCSubGraph {
     protected final List<NormalizedCutsNode> nodes;
     
     protected final FlexCompRowMatrix diffOrSum;
-    
-    protected final Map<Integer, Set<Integer>> adjacentIndexes;
-    
+        
     public RAGCSubGraph(List<NormalizedCutsNode> theNodes, FlexCompRowMatrix
-        matrixOfDiffOrSim, Map<Integer, Set<Integer>> adjacencyMap) {
+        matrixOfDiffOrSim) {
         
         this.nodes = theNodes;
         
-        this.diffOrSum = matrixOfDiffOrSim;
-        
-        this.adjacentIndexes = adjacencyMap;
+        this.diffOrSum = matrixOfDiffOrSim;        
     }
     
     public int getNumberOfNodes() {
@@ -95,47 +91,16 @@ public class RAGCSubGraph {
                 w2.set(rKey2.intValue(), cKey2.intValue(), v);
                 w2.set(cKey2.intValue(), rKey2.intValue(), v);
             }
-        }
-                
-        Map<Integer, Set<Integer>> adjMap1 = new HashMap<Integer, Set<Integer>>();
-        Map<Integer, Set<Integer>> adjMap2 = new HashMap<Integer, Set<Integer>>();
-        for (int i = 0; i < 2; ++i) {
-            Map<Integer, Integer> map;
-             Map<Integer, Set<Integer>> adjMap;
-            if (i == 0) {
-                map = map1;
-                adjMap = adjMap1;
-            } else {
-                map = map2;
-                adjMap = adjMap2;
-            }
-            for (Entry<Integer, Integer> entry : map.entrySet()) {
-                Integer indexOld = entry.getKey();
-                Integer indexNew = entry.getValue();
-                Set<Integer> indexes2Old = adjacentIndexes.get(indexOld);
-                Set<Integer> indexes2New = new HashSet<Integer>();
-                for (Integer index2Old : indexes2Old) {
-                    Integer index2New = map.get(index2Old);
-                    if (index2New != null) {
-                        indexes2New.add(index2New);
-                    }
-                }
-                adjMap.put(indexNew, indexes2New);
-            }
-        }        
+        } 
         
-        RAGCSubGraph g1 = new RAGCSubGraph(nodes1, w1, adjMap1);
-        RAGCSubGraph g2 = new RAGCSubGraph(nodes2, w2, adjMap2);
+        RAGCSubGraph g1 = new RAGCSubGraph(nodes1, w1);
+        RAGCSubGraph g2 = new RAGCSubGraph(nodes2, w2);
         
         return new RAGCSubGraph[]{g1, g2};
     }
 
     public FlexCompRowMatrix getEdgeMatrix() {
         return diffOrSum;
-    }
-    
-    public Set<Integer> getAdjacentIndexes(Integer index) {
-        return adjacentIndexes.get(index);
     }
     
     public List<NormalizedCutsNode> getNodes() {

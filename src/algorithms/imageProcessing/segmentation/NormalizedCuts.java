@@ -134,7 +134,6 @@ public class NormalizedCuts {
             // tmp = diag - w
             // tmp = d2 mult tmp mult d2
             FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(d, w);
-         System.out.println(" d - w =" + tmp.toString());
             tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);        
             tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);
 
@@ -292,6 +291,12 @@ public class NormalizedCuts {
         
         double mCut = Double.MAX_VALUE;
         
+        
+        if (true) {
+            throw new UnsupportedOperationException("not yet implmented");
+        }
+        
+        
         double delta = (maxEV - minEV)/(double)numCuts;
         double t = minEV;
         while (t < maxEV) {
@@ -355,28 +360,27 @@ public class NormalizedCuts {
      */
     private double nCutCost(boolean[] cut, FlexCompRowMatrix d, FlexCompRowMatrix w) {
 
-        if (true) {
-            throw new UnsupportedOperationException("not yet implmented");
-        }
-        
         double cutCost = 0;
         for (MatrixEntry entry : w) {
             int row = entry.row();
             int col = entry.column();
-            double v = entry.get();
-            if (cut[col] != cut[row]) {
-                cutCost += entry.get();
+            // it's a summetric matrix so only count edges once
+            if (row <= col) {
+                if (cut[col] != cut[row]) {
+                    cutCost += entry.get();
+                }
             }
         } 
-        cutCost *= 0.5;
         
         double sumAssocA = 0;
         double sumAssocB = 0;
-        for (int i = 0; i < d.numRows(); ++i) {
+        for (MatrixEntry entry : d) {
+            int i = entry.row();
+            double v = entry.get();
             if (cut[i]) {
-                sumAssocA = d.get(i, i);
+                sumAssocA += v;
             } else {
-                sumAssocB = d.get(i, i);
+                sumAssocB += v;
             }
         }
         
