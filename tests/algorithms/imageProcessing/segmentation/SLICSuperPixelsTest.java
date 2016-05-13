@@ -24,7 +24,7 @@ public class SLICSuperPixelsTest extends TestCase {
         };
         
         int[] kCells = new int[]{
-            100,
+            200,
             4
         };
         

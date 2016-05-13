@@ -5,7 +5,9 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
@@ -46,6 +48,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     
     protected final ImageExt img;
     
+    protected final List<NormalizedCutsNode> nodes;
+    
      /**
      * constructor.  
      *        
@@ -73,7 +77,35 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         differences here converted to integers).
         */
         
+        int n = regions.size();
+        this.nodes = new ArrayList<NormalizedCutsNode>(n);
+        for (int i = 0; i < n; ++i) {
+            NormalizedCutsNode node = new NormalizedCutsNode(i);
+            nodes.add(node);
+        }
     }
+    
+    public RAGCSubGraph createANodesGraph() {
+        RAGCSubGraph g = new RAGCSubGraph(nodes, diffOrSim);
+        return g;
+    }
+    
+    public int[][] relabelUsingNodes() {
+        
+        int n0 = labels.length;
+        
+        int[][] labels2 = new int[n0][];
+        for (int i = 0; i < n0; ++i) {
+            labels2[i] = new int[labels[i].length];
+            for (int j = 0; j < labels[i].length; ++j) {
+                int v = labels[i][j];
+                labels2[i][j] = nodes.get(v).getnCutsLabel();
+            }
+        }
+        
+        return labels2;
+    }
+    
    
     public void populateEdgesWithColorSimilarity(ColorSpace clrSpace) {
         

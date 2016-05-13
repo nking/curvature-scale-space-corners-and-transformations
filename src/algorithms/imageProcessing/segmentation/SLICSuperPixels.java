@@ -196,7 +196,7 @@ public class SLICSuperPixels {
                 labels[pixIdx2] = kCurrent;
                 distances[pixIdx2] = 0;
                 
-                log.info("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
+                log.fine("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
             }
         }        
     }
