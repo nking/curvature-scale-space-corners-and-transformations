@@ -73,6 +73,14 @@ public class NormalizedCuts {
         
         RAGCSubGraph nodesGraph = rag.createANodesGraph();
         
+        // add an edge to self for every node, weight = edge_max (which is 1.0 if not specified)
+        // only doing this in the similarity matrix, not the graph adjacency map
+        FlexCompRowMatrix w = nodesGraph.getEdgeMatrix();
+        int n = nodesGraph.getNumberOfNodes();
+        for (int i = 0; i < n; ++i) {
+            w.set(i, i, 1.0);
+        }
+        
         performNormalizedCuts(nodesGraph);
         
         return rag.relabelUsingNodes();
@@ -86,14 +94,6 @@ public class NormalizedCuts {
       * @param rag 
       */
     private void performNormalizedCuts(RAGCSubGraph graph) {
-        
-        // add an edge to self for every node, weight = edge_max (which is 1.0 if not specified)
-        // only doing this in the similarity matrix, not the graph adjacency map
-        FlexCompRowMatrix w = graph.getEdgeMatrix();
-        int n = graph.getNumberOfNodes();
-        for (int i = 0; i < n; ++i) {
-            w.set(i, i, 1.0);
-        }
         
         // number of normalizd cuts to perform before determinging optimal among them
         int numCuts = 10;
@@ -134,6 +134,7 @@ public class NormalizedCuts {
             // tmp = diag - w
             // tmp = d2 mult tmp mult d2
             FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(d, w);
+         System.out.println(" d - w =" + tmp.toString());
             tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);        
             tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);
 
@@ -148,11 +149,13 @@ public class NormalizedCuts {
                 tmp.set(col, row, v);
                 tmp.set(row, col, v);
             }
-                
+                            
             // 2nd smallest eigenvector
             int m = w.numRows();
             //int nEig = 2;
             int nEig = Math.min(100, m - 2);
+
+            System.out.println("nEigen =" + nEig + " eig input=" + tmp.toString());
 
             /*
             info status:
@@ -418,29 +421,11 @@ public class NormalizedCuts {
         //    and j is over all nodes
         FlexCompRowMatrix d = new FlexCompRowMatrix(w.numRows(), w.numColumns());
         
-        for (int i = 0; i < w.numRows(); ++i) {
-            
-            //d(i) = summation over j of w(i, j)
-            
-            Integer index1 = Integer.valueOf(i);
-            
-            Set<Integer> indexes2 = graph.getAdjacentIndexes(index1);
-            
-            assert(indexes2 != null);
-        
-            int idx1 = index1.intValue();
-            
-            double dSum = 0;
-            
-            for (Integer index2 : indexes2) {
-                int idx2 = index2.intValue();
-                assert(idx1 != idx2);
-                dSum += w.get(idx1, idx2);
-            }
-            
-            if (dSum != 0) {
-                d.set(i, i, dSum);
-            }
+        for (MatrixEntry entry : w) {
+            int col = entry.column();
+            double v0 = entry.get();
+            double v1 = d.get(col, col);
+            d.set(col, col, (v0 + v1));
         }
         
         return d;
