@@ -86,7 +86,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     }
     
     public RAGCSubGraph createANodesGraph() {
-        RAGCSubGraph g = new RAGCSubGraph(nodes, diffOrSim);
+        RAGCSubGraph g = new RAGCSubGraph(nodes, diffOrSim,
+        adjacencyMap);
         return g;
     }
     

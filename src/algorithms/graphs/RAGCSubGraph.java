@@ -2,8 +2,11 @@ package algorithms.graphs;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 
@@ -17,12 +20,20 @@ public class RAGCSubGraph {
     
     protected final FlexCompRowMatrix diffOrSum;
     
+    protected final Map<Integer, Set<Integer>> adjacentIndexes;
+    
     public RAGCSubGraph(List<NormalizedCutsNode> theNodes, FlexCompRowMatrix
-        matrixOfDiffOrSim) {
+        matrixOfDiffOrSim, Map<Integer, Set<Integer>> adjacencyMap) {
         
         this.nodes = theNodes;
         
         this.diffOrSum = matrixOfDiffOrSim;
+        
+        this.adjacentIndexes = adjacencyMap;
+    }
+    
+    public int getNumberOfNodes() {
+        return nodes.size();
     }
     
     public RAGCSubGraph[] partition(boolean[] partitionCut) {
@@ -44,7 +55,7 @@ public class RAGCSubGraph {
             
             if (partitionCut[i]) {
                 nodes1.add(nodes.get(i));
-                map1.put(index1,Integer.valueOf(map1.size()));
+                map1.put(index1, Integer.valueOf(map1.size()));
             } else {
                 nodes2.add(nodes.get(i));
                 map2.put(index1,Integer.valueOf(map2.size()));
@@ -85,11 +96,45 @@ public class RAGCSubGraph {
                 w2.set(cKey2.intValue(), rKey2.intValue(), v);
             }
         }
+                
+        Map<Integer, Set<Integer>> adjMap1 = new HashMap<Integer, Set<Integer>>();
+        Map<Integer, Set<Integer>> adjMap2 = new HashMap<Integer, Set<Integer>>();
+        for (int i = 0; i < 2; ++i) {
+            Map<Integer, Integer> map;
+             Map<Integer, Set<Integer>> adjMap;
+            if (i == 0) {
+                map = map1;
+                adjMap = adjMap1;
+            } else {
+                map = map2;
+                adjMap = adjMap2;
+            }
+            for (Entry<Integer, Integer> entry : map.entrySet()) {
+                Integer indexOld = entry.getKey();
+                Integer indexNew = entry.getValue();
+                Set<Integer> indexes2Old = adjacentIndexes.get(indexOld);
+                Set<Integer> indexes2New = new HashSet<Integer>();
+                for (Integer index2Old : indexes2Old) {
+                    Integer index2New = map.get(index2Old);
+                    if (index2New != null) {
+                        indexes2New.add(index2New);
+                    }
+                }
+                adjMap.put(indexNew, indexes2New);
+            }
+        }        
         
-        RAGCSubGraph g1 = new RAGCSubGraph(nodes1, w1);
-        RAGCSubGraph g2 = new RAGCSubGraph(nodes2, w2);
+        RAGCSubGraph g1 = new RAGCSubGraph(nodes1, w1, adjMap1);
+        RAGCSubGraph g2 = new RAGCSubGraph(nodes2, w2, adjMap2);
         
         return new RAGCSubGraph[]{g1, g2};
     }
+
+    public FlexCompRowMatrix getEdgeMatrix() {
+        return diffOrSum;
+    }
     
+    public Map<Integer, Set<Integer>> getAdjacentIndexes() {
+        return adjacentIndexes;
+    }
 }
