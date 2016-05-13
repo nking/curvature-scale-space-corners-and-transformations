@@ -55,11 +55,17 @@ public class SLICSuperPixels {
      * constructor for the super-pixel algorithm SLIC that uses the default
      * color space of CIE LAB and creates approximately nClusters (a.k.a. 
      * super-pixels).
-     * 
+     * Note that the minimum sampling size internally is 3, so the number of
+     * clusters may be adjusted for that and for even intervals over width and height.
      * @param img
      * @param nClusters 
      */
     public SLICSuperPixels(ImageExt img, int nClusters) {
+        
+        if  (nClusters > img.getNPixels()) {
+            throw new IllegalArgumentException(
+                "nClusters must be smaller than number of pixels in img");
+        }
         
         //TOOD: after have an implementation as authors suggest,
         //  change to use deltaE instead of sqrt sum diffs of CIE lab
@@ -67,7 +73,11 @@ public class SLICSuperPixels {
                 
         double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));
         
-        this.s = (sampling < 1) ? 1 : (int)Math.round(sampling);
+        if (sampling < 3) {
+            sampling = 3;
+        }
+           
+        this.s = (int)Math.round(sampling);
         
         nXs = Math.round((float)img.getWidth()/(float)s);
         nYs = Math.round((float)img.getHeight()/(float)s);
@@ -196,7 +206,7 @@ public class SLICSuperPixels {
                 labels[pixIdx2] = kCurrent;
                 distances[pixIdx2] = 0;
                 
-                log.fine("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
+                log.info("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
             }
         }        
     }
