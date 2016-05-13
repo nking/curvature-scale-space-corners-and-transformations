@@ -1,20 +1,13 @@
 package algorithms.graphs;
 
-import algorithms.compGeometry.clustering.KMeansPlusPlus;
-import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
+import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -107,13 +100,9 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
             
         ImageExt img = ImageIOHelper.readImageExt(filePath);
         
-        // use a faster cluster code here for inital seeds
-        // implement the SLIC algorithm
-        
-        int k = 8;
-        KMeansPlusPlus kmpp = new KMeansPlusPlus();
-        kmpp.computeMeans(k, img.copyToGreyscale());
-        int[] pixAssignments = kmpp.getImgPixelSeedIndexes();
+        SLICSuperPixels slic = new SLICSuperPixels(img, 200);
+        slic.calculate();
+        int[] pixAssignments = slic.getLabels();
         
         System.out.println("have initial labels (super pixels)");
         System.out.flush();
@@ -128,38 +117,14 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
                 nMaxLabel = pixAssignments[i];
             }
         }
-        List<Set<PairInt>> pixelSets = new ArrayList<Set<PairInt>>();
-        for (int i = 0; i <= nMaxLabel; ++i) {
-            pixelSets.add(new HashSet<PairInt>());
-        }
-        for (int i = 0; i < pixAssignments.length; ++i) {
-            int label = pixAssignments[i];
-            int col = img.getCol(i);
-            int row = img.getRow(i);
-            pixelSets.get(label).add(new PairInt(col, row));
-        }
-        
-        List<Set<PairInt>> contigPixelSets = new ArrayList<Set<PairInt>>();
-        for (int i = 0; i < pixelSets.size(); ++i) {
-            Set<PairInt> set = pixelSets.get(i);
-            DFSConnectedGroupsFinder finder = new DFSConnectedGroupsFinder();
-            finder.setMinimumNumberInCluster(1);
-            finder.findConnectedPointGroups(set);
-            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
-                Set<PairInt> g = finder.getXY(j);
-                contigPixelSets.add(g);
-            }
-        }
-        
         int[][] labels = new int[w][h];
         for (int i = 0; i < w; ++i) {
             labels[i] = new int[h];
         }
-        for (int i = 0; i < contigPixelSets.size(); ++i) {
-            Set<PairInt> set = contigPixelSets.get(i);
-            for (PairInt p : set) {
-                labels[p.getX()][p.getY()] = i;
-            }
+        for (int i = 0; i < pixAssignments.length; ++i) {
+            int x = img.getCol(i);
+            int y = img.getRow(i);
+            labels[x][y] = pixAssignments[i];
         }
         
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(img, labels);
