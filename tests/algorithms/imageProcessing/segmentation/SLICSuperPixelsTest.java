@@ -4,6 +4,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.ResourceFinder;
+import java.util.Arrays;
 import junit.framework.TestCase;
 
 /**
@@ -19,13 +20,12 @@ public class SLICSuperPixelsTest extends TestCase {
         
         String[] fileNames = new String[]{
             "android_statues_02.jpg", 
-            "checkerboard_subimage.jpg",
-            //"tmp3.png"
+            "color_squares.png",
         };
         
         int[] kCells = new int[]{
             200,
-            4
+            9
         };
         
         for (int i = 0; i < fileNames.length; ++i) {
@@ -49,6 +49,8 @@ public class SLICSuperPixelsTest extends TestCase {
             ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
 
             MiscDebug.writeImage(img,  "_slic_" + fileNameRoot);
+            
+            //System.out.println("labels out=" + Arrays.toString(labels));
         }
     }
 }

@@ -55,8 +55,8 @@ public class SLICSuperPixels {
      * constructor for the super-pixel algorithm SLIC that uses the default
      * color space of CIE LAB and creates approximately nClusters (a.k.a. 
      * super-pixels).
-     * Note that the minimum sampling size internally is 3, so the number of
-     * clusters may be adjusted for that and for even intervals over width and height.
+     * The number of
+     * clusters may be adjusted for even intervals over width and height.
      * @param img
      * @param nClusters 
      */
@@ -73,8 +73,8 @@ public class SLICSuperPixels {
                 
         double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));
         
-        if (sampling < 3) {
-            sampling = 3;
+        if (sampling < 1) {
+            sampling = 1;
         }
            
         this.s = (int)Math.round(sampling);
@@ -164,17 +164,29 @@ public class SLICSuperPixels {
         // determine the centers of each s x s cell within search range of 3x3 in gradient
                 
         final int sHalf = s/2;
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
+        int dx, dy;
+        if (s < 3) {
+            dx = 0;
+            dy = 0;
+        } else {
+            dx = 1;
+            dy = 1;
+        }
         
         // kCurrent = (iNy * nX) + iNx;
         for (int iNy = 0; iNy < nYs; ++iNy) {
         
             int y1 = sHalf + iNy*s;
+            if ((dy == 0) && y1 > (h - 1)) {
+                y1 = h - 1;
+            }
             
             for (int iNx = 0; iNx < nXs; ++iNx) {
             
-                final int x1 = sHalf + iNx*s;            
+                int x1 = sHalf + iNx*s;            
+                if ((dx == 0) && x1 > (w - 1)) {
+                    x1 = w - 1;
+                }
                 
                 int kCurrent = (iNy * nXs) + iNx;
                                 
@@ -182,17 +194,20 @@ public class SLICSuperPixels {
                 double minG = Double.MAX_VALUE;
                 int minX2 = -1;
                 int minY2 = -1;
-                for (int m = 0; m < dxs.length; ++m) {
-                    int x2 = x1 + dxs[m];
-                    int y2 = y1 + dys[m];
-                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
+                for (int x2 = (x1 - dx); x2 <= (x1 + dx); ++x2) {
+                    if (x2 < 0 || (x2 > (w - 1))) {
                         continue;
                     }
-                    double g = gradient[x2][y2];
-                    if (g < minG) {
-                        minG = g;
-                        minX2 = x2;
-                        minY2 = y2;
+                    for (int y2 = (y1 - dy); y2 <= (y1 + dy); ++y2) {
+                        if (y2 < 0 || (y2 > (h - 1))) {
+                            continue;
+                        }
+                        double g = gradient[x2][y2];
+                        if (g < minG) {
+                            minG = g;
+                            minX2 = x2;
+                            minY2 = y2;
+                        }
                     }
                 }
                                 
@@ -206,7 +221,7 @@ public class SLICSuperPixels {
                 labels[pixIdx2] = kCurrent;
                 distances[pixIdx2] = 0;
                 
-                log.info("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
+                log.fine("seed " + kCurrent + " x=" + minX2 + " y=" + minY2);
             }
         }        
     }
