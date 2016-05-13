@@ -134,7 +134,11 @@ public class RAGCSubGraph {
         return diffOrSum;
     }
     
-    public Map<Integer, Set<Integer>> getAdjacentIndexes() {
-        return adjacentIndexes;
+    public Set<Integer> getAdjacentIndexes(Integer index) {
+        return adjacentIndexes.get(index);
+    }
+    
+    public List<NormalizedCutsNode> getNodes() {
+        return nodes;
     }
 }

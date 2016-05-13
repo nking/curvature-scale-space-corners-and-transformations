@@ -100,7 +100,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             labels2[i] = new int[labels[i].length];
             for (int j = 0; j < labels[i].length; ++j) {
                 int v = labels[i][j];
-                labels2[i][j] = nodes.get(v).getnCutsLabel();
+                labels2[i][j] = nodes.get(v).getNCutsLabel();
             }
         }
         

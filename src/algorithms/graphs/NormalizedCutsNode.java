@@ -24,14 +24,14 @@ public class NormalizedCutsNode {
     /**
      * @return the nCutsLabel
      */
-    public int getnCutsLabel() {
+    public int getNCutsLabel() {
         return nCutsLabel;
     }
 
     /**
      * @param nCutsLabel the nCutsLabel to set
      */
-    public void setnCutsLabel(int nCutsLabel) {
+    public void setNCutsLabel(int nCutsLabel) {
         this.nCutsLabel = nCutsLabel;
     }
     
