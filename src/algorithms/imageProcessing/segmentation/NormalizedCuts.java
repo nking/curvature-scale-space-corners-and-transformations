@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import no.uib.cipr.matrix.DenseVectorSub;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
@@ -45,8 +44,8 @@ public class NormalizedCuts {
      */
     public int[] normalizedCut(ImageExt img, int[] labels) {
        
-        //TODO: note, as authors mention, the wedge weights with values > 0.01
-        // are significant and the remaining are zeroes of different preceision
+        //TODO: note, as authors mention, the edge weights with values > 0.01
+        // are significant and the remaining are zeroes of different precision
         
         System.out.println("input labels=" + Arrays.toString(labels));
         
@@ -55,10 +54,6 @@ public class NormalizedCuts {
 
         System.out.println("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
 
-        // here, have to choose whether to make edges from color differences
-        // or from color similarity which uses an exponential.
-        // also, have to choose color space.
-        
         ColorSpace colorSpace = ColorSpace.RGB;
                         
         rag.populateEdgesWithColorSimilarity(colorSpace);
@@ -161,35 +156,37 @@ public class NormalizedCuts {
 
             double secondSmallestEigenValue = find2ndSmallestEigenValue(rMap);
             DenseVectorSub eigenVector = rMap.get(Double.valueOf(secondSmallestEigenValue));
-            assert(eigenVector != null);
             
-            System.out.println("secondSmallestEigenValue=" + secondSmallestEigenValue);
+            if (eigenVector != null) {
+           
+                System.out.println("secondSmallestEigenValue=" + secondSmallestEigenValue);
 
-            System.out.println("eigen vector size=" + eigenVector.size());
+                System.out.println("eigen vector size=" + eigenVector.size());
 
-            System.out.println("w.numRows=" + w.numRows() + " w.numCols=" + w.numColumns());
+                System.out.println("w.numRows=" + w.numRows() + " w.numCols=" + w.numColumns());
 
-            System.out.println("eigenVector=" + eigenVector);
-            
-            MinCut minCut = getMinNCut(eigenVector, d, w, numCuts);
+                System.out.println("eigenVector=" + eigenVector);
 
-            if (minCut != null) {
-                
-                System.out.println("mCut=" + minCut.mCut);
-                System.out.println("cut=" + Arrays.toString(minCut.minMask));
+                MinCut minCut = getMinNCut(eigenVector, d, w, numCuts);
 
-                if (minCut.mCut < thresh) {
+                if (minCut != null) {
 
-                    RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);
+                    System.out.println("mCut=" + minCut.mCut);
+                    System.out.println("cut=" + Arrays.toString(minCut.minMask));
 
-                    System.out.println("len(sub1)=" + subGraphs[0].getNumberOfNodes());
-                    
-                    System.out.println("len(sub2)=" + subGraphs[1].getNumberOfNodes());
-                    
-                    nCutRelabel(subGraphs[1], numCuts);
-                    nCutRelabel(subGraphs[0], numCuts);
+                    if (minCut.mCut < thresh) {
 
-                    return;
+                        RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);
+
+                        System.out.println("len(sub1)=" + subGraphs[0].getNumberOfNodes());
+
+                        System.out.println("len(sub2)=" + subGraphs[1].getNumberOfNodes());
+
+                        nCutRelabel(subGraphs[1], numCuts);
+                        nCutRelabel(subGraphs[0], numCuts);
+
+                        return;
+                    }
                 }
             }
         }

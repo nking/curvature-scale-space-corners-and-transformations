@@ -167,7 +167,7 @@ public class RegionAdjacencyGraph {
         
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
-                int label = labels[i][j];
+                int label = labels[j][i];
                 if (label > maxLabel) {
                     maxLabel = label;
                 }
