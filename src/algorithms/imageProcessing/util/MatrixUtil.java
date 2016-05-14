@@ -14,7 +14,9 @@ import java.util.Map;
 import java.util.Set;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
+import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
+import no.uib.cipr.matrix.sparse.SparseVector;
 import org.ejml.simple.*;
 
 /**
@@ -357,6 +359,94 @@ public class MatrixUtil {
     }
     
     /**
+     * for sparse matrices m and n (which are same size), subtract them sparsely
+     * and return the sparse result.
+     * @param m
+     * @param n
+     * @return 
+     */
+    public static FlexCompColMatrix sparseMatrixSubtract(FlexCompColMatrix m, 
+        FlexCompColMatrix n) {
+        
+        //TODO: consider use parameterization here with FlexCompRowMatrix method
+
+        if (m == null || m.numRows() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.numRows() == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mrows = m.numRows();
+
+        int mcols = m.numColumns();
+
+        if (mrows != n.numRows() || mcols != n.numColumns()) {
+            throw new IllegalArgumentException(
+                "m and n must be the same size");
+        }
+        
+        FlexCompColMatrix c = new FlexCompColMatrix(mrows, mcols);
+        
+        Set<PairInt> processed = new HashSet<PairInt>();
+        
+        long count = 0;
+        
+        Iterator<MatrixEntry> iter = m.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            int col = entry.column();
+            int row = entry.row();
+            double v = entry.get();
+            
+            double v2 = n.get(row, col);
+            
+            double result = v - v2;
+            
+            if (result != 0) {
+            
+                c.set(row, col, v - v2);
+                
+                count++;
+            }
+            
+            processed.add(new PairInt(row, col));
+           
+        }
+        
+        iter = n.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            int col = entry.column();
+            int row = entry.row();
+            
+            PairInt p = new PairInt(row, col);
+            if (processed.contains(p)) {
+                continue;
+            }
+            
+            double v2 = entry.get();
+            
+            double v = m.get(row, col);
+            
+            double result = v - v2;
+            
+            if (result != 0) {
+            
+                c.set(row, col, v - v2);
+                
+                count++;
+            }
+            
+            //processed.add(p);
+        }
+        
+        System.out.println(count + " nodes in output sparse matrix");
+        
+        return c;
+    }
+    
+    /**
      * multiply m by n and returns result in a sparse matrix.
      * iterates over nearly full size of nRows X nCols, but only writes non-zero values
      * to a sparse matrix result.
@@ -418,6 +508,81 @@ public class MatrixUtil {
                 //for (int mcol = 0; mcol < mcols; mcol++) {
                 //    sum += (m.get(row, mcol) * n.get(mcol, ncol));                    
                 //}
+                if (sum != 0) {
+                    c.set(row, ncol, sum);
+                    count++;
+                }
+            } 
+        }
+
+        System.out.println(count + " nodes in output sparse matrix");
+        
+        return c;
+    }
+    
+     /**
+     * multiply m by n and returns result in a sparse matrix.
+     * iterates over nearly full size of nRows X nCols, but only writes non-zero values
+     * to a sparse matrix result.
+     * @param m
+     * @param n
+     * @return 
+     */
+    public static FlexCompColMatrix sparseMatrixMultiply(
+        FlexCompColMatrix m, FlexCompColMatrix n) {
+
+        if (m == null || m.numRows() == 0) {
+            throw new IllegalArgumentException("m cannot be null or empty");
+        }
+        if (n == null || n.numRows() == 0) {
+            throw new IllegalArgumentException("n cannot be null or empty");
+        }
+        
+        int mrows = m.numRows();
+
+        int mcols = m.numColumns();
+
+        int nrows = n.numRows();
+        
+        int ncols = n.numColumns();
+        
+        if (mcols != nrows) {
+            throw new IllegalArgumentException(
+                "the number of columns in m must equal the number of rows in n");
+        }
+        
+        /*
+        a b c      p0 p1 p2
+        d e f      p3 p4 p5
+                   p6 p7 p8        
+        a*p0+b*p3  ...  a*p1    a*p2
+        d*p0+e*p3  ...  d*p1    d*p2
+        */
+        
+        long count = 0;
+        
+        Iterator<VectorEntry> iter = null;
+        
+        FlexCompColMatrix c = new FlexCompColMatrix(mrows, ncols);
+                            
+        for (int ncol = 0; ncol < ncols; ncol++) {
+        
+            SparseVector nColVec = n.getColumn(ncol);
+            
+            for (int row = 0; row < mrows; row++) {
+                
+                double sum = 0;
+                
+                int colCount = 0;
+                iter = nColVec.iterator();
+                while (iter.hasNext()) {
+                    VectorEntry entry = iter.next();
+                    int mcol = entry.index();
+                    double vn = entry.get();
+                    double vm = m.get(row, colCount);
+                    sum += (vm * vn);
+                    colCount++;
+                }
                 if (sum != 0) {
                     c.set(row, ncol, sum);
                     count++;

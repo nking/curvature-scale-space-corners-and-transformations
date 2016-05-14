@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.MatrixEntry;
+import no.uib.cipr.matrix.sparse.FlexCompColMatrix;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import static org.junit.Assert.*;
 import org.ejml.simple.*;
@@ -510,6 +511,44 @@ public class MatrixUtilTest extends TestCase {
         }
     }
     
+    public void testSparseMatrixMultiply2() {
+        
+        /*
+            m     *    n        result
+        
+         1  0  1    1  1  0    2  2  0
+         0  0  0    1  1  0    0  0  0
+         1  0  2    1  1  0    3  3  0
+        */
+        
+        FlexCompColMatrix m = new FlexCompColMatrix(3, 3);
+        m.set(0, 0, 1); m.set(0, 2, 1);
+        m.set(2, 0, 1); m.set(2, 2, 2);
+        
+        FlexCompColMatrix n = new FlexCompColMatrix(3, 3);
+        n.set(0, 0, 1); n.set(0, 1, 1);
+        n.set(1, 0, 1); n.set(1, 1, 1);
+        n.set(2, 0, 1); n.set(2, 1, 1);
+        
+        FlexCompColMatrix expected = new FlexCompColMatrix(3, 3);
+        expected.set(0, 0, 2); expected.set(0, 1, 2);
+        expected.set(2, 0, 3); expected.set(2, 1, 3);
+        
+        FlexCompColMatrix result = MatrixUtil.sparseMatrixMultiply(m, n);
+        
+        Iterator<MatrixEntry> iter = result.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            assertEquals(expected.get(entry.row(), entry.column()), entry.get());
+        }
+        
+        iter = expected.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            assertEquals(result.get(entry.row(), entry.column()), entry.get());
+        }
+    }
+    
     public void testSparseMatrixSubtract() {
         
         /*
@@ -535,6 +574,45 @@ public class MatrixUtilTest extends TestCase {
         expected.set(2, 1, -1); expected.set(2, 2, 2);
         
         FlexCompRowMatrix result = MatrixUtil.sparseMatrixSubtract(m, n);
+        
+        Iterator<MatrixEntry> iter = result.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            assertEquals(expected.get(entry.row(), entry.column()), entry.get());
+        }
+        
+        iter = expected.iterator();
+        while (iter.hasNext()) {
+            MatrixEntry entry = iter.next();
+            assertEquals(result.get(entry.row(), entry.column()), entry.get());
+        }
+    }
+    
+    public void testSparseMatrixSubtract2() {
+        
+        /*
+            m     *    n        result
+        
+         1  0  1    1  1  0    0  -1  1
+         0  0  0    1  1  0    -1 -1  0
+         1  0  2    1  1  0    0  -1  2
+        */
+        
+        FlexCompColMatrix m = new FlexCompColMatrix(3, 3);
+        m.set(0, 0, 1); m.set(0, 2, 1);
+        m.set(2, 0, 1); m.set(2, 2, 2);
+        
+        FlexCompColMatrix n = new FlexCompColMatrix(3, 3);
+        n.set(0, 0, 1); n.set(0, 1, 1);
+        n.set(1, 0, 1); n.set(1, 1, 1);
+        n.set(2, 0, 1); n.set(2, 1, 1);
+        
+        FlexCompColMatrix expected = new FlexCompColMatrix(3, 3);
+        expected.set(0, 1, -1); expected.set(0, 2, 1);
+        expected.set(1, 0, -1); expected.set(1, 1, -1);
+        expected.set(2, 1, -1); expected.set(2, 2, 2);
+        
+        FlexCompColMatrix result = MatrixUtil.sparseMatrixSubtract(m, n);
         
         Iterator<MatrixEntry> iter = result.iterator();
         while (iter.hasNext()) {
