@@ -188,9 +188,9 @@ public class NormalizedCuts {
 
                     RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);
 
-                    System.out.println("length of subGraph 1 =" + subGraphs[0].getNumberOfNodes());
+                    System.out.println("len(sub1)=" + subGraphs[0].getNumberOfNodes());
                     
-                    System.out.println("length of subGraph 2 =" + subGraphs[1].getNumberOfNodes());
+                    System.out.println("len(sub2)=" + subGraphs[1].getNumberOfNodes());
                     
                     nCutRelabel(subGraphs[0], numCuts);
                     nCutRelabel(subGraphs[1], numCuts);
@@ -305,10 +305,16 @@ public class NormalizedCuts {
             for (int i = 0; i < mask.length; ++i) {
                 mask[i] = (eigenVector.get(i) > t) ? true : false;
             }
-                        
+            
             double cost = nCutCost(mask, d, w);
             
-            System.out.println("cut.length=" + mask.length + " cost=" + cost);
+            if (Double.isNaN(cost)) {
+                // happens when mask has all same values
+                break;
+            }
+            
+            System.out.println("cut.length=" + mask.length + " cost=" + cost + 
+                "  cut_mask=" + Arrays.toString(mask));
             
             if (cost < mCut) {
                 mCut = cost;
