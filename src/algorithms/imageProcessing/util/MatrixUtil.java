@@ -271,6 +271,17 @@ public class MatrixUtil {
         }
         return count;
     }
+
+    public static long countNodes(FlexCompColMatrix a) {
+        
+        long count = 0;
+        Iterator<MatrixEntry> iter = a.iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            ++count;
+        }
+        return count;
+    }
     
     /**
      * for sparse matrices m and n (which are same size), subtract them sparsely

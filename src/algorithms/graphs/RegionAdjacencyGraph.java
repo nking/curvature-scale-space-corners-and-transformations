@@ -27,28 +27,37 @@ public class RegionAdjacencyGraph {
     protected final int imageWidth;
     protected final int imageHeight;
     
+    //NOTE: these are transcribed to format [row][col]
     protected final int[][] labels;
         
     /**
      * constructor
      * @param img 
      * @param labels double array of labels for each pixel using the convention
-     * labels[col][row].  Note that the largest label must be less than 
+     * labels[pixelIndex].  Note that the largest label must be less than 
      * the number of pixels in the image.
      * Also note that labels isn't copied and will be modified as the graph changes.
      */
-    public RegionAdjacencyGraph(ImageExt img, int[][] labels) {
+    public RegionAdjacencyGraph(ImageExt img, int[] labels1D) {
         
         imageWidth = img.getWidth();
         imageHeight = img.getHeight();
         
-        this.labels = labels;
+        this.labels = new int[imageHeight][];
+        for (int i = 0; i < imageHeight; ++i) {
+            labels[i] = new int[imageWidth];
+            for (int j = 0; j < imageWidth; ++j) {
+                int pixIdx = img.getInternalIndex(j, i);
+                labels[i][j] = labels1D[pixIdx];
+            } 
+        } 
         
         this.regions = createRegionsList(img, labels);
         
         this.adjacencyMap = createAdjacencyMap(this.regions);
     }
     
+    /*
     public void mergeRegions(int regionIndex1, int regionIndex2) {
 
         Region region1 = regions.get(regionIndex1);
@@ -84,7 +93,8 @@ public class RegionAdjacencyGraph {
         }
         adjacencyMap.remove(index2);
     }
-    
+    */
+ 
     public Map<Integer, Set<Integer>> createAdjacencyMap(List<Region> aRegion) {
         
         Map<Integer, Set<Integer>> map = new HashMap<Integer, Set<Integer>>();
@@ -190,7 +200,7 @@ public class RegionAdjacencyGraph {
         for (int i = 0; i < w; ++i) {
             for (int j = 0; j < h; ++j) {
                 
-                int label = labels[i][j];
+                int label = labels[j][i];
                 Integer index = Integer.valueOf(label);
                 
                 Set<PairInt> set = map.get(index);

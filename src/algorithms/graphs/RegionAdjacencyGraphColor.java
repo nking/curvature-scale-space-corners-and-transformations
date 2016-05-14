@@ -55,9 +55,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
      *        
      * @param img 
      * @param labels double array of labels for each pixel using the convention
-     * labels[col][row]. Note that the labeled regions must be contiguous.
+     * labels[pixelIndex]. Note that the labeled regions must be contiguous.
      */
-    public RegionAdjacencyGraphColor(ImageExt img, int[][] labels) {
+    public RegionAdjacencyGraphColor(ImageExt img, int[] labels) {
 
         super(img, labels);  
         
@@ -90,9 +90,12 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         return g;
     }
     
-    public int[][] relabelUsingNodes() {
+    public int[] relabelUsingNodes() {
+
+//TODO: in the middle of using these as [row][col] so revisit for consistency check
         
         int n0 = labels.length;
+        int nPix = 0;
         
         int[][] labels2 = new int[n0][];
         for (int i = 0; i < n0; ++i) {
@@ -100,10 +103,20 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             for (int j = 0; j < labels[i].length; ++j) {
                 int v = labels[i][j];
                 labels2[i][j] = nodes.get(v).getNCutsLabel();
+                ++nPix;
+            }
+        }
+        assert(nPix == img.getNPixels());
+
+        int[] labeled = new int[nPix];
+        for (int i = 0; i < n0; ++i) {
+            for (int j = 0; j < labels2[i].length; ++j) {
+                int pixIdx = img.getInternalIndex(j, i);
+                labeled[pixIdx] = labels2[i][j];
             }
         }
         
-        return labels2;
+        return labeled;
     }
     
    
@@ -204,7 +217,9 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         
         for (int row = 0; row < nRows; ++row) {
             for (int col = 0; col < nCols; ++col) {
-                int label = labels[col][row];
+
+                int label = labels[row][col];
+                
                 nodeColors[0][label] += img.getR(col, row);
                 nodeColors[1][label] += img.getG(col, row);
                 nodeColors[2][label] += img.getB(col, row);

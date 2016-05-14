@@ -102,30 +102,13 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         
         SLICSuperPixels slic = new SLICSuperPixels(img, 200);
         slic.calculate();
-        int[] pixAssignments = slic.getLabels();
+        int[] labels = slic.getLabels();
         
         System.out.println("have initial labels (super pixels)");
         System.out.flush();
         
         int w = img.getWidth();
         int h = img.getHeight();
-        //int n = img.getNPixels();
-        
-        int nMaxLabel = Integer.MIN_VALUE;
-        for (int i = 0; i < pixAssignments.length; ++i) {
-            if (pixAssignments[i] > nMaxLabel) {
-                nMaxLabel = pixAssignments[i];
-            }
-        }
-        int[][] labels = new int[w][h];
-        for (int i = 0; i < w; ++i) {
-            labels[i] = new int[h];
-        }
-        for (int i = 0; i < pixAssignments.length; ++i) {
-            int x = img.getCol(i);
-            int y = img.getRow(i);
-            labels[x][y] = pixAssignments[i];
-        }
         
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(img, labels);
         rag.populateEdgesWithColorSimilarity(ColorSpace.HSV);
@@ -133,109 +116,7 @@ public class RegionAdjacencyGraphColorTest extends TestCase {
         System.out.println("created region agency graph and similarity matrix");
         System.out.flush();
         FlexCompRowMatrix weights = rag.getEdgeMatrix();
-        FlexCompRowMatrix diag = createD(weights, rag);
 
-        FlexCompRowMatrix d2 = (FlexCompRowMatrix) diag.copy();
-        Iterator<MatrixEntry> iter = diag.iterator();
-        while (iter.hasNext()) {
-            MatrixEntry entry = iter.next();
-            int col = entry.column();
-            int row = entry.row();
-            double v = entry.get();
-            v = (v == 0) ? Double.MAX_VALUE : 1./Math.sqrt(v);
-            d2.set(col, row, v);
-        }
-        
-        System.out.println("weight matrix " + 
-            " nRowsXCols=" + (weights.numRows() * weights.numColumns())
-            + " number of nodes=" + MatrixUtil.countNodes(weights)
-        );
-        
-        //D^(-1/2)(D - W)D^(-1/2)z = lamdba z;
-        // tmp = diag - w
-        // tmp = d2 mult tmp mult d2
-        FlexCompRowMatrix tmp = MatrixUtil.sparseMatrixSubtract(diag, weights);
-        
-        System.out.println("tmp matrix after subtract " + 
-            " nRowsXCols=" + (tmp.numRows() * tmp.numColumns())
-            + " number of nodes=" + MatrixUtil.countNodes(tmp)
-        );
-        
-        tmp = MatrixUtil.sparseMatrixMultiply(d2, tmp);
-        
-        System.out.println("tmp matrix after multiply " + 
-            " nRowsXCols=" + (tmp.numRows() * tmp.numColumns())
-            + " number of nodes=" + MatrixUtil.countNodes(tmp)
-        );
-        
-        tmp = MatrixUtil.sparseMatrixMultiply(tmp, d2);
- 
-        // PRECISION CORRECTIONS needed for perfectly symmetric matrix
-        FlexCompRowMatrix tmp2 = new FlexCompRowMatrix(tmp.numRows(), tmp.numRows());
-        //matrix is not symetric
-        iter = tmp.iterator();
-        while (iter.hasNext()) {
-            MatrixEntry entry = iter.next();
-            int col = entry.column();
-            int row = entry.row();
-            double v = entry.get();
-            tmp2.set(col, row, v);
-            tmp2.set(row, col, v);
-        }
-       
-        int m = weights.numRows();
-        int nEig = Math.min(100, m - 2);
-        ArpackSym arpackSym = new ArpackSym(tmp2);
-        Map<Double, DenseVectorSub> rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);
-        
-        assertNotNull(rMap);
-        assertTrue(rMap.size() > 1);
-        /*for (Map.Entry<Double, DenseVectorSub> result : rMap.entrySet()) {           
-            System.out.println("resulting eigenvalue=" + result.getKey().toString());
-            System.out.println("resulting eigenvector=" + result.getValue().toString());
-        }*/
-        
-        /*
-        SimpleMatrix tmp = diag.minus(w);
-        tmp = d2.mult(tmp).mult(d2);
-
-        SimpleEVD eigVD = tmp.eig();
-        
-        System.out.println("n eigenvalues=" + eigVD.getNumberOfEigenvalues());
-        */
-    }
-    
-    private FlexCompRowMatrix createD(FlexCompRowMatrix w, RegionAdjacencyGraphColor rag) {
-
-        //D is an N X N diagonal matrix with d on the diagonal
-        //    d(i) = summation over j of w(i, j) where w is "weight" of the edge
-        //    and j is over all nodes
-        FlexCompRowMatrix d = new FlexCompRowMatrix(w.numRows(), w.numColumns());
-        
-        for (int i = 0; i < w.numRows(); ++i) {
-            
-            //d(i) = summation over j of w(i, j)
-            
-            Integer index1 = Integer.valueOf(i);
-            
-            Set<Integer> indexes2 = rag.getAdjacentIndexes(index1);
-            
-            assert(indexes2 != null);
-        
-            int idx1 = index1.intValue();
-            
-            double dSum = 0;
-            
-            for (Integer index2 : indexes2) {
-                int idx2 = index2.intValue();
-                assert(idx1 != idx2);
-                dSum += w.get(idx1, idx2);
-            }
-            
-            d.set(i, i, dSum);
-        }
-        
-        return d;
     }
    
 }

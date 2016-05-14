@@ -36,10 +36,6 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  */
 public class NormalizedCuts {
     
-    int[][] debugLabels = null;
-    RegionAdjacencyGraphColor debugRag = null;
-    ImageExt debugImg = null;
-    
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
      * to segment the image into regions.
@@ -47,22 +43,18 @@ public class NormalizedCuts {
      * @param labels of contiguous pixels
      * @return 
      */
-    public int[][] normalizedCut(ImageExt img, int[][] labels) {
+    public int[] normalizedCut(ImageExt img, int[] labels) {
        
-        System.out.println("input labels=");
-        for (int i = 0; i < labels.length; ++i) {
-            System.out.println(Arrays.toString(labels[i]));
-        }
+        //TODO: note, as authors mention, the wedge weights with values > 0.01
+        // are significant and the remaining are zeroes of different preceision
+        
+        System.out.println("input labels=" + Arrays.toString(labels));
         
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(
             img, labels);
 
         System.out.println("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
 
-        debugLabels = labels;
-        debugRag = rag;
-        debugImg = img;
-        
         // here, have to choose whether to make edges from color differences
         // or from color similarity which uses an exponential.
         // also, have to choose color space.
@@ -85,7 +77,7 @@ public class NormalizedCuts {
         
         return rag.relabelUsingNodes();
     }
-        
+    
      /**
       * Perform a 2-way normalized cut recursively using the graph's similarity
       * edges with a lancos eigen value decomposition to find the smallest
@@ -170,6 +162,8 @@ public class NormalizedCuts {
             double secondSmallestEigenValue = find2ndSmallestEigenValue(rMap);
             DenseVectorSub eigenVector = rMap.get(Double.valueOf(secondSmallestEigenValue));
             assert(eigenVector != null);
+            
+            System.out.println("secondSmallestEigenValue=" + secondSmallestEigenValue);
 
             System.out.println("eigen vector size=" + eigenVector.size());
 
@@ -192,8 +186,8 @@ public class NormalizedCuts {
                     
                     System.out.println("len(sub2)=" + subGraphs[1].getNumberOfNodes());
                     
-                    nCutRelabel(subGraphs[0], numCuts);
                     nCutRelabel(subGraphs[1], numCuts);
+                    nCutRelabel(subGraphs[0], numCuts);
 
                     return;
                 }
@@ -290,12 +284,6 @@ public class NormalizedCuts {
         boolean[] minMask = null;
         
         double mCut = Double.MAX_VALUE;
-        
-        
-        if (true) {
-            throw new UnsupportedOperationException("not yet implmented");
-        }
-        
         
         double delta = (maxEV - minEV)/(double)numCuts;
         double t = minEV;
@@ -408,11 +396,14 @@ public class NormalizedCuts {
             if (min1 == Double.MAX_VALUE) {
                 min1 = v;
             } else if (min2 == Double.MAX_VALUE) {
-                min2 = v;
-            } else {
-                if (v == min1) {
+                if (v <= min1) {
                     min2 = min1;
-                } else if (v < min1) {
+                    min1 = v;
+                } else {
+                    min2 = v;
+                }
+            } else {
+                if (v <= min1) {
                     min2 = min1;
                     min1 = v;
                 } else if (v < min2) {
