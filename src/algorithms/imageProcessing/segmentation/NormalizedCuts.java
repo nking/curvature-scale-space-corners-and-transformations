@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseVectorSub;
 import no.uib.cipr.matrix.MatrixEntry;
 import no.uib.cipr.matrix.VectorEntry;
@@ -35,6 +36,8 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
  */
 public class NormalizedCuts {
     
+    protected Logger log = Logger.getLogger(this.getClass().getName());
+    
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
      * to segment the image into regions.
@@ -47,12 +50,12 @@ public class NormalizedCuts {
         //TODO: note, as authors mention, the edge weights with values > 0.01
         // are significant and the remaining are zeroes of different precision
         
-        System.out.println("input labels=" + Arrays.toString(labels));
+        log.fine("input labels=" + Arrays.toString(labels));
         
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(
             img, labels);
 
-        System.out.println("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
+        log.fine("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
 
         ColorSpace colorSpace = ColorSpace.RGB;
                         
@@ -101,8 +104,7 @@ public class NormalizedCuts {
         FlexCompRowMatrix w = graph.getEdgeMatrix();
         FlexCompRowMatrix d = createD(w, graph);
         
-        System.out.println("w.nnz=" + MatrixUtil.countNodes(w));
-        System.out.println("w=" + w.toString());
+        log.fine("w.nnz=" + MatrixUtil.countNodes(w));
         
         if (w.numRows()> 2) {
         
@@ -141,7 +143,7 @@ public class NormalizedCuts {
             //int nEig = 2;
             int nEig = Math.min(100, m - 2);
 
-            System.out.println("nEigen =" + nEig + " eig input=" + tmp.toString());
+            log.fine("nEigen =" + nEig + " eig input=" + tmp.toString());
 
             /*
             info status:
@@ -159,28 +161,26 @@ public class NormalizedCuts {
             
             if (eigenVector != null) {
            
-                System.out.println("secondSmallestEigenValue=" + secondSmallestEigenValue);
+                log.finest("secondSmallestEigenValue=" + secondSmallestEigenValue);
 
-                System.out.println("eigen vector size=" + eigenVector.size());
+                log.finest("eigen vector size=" + eigenVector.size());
 
-                System.out.println("w.numRows=" + w.numRows() + " w.numCols=" + w.numColumns());
-
-                System.out.println("eigenVector=" + eigenVector);
+                log.finest("eigenVector=" + eigenVector);
 
                 MinCut minCut = getMinNCut(eigenVector, d, w, numCuts);
 
                 if (minCut != null) {
 
-                    System.out.println("mCut=" + minCut.mCut);
-                    System.out.println("cut=" + Arrays.toString(minCut.minMask));
+                    log.fine("mCut=" + minCut.mCut);
+                    log.fine("cut=" + Arrays.toString(minCut.minMask));
 
                     if (minCut.mCut < thresh) {
 
                         RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);
 
-                        System.out.println("len(sub1)=" + subGraphs[0].getNumberOfNodes());
+                        log.fine("len(sub1)=" + subGraphs[0].getNumberOfNodes());
 
-                        System.out.println("len(sub2)=" + subGraphs[1].getNumberOfNodes());
+                        log.fine("len(sub2)=" + subGraphs[1].getNumberOfNodes());
 
                         nCutRelabel(subGraphs[1], numCuts);
                         nCutRelabel(subGraphs[0], numCuts);
@@ -298,7 +298,7 @@ public class NormalizedCuts {
                 break;
             }
             
-            System.out.println("cut.length=" + mask.length + " cost=" + cost + 
+            log.fine("cut.length=" + mask.length + " cost=" + cost + 
                 "  cut_mask=" + Arrays.toString(mask));
             
             if (cost < mCut) {

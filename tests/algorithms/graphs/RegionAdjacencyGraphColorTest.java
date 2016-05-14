@@ -4,16 +4,9 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
-import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.DenseVectorSub;
-import no.uib.cipr.matrix.MatrixEntry;
-import no.uib.cipr.matrix.sparse.ArpackSym;
 import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 import org.ejml.simple.SimpleMatrix;
 

@@ -22,12 +22,16 @@ public class NormalizedCutsTest extends TestCase {
     public void testNormalizedCut() throws Exception {
             
         String[] fileNames = new String[]{
-            //"color_squares.png",
+            "color_squares.png",
             "android_statues_01.jpg"
         };
         int[] kCells = new int[] {
-            //9,
+            9,
             400
+        };
+        int[] numbersOfIterations = new int[] {
+            1,
+            1
         };
         
         for (int i = 0; i < fileNames.length; ++i) {
@@ -57,14 +61,24 @@ public class NormalizedCutsTest extends TestCase {
             int w = img.getWidth();
             int h = img.getHeight();
             //int n = img.getNPixels();
-    
-            NormalizedCuts normCuts = new NormalizedCuts();
-            int[] labels2 = normCuts.normalizedCut(img, labels);
-
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels2);
-            MiscDebug.writeImage(img2,  "_ncuts_" + fileNameRoot);
             
-            System.out.println("labels2=" + Arrays.toString(labels2));
+            int[] labels2 = null;
+            for (int nIter = 0; nIter < numbersOfIterations[i]; ++nIter) {
+    
+                NormalizedCuts normCuts = new NormalizedCuts();
+                labels2 = normCuts.normalizedCut(img, labels);
+                labels = labels2;
+                
+                System.out.println("labels2=" + Arrays.toString(labels2));
+                
+                img2 = ImageIOHelper.readImageExt(filePath);
+                ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels2);
+                MiscDebug.writeImage(img2,  "_ncuts_" + fileNameRoot + "_" + nIter); 
+            } 
+            
+            img2 = ImageIOHelper.readImageExt(filePath);
+            LabelToColorHelper.applyLabels(img2, labels);
+            MiscDebug.writeImage(img2,  "_ncuts_" + fileNameRoot + "_final"); 
         }
     }
     
