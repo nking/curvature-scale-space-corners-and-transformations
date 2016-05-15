@@ -47,9 +47,10 @@ public class SLICSuperPixels {
     
     protected final double threshold;
     
-    // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15);  sqrt(sum sq) = 28.78
+    // range of CIE LAB values is (0,0,0) to (28.51 3.28 2.15);  
+    // sqrt(sum sq) = 28.78
     // paper recommends using value between 1 and 40
-    protected static final double maxCIELAB = 10;//28.78;
+    protected final double maxCIELAB;
     
     /**
      * constructor for the super-pixel algorithm SLIC that uses the default
@@ -59,6 +60,56 @@ public class SLICSuperPixels {
      * clusters may be adjusted for even intervals over width and height.
      * @param img
      * @param nClusters 
+     * @param clrNorm a smaller number than 10 finds details such as textures
+     * and a number closer to 40 produces very blocky segmentation mostly 
+     * lacking curves.  
+     */
+    public SLICSuperPixels(ImageExt img, int nClusters, double clrNorm) {
+        
+        if (clrNorm < 1 || (clrNorm > 40)) {
+            throw new IllegalArgumentException("clrNorm should be in range "
+                + "1 to 40");
+        }
+        
+        maxCIELAB = clrNorm;
+        
+        double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));
+        
+        if (sampling < 1) {
+            sampling = 1;
+        }
+           
+        this.s = (int)Math.round(sampling);
+        
+        nXs = Math.round((float)img.getWidth()/(float)s);
+        nYs = Math.round((float)img.getHeight()/(float)s);
+        this.k = nXs * nYs;
+        
+        log.info("k = " + k);
+        
+        this.img = img;
+        
+        // l, a, b, x, y
+        seedDescriptors = new float[k][];
+        for (int i = 0; i < k; ++i) {
+            seedDescriptors[i] = new float[5];
+        }
+        
+        // max error would be ( maxClr * maxClr * k) + 2*( s/2 * s/2 * k)
+        double maxError = 2*(maxCIELAB * maxCIELAB * k);
+        maxError = Math.sqrt(maxError);
+        threshold = 0.01 * maxError;
+    }
+    
+    /**
+     * constructor for the super-pixel algorithm SLIC that uses the default
+     * color space of CIE LAB and creates approximately nClusters (a.k.a. 
+     * super-pixels).
+     * The number of
+     * clusters may be adjusted for even intervals over width and height.
+     * Uses a default clrNorm = 10;
+     * @param img
+     * @param nClusters 
      */
     public SLICSuperPixels(ImageExt img, int nClusters) {
         
@@ -66,6 +117,8 @@ public class SLICSuperPixels {
             throw new IllegalArgumentException(
                 "nClusters must be smaller than number of pixels in img");
         }
+        
+        maxCIELAB = 10;
         
         //TOOD: after have an implementation as authors suggest,
         //  change to use deltaE instead of sqrt sum diffs of CIE lab

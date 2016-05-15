@@ -6,6 +6,6 @@ package algorithms.imageProcessing.optimization.segmentation;
  */
 public class SData {
     public String dirPath;
-    public String imaFileName;
+    public String imgFileName;
     public String segFileName;
 }

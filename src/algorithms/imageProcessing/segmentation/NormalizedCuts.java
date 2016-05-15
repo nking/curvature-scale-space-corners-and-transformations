@@ -31,7 +31,14 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
     the skimage API license is at
     https://github.com/scikit-image/scikit-image/blob/master/LICENSE.txt  
     (copy that here)
-    * 
+    
+    <pre>
+    useful documentation for netlib-java and matrix-toolkit-java (mtj) is
+    https://github.com/fommil/netlib-java
+    https://github.com/fommil/matrix-toolkits-java/wiki
+    https://github.com/fommil/matrix-toolkits-java/blob/master/src/main/java/no/uib/cipr/matrix/sparse/ArpackSym.java
+    http://www.javadoc.io/doc/com.googlecode.matrix-toolkits-java/mtj/1.0.4
+    </pre>
  * @author nichole
  */
 public class NormalizedCuts {

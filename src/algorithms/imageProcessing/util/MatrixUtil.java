@@ -364,7 +364,7 @@ public class MatrixUtil {
             //processed.add(p);
         }
         
-        System.out.println(count + " nodes in output sparse matrix");
+        //System.out.println(count + " nodes in output sparse matrix");
         
         return c;
     }
@@ -452,7 +452,7 @@ public class MatrixUtil {
             //processed.add(p);
         }
         
-        System.out.println(count + " nodes in output sparse matrix");
+        //System.out.println(count + " nodes in output sparse matrix");
         
         return c;
     }
@@ -526,7 +526,7 @@ public class MatrixUtil {
             } 
         }
 
-        System.out.println(count + " nodes in output sparse matrix");
+        //System.out.println(count + " nodes in output sparse matrix");
         
         return c;
     }
@@ -601,7 +601,7 @@ public class MatrixUtil {
             } 
         }
 
-        System.out.println(count + " nodes in output sparse matrix");
+        //System.out.println(count + " nodes in output sparse matrix");
         
         return c;
     }
