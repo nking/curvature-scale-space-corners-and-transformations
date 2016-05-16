@@ -2,8 +2,11 @@ package algorithms.imageProcessing.optimization.segmentation;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
@@ -17,6 +20,7 @@ public class SegmentationResults {
     private final int[] xCentroids;
     private final int[] yCentroids;
     private final int[] nPoints;
+    private List<Set<PairInt>> points;
     
     public SegmentationResults(List<Set<PairInt>> segmentedSets) {
         
@@ -39,33 +43,17 @@ public class SegmentationResults {
             yCentroids[i] = (int)Math.round(xyCen[1]);
             
             nPoints[i] = set.size();
-        }
-    }
-    
-    public SegmentationResults(int[][] xyCenN) {
-        
-        if (xyCenN.length != 3) {
-            throw new IllegalArgumentException("expecting xyCenN.length == 3");
-        }
-        
-        int n = xyCenN[0].length;
-        
-        xCentroids = new int[n];
-        yCentroids = new int[n];
-        nPoints = new int[n];
-                
-        for (int i = 0; i < n; ++i) {
             
-            xCentroids[i] = xyCenN[0][i];
-            
-            yCentroids[i] = xyCenN[1][i];
-            
-            nPoints[i] = xyCenN[2][i];
+            points.add(new HashSet<PairInt>(set));
         }
     }
     
     public int getNumberOfItems() {
         return xCentroids.length;
+    }
+    
+    public List<Set<PairInt>> getPointsList() {
+        return this.points;
     }
     
     /**
@@ -235,6 +223,60 @@ public class SegmentationResults {
         
         diffSum += penalty;
         
+        /*
+        now calculate the difference between points.
+        creating a penalty for missing points and additional
+        points as the sum of the normalized distance from
+        expected centroid.
+        */
+        double penalty2 = 0;
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }            
+            int x2 = expected.xCentroids[idx2];
+            int y2 = expected.yCentroids[idx2];
+            
+            Set<PairInt> set2 = expected.getPointsList().get(idx2);
+            Set<PairInt> set1 = expected.getPointsList().get(idx1);
+                
+            // xMin, xMax, yMin, yMax
+            int[] minMaxXY = MiscMath.findMinMaxXY(set2);
+    
+            int wX = minMaxXY[1] - minMaxXY[0];
+            int wY = minMaxXY[3] - minMaxXY[2];
+            double normalization = Math.sqrt(wX * wX + wY * wY);
+            
+            double sumDist = 0;
+            for (PairInt p : set2) {
+                if (set1.contains(p)) {
+                    continue;
+                }
+                int diffX = p.getX() - x2;
+                int diffY = p.getY() - y2;
+                sumDist += Math.sqrt(diffX * diffX + diffY * diffY);
+            }
+            for (PairInt p : set1) {
+                if (set2.contains(p)) {
+                    continue;
+                }
+                int diffX = p.getX() - x2;
+                int diffY = p.getY() - y2;
+                sumDist += Math.sqrt(diffX * diffX + diffY * diffY);
+            }
+            sumDist /= normalization;
+            penalty2 += sumDist;
+        }
+        
+        diffSum += penalty2;
+                
         return diffSum;
     }
     

@@ -78,7 +78,7 @@ public class SequentialBisectorSolver {
         int np = 1 << parameters.length;
     
         boolean hasConverged = false;
-        
+      
         SegmentationResults[] expected = readTrainingFiles();
         
         List<List<PairIntArray>> edgesList = extractEdges();
@@ -263,12 +263,12 @@ public class SequentialBisectorSolver {
         
         for (int i = 0; i < trainingData.length; ++i) {
             
-            //String rootName = trainingData[i].imaFileName.split("\\.")[0];
+            //String rootName = trainingData[i].imgFileName.split("\\.")[0];
             String segFilePath = trainingData[i].dirPath + "/" + trainingData[i].segFileName;
             
-            int[][] centroidsN = reader.readCentroids(segFilePath);
+            List<Set<PairInt>> set = reader.readFile(segFilePath);
             
-            output[i] = new SegmentationResults(centroidsN);
+            output[i] = new SegmentationResults(set);
         }
         
         return output;
@@ -282,8 +282,8 @@ public class SequentialBisectorSolver {
                 
         for (int i = 0; i < trainingData.length; ++i) {
             
-            String rootName = trainingData[i].imaFileName.split("\\.")[0];
-            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imaFileName;        
+            String rootName = trainingData[i].imgFileName.split("\\.")[0];
+            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imgFileName;        
             
             ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
         
@@ -306,8 +306,8 @@ public class SequentialBisectorSolver {
         
         for (int i = 0; i < trainingData.length; ++i) {
             
-            String rootName = trainingData[i].imaFileName.split("\\.")[0];
-            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imaFileName;        
+            String rootName = trainingData[i].imgFileName.split("\\.")[0];
+            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imgFileName;        
             
             ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
             
@@ -321,7 +321,6 @@ public class SequentialBisectorSolver {
             
             SegmentationResults exp = expected[i];
             
-     //TODO: cost function needs to be improved       
             sumDifference += sr0.calculateDifference(exp);
         }
         
