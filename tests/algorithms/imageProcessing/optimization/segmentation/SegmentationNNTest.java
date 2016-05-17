@@ -4,6 +4,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.optimization.segmentation.DownhillSimplexSolver.SFit;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -42,9 +43,9 @@ public class SegmentationNNTest extends TestCase {
     public void testNN() throws Exception {
     }
     
-    public void testBisectionPattern() throws Exception {
+    public void estBisectionSolver() throws Exception {
         
-        boolean enabled = false;
+        boolean enabled = true;
         
         if (!enabled) {
             return;
@@ -79,6 +80,51 @@ public class SegmentationNNTest extends TestCase {
         */
     }
     
+    public void testNelderMeadeSolver() throws Exception {
+        
+        boolean enabled = true;
+        
+        if (!enabled) {
+            return;
+        }
+               
+        SData[] data = getDetailedTrainingData();
+        
+        DownhillSimplexSolver solver = 
+            new DownhillSimplexSolver(true, true, data);
+        
+        SFit fit = solver.solve();
+        double diff = fit.costF;
+        
+        System.out.println(
+            "hsv, reduceNoise=true, difference=" + diff +
+            "  params=" + Arrays.toString(solver.getParameters()));
+        
+        // --------
+        solver = new DownhillSimplexSolver(false, 
+            true, data);
+        
+        fit = solver.solve();
+        diff = fit.costF;
+        
+        System.out.println(
+            "cie, reduceNoise=true, difference=" + diff +
+            "  parmaeters=" + Arrays.toString(solver.getParameters()));
+        
+        /*
+        normalize = false:
+           hsv, nIter=3 bestFit=cost=2.7239726540785525E7 
+              tLen=29 tColor=0.48000000019868216 
+              tSmallMerge=0.03366666678339243 tR=1.5 
+              reduceNoiseF=true colorSpace=1.0
+            
+           cie nIter=2 bestFit=cost=1.947937187996745E7 
+             tLen=11 tColor=4.0 tSmallMerge=0.03500000014901161 
+             tR=1.5 reduceNoiseF=true colorSpace=0.0
+            
+        */
+    }
+    
     public void estResults() throws Exception {
         
         boolean enabled = false;
@@ -97,9 +143,9 @@ public class SegmentationNNTest extends TestCase {
         
         for (int i = 0; i < data.length; ++i) {
             
-            String rootName = data[i].imaFileName.split("\\.")[0];
+            String rootName = data[i].imgFileName.split("\\.")[0];
             
-            String imgFilePath = data[i].dirPath + "/" + data[i].imaFileName;
+            String imgFilePath = data[i].dirPath + "/" + data[i].imgFileName;
         
             String segFilePath = data[i].dirPath + "/" + data[i].segFileName;
                                         
@@ -114,7 +160,7 @@ public class SegmentationNNTest extends TestCase {
         
             MiscDebug.writeImage(img, rootName + "_seg_to_train_");
             
-            plot(data[i].dirPath, data[i].imaFileName, data[i].segFileName);
+            plot(data[i].dirPath, data[i].imgFileName, data[i].segFileName);
         }
     }
     
@@ -236,57 +282,57 @@ public class SegmentationNNTest extends TestCase {
         
         data[0] = new SData();
         data[0].dirPath = dir + "/101085";
-        data[0].imaFileName = "101085.jpg";
+        data[0].imgFileName = "101085.jpg";
         data[0].segFileName = "101085_1124.seg";
             
         data[1] = new SData();
         data[1].dirPath = dir + "/101087";
-        data[1].imaFileName = "101087.jpg";
+        data[1].imgFileName = "101087.jpg";
         data[1].segFileName = "101087_1126.seg";
         
         data[2] = new SData();
         data[2].dirPath = dir + "/126007";
-        data[2].imaFileName = "126007.jpg";
+        data[2].imgFileName = "126007.jpg";
         data[2].segFileName = "126007_1123.seg";
         
         data[3] = new SData();
         data[3].dirPath = dir + "/167062";
-        data[3].imaFileName = "167062.jpg";
+        data[3].imgFileName = "167062.jpg";
         data[3].segFileName = "167062_1112.seg";
         
         data[4] = new SData();
         data[4].dirPath = dir + "/216081";
-        data[4].imaFileName = "216081.jpg";
+        data[4].imgFileName = "216081.jpg";
         data[4].segFileName = "216081_1130.seg";
         
         data[5] = new SData();
         data[5].dirPath = dir + "/227092";
-        data[5].imaFileName = "227092.jpg";
+        data[5].imgFileName = "227092.jpg";
         data[5].segFileName = "227092_1121.seg";
         
         data[6] = new SData();
         data[6].dirPath = dir + "/229036";
-        data[6].imaFileName = "229036.jpg";
+        data[6].imgFileName = "229036.jpg";
         data[6].segFileName = "229036_1123.seg";
       
         data[7] = new SData();
         data[7].dirPath = dir + "/241004";
-        data[7].imaFileName = "241004.jpg";
+        data[7].imgFileName = "241004.jpg";
         data[7].segFileName = "241004_1108.seg";
         
         data[8] = new SData();
         data[8].dirPath = dir + "/37073";
-        data[8].imaFileName = "37073.jpg";
+        data[8].imgFileName = "37073.jpg";
         data[8].segFileName = "37073_1119.seg";
         
         data[9] = new SData();
         data[9].dirPath = dir + "/42049";
-        data[9].imaFileName = "42049.jpg";
+        data[9].imgFileName = "42049.jpg";
         data[9].segFileName = "42049_1123.seg";
         
         data[10] = new SData();
         data[10].dirPath = dir + "/62096";
-        data[10].imaFileName = "62096.jpg";
+        data[10].imgFileName = "62096.jpg";
         data[10].segFileName = "62096_1107.seg";
         
         return data;
@@ -301,57 +347,57 @@ public class SegmentationNNTest extends TestCase {
         
         data[0] = new SData();
         data[0].dirPath = dir + "/101085";
-        data[0].imaFileName = "101085.jpg";
+        data[0].imgFileName = "101085.jpg";
         data[0].segFileName = "101085_1108.seg";
             
         data[1] = new SData();
         data[1].dirPath = dir + "/101087";
-        data[1].imaFileName = "101087.jpg";
+        data[1].imgFileName = "101087.jpg";
         data[1].segFileName = "101087_1109.seg";
         
         data[2] = new SData();
         data[2].dirPath = dir + "/126007";
-        data[2].imaFileName = "126007.jpg";
+        data[2].imgFileName = "126007.jpg";
         data[2].segFileName = "126007_1132.seg";
         
         data[3] = new SData();
         data[3].dirPath = dir + "/167062";
-        data[3].imaFileName = "167062.jpg";
+        data[3].imgFileName = "167062.jpg";
         data[3].segFileName = "167062_1123.seg";
         
         data[4] = new SData();
         data[4].dirPath = dir + "/216081";
-        data[4].imaFileName = "216081.jpg";
+        data[4].imgFileName = "216081.jpg";
         data[4].segFileName = "216081_1109.seg";
         
         data[5] = new SData();
         data[5].dirPath = dir + "/227092";
-        data[5].imaFileName = "227092.jpg";
+        data[5].imgFileName = "227092.jpg";
         data[5].segFileName = "227092_1130.seg";
         
         data[6] = new SData();
         data[6].dirPath = dir + "/229036";
-        data[6].imaFileName = "229036.jpg";
+        data[6].imgFileName = "229036.jpg";
         data[6].segFileName = "229036_1109.seg";
       
         data[7] = new SData();
         data[7].dirPath = dir + "/241004";
-        data[7].imaFileName = "241004.jpg";
+        data[7].imgFileName = "241004.jpg";
         data[7].segFileName = "241004_1108.seg";
         
         data[8] = new SData();
         data[8].dirPath = dir + "/37073";
-        data[8].imaFileName = "37073.jpg";
+        data[8].imgFileName = "37073.jpg";
         data[8].segFileName = "37073_1130.seg";
         
         data[9] = new SData();
         data[9].dirPath = dir + "/42049";
-        data[9].imaFileName = "42049.jpg";
+        data[9].imgFileName = "42049.jpg";
         data[9].segFileName = "42049_1115.seg";
         
         data[10] = new SData();
         data[10].dirPath = dir + "/62096";
-        data[10].imaFileName = "62096.jpg";
+        data[10].imgFileName = "62096.jpg";
         data[10].segFileName = "62096_1130.seg";
      
         return data;

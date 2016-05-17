@@ -29,6 +29,7 @@ public class SegmentationResults {
         xCentroids = new int[n];
         yCentroids = new int[n];
         nPoints = new int[n];
+        points = new ArrayList<Set<PairInt>>();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -67,10 +68,11 @@ public class SegmentationResults {
      */
     public double calculateDifference(SegmentationResults expected) {
         
-        /*
-        TODO: the cost function needs to use the dimensions of the cells
-           or define a difference between perimeters for optimization.
-        */
+        if (true) {
+            throw new UnsupportedOperationException(
+                "chaging the cost function to the precisiona nd recall");
+        }
+        
         
         boolean doNormalize = false;
         
@@ -113,7 +115,8 @@ public class SegmentationResults {
             weights[i] = (float) div;
             tot += div;
         }*/
-        // weights that iven items with larger number of points a higher proportion of difference
+        // weights that have items with larger number 
+        // of points a higher proportion of difference
         double tot = 0;
         for (int i = 0; i < n2; ++i) {
             weights[i] /= nSum;
@@ -205,7 +208,7 @@ public class SegmentationResults {
         
         // for missing expected items, estimating a cost as the centroid times
         // the number of point
-        int nc = 0;
+        /*int nc = 0;
         for (int i = 0; i < n2; ++i) {
             if (!matched[i]) {
                 int x2 = expected.xCentroids[i];
@@ -222,6 +225,7 @@ public class SegmentationResults {
         double penalty = Math.abs(n1 - (n2 - nc)) * maxDiff;
         
         diffSum += penalty;
+        */
         
         /*
         now calculate the difference between points.
