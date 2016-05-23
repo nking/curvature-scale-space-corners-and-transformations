@@ -342,6 +342,17 @@ public class MinCostUnbalancedAssignment {
             }
             
             //augment M along path;
+            /*
+            "We augment along a tight augmenting path 
+            by swapping the status of the edges that 
+            underlie its links, saturating the idle edges
+            and idling the saturated ones. This process 
+            increases the size of the matching by exactly 1. 
+            It marries off the maiden and bachelor at the 
+            ends of the augmenting path, thus reducing the
+            number of places where future augmenting paths 
+            can start or end.
+            */
             
             //announce(M is a matching)
             
@@ -523,10 +534,17 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode = leftNodes.get(xIndex);
                 RightNode yNode = rightNodes.get(yIndex);
                 
-                xNode.setKey(yNode.getKey());
-                // modifiy heap key if xNode is in heap?
+                //xNode.setKey(yNode.getKey());
                 
-                scanAndAdd(heap, forest, rM, rightNodes, xNode);
+                //TODO: check state here. a node is present in
+                // more than one augmenting path.
+                
+                // make a copy in case it's already in forest
+                LeftNode xNode2 = new LeftNode();
+                xNode2.setKey(yNode.getKey());
+                xNode2.setData(xNode.getData());
+           
+                scanAndAdd(heap, forest, rM, rightNodes, xNode2);
                 
             } else {    
                 //exit(bachelor β := y reached);
@@ -589,8 +607,9 @@ Matchings in G are integral flows in N_G
             // "We first perform some initialization. 
             // Ignoring the edges weights, we use Hopcroft-Karp 
             // to look for some matching of size t."
-            // so, c(x,y) is 0 by this statement
-            int cp = 0;
+            // so, c(x,y) which is the edge weight in Graph g,
+            // is 1 here by this statement.
+            int cp = 1;
             
             long ell = lX + cp;
             long lOld = lY;
@@ -622,6 +641,9 @@ Matchings in G are integral flows in N_G
         order of l(v), so B never decreases. 
         To implement insert(v,k), we add v to the list Q[k].
         */
+        
+        // NOTE: if the same node is inserted more than once,
+        // the forest will be corrupted
         
         if (node.getKey() < forest.length) {
             int k = (int) node.getKey();
