@@ -571,9 +571,6 @@ Matchings in G are integral flows in N_G
             //    continue;
             //}
             
-            // by definition, the forward link in residual digraph of matches,
-            // is "idle", that is f=0
-            
             //link length = net cost of the edge 
             //    (lp(x ⇒ y) = cp(X,Y))
             //link length of backward link Y->X, is 0, lp(y ⇒ x) := 0.
@@ -588,11 +585,13 @@ Matchings in G are integral flows in N_G
             //L := l(x) + lp(x ⇒ y) 
             //   = l(x) + cp(x, y)
             //   = l(x) + c(x, y) − pd(x) + pd(y)
-            int cp;
-            if (true) {
-               //calc cp
-                throw new UnsupportedOperationException("not yet implemented");
-            }
+            // from page 41 regarding first steps in FlowAssign:  
+            // "We first perform some initialization. 
+            // Ignoring the edges weights, we use Hopcroft-Karp 
+            // to look for some matching of size t."
+            // so, c(x,y) is 0 by this statement
+            int cp = 0;
+            
             long ell = lX + cp;
             long lOld = lY;
             if (ell < lOld) {
