@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * A solver for the min-cost, unbalanced, bipartite
@@ -37,6 +38,8 @@ import java.util.Set;
  */
 public class MinCostUnbalancedAssignment {
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+    
     public static class Graph {
                 
         /**
@@ -58,28 +61,94 @@ public class MinCostUnbalancedAssignment {
     }
     
     public static class FlowNetwork {
-                
+        
+        /*
+        matchings M in Graph g are integral flows f in the 
+        FlowNetwork.
+        
+        If allow for conditions which are not integral, one uses
+        linear programming terms to replace the term slackness
+        with "proper"ness on properties f and p where p is prices.
+          - a node has a per unit price.
+            - adopting the cost to dispose of a unit as the model
+              p_d(v)
+            - (the dispose cost is equal with opposite sign to acquire cost)
+          - the cost of each arc is the difference between the
+               disposal cost of the two encasing nodes.
+               - the net cost is cp(v, w)
+               - the benefits of the arc is bp(v,w) and the sum of it
+                 and cp(v,w) is 0.
+               cp(v, w) := c(v, w) + pa(v) − pa(w) 
+                         = c(v, w) − pd(v) + pd(w) 
+               bp(v, w) := b(v, w) − pa(v) + pa(w) 
+                         = b(v, w) + pd(v) − pd(w)
+        
+               cp(v, w) = c(v, w) − pd(v) + pd(w)
+
+           - cost and net flow are related as:
+             cp(f) = summation over arcs in flow network
+                     f(v,w) * cp(v,w)
+                   = summation over arcs in flow network
+                     f(v,w) * (c(v,w) − pd(v) + pd(w))
+                   = c(f) − |f| * pd(⊢) − pd(⊣)
+             note that the value |f| is the total flow out of the
+               source ⊢ and into the sink ⊣, 
+               while flow is conserved at all other nodes.
+
+            - each arc w/ f(v,w) = 0 and cp(x, y) ≥ 0
+              and is idle
+              and each arc w/ f(v,w) = 1 and cp(x, y) ≤ 0
+              is saturated.
+              (the pair of f and p are proper under those conditions)
+            - arcs with fractional flow have zero net cost
+            - (edges w/ 0 net cost are "tight") 
+        */
+        
+        /**
+         * <pre>
+         * |-
+         * </pre>
+         */
         int sourceNode = -1;
+        /**
+         * <pre>
+         * -|
+         * </pre>
+         */
         int sinkNode = -1;
         
         /**
-         * nodes that correspond to left (==X) vertices in G
+         * nodes that correspond to left (==X==v) vertices in G
          */
         Set<Integer> leftNG = new HashSet<Integer>();
         
         /**
-         * nodes that correspond to right (==Y) vertices in G
+         * nodes that correspond to right (==Y==w) vertices in G
          */
         Set<Integer> rightNG = new HashSet<Integer>();
         
         // forward arcs only in the flow graph
+        // may represent these differently soon.
+        // they are also known as "bipartite arcs".
         Map<Integer, Set<Integer>> forwardArcs = 
             new HashMap<Integer, Set<Integer>>();
         
+        /*
+        somewhere in here need to represent dummy arcs
+        from source to all X and from all Y to sink.
+        The per-unit cost of a left-dummy arc is zero: 
+        c(⊢, x) := 0. 
+        The per-unit cost of a right-dummy arx is also zero:
+        c(y, ⊣) := 0.
+        
+        the flow netowrk uses forward arcs with "ceiling quantization".
+        
+        */
+        
         /**
-         * per unit flow costs are the edges given in G.
-         * key = index in left (a.k.a. X) and index in
-         * right (a.k.a. Y),
+         * per unit flow costs are the same as the edges given in G.
+         * key = index in left (==X==v) and index in
+         * right (==Y==w),
          * value = cost of the arc.
          */
         Map<PairInt, Integer> c = 
@@ -87,13 +156,16 @@ public class MinCostUnbalancedAssignment {
         
         /**
          * the flow on the arc.
-         * key = index in left (a.k.a. X) and index in
-         * right (a.k.a. Y),
-         * value = number from 0 to 1 inclusive.
+         * key = index in left (==X==v) and index in
+         * right (==Y==w),
+         * value = number from 0 to 1 inclusive if it's
+         * a "pseudoflow":
          * the value 0 is "idle" and corresponds to an
          * unmatched link in the residual graph.
          * the value 1 is "saturated" and corresponds to
-         * a matched link in the residual graph.
+         * a matched link in the residual graph (but in 
+         * the residual graph, it would be specified in 
+         * format right to left).
          * 
          */
         Map<PairInt, Float> f = 
@@ -115,7 +187,7 @@ public class MinCostUnbalancedAssignment {
          zero net cost.
        - c(P) is the cost of augmenting path P.
          it's the sum of costs of the arcs of the path in 
-         the residual network.
+         the flow network.
        - Let x_i_j = 1   if i is assigned to j,  else =0
          to augment along path p is to replace x_i_j by 1 for
          each arc (i,j) in P directed from X to Y, and to
@@ -328,7 +400,7 @@ public class MinCostUnbalancedAssignment {
       arc X → Y is nonnegative and satisfies the unit-capacity 
       constraint: 0 ≤ f (X, Y) ≤ 1. 
       - an arc is idle in f if it's a pseudoflow w/ f(X,Y) = 0 
-      - an arc is saturated if f(X,Y) = 1
+      - an arc is saturated if f(X,Y) = 1, (cp(x, y) ≤ 0)
       - else arc is fractional flow with 0 < f(X,Y) < 1  
 The value of a flow f, denoted |f|, is the total 
     flow out of the source, which is also the total 
@@ -392,7 +464,7 @@ Matchings in G are integral flows in N_G
         with an empty matching graph.
         there are no backward links in the residual digraph
         for an empty matching graph, and so there are no
-        alternating paths, just maiden nodes from Y.
+        alternating paths larger than single maiden nodes.
         */
         
         // init all nodes to inf length
@@ -458,6 +530,7 @@ Matchings in G are integral flows in N_G
                 
             } else {    
                 //exit(bachelor β := y reached);
+                log.info("bachelor y index=" + y.getData());
                 break;
             }
         }
@@ -492,12 +565,11 @@ Matchings in G are integral flows in N_G
         Set<Integer> forwardLinks = rM.forwardLinksRM.get(x);
         for (Integer y : forwardLinks) {
             
-            // because the paths need to be alternating, check
-            // that the y, that is the right node, is in the
-            // residual graph backward links indicating it is matched.
-            if (!rM.backwardLinksRM.containsKey(y)) {
-                continue;
-            }
+            // check that the Y is matched?  pseudocode does not
+            // have that
+            //if (!rM.backwardLinksRM.containsKey(y)) {
+            //    continue;
+            //}
             
             // by definition, the forward link in residual digraph of matches,
             // is "idle", that is f=0
@@ -513,10 +585,15 @@ Matchings in G are integral flows in N_G
             assert(((Integer)(yNode.getData())).intValue() 
                 == y.intValue());
             
-            //L := l(x) + lp(x ⇒ y); 
-            // for the bipartite digraph logic and idle edge, lp(x ⇒ y)=0
-            
-            long ell = lX;// + 0
+            //L := l(x) + lp(x ⇒ y) 
+            //   = l(x) + cp(x, y)
+            //   = l(x) + c(x, y) − pd(x) + pd(y)
+            int cp;
+            if (true) {
+               //calc cp
+                throw new UnsupportedOperationException("not yet implemented");
+            }
+            long ell = lX + cp;
             long lOld = lY;
             if (ell < lOld) {
                 lY = ell;
@@ -555,6 +632,12 @@ Matchings in G are integral flows in N_G
                 forest[k] = list;
             }
             list.insert(node);
+            
+            String str = 
+                node.getClass().getSimpleName().contains("Left") ?
+                " Left" : " Right";
+            log.info("add to forest[" + k + "] " + str 
+                + " node w/ index=" + node.getData());
         }
     }
 
