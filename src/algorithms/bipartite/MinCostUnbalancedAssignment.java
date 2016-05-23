@@ -332,8 +332,9 @@ public class MinCostUnbalancedAssignment {
         if (allAreEmpty(augmentingPaths)) {
             return m;
         }
-    
-        for (int i = 0; i < augmentingPaths.length; ++i) {
+
+// start at i=1, because i=0 is not alternating? 
+        for (int i = 1; i < augmentingPaths.length; ++i) {
             
             DoubleLinkedCircularList path = augmentingPaths[i];
             
@@ -343,6 +344,9 @@ public class MinCostUnbalancedAssignment {
             
             //augment M along path;
             /*
+            pg 11: "But our augmenting paths will be paths 
+            in an auxiliary graph called the residual digraph"
+            
             "We augment along a tight augmenting path 
             by swapping the status of the edges that 
             underlie its links, saturating the idle edges
@@ -352,10 +356,16 @@ public class MinCostUnbalancedAssignment {
             ends of the augmenting path, thus reducing the
             number of places where future augmenting paths 
             can start or end.
+            
+            Finally, we augment the pseudoflow f along each 
+            of the paths in P. These augmentations reverse 
+            the forward-versus-backward orientation of each 
+            link along the path and the idle-versus-saturated 
+            status of each underlying arc. T
             */
-            
+           
             //announce(M is a matching)
-            
+            log.info("m.size=" + m.size());
         }
         
         return m;
@@ -456,21 +466,18 @@ Matchings in G are integral flows in N_G
      * remaining maidens, that is unmatched left nodes (a.k.a. G's
      * X nodes).
      */
-    protected DoubleLinkedCircularList[] 
-        buildForest(final ResidualDigraph rM) {
+    protected DoubleLinkedCircularList[] buildForest(
+        final ResidualDigraph rM) {
         
         //TODO: revisit this.
-        int lambda = Math.min(rM.leftRM.size(), 
-            rM.rightRM.size())/2;
+        int lambda = 2 * Math.min(rM.leftRM.size(), rM.rightRM.size());
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
         
         Heap heap = new Heap();
         
-        /*NOTE:
-        need to run tests on this section.
-        
+        /*
         upon first use as hopcroft karp is initialized
         with an empty matching graph.
         there are no backward links in the residual digraph
@@ -495,10 +502,11 @@ Matchings in G are integral flows in N_G
         }
         
         // for all maidens, that is, the keys in forwardLinksRM,
-        // set key to 0 and ScanAndAdd(index)
+        // set key to 0, then ScanAndAdd(index)
         for (Integer lNode : rM.forwardLinksRM.keySet()) {
             LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
+            // any rightNodes inserted into heap get decreased keys
             scanAndAdd(heap, forest, rM, rightNodes, node);
         }
         
@@ -513,9 +521,11 @@ Matchings in G are integral flows in N_G
             HeapNode y = heap.extractMin();
             assert(y instanceof RightNode);
             assert(y.getData() != null);
+        
+            log.fine("heap.size=" + heap.getNumberOfNodes());
             
             addToForest(forest, y);
-        
+                    
             /*
             if y is married then
                 x := wife of y;
@@ -534,19 +544,21 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode = leftNodes.get(xIndex);
                 RightNode yNode = rightNodes.get(yIndex);
                 
-                //xNode.setKey(yNode.getKey());
-                
-                //TODO: check state here. a node is present in
-                // more than one augmenting path.
+                // not necessary to update original key,
+                //  but it does show presence in larger tree
+                //  when key != forest key
+                xNode.setKey(yNode.getKey());
                 
                 // make a copy in case it's already in forest
                 LeftNode xNode2 = new LeftNode();
                 xNode2.setKey(yNode.getKey());
                 xNode2.setData(xNode.getData());
            
+                // any rightNodes inserted into heap get decreased keys
                 scanAndAdd(heap, forest, rM, rightNodes, xNode2);
                 
-            } else {    
+            } else {
+                // break early for finding a complete short augmenting path
                 //exit(bachelor β := y reached);
                 log.info("bachelor y index=" + y.getData());
                 break;
@@ -565,6 +577,9 @@ Matchings in G are integral flows in N_G
     right nodes in alternating paths
     to insert right nodes into the heap
     or update their heap keys for shorter paths.
+    
+    note that any yNodes inserted into the heap internally,
+    have their keys updated.
     
      * @param heap
      * @param forest

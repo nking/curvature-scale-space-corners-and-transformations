@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 /**
@@ -17,6 +18,9 @@ import junit.framework.TestCase;
  * @author nichole
  */
 public class MinCostUnbalancedAssignmentTest extends TestCase {
+    
+    private Logger log = 
+        Logger.getLogger(this.getClass().getName());
     
     public MinCostUnbalancedAssignmentTest() {
     }
@@ -144,26 +148,26 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
                 value);
         }
         
-        /*
         DoubleLinkedCircularList[] forest = 
             bipartite.buildForest(rM);
         
+        int k = 0;
         for (DoubleLinkedCircularList list : forest) {
             if (list == null) {
                 continue;
             }
             
             HeapNode node = list.getSentinel();
-            for (int i = 0; i <= list.getNumberOfNodes(); ++i) {
+            for (int i = 0; i < list.getNumberOfNodes(); ++i) {
                 node = node.getRight();
                 String nodeType = 
                     node.getClass().getSimpleName().contains("Left") ?
                     " Left" : " Right";
-                System.out.println("key=" + node.getKey()
+                log.info("k=[" + k + "] key=" + node.getKey()
                     + nodeType + " index=" + node.getData());
             }
+            ++k;
         }
-        */
     }
 
 }
