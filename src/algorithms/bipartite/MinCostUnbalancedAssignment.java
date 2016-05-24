@@ -4,6 +4,7 @@ import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,27 +40,7 @@ import java.util.logging.Logger;
 public class MinCostUnbalancedAssignment {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
-    
-    public static class Graph {
-                
-        /**
-         * left (==X) vertices in graph
-         */
-        Set<Integer> leftG = new HashSet<Integer>();
-        
-        /**
-         * right (==Y) vertices in graph
-         */
-        Set<Integer> rightG = new HashSet<Integer>();
-        
-        /**
-         * map of edge weights with key = pairint of left
-         * index and right index and value being the edge weight.
-         */
-        Map<PairInt, Integer> edgeWeights = 
-            new HashMap<PairInt, Integer>();
-    }
-    
+
     public static class FlowNetwork {
         
         /*
@@ -141,7 +122,7 @@ public class MinCostUnbalancedAssignment {
         The per-unit cost of a right-dummy arx is also zero:
         c(y, ⊣) := 0.
         
-        the flow netowrk uses forward arcs with "ceiling quantization".
+        the flow network uses forward arcs with "ceiling quantization".
         
         */
         
@@ -203,48 +184,39 @@ public class MinCostUnbalancedAssignment {
         */
     }
     
-    public static class ResidualDigraph {
-                
-        /**
-         * nodes that correspond to left (==X) vertices in G
-         */
-        Set<Integer> leftRM = new HashSet<Integer>();
-        
-        /**
-         * nodes that correspond to right (==Y) vertices in G
-         */
-        Set<Integer> rightRM = new HashSet<Integer>();
-        
-        /**
-         * links X to Y (that is, left to right).  
-         * These are "idle" arcs, f=0, in the flow network N_G.
-         * They correspond to "unmarried" in the matched
-         * M graph.
-         */
-        Map<Integer, Set<Integer>> forwardLinksRM = 
-            new HashMap<Integer, Set<Integer>>();
-        
-        /**
-         * links Y to X (that is, right to left).  
-         * These are "saturated" arcs, f=1, in the flow network N_G.
-         * They correspond to "married" in the matched
-         * M graph.
-         */
-        Map<Integer, Integer> backwardLinksRM = 
-            new HashMap<Integer, Integer>();
-    }
-    
     /**
      * class specializing a fibonacci heap node to identify
      * a left node, a.k.a. X node
      */
     private class LeftNode extends HeapNode {
+        PairInt xy = null;
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("LeftNode key=").append(Long.toString(getKey()));
+            sb.append(" index=").append(getData().toString());
+            if (xy != null) {
+                sb.append(" x, y =").append(xy.toString());
+            }
+            return sb.toString();
+        }
     }
     /**
      * class specializing a fibonacci heap node to identify
      * a right node, a.k.a. Y node
      */
     private class RightNode extends HeapNode {
+        PairInt xy = null;
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("RightNode key=").append(Long.toString(getKey()));
+            sb.append(" index=").append(getData().toString());
+            if (xy != null) {
+                sb.append(" x, y =").append(xy.toString());
+            }
+            return sb.toString();
+        }
     }
     
     /*
@@ -320,10 +292,25 @@ public class MinCostUnbalancedAssignment {
       od;    
     */
     
+    //TODO: add t as limit for size
     protected Map<Integer, Integer> hopcroftKarp(Graph g) {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
+        if (true) {             
+            //temporarily, replacing w/ O(m * sqrt(n))
+            HopcroftKarp hk = new HopcroftKarp();
+            int[] matched = hk.hopcroftKarpV0(createUnweightedGraph(g));
+            log.info("matched=" + Arrays.toString(matched));
+            for (int i = 0; i < matched.length; ++i) {
+                int v = matched[i];
+                if (v > -1) {
+                    m.put(Integer.valueOf(i), Integer.valueOf(v));
+                }
+            }
+            return m;
+        }
+                
         ResidualDigraph rM = createResidualGraph(g, m);
         
         return hopcroftKarp(g, rM);
@@ -331,118 +318,61 @@ public class MinCostUnbalancedAssignment {
     
     protected Map<Integer, Integer> hopcroftKarp(Graph g, 
         ResidualDigraph rM) {
-        
+       
+        if (true) {
+            throw new UnsupportedOperationException("not yet implemented");
+        }
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
-                
-        DoubleLinkedCircularList[] augmentingPaths =
-            buildForest(rM);
         
-        if (allAreEmpty(augmentingPaths)) {
-            return m;
-        }
+        while (true) {
+        
+            DoubleLinkedCircularList[] augmentingPaths =
+                buildForest(rM);
 
-        // start at i=1, because i=0 is not alternating? 
-        for (int i = 1; i < augmentingPaths.length; ++i) {
-            
-            DoubleLinkedCircularList path = augmentingPaths[i];
-            
-            if (path == null) {
-                continue;
+            if (allAreEmpty(augmentingPaths)) {
+                return m;
             }
-            
-            //NOTE: not sure the logic is correct here.
-                        
-            //augment M along path;
-            /*
-            pg 11: "But our augmenting paths will be paths 
-            in an auxiliary graph called the residual digraph"
-            
-            "We augment along a tight augmenting path 
-            by swapping the status of the edges that 
-            underlie its links, saturating the idle edges
-            and idling the saturated ones. This process 
-            increases the size of the matching by exactly 1. 
-            It marries off the maiden and bachelor at the 
-            ends of the augmenting path, thus reducing the
-            number of places where future augmenting paths 
-            can start or end.
-            */
-            
-            /* traverse w/ getLeft for FIFO order.
-            for a given forest key, segments start
-            with right if i is odd, else left
-            example i=1
-               a path is RightNode, LeftNode
-               next path is RightNode, LeftNode,RightNode
-            */
-                        
-            long n = path.getNumberOfNodes();
-            HeapNode node = path.getSentinel();
-            HeapNode node2;
-            HeapNode startNode = null;
-            int nCurrent = 0;
-            for (int j = 0; j < (n - 1); ++j) {
-                node = node.getLeft();
-                boolean startLeft = (node instanceof LeftNode);
-                node2 = node.getLeft();
-                
-                Integer index1 = (Integer)node.getData();
-                Integer index2 = (Integer)node2.getData();
-                        
-                if (startNode == null) {
-                    startNode = node;
+
+            // start at i=1, because i=0 is not alternating? 
+            for (int i = 1; i < augmentingPaths.length; ++i) {
+
+                DoubleLinkedCircularList path = augmentingPaths[i];
+
+                if (path == null) {
+                    continue;
                 }
-                
-                if (startLeft) {
-                    swapLinkExistence(rM, m, index1, index2);
-                } else {
-                    swapLinkExistence(rM, m, index2, index1);
-                }
-                
-                boolean nextIsInThisPath = false;
-                // check for possibility that next node is part
-                // of this path, and if so, do not increment node and counter
-                if ((j + 1) < n) {
-                    HeapNode nextNode = node2.getLeft();
-                    Integer nextIndex = (Integer)node2.getData();
-                    //TODO: revisit this
-                    if (
-                        (startNode instanceof RightNode && (nCurrent < i)) ||
-                        (startNode instanceof LeftNode && (nCurrent <= i))
-                        ) {
-                        PairInt edgeNext;
-                        if (startLeft) {
-                            //left  right
-                            //      right  left
-                            edgeNext = new PairInt(nextIndex.intValue(),
-                                index2.intValue());
-                        } else {
-                            //right left
-                            //      left  right
-                            edgeNext = new PairInt(index2.intValue(),
-                                nextIndex.intValue());
-                        }
-                        Integer edgeNextWeight = g.edgeWeights.get(edgeNext);
-                        if (edgeNextWeight != null &&
-                            (edgeNextWeight.intValue() != 0)) {
-                            nextIsInThisPath = true;
-                        }
-                    }
-                }
-                nCurrent++;
-                
-                if (!nextIsInThisPath) {
-                    node = node2;
-                    j++;
-                    nCurrent = 0;
-                }
+
+                //NOTE: not sure the logic is correct here.
+
+                //augment M along path;
+                /*
+                pg 11: "But our augmenting paths will be paths 
+                in an auxiliary graph called the residual digraph"
+
+                "We augment along a tight augmenting path 
+                by swapping the status of the edges that 
+                underlie its links, saturating the idle edges
+                and idling the saturated ones. This process 
+                increases the size of the matching by exactly 1. 
+                It marries off the maiden and bachelor at the 
+                ends of the augmenting path, thus reducing the
+                number of places where future augmenting paths 
+                can start or end.
+                */
+
+                /* traverse w/ getLeft for FIFO order.
+                for a given forest key, segments start
+                with right if i is odd, else left
+                example i=1
+                   a path is RightNode, LeftNode
+                   next path is RightNode, LeftNode,RightNode
+                */
+
+                //announce(M is a matching)
+                log.info("m.size=" + m.size());
             }
-            
-            //announce(M is a matching)
-            log.info("m.size=" + m.size());
-        }
-        
-        return m;
+        } 
+        //return m;
     }
     
     /*
@@ -544,7 +474,7 @@ Matchings in G are integral flows in N_G
         final ResidualDigraph rM) {
         
         //TODO: revisit this.
-        int lambda = 2 * Math.min(rM.leftRM.size(), rM.rightRM.size());
+        int lambda = 2 * Math.min(rM.getLeftRM().size(), rM.getRightRM().size());
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -562,13 +492,13 @@ Matchings in G are integral flows in N_G
         // init all nodes to inf length
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
-        for (Integer rNode : rM.rightRM) {
+        for (Integer rNode : rM.getRightRM()) {
             RightNode node = new RightNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(rNode);
             rightNodes.put(rNode, node);
         }
-        for (Integer lNode : rM.leftRM) {
+        for (Integer lNode : rM.getLeftRM()) {
             LeftNode node = new LeftNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(lNode);
@@ -577,7 +507,7 @@ Matchings in G are integral flows in N_G
         
         // for all maidens, that is, the keys in forwardLinksRM,
         // set key to 0, then ScanAndAdd(index)
-        for (Integer lNode : rM.forwardLinksRM.keySet()) {
+        for (Integer lNode : rM.getForwardLinksRM().keySet()) {
             LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
             // any rightNodes inserted into heap get decreased keys
@@ -612,7 +542,7 @@ Matchings in G are integral flows in N_G
             Integer yIndex = (Integer)(y.getData());
             // the married nodes are the keys in the backward
             // links of the residual digraph
-            Integer xIndex = rM.backwardLinksRM.get(yIndex);
+            Integer xIndex = rM.getBackwardLinksRM().get(yIndex);
             if (xIndex != null) {
                 
                 LeftNode xNode = leftNodes.get(xIndex);
@@ -627,6 +557,7 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode2 = new LeftNode();
                 xNode2.setKey(yNode.getKey());
                 xNode2.setData(xNode.getData());
+                xNode2.xy = xNode.xy;
            
                 // any rightNodes inserted into heap get decreased keys
                 scanAndAdd(heap, forest, rM, rightNodes, xNode2);
@@ -669,7 +600,7 @@ Matchings in G are integral flows in N_G
         long lX = xNode.getKey();
         Integer x = (Integer)(xNode.getData());
         
-        Set<Integer> forwardLinks = rM.forwardLinksRM.get(x);
+        Set<Integer> forwardLinks = rM.getForwardLinksRM().get(x);
         for (Integer y : forwardLinks) {
             
             // check that the Y is matched?  pseudocode does not
@@ -706,9 +637,14 @@ Matchings in G are integral flows in N_G
                 lY = ell;
                 if (lOld == Long.MAX_VALUE) {
                     yNode.setKey(lY);
+                    yNode.xy = new PairInt(x.intValue(), y.intValue());
                     heap.insert(yNode);
+                    log.info(String.format("HEAP insert: %s",
+                        yNode.toString()));
                 } else {
                     heap.decreaseKey(yNode, lY);
+                    log.info(String.format("HEAP decr: %s",
+                        yNode.toString()));
                 }
             }
         }
@@ -747,7 +683,7 @@ Matchings in G are integral flows in N_G
                 node.getClass().getSimpleName().contains("Left") ?
                 " Left" : " Right";
             log.info("add to forest[" + k + "] " + str 
-                + " node w/ index=" + node.getData());
+                + " node " + node.toString());
         }
     }
 
@@ -769,15 +705,15 @@ Matchings in G are integral flows in N_G
                 
         ResidualDigraph rM = new ResidualDigraph();
         
-        for (Integer x : g.leftG) {
-            rM.leftRM.add(x);
+        for (Integer x : g.getLeftG()) {
+            rM.getLeftRM().add(x);
         }
         
-        for (Integer y : g.rightG) {
-            rM.rightRM.add(y);
+        for (Integer y : g.getRightG()) {
+            rM.getRightRM().add(y);
         }
         
-        for (Entry<PairInt, Integer> entry : g.edgeWeights.entrySet()) {
+        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
             
             PairInt p = entry.getKey();
             
@@ -789,10 +725,10 @@ Matchings in G are integral flows in N_G
             Integer x = Integer.valueOf(p.getX());
             Integer y = Integer.valueOf(p.getY());
             
-            Set<Integer> ys = rM.forwardLinksRM.get(x);
+            Set<Integer> ys = rM.getForwardLinksRM().get(x);
             if (ys == null) {
                 ys = new HashSet<Integer>();
-                rM.forwardLinksRM.put(x, ys);
+                rM.getForwardLinksRM().put(x, ys);
             }
             
             ys.add(y);
@@ -802,20 +738,43 @@ Matchings in G are integral flows in N_G
             Integer x = entry.getKey();
             Integer y = entry.getValue();
             
-            if (rM.forwardLinksRM.containsKey(x)) {
-                rM.forwardLinksRM.get(x).remove(y);
+            if (rM.getForwardLinksRM().containsKey(x)) {
+                rM.getForwardLinksRM().get(x).remove(y);
             }
             
-            rM.backwardLinksRM.put(y, x);
+            rM.getBackwardLinksRM().put(y, x);
         }
 
         return rM;
+    }
+        
+    private GraphWithoutWeights createUnweightedGraph(Graph g) {
+
+        GraphWithoutWeights g2 = new GraphWithoutWeights(
+            g.getLeftG().size(), g.getRightG().size());
+        Map<Integer, Set<Integer>> adjMap = g2.getAdjacencyMap();
+        
+        for (Entry<PairInt, Integer> entry : 
+            g.getEdgeWeights().entrySet()) {
+            
+            Integer index1 = entry.getKey().getX();
+            Integer index2 = entry.getKey().getY();
+            
+            Set<Integer> indexes2 = adjMap.get(index1);
+            if (indexes2 == null) {
+                indexes2 = new HashSet<Integer>();
+                adjMap.put(index1, indexes2);
+            }
+            indexes2.add(index2);
+        }
+        
+        return g2;
     }
     
     private void swapLinkExistence(ResidualDigraph rM, 
         Map<Integer, Integer> m, Integer leftIndex, Integer rightIndex) {
         
-        Set<Integer> rIndexes = rM.forwardLinksRM.get(leftIndex);
+        Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
         
         boolean forwardFound = (rIndexes != null) && rIndexes.contains(rightIndex);
         
@@ -823,31 +782,29 @@ Matchings in G are integral flows in N_G
             
             // remove existing "idle" forward link
             rIndexes.remove(rightIndex);
-            if (rIndexes.isEmpty()) {
-                rM.forwardLinksRM.remove(leftIndex);
-            }
             
             // create a backward link and matched mapping
-            rM.backwardLinksRM.put(rightIndex, leftIndex);
+            rM.getBackwardLinksRM().put(rightIndex, leftIndex);
             m.put(leftIndex, rightIndex);
             
             return;
         }
         
         // assert that a backward link exists
-        Integer v2 = rM.backwardLinksRM.get(rightIndex);
+        Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
         assert(v2 != null && v2.equals(leftIndex));
         
         // remove backwards link and mapping
-        rM.backwardLinksRM.remove(rightIndex);
+        rM.getBackwardLinksRM().remove(rightIndex);
         m.remove(leftIndex, rightIndex);
         
         // create a forward link        
         if (rIndexes == null) {
             rIndexes = new HashSet<Integer>();
-            rM.forwardLinksRM.put(leftIndex, rIndexes);
+            rM.getForwardLinksRM().put(leftIndex, rIndexes);
         }
         rIndexes.add(rightIndex);
         
     }
+    
 }

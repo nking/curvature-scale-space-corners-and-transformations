@@ -1,7 +1,5 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.Graph;
-import algorithms.bipartite.MinCostUnbalancedAssignment.ResidualDigraph;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
@@ -32,64 +30,64 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         Graph g = new Graph();
         for (int i = 0; i < 6; ++i) {
             Integer x = Integer.valueOf(i);
-            g.leftG.add(x);
+            g.getLeftG().add(x);
         }
         
         for (int i = 0; i < 5; ++i) {
             Integer y = Integer.valueOf(i);
-            g.rightG.add(y);
+            g.getRightG().add(y);
         }
         
-        g.edgeWeights.put(new PairInt(0, 0), Integer.valueOf(1));
-        g.edgeWeights.put(new PairInt(0, 2), Integer.valueOf(1));
+        g.getEdgeWeights().put(new PairInt(0, 0), Integer.valueOf(1));
+        g.getEdgeWeights().put(new PairInt(0, 2), Integer.valueOf(1));
         
-        g.edgeWeights.put(new PairInt(1, 1), Integer.valueOf(2));
-        g.edgeWeights.put(new PairInt(1, 2), Integer.valueOf(1));
+        g.getEdgeWeights().put(new PairInt(1, 1), Integer.valueOf(2));
+        g.getEdgeWeights().put(new PairInt(1, 2), Integer.valueOf(1));
         
-        g.edgeWeights.put(new PairInt(2, 3), Integer.valueOf(2));
+        g.getEdgeWeights().put(new PairInt(2, 3), Integer.valueOf(2));
         
-        g.edgeWeights.put(new PairInt(3, 0), Integer.valueOf(1));
-        g.edgeWeights.put(new PairInt(3, 1), Integer.valueOf(2));
-        g.edgeWeights.put(new PairInt(3, 4), Integer.valueOf(3));
+        g.getEdgeWeights().put(new PairInt(3, 0), Integer.valueOf(1));
+        g.getEdgeWeights().put(new PairInt(3, 1), Integer.valueOf(2));
+        g.getEdgeWeights().put(new PairInt(3, 4), Integer.valueOf(3));
     
-        g.edgeWeights.put(new PairInt(4, 3), Integer.valueOf(2));
-        g.edgeWeights.put(new PairInt(4, 4), Integer.valueOf(1));
+        g.getEdgeWeights().put(new PairInt(4, 3), Integer.valueOf(2));
+        g.getEdgeWeights().put(new PairInt(4, 4), Integer.valueOf(1));
         
-        g.edgeWeights.put(new PairInt(5, 3), Integer.valueOf(2));
+        g.getEdgeWeights().put(new PairInt(5, 3), Integer.valueOf(2));
          
         ResidualDigraph expectedDigrph = new ResidualDigraph();
         for (int i = 0; i < 6; ++i) {
             Integer x = Integer.valueOf(i);
-            expectedDigrph.leftRM.add(x);
-            expectedDigrph.forwardLinksRM.put(x, 
+            expectedDigrph.getLeftRM().add(x);
+            expectedDigrph.getForwardLinksRM().put(x, 
                 new HashSet<Integer>());
         }
         for (int i = 0; i < 5; ++i) {
             Integer y = Integer.valueOf(i);
-            expectedDigrph.rightRM.add(y);
+            expectedDigrph.getRightRM().add(y);
         }
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(0)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(0)) 
             .add(Integer.valueOf(0));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(0)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(0)) 
             .add(Integer.valueOf(2));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(1)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(1)) 
             .add(Integer.valueOf(1));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(2)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(2)) 
             .add(Integer.valueOf(3));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(3)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(3)) 
             .add(Integer.valueOf(1));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(3)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(3)) 
             .add(Integer.valueOf(4));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(4)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(4)) 
             .add(Integer.valueOf(4));
-        expectedDigrph.forwardLinksRM.get(Integer.valueOf(5)) 
+        expectedDigrph.getForwardLinksRM().get(Integer.valueOf(5)) 
             .add(Integer.valueOf(3));
         
-        expectedDigrph.backwardLinksRM.put(Integer.valueOf(0), 
+        expectedDigrph.getBackwardLinksRM().put(Integer.valueOf(0), 
             Integer.valueOf(3));
-        expectedDigrph.backwardLinksRM.put(Integer.valueOf(2), 
+        expectedDigrph.getBackwardLinksRM().put(Integer.valueOf(2), 
             Integer.valueOf(1));
-        expectedDigrph.backwardLinksRM.put(Integer.valueOf(3), 
+        expectedDigrph.getBackwardLinksRM().put(Integer.valueOf(3), 
             Integer.valueOf(4));
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
@@ -102,49 +100,49 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         
         ResidualDigraph rM = bipartite.createResidualGraph(g, m);
         
-        assertEquals(expectedDigrph.leftRM.size(),
-            rM.leftRM.size());
+        assertEquals(expectedDigrph.getLeftRM().size(),
+            rM.getLeftRM().size());
         
-        assertEquals(expectedDigrph.rightRM.size(),
-            rM.rightRM.size());
+        assertEquals(expectedDigrph.getRightRM().size(),
+            rM.getRightRM().size());
         
-        assertEquals(expectedDigrph.forwardLinksRM.size(),
-            rM.forwardLinksRM.size());
+        assertEquals(expectedDigrph.getForwardLinksRM().size(),
+            rM.getForwardLinksRM().size());
         
-        assertEquals(expectedDigrph.backwardLinksRM.size(),
-            rM.backwardLinksRM.size());
+        assertEquals(expectedDigrph.getBackwardLinksRM().size(),
+            rM.getBackwardLinksRM().size());
         
-        for (Integer x : expectedDigrph.leftRM) {
-            assertTrue(rM.leftRM.contains(x));
+        for (Integer x : expectedDigrph.getLeftRM()) {
+            assertTrue(rM.getLeftRM().contains(x));
         }
-        for (Integer y : expectedDigrph.rightRM) {
-            assertTrue(rM.rightRM.contains(y));
+        for (Integer y : expectedDigrph.getRightRM()) {
+            assertTrue(rM.getRightRM().contains(y));
         }
         for (Entry<Integer, Set<Integer>> entry : 
-            expectedDigrph.forwardLinksRM.entrySet()) {
+            expectedDigrph.getForwardLinksRM().entrySet()) {
             
             Integer key = entry.getKey();
             Set<Integer> links = entry.getValue();
             
-            assertTrue(rM.forwardLinksRM.containsKey(key));
+            assertTrue(rM.getForwardLinksRM().containsKey(key));
             
-            assertEquals(rM.forwardLinksRM.get(key).size(),
+            assertEquals(rM.getForwardLinksRM().get(key).size(),
                 links.size());
             
             for (Integer y : links) {
-                assertTrue(rM.forwardLinksRM.get(key).contains(y));
+                assertTrue(rM.getForwardLinksRM().get(key).contains(y));
             }
         }
         
         for (Entry<Integer, Integer> entry : 
-            expectedDigrph.backwardLinksRM.entrySet()) {
+            expectedDigrph.getBackwardLinksRM().entrySet()) {
             
             Integer key = entry.getKey();
             Integer value = entry.getValue();
             
-            assertTrue(rM.backwardLinksRM.containsKey(key));
+            assertTrue(rM.getBackwardLinksRM().containsKey(key));
             
-            assertEquals(rM.backwardLinksRM.get(key),
+            assertEquals(rM.getBackwardLinksRM().get(key),
                 value);
         }
         
@@ -171,7 +169,9 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         }
         
         // ------------------------------------
-        Map<Integer, Integer> aMatching = bipartite.hopcroftKarp(g, rM);
+        Map<Integer, Integer> aMatching = 
+            bipartite.hopcroftKarp(g);
+        //  bipartite.hopcroftKarp(g, rM);
         for (Entry<Integer, Integer> entry : aMatching.entrySet()) {
             log.info("matched left " + entry.getKey() + " to right " +
                 entry.getValue());

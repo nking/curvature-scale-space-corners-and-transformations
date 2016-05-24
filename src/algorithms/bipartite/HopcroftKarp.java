@@ -1,0 +1,211 @@
+package algorithms.bipartite;
+
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ * finds a maximum matching in a bipartite graph.
+ * Note that the graph does not hae edge weights.
+ * 
+ * useful reading is Cormen et al. "Introduction to Algorithms"
+ * pseudocode of Hopcroft-Karp.
+ * 
+ * Also helpful is 
+ * http://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm
+ * and
+ * http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
+
+ * The runtime complexity is O(sqrt(V) * E).
+ * 
+ * @author nichole
+ */
+public class HopcroftKarp {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
+    /*
+    G is a directed bipartite graph (V, E) where V is composed
+    of left L and right R.
+    
+    a path is a sequence of edges.
+    an augmenting path in the matching M starts at an unmatched L
+    and ends at an unmatched vertex in R and in between alternates
+    between matched and unmatched edges, (members of E and E-M).
+    an augmenting path can be composed of only two vertices and the
+    edge between them.
+    
+    The shortest augmenting path has the fewest number of edges in it.
+    
+    And the symmetric difference of 2 sets is the points that are 
+    not in the intersection, but are in the union of them.
+    For example, sym diff of {1, 2, 3} and {3, 4} is {1, 2, 4}.
+    http://en.wikipedia.org/wiki/Symmetric_difference
+    
+    if M is a matching within G and P is an augmenting path,
+    then the summetric difference of M with P is a matching
+    of size |M| + 1.
+    
+    input G
+    
+    M = 0
+    repeat
+        let P = {P1, P2, ...Pk} be a maximum set of vertex-disjoint
+            shortest augmenting paths with respect to M
+        M = the symmetric difference between M and
+            (P1 union P2 union ...Pk) 
+        until P = 0
+    return M
+    
+    To find the vertex-disjoint shortest paths,
+    using the pattern of single BFS and single DFS
+        (see wikipedia).
+    
+    */
+    
+    /**
+     * implementing the version of Hopcroft-Karp that uses a
+     * single round of BFS followed by DFs to find the 
+     * shortest augmenting paths, all within a pattern
+     * of augmenting the matching M until no new augmenting
+     * paths can be found.  the matching M is returned.
+     * The code below follows:
+      http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
+      which uses the unlicense:
+      http://github.com/indy256/codelibrary/blob/master/UNLICENSE
+     
+     * @return matching from perspective int[uIndex] = vIndex
+     */
+    public int[] hopcroftKarpV0(GraphWithoutWeights g) {
+        
+        int[] m = hopcroftKarpV0Rev(g);
+        
+        int[] mForward = new int[m.length];
+        Arrays.fill(mForward, -1);
+        
+        for (int i = 0; i < m.length; ++i) {
+            int idx = m[i];
+            if (idx > -1) {
+                mForward[idx] = i;
+            }
+        }
+        
+        return mForward;
+    }
+    
+    /**
+     * implementing the version of Hopcroft-Karp that uses a
+     * single round of BFS followed by DFs to find the 
+     * shortest augmenting paths, all within a pattern
+     * of augmenting the matching M until no new augmenting
+     * paths can be found.  the matching M is returned.
+     * The code below follows:
+      http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
+      which uses the unlicense:
+      http://github.com/indy256/codelibrary/blob/master/UNLICENSE
+     
+     * @return matching from perspective int[vIndex] = uIndex
+     */
+    private int[] hopcroftKarpV0Rev(GraphWithoutWeights g) {
+        
+        int n1 = g.getNLeft();
+        int n2 = g.getNRight();
+        
+        int[] dist = new int[n1];
+        int[] matching = new int[n2];
+        Arrays.fill(matching, -1);
+        
+		boolean[] used = new boolean[n1];
+		for (int res = 0; ; ) {
+			
+            bfs(g, used, matching, dist);
+			
+            boolean[] vis = new boolean[n1];
+			
+            int f = 0;
+			
+            for (int u = 0; u < n1; ++u) {
+				if (!used[u] && dfs(g, vis, used, matching, 
+                    dist, u)) {
+					++f;
+                }
+            }
+			
+            if (f == 0) {
+				return matching;
+            }
+			res += f;
+        }        
+    }
+    
+    /**
+     * note, this depends upon g
+     * @param g
+     * @param used
+     * @param matching
+     * @param dist 
+     */
+    private void bfs(GraphWithoutWeights g, boolean[] used, 
+        int[] matching, int[] dist) {
+		Arrays.fill(dist, -1);
+		int n1 = g.getNLeft();
+		int[] Q = new int[n1];
+		int sizeQ = 0;
+        for (int u = 0; u < n1; ++u) {
+			if (!used[u]) {
+				Q[sizeQ++] = u;
+				dist[u] = 0;
+			}
+		}
+		for (int i = 0; i < sizeQ; i++) {
+			int u1 = Q[i];
+            Set<Integer> neighbors = g.getAdjacencyMap().get(
+                Integer.valueOf(u1));
+            if (neighbors == null) {
+                continue;
+            }
+			for (Integer vIndex : neighbors) {
+                int v = vIndex.intValue();
+                log.info(String.format("bfs visiting (%d, %d)", u1, v));
+				int u2 = matching[v];
+				if (u2 > -1 && dist[u2] < 0) {
+					dist[u2] = dist[u1] + 1;
+					Q[sizeQ++] = u2;
+				}
+			}
+		}
+	}
+
+	private boolean dfs(GraphWithoutWeights g, boolean[] vis, 
+        boolean[] used, int[] matching, int[] dist, int u1) {
+		
+        vis[u1] = true;
+		
+        Set<Integer> neighbors = g.getAdjacencyMap().get(
+            Integer.valueOf(u1));
+        if (neighbors != null) {
+            
+            for (Integer vIndex : neighbors) {
+                int v = vIndex.intValue();
+                log.info(String.format("DFS visiting (%d, %d)", u1, v));
+                int u2 = matching[v];
+                log.info(String.format("u2=%d", u2));
+                if (u2 < 0 || !vis[u2] && (dist[u2] == (dist[u1] + 1)) 
+                    && dfs(g, vis, used, matching, dist, u2)) {
+                    
+                    log.info(String.format("m[%d]=%d", v, u1));
+                    
+                    matching[v] = u1;
+                    used[u1] = true;
+                    return true;
+                }
+            }
+        }
+        
+		return false;
+	}
+
+}
