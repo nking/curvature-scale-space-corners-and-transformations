@@ -169,7 +169,7 @@ public class HopcroftKarp {
             }
 			for (Integer vIndex : neighbors) {
                 int v = vIndex.intValue();
-                log.info(String.format("bfs visiting (%d, %d)", u1, v));
+                log.fine(String.format("bfs visiting (%d, %d)", u1, v));
 				int u2 = matching[v];
 				if (u2 > -1 && dist[u2] < 0) {
 					dist[u2] = dist[u1] + 1;
@@ -190,13 +190,13 @@ public class HopcroftKarp {
             
             for (Integer vIndex : neighbors) {
                 int v = vIndex.intValue();
-                log.info(String.format("DFS visiting (%d, %d)", u1, v));
+                log.fine(String.format("DFS visiting (%d, %d)", u1, v));
                 int u2 = matching[v];
-                log.info(String.format("u2=%d", u2));
+                log.fine(String.format("u2=%d", u2));
                 if (u2 < 0 || !vis[u2] && (dist[u2] == (dist[u1] + 1)) 
                     && dfs(g, vis, used, matching, dist, u2)) {
                     
-                    log.info(String.format("m[%d]=%d", v, u1));
+                    log.fine(String.format("m[%d]=%d", v, u1));
                     
                     matching[v] = u1;
                     used[u1] = true;
