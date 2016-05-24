@@ -1,9 +1,6 @@
 package algorithms.bipartite;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -80,62 +77,36 @@ public class HopcroftKarp {
      * @return matching from perspective int[uIndex] = vIndex
      */
     public int[] hopcroftKarpV0(GraphWithoutWeights g) {
-        
-        int[] m = hopcroftKarpV0Rev(g);
-        
-        int[] mForward = new int[m.length];
-        Arrays.fill(mForward, -1);
-        
-        for (int i = 0; i < m.length; ++i) {
-            int idx = m[i];
-            if (idx > -1) {
-                mForward[idx] = i;
-            }
-        }
-        
-        return mForward;
-    }
-    
-    /**
-     * implementing the version of Hopcroft-Karp that uses a
-     * single round of BFS followed by DFs to find the 
-     * shortest augmenting paths, all within a pattern
-     * of augmenting the matching M until no new augmenting
-     * paths can be found.  the matching M is returned.
-     * The code below follows:
-      http://github.com/indy256/codelibrary/blob/master/java/src/MaxMatchingHopcroftKarp.java     * @param g
-      which uses the unlicense:
-      http://github.com/indy256/codelibrary/blob/master/UNLICENSE
-     
-     * @return matching from perspective int[vIndex] = uIndex
-     */
-    private int[] hopcroftKarpV0Rev(GraphWithoutWeights g) {
-        
+       
         int n1 = g.getNLeft();
         int n2 = g.getNRight();
         
         int[] dist = new int[n1];
-        int[] matching = new int[n2];
-        Arrays.fill(matching, -1);
         
-		boolean[] used = new boolean[n1];
+        int[] match21 = new int[n2];
+        Arrays.fill(match21, -1);
+        
+        // forward matching indexes, opposite mapping of match21
+		int[] match12 = new int[n1];
+        Arrays.fill(match12, -1);
+        
 		for (int res = 0; ; ) {
 			
-            bfs(g, used, matching, dist);
+            bfs(g, match12, match21, dist);
 			
             boolean[] vis = new boolean[n1];
 			
             int f = 0;
 			
             for (int u = 0; u < n1; ++u) {
-				if (!used[u] && dfs(g, vis, used, matching, 
-                    dist, u)) {
+				if ((match12[u] == -1) && 
+                    dfs(g, vis, match12, match21, dist, u)) {
 					++f;
                 }
             }
 			
             if (f == 0) {
-				return matching;
+				return match12;
             }
 			res += f;
         }        
@@ -144,18 +115,18 @@ public class HopcroftKarp {
     /**
      * note, this depends upon g
      * @param g
-     * @param used
-     * @param matching
+     * @param match12
+     * @param match21
      * @param dist 
      */
-    private void bfs(GraphWithoutWeights g, boolean[] used, 
-        int[] matching, int[] dist) {
+    private void bfs(GraphWithoutWeights g, int[] match12, 
+        int[] match21, int[] dist) {
 		Arrays.fill(dist, -1);
 		int n1 = g.getNLeft();
 		int[] Q = new int[n1];
 		int sizeQ = 0;
         for (int u = 0; u < n1; ++u) {
-			if (!used[u]) {
+			if (match12[u] == -1) {
 				Q[sizeQ++] = u;
 				dist[u] = 0;
 			}
@@ -170,7 +141,7 @@ public class HopcroftKarp {
 			for (Integer vIndex : neighbors) {
                 int v = vIndex.intValue();
                 log.fine(String.format("bfs visiting (%d, %d)", u1, v));
-				int u2 = matching[v];
+				int u2 = match21[v];
 				if (u2 > -1 && dist[u2] < 0) {
 					dist[u2] = dist[u1] + 1;
 					Q[sizeQ++] = u2;
@@ -180,7 +151,7 @@ public class HopcroftKarp {
 	}
 
 	private boolean dfs(GraphWithoutWeights g, boolean[] vis, 
-        boolean[] used, int[] matching, int[] dist, int u1) {
+        int[] match12, int[] match21, int[] dist, int u1) {
 		
         vis[u1] = true;
 		
@@ -191,15 +162,15 @@ public class HopcroftKarp {
             for (Integer vIndex : neighbors) {
                 int v = vIndex.intValue();
                 log.fine(String.format("DFS visiting (%d, %d)", u1, v));
-                int u2 = matching[v];
+                int u2 = match21[v];
                 log.fine(String.format("u2=%d", u2));
                 if (u2 < 0 || !vis[u2] && (dist[u2] == (dist[u1] + 1)) 
-                    && dfs(g, vis, used, matching, dist, u2)) {
+                    && dfs(g, vis, match12, match21, dist, u2)) {
                     
                     log.fine(String.format("m[%d]=%d", v, u1));
                     
-                    matching[v] = u1;
-                    used[u1] = true;
+                    match21[v] = u1;
+                    match12[u1] = v;
                     return true;
                 }
             }
