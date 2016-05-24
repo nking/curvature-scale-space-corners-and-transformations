@@ -148,6 +148,7 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
                 value);
         }
         
+        // ---------------------------------------------------
         DoubleLinkedCircularList[] forest = 
             bipartite.buildForest(rM);
         
@@ -156,10 +157,10 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
             if (list == null) {
                 continue;
             }
-            
+            // traverse getLeft for FIFO order
             HeapNode node = list.getSentinel();
             for (int i = 0; i < list.getNumberOfNodes(); ++i) {
-                node = node.getRight();
+                node = node.getLeft();
                 String nodeType = 
                     node.getClass().getSimpleName().contains("Left") ?
                     " Left" : " Right";
@@ -167,6 +168,13 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
                     + nodeType + " index=" + node.getData());
             }
             ++k;
+        }
+        
+        // ------------------------------------
+        Map<Integer, Integer> aMatching = bipartite.hopcroftKarp(g, rM);
+        for (Entry<Integer, Integer> entry : aMatching.entrySet()) {
+            log.info("matched left " + entry.getKey() + " to right " +
+                entry.getValue());
         }
     }
 

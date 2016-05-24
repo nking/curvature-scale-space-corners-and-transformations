@@ -326,6 +326,14 @@ public class MinCostUnbalancedAssignment {
         
         ResidualDigraph rM = createResidualGraph(g, m);
         
+        return hopcroftKarp(g, rM);
+    }
+    
+    protected Map<Integer, Integer> hopcroftKarp(Graph g, 
+        ResidualDigraph rM) {
+        
+        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+                
         DoubleLinkedCircularList[] augmentingPaths =
             buildForest(rM);
         
@@ -333,7 +341,7 @@ public class MinCostUnbalancedAssignment {
             return m;
         }
 
-// start at i=1, because i=0 is not alternating? 
+        // start at i=1, because i=0 is not alternating? 
         for (int i = 1; i < augmentingPaths.length; ++i) {
             
             DoubleLinkedCircularList path = augmentingPaths[i];
@@ -342,6 +350,8 @@ public class MinCostUnbalancedAssignment {
                 continue;
             }
             
+            //NOTE: not sure the logic is correct here.
+                        
             //augment M along path;
             /*
             pg 11: "But our augmenting paths will be paths 
@@ -356,14 +366,78 @@ public class MinCostUnbalancedAssignment {
             ends of the augmenting path, thus reducing the
             number of places where future augmenting paths 
             can start or end.
-            
-            Finally, we augment the pseudoflow f along each 
-            of the paths in P. These augmentations reverse 
-            the forward-versus-backward orientation of each 
-            link along the path and the idle-versus-saturated 
-            status of each underlying arc. T
             */
-           
+            
+            /* traverse w/ getLeft for FIFO order.
+            for a given forest key, segments start
+            with right if i is odd, else left
+            example i=1
+               a path is RightNode, LeftNode
+               next path is RightNode, LeftNode,RightNode
+            */
+                        
+            long n = path.getNumberOfNodes();
+            HeapNode node = path.getSentinel();
+            HeapNode node2;
+            HeapNode startNode = null;
+            int nCurrent = 0;
+            for (int j = 0; j < (n - 1); ++j) {
+                node = node.getLeft();
+                boolean startLeft = (node instanceof LeftNode);
+                node2 = node.getLeft();
+                
+                Integer index1 = (Integer)node.getData();
+                Integer index2 = (Integer)node2.getData();
+                        
+                if (startNode == null) {
+                    startNode = node;
+                }
+                
+                if (startLeft) {
+                    swapLinkExistence(rM, m, index1, index2);
+                } else {
+                    swapLinkExistence(rM, m, index2, index1);
+                }
+                
+                boolean nextIsInThisPath = false;
+                // check for possibility that next node is part
+                // of this path, and if so, do not increment node and counter
+                if ((j + 1) < n) {
+                    HeapNode nextNode = node2.getLeft();
+                    Integer nextIndex = (Integer)node2.getData();
+                    //TODO: revisit this
+                    if (
+                        (startNode instanceof RightNode && (nCurrent < i)) ||
+                        (startNode instanceof LeftNode && (nCurrent <= i))
+                        ) {
+                        PairInt edgeNext;
+                        if (startLeft) {
+                            //left  right
+                            //      right  left
+                            edgeNext = new PairInt(nextIndex.intValue(),
+                                index2.intValue());
+                        } else {
+                            //right left
+                            //      left  right
+                            edgeNext = new PairInt(index2.intValue(),
+                                nextIndex.intValue());
+                        }
+                        Integer edgeNextWeight = g.edgeWeights.get(edgeNext);
+                        if (edgeNextWeight != null &&
+                            (edgeNextWeight.intValue() != 0)) {
+                            nextIsInThisPath = true;
+                        }
+                    }
+                }
+                nCurrent++;
+                
+                if (!nextIsInThisPath) {
+                    node = node2;
+                    j++;
+                    nCurrent = 0;
+                }
+            }
+            
             //announce(M is a matching)
             log.info("m.size=" + m.size());
         }
@@ -546,7 +620,7 @@ Matchings in G are integral flows in N_G
                 
                 // not necessary to update original key,
                 //  but it does show presence in larger tree
-                //  when key != forest key
+                //  when node.key > forest key
                 xNode.setKey(yNode.getKey());
                 
                 // make a copy in case it's already in forest
@@ -737,5 +811,43 @@ Matchings in G are integral flows in N_G
 
         return rM;
     }
-
+    
+    private void swapLinkExistence(ResidualDigraph rM, 
+        Map<Integer, Integer> m, Integer leftIndex, Integer rightIndex) {
+        
+        Set<Integer> rIndexes = rM.forwardLinksRM.get(leftIndex);
+        
+        boolean forwardFound = (rIndexes != null) && rIndexes.contains(rightIndex);
+        
+        if (forwardFound) {
+            
+            // remove existing "idle" forward link
+            rIndexes.remove(rightIndex);
+            if (rIndexes.isEmpty()) {
+                rM.forwardLinksRM.remove(leftIndex);
+            }
+            
+            // create a backward link and matched mapping
+            rM.backwardLinksRM.put(rightIndex, leftIndex);
+            m.put(leftIndex, rightIndex);
+            
+            return;
+        }
+        
+        // assert that a backward link exists
+        Integer v2 = rM.backwardLinksRM.get(rightIndex);
+        assert(v2 != null && v2.equals(leftIndex));
+        
+        // remove backwards link and mapping
+        rM.backwardLinksRM.remove(rightIndex);
+        m.remove(leftIndex, rightIndex);
+        
+        // create a forward link        
+        if (rIndexes == null) {
+            rIndexes = new HashSet<Integer>();
+            rM.forwardLinksRM.put(leftIndex, rIndexes);
+        }
+        rIndexes.add(rightIndex);
+        
+    }
 }
