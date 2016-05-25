@@ -308,7 +308,9 @@ public class FlowNetwork {
         
         float delta = (q - 1.f) * eps;
         
-        //see Figure 7.4
+        float qEps = q * eps;
+        
+        //see Figure 7.4, pg 53
         // looks like the price raise is multiples of (q-1)*eps
         
         for (Map.Entry<Integer, Set<Integer>> entry : 
@@ -326,10 +328,10 @@ public class FlowNetwork {
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
                 if (unitFlow == 0) {
-                    // idle, cp > -eps
+                    // idle, cp > -qEps
                     //cp = cost - pdX + pdY so inr pdY
                     float count = 1.f;
-                    while (cp <= -eps) {
+                    while (cp <= -qEps) {
                         pRight[index2.intValue()] += (count * delta);
                         cp = calcNetCost(p);
                         count += 1.f;
@@ -337,7 +339,7 @@ public class FlowNetwork {
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     //cp = cost - pdX + pdY so incr pdX
-                    while (cp > eps) {
+                    while (cp > qEps) {
                         float count = 1.f;
                         pLeft[index2.intValue()] += (count * delta);
                         cp = calcNetCost(p);
