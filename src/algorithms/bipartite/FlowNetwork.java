@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * class representing a flow network for 
+ * MinCostUnbalancedAssignment.java
+ * 
  * @author nichole
  */
 public class FlowNetwork {
@@ -166,40 +168,6 @@ public class FlowNetwork {
         return maxC;
     }
 
-    boolean integralFlowIsEpsProper(float epsT) {
-        
-        //NOTE that the flow is min-cost when eps < 1/6s
-        //  and all integral ars are "eps-proper"
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            if (index1.intValue() == sourceNode) {
-                continue;
-            }
-            for (Integer index2 : entry.getValue()) {
-                if (index2.intValue() == sinkNode) {
-                    continue;
-                }
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
-                float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
-                if (unitFlow == 0) {
-                    // idle, cp > -epsT
-                    if (cp <= -epsT) {
-                        return false;
-                    }
-                } else if (unitFlow == 1.f) {
-                    // saturated
-                    if (cp > epsT) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-    
     /**
      * <pre>
      * cp(f) = c(f) - |f|*(pd(|-) - pd(-|))
@@ -291,6 +259,103 @@ public class FlowNetwork {
         float cp = cost - pdX + pdY;
 
         return cp;
+    }
+    
+    /**
+     * assert that flux f on NG is a flow of value |f|=s
+     * @param s
+     * @return 
+     */
+    boolean assertFlowValue(int s) {
+                
+        //Should this be for the integral flow only?
+        double flow = calcTotalFlow();
+        
+        return (Math.abs(flow - s) < 1);
+    }
+
+    /**
+     * assert that the prices at all nodes are multiples of eps
+     * @param eps
+     * @return 
+     */
+    boolean assertPricesAreQuantizedEps(float eps) {
+        
+        double tolerance = 0.01;
+        
+        for (int i = 0; i < pLeft.length; ++i) {
+            float p = pLeft[i];
+            float div = p/eps;
+            double r = div - Math.floor(div);
+            if (r > 0.01) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    boolean assertIntegralFlowIsEpsProper(float epsT) {
+        
+        //NOTE that the flow is min-cost when eps < 1/6s
+        //  and all integral arcs are "eps-proper"
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            if (index1.intValue() == sourceNode) {
+                continue;
+            }
+            for (Integer index2 : entry.getValue()) {
+                if (index2.intValue() == sinkNode) {
+                    continue;
+                }
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (unitFlow == 0) {
+                    // idle, cp > -epsT
+                    if (cp <= -epsT) {
+                        return false;
+                    }
+                } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    if (cp > epsT) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    boolean assertSaturatedBipartiteIsEpsSnug(float eps) {
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            if (index1.intValue() == sourceNode) {
+                continue;
+            }
+            for (Integer index2 : entry.getValue()) {
+                if (index2.intValue() == sinkNode) {
+                    continue;
+                }
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    // snug is -eps < cp <= eps
+                    if ((cp <= -eps) || (cp > eps)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /*

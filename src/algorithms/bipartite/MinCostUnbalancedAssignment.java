@@ -201,11 +201,11 @@ public class MinCostUnbalancedAssignment {
         
         while (eps > epsBar) {
             
-            // see pg 45 and earlier
-            assert(fa1(gFlow, s));
-            assert(fa2(gFlow));
-            assert(fa3(gFlow));
-            assert(fa4(gFlow));
+            // pg 44, assertions I1, I2, I3, and I4
+            assert(gFlow.assertFlowValue(s));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
+            assert(gFlow.assertIntegralFlowIsEpsProper(eps));
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             
             eps /= (float)q;
             
@@ -328,21 +328,7 @@ public class MinCostUnbalancedAssignment {
                 //NOTE: not sure the logic is correct here.
 
                 //augment M along path;
-                /*
-                pg 11: "But our augmenting paths will be paths 
-                in an auxiliary graph called the residual digraph"
-
-                "We augment along a tight augmenting path 
-                by swapping the status of the edges that 
-                underlie its links, saturating the idle edges
-                and idling the saturated ones. This process 
-                increases the size of the matching by exactly 1. 
-                It marries off the maiden and bachelor at the 
-                ends of the augmenting path, thus reducing the
-                number of places where future augmenting paths 
-                can start or end.
-                */
-
+                
                 /* traverse w/ getLeft for FIFO order.
                 for a given forest key, segments start
                 with right if i is odd, else left
@@ -351,7 +337,41 @@ public class MinCostUnbalancedAssignment {
                    next path is RightNode, LeftNode,RightNode
                 */
 
-               
+               /*
+                NOTE this isn't correct.
+                     path building may need corrections first
+                
+                long n = path.getNumberOfNodes();
+                HeapNode node = path.getSentinel();
+                HeapNode node2;
+                int nCurrent = 0;
+                for (int j = 0; j < n; ++j) {
+                    node = node.getLeft();
+                    boolean startLeft = (node instanceof LeftNode);
+                    Integer index1, index2;
+                    if (!startLeft) {
+                        PairInt leadingEdge = ((RightNode)node).xy;
+                        if (leadingEdge != null) {
+                            index1 = Integer.valueOf(leadingEdge.getX());
+                            index2 = Integer.valueOf(leadingEdge.getY());
+                            swapLinkExistence(rM, m, index1, index2);
+                        }
+                    }
+                    if (j < (n - 1)) {
+                        node2 = node.getLeft();
+                        if (startLeft) {
+                            index1 = (Integer)node.getData();
+                            index2 = (Integer)node2.getData();
+                        } else {
+                            index2 = (Integer)node.getData();
+                            index1 = (Integer)node2.getData();
+                        }
+                        swapLinkExistence(rM, m, index1, index2);
+                        ++j;
+                        node = node2;
+                    }
+                }
+                */
                 //announce(M is a matching)
                 log.info("m.size=" + m.size());
             }
@@ -794,24 +814,4 @@ Matchings in G are integral flows in N_G
         rIndexes.add(rightIndex);
     }
     
-    private boolean fa1(FlowNetwork gFlow, int s) {
-        //The flux f on NG is a flow of value |f|=s.
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    private boolean fa2(FlowNetwork gFlow) {
-        //The prices at all nodes in NG are multiples of eps
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    private boolean fa3(FlowNetwork gFlow) {
-        //Every arc of NG, idle or saturated, is eps-proper
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    private boolean fa4(FlowNetwork gFlow) {
-        //Every saturated bipartite arc is eps-snug.
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
 }
