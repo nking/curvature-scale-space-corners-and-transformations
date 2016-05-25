@@ -3,6 +3,7 @@ package algorithms.bipartite;
 import algorithms.util.PairInt;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,14 +61,14 @@ public class FlowNetwork {
      * |-
      * </pre>
      */
-    int sourceNode = -1;
+    private final int sourceNode;
     
     /**
      * <pre>
      * -|
      * </pre>
      */
-    int sinkNode = -1;
+    private int sinkNode;
 
     /**
      * left (==X) vertices in graph
@@ -295,7 +296,59 @@ public class FlowNetwork {
         return true;
     }
     
-    boolean assertIntegralFlowIsEpsProper(float epsT) {
+    /**
+     * raise prices so that every arc becomes eps-proper, 
+     * for the resulting pseudoflow f
+     * @param eps
+     * @param q
+     * @return 
+     */
+    public void raisePricesUntilEpsProper(float eps, 
+        int q) {
+        
+        float delta = (q - 1.f) * eps;
+        
+        //see Figure 7.4
+        // looks like the price raise is multiples of (q-1)*eps
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            if (index1.intValue() == sourceNode) {
+                continue;
+            }
+            for (Integer index2 : entry.getValue()) {
+                if (index2.intValue() == sinkNode) {
+                    continue;
+                }
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (unitFlow == 0) {
+                    // idle, cp > -eps
+                    //cp = cost - pdX + pdY so inr pdY
+                    float count = 1.f;
+                    while (cp <= -eps) {
+                        pRight[index2.intValue()] += (count * delta);
+                        cp = calcNetCost(p);
+                        count += 1.f;
+                    }
+                } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    //cp = cost - pdX + pdY so incr pdX
+                    while (cp > eps) {
+                        float count = 1.f;
+                        pLeft[index2.intValue()] += (count * delta);
+                        cp = calcNetCost(p);
+                        count += 1.f;
+                    }
+                }
+            }
+        }
+    }
+    
+    boolean integralFlowIsEpsProper(float epsT) {
         
         //NOTE that the flow is min-cost when eps < 1/6s
         //  and all integral arcs are "eps-proper"
@@ -357,7 +410,38 @@ public class FlowNetwork {
         }
         return true;
     }
+    
+    /**
+     * populate given lists with the bipartite nodes of 
+     * saturated arcs.
+     * @param surplus
+     * @param deficit 
+     */
+    public void getMatchedLeftRight(List<Integer> surplus, List<Integer> deficit) {
 
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            if (index1.intValue() == sourceNode) {
+                continue;
+            }
+            for (Integer index2 : entry.getValue()) {
+                if (index2.intValue() == sinkNode) {
+                    continue;
+                }
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated are matched arcs
+                    surplus.add(index1);
+                    deficit.add(index2);
+                }
+            }
+        }
+    }
+    
     /*
      the flow network uses forward arcs with "ceiling quantization".
      - the ceiling quantization is the choice of
@@ -432,4 +516,5 @@ public class FlowNetwork {
     public int getSourceNode() {
         return sourceNode;
     }
+
 }

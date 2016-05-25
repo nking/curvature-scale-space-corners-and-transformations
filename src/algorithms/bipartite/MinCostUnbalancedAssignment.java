@@ -4,9 +4,11 @@ import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -88,6 +90,7 @@ public class MinCostUnbalancedAssignment {
             return sb.toString();
         }
     }
+    
     /**
      * class specializing a fibonacci heap node to identify
      * a right node, a.k.a. Y node
@@ -188,7 +191,8 @@ public class MinCostUnbalancedAssignment {
         // NOTE: compare this to the maxC in gFlow.  pg 32 suggests eps=maxC
         float eps = 1.f/(6.f * (float)s);
         
-        float eBar = 1.f + (float)(Math.log(gFlow.getMaxC())/Math.log(q));
+        float eBar = 1.f + (float)Math.floor(Math.log(
+            gFlow.getMaxC())/Math.log(q));
         //e_bar = 1 + log_q(C)
         //eps_bar = q^(e_bar)
         float epsBar = (float)Math.pow(eBar, q);
@@ -204,12 +208,12 @@ public class MinCostUnbalancedAssignment {
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
-            assert(gFlow.assertIntegralFlowIsEpsProper(eps));
+            assert(gFlow.integralFlowIsEpsProper(eps));
             assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             
             eps /= (float)q;
             
-            refine(gFlow, s, eps);
+            refine(gFlow, s, eps, q);
         }
         
         // round prices to integers that make all arcs proper
@@ -218,28 +222,57 @@ public class MinCostUnbalancedAssignment {
         return m;
     }
     
-    protected void refine(FlowNetwork gFlow, int s, float eps) {
+    protected void refine(FlowNetwork gFlow, int s, float eps,
+        int q) {
+        
+        // S = left nodes matched in gFlow
+        List<Integer> surplus = new ArrayList<Integer>();
+        
+        // D = right nodes matched in gFlow
+        List<Integer> deficit = new ArrayList<Integer>();
+        
+        gFlow.getMatchedLeftRight(surplus, deficit);
+        
+        // convert the saturated bipartite arcs in f to idle
+        for (int i = 0; i < surplus.size(); ++i) {
+            int idx1 = surplus.get(i);
+            int idx2 = deficit.get(i);
+            gFlow.getFlow().put(new PairInt(idx1, idx2), 
+                Float.valueOf(0));
+        }
+        
+        /*
+        see Figure 7.4 on pg 53.
+        raise prices so that every arc in 
+        gFlow becomes eps-proper, for the resulting pseudoflow 
+        f and for the new, smaller value of eps.
+        */
+        gFlow.raisePricesUntilEpsProper(eps, q);
+        
+        //ResidualDigraph2 rd = new ResidualDigraph2(gFlow);
+        
+        int h = 2;
+        while (h > 0) {
+           
+            /*
+            build a shortest-path forest from the current surpluses S, 
+               stopping when a current deficit in D is reached;
+            raise prices at forest nodes by multiples of ε, 
+               shortening the discovered augmenting path to length 0;
+            find a maximal set P of length-0 augmenting paths 
+               that are compatible, as defined in Section 8.3;
+            augment f along each of the paths in P in turn, thereby 
+               reducing |S| = |D| = h by |P|;
+            */
+        }
         
         throw new UnsupportedOperationException("not yet implemented");
-    /*
-    Refine(f,p,ε)
-      S := {the s women who are matched in f};
-      D := {the s men who are matched in f};
-      convert the s bipartite arcs that are saturated in 
-        f to idle; 
-      raise the prices p, as in Figure 7.4, to make all arcs 
-        ε-proper; 
-      int h := s;
-      while h > 0 do
-        build a shortest-path forest from the current surpluses S, 
-          stopping when a current deficit in D is reached;
-        raise prices at forest nodes by multiples of ε, 
-          shortening the discovered augmenting path to length 0;
-        find a maximal set P of length-0 augmenting paths 
-          that are compatible, as defined in Section 8.3;
-        augment f along each of the paths in P in turn, thereby 
-          reducing |S| = |D| = h by |P|;
-      od; 
+    /*    
+        lengths of links:
+       - quantization into units of eps is used for net cost:
+         for a forward link: lp(v->w) = Math.ceil(cp(v, w)/eps)
+         for a backward link: lp(w->v) = 1 - Math.ceil(cp(v, w)/eps)
+         both results are >= 0        
     */
         /*
         a surplus of f is a node (not the sink node), that has
@@ -813,5 +846,5 @@ Matchings in G are integral flows in N_G
         }
         rIndexes.add(rightIndex);
     }
-    
+            
 }
