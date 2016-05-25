@@ -57,8 +57,8 @@ public class HopcroftKarp {
         until P = 0
     return M
     
-    To find the vertex-disjoint shortest paths,
-    using the pattern of single BFS and single DFS
+    finding the vertex-disjoint shortest paths,
+    using the pattern of single BFS followed by DFS, per L vertex
         (see wikipedia).
     
     */

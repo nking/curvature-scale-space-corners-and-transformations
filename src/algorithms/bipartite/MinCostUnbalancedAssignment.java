@@ -41,148 +41,35 @@ public class MinCostUnbalancedAssignment {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    public static class FlowNetwork {
-        
-        /*
-        matchings M in Graph g are integral flows f in the 
-        FlowNetwork.
-        
-        If allow for conditions which are not integral, one uses
-        linear programming terms to replace the term slackness
-        with "proper"ness on properties f and p where p is prices.
-          - a node has a per unit price.
-            - adopting the cost to dispose of a unit as the model
-              p_d(v)
-            - (the dispose cost is equal with opposite sign to acquire cost)
-          - the cost of each arc is the difference between the
-               disposal cost of the two encasing nodes.
-               - the net cost is cp(v, w)
-               - the benefits of the arc is bp(v,w) and the sum of it
-                 and cp(v,w) is 0.
-               cp(v, w) := c(v, w) + pa(v) − pa(w) 
-                         = c(v, w) − pd(v) + pd(w) 
-               bp(v, w) := b(v, w) − pa(v) + pa(w) 
-                         = b(v, w) + pd(v) − pd(w)
-        
-               cp(v, w) = c(v, w) − pd(v) + pd(w)
+    /*
+    an alternating path is in the residual digraph, and 
+       alternates between forward and backward.
+    augmenting paths are in the residual digraph.
+       an augmenting path starts at a maiden and ends at
+       a bachelor (therefore, first and last links are
+       forward links).  the links from Y to X are already
+       matched (married).
+   - an augmenting path takes forward steps to add a new 
+     edge to the matched AND takes backward steps to 
+     remove an edge from the matched.
+   - an augmenting path is "tight" when all of the edges
+     that underlie its links are tight, that is, have 
+     zero net cost.
+   - c(P) is the cost of augmenting path P.
+     it's the sum of costs of the arcs of the path in 
+     the flow network.
+   - Let x_i_j = 1   if i is assigned to j,  else =0
+     to augment along path p is to replace x_i_j by 1 for
+     each arc (i,j) in P directed from X to Y, and to
+     replace each x_i_j by 0 for each arc (j, i) in P
+     directed from Y to X.
+     - suppose x' is the matching obtained from x after
+       augmenting along path P.
+       the cost of x' is cx' = cx + c(P)
 
-           - cost and net flow are related as:
-             cp(f) = summation over arcs in flow network
-                     f(v,w) * cp(v,w)
-                   = summation over arcs in flow network
-                     f(v,w) * (c(v,w) − pd(v) + pd(w))
-                   = c(f) − |f| * pd(⊢) − pd(⊣)
-             note that the value |f| is the total flow out of the
-               source ⊢ and into the sink ⊣, 
-               while flow is conserved at all other nodes.
-
-            - each arc w/ f(v,w) = 0 and cp(x, y) ≥ 0
-              and is idle
-              and each arc w/ f(v,w) = 1 and cp(x, y) ≤ 0
-              is saturated.
-              (the pair of f and p are proper under those conditions)
-            - arcs with fractional flow have zero net cost
-            - (edges w/ 0 net cost are "tight") 
-        */
-        
-        /**
-         * <pre>
-         * |-
-         * </pre>
-         */
-        int sourceNode = -1;
-        /**
-         * <pre>
-         * -|
-         * </pre>
-         */
-        int sinkNode = -1;
-        
-        /**
-         * nodes that correspond to left (==X==v) vertices in G
-         */
-        Set<Integer> leftNG = new HashSet<Integer>();
-        
-        /**
-         * nodes that correspond to right (==Y==w) vertices in G
-         */
-        Set<Integer> rightNG = new HashSet<Integer>();
-        
-        // forward arcs only in the flow graph
-        // may represent these differently soon.
-        // they are also known as "bipartite arcs".
-        Map<Integer, Set<Integer>> forwardArcs = 
-            new HashMap<Integer, Set<Integer>>();
-        
-        /*
-        somewhere in here need to represent dummy arcs
-        from source to all X and from all Y to sink.
-        The per-unit cost of a left-dummy arc is zero: 
-        c(⊢, x) := 0. 
-        The per-unit cost of a right-dummy arx is also zero:
-        c(y, ⊣) := 0.
-        
-        the flow network uses forward arcs with "ceiling quantization".
-        
-        */
-        
-        /**
-         * per unit flow costs are the same as the edges given in G.
-         * key = index in left (==X==v) and index in
-         * right (==Y==w),
-         * value = cost of the arc.
-         */
-        Map<PairInt, Integer> c = 
-            new HashMap<PairInt, Integer>();
-        
-        /**
-         * the flow on the arc.
-         * key = index in left (==X==v) and index in
-         * right (==Y==w),
-         * value = number from 0 to 1 inclusive if it's
-         * a "pseudoflow":
-         * the value 0 is "idle" and corresponds to an
-         * unmatched link in the residual graph.
-         * the value 1 is "saturated" and corresponds to
-         * a matched link in the residual graph (but in 
-         * the residual graph, it would be specified in 
-         * format right to left).
-         * 
-         */
-        Map<PairInt, Float> f = 
-            new HashMap<PairInt, Float>(); 
-        
-        /*
-        an alternating path is in the residual digraph, and 
-           alternates between forward and backward.
-        augmenting paths are in the residual digraph.
-           an augmenting path starts at a maiden and ends at
-           a bachelor (therefore, first and last links are
-           forward links).  the links from Y to X are already
-           matched (married).
-       - an augmenting path takes forward steps to add a new 
-         edge to the matched AND takes backward steps to 
-         remove an edge from the matched.
-       - an augmenting path is "tight" when all of the edges
-         that underlie its links are tight, that is, have 
-         zero net cost.
-       - c(P) is the cost of augmenting path P.
-         it's the sum of costs of the arcs of the path in 
-         the flow network.
-       - Let x_i_j = 1   if i is assigned to j,  else =0
-         to augment along path p is to replace x_i_j by 1 for
-         each arc (i,j) in P directed from X to Y, and to
-         replace each x_i_j by 0 for each arc (j, i) in P
-         directed from Y to X.
-         - suppose x' is the matching obtained from x after
-           augmenting along path P.
-           the cost of x' is cx' = cx + c(P)
-        
-        
-        Definition 2-7 on page 15 defines a proper pseudoflow
-        of f and cp.
-        */
-    }
+    Definition 2-7 on page 15 defines a proper pseudoflow
+    of f and cp.
+    */
     
     /**
      * class specializing a fibonacci heap node to identify
@@ -246,7 +133,6 @@ public class MinCostUnbalancedAssignment {
        lp(A):= summation over arcs X->Y (cp(X,Y)) -
                   summation over arcs Y->X (cp(X,Y))
     
-    
     FlowAssign (G, t)
       (M, s) := HopcroftKarp(G, t);
       convert M into an integral flow f on N_G with |f| = s; 
@@ -277,20 +163,117 @@ public class MinCostUnbalancedAssignment {
         augment f along each of the paths in P in turn, thereby 
           reducing |S| = |D| = h by |P|;
       od;
-    
-    HopcroftKarp (G)
-      set M to the empty matching; 
-      do
-        find a maximal set P of vertex-disjoint augmenting paths, 
-          for M, all of the minimum possible length;
-        if |P| = 0 then announce(ν(G) = |M|); 
-          return; 
-        fi; 
-        for P in P do
-          augment M along P;
-          announce(M is a matching); od;
-      od;    
+      
     */
+
+    /**
+     * 
+     * @param g bipartite graph with integral weights
+     * @return 
+     */
+    public Map<Integer, Integer> flowAssign(Graph g) {
+
+        //TODO: add size restriction t
+        Map<Integer, Integer> m = hopcroftKarp(g);
+        
+        FlowNetwork gFlow = new FlowNetwork(g, m);
+        
+        int s = m.size();
+         
+        // q >= 2
+        int q = 2;
+        
+        // since all costs are integers, can set eps < 1/6s
+        // where s is size of m
+        // NOTE: compare this to the maxC in gFlow.  pg 32 suggests eps=maxC
+        float eps = 1.f/(6.f * (float)s);
+        
+        float eBar = 1.f + (float)(Math.log(gFlow.getMaxC())/Math.log(q));
+        //e_bar = 1 + log_q(C)
+        //eps_bar = q^(e_bar)
+        float epsBar = (float)Math.pow(eBar, q);
+        log.info("eps=" + eps + " epsBar=" + epsBar + " maxC=" + 
+            gFlow.getMaxC());
+        
+        assert(eps > gFlow.getMaxC());
+       
+        // all nodes V in gFlow have prices = 0
+        
+        while (eps > epsBar) {
+            
+            // see pg 45 and earlier
+            assert(fa1(gFlow, s));
+            assert(fa2(gFlow));
+            assert(fa3(gFlow));
+            assert(fa4(gFlow));
+            
+            eps /= (float)q;
+            
+            refine(gFlow, s, eps);
+        }
+        
+        // round prices to integers that make all arcs proper
+        roundFinalPrices(gFlow);
+        
+        return m;
+    }
+    
+    protected void refine(FlowNetwork gFlow, int s, float eps) {
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    /*
+    Refine(f,p,ε)
+      S := {the s women who are matched in f};
+      D := {the s men who are matched in f};
+      convert the s bipartite arcs that are saturated in 
+        f to idle; 
+      raise the prices p, as in Figure 7.4, to make all arcs 
+        ε-proper; 
+      int h := s;
+      while h > 0 do
+        build a shortest-path forest from the current surpluses S, 
+          stopping when a current deficit in D is reached;
+        raise prices at forest nodes by multiples of ε, 
+          shortening the discovered augmenting path to length 0;
+        find a maximal set P of length-0 augmenting paths 
+          that are compatible, as defined in Section 8.3;
+        augment f along each of the paths in P in turn, thereby 
+          reducing |S| = |D| = h by |P|;
+      od; 
+    */
+        /*
+        a surplus of f is a node (not the sink node), that has
+           entering flow > exiting flow.
+        a deficit of f is a node (not the source node), that has
+           exiting flow > entering flow.
+        
+        For a woman x in X, 
+            let the left stub to x be the pseudoflow that 
+            saturates the left-dummy arc |- -> x, 
+            but leaves all other arcs idle. 
+        For a man y in Y, 
+            the right stub from 
+            y saturates only the right-dummy arc
+            y -> -|. 
+        Any pseudoflow f that arises in Refine is the sum 
+           of some flow, some left-stubs, and some right-stubs. 
+           The flow component, which we denote f, encodes 
+           the partial matching that Refine has constructed so far, 
+           during this scaling phase. 
+           - We initialize fˆ to zero, so this matching starts 
+             out empty. The left-stubs remember those women who 
+             were matched at the end of the previous phase and 
+             who have not yet been either matched or replaced 
+             during this phase.
+             - Those women are the surpluses of the pseudoflow f, 
+             and they constitute the set S. 
+             - The right-stubs remember the previously matched 
+               men in a similar way. Those men are the deficits of f, 
+             and they constitute D.
+             -- then |fˆ| = s - h, where h = |S| == |D|
+                (if h = 0. fˆ = f so is an integral flow)
+        */
+    }
     
     //TODO: add t as limit for size
     protected Map<Integer, Integer> hopcroftKarp(Graph g) {
@@ -368,6 +351,7 @@ public class MinCostUnbalancedAssignment {
                    next path is RightNode, LeftNode,RightNode
                 */
 
+               
                 //announce(M is a matching)
                 log.info("m.size=" + m.size());
             }
@@ -375,15 +359,14 @@ public class MinCostUnbalancedAssignment {
         //return m;
     }
     
+    private void roundFinalPrices(FlowNetwork gFlow) {
+        //see pg 46
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
     /*
     NOTES
     ------
-    input 
-       G = (X, Y, E)
-       set<integer> x, set<integer> y
-    output
-       map<integer, integer> m0
-    
     G has vertices and edges 
        (and edge is usually written (X,Y)),
     N_G, the flow network, has nodes and arcs 
@@ -472,6 +455,10 @@ Matchings in G are integral flows in N_G
      */
     protected DoubleLinkedCircularList[] buildForest(
         final ResidualDigraph rM) {
+        
+        //TODO: read Fredman and Tarjan, 1987
+        // "Fibonacci heaps and their uses in improved network optimization algorithms"
+        // to correct this
         
         //TODO: revisit this.
         int lambda = 2 * Math.min(rM.getLeftRM().size(), rM.getRightRM().size());
@@ -705,12 +692,12 @@ Matchings in G are integral flows in N_G
                 
         ResidualDigraph rM = new ResidualDigraph();
         
-        for (Integer x : g.getLeftG()) {
-            rM.getLeftRM().add(x);
+        for (int i = 0; i < g.getNLeft(); ++i) {
+            rM.getLeftRM().add(Integer.valueOf(i));
         }
         
-        for (Integer y : g.getRightG()) {
-            rM.getRightRM().add(y);
+        for (int i = 0; i < g.getNRight(); ++i) {
+            rM.getRightRM().add(Integer.valueOf(i));
         }
         
         for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
@@ -751,7 +738,7 @@ Matchings in G are integral flows in N_G
     private GraphWithoutWeights createUnweightedGraph(Graph g) {
 
         GraphWithoutWeights g2 = new GraphWithoutWeights(
-            g.getLeftG().size(), g.getRightG().size());
+            g.getNLeft(), g.getNRight());
         Map<Integer, Set<Integer>> adjMap = g2.getAdjacencyMap();
         
         for (Entry<PairInt, Integer> entry : 
@@ -772,7 +759,8 @@ Matchings in G are integral flows in N_G
     }
     
     private void swapLinkExistence(ResidualDigraph rM, 
-        Map<Integer, Integer> m, Integer leftIndex, Integer rightIndex) {
+        Map<Integer, Integer> m, Integer leftIndex, 
+        Integer rightIndex) {
         
         Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
         
@@ -804,7 +792,26 @@ Matchings in G are integral flows in N_G
             rM.getForwardLinksRM().put(leftIndex, rIndexes);
         }
         rIndexes.add(rightIndex);
-        
     }
     
+    private boolean fa1(FlowNetwork gFlow, int s) {
+        //The flux f on NG is a flow of value |f|=s.
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean fa2(FlowNetwork gFlow) {
+        //The prices at all nodes in NG are multiples of eps
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean fa3(FlowNetwork gFlow) {
+        //Every arc of NG, idle or saturated, is eps-proper
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean fa4(FlowNetwork gFlow) {
+        //Every saturated bipartite arc is eps-snug.
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

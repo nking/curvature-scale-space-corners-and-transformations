@@ -15,12 +15,12 @@ public class Graph {
     /**
      * left (==X) vertices in graph
      */
-    private Set<Integer> leftG = new HashSet<Integer>();
+    private final int nLeft;
 
     /**
      * right (==Y) vertices in graph
      */
-    private Set<Integer> rightG = new HashSet<Integer>();
+    private final int nRight;
 
     /**
      * map of edge weights with key = pairint of left index and right index and
@@ -29,18 +29,23 @@ public class Graph {
     private Map<PairInt, Integer> edgeWeights
         = new HashMap<PairInt, Integer>();
 
+    public Graph(int nLeftVertices, int nRightVertices) {
+        this.nLeft = nLeftVertices;
+        this.nRight = nRightVertices;
+    }
+    
     /**
-     * @return the leftG
+     * @return the number of left vertices
      */
-    public Set<Integer> getLeftG() {
-        return leftG;
+    public int getNLeft() {
+        return nLeft;
     }
 
     /**
-     * @return the rightG
+     * @return the number of right vertices
      */
-    public Set<Integer> getRightG() {
-        return rightG;
+    public int getNRight() {
+        return nRight;
     }
 
     /**
