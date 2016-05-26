@@ -258,16 +258,17 @@ public class MinCostUnbalancedAssignment {
         f and for the new, smaller value of eps.
         */
         gFlow.raisePricesUntilEpsProper(eps, q);
-        
-        //ResidualDigraph2 rd = new ResidualDigraph2(gFlow);
-        
+                
         int h = 2;
         while (h > 0) {
-           
+          
+            // build a shortest-path forest from the current surpluses S, 
+            // stopping when a current deficit in D is reached;
+            // (pg 55)
+            DoubleLinkedCircularList[] forest = 
+                buildForest2(gFlow, surplus, deficit, eps);
+        
             /*
-            build a shortest-path forest from the current surpluses S, 
-               stopping when a current deficit in D is reached;
-               (pg 55)
             raise prices at forest nodes by multiples of ε, 
                shortening the discovered augmenting path to length 0;
             find a maximal set P of length-0 augmenting paths 
@@ -280,16 +281,12 @@ public class MinCostUnbalancedAssignment {
         build a shortest-path forest from the current surpluses S, 
                stopping when a current deficit in D is reached;
                (pg 55)
-        -- goal is a path from  surplus to a deficit
+        -- goal is a path from a surplus node to a deficit node
         -- link lengths details for forward and backward
+           (see pg 51)
         -- doesn't use fibonaci heaps.  instead uses buckets
-            and quantization by eps.
+            and quantization by eps (dial's algorithm).
             there's no bound on size of heap
-            Dial’s algorithm finds s.p. in linear time 
-             if ℓ is integral and ∀v ∈
-                V, dist(s, v) ≤ n.
-            Dial’s algorithm, multilevel buckets, HOT queues.
-            see http://www.diku.dk/PATH05/GoldbergSlides.pdf
             
         -- 
         */
@@ -335,6 +332,127 @@ public class MinCostUnbalancedAssignment {
                 (if h = 0. fˆ = f so is an integral flow)
         */
     }
+    
+    protected DoubleLinkedCircularList[] buildForest2(
+        final FlowNetwork gFlow, List<Integer> surplus,
+        List<Integer> deficit, float eps) {
+        
+        Set<Integer> d = new HashSet<Integer>(deficit);
+    
+        ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
+
+        //TODO: revisit this.
+        int lambda = 3 * Math.min(gFlow.getNLeft(), 
+            gFlow.getNRight());
+        
+        DoubleLinkedCircularList[] forest 
+            = new DoubleLinkedCircularList[lambda];
+
+        //TODO: revisit this
+        // need to use a limit which will always include
+        // the shortest path length at any time.
+        // they're quantized w/ eps.
+        DoubleLinkedCircularList[] minHeap = new DoubleLinkedCircularList[lambda];
+        
+        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
+        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
+        for (int i = 0; i < gFlow.getNRight(); ++i) {
+            Integer index = Integer.valueOf(i);
+            RightNode node = new RightNode();
+            node.setKey(Long.MAX_VALUE);
+            node.setData(index);
+            rightNodes.put(index, node);
+        }
+        for (int i = 0; i < gFlow.getNLeft(); ++i) {
+            Integer index = Integer.valueOf(i);
+            LeftNode node = new LeftNode();
+            node.setKey(Long.MAX_VALUE);
+            node.setData(index);
+            leftNodes.put(index, node);
+        }
+                  
+        for (Integer sigma : surplus) {
+            
+            LeftNode sNode = leftNodes.get(sigma);
+            sNode.setKey(0);
+            
+            //insert(sigma, 0);
+            insertIntoHeap(minHeap, sNode);
+               
+            PathNode node1 = extractMinFromHeap(minHeap);
+            Integer index1 = (Integer)node1.getData();
+            int idx1 = index1.intValue();
+            final long l1 = node1.getKey();
+            
+            boolean node1IsLeft = (node1 instanceof LeftNode);
+            
+            do {
+                //scan:
+                if (node1IsLeft) {
+                    Set<Integer> indexes2 = rF.getForwardLinksRM().get(index1);
+                    if (indexes2 != null) {
+                        for (Integer index2 : indexes2) {
+                            RightNode node2 = rightNodes.get(index2);
+                            float cp = gFlow.calcNetCost(idx1, index2.intValue());
+                            long lp = (long)Math.ceil(cp/eps);
+                            long lTot = l1 + lp;
+                            long lOld = node2.getKey();
+                            if ((lTot < lambda) && (lTot < lOld)) {
+                                if (lOld == Long.MAX_VALUE) {
+                                    node2.setKey(lTot);
+                                    insertIntoHeap(minHeap, node2);
+                                } else {
+                                    decreaseKeyInHeap(minHeap, node2, lTot);
+                                }
+                            }
+                            /*
+                             L := l(v) + lp(v -> w); 
+                             L_old := l(w);
+                             if L <= lambda and L < L_old 
+                                then set l(w) := L;
+                                if Lold = inf
+                                   then insert(w, L)
+                                else 
+                                   decrease-key(w, L);
+                             */
+                        }
+                    }
+                } else {
+                    Integer index2 = rF.getBackwardLinksRM().get(index1); 
+                    if (index2 != null) {
+                        LeftNode node2 = leftNodes.get(index2);
+                        float cp = gFlow.calcNetCost(index2.intValue(), idx1);
+                        long lp = 1 - (long)Math.ceil(cp/eps);
+                        long lTot = l1 + lp;
+                        long lOld = node2.getKey();
+                        if ((lTot < lambda) && (lTot < lOld)) {
+                            if (lOld == Long.MAX_VALUE) {
+                                node2.setKey(lTot);
+                                insertIntoHeap(minHeap, node2);
+                            } else {
+                                decreaseKeyInHeap(minHeap, node2, lTot);
+                            }
+                        }
+                    }
+                }
+                //add v to the forest;
+                addToForest(forest, node1);
+            } while (!d.contains(index1));
+        }
+        
+        /*
+        link lengths in residual digrph 2:
+           - a forward link v->w has length
+               lp(v->w) = Math.ceil(cp(v,w)/eps)
+               (an idle arc will have lp(v->w) >= 0)
+           - a backward link w->v has length
+               lp(w->v) = 1 - Math.ceil(cp(v,w)/eps)
+               (value will be >= 0)
+        */
+        
+        return forest;
+    }
+
     
     //TODO: add t as limit for size
     protected Map<Integer, Integer> hopcroftKarp(Graph g) {
@@ -544,9 +662,6 @@ Matchings in G are integral flows in N_G
      Thus, a min-cost matching of some size s corresponds to 
      a min-cost integral flow of value s.
 -------    
-    Robert B. Dial. Algorithm 360: 
-       Shortest path forest with topological ordering. 
-       Communications of the ACM 12 (1969) pp. 632–633.
     */
     
     /**
@@ -934,6 +1049,50 @@ Matchings in G are integral flows in N_G
         }
         
         return nodes;
+    }
+    
+    private void insertIntoHeap(DoubleLinkedCircularList[] minHeap, 
+        PathNode node) {
+        
+        // NOTE: a buicket in the heap may already have a
+        // node in it, so linked lists are used.
+        // a doubly linked list is chosen so that the
+        // list can be read as FIFO
+        
+        int key = (int)node.getKey();
+        
+        DoubleLinkedCircularList bucket = minHeap[key];
+        if (bucket == null) {
+            bucket = new DoubleLinkedCircularList();
+            minHeap[key] = bucket;
+        }
+        
+        bucket.insert(node);        
+    }
+    
+    private PathNode extractMinFromHeap(
+        DoubleLinkedCircularList[] minHeap) {
+
+        for (DoubleLinkedCircularList bucket : minHeap) {
+            if (bucket != null && (bucket.getNumberOfNodes() > 0)) {
+                HeapNode node = bucket.getSentinel().getLeft();
+                bucket.remove(node);
+                return (PathNode)node;
+            }
+        }
+        
+        return null;
+    }
+
+    private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
+        minHeap, PathNode node2, long lTot) {
+
+        int prevKey = (int)node2.getKey();
+        minHeap[prevKey].remove(node2);
+        
+        node2.setKey(lTot);
+        
+        insertIntoHeap(minHeap, node2);
     }
 
 }
