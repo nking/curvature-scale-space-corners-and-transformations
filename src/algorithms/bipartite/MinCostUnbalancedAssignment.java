@@ -77,33 +77,43 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a left node, a.k.a. X node
      */
-    private class LeftNode extends HeapNode {
-        PairInt xy = null;
+    private class LeftNode extends PathNode {
+        
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("LeftNode key=").append(Long.toString(getKey()));
             sb.append(" index=").append(getData().toString());
-            if (xy != null) {
-                sb.append(" x, y =").append(xy.toString());
+            PathNode prev = pathPredecessor;
+            while (prev != null) {
+                sb.append(" [prev=").append(prev.toString())
+                    .append("]");
+                prev = prev.pathPredecessor;
             }
             return sb.toString();
         }
+    }
+    
+    public static class PathNode extends HeapNode {
+        PathNode pathPredecessor = null;
     }
     
     /**
      * class specializing a fibonacci heap node to identify
      * a right node, a.k.a. Y node
      */
-    private class RightNode extends HeapNode {
-        PairInt xy = null;
+    private class RightNode extends PathNode {
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("RightNode key=").append(Long.toString(getKey()));
             sb.append(" index=").append(getData().toString());
-            if (xy != null) {
-                sb.append(" x, y =").append(xy.toString());
+            PathNode prev = pathPredecessor;
+            while (prev != null) {
+                sb.append(" [prev=").append(prev.toString())
+                    .append("]");
+                prev = prev.pathPredecessor;
             }
             return sb.toString();
         }
@@ -257,6 +267,7 @@ public class MinCostUnbalancedAssignment {
             /*
             build a shortest-path forest from the current surpluses S, 
                stopping when a current deficit in D is reached;
+               (pg 55)
             raise prices at forest nodes by multiples of ε, 
                shortening the discovered augmenting path to length 0;
             find a maximal set P of length-0 augmenting paths 
@@ -265,6 +276,23 @@ public class MinCostUnbalancedAssignment {
                reducing |S| = |D| = h by |P|;
             */
         }
+        /*
+        build a shortest-path forest from the current surpluses S, 
+               stopping when a current deficit in D is reached;
+               (pg 55)
+        -- goal is a path from  surplus to a deficit
+        -- link lengths details for forward and backward
+        -- doesn't use fibonaci heaps.  instead uses buckets
+            and quantization by eps.
+            there's no bound on size of heap
+            Dial’s algorithm finds s.p. in linear time 
+             if ℓ is integral and ∀v ∈
+                V, dist(s, v) ≤ n.
+            Dial’s algorithm, multilevel buckets, HOT queues.
+            see http://www.diku.dk/PATH05/GoldbergSlides.pdf
+            
+        -- 
+        */
         
         throw new UnsupportedOperationException("not yet implemented");
     /*    
@@ -352,59 +380,91 @@ public class MinCostUnbalancedAssignment {
             // start at i=1, because i=0 is not alternating? 
             for (int i = 1; i < augmentingPaths.length; ++i) {
 
-                DoubleLinkedCircularList path = augmentingPaths[i];
+                DoubleLinkedCircularList tree = augmentingPaths[i];
 
-                if (path == null) {
+                if (tree == null) {
                     continue;
                 }
 
                 //NOTE: not sure the logic is correct here.
 
                 //augment M along path;
-                
-                /* traverse w/ getLeft for FIFO order.
-                for a given forest key, segments start
-                with right if i is odd, else left
-                example i=1
-                   a path is RightNode, LeftNode
-                   next path is RightNode, LeftNode,RightNode
+                /*
+                pg 11: "But our augmenting paths will be paths 
+                in an auxiliary graph called the residual digraph"
+
+                "We augment along a tight augmenting path 
+                by swapping the status of the edges that 
+                underlie its links, saturating the idle edges
+                and idling the saturated ones. This process 
+                increases the size of the matching by exactly 1. 
+                It marries off the maiden and bachelor at the 
+                ends of the augmenting path, thus reducing the
+                number of places where future augmenting paths 
+                can start or end.
                 */
 
-               /*
-                NOTE this isn't correct.
-                     path building may need corrections first
+                // HeapNode getLeft() traverses the tree nodes in FIFO order.
                 
-                long n = path.getNumberOfNodes();
-                HeapNode node = path.getSentinel();
-                HeapNode node2;
+                // each item in tree is a HeapNode whose path
+                //    is included as pathPredecessor of the node.
+                
+                long n = tree.getNumberOfNodes();
+                HeapNode node = tree.getSentinel();
                 int nCurrent = 0;
                 for (int j = 0; j < n; ++j) {
+                    
                     node = node.getLeft();
-                    boolean startLeft = (node instanceof LeftNode);
-                    Integer index1, index2;
-                    if (!startLeft) {
-                        PairInt leadingEdge = ((RightNode)node).xy;
-                        if (leadingEdge != null) {
-                            index1 = Integer.valueOf(leadingEdge.getX());
-                            index2 = Integer.valueOf(leadingEdge.getY());
-                            swapLinkExistence(rM, m, index1, index2);
-                        }
-                    }
-                    if (j < (n - 1)) {
-                        node2 = node.getLeft();
-                        if (startLeft) {
-                            index1 = (Integer)node.getData();
+                    
+                    /*
+                    node is a path.
+                    
+                    The following is a path example of length 1. 
+                    XB is current HeapNode and it is a LeftNode.
+                    Its pathPedecessor is YA and it's a RightNode.
+                    So, for this node, we ascend until pathPredecessor is null.
+                    XA
+                       \
+                         YA
+                       /
+                    XB
+                    
+                    Note that, the path building above still has an error
+                    in it, but there is a work aorund here.
+                    For a given i, that is "tree" in the forest,
+                    there is sometimes a path with longer link
+                    count that ends with 2 identical pathPredecessors.
+                    Those are the error, and those two nodes are 
+                    always present in another branch of the
+                    same tree, that is another path with smaller 
+                    link count, so those erros are deleted from the extracted
+                    path here.
+                    */
+                    List<PathNode> path = extractNodes(node);
+                    
+                    for (int ii = 0; ii < (path.size() - 1); ++ii) {
+                        
+                        PathNode node1 = path.get(ii);
+                        PathNode node2 = path.get(ii + 1);
+                        
+                        log.info("forest[" + i + "] tree branch[" 
+                            + j + "] node[" + ii + "]=" + node1.toString());
+                        
+                        // index1 is the left index of arc
+                        // index2 is the right index of the arc
+                        Integer index1, index2;
+                        if (node1 instanceof LeftNode) {
+                            index1 = (Integer)node1.getData();
                             index2 = (Integer)node2.getData();
                         } else {
-                            index2 = (Integer)node.getData();
                             index1 = (Integer)node2.getData();
+                            index2 = (Integer)node1.getData();
                         }
-                        swapLinkExistence(rM, m, index1, index2);
-                        ++j;
-                        node = node2;
+                        
+                        swapLinkExistence(rM, m, index1, index2);                        
                     }
                 }
-                */
+               
                 //announce(M is a matching)
                 log.info("m.size=" + m.size());
             }
@@ -509,10 +569,6 @@ Matchings in G are integral flows in N_G
     protected DoubleLinkedCircularList[] buildForest(
         final ResidualDigraph rM) {
         
-        //TODO: read Fredman and Tarjan, 1987
-        // "Fibonacci heaps and their uses in improved network optimization algorithms"
-        // to correct this
-        
         //TODO: revisit this.
         int lambda = 2 * Math.min(rM.getLeftRM().size(), rM.getRightRM().size());
         
@@ -566,7 +622,7 @@ Matchings in G are integral flows in N_G
             assert(y instanceof RightNode);
             assert(y.getData() != null);
         
-            log.fine("heap.size=" + heap.getNumberOfNodes());
+            log.info("heap.size=" + heap.getNumberOfNodes());
             
             addToForest(forest, y);
                     
@@ -597,8 +653,7 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode2 = new LeftNode();
                 xNode2.setKey(yNode.getKey());
                 xNode2.setData(xNode.getData());
-                xNode2.xy = xNode.xy;
-           
+                xNode2.pathPredecessor = yNode;
                 // any rightNodes inserted into heap get decreased keys
                 scanAndAdd(heap, forest, rM, rightNodes, xNode2);
                 
@@ -674,10 +729,10 @@ Matchings in G are integral flows in N_G
             long ell = lX + cp;
             long lOld = lY;
             if (ell < lOld) {
-                lY = ell;
+                lY = ell;            
+                yNode.pathPredecessor = xNode;
                 if (lOld == Long.MAX_VALUE) {
                     yNode.setKey(lY);
-                    yNode.xy = new PairInt(x.intValue(), y.intValue());
                     heap.insert(yNode);
                     log.info(String.format("HEAP insert: %s",
                         yNode.toString()));
@@ -846,5 +901,39 @@ Matchings in G are integral flows in N_G
         }
         rIndexes.add(rightIndex);
     }
+    
+    List<PathNode> extractNodes(HeapNode node) {
+        
+        List<PathNode> nodes = new ArrayList<PathNode>();
+        
+        PathNode node1 = (PathNode) node;
+        while (node1 != null) {
+            nodes.add(node1);
+            node1 = node1.pathPredecessor;
+        }
+        for (PathNode node2 : nodes) {
+            node2.pathPredecessor = null;
+        }
+        
+        if (nodes.size() > 2) {
+            HeapNode nodeL1 = nodes.get(nodes.size() - 1);
+            HeapNode nodeL2 = nodes.get(nodes.size() - 2);
             
+            Integer index = (Integer)nodeL1.getData();
+            Integer indexOther = (Integer)(nodeL2.getData());
+            
+            if (index.equals(indexOther)) {
+                if ((nodeL1 instanceof LeftNode &&
+                nodeL2 instanceof LeftNode) ||
+                (nodeL1 instanceof RightNode &&
+                nodeL2 instanceof RightNode)) {
+                    nodes.remove(nodes.size() - 1);
+                    nodes.remove(nodes.size() - 1);
+                }
+            }
+        }
+        
+        return nodes;
+    }
+
 }

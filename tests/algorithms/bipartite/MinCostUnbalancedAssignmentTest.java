@@ -1,10 +1,12 @@
 package algorithms.bipartite;
 
+import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -27,16 +29,7 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         
         // test graphs on pg 21
         
-        Graph g = new Graph();
-        for (int i = 0; i < 6; ++i) {
-            Integer x = Integer.valueOf(i);
-            g.getLeftG().add(x);
-        }
-        
-        for (int i = 0; i < 5; ++i) {
-            Integer y = Integer.valueOf(i);
-            g.getRightG().add(y);
-        }
+        Graph g = new Graph(6, 5);
         
         g.getEdgeWeights().put(new PairInt(0, 0), Integer.valueOf(1));
         g.getEdgeWeights().put(new PairInt(0, 2), Integer.valueOf(1));
@@ -155,15 +148,15 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
             if (list == null) {
                 continue;
             }
-            // traverse getLeft for FIFO order
+            // traverse w/ getLeft for FIFO order
             HeapNode node = list.getSentinel();
             for (int i = 0; i < list.getNumberOfNodes(); ++i) {
                 node = node.getLeft();
-                String nodeType = 
-                    node.getClass().getSimpleName().contains("Left") ?
-                    " Left" : " Right";
-                log.info("k=[" + k + "] key=" + node.getKey()
-                    + nodeType + " index=" + node.getData());
+                List<PathNode> path = bipartite.extractNodes(node);
+                log.info("*k=[" + k + "]");
+                for (PathNode node1 : path) {
+                    log.info("  node=" + node1.toString());
+                }
             }
             ++k;
         }

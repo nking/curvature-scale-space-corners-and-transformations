@@ -339,6 +339,8 @@ public class FlowNetwork {
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     //cp = cost - pdX + pdY so incr pdX
+                    //TODO: a single price raise of 2*delta or 3*delta?
+                    //      difficult to tell by pg 54 and 53
                     while (cp > qEps) {
                         float count = 1.f;
                         pLeft[index2.intValue()] += (count * delta);

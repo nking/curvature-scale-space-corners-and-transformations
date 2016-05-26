@@ -156,17 +156,17 @@ public class HeapNode {
     }
 
     /**
-     * @param left the left to set
+     * @param theLeft the left to set
      */
-    public void setLeft(HeapNode left) {
-        this.left = left;
+    public void setLeft(HeapNode theLeft) {
+        left = theLeft;
     }
 
     /**
-     * @param parent the parent to set
+     * @param theParent the parent to set
      */
-    public void setParent(HeapNode parent) {
-        this.parent = parent;
+    public void setParent(HeapNode theParent) {
+        parent = theParent;
     }
 
     /**
