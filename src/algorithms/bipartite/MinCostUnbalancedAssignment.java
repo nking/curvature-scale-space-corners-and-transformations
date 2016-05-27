@@ -119,6 +119,18 @@ public class MinCostUnbalancedAssignment {
         }
     }
     
+    private int estimateLambda(ResidualDigraph rM) {
+        //TODO: this may need to be revised
+        int n = 0;
+        for (Entry<Integer, Set<Integer>> entry :
+            rM.getForwardLinksRM().entrySet()) {
+            if (entry.getValue().size() > 1) {
+                n++;
+            }
+        }
+        return (n + 2);
+    }
+
     /*
     input to FlowAssign is a bipartite graph G with integral 
     edge weights and a target size t. 
@@ -397,9 +409,9 @@ public class MinCostUnbalancedAssignment {
         }
                   
         for (Integer sigma : surplus) {
-    
-      //build a new node instead of get from list?
-          
+
+//build a new node instead of get from list?
+
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
             
@@ -413,18 +425,6 @@ public class MinCostUnbalancedAssignment {
             
             boolean node1IsLeft = (node1 instanceof LeftNode);
 
-  //extracted node should not need to be copied
-            
-            PathNode node1Cp;
-            if (node1IsLeft) {
-                node1Cp = new LeftNode();
-            } else {
-                node1Cp = new RightNode();
-            }
-            node1Cp.setKey(node1.getKey());
-            node1Cp.setData(node1.getData());
-            node1Cp.pathPredecessor = node1.pathPredecessor;
-            
             do {
                 //scan:
                 if (node1IsLeft) {
@@ -438,7 +438,7 @@ public class MinCostUnbalancedAssignment {
                             long lTot = l1 + lp;
                             long lOld = node2.getKey();
                             if ((lTot < lambda) && (lTot < lOld)) {
-                                node2.pathPredecessor = node1Cp;
+                                node2.pathPredecessor = node1;
                                 if (lOld == Long.MAX_VALUE) {
                                     node2.setKey(lTot);
                                     insertIntoHeap(minHeap, node2);
@@ -467,7 +467,7 @@ public class MinCostUnbalancedAssignment {
                         long lTot = l1 + lp;
                         long lOld = node2.getKey();
                         if ((lTot < lambda) && (lTot < lOld)) {
-                            node2.pathPredecessor = node1Cp; 
+                            node2.pathPredecessor = node1; 
                             if (lOld == Long.MAX_VALUE) {
                                 node2.setKey(lTot);
                                 insertIntoHeap(minHeap, node2);
@@ -478,11 +478,11 @@ public class MinCostUnbalancedAssignment {
                     }
                 }
                 //add v to the forest;
-                addToForest(forest, node1Cp);
+                addToForest(forest, node1);
                 
                 terminatingDeficitIdx[0] = idx1;
                 terminatingDeficitIdx[1] = 
-                    ((Integer)(forest[(int)node1Cp.getKey()].getSentinel()
+                    ((Integer)(forest[(int)node1.getKey()].getSentinel()
                     .getLeft().getData())).intValue();
             } while (!d.contains(index1));
         }
@@ -539,11 +539,16 @@ public class MinCostUnbalancedAssignment {
         int prevMSize = m.size();
         
         int nIter = 0;
-        
+            
+        // estimate lambda for the dial array length by
+        // looking at the number of edges with more than
+        // one connection.
+        int lambda = estimateLambda(rM);
+
         while (true) {
-        
+            
             DoubleLinkedCircularList[] augmentingPaths =
-                buildForest(rM);
+                buildForest(rM, lambda);
 
             if (allAreEmpty(augmentingPaths)) {
                 return m;
@@ -694,9 +699,7 @@ public class MinCostUnbalancedAssignment {
             assert (prevMSize < m.size());
             prevMSize = m.size();
             ++nIter;            
-        }
-        
-        //return m;
+        }        
     }
     
     private void roundFinalPrices(FlowNetwork gFlow) {
@@ -789,12 +792,11 @@ Matchings in G are integral flows in N_G
      * are the path lengths and whose items hold at the root, the
      * remaining maidens, that is unmatched left nodes (a.k.a. G's
      * X nodes).
+     * @param lambda the length to use for a countins sort of
+     * augmenting path lengths
      */
     protected DoubleLinkedCircularList[] buildForest(
-        final ResidualDigraph rM) {
-        
-        //TODO: revisit this.
-        int lambda = 2 * Math.min(rM.getLeftRM().size(), rM.getRightRM().size());
+        final ResidualDigraph rM, int lambda) {
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -888,18 +890,9 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode = leftNodes.get(xIndex);
                 RightNode yNode = rightNodes.get(yIndex);
                 
-                // not necessary to update original key,
-                //  but it does show presence in larger tree
-                //  when node.key > forest key
                 xNode.setKey(yNode.getKey());
-                
-                // make a copy in case it's already in forest
-                LeftNode xNode2 = new LeftNode();
-                xNode2.setKey(yNode.getKey());
-                xNode2.setData(xNode.getData());
-                xNode2.pathPredecessor = yNode;
-                // any rightNodes inserted into heap get decreased keys
-                scanAndAdd(heap, forest, rM, rightNodes, xNode2);
+                xNode.pathPredecessor = yNode;
+                scanAndAdd(heap, forest, rM, rightNodes, xNode);
                 
             } else {
                 // break early for finding a complete short augmenting path

@@ -140,9 +140,10 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         }
         
         // ---------------------------------------------------
+        /*
         DoubleLinkedCircularList[] forest = 
             bipartite.buildForest(rM);
-        
+                
         int k = 0;
         for (DoubleLinkedCircularList list : forest) {
             if (list == null) {
@@ -150,21 +151,24 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
             }
             // traverse w/ getLeft for FIFO order
             HeapNode node = list.getSentinel();
-            for (int i = 0; i < list.getNumberOfNodes(); ++i) {
-                node = node.getLeft();
+            int i = 0;
+            while (i < list.getNumberOfNodes()) {
+                node = node.getRight();
                 List<PathNode> path = bipartite.extractNodes(node);
-                log.info("*k=[" + k + "]");
+                log.info("*k=[" + k + "] i=[" + i + "]");
                 for (PathNode node1 : path) {
                     log.info("  node=" + node1.toString());
                 }
+                ++i;
             }
             ++k;
         }
-        
+        */
         // ------------------------------------
+        int s = Math.min(g.getNLeft(), g.getNRight());
         Map<Integer, Integer> aMatching = 
-            bipartite.hopcroftKarp(g);
-        //  bipartite.hopcroftKarp(g, rM);
+        //    bipartite.hopcroftKarp(g);
+            bipartite.hopcroftKarp(g, rM, s);
         for (Entry<Integer, Integer> entry : aMatching.entrySet()) {
             log.info("matched left " + entry.getKey() + " to right " +
                 entry.getValue());
