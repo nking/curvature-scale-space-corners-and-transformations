@@ -243,7 +243,7 @@ public class MinCostUnbalancedAssignment {
         
         gFlow.getMatchedLeftRight(surplus, deficit);
         
-        // convert the saturated bipartite arcs in f to idle
+        // set the flow of saturated bipartite arcs to 0
         for (int i = 0; i < surplus.size(); ++i) {
             int idx1 = surplus.get(i);
             int idx2 = deficit.get(i);
@@ -258,39 +258,44 @@ public class MinCostUnbalancedAssignment {
         f and for the new, smaller value of eps.
         */
         gFlow.raisePricesUntilEpsProper(eps, q);
-                
+         
+        //in [0] holds the index for the deficit node which
+        // terminates the surplus loop,
+        //in [1] holds the surplus vertex index at the root 
+        // of the tree that the terminating deficit node was 
+        // added to.
+        int[] terminatingDeficitIdx = new int[1];
         int h = 2;
         while (h > 0) {
           
+            ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
+
             // build a shortest-path forest from the current surpluses S, 
             // stopping when a current deficit in D is reached;
             // (pg 55)
             DoubleLinkedCircularList[] forest = 
-                buildForest2(gFlow, surplus, deficit, eps);
-        
+                buildForest2(gFlow, rF, surplus, deficit, eps,
+                terminatingDeficitIdx);
+                        
+            //raise prices at forest nodes by multiples of ε, 
+            //shortening the discovered augmenting path to length 0;
+            raisePrices2(gFlow, rF, forest, terminatingDeficitIdx,
+                eps);
+            
             /*
-            raise prices at forest nodes by multiples of ε, 
-               shortening the discovered augmenting path to length 0;
+            assert from pg 52 
+                   I1', I2, I3, I4, on FlowNetwork
+                   and I5 on ResidualDigraph2
+            */
+            
+            /*
             find a maximal set P of length-0 augmenting paths 
                that are compatible, as defined in Section 8.3;
             augment f along each of the paths in P in turn, thereby 
                reducing |S| = |D| = h by |P|;
             */
         }
-        /*
-        build a shortest-path forest from the current surpluses S, 
-               stopping when a current deficit in D is reached;
-               (pg 55)
-        -- goal is a path from a surplus node to a deficit node
-        -- link lengths details for forward and backward
-           (see pg 51)
-        -- doesn't use fibonaci heaps.  instead uses buckets
-            and quantization by eps (dial's algorithm).
-            there's no bound on size of heap
-            
-        -- 
-        */
-        
+       
         throw new UnsupportedOperationException("not yet implemented");
     /*    
         lengths of links:
@@ -333,14 +338,31 @@ public class MinCostUnbalancedAssignment {
         */
     }
     
+    /**
+     * 
+     * @param gFlow
+     * @param surplus
+     * @param deficit
+     * @param eps
+     * @param terminatingDeficitIdx output array of size 2
+     * to hold first the index for the deficit node which
+     * terminates the surplus loop, and then second to hold
+     * the surplus vertex index at the root of the tree that
+     * the terminating deficit node was added to.
+     * @return 
+     */
     protected DoubleLinkedCircularList[] buildForest2(
-        final FlowNetwork gFlow, List<Integer> surplus,
-        List<Integer> deficit, float eps) {
+        final FlowNetwork gFlow, ResidualDigraph2 rF,
+        List<Integer> surplus,
+        List<Integer> deficit, float eps,
+        int[] terminatingDeficitIdx) {
+        
+        if (true) {
+            throw new IllegalArgumentException("not yet implemented");
+        }
         
         Set<Integer> d = new HashSet<Integer>(deficit);
     
-        ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
-
         //TODO: revisit this.
         int lambda = 3 * Math.min(gFlow.getNLeft(), 
             gFlow.getNRight());
@@ -353,6 +375,8 @@ public class MinCostUnbalancedAssignment {
         // the shortest path length at any time.
         // they're quantized w/ eps.
         DoubleLinkedCircularList[] minHeap = new DoubleLinkedCircularList[lambda];
+    
+//these lengths should be in residual graph2
         
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
@@ -372,7 +396,9 @@ public class MinCostUnbalancedAssignment {
         }
                   
         for (Integer sigma : surplus) {
-            
+    
+      //build a new node instead of get from list?
+          
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
             
@@ -385,6 +411,18 @@ public class MinCostUnbalancedAssignment {
             final long l1 = node1.getKey();
             
             boolean node1IsLeft = (node1 instanceof LeftNode);
+
+  //extracted node should not need to be copied
+            
+            PathNode node1Cp;
+            if (node1IsLeft) {
+                node1Cp = new LeftNode();
+            } else {
+                node1Cp = new RightNode();
+            }
+            node1Cp.setKey(node1.getKey());
+            node1Cp.setData(node1.getData());
+            node1Cp.pathPredecessor = node1.pathPredecessor;
             
             do {
                 //scan:
@@ -392,12 +430,14 @@ public class MinCostUnbalancedAssignment {
                     Set<Integer> indexes2 = rF.getForwardLinksRM().get(index1);
                     if (indexes2 != null) {
                         for (Integer index2 : indexes2) {
+                            
                             RightNode node2 = rightNodes.get(index2);
                             float cp = gFlow.calcNetCost(idx1, index2.intValue());
                             long lp = (long)Math.ceil(cp/eps);
                             long lTot = l1 + lp;
                             long lOld = node2.getKey();
                             if ((lTot < lambda) && (lTot < lOld)) {
+                                node2.pathPredecessor = node1Cp;
                                 if (lOld == Long.MAX_VALUE) {
                                     node2.setKey(lTot);
                                     insertIntoHeap(minHeap, node2);
@@ -426,6 +466,7 @@ public class MinCostUnbalancedAssignment {
                         long lTot = l1 + lp;
                         long lOld = node2.getKey();
                         if ((lTot < lambda) && (lTot < lOld)) {
+                            node2.pathPredecessor = node1Cp; 
                             if (lOld == Long.MAX_VALUE) {
                                 node2.setKey(lTot);
                                 insertIntoHeap(minHeap, node2);
@@ -436,7 +477,12 @@ public class MinCostUnbalancedAssignment {
                     }
                 }
                 //add v to the forest;
-                addToForest(forest, node1);
+                addToForest(forest, node1Cp);
+                
+                terminatingDeficitIdx[0] = idx1;
+                terminatingDeficitIdx[1] = 
+                    ((Integer)(forest[(int)node1Cp.getKey()].getSentinel()
+                    .getLeft().getData())).intValue();
             } while (!d.contains(index1));
         }
         
@@ -452,7 +498,6 @@ public class MinCostUnbalancedAssignment {
         
         return forest;
     }
-
     
     //TODO: add t as limit for size
     protected Map<Integer, Integer> hopcroftKarp(Graph g) {
@@ -547,16 +592,6 @@ public class MinCostUnbalancedAssignment {
                        /
                     XB
                     
-                    Note that, the path building above still has an error
-                    in it, but there is a work aorund here.
-                    For a given i, that is "tree" in the forest,
-                    there is sometimes a path with longer link
-                    count that ends with 2 identical pathPredecessors.
-                    Those are the error, and those two nodes are 
-                    always present in another branch of the
-                    same tree, that is another path with smaller 
-                    link count, so those erros are deleted from the extracted
-                    path here.
                     */
                     List<PathNode> path = extractNodes(node);
                     
@@ -693,11 +728,25 @@ Matchings in G are integral flows in N_G
         Heap heap = new Heap();
         
         /*
-        upon first use as hopcroft karp is initialized
-        with an empty matching graph.
-        there are no backward links in the residual digraph
-        for an empty matching graph, and so there are no
-        alternating paths larger than single maiden nodes.
+        this class is invoked as the first step in a
+        hopcroft-karp matching algorithm and there are
+        at first no matching nodes,
+        so all X nodes are maiden nodes.
+        but other uses my give the method a residual graph
+        that has matched arcs in it.
+        
+        The code below treats each maiden X node as a single
+        source shortest path problem.
+        
+        The storage of the found paths is a little more complex
+        in that an array indexed by calculated path lengths
+        is created and each item is a doubly linked list of
+        paths.
+        so forest[0] holds a doubly linked list.
+           each item in that doubly linked list is a maiden 
+             node without a predecessor and havinf dist=0.
+        
+        
         */
         
         // init all nodes to inf length
@@ -716,12 +765,20 @@ Matchings in G are integral flows in N_G
             leftNodes.put(lNode, node);
         }
         
-        // for all maidens, that is, the keys in forwardLinksRM,
+        // married X nodes
+        Set<Integer> matchedLeft = new HashSet<Integer>(
+            rM.getBackwardLinksRM().values());
+        
+  //TODO: see Fredman and Tarjan [10]      
+   
+        // for all maidens
         // set key to 0, then ScanAndAdd(index)
-        for (Integer lNode : rM.getForwardLinksRM().keySet()) {
+        for (Integer lNode : rM.getLeftRM()) {
+            if (matchedLeft.contains(lNode)) {
+                continue;
+            }
             LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
-            // any rightNodes inserted into heap get decreased keys
             scanAndAdd(heap, forest, rM, rightNodes, node);
         }
         
@@ -783,11 +840,7 @@ Matchings in G are integral flows in N_G
         return forest;
     }
 
-    /**
-    visit alternating paths and update the heap for the best
-    path lengths in the right (matched) nodes and add the
-    maiden nodes to the forest.
-    
+    /**    
     given a maiden (left) node, search forward links to 
     right nodes in alternating paths
     to insert right nodes into the heap
@@ -812,12 +865,6 @@ Matchings in G are integral flows in N_G
         
         Set<Integer> forwardLinks = rM.getForwardLinksRM().get(x);
         for (Integer y : forwardLinks) {
-            
-            // check that the Y is matched?  pseudocode does not
-            // have that
-            //if (!rM.backwardLinksRM.containsKey(y)) {
-            //    continue;
-            //}
             
             //link length = net cost of the edge 
             //    (lp(x ⇒ y) = cp(X,Y))
@@ -1026,28 +1073,7 @@ Matchings in G are integral flows in N_G
             nodes.add(node1);
             node1 = node1.pathPredecessor;
         }
-        for (PathNode node2 : nodes) {
-            node2.pathPredecessor = null;
-        }
-        
-        if (nodes.size() > 2) {
-            HeapNode nodeL1 = nodes.get(nodes.size() - 1);
-            HeapNode nodeL2 = nodes.get(nodes.size() - 2);
-            
-            Integer index = (Integer)nodeL1.getData();
-            Integer indexOther = (Integer)(nodeL2.getData());
-            
-            if (index.equals(indexOther)) {
-                if ((nodeL1 instanceof LeftNode &&
-                nodeL2 instanceof LeftNode) ||
-                (nodeL1 instanceof RightNode &&
-                nodeL2 instanceof RightNode)) {
-                    nodes.remove(nodes.size() - 1);
-                    nodes.remove(nodes.size() - 1);
-                }
-            }
-        }
-        
+                
         return nodes;
     }
     
@@ -1093,6 +1119,80 @@ Matchings in G are integral flows in N_G
         node2.setKey(lTot);
         
         insertIntoHeap(minHeap, node2);
+    }
+
+    private void raisePrices2(FlowNetwork gFlow, ResidualDigraph2 rF,
+        DoubleLinkedCircularList[] forest, 
+        int[] terminatingDeficitIdx, float eps) {
+        
+         /*
+        raise prices at forest nodes by multiples of ε, 
+            shortening the discovered augmenting path to length 0;
+            - In a round of price increases in the main loop of 
+              Refine, raising the price pd(v) at some node v in NG 
+              by eps lowers by 1 the length of any link in the 
+              residual digraph Rf that leaves v and raises by 1 
+              the length of any link that enters v.
+            - A link v -> w leaving v is either forward or backward.
+              If it is forward, the arc underlying it is the idle 
+              arc v -> w. Raising the price at v by eps lowers the 
+              net cost of this arc by eps, which, 
+              by equation (7-3), lowers the length of the link by 1.
+              If the link v -> w is backward, the arc underlying it 
+              is the saturated arc w -> v. 
+              Raising the price at v by eps raises the net cost of 
+              this arc by eps, which, by equation (7-4), also lowers 
+              the length of the link by 1.
+            -- raise prices: 
+              For each node v in the shortest-path forest, 
+              we set the new (dispose) price pd'(v) by
+              pd'(v) := p(d) + (l(termDefIdx) - l(v))*eps
+              where termDefIdx is the deficit whose discovery 
+              halted the growth of the shortest-path forest. 
+              (reminder that path lengths are multiples of eps).
+                 - Let sigma be the surplus at the root of the tree 
+              that termDefIdx joins. 
+            index (tree) that termDefIdx was last inserted into.  
+              We have pd'(sigma) = pd(sigma) + l(termDefIdx)*eps, 
+              but pd'(termDefIdx) = pd(termDefIdx). 
+              So Prop 7-5 tells us that our price increases 
+              shorten the path from sigma to termDefIdx by 
+                 l(termDefIdx) length units. 
+              Since l(termDefIdx) was the length of that path before 
+              our price increases, its length after the increases 
+              will be zero. 
+              - If our invariants are preserved, 
+              all of the links along that path must end up of 
+              length 0, meaning that all of the underlying arcs 
+              are eps-tight. As for our invariants, it’s clear 
+              that I1' and I2 continue to hold. 
+              But establishing the other three invariants takes 
+              more work.
+               For each node v in the network NG,
+               define i(v) to be the multiple of eps by which 
+               we raise the price pd(v). 
+               -- So, for nodes v in the forest: 
+                   i(v) := l(termDefIdx) - l(v), while, 
+               -- for nodes v not in the forest:
+                   i(v) := 0. 
+               ** We then have the repricing formula 
+                   pd'(v) = pd(v) + i(v)*eps, for all nodes v. 
+               
+               Using this repricing formula, we can express 
+               the impact of our repricings on an arc
+               v->w without needing to know whether or not the 
+               nodes v and w lie in the forest. We have
+                   cp(v, w) = c(v, w) - pd(v) + pd(w)
+                   cp'(v, w) = c(v, w) - pd'(v) + pd'(w)
+                 ==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
+            -- after price incr,
+                   assert from pg 52 
+                   I1', I2, I3, I4, on FlowNetwork
+                   and I5 on ResidualDigraph2
+            -- 
+        */
+        
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
