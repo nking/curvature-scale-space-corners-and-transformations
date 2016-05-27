@@ -186,8 +186,9 @@ public class MinCostUnbalancedAssignment {
      */
     public Map<Integer, Integer> flowAssign(Graph g) {
 
-        //TODO: add size restriction t
-        Map<Integer, Integer> m = hopcroftKarp(g);
+        int sz = Math.min(g.getNLeft(), g.getNRight());
+        
+        Map<Integer, Integer> m = hopcroftKarp(g, sz);
         
         FlowNetwork gFlow = new FlowNetwork(g, m);
         
@@ -499,12 +500,19 @@ public class MinCostUnbalancedAssignment {
         return forest;
     }
     
-    //TODO: add t as limit for size
-    protected Map<Integer, Integer> hopcroftKarp(Graph g) {
+    /**
+     * find a maximal matching of size s for the left
+     * and right nodes in the bipartite graph g
+     * @param g
+     * @param s
+     * @return 
+     */
+    protected Map<Integer, Integer> hopcroftKarp(Graph g,
+        int s) {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
-        if (true) {             
+        if (false) {             
             //temporarily, replacing w/ O(m * sqrt(n))
             HopcroftKarp hk = new HopcroftKarp();
             int[] matched = hk.hopcroftKarpV0(createUnweightedGraph(g));
@@ -519,17 +527,18 @@ public class MinCostUnbalancedAssignment {
         }
                 
         ResidualDigraph rM = createResidualGraph(g, m);
-        
-        return hopcroftKarp(g, rM);
+                
+        return hopcroftKarp(g, rM, s);
     }
     
     protected Map<Integer, Integer> hopcroftKarp(Graph g, 
-        ResidualDigraph rM) {
+        ResidualDigraph rM, int s) {
        
-        if (true) {
-            throw new UnsupportedOperationException("not yet implemented");
-        }
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        
+        int prevMSize = m.size();
+        
+        int nIter = 0;
         
         while (true) {
         
@@ -539,6 +548,10 @@ public class MinCostUnbalancedAssignment {
             if (allAreEmpty(augmentingPaths)) {
                 return m;
             }
+           
+            //NOTE: the path building above may still has an error.
+            
+            Set<PairInt> augmented = new HashSet<PairInt>();
 
             // start at i=1, because i=0 is not alternating? 
             for (int i = 1; i < augmentingPaths.length; ++i) {
@@ -548,8 +561,6 @@ public class MinCostUnbalancedAssignment {
                 if (tree == null) {
                     continue;
                 }
-
-                //NOTE: not sure the logic is correct here.
 
                 //augment M along path;
                 /*
@@ -567,17 +578,19 @@ public class MinCostUnbalancedAssignment {
                 can start or end.
                 */
 
-                // HeapNode getLeft() traverses the tree nodes in FIFO order.
+                // use getRight() to traverse LIFO order which
+                //   makes removing redundant paths easier
+                //   currently.
                 
                 // each item in tree is a HeapNode whose path
                 //    is included as pathPredecessor of the node.
-                
+
                 long n = tree.getNumberOfNodes();
                 HeapNode node = tree.getSentinel();
-                int nCurrent = 0;
-                for (int j = 0; j < n; ++j) {
+                int j = 0;
+                while (j < n) {
                     
-                    node = node.getLeft();
+                    node = node.getRight();
                     
                     /*
                     node is a path.
@@ -594,13 +607,13 @@ public class MinCostUnbalancedAssignment {
                     
                     */
                     List<PathNode> path = extractNodes(node);
-                    
+
                     for (int ii = 0; ii < (path.size() - 1); ++ii) {
                         
                         PathNode node1 = path.get(ii);
                         PathNode node2 = path.get(ii + 1);
                         
-                        log.info("forest[" + i + "] tree branch[" 
+                        log.fine("forest[" + i + "] tree branch[" 
                             + j + "] node[" + ii + "]=" + node1.toString());
                         
                         // index1 is the left index of arc
@@ -614,14 +627,75 @@ public class MinCostUnbalancedAssignment {
                             index2 = (Integer)node1.getData();
                         }
                         
-                        swapLinkExistence(rM, m, index1, index2);                        
-                    }
+                        PairInt pair = new PairInt(index1.intValue(),
+                            index2.intValue());
+                        if (augmented.contains(pair)) {
+                            break;
+                        }
+                        swapLinkExistence(rM, index1, index2);
+                        augmented.add(pair);
+                    }                    
+                    j++;
                 }
-               
-                //announce(M is a matching)
-                log.info("m.size=" + m.size());
             }
-        } 
+
+            /*            
+            let P = {P1, P2, ...Pk} be a maximum set of vertex-disjoint
+               shortest augmenting paths with respect to M
+            M = the symmetric difference between M and
+               (P1 union P2 union ...Pk)
+            
+            now applying the symmetric difference to m and m2
+            */
+            
+            Map<Integer, Integer> m2 = rM.extractMatchings();
+            
+            //announce(M is a matching)
+            log.info("nIter=" + nIter + " m2.size=" + m2.size());
+
+            // debug:
+            for (Entry<Integer, Integer> entry : m2.entrySet()) {
+                log.info("m2 match= " + entry.getKey() + "->" + entry.getValue());
+            }
+            for (Entry<Integer, Integer> entry : m.entrySet()) {
+                log.info("m match= " + entry.getKey() + "->" + entry.getValue());
+            }
+                        
+            // remove the intersection of m and m2
+            for (Entry<Integer, Integer> entry : m.entrySet()) {
+                Integer key = entry.getKey();
+                if (m2.containsKey(key) &&
+                    m2.get(key).equals(entry.getValue())) {
+                    m2.remove(key);
+                }
+            }
+            Set<Integer> m2R = new HashSet<Integer>(m2.values());
+            // if m has a match that does not conflict with m2,
+            // add it to m2
+            for (Entry<Integer, Integer> entry : m.entrySet()) {
+                Integer key = entry.getKey();
+                Integer value = entry.getValue();
+                if (!m2.containsKey(key) && !m2R.contains(value)) {
+                    m2.put(key, value);
+                }
+            }
+            m = m2;
+            log.info("symmetric diff of m and m2.size=" + m.size());
+            for (Entry<Integer, Integer> entry : m.entrySet()) {
+                log.info("sym diff m match= " + entry.getKey() + "->" + entry.getValue());
+            }
+            
+            if (m.size() >= s) {
+                return m;
+            }
+            
+            rM = createResidualGraph(g, m);
+                        
+            assert (prevMSize < m.size());
+            prevMSize = m.size();
+            ++nIter;            
+        }
+        
         //return m;
     }
     
@@ -744,9 +818,7 @@ Matchings in G are integral flows in N_G
         paths.
         so forest[0] holds a doubly linked list.
            each item in that doubly linked list is a maiden 
-             node without a predecessor and havinf dist=0.
-        
-        
+             node without a predecessor and having dist=0.        
         */
         
         // init all nodes to inf length
@@ -769,7 +841,7 @@ Matchings in G are integral flows in N_G
         Set<Integer> matchedLeft = new HashSet<Integer>(
             rM.getBackwardLinksRM().values());
         
-  //TODO: see Fredman and Tarjan [10]      
+  //TODO: Fredman and Tarjan [10]      
    
         // for all maidens
         // set key to 0, then ScanAndAdd(index)
@@ -794,7 +866,7 @@ Matchings in G are integral flows in N_G
             assert(y instanceof RightNode);
             assert(y.getData() != null);
         
-            log.info("heap.size=" + heap.getNumberOfNodes());
+            log.fine("heap.size=" + heap.getNumberOfNodes());
             
             addToForest(forest, y);
                     
@@ -896,11 +968,11 @@ Matchings in G are integral flows in N_G
                 if (lOld == Long.MAX_VALUE) {
                     yNode.setKey(lY);
                     heap.insert(yNode);
-                    log.info(String.format("HEAP insert: %s",
+                    log.fine(String.format("HEAP insert: %s",
                         yNode.toString()));
                 } else {
                     heap.decreaseKey(yNode, lY);
-                    log.info(String.format("HEAP decr: %s",
+                    log.fine(String.format("HEAP decr: %s",
                         yNode.toString()));
                 }
             }
@@ -936,10 +1008,7 @@ Matchings in G are integral flows in N_G
             }
             list.insert(node);
             
-            String str = 
-                node.getClass().getSimpleName().contains("Left") ?
-                " Left" : " Right";
-            log.info("add to forest[" + k + "] " + str 
+            log.fine("add to forest[" + k + "] " 
                 + " node " + node.toString());
         }
     }
@@ -1029,8 +1098,7 @@ Matchings in G are integral flows in N_G
     }
     
     private void swapLinkExistence(ResidualDigraph rM, 
-        Map<Integer, Integer> m, Integer leftIndex, 
-        Integer rightIndex) {
+        Integer leftIndex, Integer rightIndex) {
         
         Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
         
@@ -1043,18 +1111,23 @@ Matchings in G are integral flows in N_G
             
             // create a backward link and matched mapping
             rM.getBackwardLinksRM().put(rightIndex, leftIndex);
-            m.put(leftIndex, rightIndex);
+            
+            log.fine("augment to add :" + leftIndex + " to " +
+                rightIndex);
             
             return;
         }
         
+        log.fine("augment to remove :" + leftIndex + " to " +
+            rightIndex);
+        
         // assert that a backward link exists
         Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
-        assert(v2 != null && v2.equals(leftIndex));
+        assert(v2 != null);
+        assert(v2.equals(leftIndex));
         
         // remove backwards link and mapping
         rM.getBackwardLinksRM().remove(rightIndex);
-        m.remove(leftIndex, rightIndex);
         
         // create a forward link        
         if (rIndexes == null) {

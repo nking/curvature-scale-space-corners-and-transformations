@@ -3,6 +3,7 @@ package algorithms.bipartite;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -62,5 +63,18 @@ public class ResidualDigraph {
      */
     public Map<Integer, Integer> getBackwardLinksRM() {
         return backwardLinksRM;
+    }
+
+    public Map<Integer, Integer> extractMatchings() {
+
+        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        
+        for (Entry<Integer, Integer> entry : backwardLinksRM.entrySet()) {
+            Integer rightIndex = entry.getKey();
+            Integer leftIndex = entry.getValue();
+            m.put(leftIndex, rightIndex);
+        }
+        
+        return m;
     }
 }
