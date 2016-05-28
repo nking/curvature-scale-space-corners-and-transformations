@@ -167,11 +167,42 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         // ------------------------------------
         int s = Math.min(g.getNLeft(), g.getNRight());
         Map<Integer, Integer> aMatching = 
-        //    bipartite.hopcroftKarp(g);
             bipartite.hopcroftKarp(g, rM, s);
         for (Entry<Integer, Integer> entry : aMatching.entrySet()) {
             log.info("matched left " + entry.getKey() + " to right " +
                 entry.getValue());
+        }
+
+        // ------ statements in flowAssign:
+        FlowNetwork gFlow = new FlowNetwork(g, aMatching);
+
+        s = aMatching.size();
+        int q = 2;
+        float eps = 1.f/(6.f * (float)s);
+        float eBar = 1.f + (float)Math.floor(Math.log(
+            gFlow.getMaxC())/Math.log(q));
+        float epsBar = (float)Math.pow(eBar, q);
+        if (eps < gFlow.getMaxC()) {
+            double ni = Math.log(s * gFlow.getMaxC())/Math.log(q);
+            eps = (float)(epsBar * Math.pow(q, ni));
+        }
+        log.info("eps=" + eps + " epsBar=" + epsBar + " maxC=" + 
+            gFlow.getMaxC());
+        assert(eps > gFlow.getMaxC());
+        int nIterR = 0;
+        while (eps > epsBar) {
+            assert(gFlow.assertFlowValue(s));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
+            assert(gFlow.integralFlowIsEpsProper(eps));
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+            
+            eps /= (float)q;
+
+            bipartite.refine(gFlow, s, eps, q);
+if (true) {
+    return;
+}
+            ++nIterR;
         }
     }
 
