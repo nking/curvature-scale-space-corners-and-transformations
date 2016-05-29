@@ -334,12 +334,10 @@ public class MinCostUnbalancedAssignment {
         */
         gFlow.raisePricesUntilEpsProper(eps, q);
          
-        //in [0] holds the index for the deficit node which
-        // terminates the surplus loop,
-        //in [1] holds the surplus vertex index at the root 
-        // of the tree that the terminating deficit node was 
+        //in [0] holds the length of the terminating deficit
+        // node which is also the forest index it was
         // added to.
-        int[] terminatingDeficitIdx = new int[2];
+        int[] terminatingDeficitIdx = new int[1];
         int h = 2;
         while (h > 0) {
           
@@ -352,8 +350,10 @@ public class MinCostUnbalancedAssignment {
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 terminatingDeficitIdx);
          
+            log.info("l(termIndex)=" + terminatingDeficitIdx[0]);
+         
             debug(forest);
-                      
+            
             //raise prices at forest nodes by multiples of ε, 
             //shortening the discovered augmenting path to length 0;
             /*
@@ -379,7 +379,7 @@ public class MinCostUnbalancedAssignment {
             // then for all nodes v: pd'(v) = pd(v) + i(v)*eps, 
             //==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
             
-      if (true) 
+        if (true) 
           throw new UnsupportedOperationException("not yet implemented");
             
             /*
@@ -392,7 +392,7 @@ public class MinCostUnbalancedAssignment {
             assert(gFlow.integralFlowIsEpsProper(eps));
             assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             // assert I5: Rf has no cycles of length zero.
-            
+            // such a cycle should be present in the forest if so
             
             /*
             find a maximal set P of length-0 augmenting paths 
@@ -417,11 +417,10 @@ public class MinCostUnbalancedAssignment {
      * @param surplus
      * @param deficit
      * @param eps
-     * @param terminatingDeficitIdx output array of size 2
-     * to hold first the index for the deficit node which
-     * terminates the surplus loop, and then second to hold
-     * the surplus vertex index at the root of the tree that
-     * the terminating deficit node was added to.
+     * @param terminatingDeficitIdx output array of size 1
+     * to hold th length of the key of the terminating deficit
+     * node (which is also the index of the forest tree it 
+     * was added to).
      * @return 
      */
     protected DoubleLinkedCircularList[] buildForest2(
@@ -490,14 +489,15 @@ public class MinCostUnbalancedAssignment {
             if (nodeIsSource) {        
                 // scan forward source links
                 for (Integer index2 : rF.getForwardLinksSourceRM()) {
-                    handleLeft(minHeap, gFlow, node1, index2, 
-                       leftNodes, lambda, eps); 
+                    handleSourceForwardLink(minHeap, gFlow, 
+                        (SourceNode)node1, index2, 
+                        leftNodes, lambda, eps); 
                 }
             } else if (nodeIsSink) {
                 // scan backward sink links
                 for (Integer index2 : rF.getBackwardLinksSinkRM()) {
-                    handleRight(minHeap, gFlow, node1, index2, 
-                        rightNodes, lambda, eps);
+                    handleSinkBackwardLink(minHeap, gFlow, 
+                        (SinkNode)node1, index2, rightNodes, lambda, eps);
                 }
             } else if (node1IsLeft) {
                 // scan the bipartite arcs forward
@@ -512,8 +512,8 @@ public class MinCostUnbalancedAssignment {
                 if (rF.getBackwardLinksSourceRM().contains(index1)) {
                     // insert a copy of the source node
                     SourceNode sNode2 = sourceNode.copy();
-                    handleSource(minHeap, gFlow, node1, sNode2, 
-                        lambda, eps);
+                    handleSourceBackwardLink(minHeap, gFlow, 
+                        node1, sNode2, lambda, eps);
                 }
             } else {
                 // node1 is a RighNode
@@ -539,9 +539,8 @@ public class MinCostUnbalancedAssignment {
             HeapNode rootOfTD = forest[(int)node1Cp.getKey()].getSentinel()
                 .getRight();
             Integer rootIndex = (Integer)rootOfTD.getData();
-            terminatingDeficitIdx[0] = idx1;
-            terminatingDeficitIdx[1] = rootIndex.intValue();
-            
+            terminatingDeficitIdx[0] = (int)node1Cp.getKey();
+                
             if (d.contains(index1) && !node1IsLeft) {
                 break;
             }
@@ -1230,6 +1229,33 @@ Matchings in G are integral flows in N_G
         }            
     }
     
+    private void handleSourceForwardLink(
+        DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, SourceNode node1,
+        Integer index2, Map<Integer, LeftNode> leftNodes,
+        int lambda, float eps) {
+    
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = index2.intValue();
+        
+        LeftNode node2 = leftNodes.get(index2);
+        float cp = gFlow.calcSourceNetCost(idx2);
+        
+        long lp = (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
+    }
+    
     private void handleLeft(DoubleLinkedCircularList[] minHeap,
         FlowNetwork gFlow, PathNode node1,
         Integer index2, Map<Integer, LeftNode> leftNodes,
@@ -1240,12 +1266,7 @@ Matchings in G are integral flows in N_G
         int idx2 = index2.intValue();
         
         LeftNode node2 = leftNodes.get(index2);
-        float cp;
-        if (node1 instanceof SourceNode) {
-            cp = gFlow.calcSourceNetCost(idx2);
-        } else {
-            cp = gFlow.calcNetCost(index2.intValue(), idx1);
-        }
+        float cp = gFlow.calcNetCost(index2.intValue(), idx1);
         long lp = 1 - (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
@@ -1270,12 +1291,7 @@ Matchings in G are integral flows in N_G
         int idx2 = index2.intValue();
         
         RightNode node2 = rightNodes.get(index2);
-        float cp;
-        if (node1 instanceof SinkNode) {
-            cp = gFlow.calcSinkNetCost(idx2);
-        } else {
-            cp = gFlow.calcNetCost(idx1, idx2);
-        }
+        float cp = gFlow.calcNetCost(idx1, idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
@@ -1290,7 +1306,34 @@ Matchings in G are integral flows in N_G
         }
     }
     
-    private void handleSource(DoubleLinkedCircularList[] minHeap,
+    private void handleSinkBackwardLink(
+        DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, SinkNode node1,
+        Integer index2, Map<Integer, RightNode> rightNodes,
+        int lambda, float eps) {
+        
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = index2.intValue();
+        
+        RightNode node2 = rightNodes.get(index2);
+        float cp = gFlow.calcSinkNetCost(idx2);
+        long lp = 1 - (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
+    }
+    
+    private void handleSourceBackwardLink(
+        DoubleLinkedCircularList[] minHeap,
         FlowNetwork gFlow, PathNode node1,
         SourceNode node2, int lambda, float eps) {
         
@@ -1299,7 +1342,8 @@ Matchings in G are integral flows in N_G
         int idx2 = ((Integer)node2.getData()).intValue();
 
         float cp = gFlow.calcSourceNetCost(idx1);
-        long lp = (long) Math.ceil(cp / eps);
+        long lp = 1 - (long) Math.ceil(cp / eps);
+        
         long lTot = l1 + lp;
         long lOld = node2.getKey();
         if ((lTot < lambda) && (lTot < lOld)) {
@@ -1323,6 +1367,7 @@ Matchings in G are integral flows in N_G
 
         float cp = gFlow.calcSinkNetCost(idx1);
         long lp = (long) Math.ceil(cp / eps);
+        
         long lTot = l1 + lp;
         long lOld = node2.getKey();
         if ((lTot < lambda) && (lTot < lOld)) {
