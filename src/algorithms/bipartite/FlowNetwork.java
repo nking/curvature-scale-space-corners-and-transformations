@@ -313,6 +313,13 @@ public class FlowNetwork {
         return sum;
     }
     
+    public float getSourceToLeftFlow(int idx) {
+        return sourceToLeftF.get(Integer.valueOf(idx));
+    }
+    public float getRightToSinkFlow(int idx) {
+        return rightToSinkF.get(Integer.valueOf(idx));
+    }
+    
     public float calcNetCost(int u, int v) {
 
         if (u == sourceNode) {
@@ -512,8 +519,8 @@ public class FlowNetwork {
                 //cp = cost - pdX + pdY so incr pdX
                 //TODO: a single price raise of 2*delta or 3*delta?
                 //      difficult to tell by pg 54 and 53
+                float count = 1.f;
                 while (cp > qEps) {
-                    float count = 1.f;
                     pLeft[xIndex.intValue()] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
                     count += 1.f;
@@ -540,8 +547,8 @@ public class FlowNetwork {
                 //cp = cost - pdX + pdY so incr pdX
                 //TODO: a single price raise of 2*delta or 3*delta?
                 //      difficult to tell by pg 54 and 53
+                float count = 1.f;
                 while (cp > qEps) {
-                    float count = 1.f;
                     pRight[yIndex.intValue()] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
                     count += 1.f;

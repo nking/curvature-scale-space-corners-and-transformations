@@ -375,7 +375,8 @@ public class MinCostUnbalancedAssignment {
             // array i[v] for all nodes in V (==left nodes)
             // if in forest: i(v) := l(termDefIdx) - l(v), else i(v)=0
             int[] incr = new int[gFlow.getNLeft()];
-               
+            
+            
             // then for all nodes v: pd'(v) = pd(v) + i(v)*eps, 
             //==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
             
@@ -516,7 +517,7 @@ public class MinCostUnbalancedAssignment {
                         node1, sNode2, lambda, eps);
                 }
             } else {
-                // node1 is a RighNode
+                // node1 is a RightNode
                 Integer index2 = rF.getBackwardLinksRM().get(index1);
                 if (index2 != null) {
                     handleLeft(minHeap, gFlow, node1, index2, 
@@ -533,6 +534,8 @@ public class MinCostUnbalancedAssignment {
                 
             PathNode node1Cp = node1.copy();
 
+            log.info("add to forest key=" + node1Cp.getKey());
+            
             //add v to the forest;
             addToForest(forest, node1Cp);
 

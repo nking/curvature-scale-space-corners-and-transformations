@@ -149,6 +149,8 @@ public class ResidualDigraph2 {
     }
 
     /**
+     * key is Right (==Y) index node, and value is
+     * Left (==X) index node.
      * @return the backwardLinksRM
      */
     public Map<Integer, Integer> getBackwardLinksRM() {
