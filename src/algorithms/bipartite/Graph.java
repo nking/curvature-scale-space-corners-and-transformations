@@ -48,6 +48,9 @@ public class Graph {
     private Map<PairInt, Integer> edgeWeights
         = new HashMap<PairInt, Integer>();
 
+    private Map<PairInt, Integer> sourceEdgeWeights = null;
+    private Map<PairInt, Integer> sinkEdgeWeights = null;
+
     public Graph(int nLeftVertices, int nRightVertices,
         Map<PairInt, Integer> theEdgeWeights, 
         boolean createSourceAndSinkEdges) {
@@ -70,13 +73,15 @@ public class Graph {
         if (createSourceAndSinkEdges) {
             this.sourceNode = nLeft;
             this.sinkNode = nRight;
+            sourceEdgeWeights = new HashMap<PairInt, Integer>();
+            sinkEdgeWeights = new HashMap<PairInt, Integer>();
             for (int i = 0; i < nLeft; ++i) {
                 PairInt p = new PairInt(sourceNode, i);
-                edgeWeights.put(p, 0);
+                sourceEdgeWeights.put(p, 0);
             }
             for (int i = 0; i < nLeft; ++i) {
                 PairInt p = new PairInt(i, sinkNode);
-                 edgeWeights.put(p, 0);
+                 sinkEdgeWeights.put(p, 0);
             }
         } else {
             this.sourceNode = -1;
@@ -99,12 +104,24 @@ public class Graph {
     }
 
     /**
-     * @return the edgeWeights, including the dummy
-     * values added for edges from and to 
-     * source and sink nodes.
+     * @return the edgeWeights
      */
     public Map<PairInt, Integer> getEdgeWeights() {
         return edgeWeights;
+    }
+
+    /**
+     * @return the sourceEdgeWeights
+     */
+    public Map<PairInt, Integer> getSourceEdgeWeights() {
+        return sourceEdgeWeights;
+    }
+
+    /**
+     * @return the sinkEdgeWeights
+     */
+    public Map<PairInt, Integer> getSinkEdgeWeights() {
+        return sinkEdgeWeights;
     }
 
     /**
@@ -119,5 +136,18 @@ public class Graph {
      */
     public int getSinkNode() {
         return sinkNode;
+    }
+    
+    Graph copyToCreateSourceSink() {
+    
+        if (sourceNode == -1) {
+            Graph g = new Graph(nLeft, nRight, edgeWeights,
+                true);
+            return g;
+        }
+    
+        throw new IllegalStateException("currently, the "
+            + "method is for use on graphs that were"
+            + " constructed without source and sink nodes");
     }
 }

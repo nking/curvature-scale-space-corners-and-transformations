@@ -78,6 +78,9 @@ public class MinCostUnbalancedAssignment {
      * a left node, a.k.a. X node
      */
     private class LeftNode extends PathNode {
+        public LeftNode() {
+            this.id = "LeftNode";
+        }        
         public LeftNode copy() {
             LeftNode node = new LeftNode();
             node.setKey(getKey());
@@ -85,10 +88,16 @@ public class MinCostUnbalancedAssignment {
             node.pathPredecessor = pathPredecessor;
             return node;
         }
+    }
+    
+    public static abstract class PathNode extends HeapNode {
+        PathNode pathPredecessor = null;
+        public abstract PathNode copy();
+        String id = "";
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("LeftNode key=").append(Long.toString(getKey()));
+            sb.append(id).append(" key=").append(Long.toString(getKey()));
             sb.append(" index=").append(getData().toString());
             PathNode prev = pathPredecessor;
             while (prev != null) {
@@ -98,11 +107,6 @@ public class MinCostUnbalancedAssignment {
             }
             return sb.toString();
         }
-    }
-    
-    public static abstract class PathNode extends HeapNode {
-        PathNode pathPredecessor = null;
-        public abstract PathNode copy();
     }
     
     /**
@@ -110,6 +114,9 @@ public class MinCostUnbalancedAssignment {
      * a right node, a.k.a. Y node
      */
     private class RightNode extends PathNode {
+        public RightNode() {
+            this.id = "RightNode";
+        }
         public RightNode copy() {
             RightNode node = new RightNode();
             node.setKey(getKey());
@@ -117,18 +124,38 @@ public class MinCostUnbalancedAssignment {
             node.pathPredecessor = pathPredecessor;
             return node;
         }
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("RightNode key=").append(Long.toString(getKey()));
-            sb.append(" index=").append(getData().toString());
-            PathNode prev = pathPredecessor;
-            while (prev != null) {
-                sb.append(" [prev=").append(prev.toString())
-                    .append("]");
-                prev = prev.pathPredecessor;
-            }
-            return sb.toString();
+    }
+    
+    /**
+     * class specializing a fibonacci heap node to identify
+     * a source
+     */
+    private class SourceNode extends PathNode {
+        public SourceNode() {
+            this.id = "SourceNode";
+        }        
+        public SourceNode copy() {
+            SourceNode node = new SourceNode();
+            node.setKey(getKey());
+            node.setData(getData());
+            node.pathPredecessor = pathPredecessor;
+            return node;
+        }
+    }
+    /**
+     * class specializing a fibonacci heap node to identify
+     * a sink node
+     */
+    private class SinkNode extends PathNode {
+        public SinkNode() {
+            this.id = "SinkNode";
+        }        
+        public SinkNode copy() {
+            SinkNode node = new SinkNode();
+            node.setKey(getKey());
+            node.setData(getData());
+            node.pathPredecessor = pathPredecessor;
+            return node;
         }
     }
     
@@ -215,8 +242,10 @@ public class MinCostUnbalancedAssignment {
         
         Map<Integer, Integer> m = hopcroftKarp(g, sz);
         
-        FlowNetwork gFlow = new FlowNetwork(g, m);
+        g = g.copyToCreateSourceSink();
         
+        FlowNetwork gFlow = new FlowNetwork(g, m);
+       
         //TODO: estimate of eps may need to be revised
         
         int s = m.size();
@@ -349,8 +378,9 @@ public class MinCostUnbalancedAssignment {
                
             // then for all nodes v: pd'(v) = pd(v) + i(v)*eps, 
             //==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
-if (true)
-        throw new UnsupportedOperationException("Not supported yet."); 
+            
+      if (true) 
+          throw new UnsupportedOperationException("not yet implemented");
             
             /*
             assert from pg 52 
@@ -362,7 +392,6 @@ if (true)
             assert(gFlow.integralFlowIsEpsProper(eps));
             assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             // assert I5: Rf has no cycles of length zero.
-            
             
             
             /*
@@ -380,38 +409,6 @@ if (true)
          for a backward link: lp(w->v) = 1 - Math.ceil(cp(v, w)/eps)
          both results are >= 0        
     */
-        /*
-        a surplus of f is a node (not the sink node), that has
-           entering flow > exiting flow.
-        a deficit of f is a node (not the source node), that has
-           exiting flow > entering flow.
-        
-        For a woman x in X, 
-            let the left stub to x be the pseudoflow that 
-            saturates the left-dummy arc |- -> x, 
-            but leaves all other arcs idle. 
-        For a man y in Y, 
-            the right stub from 
-            y saturates only the right-dummy arc
-            y -> -|. 
-        Any pseudoflow f that arises in Refine is the sum 
-           of some flow, some left-stubs, and some right-stubs. 
-           The flow component, which we denote f, encodes 
-           the partial matching that Refine has constructed so far, 
-           during this scaling phase. 
-           - We initialize fˆ to zero, so this matching starts 
-             out empty. The left-stubs remember those women who 
-             were matched at the end of the previous phase and 
-             who have not yet been either matched or replaced 
-             during this phase.
-             - Those women are the surpluses of the pseudoflow f, 
-             and they constitute the set S. 
-             - The right-stubs remember the previously matched 
-               men in a similar way. Those men are the deficits of f, 
-             and they constitute D.
-             -- then |fˆ| = s - h, where h = |S| == |D|
-                (if h = 0. fˆ = f so is an integral flow)
-        */
     }
     
     /**
@@ -447,18 +444,9 @@ if (true)
         // the shortest path length at any time.
         // they're quantized w/ eps.
         DoubleLinkedCircularList[] minHeap = new DoubleLinkedCircularList[lambda];
-    
-//these lengths should be in residual graph2
-        
+            
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
-        for (int i = 0; i < gFlow.getNRight(); ++i) {
-            Integer index = Integer.valueOf(i);
-            RightNode node = new RightNode();
-            node.setKey(Long.MAX_VALUE);
-            node.setData(index);
-            rightNodes.put(index, node);
-        }
         for (int i = 0; i < gFlow.getNLeft(); ++i) {
             Integer index = Integer.valueOf(i);
             LeftNode node = new LeftNode();
@@ -466,19 +454,26 @@ if (true)
             node.setData(index);
             leftNodes.put(index, node);
         }
+        // NOTE: pseudocode does not suggest init of Right to inf
+        for (int i = 0; i < gFlow.getNRight(); ++i) {
+            Integer index = Integer.valueOf(i);
+            RightNode node = new RightNode();
+            node.setKey(Long.MAX_VALUE);
+            node.setData(index);
+            rightNodes.put(index, node);
+        }        
         
-        if (true)
-            throw new UnsupportedOperationException(
-            "not yet implemented");
+        SourceNode sourceNode = new SourceNode();
+        sourceNode.setKey(Long.MAX_VALUE);
+        sourceNode.setData(Integer.valueOf(gFlow.getNLeft()));
         
-    //    TODO: need to handle init of source and
-    //        sink nodes here
-                  
+        SinkNode sinkNode = new SinkNode();
+        sinkNode.setKey(Long.MAX_VALUE);
+        sinkNode.setData(Integer.valueOf(gFlow.getNRight()));
+       
         for (Integer sigma : surplus) {
-
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
-            
             insertIntoHeap(minHeap, sNode);
         }
                
@@ -486,49 +481,53 @@ if (true)
             PathNode node1 = extractMinFromHeap(minHeap);
             Integer index1 = (Integer)node1.getData();
             int idx1 = index1.intValue();
-            final long l1 = node1.getKey();
             
             boolean node1IsLeft = (node1 instanceof LeftNode);
-
+            boolean nodeIsSource = (node1 instanceof SourceNode);
+            boolean nodeIsSink = (node1 instanceof SinkNode);
+            
             //scan:
-            if (node1IsLeft) {
+            if (nodeIsSource) {        
+                // scan forward source links
+                for (Integer index2 : rF.getForwardLinksSourceRM()) {
+                    handleLeft(minHeap, gFlow, node1, index2, 
+                       leftNodes, lambda, eps); 
+                }
+            } else if (nodeIsSink) {
+                // scan backward sink links
+                for (Integer index2 : rF.getBackwardLinksSinkRM()) {
+                    handleRight(minHeap, gFlow, node1, index2, 
+                        rightNodes, lambda, eps);
+                }
+            } else if (node1IsLeft) {
+                // scan the bipartite arcs forward
                 Set<Integer> indexes2 = rF.getForwardLinksRM().get(index1);
                 if (indexes2 != null) {
                     for (Integer index2 : indexes2) {
-
-                        RightNode node2 = rightNodes.get(index2);
-                        float cp = gFlow.calcNetCost(idx1, index2.intValue());
-                        long lp = (long) Math.ceil(cp / eps);
-                        long lTot = l1 + lp;
-                        long lOld = node2.getKey();
-                        if ((lTot < lambda) && (lTot < lOld)) {
-                            node2.pathPredecessor = node1;
-                            if (lOld == Long.MAX_VALUE) {
-                                node2.setKey(lTot);
-                                insertIntoHeap(minHeap, node2);
-                            } else {
-                                decreaseKeyInHeap(minHeap, node2, lTot);
-                            }
-                        }
+                        handleRight(minHeap, gFlow, node1, index2, 
+                            rightNodes, lambda, eps);                        
                     }
                 }
+                // if there's a source link
+                if (rF.getBackwardLinksSourceRM().contains(index1)) {
+                    // insert a copy of the source node
+                    SourceNode sNode2 = sourceNode.copy();
+                    handleSource(minHeap, gFlow, node1, sNode2, 
+                        lambda, eps);
+                }
             } else {
+                // node1 is a RighNode
                 Integer index2 = rF.getBackwardLinksRM().get(index1);
                 if (index2 != null) {
-                    LeftNode node2 = leftNodes.get(index2);
-                    float cp = gFlow.calcNetCost(index2.intValue(), idx1);
-                    long lp = 1 - (long) Math.ceil(cp / eps);
-                    long lTot = l1 + lp;
-                    long lOld = node2.getKey();
-                    if ((lTot < lambda) && (lTot < lOld)) {
-                        node2.pathPredecessor = node1;
-                        if (lOld == Long.MAX_VALUE) {
-                            node2.setKey(lTot);
-                            insertIntoHeap(minHeap, node2);
-                        } else {
-                            decreaseKeyInHeap(minHeap, node2, lTot);
-                        }
-                    }
+                    handleLeft(minHeap, gFlow, node1, index2, 
+                       leftNodes, lambda, eps);                     
+                }
+                // if there is a sink link
+                if (rF.getForwardLinksSinkRM().contains(index1)) {
+                    // insert a copy of the sink node
+                    SinkNode sNode2 = sinkNode.copy();
+                    handleSink(minHeap, gFlow, node1, sNode2, 
+                        lambda, eps);
                 }
             }
                 
@@ -1229,5 +1228,111 @@ Matchings in G are integral flows in N_G
                 j++;
             }
         }            
+    }
+    
+    private void handleLeft(DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, PathNode node1,
+        Integer index2, Map<Integer, LeftNode> leftNodes,
+        int lambda, float eps) {
+    
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = index2.intValue();
+        
+        LeftNode node2 = leftNodes.get(index2);
+        float cp;
+        if (node1 instanceof SourceNode) {
+            cp = gFlow.calcSourceNetCost(idx2);
+        } else {
+            cp = gFlow.calcNetCost(index2.intValue(), idx1);
+        }
+        long lp = 1 - (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
+    }
+    
+    private void handleRight(DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, PathNode node1,
+        Integer index2, Map<Integer, RightNode> rightNodes,
+        int lambda, float eps) {
+        
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = index2.intValue();
+        
+        RightNode node2 = rightNodes.get(index2);
+        float cp;
+        if (node1 instanceof SinkNode) {
+            cp = gFlow.calcSinkNetCost(idx2);
+        } else {
+            cp = gFlow.calcNetCost(idx1, idx2);
+        }
+        long lp = (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
+    }
+    
+    private void handleSource(DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, PathNode node1,
+        SourceNode node2, int lambda, float eps) {
+        
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = ((Integer)node2.getData()).intValue();
+
+        float cp = gFlow.calcSourceNetCost(idx1);
+        long lp = (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
+    }
+    
+    private void handleSink(DoubleLinkedCircularList[] minHeap,
+        FlowNetwork gFlow, PathNode node1,
+        SinkNode node2, int lambda, float eps) {
+        
+        long l1 = node1.getKey();
+        int idx1 = ((Integer)node1.getData()).intValue();
+        int idx2 = ((Integer)node2.getData()).intValue();
+
+        float cp = gFlow.calcSinkNetCost(idx1);
+        long lp = (long) Math.ceil(cp / eps);
+        long lTot = l1 + lp;
+        long lOld = node2.getKey();
+        if ((lTot < lambda) && (lTot < lOld)) {
+            node2.pathPredecessor = node1;
+            if (lOld == Long.MAX_VALUE) {
+                node2.setKey(lTot);
+                insertIntoHeap(minHeap, node2);
+            } else {
+                decreaseKeyInHeap(minHeap, node2, lTot);
+            }
+        }
     }
 }

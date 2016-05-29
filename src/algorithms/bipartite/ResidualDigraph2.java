@@ -39,32 +39,62 @@ public class ResidualDigraph2 {
     private final int nRight;
 
     /**
-     * links X to Y (that is, left to right). These are "idle" arcs, f=0, in the
-     * flow network N_G. They correspond to "unmarried" in the matched M graph.
+     * links X to Y (that is, left to right). These are "idle" 
+     * arcs, f=0, in the flow network N_G. They correspond to 
+     * "unmarried" in the matched M graph.
      */
     private Map<Integer, Set<Integer>> forwardLinksRM
         = new HashMap<Integer, Set<Integer>>();
 
     /**
-     * links Y to X (that is, right to left). These are "saturated" arcs, f=1,
-     * in the flow network N_G. They correspond to "married" in the matched M
-     * graph.
+     * links Y to X (that is, right to left). These are "saturated" 
+     * arcs, f=1, in the flow network N_G. They correspond to "married" 
+     * in the matched M graph.
      */
     private Map<Integer, Integer> backwardLinksRM
         = new HashMap<Integer, Integer>();
 
+    /**
+     * source to Left links are represented by this
+     * set of Left indexes.  These are "saturated" 
+     * Left vertexes at initialization from being
+     * connected to a matched node.
+     */
+    private Set<Integer> forwardLinksSourceRM =
+        new HashSet<Integer>();
+    
+    /**
+     * Left to source links are represented by this set of
+     * Left vertexes.  These are "idle" Left vertexes.
+     */
+    private Set<Integer> backwardLinksSourceRM =
+        new HashSet<Integer>();
+    
+    /**
+     * Right to sink links are represented by this set of
+     * right vertexes.  These are "saturated" Right vertexes
+     * at initialization, from being connected to a matched node.
+     */
+    private Set<Integer> forwardLinksSinkRM =
+        new HashSet<Integer>();
+    
+    /**
+     * sink to Right links are represented by this set of
+     * Right vertexes.  These are "idle" Right vertexes.
+     */
+    private Set<Integer> backwardLinksSinkRM =
+        new HashSet<Integer>();
+    
     public ResidualDigraph2(FlowNetwork gFlow) {
     
         this.nLeft = gFlow.getNLeft();
         this.nRight = gFlow.getNRight();
         this.sourceNode = gFlow.getSourceNode();
         this.sinkNode = gFlow.getSinkNode();
-        
-        // this includes source and sink node arcs too
-        
+       
         for (Map.Entry<Integer, Set<Integer>> entry : 
             gFlow.getForwardArcs().entrySet()) {
-            
+          
             Integer index1 = entry.getKey();
             
             for (Integer index2 : entry.getValue()) {
@@ -86,43 +116,31 @@ public class ResidualDigraph2 {
             }
         }
         
+        // see Figure 7.2 pg 49
+        
+        for (Integer xNode : gFlow.getSourceForwardArcs()) {
+            float unitFlow = gFlow.getFlow(sourceNode, xNode.intValue());                
+            if (unitFlow == 0) {
+                // idle
+                backwardLinksSourceRM.add(xNode);
+            } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                // saturated
+                forwardLinksSourceRM.add(xNode);
+            }
+        }
+
+        for (Integer yNode : gFlow.getSinkForwardArcs()) {
+            float unitFlow = gFlow.getFlow(yNode.intValue(), sinkNode);                
+            if (unitFlow == 0) {
+                // idle
+                backwardLinksSinkRM.add(yNode);
+            } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                // saturated
+                forwardLinksSinkRM.add(yNode);
+            }
+        }
     }
-    
-    /*
-    augmenting paths start at a surplus node and end at a 
-    deficit node, and may visit source or sink nodes
-    in between.  no node can be visited more than once 
-    in an augmenting path.
-       - augmenting path involves reversing link idle or
-         saturated status.
-    
-    lengths of links:
-       - quantization into units of eps is used for net cost:
-         for a forward link: lp(v->w) = Math.ceil(cp(v, w)/eps)
-         for a backward link: lp(w->v) = 1 - Math.ceil(cp(v, w)/eps)
-         both results are >= 0
-    
-    raising prices:
-       during main loop in refine, raising by eps the
-         price gFlow.pRight at a right node in gFlow
-         is complemented by 
-           lowering by a value of 1 the length of any link
-           in the residul digraph that leaves v and
-           raising by a value of 1 the length of any link
-           that enters v.
-           (can see that is a + or - to cp in section above
-            which would presumably be applied to the 
-            flow network f??  looks like the authors only
-            apply the change dynamically?)
-          proof 7-6 on pg 52...
-       so looks like link lenths might need to be a variable
-       here
-    
-       need to add assert I5 on pg 52 to this class
-    
-       example of price changes on pg 53 and 54
-    */
-    
+  
     /**
      * @return the forwardLinksRM
      */
@@ -149,5 +167,39 @@ public class ResidualDigraph2 {
      */
     public int getSinkNode() {
         return sinkNode;
+    }
+    
+    /**
+     * the arcs that are initialized from being connected
+     * to matched nodes, that is Left nodes that
+     * are in "saturated" arcs.
+     * @return the forwardLinksSourceRM
+     */
+    public Set<Integer> getForwardLinksSourceRM() {
+        return forwardLinksSourceRM;
+    }
+
+    /**
+     * @return the backwardLinksSourceRM
+     */
+    public Set<Integer> getBackwardLinksSourceRM() {
+        return backwardLinksSourceRM;
+    }
+
+    /**
+     * the arcs that are initialized from being connected
+     * to matched nodes, that is Right nodes that
+     * are in "saturated" arcs.
+     * @return the forwardLinksSinkRM
+     */
+    public Set<Integer> getForwardLinksSinkRM() {
+        return forwardLinksSinkRM;
+    }
+
+    /**
+     * @return the backwardLinksSinkRM
+     */
+    public Set<Integer> getBackwardLinksSinkRM() {
+        return backwardLinksSinkRM;
     }
 }
