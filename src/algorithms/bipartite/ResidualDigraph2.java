@@ -136,4 +136,18 @@ public class ResidualDigraph2 {
     public Map<Integer, Integer> getBackwardLinksRM() {
         return backwardLinksRM;
     }
+
+    /**
+     * @return the sourceNode
+     */
+    public int getSourceNode() {
+        return sourceNode;
+    }
+
+    /**
+     * @return the sinkNode
+     */
+    public int getSinkNode() {
+        return sinkNode;
+    }
 }

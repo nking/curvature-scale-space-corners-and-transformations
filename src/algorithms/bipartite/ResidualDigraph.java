@@ -1,5 +1,6 @@
 package algorithms.bipartite;
 
+import algorithms.util.PairInt;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -37,6 +38,71 @@ public class ResidualDigraph {
     private Map<Integer, Integer> backwardLinksRM
         = new HashMap<Integer, Integer>();
 
+    public ResidualDigraph(Graph g, Map<Integer, Integer> m) {                
+        
+        for (int i = 0; i < g.getNLeft(); ++i) {
+           getLeftRM().add(Integer.valueOf(i));
+        }
+        
+        for (int i = 0; i < g.getNRight(); ++i) {
+            getRightRM().add(Integer.valueOf(i));
+        }
+        
+        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
+            
+            PairInt p = entry.getKey();
+            
+            Integer x = Integer.valueOf(p.getX());
+            Integer y = Integer.valueOf(p.getY());
+            
+            Set<Integer> ys = getForwardLinksRM().get(x);
+            if (ys == null) {
+                ys = new HashSet<Integer>();
+                getForwardLinksRM().put(x, ys);
+            }
+            
+            ys.add(y);
+        }
+        
+        for (Entry<Integer, Integer> entry : m.entrySet()) {
+            Integer x = entry.getKey();
+            Integer y = entry.getValue();
+            
+            if (getForwardLinksRM().containsKey(x)) {
+                getForwardLinksRM().get(x).remove(y);
+            }
+            
+            getBackwardLinksRM().put(y, x);
+        }
+    }
+            
+    public ResidualDigraph(GraphWithoutWeights g) {                
+    
+        for (int i = 0; i < g.getNLeft(); ++i) {
+           getLeftRM().add(Integer.valueOf(i));
+        }
+        
+        for (int i = 0; i < g.getNRight(); ++i) {
+            getRightRM().add(Integer.valueOf(i));
+        }
+        
+        for (Entry<Integer, Set<Integer>> entry : 
+            g.getAdjacencyMap().entrySet()) {
+            
+            Integer uIndex = entry.getKey();
+            
+            Set<Integer> vIndexes = entry.getValue();
+            for (Integer v : vIndexes) {            
+                Set<Integer> ys = getForwardLinksRM().get(uIndex);
+                if (ys == null) {
+                    ys = new HashSet<Integer>();
+                    getForwardLinksRM().put(uIndex, ys);
+                }
+                ys.add(v);
+            }
+        }
+    }
+ 
     /**
      * @return the leftRM
      */
@@ -77,4 +143,5 @@ public class ResidualDigraph {
         
         return m;
     }
+
 }

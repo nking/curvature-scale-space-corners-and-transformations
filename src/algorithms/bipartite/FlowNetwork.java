@@ -1,6 +1,7 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,11 +159,27 @@ public class FlowNetwork {
            y to the sink node -| and of cost zero: 
            c(y, -|) := 0.            
         */
+        Integer sourceIndex = Integer.valueOf(sourceNode);
+        for (int i = 0; i < nLeft; ++i) {
+            Integer index2 = Integer.valueOf(i);
+            Set<Integer> indexes2 = forwardArcs.get(sourceIndex);
+            if (indexes2 == null) {
+                indexes2 = new HashSet<Integer>();
+                forwardArcs.put(sourceIndex, indexes2);
+            }
+            indexes2.add(index2);
+        }
+        Integer sinkIndex = Integer.valueOf(sinkNode);
+        for (int i = 0; i < nLeft; ++i) {
+            Integer index1 = Integer.valueOf(i);
+            Set<Integer> indexes2 = forwardArcs.get(index1);
+            if (indexes2 == null) {
+                indexes2 = new HashSet<Integer>();
+                forwardArcs.put(index1, indexes2);
+            }
+            indexes2.add(sinkIndex);
+        }
         
-        /*
-        TODO: need to store the left and right stubs that
-           are the result of an iteration of method refine(...)
-        */
     }
     
     public int getMaxC() {
@@ -273,6 +290,35 @@ public class FlowNetwork {
         double flow = calcTotalFlow();
         
         return (Math.abs(flow - s) < 1);
+    }
+    
+    /**
+     * assert that flux f on NG is a flow of value |f|=s
+     * @param s
+     * @return 
+     */
+    boolean assertFlowValueIncludingSrcSnk(int s) {
+                
+        double flow = 0;
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : forwardArcs.entrySet()) {
+            Integer index1 = entry.getKey();
+            for (Integer index2 : entry.getValue()) {
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                flow += unitFlow;
+            }
+        }
+        
+        // calculate the number of source nodes == number of
+        // deficit nodes
+        List<Integer> surplus = new ArrayList<Integer>();        
+        List<Integer> deficit = new ArrayList<Integer>();
+        getMatchedLeftRight(surplus, deficit);
+        assert(surplus.size() == deficit.size());
+        int h = surplus.size();
+                
+        return (Math.abs(flow - (s - h)) < 1);
     }
 
     /**

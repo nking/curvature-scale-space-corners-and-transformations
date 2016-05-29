@@ -206,7 +206,7 @@ public class MinCostUnbalancedAssignment {
 
     /**
      * 
-     * @param g bipartite graph with integral weights
+     * @param g bipartite graph with integral weights.
      * @return 
      */
     public Map<Integer, Integer> flowAssign(Graph g) {
@@ -324,21 +324,46 @@ public class MinCostUnbalancedAssignment {
                 terminatingDeficitIdx);
          
             debug(forest);
-            
-      if (true) {
-          throw new UnsupportedOperationException("not yet implemented");
-      }
-                        
+                      
             //raise prices at forest nodes by multiples of ε, 
             //shortening the discovered augmenting path to length 0;
-       //     raisePrices2(gFlow, rF, forest, terminatingDeficitIdx,
-       //         eps);
+            /*
+            Prop 7-5. In a round of price increases in the main loop 
+            of Refine, raising the price pd(v) 
+            at some node v in NG (only forest nodes?)
+            by eps lowers by 1 the length of any link in the 
+            residual digraph Rf that leaves v and raises by 1 
+            the length of any link that enters v.
+              - If our invariants are preserved, 
+              all of the links along that path must end up of 
+              length 0, meaning that all of the underlying arcs 
+              are eps-tight. As for our invariants, it’s clear 
+              that I1' and I2 continue to hold. 
+              But establishing the other three invariants takes 
+              more work.               
+            */
+
+            // array i[v] for all nodes in V (==left nodes)
+            // if in forest: i(v) := l(termDefIdx) - l(v), else i(v)=0
+            int[] incr = new int[gFlow.getNLeft()];
+               
+            // then for all nodes v: pd'(v) = pd(v) + i(v)*eps, 
+            //==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
+if (true)
+        throw new UnsupportedOperationException("Not supported yet."); 
             
             /*
             assert from pg 52 
                    I1', I2, I3, I4, on FlowNetwork
                    and I5 on ResidualDigraph2
             */
+            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
+            assert(gFlow.integralFlowIsEpsProper(eps));
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+            // assert I5: Rf has no cycles of length zero.
+            
+            
             
             /*
             find a maximal set P of length-0 augmenting paths 
@@ -348,7 +373,6 @@ public class MinCostUnbalancedAssignment {
             */
         }
        
-        throw new UnsupportedOperationException("not yet implemented");
     /*    
         lengths of links:
        - quantization into units of eps is used for net cost:
@@ -442,6 +466,13 @@ public class MinCostUnbalancedAssignment {
             node.setData(index);
             leftNodes.put(index, node);
         }
+        
+        if (true)
+            throw new UnsupportedOperationException(
+            "not yet implemented");
+        
+    //    TODO: need to handle init of source and
+    //        sink nodes here
                   
         for (Integer sigma : surplus) {
 
@@ -515,6 +546,7 @@ public class MinCostUnbalancedAssignment {
             if (d.contains(index1) && !node1IsLeft) {
                 break;
             }
+            
         } while (true);
         
         /*
@@ -547,7 +579,7 @@ public class MinCostUnbalancedAssignment {
         if (false) {             
             //temporarily, replacing w/ O(m * sqrt(n))
             HopcroftKarp hk = new HopcroftKarp();
-            int[] matched = hk.hopcroftKarpV0(createUnweightedGraph(g));
+            int[] matched = hk.hopcroftKarpV0(new GraphWithoutWeights(g));
             log.info("matched=" + Arrays.toString(matched));
             for (int i = 0; i < matched.length; ++i) {
                 int v = matched[i];
@@ -558,7 +590,7 @@ public class MinCostUnbalancedAssignment {
             return m;
         }
                 
-        ResidualDigraph rM = createResidualGraph(g, m);
+        ResidualDigraph rM = new ResidualDigraph(g, m);
                 
         return hopcroftKarp(g, rM, s);
     }
@@ -731,7 +763,7 @@ public class MinCostUnbalancedAssignment {
                 return m;
             }
             
-            rM = createResidualGraph(g, m);
+            rM = new ResidualDigraph(g, m);
                         
             assert (prevMSize < m.size());
             prevMSize = m.size();
@@ -1056,77 +1088,6 @@ Matchings in G are integral flows in N_G
         return true;
     }
     
-    protected ResidualDigraph createResidualGraph(Graph g, 
-        Map<Integer, Integer> m) {
-                
-        ResidualDigraph rM = new ResidualDigraph();
-        
-        for (int i = 0; i < g.getNLeft(); ++i) {
-            rM.getLeftRM().add(Integer.valueOf(i));
-        }
-        
-        for (int i = 0; i < g.getNRight(); ++i) {
-            rM.getRightRM().add(Integer.valueOf(i));
-        }
-        
-        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
-            
-            PairInt p = entry.getKey();
-            
-            // presumably, edge weight of 0 is "not connected"
-            if (entry.getValue().intValue() == 0) {
-                continue;
-            }
-            
-            Integer x = Integer.valueOf(p.getX());
-            Integer y = Integer.valueOf(p.getY());
-            
-            Set<Integer> ys = rM.getForwardLinksRM().get(x);
-            if (ys == null) {
-                ys = new HashSet<Integer>();
-                rM.getForwardLinksRM().put(x, ys);
-            }
-            
-            ys.add(y);
-        }
-        
-        for (Entry<Integer, Integer> entry : m.entrySet()) {
-            Integer x = entry.getKey();
-            Integer y = entry.getValue();
-            
-            if (rM.getForwardLinksRM().containsKey(x)) {
-                rM.getForwardLinksRM().get(x).remove(y);
-            }
-            
-            rM.getBackwardLinksRM().put(y, x);
-        }
-
-        return rM;
-    }
-        
-    private GraphWithoutWeights createUnweightedGraph(Graph g) {
-
-        GraphWithoutWeights g2 = new GraphWithoutWeights(
-            g.getNLeft(), g.getNRight());
-        Map<Integer, Set<Integer>> adjMap = g2.getAdjacencyMap();
-        
-        for (Entry<PairInt, Integer> entry : 
-            g.getEdgeWeights().entrySet()) {
-            
-            Integer index1 = entry.getKey().getX();
-            Integer index2 = entry.getKey().getY();
-            
-            Set<Integer> indexes2 = adjMap.get(index1);
-            if (indexes2 == null) {
-                indexes2 = new HashSet<Integer>();
-                adjMap.put(index1, indexes2);
-            }
-            indexes2.add(index2);
-        }
-        
-        return g2;
-    }
-    
     private void swapLinkExistence(ResidualDigraph rM, 
         Integer leftIndex, Integer rightIndex) {
         
@@ -1222,77 +1183,6 @@ Matchings in G are integral flows in N_G
         node2.setKey(lTot);
         
         insertIntoHeap(minHeap, node2);
-    }
-
-    private void raisePrices2(FlowNetwork gFlow, ResidualDigraph2 rF,
-        DoubleLinkedCircularList[] forest, 
-        int[] terminatingDeficitIdx, float eps) {
-        
-        /*
-        Prop 7-5. In a round of price increases in the main loop 
-        of Refine, raising the price pd(v) 
-        at some node v in NG (only forest nodes?)
-        by eps lowers by 1 the length of any link in the 
-        residual digraph Rf that leaves v and raises by 1 
-        the length of any link that enters v.
-           -  For each node v in the shortest-path forest, 
-              set the new (dispose) price pd'(v)
-              pd'(v) := p(d) + (l(termDefIdx) - l(v))*eps
-              where termDefIdx is the deficit whose discovery 
-              halted the growth of the shortest-path forest. 
-              (remember that path lengths are multiples of eps).
-             
-            - Let sigma be the surplus at the root of the tree 
-              that termDefIdx joins. 
-              We have pd'(sigma) = pd(sigma) + l(termDefIdx)*eps, 
-              but pd'(termDefIdx) = pd(termDefIdx). 
-              So Prop 7-5 tells us that our price increases 
-              shorten the path from sigma to termDefIdx by 
-                 l(termDefIdx) length units. 
-              Since l(termDefIdx) was the length of that path before 
-              our price increases, its length after the increases 
-              will be zero. 
-              - If our invariants are preserved, 
-              all of the links along that path must end up of 
-              length 0, meaning that all of the underlying arcs 
-              are eps-tight. As for our invariants, it’s clear 
-              that I1' and I2 continue to hold. 
-              But establishing the other three invariants takes 
-              more work.
-               
-            -- 
-        */
-
-        /*
-        For each node v in the network NG,
-           define i(v) to be the multiple of eps by which 
-           we raise the price pd(v). 
-           -- So, for nodes v in the forest: 
-               i(v) := l(termDefIdx) - l(v), while, 
-           -- for nodes v not in the forest:
-               i(v) := 0. 
-           ** We then have the repricing formula 
-               pd'(v) = pd(v) + i(v)*eps, for all nodes v. 
-
-           Using this repricing formula, we can express 
-           the impact of our repricings on an arc
-           v->w without needing to know whether or not the 
-           nodes v and w lie in the forest. We have
-               cp(v, w) = c(v, w) - pd(v) + pd(w)
-               cp'(v, w) = c(v, w) - pd'(v) + pd'(w)
-             ==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
-        -- after price incr,
-               assert from pg 52 
-               I1', I2, I3, I4, on FlowNetwork
-               and I5 on ResidualDigraph2
-        */
-        // array i[v] for all nodes in V (==left nodes)
-        int[] incr = new int[gFlow.getNLeft()];
-        
-        // extract nodes in forest
-        // i(v) := l(termDefIdx) - l(v)
-        
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     private void debug(DoubleLinkedCircularList[] forest) {

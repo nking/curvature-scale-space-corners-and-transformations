@@ -42,9 +42,11 @@ public class HopcroftKarpTest extends TestCase {
         MinCostUnbalancedAssignment bipartite2 = 
             new MinCostUnbalancedAssignment();
         
-        ResidualDigraph rM = createResidualDigraph(g);
+        int s = Math.min(g.getNLeft(), g.getNRight());
+        
+        ResidualDigraph rM = new ResidualDigraph(g);
         DoubleLinkedCircularList[] forest = 
-            bipartite2.buildForest(rM);
+            bipartite2.buildForest(rM, s);
         
         int k = 0;
         for (DoubleLinkedCircularList list : forest) {
@@ -63,40 +65,6 @@ public class HopcroftKarpTest extends TestCase {
             }
             ++k;
         }
-    }
-    
-    private ResidualDigraph createResidualDigraph(
-        GraphWithoutWeights g) {
-        
-        ResidualDigraph rM = new ResidualDigraph();
-        
-        for (int i = 0; i < g.getNLeft(); ++i) {
-            Integer x = Integer.valueOf(i);
-            rM.getLeftRM().add(x);
-        }
-        
-        for (int i = 0; i < g.getNRight(); ++i) {
-            Integer y = Integer.valueOf(i);
-            rM.getRightRM().add(y);
-        }
-        
-        for (Entry<Integer, Set<Integer>> entry : 
-            g.getAdjacencyMap().entrySet()) {
-            
-            Integer uIndex = entry.getKey();
-            
-            Set<Integer> vIndexes = entry.getValue();
-            for (Integer v : vIndexes) {            
-                Set<Integer> ys = rM.getForwardLinksRM().get(uIndex);
-                if (ys == null) {
-                    ys = new HashSet<Integer>();
-                    rM.getForwardLinksRM().put(uIndex, ys);
-                }
-                ys.add(v);
-            }
-        }
-        
-        return rM;
     }
     
     private GraphWithoutWeights getTestGraph() {
