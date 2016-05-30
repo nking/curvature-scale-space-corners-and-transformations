@@ -500,7 +500,7 @@
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
         <junit fork="true" filtertrace="on" printsummary="yes" 
-            haltonerror="true" haltonfailure="true" showoutput="true">
+            haltonerror="true" haltonfailure="true" showoutput="false">
             
             <assertions enablesystemassertions="true">
                 <enable/>
