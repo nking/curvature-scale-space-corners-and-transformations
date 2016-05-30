@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -339,8 +340,11 @@ public class MinCostUnbalancedAssignment {
         // added to.
         int[] terminatingDeficitIdx = new int[1];
         int h = 2;
+        int nHIter = 0;
         while (h > 0) {
           
+            log.info("nHIter=" + nHIter);
+            
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
 
             // build a shortest-path forest from the current surpluses S, 
@@ -353,36 +357,77 @@ public class MinCostUnbalancedAssignment {
             log.info("l(termIndex)=" + terminatingDeficitIdx[0]);
          
             debug(forest);
-            
-            //raise prices at forest nodes by multiples of ε, 
-            //shortening the discovered augmenting path to length 0;
-            /*
-            Prop 7-5. In a round of price increases in the main loop 
-            of Refine, raising the price pd(v) 
-            at some node v in NG (only forest nodes?)
-            by eps lowers by 1 the length of any link in the 
-            residual digraph Rf that leaves v and raises by 1 
-            the length of any link that enters v.
-              - If our invariants are preserved, 
-              all of the links along that path must end up of 
-              length 0, meaning that all of the underlying arcs 
-              are eps-tight. As for our invariants, it’s clear 
-              that I1' and I2 continue to hold. 
-              But establishing the other three invariants takes 
-              more work.               
-            */
-
-            // array i[v] for all nodes in V (==left nodes)
-            // if in forest: i(v) := l(termDefIdx) - l(v), else i(v)=0
-            int[] incr = new int[gFlow.getNLeft()];
-            
+           
+            // raise prices at forest nodes by multiples of ε, 
+            // shortening the discovered augmenting path to length 0;
             
             // then for all nodes v: pd'(v) = pd(v) + i(v)*eps, 
-            //==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
+            // ==> cp'(v, w) = cp(v, w) + (i(w) - i(v))*eps
+            // ==> raising the price pd(v) at *some* node v in NG 
+            //     by eps 
+            //     lowers by 1 the length of any link in the 
+            //     residual digraph Rf that leaves v 
+            //     and raises by 1 the length of any link that enters v.
+            // ==> ?? ignoring backwardLinks w->v???
             
-        if (true) 
-          throw new UnsupportedOperationException("not yet implemented");
+            // NOTE: w.r.t. v nodes, I'm assuming that they are only
+            //       those in the forest or connected to it,
+            //       because if not, all combinations of links
+            //       would need to be calculated which would defeat
+            //       one of the main points of buildForest2 which
+            //       stops the calculations early upon first deficit node.
             
+            // --- for price and path length changes:
+            /*
+            could traverse forest and make maps
+                key    value
+                v->w   list of locations as pairints of forest/branch
+                w->v       same
+                source->v  same
+                w->sink    same
+            then traverse forest making price changes in FlowNetwork
+                and making link length changes to the
+                forest nodes by looking up where they
+                are in the new maps.
+                the instructions dont say, but should 
+                any changes be applied to nodes further
+                down a branch?
+            then from the forest, make an adjacency list
+                (or lists to include source and sink?)
+                of the links with lengths = 0;
+            */
+      
+            // traverse trees in the forest
+            for (int i = 0; i < forest.length; ++i) {
+                DoubleLinkedCircularList tree = forest[i];
+                if (tree == null) {
+                    continue;
+                }
+                long n = tree.getNumberOfNodes();
+                HeapNode node = tree.getSentinel();
+                int j = 0;
+                while (j < n) {
+                    node = node.getRight();                    
+                    List<PathNode> path = extractNodes(node);
+                    for (int ii = 0; ii < (path.size() - 1); ++ii) {
+                        PathNode node1 = path.get(ii);
+                        PathNode node2 = path.get(ii + 1);
+                        // index1 is the left index of arc
+                        // index2 is the right index of the arc
+                        Integer index1, index2;
+                        if (node1 instanceof LeftNode) {
+                            index1 = (Integer)node1.getData();
+                            index2 = (Integer)node2.getData();
+                        } else {
+                            index1 = (Integer)node2.getData();
+                            index2 = (Integer)node1.getData();
+                        }
+                        // process edge
+                    }                    
+                    j++;
+                }
+            }
+                    
             /*
             assert from pg 52 
                    I1', I2, I3, I4, on FlowNetwork
@@ -395,21 +440,29 @@ public class MinCostUnbalancedAssignment {
             // assert I5: Rf has no cycles of length zero.
             // such a cycle should be present in the forest if so
             
+            // --- Sect 8.3, create maximal set of compatible augmenting paths
             /*
-            find a maximal set P of length-0 augmenting paths 
-               that are compatible, as defined in Section 8.3;
+            then apply pseudocode from pg 62 , Figure 8.2
+               with input = length 0 adj list, the surplus
+               list and the deficit list
+               to create the maximal set of compatible paths.
+            
+               state that needs to be tracked for a vertex:
+                - visited (== marked)
+                - identity (== Left or Right or Source or Sink)
+            */ 
+            
+            /*
             augment f along each of the paths in P in turn, thereby 
                reducing |S| = |D| = h by |P|;
-            */
+            */            
+            
+        if (true) 
+          throw new UnsupportedOperationException("not yet implemented");
+            
+            ++nHIter;
         }
-       
-    /*    
-        lengths of links:
-       - quantization into units of eps is used for net cost:
-         for a forward link: lp(v->w) = Math.ceil(cp(v, w)/eps)
-         for a backward link: lp(w->v) = 1 - Math.ceil(cp(v, w)/eps)
-         both results are >= 0        
-    */
+      
     }
     
     /**
@@ -481,6 +534,8 @@ public class MinCostUnbalancedAssignment {
             PathNode node1 = extractMinFromHeap(minHeap);
             Integer index1 = (Integer)node1.getData();
             int idx1 = index1.intValue();
+         
+            log.info("extractMin=" + node1.toString());
             
             boolean node1IsLeft = (node1 instanceof LeftNode);
             boolean nodeIsSource = (node1 instanceof SourceNode);
@@ -502,13 +557,15 @@ public class MinCostUnbalancedAssignment {
                 }
             } else if (node1IsLeft) {
                 // scan the bipartite arcs forward
-                Set<Integer> indexes2 = rF.getForwardLinksRM().get(index1);
+                Set<Integer> indexes2 = rF.getForwardLinksRM().get(
+                    index1);
                 if (indexes2 != null) {
                     for (Integer index2 : indexes2) {
                         handleRight(minHeap, gFlow, node1, index2, 
                             rightNodes, lambda, eps);                        
                     }
                 }
+           
                 // if there's a source link
                 if (rF.getBackwardLinksSourceRM().contains(index1)) {
                     // insert a copy of the source node
@@ -746,7 +803,7 @@ public class MinCostUnbalancedAssignment {
             }
             Set<Integer> m2R = new HashSet<Integer>(m2.values());
             // if m has a match that does not conflict with m2,
-            // add it to m2
+            // add it to m2 (== vertex disjoint)
             for (Entry<Integer, Integer> entry : m.entrySet()) {
                 Integer key = entry.getKey();
                 Integer value = entry.getValue();
@@ -1144,12 +1201,7 @@ Matchings in G are integral flows in N_G
     
     private void insertIntoHeap(DoubleLinkedCircularList[] minHeap, 
         PathNode node) {
-        
-        // NOTE: a buicket in the heap may already have a
-        // node in it, so linked lists are used.
-        // a doubly linked list is chosen so that the
-        // list can be read as FIFO
-        
+         
         int key = (int)node.getKey();
         
         DoubleLinkedCircularList bucket = minHeap[key];
@@ -1157,6 +1209,8 @@ Matchings in G are integral flows in N_G
             bucket = new DoubleLinkedCircularList();
             minHeap[key] = bucket;
         }
+        
+        log.info("insert into heap=" + node);
         
         bucket.insert(node);        
     }
@@ -1178,6 +1232,8 @@ Matchings in G are integral flows in N_G
     private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
         minHeap, PathNode node2, long lTot) {
 
+        log.info("decreaseKey=" + node2);
+        
         int prevKey = (int)node2.getKey();
         minHeap[prevKey].remove(node2);
         
@@ -1188,8 +1244,6 @@ Matchings in G are integral flows in N_G
 
     private void debug(DoubleLinkedCircularList[] forest) {
         
-        Set<PairInt> augmented = new HashSet<PairInt>();
-
         for (int i = 0; i < forest.length; ++i) {
 
             DoubleLinkedCircularList tree = forest[i];
@@ -1297,7 +1351,7 @@ Matchings in G are integral flows in N_G
         float cp = gFlow.calcNetCost(idx1, idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
-        long lOld = node2.getKey();
+        long lOld = node2.getKey();     
         if ((lTot < lambda) && (lTot < lOld)) {
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
