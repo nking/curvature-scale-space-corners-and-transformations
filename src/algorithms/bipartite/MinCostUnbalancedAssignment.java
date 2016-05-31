@@ -258,35 +258,26 @@ public class MinCostUnbalancedAssignment {
         // pg 44
         // since all costs are integers, can set eps < 1/6s
         // where s is size of m
-        // NOTE: pg 32 suggests eps=maxC
         float eps = 1.f/(6.f * (float)s);
-        //     this is possibly smaller than maxC, so presumably
-        //     the loop conditions below combined with
-        //     the runtime complexity suggest something
-        //     more like eps = epsBar * q^(nIter)
+        // looking ahead at link lengths, one needs eps <= 0.5
+        // in order to distinguish between the smallest
+        // difference of integer costs, which is 1.
         
-        // eps_bar = q^(e_bar) > maxC
-        //           e_bar*math.log(q) > math.log(maxC)
-        float eBar = 1.f + (float)Math.floor(Math.log(
-            gFlow.getMaxC()/Math.log(q)));
-        //e_bar = 1 + log_q(C)
-        //eps_bar = q^(e_bar)
-        float epsBar = (float)Math.pow(eBar, q);
+        // the loop conitional requires the initial eps
+        // to be larger than epsBar.
+        // TODO: calculate eps_bar correctly...
+        // until then, just using a counter and limit
+        // of the rough expected runtime
+        int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
         
-        if (eps < gFlow.getMaxC()) {
-            double ni = Math.log(s * gFlow.getMaxC())/Math.log(q);
-            eps = (float)(epsBar * Math.pow(q, ni));
-        }
-        log.info("eps=" + eps + " epsBar=" + epsBar + " maxC=" + 
+        log.info("eps=" + eps + " rIter=" + rIter + " maxC=" + 
             gFlow.getMaxC());
-        
-        assert(eps > gFlow.getMaxC());
-       
+               
         // all nodes V in gFlow have prices = 0
         
         int nIterR = 0;
                 
-        while (eps > epsBar) {
+        while (nIterR < rIter) {
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
@@ -623,7 +614,7 @@ public class MinCostUnbalancedAssignment {
             //Let Rf0 denote that subgraph of the residual digraph 
             //formed by links of length zero.
            
-            //TODO: paused here
+            
             
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             //

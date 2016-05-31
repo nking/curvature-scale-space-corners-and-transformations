@@ -68,8 +68,8 @@ public class MinCostUnbalancedAssignment2Test extends TestCase {
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
                 
-        weights.put(new PairInt(0, 0), Integer.valueOf(1));
-        weights.put(new PairInt(0, 2), Integer.valueOf(1));
+        weights.put(new PairInt(0, 0), Integer.valueOf(2));
+        weights.put(new PairInt(0, 2), Integer.valueOf(3));
         
         weights.put(new PairInt(1, 1), Integer.valueOf(2));
         weights.put(new PairInt(1, 2), Integer.valueOf(1));
@@ -80,8 +80,8 @@ public class MinCostUnbalancedAssignment2Test extends TestCase {
         weights.put(new PairInt(3, 1), Integer.valueOf(2));
         weights.put(new PairInt(3, 4), Integer.valueOf(3));
     
-        weights.put(new PairInt(4, 3), Integer.valueOf(2));
-        weights.put(new PairInt(4, 4), Integer.valueOf(1));
+        weights.put(new PairInt(4, 3), Integer.valueOf(1));
+        weights.put(new PairInt(4, 4), Integer.valueOf(2));
         
         weights.put(new PairInt(5, 3), Integer.valueOf(2));
         
