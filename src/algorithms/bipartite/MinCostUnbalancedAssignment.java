@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
@@ -95,7 +96,10 @@ public class MinCostUnbalancedAssignment {
     
     public static abstract class PathNode extends HeapNode {
         PathNode pathPredecessor = null;
+        // m = 0 is unmarked, m=1 is marked
+        int m = 0;
         public abstract PathNode copy();
+        // id is only used in toString fr debug statements
         String id = "";
         @Override
         public String toString() {
@@ -362,7 +366,6 @@ public class MinCostUnbalancedAssignment {
             //     lowers by 1 the length of any link in the 
             //     residual digraph Rf that leaves v 
             //     and raises by 1 the length of any link that enters v.
-            // ==> ?? ignoring backwardLinks w->v???
             
             // NOTE: w.r.t. v nodes, I'm assuming that they are only
             //       those in the forest or connected to it,
@@ -408,30 +411,25 @@ public class MinCostUnbalancedAssignment {
             
             //Let Rf0 denote that subgraph of the residual digraph 
             //formed by links of length zero.
-            ResidualDigraphZero rF0 = 
-                new ResidualDigraphZero(
-                gFlow.getNLeft(), gFlow.getNRight(),
-                gFlow.getSourceNode(), gFlow.getSinkNode(),
-                forest);
+            List<LinkedList<PathNode>> zeroLengthLinks =
+                extractZeroLengthLinks(forest);
             
             // --- Sect 8.3, create maximal set of compatible augmenting paths
-            //
-            //then apply pseudocode from pg 62 , Figure 8.2
-            //   with input = length 0 adj list, the surplus
-            //   list and the deficit list
-            //   to create the maximal set of compatible paths.
-            //
-            //   state that needs to be tracked for a vertex:
-            //    - visited (== marked)
-            //    - identity (== Left or Right or Source or Sink)
-        
-           
+            List<LinkedList<PathNode>> cPaths =
+                findMaximalSetOfCompatiblePaths(
+                gFlow.getNLeft(), gFlow.getNRight(),
+                gFlow.getSinkNode(), gFlow.getSourceNode(),
+                zeroLengthLinks, surplus, 
+                new HashSet<Integer>(deficit));
+            
+            debug(cPaths);
             
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
+            augmentFlow(gFlow, cPaths);
             
-        if (true)
-          throw new UnsupportedOperationException("not yet implemented");
+            if (true)
+                throw new UnsupportedOperationException("not yet implemented");
             
             ++nHIter;
         }
@@ -1213,6 +1211,21 @@ Matchings in G are integral flows in N_G
         
         insertIntoHeap(minHeap, node2);
     }
+    
+    private void debug(List<LinkedList<PathNode>> cPaths) {
+
+        log.info("cPaths.size=" + cPaths.size());
+        
+        for (int i = 0; i < cPaths.size(); ++i) {
+            StringBuilder sb = new StringBuilder("i=");
+            sb.append(Integer.toString(i)).append(" ");
+            LinkedList<PathNode> path = cPaths.get(i);
+            for (PathNode node : path) {
+                sb.append(node.toString()).append(" ");
+            }
+            log.info(sb.toString());
+        }
+    }
 
     private void debug(DoubleLinkedCircularList[] forest) {
         
@@ -1689,6 +1702,230 @@ Matchings in G are integral flows in N_G
                     node.setKey(key + 1);
                 }
             }
+        }
+    }
+
+    private List<LinkedList<PathNode>>
+        findMaximalSetOfCompatiblePaths(
+            int nLeft, int nRight, int sourceNodeIdx,
+            int sinkNodeIdx,
+            List<LinkedList<PathNode>> pathLinkLists,
+            List<Integer> surplus, Set<Integer> deficit) {
+        
+        //then apply pseudocode from pg 62 , Figure 8.2
+        //   with input = length 0 adj list, the surplus
+        //   list and the deficit list
+        //   to create the maximal set of compatible paths.
+        //
+        //   state that needs to be tracked for a vertex:
+        //    - visited (== marked)
+        //    - identity (== Left or Right or Source or Sink)
+
+        //NOTE: can change to use "link compatible" filter here
+        // instead of this "node compatible" filter
+            
+        List<LeftNode> leftNodes = new ArrayList<LeftNode>();
+        for (int i = 0; i < nLeft; ++i) {
+            LeftNode node = new LeftNode();
+            node.setData(Integer.valueOf(i));
+            leftNodes.add(node);
+        }
+        List<RightNode> rightNodes = new ArrayList<RightNode>();
+        for (int i = 0; i < nRight; ++i) {
+            RightNode node = new RightNode();
+            node.setData(Integer.valueOf(i));
+            rightNodes.add(node);
+        }
+        SinkNode sinkNode = new SinkNode();
+        sinkNode.setData(Integer.valueOf(sinkNodeIdx));
+        
+        SourceNode sourceNode = new SourceNode();
+        sourceNode.setData(Integer.valueOf(sourceNodeIdx));
+        
+        Map<PathNode, Set<PathNode>> pathLinksMap =
+            new HashMap<PathNode, Set<PathNode>>();
+        for (LinkedList<PathNode> link : pathLinkLists) {
+            PathNode node1 = link.pollFirst();
+            PathNode node2 = link.pollFirst();
+            assert(link.isEmpty());
+            // replace node1 and node2 
+            //     with nodes above to have same identity
+            //     and field m
+            int idx1 = ((Integer)node1.getData()).intValue();
+            int idx2 = ((Integer)node2.getData()).intValue();
+            if (node1 instanceof SinkNode) {
+                node1 = sinkNode;
+            } else if (node1 instanceof SourceNode) {
+                node1 = sourceNode;
+            } else if (node1 instanceof LeftNode) {
+                node1 = leftNodes.get(idx1);
+            } else {
+                node1 = rightNodes.get(idx1);
+            }
+            if (node2 instanceof SinkNode) {
+                node2 = sinkNode;
+            } else if (node2 instanceof SourceNode) {
+                node2 = sourceNode;
+            } else if (node2 instanceof LeftNode) {
+                node2 = leftNodes.get(idx2);
+            } else {
+                node2 = rightNodes.get(idx2);
+            }
+            
+            Set<PathNode> values = pathLinksMap.get(node1);
+            if (values == null) {
+                values = new HashSet<PathNode>();
+                pathLinksMap.put(node1, values);
+            }
+            values.add(node2);
+        }
+        
+        List<LinkedList<PathNode>> augPaths 
+            = new ArrayList<LinkedList<PathNode>>();
+        
+        Stack<PathNode> stack = new Stack<PathNode>();
+        LinkedList<Integer> surp = new LinkedList<Integer>(surplus);
+        
+        A:
+        while (!surp.isEmpty()) {
+            Integer x = surp.remove();
+            LeftNode xNode = leftNodes.get(x.intValue());
+            stack.add(xNode);
+            B:
+            while (!stack.isEmpty()) {
+                PathNode v = stack.peek();
+                log.info("stack.top=" + v.toString());
+                Integer vIndex = (Integer)v.getData();
+                boolean isLeftNode = (v instanceof LeftNode);
+                boolean isRightNode = (v instanceof RightNode);
+                if (isLeftNode || isRightNode) {
+                    v.m = 1;
+                }
+                if (isRightNode && deficit.contains(vIndex)) {
+                    // add all of stack to P as an augmenting Path
+                    log.info("add all of stack to augPaths");
+                    PathNode node = stack.pop();
+                    LinkedList<PathNode> augPath = new
+                        LinkedList<PathNode>();
+                    if (node != null) {
+                        augPath.add(node);
+                        augPaths.add(augPath);
+                    }
+                    while (!stack.isEmpty()) {
+                        augPath.add(stack.pop());
+                    }
+                    break A;
+                }
+                Set<PathNode> set = pathLinksMap.get(v);
+                if (set != null) {
+                    while (!set.isEmpty()) {
+                        PathNode w = set.iterator().next();
+                        set.remove(w);
+                        log.info("stack.push w = " + w.toString());
+                        if (w.m == 0) {
+                            stack.push(w);
+                            break B;
+                        }
+                    }
+                }
+                // do nothing with 
+                stack.pop();
+            }
+        }
+        
+        return augPaths;
+        
+        /*
+        a stack K is needed.
+        a (linked list) List L[v] is needed for each node v to 
+            hold the w's for links with v->w length = 0.
+            (==the rF0 adjacency lists)
+
+        for v in NG do set v to be unmarked;
+        set stack K to empty;
+        Surp := S;
+            A: while Surp not empty do
+            x := first(Surp); Surp := rest(Surp);
+            push(x, K);
+            B: while K not empty do
+                v := top(K);
+                if v != source and v != sink then mark(v) fi;
+                if v in D then
+                    add K to P as an augmenting path;
+                    set K to empty;
+                    goto A;
+                fi;
+                C: while L[v] not empty do
+                    w := first(L[v]); L[v] := rest(L[v]);
+                    if w not marked then
+                        push(w,K); goto B fi; od;
+                    pop(K);
+                od;
+            od;
+        */
+    }
+    
+    private List<LinkedList<PathNode>> extractZeroLengthLinks(
+        DoubleLinkedCircularList[] forest) {
+
+        // each linked list is a pair of 2 path nodes whose link length = 0
+        List<LinkedList<PathNode>> pathLists = new
+            ArrayList<LinkedList<PathNode>>();
+        
+        // traverse trees in the forest
+        for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
+            DoubleLinkedCircularList tree = forest[forestIdx];
+            if (tree == null) {
+                continue;
+            }
+            long n = tree.getNumberOfNodes();
+            HeapNode node = tree.getSentinel();
+            int treeIdx = 0;
+            while (treeIdx < n) {
+                node = node.getRight();
+                List<PathNode> path = MinCostUnbalancedAssignment.extractNodes(node);
+                Misc.<PathNode>reverse(path);
+                for (int branchIdx = 0; branchIdx < (path.size() - 1); ++branchIdx) {
+                    PathNode node1 = path.get(branchIdx);
+                    PathNode node2 = path.get(branchIdx + 1);
+                    int l1 = (int) node1.getKey();
+                    int l2 = (int) node2.getKey();
+                    if (l2 != 0) {
+                        continue;
+                    }
+                    LinkedList<PathNode> link =
+                        new LinkedList<PathNode>();
+                    link.add(node1);
+                    link.add(node2);
+                    pathLists.add(link);
+                }
+                treeIdx++;
+            }
+        }
+        
+        return pathLists;
+    }
+
+    private void augmentFlow(FlowNetwork gFlow, 
+        List<LinkedList<PathNode>> cPaths) {
+
+        // see pg 63, Sect 8.4
+        
+        for (LinkedList<PathNode> link : cPaths) {
+            assert(link.size() == 2);
+            PathNode node2 = link.pollFirst();
+            PathNode node1 = link.pollFirst();
+            
+            if (node1 instanceof SourceNode) {
+                    
+            } else if (node1 instanceof SinkNode) {
+            
+            } else if (node1 instanceof LeftNode) {
+            
+            } else {
+            
+            }
+                        
         }
     }
 
