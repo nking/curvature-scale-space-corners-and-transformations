@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * class representing a flow network for 
@@ -17,6 +19,8 @@ import java.util.Set;
  * @author nichole
  */
 public class FlowNetwork {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     /*
      matchings M in Graph g are integral flows f in the 
@@ -392,12 +396,26 @@ public class FlowNetwork {
     /**
      * assert pg 52, I1'.
      * assert that flux f on NG is a flow of value |f|=s
-     * @param s
-     * @return 
+     * @param nMatchingsHK the number of matched
+     * nodes from hopcroft-karp before refine is invoked.
+     * @return the number of surplus nodes which is the same
+     * as the number of deficit nodes.  this may be smaller
+     * than nMatchingsHK after an iteration of refine
      */
-    boolean assertFlowValueIncludingSrcSnk(int s) {
+    boolean assertFlowValueIncludingSrcSnk(int nMatchingsHK) {
                 
         double flow = 0;
+        
+        // NOTE: not completely sure about the intended assertion,
+        // but I'm assuming that in refine, after zeroing
+        // the bipartite matched flow then raising prices
+        // and changing arc lengths, and then augemtning paths,
+        // one has a matching
+        // between the surplus and deficit nodes.
+        // the matching might only be one node for example,
+        // the the bipartite flow sum is 1, and the
+        // that equals the number of hopcroftkarp matchings
+        // minus the updated number of surplus matchings
         
         for (Map.Entry<Integer, Set<Integer>> entry : forwardArcs.entrySet()) {
             Integer index1 = entry.getKey();
@@ -408,25 +426,23 @@ public class FlowNetwork {
             }
         }
         
-        for (Integer index1 : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index1);
-            flow += unitFlow;
-        }
+        log.info("source flow sum=" + flow);
         
-        for (Integer index1 : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index1);
-            flow += unitFlow;
-        }
+        // nSurplus is the number of nodes, excluding the
+        // sink where the flow into the node is larger
+        // than the flow leaving the sink.
         
-        // calculate the number of source nodes == number of
-        // deficit nodes
-        List<Integer> surplus = new ArrayList<Integer>();        
-        List<Integer> deficit = new ArrayList<Integer>();
-        getMatchedLeftRight(surplus, deficit);
-        assert(surplus.size() == deficit.size());
-        int h = surplus.size();
+        List<Integer> surplus = new ArrayList<Integer>();
+        getSurplusRightIndexes(surplus);
+        assert(surplus.isEmpty());
+        
+        getSurplusLeftIndexes(surplus);
+        
+        int nSurplus = surplus.size();
+        
+        log.info("s=" + nMatchingsHK + " h=" + nSurplus);
                 
-        return (Math.abs(flow - (s - h)) < 1);
+        return (Math.abs(flow - (nMatchingsHK - nSurplus)) < 1);
     }
 
     /**
@@ -653,6 +669,60 @@ public class FlowNetwork {
             }
         }
     }
+
+    private void getSurplusLeftIndexes(List<Integer> surplus) {
+
+        for (int i = 0; i < nLeft; ++i) {
+            
+            Integer index = Integer.valueOf(i);        
+            
+            float flowInto = 0;
+            float flowOutOf = 0;
+            // flow into left from source
+            if (sourceForwardArcs.contains(index)) {
+                flowInto += sourceToLeftF.get(index);
+            }
+            Set<Integer> set = forwardArcs.get(index);
+            if (set != null) {
+                for (Integer index2 : set) {
+                    PairInt p = new PairInt(index.intValue(), index2.intValue());
+                    flowOutOf += f.get(p);
+                }
+            }
+            if (flowInto > flowOutOf) {
+                surplus.add(index);
+            }
+        }
+    }  
+    
+    private void getSurplusRightIndexes(List<Integer> surplus) {
+
+        for (int i = 0; i < nRight; ++i) {
+            
+            Integer index = Integer.valueOf(i);        
+            
+            float flowInto = 0;
+            float flowOutOf = 0;
+            // flow into right from left node
+            for (Entry<Integer, Set<Integer>> entry :
+                forwardArcs.entrySet()) {
+                if (entry.getValue().contains(index)) {
+                    PairInt p = new PairInt(entry.getKey().intValue(), 
+                        index.intValue());
+                    flowInto += f.get(p);
+                }
+            }
+            
+            // flow from right to sink            
+            if (sinkForwardArcs.contains(index)) {
+                flowOutOf += rightToSinkF.get(index);
+            }
+            
+            if (flowInto > flowOutOf) {
+                surplus.add(index);
+            }
+        }
+    }  
     
     /*
      the flow network uses forward arcs with "ceiling quantization".
@@ -685,6 +755,22 @@ public class FlowNetwork {
     public void setRightPrice(int idx, float value) {
         pRight[idx] = value;
     }
+    
+    public void addToLeftPrice(int idx, float value) {
+        pLeft[idx] += value;
+    }
+
+    public void addToRightPrice(int idx, float value) {
+        pRight[idx] += value;
+    }
+    
+    public float getLeftPrice(int idx) {
+        return pLeft[idx];
+    }
+
+    public float getRightPrice(int idx) {
+        return pRight[idx];
+    }
 
     /**
      * @return the number of left vertices
@@ -715,4 +801,5 @@ public class FlowNetwork {
     public Set<Integer> getSinkForwardArcs() {
         return sinkForwardArcs;
     }
+
 }
