@@ -4,7 +4,9 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
@@ -57,4 +59,18 @@ public class MiscTest extends TestCase {
         assertTrue(points2.isEmpty());
     }    
     
+    public void testReverse() {
+        
+        List<Integer> list = new ArrayList<Integer>();
+        for (int i = 0; i < 4; ++i) {
+            Integer index = Integer.valueOf(i);
+            list.add(index);
+        }
+        Misc.<Integer>reverse(list);
+        
+        for (int i = 0; i < 4; ++i) {
+            Integer index = list.get(i);
+            assertEquals(3 - i, index.intValue());
+        }
+    }
 }

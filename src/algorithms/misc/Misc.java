@@ -430,4 +430,22 @@ public class Misc {
         
         return dxys;
     }
+
+    public static <T extends Object> void reverse(List<T> list) {
+        
+        int n = list.size();
+        
+        if (n < 2) {
+            return;
+        }
+                
+        int end = n >> 1;
+        // 0 1 2 3 4
+        for (int i = 0; i < end; i++) {
+            int idx2 = n - i - 1;
+            T swap = list.get(i);
+            list.set(i, list.get(idx2));
+            list.set(idx2, swap);
+        }
+    }
 }

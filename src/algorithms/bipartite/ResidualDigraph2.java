@@ -204,4 +204,5 @@ public class ResidualDigraph2 {
     public Set<Integer> getBackwardLinksSinkRM() {
         return backwardLinksSinkRM;
     }
+
 }

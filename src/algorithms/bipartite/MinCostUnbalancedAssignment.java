@@ -3,6 +3,7 @@ package algorithms.bipartite;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.TrioInt;
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a left node, a.k.a. X node
      */
-    private class LeftNode extends PathNode {
+    public static class LeftNode extends PathNode {
         public LeftNode() {
             this.id = "LeftNode";
         }        
@@ -115,7 +116,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a right node, a.k.a. Y node
      */
-    private class RightNode extends PathNode {
+    public static class RightNode extends PathNode {
         public RightNode() {
             this.id = "RightNode";
         }
@@ -132,7 +133,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a source
      */
-    private class SourceNode extends PathNode {
+    public static class SourceNode extends PathNode {
         public SourceNode() {
             this.id = "SourceNode";
         }        
@@ -148,7 +149,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a sink node
      */
-    private class SinkNode extends PathNode {
+    public static class SinkNode extends PathNode {
         public SinkNode() {
             this.id = "SinkNode";
         }        
@@ -389,214 +390,8 @@ public class MinCostUnbalancedAssignment {
             //    (and lists to include source and sink?)
             //    of the links with lengths = 0;
             
-            
-            int[] incrLeft = new int[gFlow.getNLeft()];
-            int[] incrRight = new int[gFlow.getNRight()];
-
-            Map<Integer, Set<TrioInt>> leftToRightLoc
-                = new HashMap<Integer, Set<TrioInt>>();
-            Map<Integer, Set<TrioInt>> rightToLeftLoc
-                = new HashMap<Integer, Set<TrioInt>>();
-            Map<Integer, TrioInt> sourceToLeftLoc
-                = new HashMap<Integer, TrioInt>();
-            Map<Integer, TrioInt> leftToSourceLoc
-                = new HashMap<Integer, TrioInt>();
-            Map<Integer, TrioInt> rightToSinkLoc
-                = new HashMap<Integer, TrioInt>();
-            Map<Integer, TrioInt> sinkToRightLoc
-                = new HashMap<Integer, TrioInt>();
-            
-            Map<Integer, Map<Integer, List<PathNode>>> forestTreeMap = 
-                new HashMap<Integer, Map<Integer, List<PathNode>>>();
-            
-            int lt = terminatingDeficitIdx[0];
-            
-            // traverse trees in the forest
-            for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
-                DoubleLinkedCircularList tree = forest[forestIdx];
-                if (tree == null) {
-                    continue;
-                }
-                long n = tree.getNumberOfNodes();
-                HeapNode node = tree.getSentinel();
-                int treeIdx = 0;
-                while (treeIdx < n) {
-                    node = node.getRight(); 
-                    List<PathNode> path = extractNodes(node);
-                    insert(forestTreeMap, forestIdx, treeIdx, path);
-                    for (int branchIdx = 0; branchIdx < (path.size() - 1); ++branchIdx) {
-                        PathNode node2 = path.get(branchIdx);
-                        PathNode node1 = path.get(branchIdx + 1);
-                        int l1 = (int)node1.getKey();
-                        int l2 = (int)node2.getKey();
-                        int idx1 = ((Integer)node1.getData()).intValue();
-                        int idx2 = ((Integer)node2.getData()).intValue();
-                        if (node1 instanceof LeftNode) {
-                            assert(!(node2 instanceof LeftNode));
-                            //i(v) := l(termDefIdx) - l(v)
-                            incrLeft[idx1] = lt - l1;
-                            if (node2 instanceof RightNode) {
-                                insert(leftToRightLoc, node1, node2,
-                                    forestIdx, treeIdx, branchIdx);
-                                incrRight[idx2] = lt - l2;
-                            } else {
-                                assert(node2 instanceof SourceNode);
-                                assert(leftToSourceLoc.get(
-                                    (Integer)node1.getData()) == null);
-                                leftToSourceLoc.put(
-                                    (Integer)node1.getData(),
-                                    new TrioInt(forestIdx, treeIdx, branchIdx));
-                                incrLeft[idx2] = lt - l2;
-                            }
-                        } else if (node1 instanceof RightNode) {
-                            assert(!(node2 instanceof RightNode));
-                            //i(v) := l(termDefIdx) - l(v)
-                            incrRight[idx1] = lt - l1;
-                            if (node2 instanceof LeftNode) {
-                                insert(rightToLeftLoc, node1, node2,
-                                    forestIdx, treeIdx, branchIdx);
-                                incrLeft[idx2] = lt - l2;
-                            } else {
-                                assert(node2 instanceof SinkNode);
-                                assert(rightToSinkLoc.get(
-                                    (Integer)node1.getData()) == null);
-                                rightToSinkLoc.put(
-                                    (Integer)node1.getData(),
-                                    new TrioInt(forestIdx, treeIdx, branchIdx));
-                                incrRight[idx2] = lt - l2;
-                            }
-                        } else if (node1 instanceof SourceNode) {
-                            assert(node2 instanceof LeftNode);
-                            assert(sourceToLeftLoc.get(
-                                (Integer)node2.getData()) == null);
-                            sourceToLeftLoc.put(
-                                (Integer)node2.getData(),
-                                new TrioInt(forestIdx, treeIdx, branchIdx));                            
-                            //i(v) := l(termDefIdx) - l(v)
-                            incrLeft[idx1] = lt - l1;
-                            incrLeft[idx2] = lt - l2;
-                        } else {
-                            //node1 is a sink node
-                            assert(node2 instanceof RightNode);
-                            assert(sinkToRightLoc.get(
-                                (Integer)node2.getData()) == null);
-                            sinkToRightLoc.put(
-                                (Integer)node2.getData(),
-                                new TrioInt(forestIdx, treeIdx, branchIdx));
-                            //i(v) := l(termDefIdx) - l(v)
-                            incrRight[idx1] = lt - l1;
-                            incrRight[idx2] = lt - l2;
-                        }
-                    }
-                    treeIdx++;
-                }
-            }
-        
-            //pd'(v) = pd(v) + i(v)*eps,
-            for (int i = 0; i < gFlow.getNLeft(); ++i) {
-                float incr = eps * incrLeft[i];
-                if (incr > 0) {
-                    gFlow.addToLeftPrice(i, incr);
-                    // -1 to links leaving v
-                    // +1 to links entering v
-                    
-                    Integer index = Integer.valueOf(i);
-                    // left to right
-                    Set<TrioInt> set = leftToRightLoc.get(index);
-                    if (set != null) {
-                        for (TrioInt loc : set) {
-                            PathNode node = forestTreeMap
-                                .get(Integer.valueOf(loc.getX()))
-                                .get(Integer.valueOf(loc.getY()))
-                                .get(loc.getZ());
-                            long key = node.getKey();
-                            node.setKey(key - 1);
-                        }
-                    }
-                    if (leftToSourceLoc.containsKey(index)) {
-                        TrioInt loc = leftToSourceLoc.get(index);
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key - 1);
-                    }
-                    
-                    //links entering v
-                    set = rightToLeftLoc.get(index);
-                    if (set != null) {
-                        for (TrioInt loc : set) {
-                            PathNode node = forestTreeMap
-                                .get(Integer.valueOf(loc.getX()))
-                                .get(Integer.valueOf(loc.getY()))
-                                .get(loc.getZ());
-                            long key = node.getKey();
-                            node.setKey(key + 1);
-                        }
-                    }
-                    if (sourceToLeftLoc.containsKey(index)) {
-                        TrioInt loc = sourceToLeftLoc.get(index);
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key + 1);
-                    }
-                }
-            }
-            for (int i = 0; i < gFlow.getNRight(); ++i) {
-                Integer index = Integer.valueOf(i);
-                float incr = eps * incrRight[i];
-                if (incr > 0) {
-                    gFlow.addToRightPrice(i, incr);
-                    // -1 to links leaving v
-                    // +1 to links entering v
-                    Set<TrioInt> set = rightToLeftLoc.get(index);
-                    if (set != null) {
-                        for (TrioInt loc : set) {
-                            PathNode node = forestTreeMap
-                                .get(Integer.valueOf(loc.getX()))
-                                .get(Integer.valueOf(loc.getY()))
-                                .get(loc.getZ());
-                            long key = node.getKey();
-                            node.setKey(key - 1);
-                        }
-                    }
-                    if (rightToSinkLoc.containsKey(index)) {
-                        TrioInt loc = rightToSinkLoc.get(index);
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key - 1);
-                    }
-                    
-                    //links entering v
-                    set = leftToRightLoc.get(index);
-                    if (set != null) {
-                        for (TrioInt loc : set) {
-                            PathNode node = forestTreeMap
-                                .get(Integer.valueOf(loc.getX()))
-                                .get(Integer.valueOf(loc.getY()))
-                                .get(loc.getZ());
-                            long key = node.getKey();
-                            node.setKey(key + 1);
-                        }
-                    }
-                    if (sinkToRightLoc.containsKey(index)) {
-                        TrioInt loc = sinkToRightLoc.get(index);
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key + 1);
-                    }
-                }
-            }
+            modifyPricesAndPathLengths(gFlow, forest, 
+                terminatingDeficitIdx[0], eps);
             
             //assert from pg 52 
             //       I1', I2, I3, I4, on FlowNetwork
@@ -613,8 +408,11 @@ public class MinCostUnbalancedAssignment {
             
             //Let Rf0 denote that subgraph of the residual digraph 
             //formed by links of length zero.
-           
-            
+            ResidualDigraphZero rF0 = 
+                new ResidualDigraphZero(
+                gFlow.getNLeft(), gFlow.getNRight(),
+                gFlow.getSourceNode(), gFlow.getSinkNode(),
+                forest);
             
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             //
@@ -626,7 +424,8 @@ public class MinCostUnbalancedAssignment {
             //   state that needs to be tracked for a vertex:
             //    - visited (== marked)
             //    - identity (== Left or Right or Source or Sink)
-            
+        
+           
             
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
@@ -1359,7 +1158,7 @@ Matchings in G are integral flows in N_G
         rIndexes.add(rightIndex);
     }
     
-    List<PathNode> extractNodes(HeapNode node) {
+    public static List<PathNode> extractNodes(HeapNode node) {
         
         List<PathNode> nodes = new ArrayList<PathNode>();
         
@@ -1644,6 +1443,253 @@ Matchings in G are integral flows in N_G
         }
         
         set.add(trioInt);
+    }
+    
+    private void pruneToLength0Links(
+        Map<Integer, Map<Integer, List<PathNode>>> forestTreeMap, 
+        Map<Integer, Set<TrioInt>> leftToRightLoc, 
+        Map<Integer, Set<TrioInt>> rightToLeftLoc, 
+        Map<Integer, TrioInt> sourceToLeftLoc, 
+        Map<Integer, TrioInt> leftToSourceLoc, 
+        Map<Integer, TrioInt> rightToSinkLoc, 
+        Map<Integer, TrioInt> sinkToRightLoc) {
+
+        Map<Integer, Set<Integer>> leftToRight = new
+            HashMap<Integer, Set<Integer>>();
+        for (Entry<Integer, Set<TrioInt>> entry :
+            leftToRightLoc.entrySet()) {
+            Integer leftIndex = entry.getKey();
+            for (TrioInt loc : entry.getValue()) {
+                PathNode node = forestTreeMap
+                    .get(Integer.valueOf(loc.getX()))
+                    .get(Integer.valueOf(loc.getY()))
+                    .get(loc.getZ());
+                if (node.getKey() == 0L) {
+                    Set<Integer> indexes2 = leftToRight.get(leftIndex);
+                    if (indexes2 == null) {
+                        indexes2 = new HashSet<Integer>();
+                        leftToRight.put(leftIndex, indexes2);
+                    }
+                    indexes2.add((Integer)node.getData());
+                }
+            }
+        }
+    }
+    
+    private void modifyPricesAndPathLengths(FlowNetwork gFlow,
+        DoubleLinkedCircularList[] forest, int lt,
+        float eps) {
+
+        int[] incrLeft = new int[gFlow.getNLeft()];
+        int[] incrRight = new int[gFlow.getNRight()];
+
+        Map<Integer, Set<TrioInt>> leftToRightLoc
+            = new HashMap<Integer, Set<TrioInt>>();
+        Map<Integer, Set<TrioInt>> rightToLeftLoc
+            = new HashMap<Integer, Set<TrioInt>>();
+        Map<Integer, TrioInt> sourceToLeftLoc
+            = new HashMap<Integer, TrioInt>();
+        Map<Integer, TrioInt> leftToSourceLoc
+            = new HashMap<Integer, TrioInt>();
+        Map<Integer, TrioInt> rightToSinkLoc
+            = new HashMap<Integer, TrioInt>();
+        Map<Integer, TrioInt> sinkToRightLoc
+            = new HashMap<Integer, TrioInt>();
+
+        Map<Integer, Map<Integer, List<PathNode>>> forestTreeMap
+            = new HashMap<Integer, Map<Integer, List<PathNode>>>();
+
+        // traverse trees in the forest
+        for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
+            DoubleLinkedCircularList tree = forest[forestIdx];
+            if (tree == null) {
+                continue;
+            }
+            long n = tree.getNumberOfNodes();
+            HeapNode node = tree.getSentinel();
+            int treeIdx = 0;
+            while (treeIdx < n) {
+                node = node.getRight();
+                List<PathNode> path = extractNodes(node);
+                Misc.<PathNode>reverse(path);
+                insert(forestTreeMap, forestIdx, treeIdx, path);
+                for (int branchIdx = 0; branchIdx < (path.size() - 1); ++branchIdx) {
+                    PathNode node1 = path.get(branchIdx);
+                    PathNode node2 = path.get(branchIdx + 1);
+                    int l1 = (int) node1.getKey();
+                    int l2 = (int) node2.getKey();
+                    int idx1 = ((Integer) node1.getData()).intValue();
+                    int idx2 = ((Integer) node2.getData()).intValue();
+                    if (node1 instanceof LeftNode) {
+                        assert (!(node2 instanceof LeftNode));
+                        //i(v) := l(termDefIdx) - l(v)
+                        incrLeft[idx1] = lt - l1;
+                        if (node2 instanceof RightNode) {
+                            insert(leftToRightLoc, node1, node2,
+                                forestIdx, treeIdx, branchIdx + 1);
+                            incrRight[idx2] = lt - l2;
+                        } else {
+                            assert (node2 instanceof SourceNode);
+                            assert (leftToSourceLoc.get(
+                                (Integer) node1.getData()) == null);
+                            leftToSourceLoc.put(
+                                (Integer) node1.getData(),
+                                new TrioInt(forestIdx, treeIdx, 
+                                    branchIdx + 1));
+                            incrLeft[idx2] = lt - l2;
+                        }
+                    } else if (node1 instanceof RightNode) {
+                        assert (!(node2 instanceof RightNode));
+                        //i(v) := l(termDefIdx) - l(v)
+                        incrRight[idx1] = lt - l1;
+                        if (node2 instanceof LeftNode) {
+                            insert(rightToLeftLoc, node1, node2,
+                                forestIdx, treeIdx, branchIdx + 1);
+                            incrLeft[idx2] = lt - l2;
+                        } else {
+                            assert (node2 instanceof SinkNode);
+                            assert (rightToSinkLoc.get(
+                                (Integer) node1.getData()) == null);
+                            rightToSinkLoc.put(
+                                (Integer) node1.getData(),
+                                new TrioInt(forestIdx, treeIdx, 
+                                    branchIdx + 1));
+                            incrRight[idx2] = lt - l2;
+                        }
+                    } else if (node1 instanceof SourceNode) {
+                        assert (node2 instanceof LeftNode);
+                        assert (sourceToLeftLoc.get(
+                            (Integer) node2.getData()) == null);
+                        sourceToLeftLoc.put(
+                            (Integer) node2.getData(),
+                            new TrioInt(forestIdx, treeIdx, 
+                                branchIdx + 1));
+                        //i(v) := l(termDefIdx) - l(v)
+                        incrLeft[idx1] = lt - l1;
+                        incrLeft[idx2] = lt - l2;
+                    } else {
+                        //node1 is a sink node
+                        assert (node2 instanceof RightNode);
+                        assert (sinkToRightLoc.get(
+                            (Integer) node2.getData()) == null);
+                        sinkToRightLoc.put(
+                            (Integer) node2.getData(),
+                            new TrioInt(forestIdx, treeIdx, 
+                                branchIdx + 1));
+                        //i(v) := l(termDefIdx) - l(v)
+                        incrRight[idx1] = lt - l1;
+                        incrRight[idx2] = lt - l2;
+                    }
+                }
+                treeIdx++;
+            }
+        }
+
+        //pd'(v) = pd(v) + i(v)*eps,
+        for (int i = 0; i < gFlow.getNLeft(); ++i) {
+            float incr = eps * incrLeft[i];
+            if (incr > 0) {
+                gFlow.addToLeftPrice(i, incr);
+                    // -1 to links leaving v
+                // +1 to links entering v
+
+                Integer index = Integer.valueOf(i);
+                // left to right
+                Set<TrioInt> set = leftToRightLoc.get(index);
+                if (set != null) {
+                    for (TrioInt loc : set) {
+                        PathNode node = forestTreeMap
+                            .get(Integer.valueOf(loc.getX()))
+                            .get(Integer.valueOf(loc.getY()))
+                            .get(loc.getZ());
+                        long key = node.getKey();
+                        node.setKey(key - 1);
+                    }
+                }
+                if (leftToSourceLoc.containsKey(index)) {
+                    TrioInt loc = leftToSourceLoc.get(index);
+                    PathNode node = forestTreeMap
+                        .get(Integer.valueOf(loc.getX()))
+                        .get(Integer.valueOf(loc.getY()))
+                        .get(loc.getZ());
+                    long key = node.getKey();
+                    node.setKey(key - 1);
+                }
+
+                //links entering v
+                set = rightToLeftLoc.get(index);
+                if (set != null) {
+                    for (TrioInt loc : set) {
+                        PathNode node = forestTreeMap
+                            .get(Integer.valueOf(loc.getX()))
+                            .get(Integer.valueOf(loc.getY()))
+                            .get(loc.getZ());
+                        long key = node.getKey();
+                        node.setKey(key + 1);
+                    }
+                }
+                if (sourceToLeftLoc.containsKey(index)) {
+                    TrioInt loc = sourceToLeftLoc.get(index);
+                    PathNode node = forestTreeMap
+                        .get(Integer.valueOf(loc.getX()))
+                        .get(Integer.valueOf(loc.getY()))
+                        .get(loc.getZ());
+                    long key = node.getKey();
+                    node.setKey(key + 1);
+                }
+            }
+        }
+        for (int i = 0; i < gFlow.getNRight(); ++i) {
+            Integer index = Integer.valueOf(i);
+            float incr = eps * incrRight[i];
+            if (incr > 0) {
+                gFlow.addToRightPrice(i, incr);
+                    // -1 to links leaving v
+                // +1 to links entering v
+                Set<TrioInt> set = rightToLeftLoc.get(index);
+                if (set != null) {
+                    for (TrioInt loc : set) {
+                        PathNode node = forestTreeMap
+                            .get(Integer.valueOf(loc.getX()))
+                            .get(Integer.valueOf(loc.getY()))
+                            .get(loc.getZ());
+                        long key = node.getKey();
+                        node.setKey(key - 1);
+                    }
+                }
+                if (rightToSinkLoc.containsKey(index)) {
+                    TrioInt loc = rightToSinkLoc.get(index);
+                    PathNode node = forestTreeMap
+                        .get(Integer.valueOf(loc.getX()))
+                        .get(Integer.valueOf(loc.getY()))
+                        .get(loc.getZ());
+                    long key = node.getKey();
+                    node.setKey(key - 1);
+                }
+
+                //links entering v
+                set = leftToRightLoc.get(index);
+                if (set != null) {
+                    for (TrioInt loc : set) {
+                        PathNode node = forestTreeMap
+                            .get(Integer.valueOf(loc.getX()))
+                            .get(Integer.valueOf(loc.getY()))
+                            .get(loc.getZ());
+                        long key = node.getKey();
+                        node.setKey(key + 1);
+                    }
+                }
+                if (sinkToRightLoc.containsKey(index)) {
+                    TrioInt loc = sinkToRightLoc.get(index);
+                    PathNode node = forestTreeMap
+                        .get(Integer.valueOf(loc.getX()))
+                        .get(Integer.valueOf(loc.getY()))
+                        .get(loc.getZ());
+                    long key = node.getKey();
+                    node.setKey(key + 1);
+                }
+            }
+        }
     }
 
 }
