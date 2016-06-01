@@ -181,7 +181,7 @@ public class FlowNetwork {
         this.sinkNode = nRight;
         pLeft = new float[nLeft + 1];
         pRight = new float[nRight + 1];
-        
+                
         for (Map.Entry<PairInt, Integer> entry : 
             g.getEdgeWeights().entrySet()) {
 
@@ -199,6 +199,7 @@ public class FlowNetwork {
 
             Integer cost = g.getEdgeWeights().get(p);
             c.put(p, cost);
+            f.put(p, Float.valueOf(0));
 
             if (Math.abs(cost.intValue()) > maxC) {
                 maxC = Math.abs(cost.intValue());
@@ -207,21 +208,25 @@ public class FlowNetwork {
             sourceForwardArcs.add(index1);
             sinkForwardArcs.add(index2);
             
-            if (m.containsKey(index1) && m.get(index1).equals(index2)) {
-                // create saturated arc, f(v,w)=1, net cost cp <= 0
-                f.put(p, Float.valueOf(1));
-                sourceToLeftF.put(index1, Float.valueOf(1));
-                rightToSinkF.put(index2, Float.valueOf(1));
-            } else {
-                // create idle arc, f(v,w)=0, net cost cp >= 0
-                f.put(p, Float.valueOf(0));                
-                sourceToLeftF.put(index1, Float.valueOf(0));
-                rightToSinkF.put(index2, Float.valueOf(0));
-            }
+            // set source and sink arcs to 0 and overwrite
+            // those for matched vertexes in next block
+            sourceToLeftF.put(index1, Float.valueOf(0));
+            rightToSinkF.put(index2, Float.valueOf(0));
             
             // cost of dummy edge is 0
             sourceToLeftC.put(index1, Integer.valueOf(0));
             rightToSinkC.put(index2, Integer.valueOf(0));
+        }
+        
+        for (Entry<Integer, Integer> entry : m.entrySet()) {
+            Integer leftIndex = entry.getKey();
+            sourceToLeftF.put(leftIndex, Float.valueOf(1));
+            PairInt p = new PairInt(leftIndex.intValue(),
+                entry.getValue().intValue());
+            f.put(p, Float.valueOf(1));
+        }
+        for (Integer rightIndex : m.values()) {
+            rightToSinkF.put(rightIndex, Float.valueOf(1));
         }
 
         assert (maxC > 1);
@@ -393,6 +398,27 @@ public class FlowNetwork {
         return (Math.abs(flow - s) < 1);
     }
     
+    boolean printFlowValueIncludingSrcSnk(int s) {
+        
+        log.info("s=" + s);
+        
+        double flow = 0;
+        
+        flow += calcTotalFlow();
+        
+        log.info("bipartite flow sum=" + flow);
+        
+        flow += calcTotalSourceFlow();
+        
+        log.info("bipartite + source flow sum=" + flow);
+        
+        flow += calcTotalSinkFlow();
+        
+        log.info("bipartite + source + sink flow sum=" + flow);
+    
+        return true;
+    }
+    
     /**
      * assert pg 52, I1'.
      * assert that flux f on NG is a flow of value |f|=s
@@ -417,30 +443,18 @@ public class FlowNetwork {
         // that equals the number of hopcroftkarp matchings
         // minus the updated number of surplus matchings
         
-        for (Map.Entry<Integer, Set<Integer>> entry : forwardArcs.entrySet()) {
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
-                float unitFlow = f.get(p);
-                flow += unitFlow;
-            }
-        }
+        flow += calcTotalFlow();
         
-        log.info("bipatite flow sum=" + flow);
+        log.info("bipartite flow sum=" + flow);
         
-        for (Integer index : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index);
-            flow += unitFlow;
-        }
+        /*flow += calcTotalSourceFlow();
         
         log.info("bipartite + source flow sum=" + flow);
         
-        for (Integer index : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index);
-            flow += unitFlow;
-        }
+        flow += calcTotalSinkFlow();
         
         log.info("bipartite + source + sink flow sum=" + flow);
+        */
         
         // nSurplus is the number of nodes, excluding the
         // sink where the flow into the node is larger
@@ -457,6 +471,30 @@ public class FlowNetwork {
         log.info("s=" + nMatchingsHK + " h=" + nSurplus);
                 
         return (Math.abs(flow - (nMatchingsHK - nSurplus)) < 1);
+    }
+  
+    double calcTotalSourceFlow() {
+                
+        double flow = 0;
+        
+        for (Integer index : sourceForwardArcs) {
+            float unitFlow = sourceToLeftF.get(index);
+            flow += unitFlow;
+        }
+                
+        return flow;
+    }
+    
+    double calcTotalSinkFlow() {
+                
+        double flow = 0;
+        
+        for (Integer index : sinkForwardArcs) {
+            float unitFlow = rightToSinkF.get(index);
+            flow += unitFlow;
+        }
+                
+        return flow;
     }
 
     /**
