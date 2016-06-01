@@ -528,7 +528,7 @@
     <!-- target that does not recompile if no changes to a class or the class it
          depends upon.  can only be used if a previous runTest was invoked so 
          that the binaries have been built for debugging print mode -->
-    <target name="runTest2" if="junit.present" depends="debug,JUnit">
+    <target name="compileTests2" if="junit.present" depends="debug,JUnit">
 
         <record name="${logfile}" append="yes" loglevel="info"/>
 
@@ -565,8 +565,22 @@
             <src path="${tests.dir}"/>
             <src path="${src.dir}"/>
             <compilerarg value="-Xlint"/>
-        </javac>
+        </javac>            
+    </target>
+    
+    <!-- target that does not recompile if no changes to a class or the class it
+         depends upon.  can only be used if a previous runTest was invoked so 
+         that the binaries have been built for debugging print mode -->
+    <target name="runTest2" if="junit.present" depends="debug,JUnit,compileTests2">
 
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <echo message="${src.out.dir}/logging.properties"/>
+        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        
         <junit fork="true" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="false">
             
@@ -590,6 +604,34 @@
                 <formatter type="plain" usefile="false"/>
             </test>
             
+        </junit>
+    </target>
+
+    <!-- target that does not recompile if no changes to a class or the class it
+         depends upon.  can only be used if a previous runTest was invoked so 
+         that the binaries have been built for debugging print mode -->
+    <target name="debugTest2" if="junit.present" depends="debug,JUnit,compileTests2">
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <junit fork="true" showoutput="true" filtertrace="off">
+            <!--<jvmarg value="-ea"/>-->
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
+            <jvmarg line="-enableassertions -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y -XX:-UseSplitVerifier"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+            <test name="${test}" fork="true" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
         </junit>
     </target>
 
