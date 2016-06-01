@@ -426,7 +426,21 @@ public class FlowNetwork {
             }
         }
         
-        log.info("source flow sum=" + flow);
+        log.info("bipatite flow sum=" + flow);
+        
+        for (Integer index : sourceForwardArcs) {
+            float unitFlow = sourceToLeftF.get(index);
+            flow += unitFlow;
+        }
+        
+        log.info("bipartite + source flow sum=" + flow);
+        
+        for (Integer index : sinkForwardArcs) {
+            float unitFlow = rightToSinkF.get(index);
+            flow += unitFlow;
+        }
+        
+        log.info("bipartite + source + sink flow sum=" + flow);
         
         // nSurplus is the number of nodes, excluding the
         // sink where the flow into the node is larger
@@ -577,10 +591,10 @@ public class FlowNetwork {
      * assert pg 44 I3.
      * Every arc of NG, idle or saturated, is eps-proper.
      * all bipartite arcs should be eps-proper.
-     * @param epsT
+     * @param eps
      * @return 
      */
-    boolean integralFlowIsEpsProper(float epsT) {
+    boolean integralFlowIsEpsProper(float eps) {
         
         //NOTE that the flow is min-cost when eps < 1/6s
         //  and all integral arcs are "eps-proper"
@@ -597,12 +611,12 @@ public class FlowNetwork {
                 float cp = calcNetCost(p);
                 if (unitFlow == 0) {
                     // idle, cp > -epsT
-                    if (cp <= -epsT) {
+                    if (cp <= -eps) {
                         return false;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
-                    if (cp > epsT) {
+                    if (cp > eps) {
                         return false;
                     }
                 }
@@ -670,7 +684,7 @@ public class FlowNetwork {
         }
     }
 
-    private void getSurplusLeftIndexes(List<Integer> surplus) {
+    public void getSurplusLeftIndexes(List<Integer> surplus) {
 
         for (int i = 0; i < nLeft; ++i) {
             
@@ -691,6 +705,36 @@ public class FlowNetwork {
             }
             if (flowInto > flowOutOf) {
                 surplus.add(index);
+            }
+        }
+    }  
+    
+    public void getDeficitRightIndexes(List<Integer> deficit) {
+
+        // key = right, values = left
+        Map<Integer, Set<Integer>> revMap =
+            createReverseMapOfForwardArcs();
+        
+        for (int i = 0; i < nRight; ++i) {
+            
+            Integer index = Integer.valueOf(i);        
+            
+            float flowInto = 0;
+            float flowOutOf = 0;
+            // flow out of right to sink
+            if (sinkForwardArcs.contains(index)) {
+                flowOutOf += rightToSinkF.get(index);
+            }
+            Set<Integer> set = revMap.get(index);
+            if (set != null) {
+                for (Integer left : set) {
+                    PairInt p = new PairInt(left.intValue(), index.intValue());
+                    flowInto += f.get(p);
+                }
+            }
+            
+            if (flowInto < flowOutOf) {
+                deficit.add(index);
             }
         }
     }  
@@ -800,6 +844,96 @@ public class FlowNetwork {
 
     public Set<Integer> getSinkForwardArcs() {
         return sinkForwardArcs;
+    }
+
+    public void augmentSourceToLeftFlowAndArc(int idx) {
+        
+        Integer index = Integer.valueOf(idx);
+        
+        Float flow = sourceToLeftF.get(index);
+        if (flow == null || (Math.abs(flow.floatValue()) < 0.01)) {
+            // idle, so change to "saturated"
+            sourceToLeftF.put(index, Float.valueOf(1));
+            sourceForwardArcs.add(index);
+        } else if (Math.abs(flow.floatValue() - 1.) < 0.01) {
+            // saturated, so change to "idle"
+            sourceToLeftF.put(index, Float.valueOf(0));
+            //TODO: consider not removing this
+            //sourceForwardArcs.remove(index);
+        } else {
+            throw new IllegalStateException(
+                "Error in algorithm.  not expecting"
+                + " a fractional flow");
+        }
+    }
+    
+    public void augmentRightToSinkFlowAndArc(int idx) {
+        
+        Integer index = Integer.valueOf(idx);
+        
+        Float flow = rightToSinkF.get(index);
+        if (flow == null || (Math.abs(flow.floatValue()) < 0.01)) {
+            // idle, so change to "saturated"
+            rightToSinkF.put(index, Float.valueOf(1));
+            sinkForwardArcs.add(index);
+        } else if (Math.abs(flow.floatValue() - 1.) < 0.01) {
+            // saturated, so change to "idle"
+            rightToSinkF.put(index, Float.valueOf(0));
+            // TODO: consider not removing this:
+            //sinkForwardArcs.remove(index);
+        } else {
+            throw new IllegalStateException(
+                "Error in algorithm.  not expecting"
+                + " a fractional flow");
+        }
+    }
+    
+    public void augmentFlowAndArc(int idx1, int idx2) {
+        
+        assert(forwardArcs.containsKey(Integer.valueOf(idx1))
+            && forwardArcs.get(Integer.valueOf(idx1))
+            .contains(Integer.valueOf(idx2)));
+        
+        PairInt p = new PairInt(idx1, idx2);
+        
+        float flow = f.get(p);
+        if (Math.abs(flow - 1.) < 0.01) {
+            // saturated, so change to "idle"
+            f.put(p, Float.valueOf(0));
+        } else if (Math.abs(flow) < 0.01) {
+            // idle, so change to "saturated"
+            f.put(p, Float.valueOf(1));
+        } else {
+            throw new IllegalStateException(
+                "Error in algorithm.  not expecting"
+                + " a fractional flow");
+        }
+    }
+
+    private Map<Integer, Set<Integer>> 
+        createReverseMapOfForwardArcs() {
+        
+        //key=right   values=left
+        Map<Integer, Set<Integer>> revMap
+            = new HashMap<Integer, Set<Integer>>();
+    
+        for (Entry<Integer, Set<Integer>> entry :
+            forwardArcs.entrySet()) {
+            
+            Integer leftIndex = entry.getKey();
+            Set<Integer> rightIndexes = entry.getValue();
+            
+            for (Integer rightIndex : rightIndexes) {
+                Set<Integer> leftIndexes = revMap.get(rightIndex);
+                if (leftIndexes == null) {
+                    leftIndexes = new HashSet<Integer>();
+                    revMap.put(rightIndex, leftIndexes);
+                }
+                leftIndexes.add(leftIndex);
+            }
+        }
+        
+        return revMap;
     }
 
 }

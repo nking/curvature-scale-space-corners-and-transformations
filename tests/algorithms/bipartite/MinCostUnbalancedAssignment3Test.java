@@ -17,48 +17,23 @@ import junit.framework.TestCase;
  *
  * @author nichole
  */
-public class MinCostUnbalancedAssignment2Test extends TestCase {
+public class MinCostUnbalancedAssignment3Test extends TestCase {
     
     private Logger log = 
         Logger.getLogger(this.getClass().getName());
     
-    public MinCostUnbalancedAssignment2Test() {
+    public MinCostUnbalancedAssignment3Test() {
     }
     
-    public void testRefine() {
+    public void testFlow() {
         
         // test graphs on pg 49
         Graph g = getTestGraph();
         
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
-        m.put(Integer.valueOf(1), Integer.valueOf(2));
-        m.put(Integer.valueOf(3), Integer.valueOf(0));
-        m.put(Integer.valueOf(4), Integer.valueOf(3));
-        
         MinCostUnbalancedAssignment bipartite = 
             new MinCostUnbalancedAssignment();
         
-        FlowNetwork gFlow = new FlowNetwork(g, m);
-
-        assertEquals(1.0f, gFlow.getSourceToLeftFlow(1));
-        assertEquals(1.0f, gFlow.getSourceToLeftFlow(3));
-        assertEquals(1.0f, gFlow.getSourceToLeftFlow(4));
-        
-        assertEquals(0.0f, gFlow.getSourceToLeftFlow(0));
-        assertEquals(0.0f, gFlow.getSourceToLeftFlow(2));
-        assertEquals(0.0f, gFlow.getSourceToLeftFlow(5));
-        
-        assertEquals(1.0f, gFlow.getRightToSinkFlow(0));
-        assertEquals(1.0f, gFlow.getRightToSinkFlow(2));
-        assertEquals(1.0f, gFlow.getRightToSinkFlow(3));
-        
-        assertEquals(0.0f, gFlow.getRightToSinkFlow(1));
-        assertEquals(0.0f, gFlow.getRightToSinkFlow(4));
-        
-        int q = 2;
-        int s = m.size();
-        double eps = Math.pow(q, 3) * gFlow.getMaxC();
-        bipartite.refine(gFlow, s, (float)eps, q);
+        Map<Integer, Integer> m = bipartite.flowAssign(g);
         
         int z = 1;
     }

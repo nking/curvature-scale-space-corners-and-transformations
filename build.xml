@@ -525,6 +525,74 @@
         </junit>
     </target>
 
+    <!-- target that does not recompile if no changes to a class or the class it
+         depends upon.  can only be used if a previous runTest was invoked so 
+         that the binaries have been built for debugging print mode -->
+    <target name="runTest2" if="junit.present" depends="debug,JUnit">
+
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <echo message="${src.out.dir}/logging.properties"/>
+        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <javac srcdir="${src.dir}" fork="true"
+            destdir="${src.out.dir}"
+            source="${compile.target}"
+            debug="${compile.debug}"
+            deprecation="${compile.deprecation}"
+            includeAntRuntime="false"
+            memoryInitialSize="1024m"
+            memoryMaximumSize="2048m"
+            optimize="${compile.optimize}" >
+            <classpath refid="compile.classpath"/>
+            <include name="**/*.java"/>
+            <exclude name="**/*Test*.java"/>
+        </javac>
+        <copy file="${resources.dir}/logging.properties" todir="${src.out.dir}" />
+
+        <javac srcdir="${tests.dir}"
+            destdir="${tests.out.dir}"
+            source="${compile.target}"
+            debug="true"
+            includes="**/*.java"
+            excludes="**/*KDTree2Test*java"
+            includeAntRuntime="false"
+            deprecation="${compile.deprecation}"
+            optimize="${compile.optimize}" >
+            <classpath refid="test.classpath"/>
+            <src path="${tests.dir}"/>
+            <src path="${src.dir}"/>
+            <compilerarg value="-Xlint"/>
+        </javac>
+
+        <junit fork="true" filtertrace="on" printsummary="yes" 
+            haltonerror="true" haltonfailure="true" showoutput="false">
+            
+            <assertions enablesystemassertions="true">
+                <enable/>
+            </assertions>
+            
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+            
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            
+            <formatter type="plain" usefile="true"/>
+
+            <jvmarg value="-enableassertions" />
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <test name="${test}" fork="true" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+            
+        </junit>
+    </target>
+
     <target name="debugTest" if="junit.present" depends="clean,prepare,debug,compile,JUnit,compileTests">
         <record name="${logfile}" append="yes" loglevel="info"/>
 
