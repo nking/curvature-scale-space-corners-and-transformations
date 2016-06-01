@@ -108,7 +108,7 @@ public class MinCostUnbalancedAssignment {
             sb.append(" index=").append(getData().toString());
             PathNode prev = pathPredecessor;
             while (prev != null) {
-                sb.append(" [prev=").append(prev.toString())
+                sb.append("\n    [prev=").append(prev.toString())
                     .append("]");
                 prev = prev.pathPredecessor;
             }
@@ -597,7 +597,7 @@ public class MinCostUnbalancedAssignment {
                 
             PathNode node1Cp = node1.copy();
 
-            log.info("add to forest key=" + node1Cp.toString());
+            log.fine("add to forest key=" + node1Cp.toString());
             
             //add v to the forest;
             addToForest(forest, node1Cp);
@@ -956,6 +956,11 @@ Matchings in G are integral flows in N_G
     protected DoubleLinkedCircularList[] buildForest(
         final ResidualDigraph rM, int lambda) {
         
+        /*
+        NOTE: bookkeeping for the predecessors could be improved
+        here.
+        */
+        
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
         
@@ -1021,6 +1026,12 @@ Matchings in G are integral flows in N_G
         // at this point, the maidens are all in index 0 of
         // the forest trees.
         
+        /*
+        knowing that the current pattern of accumulating predecessor
+        paths stops and knowing how it is applied during augmentation,
+        one can
+        */
+        
         int nIter = 0;
                 
         while (!heap.isEmpty()) {
@@ -1034,6 +1045,8 @@ Matchings in G are integral flows in N_G
         
             log.fine("heap.size=" + heap.getNumberOfNodes());
             
+            log.info("extractMin=" + y.toString());
+            
             addToForest(forest, y);
                     
             /*
@@ -1041,9 +1054,9 @@ Matchings in G are integral flows in N_G
                 x := wife of y;
                 set l(x) := l(y) and 
                 ScanAndAdd(x); 
-             else
+            else
                 exit(bachelor β := y reached); 
-             fi;
+            fi;
             */
             Integer yIndex = (Integer)(y.getData());
             // the married nodes are the keys in the backward
@@ -1054,14 +1067,20 @@ Matchings in G are integral flows in N_G
                 LeftNode xNode = leftNodes.get(xIndex);
                 
                 xNode.setKey(y.getKey());
-                xNode.pathPredecessor = y;
+                if (xNode.pathPredecessor == null) {
+                    xNode.pathPredecessor = y;
+                }
+                
+                //log.info("scanAndAdd x=" + xNode);
                 
                 scanAndAdd(heap, forest, rM, rightNodes, xNode);
                                 
             } else {
                 //exit(bachelor β := y reached);
                 log.info("bachelor y=" + y.toString());
-                //break;
+                if (y.getKey() > 1) {
+                    break;
+                }
             }
             
             log.info("nIter=" + nIter);
