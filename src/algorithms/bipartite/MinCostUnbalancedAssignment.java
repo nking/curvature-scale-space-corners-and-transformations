@@ -525,6 +525,7 @@ public class MinCostUnbalancedAssignment {
                 time consuming step in order to consider that...
                 
                 */
+                
                 return;
             }
             
@@ -1507,7 +1508,6 @@ Matchings in G are integral flows in N_G
         float cp = gFlow.calcNetCost(idx1, idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
-        log.info("l1=" + l1 + " lp=" + lp);
         long lOld = node2.getKey();     
         if ((lTot < lambda) && (lTot < lOld)) {
             if (node2.pathPredecessor != null) {

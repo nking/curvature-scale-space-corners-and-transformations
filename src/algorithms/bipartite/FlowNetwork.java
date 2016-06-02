@@ -573,7 +573,7 @@ public class FlowNetwork {
                 float cp = calcNetCost(p);
                 if (unitFlow == 0) {
                     // idle, cp > -qEps
-                    //cp = cost - pdX + pdY so inr pdY
+                    //cp = cost - pdX + pdY, so incr pdY
                     float count = 1.f;
                     while (cp <= -qEps) {
                         pRight[index2.intValue()] += (count * delta);
@@ -581,13 +581,11 @@ public class FlowNetwork {
                         count += 1.f;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
-                    // saturated
-                    //cp = cost - pdX + pdY so incr pdX
-                    //TODO: a single price raise of 2*delta or 3*delta?
-                    //      difficult to tell by pg 54 and 53
+                    // saturated, cp <= qEps
+                    //cp = cost - pdX + pdY, so incr pdX
                     while (cp > qEps) {
                         float count = 1.f;
-                        pLeft[index2.intValue()] += (count * delta);
+                        pLeft[index1.intValue()] += (count * delta);
                         cp = calcNetCost(p);
                         count += 1.f;
                     }

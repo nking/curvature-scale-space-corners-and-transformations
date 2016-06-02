@@ -56,7 +56,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         for maximizing number of matches, then min cost:
         results are same as Hopcroft-Karp for this example
         which is a matching size of 5:
-        5  3
+        5  3   or  2 3 is equivalent
         4  4
         3  0
         1  1
