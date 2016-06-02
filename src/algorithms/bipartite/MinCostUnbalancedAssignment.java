@@ -304,7 +304,7 @@ public class MinCostUnbalancedAssignment {
                
         // all nodes V in gFlow have prices = 0
         
-   eps = 1.f;
+   eps = q;
         //while (eps > epsBar) {
         while (nIterR < rIter) {
             
@@ -313,8 +313,13 @@ public class MinCostUnbalancedAssignment {
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
-       //     assert(gFlow.integralFlowIsEpsProper(eps));
-      //      assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+            
+            // if using a smaller eps than maxC, cannot assert
+            //    these on first round
+            if ((nIterR > 0) || (eps > gFlow.getMaxC())) {
+                assert(gFlow.integralFlowIsEpsProper(eps));
+                assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+            }
             
             eps /= (float)q;
             
@@ -436,6 +441,9 @@ public class MinCostUnbalancedAssignment {
             
             modifyPricesAndPathLengths(gFlow, forest, 
                 terminatingDeficitIdx[0], eps);
+            
+            log.info("after modify prices and link lengths");
+            debug(forest);
             
             //assert from pg 52 
             //       I1', I2, I3, I4, on FlowNetwork
@@ -1678,9 +1686,11 @@ Matchings in G are integral flows in N_G
         DoubleLinkedCircularList[] forest, int lt,
         float eps) {
 
-        int[] incrLeft = new int[gFlow.getNLeft() + 1];
-        int[] incrRight = new int[gFlow.getNRight() + 1];
-
+        Map<Integer, Integer> incrLeft = 
+            new HashMap<Integer, Integer>();
+        Map<Integer, Integer> incrRight = 
+            new HashMap<Integer, Integer>();
+        
         Map<Integer, Set<TrioInt>> leftToRightLoc
             = new HashMap<Integer, Set<TrioInt>>();
         Map<Integer, Set<TrioInt>> rightToLeftLoc
@@ -1696,7 +1706,7 @@ Matchings in G are integral flows in N_G
 
         Map<Integer, Map<Integer, List<PathNode>>> forestTreeMap
             = new HashMap<Integer, Map<Integer, List<PathNode>>>();
-//TODO: check for errors here
+
         // traverse trees in the forest
         for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
             DoubleLinkedCircularList tree = forest[forestIdx];
@@ -1721,11 +1731,17 @@ Matchings in G are integral flows in N_G
                     if (node1 instanceof LeftNode) {
                         assert (!(node2 instanceof LeftNode));
                         //i(v) := l(termDefIdx) - l(v)
-                        incrLeft[idx1] = lt - l1;
+                        if ((lt - l1) != 0) {
+                            incrLeft.put(Integer.valueOf(idx1),
+                                Integer.valueOf(lt - l1));
+                        }
                         if (node2 instanceof RightNode) {
                             insert(leftToRightLoc, node1, node2,
                                 forestIdx, treeIdx, branchIdx + 1);
-                            incrRight[idx2] = lt - l2;
+                            if ((lt - l2) != 0) {
+                                incrRight.put(Integer.valueOf(idx2),
+                                    Integer.valueOf(lt - l2));
+                            }
                         } else {
                             assert (node2 instanceof SourceNode);
                             assert (leftToSourceLoc.get(
@@ -1734,16 +1750,25 @@ Matchings in G are integral flows in N_G
                                 (Integer) node1.getData(),
                                 new TrioInt(forestIdx, treeIdx, 
                                     branchIdx + 1));
-                            incrLeft[idx2] = lt - l2;
+                            if ((lt - l2) != 0) {
+                                incrLeft.put(Integer.valueOf(idx2),
+                                    Integer.valueOf(lt - l2));
+                            }
                         }
                     } else if (node1 instanceof RightNode) {
                         assert (!(node2 instanceof RightNode));
                         //i(v) := l(termDefIdx) - l(v)
-                        incrRight[idx1] = lt - l1;
+                        if ((lt - l1) != 0) {
+                            incrRight.put(Integer.valueOf(idx1),
+                                Integer.valueOf(lt - l1));
+                        }
                         if (node2 instanceof LeftNode) {
                             insert(rightToLeftLoc, node1, node2,
                                 forestIdx, treeIdx, branchIdx + 1);
-                            incrLeft[idx2] = lt - l2;
+                            if ((lt - l2) != 0) {
+                                incrLeft.put(Integer.valueOf(idx2),
+                                    Integer.valueOf(lt - l2));
+                            }
                         } else {
                             assert (node2 instanceof SinkNode);
                             assert (rightToSinkLoc.get(
@@ -1752,7 +1777,10 @@ Matchings in G are integral flows in N_G
                                 (Integer) node1.getData(),
                                 new TrioInt(forestIdx, treeIdx, 
                                     branchIdx + 1));
-                            incrRight[idx2] = lt - l2;
+                            if ((lt - l2) != 0) {
+                                incrRight.put(Integer.valueOf(idx2),
+                                    Integer.valueOf(lt - l2));
+                            }
                         }
                     } else if (node1 instanceof SourceNode) {
                         assert (node2 instanceof LeftNode);
@@ -1763,8 +1791,14 @@ Matchings in G are integral flows in N_G
                             new TrioInt(forestIdx, treeIdx, 
                                 branchIdx + 1));
                         //i(v) := l(termDefIdx) - l(v)
-                        incrLeft[idx1] = lt - l1;
-                        incrLeft[idx2] = lt - l2;
+                        if ((lt - l1) != 0) {
+                            incrLeft.put(Integer.valueOf(idx1),
+                                Integer.valueOf(lt - l1));
+                        }
+                        if ((lt - l2) != 0) {
+                            incrLeft.put(Integer.valueOf(idx2),
+                                Integer.valueOf(lt - l2));
+                        }
                     } else {
                         //node1 is a sink node
                         assert (node2 instanceof RightNode);
@@ -1775,35 +1809,37 @@ Matchings in G are integral flows in N_G
                             new TrioInt(forestIdx, treeIdx, 
                                 branchIdx + 1));
                         //i(v) := l(termDefIdx) - l(v)
-                        incrRight[idx1] = lt - l1;
-                        incrRight[idx2] = lt - l2;
+                        if ((lt - l1) != 0) {
+                            incrRight.put(Integer.valueOf(idx1),
+                                Integer.valueOf(lt - l1));
+                        }
+                        if ((lt - l2) != 0) {
+                            incrRight.put(Integer.valueOf(idx2),
+                                Integer.valueOf(lt - l2));
+                        }
                     }
                 }
                 treeIdx++;
             }
         }
 
-        //pd'(v) = pd(v) + i(v)*eps,
-        for (int i = 0; i < gFlow.getNLeft(); ++i) {
-            float incr = eps * incrLeft[i];
-            if (incr > 0) {
-                gFlow.addToLeftPrice(i, incr);
-                    // -1 to links leaving v
-                // +1 to links entering v
-
-                Integer index = Integer.valueOf(i);
-                // left to right
-                Set<TrioInt> set = leftToRightLoc.get(index);
-                if (set != null) {
-                    for (TrioInt loc : set) {
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key - 1);
-                    }
+        //pd'(v) = pd(v) + i(v)*eps
+        for (Entry<Integer, Integer> entry : incrLeft.entrySet()) {
+            Integer index = entry.getKey();
+            float incr = eps * entry.getValue();
+            gFlow.addToLeftPrice(index.intValue(), incr);
+            // left to right
+            Set<TrioInt> set = leftToRightLoc.get(index);
+            if (set != null) {
+                for (TrioInt loc : set) {
+                    PathNode node = forestTreeMap
+                        .get(Integer.valueOf(loc.getX()))
+                        .get(Integer.valueOf(loc.getY()))
+                        .get(loc.getZ());
+                    long key = node.getKey();
+                    node.setKey(key - 1);
                 }
+       
                 if (leftToSourceLoc.containsKey(index)) {
                     TrioInt loc = leftToSourceLoc.get(index);
                     PathNode node = forestTreeMap
@@ -1837,26 +1873,16 @@ Matchings in G are integral flows in N_G
                 }
             }
         }
-        for (int i = 0; i < gFlow.getNRight(); ++i) {
-            Integer index = Integer.valueOf(i);
-            float incr = eps * incrRight[i];
-            if (incr > 0) {
-                gFlow.addToRightPrice(i, incr);
-                    // -1 to links leaving v
-                // +1 to links entering v
-                Set<TrioInt> set = rightToLeftLoc.get(index);
-                if (set != null) {
-                    for (TrioInt loc : set) {
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key - 1);
-                    }
-                }
-                if (rightToSinkLoc.containsKey(index)) {
-                    TrioInt loc = rightToSinkLoc.get(index);
+        
+        for (Entry<Integer, Integer> entry : incrRight.entrySet()) {
+            Integer index = entry.getKey();
+            float incr = eps * entry.getValue().intValue();
+            gFlow.addToRightPrice(index.intValue(), incr);
+            // -1 to links leaving v
+            // +1 to links entering v
+            Set<TrioInt> set = rightToLeftLoc.get(index);
+            if (set != null) {
+                for (TrioInt loc : set) {
                     PathNode node = forestTreeMap
                         .get(Integer.valueOf(loc.getX()))
                         .get(Integer.valueOf(loc.getY()))
@@ -1864,21 +1890,21 @@ Matchings in G are integral flows in N_G
                     long key = node.getKey();
                     node.setKey(key - 1);
                 }
+            }
+            if (rightToSinkLoc.containsKey(index)) {
+                TrioInt loc = rightToSinkLoc.get(index);
+                PathNode node = forestTreeMap
+                    .get(Integer.valueOf(loc.getX()))
+                    .get(Integer.valueOf(loc.getY()))
+                    .get(loc.getZ());
+                long key = node.getKey();
+                node.setKey(key - 1);
+            }
 
-                //links entering v
-                set = leftToRightLoc.get(index);
-                if (set != null) {
-                    for (TrioInt loc : set) {
-                        PathNode node = forestTreeMap
-                            .get(Integer.valueOf(loc.getX()))
-                            .get(Integer.valueOf(loc.getY()))
-                            .get(loc.getZ());
-                        long key = node.getKey();
-                        node.setKey(key + 1);
-                    }
-                }
-                if (sinkToRightLoc.containsKey(index)) {
-                    TrioInt loc = sinkToRightLoc.get(index);
+            //links entering v
+            set = leftToRightLoc.get(index);
+            if (set != null) {
+                for (TrioInt loc : set) {
                     PathNode node = forestTreeMap
                         .get(Integer.valueOf(loc.getX()))
                         .get(Integer.valueOf(loc.getY()))
@@ -1886,6 +1912,15 @@ Matchings in G are integral flows in N_G
                     long key = node.getKey();
                     node.setKey(key + 1);
                 }
+            }
+            if (sinkToRightLoc.containsKey(index)) {
+                TrioInt loc = sinkToRightLoc.get(index);
+                PathNode node = forestTreeMap
+                    .get(Integer.valueOf(loc.getX()))
+                    .get(Integer.valueOf(loc.getY()))
+                    .get(loc.getZ());
+                long key = node.getKey();
+                node.setKey(key + 1);
             }
         }
     }
