@@ -469,6 +469,41 @@ public class MinCostUnbalancedAssignment {
             if (cPaths.isEmpty()) {
                 log.severe("did not find an augmenting path.  h=" + h);
                 gFlow.printSaturatedLinks();
+                /*
+                NOTE: when this has number of saturated arcs
+                less than s, where s is the number that we know
+                is the largest possible matching from hopcroft-karp
+                which only cares about connectedness to maximize
+                the number of matches, it's not clear what action
+                to take.
+                need to look in the paper to see if this is
+                mentioned.
+                
+                If the goal of the algorithm is first to provide
+                the maximum number of matchings and then at the
+                best minimum costs within that number of matchings,
+                one might expect that the algorithm actually has 
+                to be initialized with the matchings that
+                if not matched, lead to a reduction in the number
+                of total matches.  For example if a vertex has only
+                one edge and the vertex it would match to is present
+                in 2 edges, then the first must be matched even if
+                cost is higher if goal is to match all with secondary
+                goal of minimizing the cost.
+                
+                If minimum cost is the primary goal, then arriving
+                at no more augmentable paths
+                would suggest that the solution to return is
+                this smaller set of matchings.
+                
+                A perfect or imperfect matching in G at minimum cost
+                suggests the FlowNetwork initialization for
+                blocking matches has to occur first.
+                
+                currently, re-reading the paper to see if there is an 
+                error in my implementation, or discussion of
+                this case.
+                */
                 return;
             }
             

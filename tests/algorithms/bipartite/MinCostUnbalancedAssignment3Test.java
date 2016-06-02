@@ -54,12 +54,22 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         ------------------
         
         for maximizing number of matches, then min cost:
-        results are same as Hopcroft-Karp:
+        results are same as Hopcroft-Karp for this example
+        which is a matching size of 5:
         5  3
         4  4
         3  0
         1  1
         0  2
+        
+        -----
+        so far, the full algorithm progresses to this, but can find
+        no further augmenting paths:
+          0  1
+          1  1
+          3  4
+          4  3  <--- this one is min-cost, optimal for the pair
+                     but it prevents 5 3 
         */
                 
         weights.put(new PairInt(0, 0), Integer.valueOf(2));
