@@ -273,30 +273,33 @@ public class MinCostUnbalancedAssignment {
 
         // q >= 2.  consider q = O(log_2(n)) pg 41 par 3.
         int q = 2;
+
+        // pg 32, the weight scaling techinique
+        // starts w/ eps ~ maxC and reduces to ~1/s or 1/(6*s)
+        // w/ nIter ~ log_q(s*maxC)
+        // 
+        // eps_up = q^(e_up) where eps_up is smallest power of
+        //    q that exceeds maxC
+        // e_up * math.log(q)
+        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        double eps_up = Math.pow(q, e_up);
         
-        // pg 44
-        // since all costs are integers, can set eps < 1/6s
-        // where s is size of m
-        float eps = 1.f/(6.f * (float)s);
+        int e_down = -(1 + (int)Math.floor(
+            Math.log(s + 2)/Math.log(q)));
+        
+        double eps_down = Math.pow(q, e_down);
+        
+        int eps = 1 + (int)Math.floor(eps_up);
+        if (eps > q) {
+            // first iteration through net costs math.ceil(cp/eps)
+            // will be able to distinguish between integer differences
+            // in cost of 1 if the eps it receives is q-1 = 1.
+            eps = q;
+        }
         
         // expected number of iterations without a constant factor
         int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-        
-        // eps_bar = q^(e_bar) > maxC
-        //           e_bar*math.log(q) > math.log(maxC)
-        float eBar = 1.f + (float)Math.floor(Math.log(
-            gFlow.getMaxC()/Math.log(q)));
-        //e_bar = 1 + log_q(C)
-        //eps_bar = q^(e_bar)
-        float epsBar = (float)Math.pow(eBar, q);
-        
-        if (eps < gFlow.getMaxC()) {
-            double ni = rIter;
-            eps = (float)(epsBar * Math.pow(q, ni));
-        }
-               
-        // all nodes V in gFlow have prices = 0
-        
+                  
         int nIterR = 0;
         
         log.info("eps=" + eps + " rIter=" + rIter + " maxC=" + 
@@ -304,9 +307,8 @@ public class MinCostUnbalancedAssignment {
                
         // all nodes V in gFlow have prices = 0
         
-   eps = q;
-        //while (eps > epsBar) {
-        while (nIterR < rIter) {
+        while (eps > eps_down) {
+        //while (nIterR < rIter) {
             
             log.info("nIterR=" + nIterR + " s=" + s);
             
@@ -323,7 +325,12 @@ public class MinCostUnbalancedAssignment {
             
             eps /= (float)q;
             
-            refine(gFlow, s, eps, q);
+            int ext = refine(gFlow, s, eps, q);
+            
+            if (ext > 0) {
+                m = gFlow.extractMatches();
+                return m;
+            }
             
             ++nIterR;
         }
@@ -333,10 +340,12 @@ public class MinCostUnbalancedAssignment {
         // round prices to integers that make all arcs proper
         roundFinalPrices(gFlow);
         
+        m = gFlow.extractMatches();
+        
         return m;
     }
     
-    protected void refine(FlowNetwork gFlow, int s, float eps,
+    protected int refine(FlowNetwork gFlow, int s, float eps,
         int q) {
         
         log.info("at start of refine, s=" + s);
@@ -381,8 +390,6 @@ public class MinCostUnbalancedAssignment {
         int h = s;
         int nHIter = 0;
         while (h > 0) {
-
-//THERE is an error here
             
             log.info("nHIter=" + nHIter + " h=" + h);
             
@@ -540,10 +547,16 @@ public class MinCostUnbalancedAssignment {
                 but describing a graph using conditionals 
                 (cnf) would be a very verbose and possibly
                 time consuming step in order to consider that...
-                
+                If such a step can be done with a small runtime
+                complexity, would want to use it as a pre-processing
+                stage for the graph to find those edges that 
+                must be matched inspite of cost in order to
+                reach s number of matches, then
+                remove those from the graph to let this algorithm
+                match the remaining.
                 */
                 
-                return;
+                return 1;
             }
             
             debug(cPaths);
@@ -564,6 +577,8 @@ public class MinCostUnbalancedAssignment {
             
             ++nHIter;
         }
+        
+        return 0;
     }
     
     /**
@@ -588,9 +603,11 @@ public class MinCostUnbalancedAssignment {
         
         Set<Integer> d = new HashSet<Integer>(deficit);
     
-        //TODO: revisit this.  should probably be 2 to 3 * (maxC/eps)
-        int lambda 
-            = 3 * gFlow.getMaxC();
+        //TODO: revisit this. 
+        int lambda = (int)Math.ceil(3 * (gFlow.getMaxC()/eps));
+        if (lambda < 4) {
+            lambda = 4;
+        }
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -971,6 +988,13 @@ public class MinCostUnbalancedAssignment {
     
     private void roundFinalPrices(FlowNetwork gFlow) {
         //see pg 46
+        //round prices to integers with
+        // pd^~(v) = math.floor(pd(v) + k * eps_low_bar)
+        // where k is a carefully chosen integer in
+        // the range (0 to 1)/eps_low_bar
+        // 
+        // 
+        // 
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

@@ -1076,4 +1076,25 @@ public class FlowNetwork {
         log.info(sb.toString());
     }
 
+    public Map<Integer, Integer> extractMatches() {
+        
+        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            for (Integer index2 : entry.getValue()) {
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    m.put(index1, index2);
+                }
+            }
+        }
+        
+        return m;
+    }
+
 }
