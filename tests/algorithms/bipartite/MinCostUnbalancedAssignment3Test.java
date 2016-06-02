@@ -42,6 +42,25 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
+        
+        /*
+        for best cost, w/o regard to maximizing nMatches:
+        1  2
+        3  0
+        4  3
+        
+        unmatched:
+        0,2,5     1,4
+        ------------------
+        
+        for maximizing number of matches, then min cost:
+        results are same as Hopcroft-Karp:
+        5  3
+        4  4
+        3  0
+        1  1
+        0  2
+        */
                 
         weights.put(new PairInt(0, 0), Integer.valueOf(2));
         weights.put(new PairInt(0, 2), Integer.valueOf(3));

@@ -253,13 +253,21 @@ public class MinCostUnbalancedAssignment {
             g = g.copyToCreateSourceSink();
         }
         
+        {//DEBUG
+            log.info("hopcroft-karp matches:");
+            for (Entry<Integer, Integer> entry : m.entrySet()) {
+                log.info("hk matched " + entry.getKey() + " to "
+                    + entry.getValue());
+            }
+        }
+        
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
         
         //TODO: estimate of eps may need to be revised
         
         int s = m.size();
-         
+
         // q >= 2.  consider q = O(log_2(n)) pg 41 par 3.
         int q = 2;
         
@@ -304,7 +312,7 @@ public class MinCostUnbalancedAssignment {
         while (eps > epsBar) {
         //while (nIterR < rIter) {
             
-            log.info("nIterR=" + nIterR);
+            log.info("nIterR=" + nIterR + " s=" + s);
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
@@ -315,7 +323,7 @@ public class MinCostUnbalancedAssignment {
             eps /= (float)q;
             
             refine(gFlow, s, eps, q);
-        
+            
             ++nIterR;
         }
         
@@ -448,17 +456,19 @@ public class MinCostUnbalancedAssignment {
             List<LinkedList<PathNode>> zeroLengthLinks =
                 extractZeroLengthLinks(forest);
             
+            assert(gFlow.printSurplusAndDeficit());
+            
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             List<LinkedList<PathNode>> cPaths =
                 findMaximalSetOfCompatiblePaths(
                 gFlow.getNLeft(), gFlow.getNRight(),
                 gFlow.getSinkNode(), gFlow.getSourceNode(),
-                zeroLengthLinks 
-                ,surplus, new HashSet<Integer>(deficit)
-                );
+                zeroLengthLinks,surplus, 
+                new HashSet<Integer>(deficit));
             
             if (cPaths.isEmpty()) {
                 log.severe("did not find an augmenting path.  h=" + h);
+                gFlow.printSaturatedLinks();
                 return;
             }
             
@@ -468,7 +478,8 @@ public class MinCostUnbalancedAssignment {
             //   reducing |S| = |D| = h by |P|;
             augmentFlow(gFlow, cPaths, surplus, deficit);
             
-            debug(surplus, deficit);
+            log.info("after augment flow:");
+            gFlow.printSaturatedLinks();
             
             h = surplus.size();
             
@@ -1870,7 +1881,7 @@ Matchings in G are integral flows in N_G
             stack.add(xNode);
             B: while (!stack.isEmpty()) {
                 PathNode v = stack.peek();
-                log.info("stack.top=" + v.toString());
+                log.info("v=stack.top=" + v.toString());
                 boolean isLeftNode = (v instanceof LeftNode);
                 boolean isRightNode = (v instanceof RightNode);
                 if (isLeftNode || isRightNode) {
@@ -2041,17 +2052,6 @@ Matchings in G are integral flows in N_G
         assert((hBefore - hAfter) == cPaths.size());
     }
 
-    private void debug(List<Integer> surplus, List<Integer> deficit) {
-
-        //assert (surplus.size() == deficit.size());
-        for (int i = 0; i < surplus.size(); ++i) {
-            log.info(" surplus deficit match "
-                + Integer.toString(surplus.get(i).intValue())
-                + ", "
-                + Integer.toString(deficit.get(i).intValue()));
-        }
-    }
-    
     private Map<PathNode, Set<PathNode>> createNewAdjacencyMap(
         List<LinkedList<PathNode>> pathLinkLists,
         int nLeft, int nRight, int sinkNodeIdx, int sourceNodeIdx) {

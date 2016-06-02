@@ -481,7 +481,7 @@ public class FlowNetwork {
         getSurplusLeftIndexes(surplus);
         
         List<Integer> deficit = new ArrayList<Integer>();
-        getDeficitRightIndexes(surplus);
+        getDeficitRightIndexes(deficit);
         
         StringBuilder sb = new StringBuilder("surplus=(");
         for (Integer s : surplus) {
@@ -1003,6 +1003,47 @@ public class FlowNetwork {
         }
         
         return revMap;
+    }
+        
+    public int calculateNumberOfSaturatedArcs() {
+    
+        int n = 0;
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            for (Integer index2 : entry.getValue()) {
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    n++;
+                }
+            }
+        }
+        
+        return n;
+    }
+
+    public void printSaturatedLinks() {
+
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            for (Integer index2 : entry.getValue()) {
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated are matched arcs
+                    log.info("saturated bipartite arc from " +
+                        index1 + " to " + index2);
+                }
+            }
+        }
+        
     }
 
 }
