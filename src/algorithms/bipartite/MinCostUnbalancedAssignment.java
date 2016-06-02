@@ -440,7 +440,7 @@ public class MinCostUnbalancedAssignment {
             assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             // assert I5: Rf has no cycles of length zero.
             
-            log.info("in refine after prices and link length changes");
+            log.info("srching for zero length paths in this:");
             debug(forest);
             
             //Let Rf0 denote that subgraph of the residual digraph 
@@ -453,10 +453,12 @@ public class MinCostUnbalancedAssignment {
                 findMaximalSetOfCompatiblePaths(
                 gFlow.getNLeft(), gFlow.getNRight(),
                 gFlow.getSinkNode(), gFlow.getSourceNode(),
-                zeroLengthLinks, surplus, 
-                new HashSet<Integer>(deficit));
+                zeroLengthLinks 
+                ,surplus, new HashSet<Integer>(deficit)
+                );
             
             if (cPaths.isEmpty()) {
+                log.severe("did not find an augmenting path.  h=" + h);
                 return;
             }
             
@@ -470,7 +472,7 @@ public class MinCostUnbalancedAssignment {
             
             h = surplus.size();
             
-            // assert I1', I2, I3
+            // pg 63 assert I1', I2, I34  (not I3, but I4?)
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
             assert(gFlow.integralFlowIsEpsProper(eps));
@@ -502,8 +504,9 @@ public class MinCostUnbalancedAssignment {
         Set<Integer> d = new HashSet<Integer>(deficit);
     
         //TODO: revisit this.
-        int lambda = 3 * Math.min(gFlow.getNLeft(), 
-            gFlow.getNRight());
+        int lambda 
+            = 2;
+            //= 3 * Math.min(gFlow.getNLeft(), gFlow.getNRight());
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -1349,30 +1352,11 @@ Matchings in G are integral flows in N_G
             while (j < n) {
                 node = node.getRight();                    
                 List<PathNode> path = extractNodes(node);
-                for (int ii = 0; ii < (path.size() - 1); ++ii) {
+                int n2 = path.size();
+                for (int ii = 0; ii < n2; ++ii) {
                     PathNode node1 = path.get(ii);
-                    PathNode node2 = path.get(ii + 1);
                     log.info("forest2[" + i + "] tree branch[" 
-                    + j + "] node[" + ii + "]=" + node1.toString());
-                    // index1 is the left index of arc
-                    // index2 is the right index of the arc
-                    Integer index1, index2;
-                    if (node1 instanceof LeftNode) {
-                        index1 = (Integer)node1.getData();
-                        index2 = (Integer)node2.getData();
-                    } else {
-                        index1 = (Integer)node2.getData();
-                        index2 = (Integer)node1.getData();
-                    }
-                    /*   
-                    PairInt pair = new PairInt(index1.intValue(),
-                        index2.intValue());
-                    if (augmented.contains(pair)) {
-                        break;
-                    }
-                    swapLinkExistence(rM, index1, index2);
-                    augmented.add(pair);
-                    */
+                        + j + "] node[" + ii + "]=" + node1.toString());
                 }                    
                 j++;
             }
@@ -1456,6 +1440,7 @@ Matchings in G are integral flows in N_G
         float cp = gFlow.calcNetCost(idx1, idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
+        log.info("l1=" + l1 + " lp=" + lp);
         long lOld = node2.getKey();     
         if ((lTot < lambda) && (lTot < lOld)) {
             if (node2.pathPredecessor != null) {
@@ -1848,7 +1833,7 @@ Matchings in G are integral flows in N_G
             }
         }
     }
-
+    
     private List<LinkedList<PathNode>>
         findMaximalSetOfCompatiblePaths(
             int nLeft, int nRight, int sourceNodeIdx,
@@ -1856,7 +1841,7 @@ Matchings in G are integral flows in N_G
             List<LinkedList<PathNode>> pathLinkLists,
             List<Integer> surplus, Set<Integer> deficit) {
         
-        //then apply pseudocode from pg 62 , Figure 8.2
+        //pseudocode from pg 62 , Figure 8.2
         //   with input = length 0 adj list, the surplus
         //   list and the deficit list
         //   to create the maximal set of compatible paths.
@@ -1865,100 +1850,43 @@ Matchings in G are integral flows in N_G
         //    - visited (== marked)
         //    - identity (== Left or Right or Source or Sink)
 
-        //NOTE: can change to use "link compatible" filter here
-        // instead of this "node compatible" filter
-            
-        List<LeftNode> leftNodes = new ArrayList<LeftNode>();
-        for (int i = 0; i < nLeft; ++i) {
-            LeftNode node = new LeftNode();
-            node.setData(Integer.valueOf(i));
-            leftNodes.add(node);
-        }
-        List<RightNode> rightNodes = new ArrayList<RightNode>();
-        for (int i = 0; i < nRight; ++i) {
-            RightNode node = new RightNode();
-            node.setData(Integer.valueOf(i));
-            rightNodes.add(node);
-        }
-        SinkNode sinkNode = new SinkNode();
-        sinkNode.setData(Integer.valueOf(sinkNodeIdx));
-        
-        SourceNode sourceNode = new SourceNode();
-        sourceNode.setData(Integer.valueOf(sourceNodeIdx));
-        
         Map<PathNode, Set<PathNode>> pathLinksMap =
-            new HashMap<PathNode, Set<PathNode>>();
-        for (LinkedList<PathNode> link : pathLinkLists) {
-            PathNode node1 = link.pollFirst();
-            PathNode node2 = link.pollFirst();
-            assert(link.isEmpty());
-            // replace node1 and node2 
-            //     with nodes above to have same identity
-            //     and field m
-            int idx1 = ((Integer)node1.getData()).intValue();
-            int idx2 = ((Integer)node2.getData()).intValue();
-            if (node1 instanceof SinkNode) {
-                node1 = sinkNode;
-            } else if (node1 instanceof SourceNode) {
-                node1 = sourceNode;
-            } else if (node1 instanceof LeftNode) {
-                node1 = leftNodes.get(idx1);
-            } else {
-                node1 = rightNodes.get(idx1);
-            }
-            if (node2 instanceof SinkNode) {
-                node2 = sinkNode;
-            } else if (node2 instanceof SourceNode) {
-                node2 = sourceNode;
-            } else if (node2 instanceof LeftNode) {
-                node2 = leftNodes.get(idx2);
-            } else {
-                node2 = rightNodes.get(idx2);
-            }
-            
-            Set<PathNode> values = pathLinksMap.get(node1);
-            if (values == null) {
-                values = new HashSet<PathNode>();
-                pathLinksMap.put(node1, values);
-            }
-            values.add(node2);
-        }
+            createNewAdjacencyMap(pathLinkLists,
+            nLeft, nRight, sourceNodeIdx, sinkNodeIdx);
+        
+        Set<LeftNode> surp = new HashSet<LeftNode>();
+        Set<RightNode> def = new HashSet<RightNode>();
+        makeSurplusAndDeficitSubSets(pathLinksMap, 
+            surplus, deficit, surp, def);
         
         List<LinkedList<PathNode>> augPaths 
             = new ArrayList<LinkedList<PathNode>>();
         
         Stack<PathNode> stack = new Stack<PathNode>();
-        LinkedList<Integer> surp = new LinkedList<Integer>(surplus);
         
-        A:
-        while (!surp.isEmpty()) {
-            Integer x = surp.remove();
-            LeftNode xNode = leftNodes.get(x.intValue());
+        A: while (!surp.isEmpty()) {
+            LeftNode xNode = surp.iterator().next();
+            surp.remove(xNode);
             stack.add(xNode);
-            B:
-            while (!stack.isEmpty()) {
+            B: while (!stack.isEmpty()) {
                 PathNode v = stack.peek();
                 log.info("stack.top=" + v.toString());
-                Integer vIndex = (Integer)v.getData();
                 boolean isLeftNode = (v instanceof LeftNode);
                 boolean isRightNode = (v instanceof RightNode);
                 if (isLeftNode || isRightNode) {
                     v.m = 1;
                 }
-                if (isRightNode && deficit.contains(vIndex)) {
+                if (isRightNode && def.contains(v)) {
                     // add all of stack to P as an augmenting Path
-                    log.info("add all of stack to augPaths");
-                    PathNode node = stack.pop();
                     LinkedList<PathNode> augPath = new
                         LinkedList<PathNode>();
-                    if (node != null) {
-                        augPath.add(node);
-                        augPaths.add(augPath);
-                    }
                     while (!stack.isEmpty()) {
                         augPath.add(stack.pop());
                     }
-                    break A;
+                    if (!augPath.isEmpty()) {
+                        augPaths.add(augPath);
+                    }
+                    continue A;
                 }
                 Set<PathNode> set = pathLinksMap.get(v);
                 if (set != null) {
@@ -1968,11 +1896,11 @@ Matchings in G are integral flows in N_G
                         log.info("stack.push w = " + w.toString());
                         if (w.m == 0) {
                             stack.push(w);
-                            break B;
+                            continue B;
                         }
                     }
                 }
-                // do nothing with 
+                // do nothing with v
                 stack.pop();
             }
         }
@@ -2017,7 +1945,7 @@ Matchings in G are integral flows in N_G
             ArrayList<LinkedList<PathNode>>();
         
         // traverse trees in the forest
-        for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
+        for (int forestIdx = 1; forestIdx < forest.length; ++forestIdx) {
             DoubleLinkedCircularList tree = forest[forestIdx];
             if (tree == null) {
                 continue;
@@ -2028,8 +1956,9 @@ Matchings in G are integral flows in N_G
             while (treeIdx < n) {
                 node = node.getRight();
                 List<PathNode> path = MinCostUnbalancedAssignment.extractNodes(node);
+                int n2 = path.size();
                 Misc.<PathNode>reverse(path);
-                for (int branchIdx = 0; branchIdx < (path.size() - 1); ++branchIdx) {
+                for (int branchIdx = 0; branchIdx < (n2 - 1); ++branchIdx) {
                     PathNode node1 = path.get(branchIdx);
                     PathNode node2 = path.get(branchIdx + 1);
                     int l1 = (int) node1.getKey();
@@ -2096,6 +2025,8 @@ Matchings in G are integral flows in N_G
                 }
             }                
         }
+        
+        assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
 
         surplus.clear();
         deficit.clear();
@@ -2112,7 +2043,7 @@ Matchings in G are integral flows in N_G
 
     private void debug(List<Integer> surplus, List<Integer> deficit) {
 
-        assert (surplus.size() == deficit.size());
+        //assert (surplus.size() == deficit.size());
         for (int i = 0; i < surplus.size(); ++i) {
             log.info(" surplus deficit match "
                 + Integer.toString(surplus.get(i).intValue())
@@ -2120,4 +2051,115 @@ Matchings in G are integral flows in N_G
                 + Integer.toString(deficit.get(i).intValue()));
         }
     }
+    
+    private Map<PathNode, Set<PathNode>> createNewAdjacencyMap(
+        List<LinkedList<PathNode>> pathLinkLists,
+        int nLeft, int nRight, int sinkNodeIdx, int sourceNodeIdx) {
+        
+        Map<Integer, LeftNode> leftNodes = 
+            new HashMap<Integer, LeftNode>();
+        
+        Map<Integer, RightNode> rightNodes = 
+            new HashMap<Integer, RightNode>();
+        
+        SinkNode sinkNode = new SinkNode();
+        sinkNode.setData(Integer.valueOf(sinkNodeIdx));
+        
+        SourceNode sourceNode = new SourceNode();
+        sourceNode.setData(Integer.valueOf(sourceNodeIdx));
+        
+        Map<PathNode, Set<PathNode>> pathLinksMap =
+            new HashMap<PathNode, Set<PathNode>>();
+        for (LinkedList<PathNode> link : pathLinkLists) {
+            PathNode node1 = link.pollFirst();
+            PathNode node2 = link.pollFirst();
+            assert(link.isEmpty());
+            // replace node1 and node2 
+            //     with nodes above to have same identity
+            //     and field m
+            Integer index1 = (Integer)node1.getData();
+            Integer index2 = (Integer)node2.getData();
+            if (node1 instanceof SinkNode) {
+                node1 = sinkNode;
+            } else if (node1 instanceof SourceNode) {
+                node1 = sourceNode;
+            } else if (node1 instanceof LeftNode) {
+                node1 = leftNodes.get(index1);
+                if (node1 == null) {
+                    node1 = new LeftNode();
+                    node1.setData(index1);
+                    node1.m = 0;
+                    leftNodes.put(index1, (LeftNode)node1);
+                }
+            } else {
+                node1 = rightNodes.get(index1);
+                if (node1 == null) {
+                    node1 = new RightNode();
+                    node1.setData(index1);
+                    node1.m = 0;
+                    rightNodes.put(index1, (RightNode)node1);
+                }
+            }
+            if (node2 instanceof SinkNode) {
+                node2 = sinkNode;
+            } else if (node2 instanceof SourceNode) {
+                node2 = sourceNode;
+            } else if (node2 instanceof LeftNode) {
+                node2 = leftNodes.get(index2);
+                if (node2 == null) {
+                    node2 = new LeftNode();
+                    node2.setData(index2);
+                    node2.m = 0;
+                    leftNodes.put(index2, (LeftNode)node2);
+                }
+            } else {
+                node2 = rightNodes.get(index2);
+                if (node2 == null) {
+                    node2 = new RightNode();
+                    node2.setData(index2);
+                    node2.m = 0;
+                    rightNodes.put(index2, (RightNode)node2);
+                }
+            }
+            
+            Set<PathNode> values = pathLinksMap.get(node1);
+            if (values == null) {
+                values = new HashSet<PathNode>();
+                pathLinksMap.put(node1, values);
+            }
+            values.add(node2);
+        }
+
+        return pathLinksMap;
+    }
+    
+    private void makeSurplusAndDeficitSubSets(
+        Map<PathNode, Set<PathNode>> pathLinksMap, 
+        List<Integer> surplus, Set<Integer> deficit, 
+        Set<LeftNode> outputSurplus, 
+        Set<RightNode> outputDeficit) {
+
+        Set<Integer> sSet = new HashSet<Integer>(surplus);
+        Set<Integer> dSet = new HashSet<Integer>(deficit);
+        
+        for (Entry<PathNode, Set<PathNode>> entry : pathLinksMap.entrySet()) {
+            PathNode node1 = entry.getKey();
+            Integer index1 = (Integer)node1.getData();
+            if (node1 instanceof LeftNode && sSet.contains(index1)) {
+                outputSurplus.add((LeftNode)node1);
+            } else if (node1 instanceof RightNode && dSet.contains(index1)) {
+                outputDeficit.add((RightNode)node1);
+            }
+            for (PathNode node2 : entry.getValue()) {
+                Integer index2 = (Integer)node2.getData();
+                if (node2 instanceof LeftNode && sSet.contains(index2)) {
+                    outputSurplus.add((LeftNode)node2);
+                } else if (node2 instanceof RightNode && dSet.contains(index2)) {
+                    outputDeficit.add((RightNode)node2);
+                }
+            }
+        }
+    
+    }
+
 }

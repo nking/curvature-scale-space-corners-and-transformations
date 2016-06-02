@@ -395,6 +395,8 @@ public class FlowNetwork {
         //Should this be for the integral flow only?
         double flow = calcTotalFlow();
         
+        log.info("assert I1: flow=" + flow + " s=" + s);
+        
         return (Math.abs(flow - s) < 1);
     }
     
@@ -471,6 +473,31 @@ public class FlowNetwork {
         log.info("s=" + nMatchingsHK + " h=" + nSurplus);
                 
         return (Math.abs(flow - (nMatchingsHK - nSurplus)) < 1);
+    }
+        
+    public boolean printSurplusAndDeficit() {
+    
+        List<Integer> surplus = new ArrayList<Integer>();
+        getSurplusLeftIndexes(surplus);
+        
+        List<Integer> deficit = new ArrayList<Integer>();
+        getDeficitRightIndexes(surplus);
+        
+        StringBuilder sb = new StringBuilder("surplus=(");
+        for (Integer s : surplus) {
+            sb.append(s.toString()).append(", ");
+        }
+        sb.append(")");
+        log.info(sb.toString());
+        
+        sb = new StringBuilder("deficit=(");
+        for (Integer d : deficit) {
+            sb.append(d.toString()).append(", ");
+        }
+        sb.append(")");
+        log.info(sb.toString());
+        
+        return true;
     }
   
     double calcTotalSourceFlow() {
@@ -941,6 +968,10 @@ public class FlowNetwork {
         } else if (Math.abs(flow) < 0.01) {
             // idle, so change to "saturated"
             f.put(p, Float.valueOf(1));
+            
+            // should the source and sink
+            // arcs be reversed too?
+            
         } else {
             throw new IllegalStateException(
                 "Error in algorithm.  not expecting"
