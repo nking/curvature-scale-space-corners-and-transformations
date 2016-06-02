@@ -503,6 +503,19 @@ public class MinCostUnbalancedAssignment {
                 currently, re-reading the paper to see if there is an 
                 error in my implementation, or discussion of
                 this case.
+                
+                might need to assume that the graph usually doesn't
+                have such matches that reduce total number possible,
+                and if the case where they exist occurs resulting
+                in no more augmentable paths (this block of code),
+                that then one looks at the current saturated arcs
+                to find which are the arcs that prevent another
+                arc from being matched,
+                and then handle special initialization here for
+                those arcs that must be set...
+                seems like this approach could be time consuming
+                like back tracking if several such conflicts
+                exist in the input graph.
                 */
                 return;
             }
