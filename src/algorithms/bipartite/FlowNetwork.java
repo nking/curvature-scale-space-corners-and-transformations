@@ -578,7 +578,7 @@ public class FlowNetwork {
                     while (cp <= -qEps) {
                         pRight[index2.intValue()] += (count * delta);
                         cp = calcNetCost(p);
-                        count += 1.f;
+                        //count += 1.f;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated, cp <= qEps
@@ -587,7 +587,7 @@ public class FlowNetwork {
                         float count = 1.f;
                         pLeft[index1.intValue()] += (count * delta);
                         cp = calcNetCost(p);
-                        count += 1.f;
+                        //count += 1.f;
                     }
                 }
             }
@@ -605,7 +605,7 @@ public class FlowNetwork {
                 while (cp <= -qEps) {
                     pLeft[xIndex.intValue()] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
-                    count += 1.f;
+                    //count += 1.f;
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
@@ -616,7 +616,7 @@ public class FlowNetwork {
                 while (cp > qEps) {
                     pLeft[xIndex.intValue()] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
-                    count += 1.f;
+                    //count += 1.f;
                 }
             }
         }
@@ -633,7 +633,7 @@ public class FlowNetwork {
                 while (cp <= -qEps) {
                     pRight[yIndex.intValue()] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
-                    count += 1.f;
+                    //count += 1.f;
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
@@ -644,7 +644,7 @@ public class FlowNetwork {
                 while (cp > qEps) {
                     pRight[yIndex.intValue()] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
-                    count += 1.f;
+                    //count += 1.f;
                 }
             }
         }
@@ -1042,6 +1042,25 @@ public class FlowNetwork {
             }
         }
         
+    }
+    
+    public void printNetCosts() {
+
+        StringBuilder sb = new StringBuilder();
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            for (Integer index2 : entry.getValue()) {
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                sb.append(String.format("%d to %d cp=%.2f\n",
+                    index1.intValue(), index2.intValue(), cp));
+            }
+        }
+        log.info(sb.toString());
     }
 
 }

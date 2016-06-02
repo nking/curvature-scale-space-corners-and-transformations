@@ -264,6 +264,9 @@ public class MinCostUnbalancedAssignment {
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
         
+        log.info("init FlowNetwork:");
+        gFlow.printNetCosts();
+        
         //TODO: estimate of eps may need to be revised
         
         int s = m.size();
@@ -338,7 +341,7 @@ public class MinCostUnbalancedAssignment {
     protected void refine(FlowNetwork gFlow, int s, float eps,
         int q) {
         
-        log.info("at start of refine:");
+        log.info("at start of refine, s=" + s);
         
         assert(gFlow.printFlowValueIncludingSrcSnk(s));
         
@@ -358,6 +361,8 @@ public class MinCostUnbalancedAssignment {
                 Float.valueOf(0));
             log.info("surplus idx=" + Integer.toString(idx1));
         }
+
+        assert(surplus.size() == s);
         
         /*
         see Figure 7.4 on pg 53.
@@ -368,13 +373,14 @@ public class MinCostUnbalancedAssignment {
         gFlow.raisePricesUntilEpsProper(eps, q);
         
         log.info("after raise prices:");
-        assert(gFlow.printFlowValueIncludingSrcSnk(s));
+        gFlow.printNetCosts();
+        assert(gFlow.printFlowValueIncludingSrcSnk(s));        
         
         //in [0] holds the length of the terminating deficit
         // node which is also the forest index it was
         // added to.
         int[] terminatingDeficitIdx = new int[1];
-        int h = surplus.size();//s;
+        int h = s;
         int nHIter = 0;
         while (h > 0) {
 
@@ -503,6 +509,13 @@ public class MinCostUnbalancedAssignment {
                 currently, re-reading the paper to see if there is an 
                 error in my implementation, or discussion of
                 this case.
+                --> one error is in configuring eps...
+                    initial value is larger than max(abs(cost))
+                    and that means that Math.ceil(netcost/eps)
+                    is always zero, so the costs are not used
+                    in determining arc length in buildForest2.
+                    (a large initial eps does not violate
+                    eps-proper Figure 6.1 on pg 43).
                 
                 might need to assume that the graph usually doesn't
                 have such matches that reduce total number possible,
@@ -1443,7 +1456,6 @@ Matchings in G are integral flows in N_G
         
         LeftNode node2 = leftNodes.get(index2);
         float cp = gFlow.calcSourceNetCost(idx2);
-        
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
