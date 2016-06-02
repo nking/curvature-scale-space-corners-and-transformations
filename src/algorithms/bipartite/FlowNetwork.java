@@ -578,6 +578,8 @@ public class FlowNetwork {
                     while (cp <= -qEps) {
                         pRight[index2.intValue()] += (count * delta);
                         cp = calcNetCost(p);
+                        log.info("raise price of right " + index2 +
+                            "to cp=" + cp);
                         //count += 1.f;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
@@ -588,7 +590,11 @@ public class FlowNetwork {
                         pLeft[index1.intValue()] += (count * delta);
                         cp = calcNetCost(p);
                         //count += 1.f;
+                        log.info("lower price of left " + index1 +
+                            "to cp=" + cp);
                     }
+                } else {
+                    int z = 1;
                 }
             }
         }
@@ -606,17 +612,19 @@ public class FlowNetwork {
                     pLeft[xIndex.intValue()] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
                     //count += 1.f;
+                    log.info("raise price of left for source arc" 
+                        + xIndex + "to cp=" + cp);
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 //cp = cost - pdX + pdY so incr pdX
-                //TODO: a single price raise of 2*delta or 3*delta?
-                //      difficult to tell by pg 54 and 53
                 float count = 1.f;
                 while (cp > qEps) {
-                    pLeft[xIndex.intValue()] += (count * delta);
+                    pLeft[sourceNode] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
                     //count += 1.f;
+                    log.info("lower price of left for source arc" 
+                        + xIndex + "to cp=" + cp);
                 }
             }
         }
@@ -629,11 +637,14 @@ public class FlowNetwork {
             if (unitFlow == 0) {
                 // idle, cp > -qEps
                 //cp = cost - pdX + pdY so inr pdY
+                // where pdX is pRight and pdY is pRight[sink]
                 float count = 1.f;
                 while (cp <= -qEps) {
-                    pRight[yIndex.intValue()] += (count * delta);
+                    pRight[sinkNode] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
                     //count += 1.f;
+                    log.info("raise price of right for sink arc" 
+                        + sinkNode + "to cp=" + cp);
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
@@ -645,6 +656,8 @@ public class FlowNetwork {
                     pRight[yIndex.intValue()] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
                     //count += 1.f;
+                    log.info("lower price of right for sink arc" 
+                        + yIndex + "to cp=" + cp);
                 }
             }
         }

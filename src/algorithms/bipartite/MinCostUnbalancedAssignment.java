@@ -278,11 +278,7 @@ public class MinCostUnbalancedAssignment {
         // since all costs are integers, can set eps < 1/6s
         // where s is size of m
         float eps = 1.f/(6.f * (float)s);
-        //     this is possibly smaller than maxC, so presumably
-        //     the loop conditions below combined with
-        //     the runtime complexity suggest something
-        //     more like eps = epsBar * q^(nIter)
-       
+        
         // expected number of iterations without a constant factor
         int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
         
@@ -298,11 +294,7 @@ public class MinCostUnbalancedAssignment {
             double ni = rIter;
             eps = (float)(epsBar * Math.pow(q, ni));
         }
-        log.info("eps=" + eps + " epsBar=" + epsBar + " maxC=" + 
-            gFlow.getMaxC());
-        
-        assert(eps > gFlow.getMaxC());
-       
+               
         // all nodes V in gFlow have prices = 0
         
         int nIterR = 0;
@@ -311,17 +303,18 @@ public class MinCostUnbalancedAssignment {
             gFlow.getMaxC());
                
         // all nodes V in gFlow have prices = 0
-                        
-        while (eps > epsBar) {
-        //while (nIterR < rIter) {
+        
+   eps = 1.f;
+        //while (eps > epsBar) {
+        while (nIterR < rIter) {
             
             log.info("nIterR=" + nIterR + " s=" + s);
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
-            assert(gFlow.integralFlowIsEpsProper(eps));
-            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+       //     assert(gFlow.integralFlowIsEpsProper(eps));
+      //      assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             
             eps /= (float)q;
             
@@ -516,6 +509,9 @@ public class MinCostUnbalancedAssignment {
                     in determining arc length in buildForest2.
                     (a large initial eps does not violate
                     eps-proper Figure 6.1 on pg 43).
+                    if set eps to 1, then all costs are distinguishable
+                    from one another, but the floa is no longer
+                    "eps-proper".
                 
                 might need to assume that the graph usually doesn't
                 have such matches that reduce total number possible,
@@ -584,10 +580,9 @@ public class MinCostUnbalancedAssignment {
         
         Set<Integer> d = new HashSet<Integer>(deficit);
     
-        //TODO: revisit this.
+        //TODO: revisit this.  should probably be 2 to 3 * (maxC/eps)
         int lambda 
-            = 2;
-            //= 3 * Math.min(gFlow.getNLeft(), gFlow.getNRight());
+            = 3 * gFlow.getMaxC();
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -693,7 +688,7 @@ public class MinCostUnbalancedAssignment {
             
             PathNode node1Cp = node1.copy();
 
-            log.fine("add to forest key=" + node1Cp.toString());
+            log.info("add to forest key=" + node1Cp.toString());
             
             //add v to the forest;
             addToForest(forest, node1Cp);
@@ -1394,7 +1389,7 @@ Matchings in G are integral flows in N_G
     private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
         minHeap, PathNode node2, long lTot) {
 
-        log.info("decreaseKey=" + node2);
+        log.info("decreaseKey=" + node2 + " to key=" + lTot);
         
         int prevKey = (int)node2.getKey();
         minHeap[prevKey].remove(node2);
@@ -1459,13 +1454,10 @@ Matchings in G are integral flows in N_G
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
+        log.info(String.format("(source,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx2, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("*node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1490,13 +1482,10 @@ Matchings in G are integral flows in N_G
         long lp = 1 - (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
+        log.info(String.format("(%d,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx2, idx1, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("**node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1520,14 +1509,11 @@ Matchings in G are integral flows in N_G
         float cp = gFlow.calcNetCost(idx1, idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
-        long lOld = node2.getKey();     
+        long lOld = node2.getKey(); 
+        log.info(String.format("(%d,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx1, idx2, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("***node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1553,13 +1539,10 @@ Matchings in G are integral flows in N_G
         long lp = 1 - (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
+        log.info(String.format("(%d,sink) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx2, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("****node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1584,13 +1567,10 @@ Matchings in G are integral flows in N_G
         
         long lTot = l1 + lp;
         long lOld = node2.getKey();
+        log.info(String.format("(source,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx1, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("*****node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1614,13 +1594,10 @@ Matchings in G are integral flows in N_G
         
         long lTot = l1 + lp;
         long lOld = node2.getKey();
+        log.info(String.format("(%d,sink) cp=%.1f lp=%s lTot=%s lOld=%s",
+            idx1, cp, Long.toString(lp), Long.toString(lTot), 
+            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
-            if (node2.pathPredecessor != null) {
-                log.info("******node2.pp=" + node2.pathPredecessor
-                    + " replacing with " +
-                    node1
-                );
-            }
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
@@ -1719,7 +1696,7 @@ Matchings in G are integral flows in N_G
 
         Map<Integer, Map<Integer, List<PathNode>>> forestTreeMap
             = new HashMap<Integer, Map<Integer, List<PathNode>>>();
-
+//TODO: check for errors here
         // traverse trees in the forest
         for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
             DoubleLinkedCircularList tree = forest[forestIdx];
