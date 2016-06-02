@@ -516,6 +516,14 @@ public class MinCostUnbalancedAssignment {
                 seems like this approach could be time consuming
                 like back tracking if several such conflicts
                 exist in the input graph.
+                
+                There may be fast ways to find the conflicts
+                using methods such as those in the fastest 
+                boolean sat solvers regarding conflict analysis...
+                but describing a graph using conditionals 
+                (cnf) would be a very verbose and possibly
+                time consuming step in order to consider that...
+                
                 */
                 return;
             }
