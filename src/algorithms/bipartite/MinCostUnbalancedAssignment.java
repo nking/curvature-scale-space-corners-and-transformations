@@ -277,7 +277,7 @@ public class MinCostUnbalancedAssignment {
         // pg 32, the weight scaling techinique
         // starts w/ eps ~ maxC and reduces to ~1/s or 1/(6*s)
         // w/ nIter ~ log_q(s*maxC)
-        // 
+        // pg 44
         // eps_up = q^(e_up) where eps_up is smallest power of
         //    q that exceeds maxC
         // e_up * math.log(q)
@@ -294,6 +294,9 @@ public class MinCostUnbalancedAssignment {
             // first iteration through net costs math.ceil(cp/eps)
             // will be able to distinguish between integer differences
             // in cost of 1 if the eps it receives is q-1 = 1.
+            // since eps is divided by q before refine,
+            // eps should be approx q here.
+            // TODO: needs testing for a range of max(cost) w.r.t. q
             eps = q;
         }
         
@@ -303,19 +306,17 @@ public class MinCostUnbalancedAssignment {
         int nIterR = 0;
         
         log.info("eps=" + eps + " rIter=" + rIter + " maxC=" + 
-            gFlow.getMaxC());
+            gFlow.getMaxC() + " eps_down=" + eps_down);
                
         // all nodes V in gFlow have prices = 0
         
         while (eps > eps_down) {
-        //while (nIterR < rIter) {
             
             log.info("nIterR=" + nIterR + " s=" + s);
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
-            
             // if using a smaller eps than maxC, cannot assert
             //    these on first round
             if ((nIterR > 0) || (eps > gFlow.getMaxC())) {
@@ -329,6 +330,9 @@ public class MinCostUnbalancedAssignment {
             
             if (ext > 0) {
                 m = gFlow.extractMatches();
+                // if returning gFlow instead:
+                roundFinalPrices(gFlow, eps_down);
+                gFlow.printFlowValueIncludingSrcSnk(m.size());
                 return m;
             }
             
@@ -338,7 +342,7 @@ public class MinCostUnbalancedAssignment {
         // assert nIter is approx log_q(s * maxC)
         
         // round prices to integers that make all arcs proper
-        roundFinalPrices(gFlow);
+        roundFinalPrices(gFlow, eps_down);
         
         m = gFlow.extractMatches();
         
@@ -517,16 +521,6 @@ public class MinCostUnbalancedAssignment {
                 currently, re-reading the paper to see if there is an 
                 error in my implementation, or discussion of
                 this case.
-                --> one error is in configuring eps...
-                    initial value is larger than max(abs(cost))
-                    and that means that Math.ceil(netcost/eps)
-                    is always zero, so the costs are not used
-                    in determining arc length in buildForest2.
-                    (a large initial eps does not violate
-                    eps-proper Figure 6.1 on pg 43).
-                    if set eps to 1, then all costs are distinguishable
-                    from one another, but the floa is no longer
-                    "eps-proper".
                 
                 might need to assume that the graph usually doesn't
                 have such matches that reduce total number possible,
@@ -986,16 +980,95 @@ public class MinCostUnbalancedAssignment {
         }        
     }
     
-    private void roundFinalPrices(FlowNetwork gFlow) {
+    private void roundFinalPrices(FlowNetwork gFlow,
+        double eps_down) {
+        
+        //TODO: this may need revision
+        
         //see pg 46
         //round prices to integers with
-        // pd^~(v) = math.floor(pd(v) + k * eps_low_bar)
+        // pd^~(v) = math.floor(pd(v) + k * eps_down)
         // where k is a carefully chosen integer in
-        // the range (0 to 1)/eps_low_bar
+        // the range (0 to 1)/eps_down
         // 
-        // 
-        // 
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        // k is chosen from 0 to 16, excluding k=10
+        //
+        // each currently "improper" arc for saturated arcs
+        //   is used to examine
+        //   k as fractional part of pd(v) or pd(w).
+        //   the bad value :
+        //      the largest k that causes pd(v) to round down
+        //          == same k that causes pd(w) to round up
+        // the arcs that are scanned are chosen to be the source
+        //   to left arcs.
+        //   the scan pattern is to calculate whether each
+        //      saturated arc is "proper" or "improper" for
+        //      all values of k, that is integers in range
+        //      [0 to 1)/eps_down are marked first as good
+        //      and then as bad when a bad value of k is found.
+        //
+        //      then from the integers that are still marked good,
+        //      choose that as a good value for k
+        //      and adjust the prices using it.
+        //
+        //      the final resulting f will then be min-cost
+        
+        // definition of saturated and improper in
+        // Figure 6.1, p 43
+        //   improper is net cost > 0
+        //   eps-proper is net cost > -eps
+        
+        int sourceNode = gFlow.getSourceNode();
+        
+        Set<Integer> ks = new HashSet<Integer>();
+        int maxK = (int)Math.ceil(1./eps_down);
+        for (int k = 0; k < maxK; ++k) {
+            
+            boolean keep = true;
+        
+            float factor = (float)eps_down * k;
+            
+            for (Integer xIndex : gFlow.getSourceForwardArcs()) {
+                int xIdx = xIndex.intValue();
+                float unitFlow = gFlow.getSourceToLeftFlow(xIdx);
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    //cp = cost - pdX + pdY so incr pdX                    
+                    int cost = gFlow.getSourceToLeftCost(xIdx);
+                    double pdX = gFlow.getLeftPrice(sourceNode);
+                    double pdY = gFlow.getLeftPrice(xIdx);
+                    
+                    // values causing pdX to round down
+                    // while pdY rounds up
+                    // are not proper
+                    double pdX2 = Math.floor(pdX + factor);
+                    double pdY2 = Math.floor(pdY + factor);
+                        
+                    if ((pdX2 < pdX) && (pdY2 > pdY)) {
+                        keep = false;
+                        break;
+                    }
+                    
+                }
+            }
+            if (keep) {
+                ks.add(Integer.valueOf(k));
+            }
+        }
+        
+        if (ks.size() == maxK) {
+            //TODO: revisit this
+            // no improper arcs
+            return;
+        }
+        
+        assert(!ks.isEmpty());
+        
+        // pick from ks to modify prices
+        //pd^~(v) = math.floor(pd(v) + k * eps_down)
+        
+        int k = ks.iterator().next().intValue();
+        gFlow.addToAllPrices((float)(k * eps_down));        
     }
     
     /*
@@ -1020,23 +1093,6 @@ public class MinCostUnbalancedAssignment {
          while saturated arcs (f=1) become right-to-left links. 
          Note that the residual digraph R_M depends only on the 
          matching M, not on the prices p.    
-    
-    
-       - length or distance in the residual digraph
-         is a term usable when the link has length >= 0
-         and the underlying edges are "tight" (have 0 net cost).
-   **    - to find the shortest possible augmenting path,
-           can use a variant of Dijkstra's algorithm.   
-           Note that if X->Y is a forward link R_M, corresponding
-           to an idle edge (x,y), 
-              define the length of that link 
-                to be the net cost of the edge (lp(x ⇒ y) = cp(X,Y)).
-              define the length of any backward link y ⇒ x 
-                to be zero: lp(y ⇒ x) := 0. 
-              define the length of an alternating path to be 
-                 the sum of the lengths of its links.
-              Note that the term link-count is in contrast, the
-                number of links regardless of edge cost.
     
     A pseudoflow is a flux in which the flow f(X,Y) along each 
       arc X → Y is nonnegative and satisfies the unit-capacity 

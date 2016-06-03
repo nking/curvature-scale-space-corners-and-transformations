@@ -328,6 +328,9 @@ public class FlowNetwork {
     public float getRightToSinkFlow(int idx) {
         return rightToSinkF.get(Integer.valueOf(idx));
     }
+    public int getSourceToLeftCost(int idx) {
+        return sourceToLeftC.get(Integer.valueOf(idx));
+    }
     
     public float calcNetCost(int u, int v) {
 
@@ -1095,6 +1098,22 @@ public class FlowNetwork {
         }
         
         return m;
+    }
+
+    /**
+     * given value, modify prices such that
+     * //pd^~(v) = math.floor(pd(v) + value)
+     * @param value
+     */
+    public void addToAllPrices(float value) {
+
+        for (int i = 0; i < nLeft; ++i) {
+            pLeft[i] = (float)Math.floor(pLeft[i] + value);
+        }
+        
+        for (int i = 0; i < nRight; ++i) {
+            pRight[i] = (float)Math.floor(pRight[i] + value);
+        }
     }
 
 }
