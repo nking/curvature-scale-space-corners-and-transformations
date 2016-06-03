@@ -5,7 +5,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -41,9 +40,11 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     }
     
     public void test1() throws Exception {
-        
+        // size=100, scale=10 shows error in hopcroft-karp
         for (int size = 10; size <= 10; size *= 10) {
-            for (int scale = 10; scale <= 1000; scale *= 10) {
+            for (int scale = 10; scale <= 100000; scale *= 10) {
+                
+                log.info("size=" + size + " scale=" + scale);
                 
                 Graph g = getTestGraph1(size, scale);
                 
@@ -51,6 +52,9 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                     new MinCostUnbalancedAssignment();
                 
                 Map<Integer, Integer> m = bipartite.flowAssign(g);
+                
+                log.info("size=" + size + " scale=" + scale + 
+                    " m.size=" + m.size());
                 
                 assertEquals(size, m.size());
                 

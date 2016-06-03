@@ -331,9 +331,9 @@ public class MinCostUnbalancedAssignment {
                
         // all nodes V in gFlow have prices = 0
         
-        while (eps > eps_down) {
+        while ((eps > eps_down) && (nIterR < 2*rIter)) {
             
-            log.info("nIterR=" + nIterR + " s=" + s);
+            log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps);
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
@@ -731,7 +731,7 @@ public class MinCostUnbalancedAssignment {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
-        if (false) { 
+        if (true) { 
             //runtime complexity is O(m * sqrt(max matching size))
             //    where m is number of edges in graph
             //temporarily, replacing w/ O(m * sqrt(n))
