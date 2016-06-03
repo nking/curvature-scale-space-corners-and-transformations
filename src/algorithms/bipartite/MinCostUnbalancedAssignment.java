@@ -40,6 +40,19 @@ import java.util.logging.Logger;
  by Ramshaw and Tarjan, 2012
  for their algorithm, FlowAssign, Refine, and other methods
  used in the paper.
+ * 
+ Note that the min-cost is the optimized goal, so if a 
+ graph is given that has a possible solution with more 
+ matches than the number of min-cost matches, this 
+ * solver will not completely match the nodes in that
+ * graph.
+ * (in that case, one might want to create a pre-processing
+ * stage to filter the graph...pre-matching those edges
+ * that must be matched inspite of cost because no other
+ * edges are connected to those nodes for example.
+ * might consider the very fast state management
+ * present in the conflict analysis of the fastest boolean
+ * sat solvers to design a fast pre-filter).
  </pre>
  * @author nichole
  */
@@ -486,68 +499,19 @@ public class MinCostUnbalancedAssignment {
             
             if (cPaths.isEmpty()) {
                 log.severe("did not find an augmenting path.  h=" + h);
-                gFlow.printSaturatedLinks();
+                
+                //gFlow.printSaturatedLinks();
+                
                 /*
                 NOTE: when this has number of saturated arcs
                 less than s, where s is the number that we know
                 is the largest possible matching from hopcroft-karp
                 which only cares about connectedness to maximize
-                the number of matches, it's not clear what action
-                to take.
-                need to look in the paper to see if this is
-                mentioned.
-                
-                If the goal of the algorithm is first to provide
-                the maximum number of matchings and then at the
-                best minimum costs within that number of matchings,
-                one might expect that the algorithm actually has 
-                to be initialized with the matchings that
-                if not matched, lead to a reduction in the number
-                of total matches.  For example if a vertex has only
-                one edge and the vertex it would match to is present
-                in 2 edges, then the first must be matched even if
-                cost is higher if goal is to match all with secondary
-                goal of minimizing the cost.
-                
-                If minimum cost is the primary goal, then arriving
-                at no more augmentable paths
-                would suggest that the solution to return is
-                this smaller set of matchings.
-                
-                A perfect or imperfect matching in G at minimum cost
-                suggests the FlowNetwork initialization for
-                blocking matches has to occur first.
-                
-                currently, re-reading the paper to see if there is an 
-                error in my implementation, or discussion of
-                this case.
-                
-                might need to assume that the graph usually doesn't
-                have such matches that reduce total number possible,
-                and if the case where they exist occurs resulting
-                in no more augmentable paths (this block of code),
-                that then one looks at the current saturated arcs
-                to find which are the arcs that prevent another
-                arc from being matched,
-                and then handle special initialization here for
-                those arcs that must be set...
-                seems like this approach could be time consuming
-                like back tracking if several such conflicts
-                exist in the input graph.
-                
-                There may be fast ways to find the conflicts
-                using methods such as those in the fastest 
-                boolean sat solvers regarding conflict analysis...
-                but describing a graph using conditionals 
-                (cnf) would be a very verbose and possibly
-                time consuming step in order to consider that...
-                If such a step can be done with a small runtime
-                complexity, would want to use it as a pre-processing
-                stage for the graph to find those edges that 
-                must be matched inspite of cost in order to
-                reach s number of matches, then
-                remove those from the graph to let this algorithm
-                match the remaining.
+                the number of matches, there were higher cost 
+                edges which had smaller connectivity so dropped
+                out of the solution.
+                because the algorithm goal is min-cost, can
+                just return this smaller set of matchings than s.
                 */
                 
                 return 1;
