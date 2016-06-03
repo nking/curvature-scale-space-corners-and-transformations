@@ -1241,9 +1241,7 @@ Matchings in G are integral flows in N_G
             } else {
                 //exit(bachelor β := y reached);
                 log.info("bachelor y=" + y.toString());
-                if (y.getKey() > 1) {
-                    break;
-                }
+                break;
             }
             
             log.info("nIter=" + nIter);
@@ -1310,11 +1308,11 @@ Matchings in G are integral flows in N_G
                     if (lOld == Long.MAX_VALUE) {
                         yNode.setKey(ell);
                         heap.insert(yNode);
-                        log.info(String.format("HEAP insert: %s",
+                        log.fine(String.format("HEAP insert: %s",
                             yNode.toString()));
                     } else {
                         heap.decreaseKey(yNode, ell);
-                        log.info(String.format("HEAP decr: %s",
+                        log.fine(String.format("HEAP decr: %s",
                             yNode.toString()));
                     }
                 }
@@ -1377,10 +1375,12 @@ Matchings in G are integral flows in N_G
         Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
         
         boolean forwardFound = (rIndexes != null) && rIndexes.contains(rightIndex);
+
+        Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
         
         if (forwardFound) {
             
-            if (rM.getBackwardLinksRM().containsKey(rightIndex)) {
+            if (v2 != null) {
                 return;
             }
 
@@ -1400,7 +1400,6 @@ Matchings in G are integral flows in N_G
             rightIndex);
         
         // assert that a backward link exists
-        Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
         assert(v2 != null);
         assert(v2.equals(leftIndex));
         
