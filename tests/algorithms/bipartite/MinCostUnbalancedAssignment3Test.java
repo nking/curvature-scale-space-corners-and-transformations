@@ -20,6 +20,19 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public MinCostUnbalancedAssignment3Test() {
     }
     
+    public void est00() {
+        
+        Graph g = getTestGraph00();
+        
+        MinCostUnbalancedAssignment bipartite = 
+            new MinCostUnbalancedAssignment();
+        
+        Map<Integer, Integer> m = bipartite.hopcroftKarp(g, 3);
+        
+        assertEquals(3, m.size());
+             
+    }
+    
     public void est0() {
         
         // test graphs on pg 49
@@ -39,7 +52,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             .equals(Integer.valueOf(3)));
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
         // size=100, scale=10 shows error in hopcroft-karp
         for (int size = 10; size <= 10; size *= 10) {
             for (int scale = 10; scale <= 100000; scale *= 10) {
@@ -65,9 +78,91 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 assertNotNull(bipartite.getFinalFlowNetwork());
             }
         }
-       
     }
 
+    public void est2() throws Exception {
+        
+        int size = 10;
+        int scale = 10000;//1000000;
+        
+        log.info("size=" + size + " scale=" + scale);
+
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.nanoTime();
+        sr.setSeed(seed);
+        log.info("seed=" + seed);
+        
+        for (int nTest = 0; nTest < 10; ++nTest) {
+            
+            log.info("nTest=" + nTest);
+            
+            Graph g = getTestGraph2(size, scale, sr);
+
+            MinCostUnbalancedAssignment bipartite = 
+                new MinCostUnbalancedAssignment();
+
+            Map<Integer, Integer> m = bipartite.flowAssign(g);
+
+            log.info("size=" + size + " scale=" + scale + 
+                " m.size=" + m.size());
+
+            assertEquals(size, m.size());
+
+            for (int i = 0; i < size; ++i) {
+                assertEquals(i, m.get(Integer.valueOf(i)).intValue());
+            }
+
+            assertNotNull(bipartite.getFinalFlowNetwork());
+        }
+    }
+
+    public void test3() throws Exception {
+        
+        int size = 10;
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1464988291524L;
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+        
+        Graph g = getTestGraph3(sr, size);
+
+        MinCostUnbalancedAssignment bipartite = 
+            new MinCostUnbalancedAssignment();
+
+        Map<Integer, Integer> m = bipartite.flowAssign(g);
+
+        log.info("size=" + size + " m.size=" + m.size());
+
+        assertEquals(size, m.size());
+
+        assertNotNull(bipartite.getFinalFlowNetwork());       
+    }
+
+    private Graph getTestGraph00() {
+        
+        Map<PairInt, Integer> weights 
+            = new HashMap<PairInt, Integer>();
+        
+        /*
+        0  1   2  L
+        
+        0  1   2  R
+        */
+        weights.put(new PairInt(0, 0), Integer.valueOf(1));
+        weights.put(new PairInt(0, 1), Integer.valueOf(2));
+        weights.put(new PairInt(1, 0), Integer.valueOf(2));
+        weights.put(new PairInt(1, 1), Integer.valueOf(1));
+        weights.put(new PairInt(1, 2), Integer.valueOf(1));
+        weights.put(new PairInt(2, 1), Integer.valueOf(2));
+        weights.put(new PairInt(2, 2), Integer.valueOf(1));
+        
+        Graph g = new Graph(3, 3, weights, true);
+
+        return g;
+    }
+    
     private Graph getTestGraph0() {
         
         Map<PairInt, Integer> weights 
@@ -167,7 +262,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         return g;
     }
     
-    private Graph getTestGraph2() {
+    private Graph getTestGraph2(int size, int maxCost, 
+        SecureRandom sr) throws NoSuchAlgorithmException {
         
         /*
         - graph of size n for both sets
@@ -178,10 +274,42 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
+                        
+        for (int i = 0; i < size; ++i) {
+            int cost = sr.nextInt(maxCost);
+            weights.put(new PairInt(i, i), Integer.valueOf(cost));
+        }
         
-        weights.put(new PairInt(0, 0), Integer.valueOf(2));
-         
-        Graph g = new Graph(6, 5, weights, true);
+        Graph g = new Graph(size, size, weights, true);
+
+        return g;
+    }
+    
+    private Graph getTestGraph3(SecureRandom sr,
+        int size) throws NoSuchAlgorithmException {
+        
+        /*
+        - graph of size n for both sets
+        - random number of edges for each
+        - all edges have same cost
+        --> expecting same results as hopcroft-karp
+        */
+        
+        Map<PairInt, Integer> weights 
+            = new HashMap<PairInt, Integer>();
+        
+        int cost = sr.nextInt(100);
+        
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
+                if (sr.nextBoolean()) {
+                    continue;
+                }
+                weights.put(new PairInt(i, j), Integer.valueOf(cost));
+            }
+        }
+        
+        Graph g = new Graph(size, size, weights, true);
 
         return g;
     }
