@@ -1,15 +1,11 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
-import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.Random;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -25,20 +21,50 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public MinCostUnbalancedAssignment3Test() {
     }
     
-    public void testFlow() {
+    public void est0() {
         
         // test graphs on pg 49
-        Graph g = getTestGraph();
+        Graph g = getTestGraph0();
         
         MinCostUnbalancedAssignment bipartite = 
             new MinCostUnbalancedAssignment();
         
         Map<Integer, Integer> m = bipartite.flowAssign(g);
         
-        int z = 1;
+        assertEquals(3, m.size());
+        assertTrue(m.get(Integer.valueOf(1))
+            .equals(Integer.valueOf(2)));
+        assertTrue(m.get(Integer.valueOf(3))
+            .equals(Integer.valueOf(0)));
+        assertTrue(m.get(Integer.valueOf(4))
+            .equals(Integer.valueOf(3)));
+    }
+    
+    public void test1() throws Exception {
+        
+        for (int size = 10; size <= 10; size *= 10) {
+            for (int scale = 10; scale <= 10; scale *= 10) {
+                
+                Graph g = getTestGraph1(size, scale);
+                
+                MinCostUnbalancedAssignment bipartite = 
+                    new MinCostUnbalancedAssignment();
+                
+                Map<Integer, Integer> m = bipartite.flowAssign(g);
+                
+                assertEquals(size, m.size());
+                
+                for (int i = 0; i < size; ++i) {
+                    assertEquals(i, m.get(Integer.valueOf(i)).intValue());
+                }
+                
+                assertNotNull(bipartite.getFinalFlowNetwork());
+            }
+        }
+       
     }
 
-    private Graph getTestGraph() {
+    private Graph getTestGraph0() {
         
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
@@ -89,6 +115,68 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         
         weights.put(new PairInt(5, 3), Integer.valueOf(2));
         
+        Graph g = new Graph(6, 5, weights, true);
+
+        return g;
+    }
+    
+    private Graph getTestGraph1(int size, int maxCost) throws NoSuchAlgorithmException {
+        
+        /*
+        - graph of size n for both sets
+        - highly connected, that is each vertex connected
+          to all right vertexes
+        - one min-cost best cost for a vertex
+          and all other edges have larger costs than
+          those to make the graph easier to write.
+        - want the cost to use a multiple so can
+          test that correct solution is obtained
+          no matter the magnitude of costs
+          (the weight scaling needs such exploration for
+          the internal values of q and eps)
+        - make graphs of size of power of 10 from 10 to 
+            1 million.
+        */
+        
+        Map<PairInt, Integer> weights 
+            = new HashMap<PairInt, Integer>();
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        
+        int minCostUpper = maxCost/10;
+        
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
+                int cost;
+                if (j == i) {
+                    cost = sr.nextInt(minCostUpper);
+                } else {
+                    cost = minCostUpper +
+                        sr.nextInt(maxCost - minCostUpper);
+                }
+                weights.put(new PairInt(i, j), Integer.valueOf(cost));
+            }
+        }
+        
+        Graph g = new Graph(size, size, weights, true);
+
+        return g;
+    }
+    
+    private Graph getTestGraph2() {
+        
+        /*
+        - graph of size n for both sets
+        - one edge only for each vertex
+        - a random cost for the edges
+        - graphs of size powers of 10, from 10 to 100,000?
+        */
+        
+        Map<PairInt, Integer> weights 
+            = new HashMap<PairInt, Integer>();
+        
+        weights.put(new PairInt(0, 0), Integer.valueOf(2));
+         
         Graph g = new Graph(6, 5, weights, true);
 
         return g;

@@ -24,7 +24,8 @@ public class ResidualDigraph {
     private Set<Integer> rightRM = new HashSet<Integer>();
 
     /**
-     * links X to Y (that is, left to right). These are "idle" arcs, f=0, in the
+     * links X to Y (that is, left to right). 
+     * These are "idle" arcs, f=0, in the
      * flow network N_G. They correspond to "unmarried" in the matched M graph.
      */
     private Map<Integer, Set<Integer>> forwardLinksRM
@@ -41,49 +42,46 @@ public class ResidualDigraph {
     public ResidualDigraph(Graph g, Map<Integer, Integer> m) {                
         
         for (int i = 0; i < g.getNLeft(); ++i) {
-           getLeftRM().add(Integer.valueOf(i));
+           leftRM.add(Integer.valueOf(i));
         }
         
         for (int i = 0; i < g.getNRight(); ++i) {
-            getRightRM().add(Integer.valueOf(i));
+            rightRM.add(Integer.valueOf(i));
         }
-        
+                
         for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
             
             PairInt p = entry.getKey();
             
             Integer x = Integer.valueOf(p.getX());
             Integer y = Integer.valueOf(p.getY());
-            
-            Set<Integer> ys = getForwardLinksRM().get(x);
+                 
+            Set<Integer> ys = forwardLinksRM.get(x);
             if (ys == null) {
                 ys = new HashSet<Integer>();
-                getForwardLinksRM().put(x, ys);
+                forwardLinksRM.put(x, ys);
             }
-            
             ys.add(y);
         }
         
         for (Entry<Integer, Integer> entry : m.entrySet()) {
             Integer x = entry.getKey();
             Integer y = entry.getValue();
+                        
+            backwardLinksRM.put(y, x);
             
-            if (getForwardLinksRM().containsKey(x)) {
-                getForwardLinksRM().get(x).remove(y);
-            }
-            
-            getBackwardLinksRM().put(y, x);
+            forwardLinksRM.get(x).remove(y);
         }
     }
             
     public ResidualDigraph(GraphWithoutWeights g) {                
     
         for (int i = 0; i < g.getNLeft(); ++i) {
-           getLeftRM().add(Integer.valueOf(i));
+           leftRM.add(Integer.valueOf(i));
         }
         
         for (int i = 0; i < g.getNRight(); ++i) {
-            getRightRM().add(Integer.valueOf(i));
+            rightRM.add(Integer.valueOf(i));
         }
         
         for (Entry<Integer, Set<Integer>> entry : 
@@ -93,10 +91,10 @@ public class ResidualDigraph {
             
             Set<Integer> vIndexes = entry.getValue();
             for (Integer v : vIndexes) {            
-                Set<Integer> ys = getForwardLinksRM().get(uIndex);
+                Set<Integer> ys = forwardLinksRM.get(uIndex);
                 if (ys == null) {
                     ys = new HashSet<Integer>();
-                    getForwardLinksRM().put(uIndex, ys);
+                    forwardLinksRM.put(uIndex, ys);
                 }
                 ys.add(v);
             }
