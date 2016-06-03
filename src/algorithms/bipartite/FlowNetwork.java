@@ -561,7 +561,7 @@ public class FlowNetwork {
         
         float qEps = q * eps;
         
-        log.info("delta=" + delta + " qEps");
+        log.info("delta=" + delta + " qEps=" + qEps);
         
         //see Figure 7.4, pg 53
         // looks like the price raise is multiples of (q-1)*eps

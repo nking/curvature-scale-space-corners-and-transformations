@@ -1438,7 +1438,7 @@ Matchings in G are integral flows in N_G
             minHeap[key] = bucket;
         }
         
-        log.info("insert into heap=" + node);
+        log.fine("insert into heap=" + node);
         
         bucket.insert(node);        
     }
@@ -1460,7 +1460,7 @@ Matchings in G are integral flows in N_G
     private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
         minHeap, PathNode node2, long lTot) {
 
-        log.info("decreaseKey=" + node2 + " to key=" + lTot);
+        log.fine("decreaseKey=" + node2 + " to key=" + lTot);
         
         int prevKey = (int)node2.getKey();
         minHeap[prevKey].remove(node2);
@@ -1900,7 +1900,7 @@ Matchings in G are integral flows in N_G
                         .get(Integer.valueOf(loc.getY()))
                         .get(loc.getZ());
                     long key = node.getKey();
-                    node.setKey(key - 1);
+                    node.setKey(key - lt);
                 }
        
                 if (leftToSourceLoc.containsKey(index)) {
@@ -1910,7 +1910,7 @@ Matchings in G are integral flows in N_G
                         .get(Integer.valueOf(loc.getY()))
                         .get(loc.getZ());
                     long key = node.getKey();
-                    node.setKey(key - 1);
+                    node.setKey(key - lt);
                 }
 
                 //links entering v
@@ -1922,7 +1922,7 @@ Matchings in G are integral flows in N_G
                             .get(Integer.valueOf(loc.getY()))
                             .get(loc.getZ());
                         long key = node.getKey();
-                        node.setKey(key + 1);
+                        node.setKey(key + lt);
                     }
                 }
                 if (sourceToLeftLoc.containsKey(index)) {
@@ -1932,7 +1932,7 @@ Matchings in G are integral flows in N_G
                         .get(Integer.valueOf(loc.getY()))
                         .get(loc.getZ());
                     long key = node.getKey();
-                    node.setKey(key + 1);
+                    node.setKey(key + lt);
                 }
             }
         }
@@ -1951,7 +1951,7 @@ Matchings in G are integral flows in N_G
                         .get(Integer.valueOf(loc.getY()))
                         .get(loc.getZ());
                     long key = node.getKey();
-                    node.setKey(key - 1);
+                    node.setKey(key - lt);
                 }
             }
             if (rightToSinkLoc.containsKey(index)) {
@@ -1961,7 +1961,7 @@ Matchings in G are integral flows in N_G
                     .get(Integer.valueOf(loc.getY()))
                     .get(loc.getZ());
                 long key = node.getKey();
-                node.setKey(key - 1);
+                node.setKey(key - lt);
             }
 
             //links entering v
@@ -1973,7 +1973,7 @@ Matchings in G are integral flows in N_G
                         .get(Integer.valueOf(loc.getY()))
                         .get(loc.getZ());
                     long key = node.getKey();
-                    node.setKey(key + 1);
+                    node.setKey(key + lt);
                 }
             }
             if (sinkToRightLoc.containsKey(index)) {
@@ -1983,7 +1983,7 @@ Matchings in G are integral flows in N_G
                     .get(Integer.valueOf(loc.getY()))
                     .get(loc.getZ());
                 long key = node.getKey();
-                node.setKey(key + 1);
+                node.setKey(key + lt);
             }
         }
     }

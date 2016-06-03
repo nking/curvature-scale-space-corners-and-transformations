@@ -43,7 +43,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public void test1() throws Exception {
         
         for (int size = 10; size <= 10; size *= 10) {
-            for (int scale = 10; scale <= 10; scale *= 10) {
+            for (int scale = 10; scale <= 1000; scale *= 10) {
                 
                 Graph g = getTestGraph1(size, scale);
                 
