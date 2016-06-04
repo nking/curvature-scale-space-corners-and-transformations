@@ -80,7 +80,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
 
-    public void est2() throws Exception {
+    public void test2() throws Exception {
         
         int size = 10;
         int scale = 10000;//1000000;
@@ -116,13 +116,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
 
-    public void test3() throws Exception {
+    public void est3() throws Exception {
         
         int size = 10;
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1464988291524L;
+        seed = 1464995162443L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         

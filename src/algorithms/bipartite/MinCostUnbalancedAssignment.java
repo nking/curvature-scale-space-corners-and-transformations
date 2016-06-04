@@ -67,7 +67,7 @@ public class MinCostUnbalancedAssignment {
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     private FlowNetwork finalFN = null;
-    
+
     /*
     an alternating path is in the residual digraph, and 
        alternates between forward and backward.
@@ -582,7 +582,7 @@ public class MinCostUnbalancedAssignment {
             lambda = 4;
         }
         
-        int lastKey = -1;
+        long lastKey = -1;
         
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
@@ -694,10 +694,10 @@ public class MinCostUnbalancedAssignment {
             //add v to the forest;
             lastKey = addToForest(forest, node1Cp, lastKey);
 
-            HeapNode rootOfTD = forest[lastKey].getSentinel()
+            HeapNode rootOfTD = forest[(int)lastKey].getSentinel()
                 .getRight();
             Integer rootIndex = (Integer)rootOfTD.getData();
-            terminatingDeficitIdx[0] = lastKey;
+            terminatingDeficitIdx[0] = (int)lastKey;
                 
             if (d.contains(index1) && !node1IsLeft) {
                 if (lastKey != (int)node1Cp.getKey()) {
@@ -739,7 +739,7 @@ public class MinCostUnbalancedAssignment {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
-        if (false) { 
+        if (true) { 
             //runtime complexity is O(m * sqrt(max matching size))
             //    where m is number of edges in graph
             //temporarily, replacing w/ O(m * sqrt(n))
@@ -793,106 +793,10 @@ public class MinCostUnbalancedAssignment {
         
         while (true) {
             
-            DoubleLinkedCircularList[] augmentingPaths =
-                buildForest(rM, lambda);
+            boolean augmented = buildForestAndAugment(rM, lambda);
 
-            if (allAreEmpty(augmentingPaths)) {
+            if (!augmented) {
                 return m;
-            }
-            
-            debug(augmentingPaths);
-            
-            Set<Integer> leftAugmented = new HashSet<Integer>();
-            Set<Integer> rightAugmented = new HashSet<Integer>();
-            
-            // start at i=1, because i=0 is not alternating? 
-            for (int i = 1; i < augmentingPaths.length; ++i) {
-
-                DoubleLinkedCircularList tree = augmentingPaths[i];
-
-                if (tree == null) {
-                    continue;
-                }
-
-                //augment M along path;
-                
-                //pg 11: "But our augmenting paths will be paths 
-                //in an auxiliary graph called the residual digraph"
-
-                //"We augment along a tight augmenting path 
-                //by swapping the status of the edges that 
-                //underlie its links, saturating the idle edges
-                //and idling the saturated ones. This process 
-                //increases the size of the matching by exactly 1. 
-                //It marries off the maiden and bachelor at the 
-                //ends of the augmenting path, thus reducing the
-                //number of places where future augmenting paths 
-                //can start or end.
-                
-                // use getRight() to traverse LIFO order which
-                //   makes removing redundant paths easier
-                //   currently.
-                
-                // each item in tree is a HeapNode whose path
-                //    is included as pathPredecessor of the node.
-
-                long n = tree.getNumberOfNodes();
-                HeapNode node = tree.getSentinel();
-                int j = 0;
-                while (j < n) {
-                    
-                    node = node.getRight();
-                    
-                    Set<Integer> tmpL = new HashSet<Integer>();
-                    Set<Integer> tmpR = new HashSet<Integer>();
-            
-                    //node is a path.
-                    //
-                    //The following is a path example of length 1. 
-                    //XB is current HeapNode and it is a LeftNode.
-                    //Its pathPedecessor is YA and it's a RightNode.
-                    //So, for this node, we ascend until pathPredecessor is null.
-                    //XA
-                    //   \
-                    //     YA
-                    //   /
-                    //XB
-                    //
-                  
-                    List<PathNode> path = extractNodes((PathNode)node);
-
-                    for (int ii = 0; ii < (path.size() - 1); ++ii) {
-                        
-                        PathNode node1 = path.get(ii);
-                        PathNode node2 = path.get(ii + 1);
-                        
-                        log.fine("forest[" + i + "] tree branch[" 
-                            + j + "] node[" + ii + "]=" + node1.toString());
-                        
-                        // index1 is the left index of arc
-                        // index2 is the right index of the arc
-                        Integer index1, index2;
-                        if (node1 instanceof LeftNode) {
-                            index1 = (Integer)node1.getData();
-                            index2 = (Integer)node2.getData();
-                        } else {
-                            index1 = (Integer)node2.getData();
-                            index2 = (Integer)node1.getData();
-                        }
-                        
-                        if (leftAugmented.contains(index1) ||
-                            rightAugmented.contains(index2)) {
-                            continue;
-                        }
-                        
-                        swapLinkExistence(rM, index1, index2);
-                        tmpL.add(index1);
-                        tmpR.add(index2);
-                    }
-                    leftAugmented.addAll(tmpL);
-                    rightAugmented.addAll(tmpR);
-                    j++;
-                }
             }
             
             /*            
@@ -1144,14 +1048,9 @@ Matchings in G are integral flows in N_G
      * @param lambda the length to use for a countins sort of
      * augmenting path lengths
      */
-    protected DoubleLinkedCircularList[] buildForest(
+    protected boolean buildForestAndAugment(
         final ResidualDigraph rM, int lambda) {
-        
-        /*
-        NOTE: bookkeeping for the predecessors could be improved
-        here.
-        */
-        
+      
         DoubleLinkedCircularList[] forest 
             = new DoubleLinkedCircularList[lambda];
         
@@ -1186,18 +1085,25 @@ Matchings in G are integral flows in N_G
         // init all nodes to inf length
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
-        for (Integer rNode : rM.getRightRM()) {
+        for (int i = 0; i < rM.getNRight(); ++i) {
+            Integer rNode = Integer.valueOf(i);
             RightNode node = new RightNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(rNode);
             rightNodes.put(rNode, node);
         }
-        for (Integer lNode : rM.getLeftRM()) {
+        for (int i = 0; i < rM.getNLeft(); ++i) {
+            Integer lNode = Integer.valueOf(i);
             LeftNode node = new LeftNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(lNode);
             leftNodes.put(lNode, node);
         }
+        
+        Set<Integer> augmentedLeft = new HashSet<Integer>();
+        Set<Integer> augmentedRight = new HashSet<Integer>();
+        long prevKey = -1;
+        long lastAugKey = -1;
         
         // married X nodes
         Set<Integer> matchedLeft = new HashSet<Integer>(
@@ -1206,17 +1112,20 @@ Matchings in G are integral flows in N_G
         // for all maidens
         // set key to 0, then ScanAndAdd(index)
         Set<Integer> maidens = new HashSet<Integer>();
-        for (Integer lNode : rM.getLeftRM()) {
+        for (int i = 0; i < rM.getNLeft(); ++i) {
+            Integer lNode = Integer.valueOf(i);
             if (matchedLeft.contains(lNode)) {
                 continue;
             }
             maidens.add(lNode);
             LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
-            scanAndAdd(heap, forest, rM, rightNodes, node);
+            prevKey = scanAndAdd(heap, forest, rM, 
+                rightNodes, node, prevKey);
+            assert(prevKey == 0L);
         }
         
-        int nRight = rM.getRightRM().size();
+        int nRight = rM.getNRight();
         
         log.info("done adding " + maidens.size() + 
             " maiden nodes to heap");
@@ -1225,8 +1134,6 @@ Matchings in G are integral flows in N_G
         // the forest trees.
         
         int nIter = 0;
-        
-        Set<Integer> visitedL = new HashSet<Integer>();
         
         while (!heap.isEmpty()) {
                         
@@ -1242,16 +1149,22 @@ Matchings in G are integral flows in N_G
             log.info("extractMin=" + y.toString());
             
             Integer yIndex = (Integer)(y.getData());
-            
-            if ((maidens.size() == 1) && 
-                (heap.getNumberOfNodes() > nRight)
-               
-                ) {
-                break;
+        
+            if (augmentedRight.contains(yIndex)) {
+                continue;
             }
             
-            addToForest(forest, y);
-                    
+            long currentKey = addToForest(forest, y, prevKey);
+            
+            if (currentKey > prevKey) {
+                debug(forest);
+                augmentPath(rM, forest, prevKey, augmentedLeft,
+                    augmentedRight);
+                forest[(int)prevKey] = null;
+                lastAugKey = prevKey;
+                prevKey = currentKey;    
+            }
+            
             /*
             if y is married then
                 x := wife of y;
@@ -1279,8 +1192,18 @@ Matchings in G are integral flows in N_G
                     }
                 }
                  
-                scanAndAdd(heap, forest, rM, rightNodes, xNode);
-                                
+                currentKey = scanAndAdd(heap, forest, 
+                    rM, rightNodes, xNode, prevKey);
+                
+                if (currentKey > prevKey) {
+                    debug(forest);
+                    augmentPath(rM, forest, prevKey, augmentedLeft,
+                        augmentedRight);
+                    forest[(int)prevKey] = null;
+                    lastAugKey = prevKey;
+                    prevKey = currentKey;    
+                }       
+                
             } else {
                 //exit(bachelor β := y reached);
                 log.info("bachelor y=" + y.toString());
@@ -1290,19 +1213,24 @@ Matchings in G are integral flows in N_G
                     PathNode yTop = y.topPredecessor;
                     Integer yTopIndex = (Integer)yTop.getData();
                     maidens.remove(yTopIndex);                    
-                    visitedL.add(yTopIndex);
                 } else if (maidens.isEmpty()) {
                     break;
-                //} else if (maidens.size() == 1 && 
-                //    (heap.getNumberOfNodes() > nRight)) {
-                //    break;
                 }
             }
             
             log.info("nIter=" + nIter);
         }
         
-        return forest;
+        if (lastAugKey < prevKey) {
+            debug(forest);
+            augmentPath(rM, forest, prevKey, 
+                augmentedLeft, augmentedRight);
+            lastAugKey = prevKey;
+        }
+        
+        log.info("lastAugKey=" + lastAugKey);
+        
+        return !(augmentedLeft.isEmpty() && augmentedRight.isEmpty());
     }
 
     /**    
@@ -1323,11 +1251,12 @@ Matchings in G are integral flows in N_G
     private long scanAndAdd(
         Heap heap, DoubleLinkedCircularList[] forest,
         ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
-        LeftNode xNode) {
-        
+        LeftNode xNode, long prevKey) {
+
+        Integer x = (Integer)(xNode.getData());
+      
         long lX = xNode.getKey();
         assert(lX < Long.MAX_VALUE);
-        Integer x = (Integer)(xNode.getData());
         
         Set<Integer> forwardLinks = rM.getForwardLinksRM().get(x);
         
@@ -1343,7 +1272,9 @@ Matchings in G are integral flows in N_G
 
                 RightNode yNode = yNodes.get(y);
                 long lOld = yNode.getKey();
-                assert(((Integer)(yNode.getData())).intValue() == y.intValue());
+                Integer yIndex = (Integer)(yNode.getData());
+                
+                assert(yIndex.intValue() == y.intValue());
 
                 //L := l(x) + lp(x ⇒ y) 
                 //   = l(x) + cp(x, y)
@@ -1380,13 +1311,11 @@ Matchings in G are integral flows in N_G
         }
         
         //add x to the forest;
-        addToForest(forest, xNode);
-   
-        return lX;
+        return addToForest(forest, xNode, prevKey);
     }
     
-    private void addToForest(DoubleLinkedCircularList[] forest,
-        PathNode node) {
+    private long addToForest(DoubleLinkedCircularList[] forest,
+        PathNode node, long lastKey) {
         
         /*
         Section 8.1, pg 57
@@ -1411,38 +1340,7 @@ Matchings in G are integral flows in N_G
             }
             list.insert(node);
             
-            log.fine("add to forest[" + k + "] " 
-                + " node " + node.toString());
-        }
-    }
-    
-    private int addToForest(DoubleLinkedCircularList[] forest,
-        HeapNode node, int lastKey) {
-        
-        /*
-        Section 8.1, pg 57
-        We ignore any paths we find whose lengths exceed forest.length. 
-        We also maintain an integer B, which stores the 
-        value l(v) for the node v that was most recently 
-        added to the forest. 
-        We add nodes v to the forest in nondecreasing 
-        order of l(v), so B never decreases. 
-        To implement insert(v,k), we add v to the list Q[k].
-        */
-        
-        // NOTE: if the same node is inserted more than once,
-        // the forest will be corrupted
-        
-        if (node.getKey() < forest.length) {
-            int k = (int) node.getKey();
-            DoubleLinkedCircularList list = forest[k];
-            if (list == null) {
-                list = new DoubleLinkedCircularList();
-                forest[k] = list;
-            }
-            list.insert(node);
-            
-            lastKey = k;
+            lastKey = node.getKey();
             
             log.fine("add to forest[" + k + "] " 
                 + " node " + node.toString());
@@ -1592,7 +1490,7 @@ Matchings in G are integral flows in N_G
             HeapNode node = tree.getSentinel();
             int j = 0;
             while (j < n) {
-                node = node.getRight();                    
+                node = node.getLeft();                    
                 List<PathNode> path = extractNodes((PathNode)node);
                 int n2 = path.size();
                 for (int ii = 0; ii < n2; ++ii) {
@@ -2403,5 +2301,101 @@ Matchings in G are integral flows in N_G
         }
     
     }
+    
+    private void augmentPath(ResidualDigraph rM, 
+        DoubleLinkedCircularList[] forest, 
+        long prevKey, Set<Integer> augmentedLeft, 
+        Set<Integer> augmentedRight) {
 
+        //TODO: this needs to be edited for a DFS 
+        //   search through the tree.
+        //   some branches have same root node, and
+        //   the longest among those needs to be 
+        //   aggregated into a path for augmenting
+        //   here (and the shorter of those same root
+        //   nodes are then excluded by the disjoint vertex rule)
+        
+        DoubleLinkedCircularList tree = forest[(int)prevKey];
+
+        assert(tree != null);
+
+        //augment M along path;
+
+        //pg 11: "But our augmenting paths will be paths 
+        //in an auxiliary graph called the residual digraph"
+
+        //"We augment along a tight augmenting path 
+        //by swapping the status of the edges that 
+        //underlie its links, saturating the idle edges
+        //and idling the saturated ones. This process 
+        //increases the size of the matching by exactly 1. 
+        //It marries off the maiden and bachelor at the 
+        //ends of the augmenting path, thus reducing the
+        //number of places where future augmenting paths 
+        //can start or end.
+
+        // getLeft() for FIFO order traversal
+
+        // each item in tree is a HeapNode whose path
+        //    is included as pathPredecessor of the node.
+
+        long n = tree.getNumberOfNodes();
+        HeapNode node = tree.getSentinel();
+        int j = 0;
+        while (j < n) {
+
+            node = node.getLeft();
+
+            Set<Integer> tmpL = new HashSet<Integer>();
+            Set<Integer> tmpR = new HashSet<Integer>();
+
+            //node is a path.
+            //
+            //The following is a path example of length 1. 
+            //XB is current HeapNode and it is a LeftNode.
+            //Its pathPedecessor is YA and it's a RightNode.
+            //So, for this node, we ascend until pathPredecessor is null.
+            //XA
+            //   \
+            //     YA
+            //   /
+            //XB
+            //
+
+            List<PathNode> path = extractNodes((PathNode)node);
+
+            for (int ii = 0; ii < (path.size() - 1); ++ii) {
+
+                PathNode node1 = path.get(ii);
+                PathNode node2 = path.get(ii + 1);
+
+                log.fine("forest[" + prevKey + "] tree branch[" 
+                    + j + "] node[" + ii + "]=" + node1.toString());
+
+                // index1 is the left index of arc
+                // index2 is the right index of the arc
+                Integer index1, index2;
+                if (node1 instanceof LeftNode) {
+                    index1 = (Integer)node1.getData();
+                    index2 = (Integer)node2.getData();
+                } else {
+                    index1 = (Integer)node2.getData();
+                    index2 = (Integer)node1.getData();
+                }
+
+                if (augmentedLeft.contains(index1) ||
+                    augmentedRight.contains(index2)) {
+                    break;
+                }
+
+                swapLinkExistence(rM, index1, index2);
+                tmpL.add(index1);
+                tmpR.add(index2);
+            }
+            augmentedLeft.addAll(tmpL);
+            augmentedRight.addAll(tmpR);
+            j++;
+        }
+    }
+    
 }

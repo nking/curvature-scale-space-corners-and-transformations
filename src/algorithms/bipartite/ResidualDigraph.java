@@ -14,14 +14,14 @@ import java.util.Set;
 public class ResidualDigraph {
     
     /**
-     * nodes that correspond to left (==X) vertices in G
+     * left (==X) vertices in graph
      */
-    private Set<Integer> leftRM = new HashSet<Integer>();
+    private final int nLeft;
 
     /**
-     * nodes that correspond to right (==Y) vertices in G
+     * right (==Y) vertices in graph
      */
-    private Set<Integer> rightRM = new HashSet<Integer>();
+    private final int nRight;
 
     /**
      * links X to Y (that is, left to right). 
@@ -41,14 +41,9 @@ public class ResidualDigraph {
 
     public ResidualDigraph(Graph g, Map<Integer, Integer> m) {                
         
-        for (int i = 0; i < g.getNLeft(); ++i) {
-           leftRM.add(Integer.valueOf(i));
-        }
-        
-        for (int i = 0; i < g.getNRight(); ++i) {
-            rightRM.add(Integer.valueOf(i));
-        }
-                
+        this.nLeft = g.getNLeft();
+        this.nRight = g.getNRight();
+            
         for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
             
             PairInt p = entry.getKey();
@@ -76,13 +71,8 @@ public class ResidualDigraph {
             
     public ResidualDigraph(GraphWithoutWeights g) {                
     
-        for (int i = 0; i < g.getNLeft(); ++i) {
-           leftRM.add(Integer.valueOf(i));
-        }
-        
-        for (int i = 0; i < g.getNRight(); ++i) {
-            rightRM.add(Integer.valueOf(i));
-        }
+        this.nLeft = g.getNLeft();
+        this.nRight = g.getNRight();
         
         for (Entry<Integer, Set<Integer>> entry : 
             g.getAdjacencyMap().entrySet()) {
@@ -102,19 +92,19 @@ public class ResidualDigraph {
     }
  
     /**
-     * @return the leftRM
+     * @return nLeft number of left nodes
      */
-    public Set<Integer> getLeftRM() {
-        return leftRM;
+    public int getNLeft() {
+        return nLeft;
     }
 
-    /**
-     * @return the rightRM
+   /**
+     * @return number of right nodes
      */
-    public Set<Integer> getRightRM() {
-        return rightRM;
+    public int getNRight() {
+        return nRight;
     }
-
+    
     /**
      * @return the forwardLinksRM
      */
