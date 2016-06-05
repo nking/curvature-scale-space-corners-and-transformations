@@ -18,7 +18,9 @@ import java.util.Set;
  *
  * Implemented from pseudo code in Cormen et al. Introduction to Algorithms and
  * from http://en.wikipedia.org/wiki/Prim's_algorithm.
- *
+   Useful also was
+  http://www.i-programmer.info/projects/61-algorithms/534-minimum-spanning-tree.html?start=1
+  
  * Time complexity for different implementations:
  *
  *     Minimum edge weight data structure	Time complexity (total)
@@ -26,20 +28,9 @@ import java.util.Set;
  *     adjacency matrix, searching          O(N^2)
  *     binary heap and adjacency list       O((N + E) lg2 N) = O(E lg2 N)
  *     Fibonacci heap and adjacency list	O(E + N lg2 N)
- *
- * Prim's algorithm:
- *
- * Grow a Tree in Running time is O((|N| + |E|)log|N|)
- * -- Start by picking any vertex to be the root of the tree.
- * -- While the tree does not contain all vertices in the graph and shortest
- *    edge leaving the tree and add it to the tree.
- *  
-  Following pseudo-code from Introduction to Algorithms,
-  by Cormen et al.
-  
-  Useful also was
-  http://www.i-programmer.info/projects/61-algorithms/534-minimum-spanning-tree.html?start=1
-  
+ *     
+ * this implementation uses a Fibonacci heap and adjacency list
+ *      
  * @author nichole
  */
 public class PrimsMST {
@@ -72,7 +63,7 @@ public class PrimsMST {
         List<HeapNode> nodes = new ArrayList<HeapNode>();
 
         // initialize heap
-        for (int i = 0; i < nVertexes; i++) { // 6N + N*O(1)
+        for (int i = 0; i < nVertexes; i++) {
         	HeapNode v = new HeapNode();
         	if (i == 0) {
                 v.setKey(0);
@@ -86,7 +77,7 @@ public class PrimsMST {
         
         while (heap.getNumberOfNodes() > 0) {
 
-        	HeapNode u = heap.extractMin();   // O(1)
+        	HeapNode u = heap.extractMin(); 
            
             Integer uIndex = (Integer)u.getData();
             inQ[uIndex.intValue()] = false;
