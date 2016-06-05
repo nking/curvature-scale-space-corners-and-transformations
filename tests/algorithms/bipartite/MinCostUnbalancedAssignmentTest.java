@@ -1,15 +1,8 @@
 package algorithms.bipartite;
 
-import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
-import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
@@ -40,15 +33,6 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         assertEquals(6, rM.getForwardLinksRM().size());
         assertEquals(3, rM.getBackwardLinksRM().size());
        
-        for (int i = 0; i < 6; ++i) {
-            Integer x = Integer.valueOf(i);
-            assertTrue(rM.getLeftRM().contains(x));
-            
-        }
-        for (int i = 0; i < 5; ++i) {
-            Integer y = Integer.valueOf(i);
-            assertTrue(rM.getRightRM().contains(y));        
-        }
         
         assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(0)) 
             .contains(Integer.valueOf(0)));

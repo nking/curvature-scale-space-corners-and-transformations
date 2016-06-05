@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
 
@@ -17,6 +18,8 @@ import static org.junit.Assert.*;
  * @author nichole
  */
 public class HopcroftKarpTest extends TestCase {
+    
+    Logger log = Logger.getLogger(this.getClass().getName());
     
     public HopcroftKarpTest() {
     }
@@ -37,14 +40,30 @@ public class HopcroftKarpTest extends TestCase {
             assertEquals(expectedM[i], m[i]);
         }
         
-        System.out.println(Arrays.toString(m));
+        log.info(Arrays.toString(m));
         
         MinCostUnbalancedAssignment bipartite2 = 
             new MinCostUnbalancedAssignment();
         
-        int s = Math.min(g.getNLeft(), g.getNRight());
+        int s = expectedM.length;
+        Graph g2 = getTestGraph0();
+        Map<Integer, Integer> m2 = new HashMap<Integer, Integer>();
+        ResidualDigraph rM = new ResidualDigraph(g2, m2);
+        m2 = bipartite2.hopcroftKarp(g2, rM, s);
+        for (Entry<Integer, Integer> entry : m2.entrySet()) {
+            log.info(entry.getKey() + ":" +
+                entry.getValue());
+        }
+        log.info("bfs/dfs hk-> " + Arrays.toString(m));
+    
+        /*
+        0 1
+        1 4  <-- or 1,0
+        2 2
+        3 0  <-- or 3,4
+        4 3
+        */
         
-       
     }
     
     private GraphWithoutWeights getTestGraph() {
@@ -84,37 +103,42 @@ public class HopcroftKarpTest extends TestCase {
         adjMap.get(Integer.valueOf(4))
             .add(Integer.valueOf(3));
         
-        if (true) {
-            return g;
-        }
-        // connections in opposite direction
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(0));
-        adjMap.get(Integer.valueOf(1))
-            .add(Integer.valueOf(0));
-        
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(1));
-        adjMap.get(Integer.valueOf(4))
-            .add(Integer.valueOf(1));
-        
-        adjMap.get(Integer.valueOf(2))
-            .add(Integer.valueOf(2));
-        adjMap.get(Integer.valueOf(3))
-            .add(Integer.valueOf(2));
-        
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(3));
-        adjMap.get(Integer.valueOf(4))
-            .add(Integer.valueOf(3));
-        
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(4));
-        adjMap.get(Integer.valueOf(3))
-            .add(Integer.valueOf(4));
-        
         return g;
     }
+    
+    private Graph getTestGraph0() {
+        
+        Map<PairInt, Integer> weights 
+            = new HashMap<PairInt, Integer>();
+        
+        weights.put(new PairInt(0, 0), Integer.valueOf(2));
+        weights.put(new PairInt(0, 1), Integer.valueOf(3));
+        
+        weights.put(new PairInt(1, 0), Integer.valueOf(2));
+        weights.put(new PairInt(1, 4), Integer.valueOf(1));
+        
+        weights.put(new PairInt(2, 2), Integer.valueOf(2));
+        weights.put(new PairInt(2, 3), Integer.valueOf(2));
+        
+        weights.put(new PairInt(3, 0), Integer.valueOf(1));
+        weights.put(new PairInt(3, 4), Integer.valueOf(3));
+    
+        weights.put(new PairInt(4, 0), Integer.valueOf(1));
+        weights.put(new PairInt(4, 3), Integer.valueOf(2));
+                
+        /*
+        0 1
+        1 4  <-- or 1,0
+        2 2
+        3 0  <-- or 3,4
+        4 3
+        */
+        
+        Graph g = new Graph(6, 5, weights, true);
+
+        return g;
+    }
+    
     
     private int[] getTestGraphExpectedMatching() {
     

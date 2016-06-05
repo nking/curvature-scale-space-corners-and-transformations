@@ -4,6 +4,7 @@ import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
+import algorithms.mst.PrimsMST;
 import algorithms.util.PairInt;
 import algorithms.util.TrioInt;
 import java.util.ArrayList;
@@ -117,7 +118,7 @@ public class MinCostUnbalancedAssignment {
     
     public static abstract class PathNode extends HeapNode {
         PathNode pathPredecessor = null;
-        PathNode topPredecessor = null;
+        LeftNode topPredecessor = null;
         // m = 0 is unmarked, m=1 is marked
         int m = 0;
         public abstract PathNode copy();
@@ -130,9 +131,13 @@ public class MinCostUnbalancedAssignment {
             sb.append(" index=").append(getData().toString());
             PathNode prev = pathPredecessor;
             while (prev != null) {
-                sb.append("\n    [prev=").append(prev.toString())
-                    .append("]");
+                String str = String.format("\n   [prev=%s %d %s]", 
+                    prev.id, (int)prev.getKey(), prev.getData());
+                sb.append(str);
                 prev = prev.pathPredecessor;
+            }
+            if (topPredecessor != null) {
+                sb.append(" *top=").append(topPredecessor.toString());
             }
             return sb.toString();
         }
@@ -739,7 +744,7 @@ public class MinCostUnbalancedAssignment {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
-        if (true) { 
+        if (false) { 
             //runtime complexity is O(m * sqrt(max matching size))
             //    where m is number of edges in graph
             //temporarily, replacing w/ O(m * sqrt(n))
@@ -762,7 +767,7 @@ public class MinCostUnbalancedAssignment {
                 
         return hopcroftKarp(g, rM, s);
     }
-    
+        
     /**
      * NOT READY FOR USE
      * NOTE: this method is not yet throughly tested.
@@ -809,7 +814,7 @@ public class MinCostUnbalancedAssignment {
             */
             
             Map<Integer, Integer> m2 = rM.extractMatchings();
-            
+                        
             //announce(M is a matching)
             log.info("nIter=" + nIter + " m2.size=" + m2.size()
                 + " m.size=" + m.size());
@@ -1024,6 +1029,21 @@ Matchings in G are integral flows in N_G
 -------    
     */
     
+    private String debug(Set<Integer> aL, Set<Integer> aR) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("aL=[");
+        for (Integer index : aL) {
+            sb.append(index).append(",");
+        }
+        sb.append("]");
+        sb.append(" aR=[");
+        for (Integer index : aR) {
+            sb.append(index).append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+    
     /**
      * find augmenting paths of minimal length.
      * by building the shortest path forest.
@@ -1100,6 +1120,15 @@ Matchings in G are integral flows in N_G
             leftNodes.put(lNode, node);
         }
         
+        /*
+        for the bfs and tracking "visited", need to track
+        individually for each maiden as its own single shortest
+        path.  doing so for the right nodes
+        key = maiden node index (== X index)
+        value = visited nodes along key path
+        */
+        Map<Integer, Set<Integer>> vXY = new HashMap<Integer, Set<Integer>>();
+        
         Set<Integer> augmentedLeft = new HashSet<Integer>();
         Set<Integer> augmentedRight = new HashSet<Integer>();
         long prevKey = -1;
@@ -1120,15 +1149,18 @@ Matchings in G are integral flows in N_G
             maidens.add(lNode);
             LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
+            vXY.put(lNode, new HashSet<Integer>());
             prevKey = scanAndAdd(heap, forest, rM, 
-                rightNodes, node, prevKey);
+                rightNodes, node, prevKey,
+                augmentedLeft, augmentedRight, 
+                node, vXY.get(lNode));
             assert(prevKey == 0L);
         }
-        
+          
         int nRight = rM.getNRight();
         
         log.info("done adding " + maidens.size() + 
-            " maiden nodes to heap");
+            " maiden nodes and their links to heap");
         
         // at this point, the maidens are all in index 0 of
         // the forest trees.
@@ -1143,7 +1175,7 @@ Matchings in G are integral flows in N_G
             PathNode y = (PathNode)heap.extractMin();
             assert(y instanceof RightNode);
             assert(y.getData() != null);
-        
+            
             log.info("heap.size=" + heap.getNumberOfNodes());
             
             log.info("extractMin=" + y.toString());
@@ -1154,9 +1186,15 @@ Matchings in G are integral flows in N_G
                 continue;
             }
             
+            assert(y.topPredecessor != null);
+            
+            Integer topIndex = (Integer)y.topPredecessor.getData();
+        
             long currentKey = addToForest(forest, y, prevKey);
             
             if (currentKey > prevKey) {
+                log.info("augment forest[" + prevKey + "] " 
+                    + debug(augmentedLeft, augmentedRight));
                 debug(forest);
                 augmentPath(rM, forest, prevKey, augmentedLeft,
                     augmentedRight);
@@ -1185,17 +1223,17 @@ Matchings in G are integral flows in N_G
                 xNode.setKey(y.getKey());
                 if (xNode.pathPredecessor == null) {
                     xNode.pathPredecessor = y;
-                    if (y.topPredecessor != null) {
-                        xNode.topPredecessor = y.topPredecessor;
-                    } else {
-                        xNode.topPredecessor = y;
-                    }
+                    xNode.topPredecessor = y.topPredecessor;
                 }
                  
                 currentKey = scanAndAdd(heap, forest, 
-                    rM, rightNodes, xNode, prevKey);
+                    rM, rightNodes, xNode, prevKey,
+                    augmentedLeft, augmentedRight, y.topPredecessor, 
+                    vXY.get(topIndex));
                 
                 if (currentKey > prevKey) {
+                    log.info("augment forest[" + prevKey + "] " 
+                        + debug(augmentedLeft, augmentedRight));
                     debug(forest);
                     augmentPath(rM, forest, prevKey, augmentedLeft,
                         augmentedRight);
@@ -1207,21 +1245,21 @@ Matchings in G are integral flows in N_G
             } else {
                 //exit(bachelor β := y reached);
                 log.info("bachelor y=" + y.toString());
-                if (y.topPredecessor != null && 
-                    maidens.contains(
-                        (Integer)y.topPredecessor.getData())) {
-                    PathNode yTop = y.topPredecessor;
-                    Integer yTopIndex = (Integer)yTop.getData();
-                    maidens.remove(yTopIndex);                    
+                if (maidens.contains(topIndex)) {
+                    maidens.remove(topIndex);                    
                 } else if (maidens.isEmpty()) {
+                    log.info("last maiden's bachelor reached");
+                    debug(forest);
                     break;
                 }
             }
-            
+        
             log.info("nIter=" + nIter);
         }
         
         if (lastAugKey < prevKey) {
+            log.info("augment forest[" + prevKey + "] " 
+                + debug(augmentedLeft, augmentedRight));
             debug(forest);
             augmentPath(rM, forest, prevKey, 
                 augmentedLeft, augmentedRight);
@@ -1251,10 +1289,17 @@ Matchings in G are integral flows in N_G
     private long scanAndAdd(
         Heap heap, DoubleLinkedCircularList[] forest,
         ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
-        LeftNode xNode, long prevKey) {
+        LeftNode xNode, long prevKey,
+        Set<Integer> augmentedLeft,
+        Set<Integer> augmentedRight,
+        LeftNode topNode, Set<Integer> visitedY) {
 
         Integer x = (Integer)(xNode.getData());
       
+        if (augmentedLeft.contains(x)) {
+            return prevKey;
+        }
+        
         long lX = xNode.getKey();
         assert(lX < Long.MAX_VALUE);
         
@@ -1264,6 +1309,11 @@ Matchings in G are integral flows in N_G
         
             for (Integer y : forwardLinks) {
 
+                if (visitedY.contains(y)) {
+                    continue;
+                }
+                visitedY.add(y);
+                
                 //link length = net cost of the edge 
                 //    (lp(x ⇒ y) = cp(X,Y))
                 //link length of backward link Y->X, is 0, lp(y ⇒ x) := 0.
@@ -1273,6 +1323,10 @@ Matchings in G are integral flows in N_G
                 RightNode yNode = yNodes.get(y);
                 long lOld = yNode.getKey();
                 Integer yIndex = (Integer)(yNode.getData());
+         
+                if (augmentedRight.contains(yIndex)) {
+                    continue;
+                }
                 
                 assert(yIndex.intValue() == y.intValue());
 
@@ -1292,9 +1346,13 @@ Matchings in G are integral flows in N_G
                     yNode = yNode.copy();
                     yNode.pathPredecessor = xNode.copy();
                     if (yNode.pathPredecessor.topPredecessor != null) {
-                        yNode.topPredecessor = yNode.pathPredecessor.topPredecessor;
+                        assert(yNode.pathPredecessor.
+                            topPredecessor.getData().equals(
+                            topNode.getData()));
+                        yNode.topPredecessor = 
+                            yNode.pathPredecessor.topPredecessor;
                     } else {
-                        yNode.topPredecessor = yNode.pathPredecessor;
+                        yNode.topPredecessor = topNode;
                     }
                     if (lOld == Long.MAX_VALUE) {
                         yNode.setKey(ell);
@@ -1490,7 +1548,16 @@ Matchings in G are integral flows in N_G
             HeapNode node = tree.getSentinel();
             int j = 0;
             while (j < n) {
-                node = node.getLeft();                    
+                node = node.getLeft();
+                if (j == 0 && (!(node instanceof PathNode))) {
+                    // TODO: follow up on this and write test for it
+                    while (!(node instanceof PathNode)) {
+                        node = node.getLeft();
+                    }
+                }
+                
+   another class cast error.  double linked list sentinel errors?
+   
                 List<PathNode> path = extractNodes((PathNode)node);
                 int n2 = path.size();
                 for (int ii = 0; ii < n2; ++ii) {
@@ -2023,7 +2090,7 @@ Matchings in G are integral flows in N_G
                 if (isLeftNode || isRightNode) {
                     v.m = 1;
                 }
-                if (isRightNode && def.contains(v)) {
+                if (isRightNode && def.contains((RightNode)v)) {
                     // add all of stack to P as an augmenting Path
                     LinkedList<PathNode> augPath = new
                         LinkedList<PathNode>();
@@ -2298,27 +2365,99 @@ Matchings in G are integral flows in N_G
                     outputDeficit.add((RightNode)node2);
                 }
             }
-        }
-    
+        }    
     }
     
     private void augmentPath(ResidualDigraph rM, 
         DoubleLinkedCircularList[] forest, 
-        long prevKey, Set<Integer> augmentedLeft, 
+        long foresIdx, Set<Integer> augmentedLeft, 
         Set<Integer> augmentedRight) {
 
-        //TODO: this needs to be edited for a DFS 
-        //   search through the tree.
-        //   some branches have same root node, and
-        //   the longest among those needs to be 
-        //   aggregated into a path for augmenting
-        //   here (and the shorter of those same root
-        //   nodes are then excluded by the disjoint vertex rule)
+        /*
+        will extract the paths, that is the branches in the
+        tree forest[forestIdx]
+        and find a maximal set of compatible paths within
+        those.
         
-        DoubleLinkedCircularList tree = forest[(int)prevKey];
+        could use kruskal's or prims to create the set of
+        edges (created from building the minimum spanning tree).
+        then augment using each edge, but 
+        skipping those violating vertex-disjoint.
+        
+        (requires one to renumber the right vertexes.
+         for example: left is 0, 1, 2, right becomes 3,4,5,
+        and creation of adjacency lists with those
+        and edge weights all being 1.)
+        
+        since prim's runtime complexity is better for
+        |v| < |E|, will use that.
+        
+        */
+        
+        // ---- extract the forest tree as edges ---
+        
+        DoubleLinkedCircularList tree = forest[(int)foresIdx];
 
         assert(tree != null);
-
+        
+        Set<PairInt> edges = new HashSet<PairInt>();
+        long n = tree.getNumberOfNodes();
+        HeapNode node = tree.getSentinel();
+        int j = 0;
+        while (j < n) {
+            node = node.getLeft();
+            if (j == 0 && (!(node instanceof PathNode))) {
+                // TODO: follow up on this and write test for it
+                while (!(node instanceof PathNode)) {
+                    node = node.getLeft();
+                }
+            }
+            List<PathNode> path = extractNodes((PathNode)node);
+            if (path.size() < 2) {
+                ++j;
+                continue;
+            }
+            debugPath(path);
+            //discard if not vertix disjoint from augmented sets
+            boolean skip = false;
+            List<PairInt> tmp = new ArrayList<PairInt>();
+            for (int ii = 0; ii < (path.size() - 1); ++ii) {
+                PathNode node1 = path.get(ii);
+                PathNode node2 = path.get(ii + 1);
+                // index1 is the left index of arc
+                // index2 is the right index of the arc
+                Integer index1, index2;
+                if (node1 instanceof LeftNode) {
+                    index1 = (Integer)node1.getData();
+                    index2 = (Integer)node2.getData();
+                } else {
+                    index1 = (Integer)node2.getData();
+                    index2 = (Integer)node1.getData();
+                }
+                if (augmentedLeft.contains(index1) ||
+                    augmentedRight.contains(index2)) {
+                    skip = true;
+                    break;
+                }
+                tmp.add(new PairInt(index1.intValue(), index2.intValue()));
+            }
+            if (!skip) {
+                edges.addAll(tmp);
+            }
+            ++j;
+        }
+        
+        if (edges.isEmpty()) {
+            return;
+        }
+        
+        List<PairInt> edges2;
+        if (edges.size() > 2) {
+            edges2 = filterUsingMST(edges);
+        } else {
+            edges2 = new ArrayList<PairInt>(edges);
+        }
+        
         //augment M along path;
 
         //pg 11: "But our augmenting paths will be paths 
@@ -2334,68 +2473,269 @@ Matchings in G are integral flows in N_G
         //number of places where future augmenting paths 
         //can start or end.
 
-        // getLeft() for FIFO order traversal
-
-        // each item in tree is a HeapNode whose path
-        //    is included as pathPredecessor of the node.
-
-        long n = tree.getNumberOfNodes();
-        HeapNode node = tree.getSentinel();
-        int j = 0;
-        while (j < n) {
-
-            node = node.getLeft();
-
-            Set<Integer> tmpL = new HashSet<Integer>();
-            Set<Integer> tmpR = new HashSet<Integer>();
-
-            //node is a path.
-            //
-            //The following is a path example of length 1. 
-            //XB is current HeapNode and it is a LeftNode.
-            //Its pathPedecessor is YA and it's a RightNode.
-            //So, for this node, we ascend until pathPredecessor is null.
-            //XA
-            //   \
-            //     YA
-            //   /
-            //XB
-            //
-
-            List<PathNode> path = extractNodes((PathNode)node);
-
-            for (int ii = 0; ii < (path.size() - 1); ++ii) {
-
-                PathNode node1 = path.get(ii);
-                PathNode node2 = path.get(ii + 1);
-
-                log.fine("forest[" + prevKey + "] tree branch[" 
-                    + j + "] node[" + ii + "]=" + node1.toString());
-
-                // index1 is the left index of arc
-                // index2 is the right index of the arc
-                Integer index1, index2;
-                if (node1 instanceof LeftNode) {
-                    index1 = (Integer)node1.getData();
-                    index2 = (Integer)node2.getData();
-                } else {
-                    index1 = (Integer)node2.getData();
-                    index2 = (Integer)node1.getData();
-                }
-
-                if (augmentedLeft.contains(index1) ||
-                    augmentedRight.contains(index2)) {
-                    break;
-                }
-
-                swapLinkExistence(rM, index1, index2);
-                tmpL.add(index1);
-                tmpR.add(index2);
+        /*
+        separating edits into 2 lists:
+           undo "saturated" then make idle saturated
+        */
+        List<PairInt> undoSaturated = new ArrayList<PairInt>();
+        List<PairInt> makeSaturated = new ArrayList<PairInt>();
+        
+        for (PairInt edge : edges2) {
+            Integer leftIndex = Integer.valueOf(edge.getX());
+            Integer rightIndex = Integer.valueOf(edge.getY());
+            Integer bLeftIndex = rM.getBackwardLinksRM().get(
+                rightIndex);
+            if (bLeftIndex != null && bLeftIndex.equals(leftIndex)) {
+                undoSaturated.add(edge);
+            } else {
+                makeSaturated.add(edge);
             }
-            augmentedLeft.addAll(tmpL);
-            augmentedRight.addAll(tmpR);
-            j++;
         }
+                
+        for (PairInt edge : undoSaturated) {
+
+            Integer leftIndex = Integer.valueOf(edge.getX());
+            Integer rightIndex = Integer.valueOf(edge.getY());
+
+            // remove backwards link and mapping
+            rM.getBackwardLinksRM().remove(rightIndex);
+
+            Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
+            // create a forward link        
+            if (rIndexes == null) {
+                rIndexes = new HashSet<Integer>();
+                rM.getForwardLinksRM().put(leftIndex, rIndexes);
+            }
+            rIndexes.add(rightIndex);
+
+            log.info("augmented to remove :" + leftIndex + " to " +
+                rightIndex);
+            
+            augmentedLeft.add(leftIndex);
+            augmentedRight.add(rightIndex);
+        }
+        
+        Set<Integer> tmpAR = new HashSet<Integer>();
+        Set<Integer> tmpAL = new HashSet<Integer>();
+        
+        for (PairInt edge : makeSaturated) {
+
+            Integer rightIndex = Integer.valueOf(edge.getY());
+
+            if (tmpAR.contains(rightIndex)) {
+                continue;
+            }
+            
+            Integer leftIndex = Integer.valueOf(edge.getX());
+            
+            if (tmpAL.contains(leftIndex)) {
+                continue;
+            }
+            
+            // assert saturated mapping for right node doesn't exist
+            Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
+            /*if (v2 != null) {
+                continue;
+            }*/
+            assert(v2 == null);            
+            
+            Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
+        
+            boolean forwardFound = (rIndexes != null) && rIndexes.contains(rightIndex);
+        
+            if (forwardFound) {
+                // remove existing "idle" forward link
+                rIndexes.remove(rightIndex);
+
+                // create a backward link and matched mapping
+                rM.getBackwardLinksRM().put(rightIndex, leftIndex);
+
+                log.info("augmented to add :" + leftIndex + " to " +
+                    rightIndex);
+                
+                tmpAL.add(leftIndex);
+                tmpAR.add(rightIndex);
+            }
+        }
+        augmentedRight.addAll(tmpAR);
+        augmentedLeft.addAll(tmpAL);
     }
     
+    private void debugPath(List<PathNode> path) {
+        StringBuilder sb = new StringBuilder("path=");
+        for (PathNode node : path) {
+            String str = String.format("%s %s", 
+                node.id, node.getData().toString());
+            sb.append(str).append(", ");
+        }
+        log.info(sb.toString());
+    }
+    
+    private List<PairInt> filterUsingMST(Set<PairInt> edges) {
+        
+        // ---- prepare edges as a single graph and
+        //      adjacency map to give to prim's
+        
+        // re-number the vertexes and make an adjacency map or matrix
+        // populate these from Set<PairInt> edges
+        int nVertexes = 0;
+        Map<Integer, Integer> leftToNew = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> revLeftToNew = new HashMap<Integer, Integer>();
+        for (PairInt edge : edges) {
+            Integer index = Integer.valueOf(edge.getX());
+            if (!leftToNew.containsKey(index)) {
+                Integer index2 = Integer.valueOf(nVertexes);
+                leftToNew.put(index, index2);
+                revLeftToNew.put(index2, index);
+                nVertexes++;
+            }
+        }
+        int nL = nVertexes;        
+        Map<Integer, Integer> rightToNew = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> revRightToNew = new HashMap<Integer, Integer>();
+        
+        for (PairInt edge : edges) {
+            Integer index = Integer.valueOf(edge.getY());
+            if (!rightToNew.containsKey(index)) {
+                Integer index2 = Integer.valueOf(nVertexes);
+                rightToNew.put(index, index2);
+                revRightToNew.put(index2, index);
+                nVertexes++;
+            }
+        }
+        
+        Map<Integer, Set<PairInt>> adjCostMap =
+            new HashMap<Integer, Set<PairInt>>();
+        
+        for (PairInt edge : edges) {
+            Integer index1 = Integer.valueOf(edge.getX());
+            index1 = leftToNew.get(index1);
+            Integer index2 = Integer.valueOf(edge.getY());
+            index2 = rightToNew.get(index2);
+            
+            Set<PairInt> set2 = adjCostMap.get(index1);
+            if (set2 == null) {
+                set2 = new HashSet<PairInt>();
+                adjCostMap.put(index1, set2);
+            }
+            // using a cost of 1 for all edges
+            set2.add(new PairInt(index2.intValue(), 1));
+            
+            set2 = adjCostMap.get(index2);
+            if (set2 == null) {
+                set2 = new HashSet<PairInt>();
+                adjCostMap.put(index2, set2);
+            }
+            // using a cost of 1 for all edges
+            set2.add(new PairInt(index1.intValue(), 1));
+        }
+                
+        // use prim's mst to make a maximal set of edges
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(
+            nVertexes, adjCostMap); 
+        int[] prev = prims.getPrecessorArray();
+        log.info("predecessors=" + Arrays.toString(prev));
+        
+        edges.clear();
+        
+        for (int idx2 = 0; idx2 < prev.length; ++idx2) {
+            int idx1 = prev[idx2];
+            if (idx1 == -1) {
+                continue;
+            }
+            Integer index1, index2;
+            if (idx2 < nL) {
+                //[left] = right
+                index1 = Integer.valueOf(idx2);
+                index2 = Integer.valueOf(idx1);
+            } else {
+                //[right] = left
+                index1 = Integer.valueOf(idx1);
+                index2 = Integer.valueOf(idx2);
+            }
+            
+            index1 = revLeftToNew.get(index1);            
+            index2 = revRightToNew.get(index2);
+         
+            log.info(" passed filter1: " + index1 + ":" + index2);
+            
+            edges.add(new PairInt(index1.intValue(),
+                index2.intValue()));            
+        }
+        
+        List<PairInt> edges2 = new ArrayList<PairInt>();
+        int nIter = 0;
+        int nc = 0;
+        while ((nIter == 0) || (nc > 0)) {
+            nIter++;
+            Map<Integer, Integer> lF = new HashMap<Integer, Integer>();
+            Map<Integer, Integer> rF = new HashMap<Integer, Integer>();
+            for (PairInt edge : edges) {
+                Integer index1 = Integer.valueOf(edge.getX());
+                Integer index2 = Integer.valueOf(edge.getY());
+                Integer count = lF.get(index1);
+                if (count == null) {
+                    lF.put(index1, Integer.valueOf(1));
+                } else {
+                    lF.put(index1, Integer.valueOf(count.intValue() + 1));
+                }
+                count = rF.get(index2);
+                if (count == null) {
+                    rF.put(index2, Integer.valueOf(1));
+                } else {
+                    rF.put(index2, Integer.valueOf(count.intValue() + 1));
+                }
+            }
+            
+            // add to edges2  edges w/
+            // left indexes w/ frequency=1
+            // right indexes w/ frequency=1
+            // and remove those from edges
+            
+            nc = 0;
+            
+            for (Entry<Integer, Integer> entry : lF.entrySet()) {
+                if (entry.getValue().intValue() == 1) {
+                    int idx1 = entry.getKey().intValue();
+                    PairInt p0 = null;
+                    for (PairInt p : edges) {
+                        if (p.getX() == idx1) {
+                            p0 = p;
+                            break;
+                        }
+                    }
+                    assert (p0 != null);
+                    edges2.add(p0);
+                    edges.remove(p0);
+                    nc++;
+                }
+            }
+            
+            for (Entry<Integer, Integer> entry : rF.entrySet()) {
+                if (entry.getValue().intValue() == 1) {
+                    int idx2 = entry.getKey().intValue();
+                    PairInt p0 = null;
+                    for (PairInt p : edges) {
+                        if (p.getY() == idx2) {
+                            p0 = p;
+                            break;
+                        }
+                    }
+                    if (p0 != null) {
+                        edges2.add(p0);
+                        edges.remove(p0);
+                        nc++;
+                    }
+                }
+            }
+            log.info("edges.size=" + edges.size() + " edges2.size="
+                + edges2.size());
+        }
+        
+        edges2.addAll(edges);
+
+        return edges2;
+    }
+
 }

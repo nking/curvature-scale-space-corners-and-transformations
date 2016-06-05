@@ -98,7 +98,7 @@ public class PrimsMST {
             }
         }
         
-        System.out.println(Arrays.toString(prev));
+        //System.out.println(Arrays.toString(prev));
     }
     
     public int[] getPrecessorArray() {
