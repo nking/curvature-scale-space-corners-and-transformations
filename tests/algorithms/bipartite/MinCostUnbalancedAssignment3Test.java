@@ -55,7 +55,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public void test1() throws Exception {
         // size=100, scale=10 shows error in hopcroft-karp
         for (int size = 10; size <= 10; size *= 10) {
-            for (int scale = 10; scale <= 100000; scale *= 10) {
+            for (int scale = 10; scale <= 10; scale *= 10) {
                 
                 log.info("size=" + size + " scale=" + scale);
                 

@@ -243,4 +243,75 @@ public class PrimsMSTTest extends TestCase {
         assertEquals(0, expected.size());
     }
 
+    public void test1() throws Exception {
+        
+        /*         / [b]           /[c]-- 7  -- [d]\
+         *       4    |          2     \         |    9
+         *  [a]       11      [i]         4     14      [e]
+         *       8    |     7                    |   10
+         *         \ [h] / -- 1  --[g]-- 2 -- \ [f]/
+         *   
+         * letter  index        
+         *    a      0
+         *    b      1
+         *    c      2
+         *    d      3
+         *    e      4
+         *    f      5
+         *    g      6
+         *    h      7
+         *    i      8
+        
+         *         / [1]           /[2]-- 7  -- [3]\
+         *       4    |          2     \         |    9
+         *  [0]       11      [8]         4     14      [4]
+         *       8    |     7                    |   10
+         *         \ [7] / -- 1  --[6]-- 2 -- \ [5]/
+         */
+
+        int nVertexes = 9;
+        Map<Integer, Set<PairInt>> adjCostMap 
+            = new HashMap<Integer, Set<PairInt>>();
+        
+        adjCostMap.put(Integer.valueOf(0), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(1, 4));
+        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(7, 8));
+        
+        adjCostMap.put(Integer.valueOf(2), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(3, 7));
+        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(8, 2));
+        
+        adjCostMap.put(Integer.valueOf(3), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(3)).add(new PairInt(4, 9));
+        
+        adjCostMap.put(Integer.valueOf(5), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(5)).add(new PairInt(2, 4));
+        
+        adjCostMap.put(Integer.valueOf(6), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(6)).add(new PairInt(5, 2));
+        
+        adjCostMap.put(Integer.valueOf(7), new HashSet<PairInt>());
+        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(6, 1));
+      
+        PrimsMST prims = new PrimsMST();
+        prims.calculateMinimumSpanningTree(
+            nVertexes, adjCostMap);                
+        
+        /*         / [1]           /[2]-- 7  -- [3]\
+         *       4               2     \              9
+         *  [0]              [8]          4            [4]
+         *       8
+         *         \ [7]   -- 1  --[6]-- 2 -- \ [5]
+        
+        [-1, 0, 5, 2, 3, 6, 7, 0, 2]
+             *  *  *  *  *  *  *  
+         */
+     
+        int[] predecessorArray = prims.getPrecessorArray();
+       
+        assertTrue(Arrays.equals(
+            new int[]{-1, 0, 5, 2, 3, 6, 7, 0, 2}, 
+            predecessorArray));
+                
+    }
 }

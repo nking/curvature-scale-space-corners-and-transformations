@@ -111,7 +111,12 @@ public class MinCostUnbalancedAssignment {
             LeftNode node = new LeftNode();
             node.setKey(getKey());
             node.setData(getData());
-            node.pathPredecessor = pathPredecessor;
+            if (pathPredecessor != null) {
+                node.pathPredecessor = pathPredecessor.copy();
+            }
+            if (topPredecessor != null) {
+                node.topPredecessor = topPredecessor;
+            }
             return node;
         }
     }
@@ -155,7 +160,12 @@ public class MinCostUnbalancedAssignment {
             RightNode node = new RightNode();
             node.setKey(getKey());
             node.setData(getData());
-            node.pathPredecessor = pathPredecessor;
+            if (pathPredecessor != null) {
+                node.pathPredecessor = pathPredecessor.copy();
+            }
+            if (topPredecessor != null) {
+                node.topPredecessor = topPredecessor;
+            }
             return node;
         }
     }
@@ -172,7 +182,12 @@ public class MinCostUnbalancedAssignment {
             SourceNode node = new SourceNode();
             node.setKey(getKey());
             node.setData(getData());
-            node.pathPredecessor = pathPredecessor;
+            if (pathPredecessor != null) {
+                node.pathPredecessor = pathPredecessor.copy();
+            }
+            if (topPredecessor != null) {
+                node.topPredecessor = topPredecessor;
+            }
             return node;
         }
     }
@@ -188,7 +203,12 @@ public class MinCostUnbalancedAssignment {
             SinkNode node = new SinkNode();
             node.setKey(getKey());
             node.setData(getData());
-            node.pathPredecessor = pathPredecessor;
+            if (pathPredecessor != null) {
+                node.pathPredecessor = pathPredecessor.copy();
+            }
+            if (topPredecessor != null) {
+                node.topPredecessor = topPredecessor;
+            }
             return node;
         }
     }
@@ -1294,16 +1314,16 @@ Matchings in G are integral flows in N_G
         Set<Integer> augmentedRight,
         LeftNode topNode, Set<Integer> visitedY) {
 
-        Integer x = (Integer)(xNode.getData());
+        Integer xIndex = (Integer)(xNode.getData());
       
-        if (augmentedLeft.contains(x)) {
+        if (augmentedLeft.contains(xIndex)) {
             return prevKey;
         }
         
         long lX = xNode.getKey();
         assert(lX < Long.MAX_VALUE);
         
-        Set<Integer> forwardLinks = rM.getForwardLinksRM().get(x);
+        Set<Integer> forwardLinks = rM.getForwardLinksRM().get(xIndex);
         
         if (forwardLinks != null) {
         
@@ -1343,23 +1363,36 @@ Matchings in G are integral flows in N_G
 
                 long ell = lX + cp;
                 if (ell < lOld) {
-                    yNode = yNode.copy();
-                    yNode.pathPredecessor = xNode.copy();
-                    if (yNode.pathPredecessor.topPredecessor != null) {
-                        assert(yNode.pathPredecessor.
-                            topPredecessor.getData().equals(
-                            topNode.getData()));
-                        yNode.topPredecessor = 
-                            yNode.pathPredecessor.topPredecessor;
-                    } else {
-                        yNode.topPredecessor = topNode;
-                    }
                     if (lOld == Long.MAX_VALUE) {
+                        yNode = yNode.copy();
+                        yNode.pathPredecessor = xNode.copy();
+                        if (yNode.pathPredecessor.topPredecessor != null) {
+                            assert (yNode.pathPredecessor.topPredecessor.getData().equals(
+                                topNode.getData()));
+                            yNode.topPredecessor
+                                = yNode.pathPredecessor.topPredecessor;
+                        } else {
+                            yNode.topPredecessor = topNode;
+                        }
                         yNode.setKey(ell);
                         heap.insert(yNode);
                         log.info(String.format("HEAP insert: %s",
                             yNode.toString()));
                     } else {
+                        Integer prev = 
+                            (yNode.pathPredecessor == null) ?
+                            null :
+                            (Integer)yNode.pathPredecessor.getData();
+                        Integer top = 
+                            (yNode.topPredecessor == null) ?
+                            null :
+                            (Integer)yNode.topPredecessor.getData();
+                        assert(prev != null);
+                        assert(top != null);
+                        if (prev.intValue() != xIndex) {
+                            yNode.pathPredecessor = xNode;
+                            yNode.topPredecessor = xNode.topPredecessor;
+                        }
                         heap.decreaseKey(yNode, ell);
                         log.info(String.format("HEAP decr: %s",
                             yNode.toString()));
@@ -1396,6 +1429,13 @@ Matchings in G are integral flows in N_G
                 list = new DoubleLinkedCircularList();
                 forest[k] = list;
             }
+            
+            //NOTE: since some of the nodes are still possibly
+            // nodes still present in the fibonacci heap,
+            // one should copy nodes here to help not corrupt the
+            // heap nodes.
+            node = node.copy();
+            
             list.insert(node);
             
             lastKey = node.getKey();
@@ -1555,9 +1595,7 @@ Matchings in G are integral flows in N_G
                         node = node.getLeft();
                     }
                 }
-                
-   another class cast error.  double linked list sentinel errors?
-   
+                   
                 List<PathNode> path = extractNodes((PathNode)node);
                 int n2 = path.size();
                 for (int ii = 0; ii < n2; ++ii) {
