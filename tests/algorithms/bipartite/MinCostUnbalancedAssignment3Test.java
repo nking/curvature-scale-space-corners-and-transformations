@@ -53,20 +53,33 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     }
     
     public void test1() throws Exception {
+        
+  // TODO: need to fix dependencies
+  // on max cost such as estimates of minHeap length or foret
+  // length maybe
+        
+        log.info("test1");
+        
+        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        long seed = System.currentTimeMillis();
+        seed = 1465157989128L;
+        sr.setSeed(seed);
+        log.info("SEED=" + seed);
+        
         // size=100, scale=10 shows error in hopcroft-karp
         for (int size = 10; size <= 10; size *= 10) {
-            for (int scale = 10; scale <= 10; scale *= 10) {
+            for (int maxCost = 10000; maxCost <= 10000; maxCost *= 10) {
                 
-                log.info("size=" + size + " scale=" + scale);
+                log.info("size=" + size + " maxCost=" + maxCost);
                 
-                Graph g = getTestGraph1(size, scale);
+                Graph g = getTestGraph1(size, maxCost, sr);
                 
                 MinCostUnbalancedAssignment bipartite = 
                     new MinCostUnbalancedAssignment();
                 
                 Map<Integer, Integer> m = bipartite.flowAssign(g);
                 
-                log.info("size=" + size + " scale=" + scale + 
+                log.info("size=" + size + " scale=" + maxCost + 
                     " m.size=" + m.size());
                 
                 assertEquals(size, m.size());
@@ -82,8 +95,10 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
 
     public void test2() throws Exception {
         
+        log.info("test2");
+        
         int size = 10;
-        int scale = 10000;//1000000;
+        int scale = 100;//1000000;
         
         log.info("size=" + size + " scale=" + scale);
 
@@ -166,7 +181,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
     
-    public void est00() {
+    public void test00() {
         
         log.info("test00");
         
@@ -275,7 +290,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         return g;
     }
     
-    private Graph getTestGraph1(int size, int maxCost) throws NoSuchAlgorithmException {
+    private Graph getTestGraph1(int size, int maxCost,
+        SecureRandom sr) throws NoSuchAlgorithmException {
         
         /*
         - graph of size n for both sets
@@ -296,17 +312,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
         
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        sr.setSeed(seed);
-        log.info("SEED=" + seed);
         int minCostUpper = maxCost/10;
         
         for (int i = 0; i < size; ++i) {
             for (int j = 0; j < size; ++j) {
                 int cost;
                 if (j == i) {
-                    cost = sr.nextInt(minCostUpper);
+                    cost = sr.nextInt(minCostUpper - 1) + 1;
                 } else {
                     cost = minCostUpper +
                         sr.nextInt(maxCost - minCostUpper);
@@ -356,7 +368,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
         
-        int cost = sr.nextInt(maxCost);
+        int cost = sr.nextInt(maxCost - 1) + 1;
         
         for (int i = 0; i < size; ++i) {
             for (int j = 0; j < size; ++j) {

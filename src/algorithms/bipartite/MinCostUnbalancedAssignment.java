@@ -42,7 +42,18 @@ import java.util.logging.Logger;
  by Ramshaw and Tarjan, 2012
  for their algorithm, FlowAssign, Refine, and other methods
  used in the paper.
- * 
+
+ <e>NOTE: for the best performance, the user should make sure
+ that the maximum cost in their graph is less than roughly
+ 46340 because internally it is using a data structure
+ that scales in size by that number.
+ A work-around will be added in the future for such large
+ costs, but the resulting runtime complexity will be increased
+ (the minHeap operations are currently O(1) but would be increased
+ to O(lg_2(maxCost)) for large maximum cost.
+ </b>
+* 
+* 
  Note that the min-cost is the optimized goal, so if a 
  graph is given that has a possible solution with more 
  matches than the number of min-cost matches, this 
@@ -226,8 +237,8 @@ public class MinCostUnbalancedAssignment {
     }
 
     /*
-    input to FlowAssign is a bipartite graph G with integral 
-    edge weights and a target size t. 
+    input to FlowAssign is a bipartite graph G with integer 
+    edge weights greater than zero and a target size t. 
     
     s := min(t, ν(G))
     initialization uses Hopcroft-Karp and ignores the edge weights
@@ -286,8 +297,10 @@ public class MinCostUnbalancedAssignment {
     */
 
     /**
-     * 
-     * @param g bipartite graph with integral weights.
+     * match the left and right vertices in graph g by
+     * minimum cost assignment.
+     * @param g bipartite graph with integer weights with
+     * values greater than zero.
      * @return 
      */
     public Map<Integer, Integer> flowAssign(Graph g) {
@@ -694,6 +707,8 @@ public class MinCostUnbalancedAssignment {
         // need to use a limit which will always include
         // the shortest path length at any time.
         // they're quantized w/ eps.
+        //NOTE: for max cost > ~ 46300 should use a fibonacci
+        //      heap instead, so need to encapsulate this.
         DoubleLinkedCircularList[] minHeap 
             = new DoubleLinkedCircularList[lambda];
             
