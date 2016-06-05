@@ -44,27 +44,7 @@ public class HopcroftKarpTest extends TestCase {
         
         int s = Math.min(g.getNLeft(), g.getNRight());
         
-        ResidualDigraph rM = new ResidualDigraph(g);
-        DoubleLinkedCircularList[] forest = 
-            bipartite2.buildForest(rM, s);
-        
-        int k = 0;
-        for (DoubleLinkedCircularList list : forest) {
-            if (list == null) {
-                continue;
-            }
-            // traverse getLeft for FIFO order
-            HeapNode node = list.getSentinel();
-            for (int i = 0; i < list.getNumberOfNodes(); ++i) {
-                node = node.getLeft();
-                String nodeType = 
-                    node.getClass().getSimpleName().contains("Left") ?
-                    " Left" : " Right";
-                System.out.println("k=[" + k + "] key=" + node.getKey()
-                    + nodeType + " index=" + node.getData());
-            }
-            ++k;
-        }
+       
     }
     
     private GraphWithoutWeights getTestGraph() {
