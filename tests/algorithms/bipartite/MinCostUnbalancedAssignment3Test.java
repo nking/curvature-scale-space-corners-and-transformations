@@ -53,11 +53,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     }
     
     public void test1() throws Exception {
-        
-  // TODO: need to fix dependencies
-  // on max cost such as estimates of minHeap length or foret
-  // length maybe
-        
+    
         log.info("test1");
         
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
@@ -66,9 +62,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         
-        // size=100, scale=10 shows error in hopcroft-karp
         for (int size = 10; size <= 10; size *= 10) {
-            for (int maxCost = 10000; maxCost <= 10000; maxCost *= 10) {
+            for (int maxCost = 100000; maxCost <= 100000; maxCost *= 10) {
                 
                 log.info("size=" + size + " maxCost=" + maxCost);
                 
@@ -313,6 +308,9 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             = new HashMap<PairInt, Integer>();
         
         int minCostUpper = maxCost/10;
+        if (minCostUpper < 2) {
+            minCostUpper = 2;
+        }
         
         for (int i = 0; i < size; ++i) {
             for (int j = 0; j < size; ++j) {

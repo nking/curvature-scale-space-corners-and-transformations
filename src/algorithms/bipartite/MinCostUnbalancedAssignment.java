@@ -21,8 +21,8 @@ import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
- * A solver for the min-cost, unbalanced, bipartite
- * assignment problem that also uses weight scaling
+ * A solver for the min-cost, unbalanced, weighted bipartite
+ * assignment problem that uses weight scaling
  * to solve the perfect and imperfect
  * assignment problems, but not incremental
  * with a runtime complexity of
@@ -39,18 +39,14 @@ import java.util.logging.Logger;
  
  The code below follows the paper of
  "On Minimum-Cost Assignments in Unbalanced Bipartite Graphs"
- by Ramshaw and Tarjan, 2012
- for their algorithm, FlowAssign, Refine, and other methods
- used in the paper.
+ by Ramshaw and Tarjan, 2012.
 
  <e>NOTE: for the best performance, the user should make sure
  that the maximum cost in their graph is less than roughly
- 46340 because internally it is using a data structure
- that scales in size by that number.
- A work-around will be added in the future for such large
- costs, but the resulting runtime complexity will be increased
- (the minHeap operations are currently O(1) but would be increased
- to O(lg_2(maxCost)) for large maximum cost.
+ 46340 because that is the limit wherein the an internal
+ data structure switches to using an O(lg2(N_nodes))
+ * extract min operation rather than the approximiately
+ * O(1) for smaller maximum costs.
  </b>
 * 
 * 
@@ -67,9 +63,9 @@ import java.util.logging.Logger;
  * present in the conflict analysis of the fastest boolean
  * sat solvers to design a fast pre-filter).
  * 
- * Another detail of note is that the algorithm does not
+ * A strength of the algorithm to note is that it does not
  * artificially double the graph in order to handle
- * unequally sized sets in the graph (does not use
+ * unequally sized left and right sets (it does not use
  * Bipartite double cover).
  </pre>
  * @author nichole
@@ -80,41 +76,11 @@ public class MinCostUnbalancedAssignment {
 
     private FlowNetwork finalFN = null;
 
-    /*
-    an alternating path is in the residual digraph, and 
-       alternates between forward and backward.
-    augmenting paths are in the residual digraph.
-       an augmenting path starts at a maiden and ends at
-       a bachelor (therefore, first and last links are
-       forward links).  the links from Y to X are already
-       matched (married).
-   - an augmenting path takes forward steps to add a new 
-     edge to the matched AND takes backward steps to 
-     remove an edge from the matched.
-   - an augmenting path is "tight" when all of the edges
-     that underlie its links are tight, that is, have 
-     zero net cost.
-   - c(P) is the cost of augmenting path P.
-     it's the sum of costs of the arcs of the path in 
-     the flow network.
-   - Let x_i_j = 1   if i is assigned to j,  else =0
-     to augment along path p is to replace x_i_j by 1 for
-     each arc (i,j) in P directed from X to Y, and to
-     replace each x_i_j by 0 for each arc (j, i) in P
-     directed from Y to X.
-     - suppose x' is the matching obtained from x after
-       augmenting along path P.
-       the cost of x' is cx' = cx + c(P)
-
-    Definition 2-7 on page 15 defines a proper pseudoflow
-    of f and cp.
-    */
-    
     /**
      * class specializing a fibonacci heap node to identify
      * a left node, a.k.a. X node
      */
-    public static class LeftNode extends PathNode {
+    protected static class LeftNode extends PathNode {
         public LeftNode() {
             this.id = "LeftNode";
         }        
@@ -132,7 +98,7 @@ public class MinCostUnbalancedAssignment {
         }
     }
     
-    public static abstract class PathNode extends HeapNode {
+    protected static abstract class PathNode extends HeapNode {
         PathNode pathPredecessor = null;
         LeftNode topPredecessor = null;
         // m = 0 is unmarked, m=1 is marked
@@ -163,7 +129,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a right node, a.k.a. Y node
      */
-    public static class RightNode extends PathNode {
+    protected static class RightNode extends PathNode {
         public RightNode() {
             this.id = "RightNode";
         }
@@ -185,7 +151,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a source
      */
-    public static class SourceNode extends PathNode {
+    protected static class SourceNode extends PathNode {
         public SourceNode() {
             this.id = "SourceNode";
         }        
@@ -206,7 +172,7 @@ public class MinCostUnbalancedAssignment {
      * class specializing a fibonacci heap node to identify
      * a sink node
      */
-    public static class SinkNode extends PathNode {
+    protected static class SinkNode extends PathNode {
         public SinkNode() {
             this.id = "SinkNode";
         }        
@@ -298,10 +264,14 @@ public class MinCostUnbalancedAssignment {
 
     /**
      * match the left and right vertices in graph g by
-     * minimum cost assignment.
+     * minimum cost assignment and return the mappings.
+     * (Note that the final flow network is retained by the 
+     * instance if information more than the matchings
+     * is wanted and can be retrieved.)
      * @param g bipartite graph with integer weights with
      * values greater than zero.
-     * @return 
+     * @return map of indexes of left nodes matched to indexes of
+     * right nodes
      */
     public Map<Integer, Integer> flowAssign(Graph g) {
 
@@ -707,11 +677,8 @@ public class MinCostUnbalancedAssignment {
         // need to use a limit which will always include
         // the shortest path length at any time.
         // they're quantized w/ eps.
-        //NOTE: for max cost > ~ 46300 should use a fibonacci
-        //      heap instead, so need to encapsulate this.
-        DoubleLinkedCircularList[] minHeap 
-            = new DoubleLinkedCircularList[lambda];
-            
+        MinHeapForRT2012 minHeap = new MinHeapForRT2012(lambda);
+         
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
         for (int i = 0; i < gFlow.getNLeft(); ++i) {
@@ -740,11 +707,11 @@ public class MinCostUnbalancedAssignment {
         for (Integer sigma : surplus) {
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
-            insertIntoHeap(minHeap, sNode);
+            minHeap.insert(sNode);
         }
              
         do {
-            PathNode node1 = extractMinFromHeap(minHeap);
+            PathNode node1 = minHeap.extractMin();
             if (node1 == null) {
                 break;
             }
@@ -1610,51 +1577,7 @@ Matchings in G are integral flows in N_G
                 
         return nodes;
     }
-    
-    private void insertIntoHeap(DoubleLinkedCircularList[] minHeap, 
-        PathNode node) {
-         
-        int key = (int)node.getKey();
-        
-        DoubleLinkedCircularList bucket = minHeap[key];
-        if (bucket == null) {
-            bucket = new DoubleLinkedCircularList();
-            minHeap[key] = bucket;
-        }
-        
-        log.info("insert into minHeap at key =" + key);
-        
-        bucket.insert(node);        
-    }
-    
-    private PathNode extractMinFromHeap(
-        DoubleLinkedCircularList[] minHeap) {
-
-        for (DoubleLinkedCircularList bucket : minHeap) {
-            if (bucket != null && (bucket.getNumberOfNodes() > 0)) {
-                HeapNode node = bucket.getSentinel().getLeft();
-                bucket.remove(node);
-                return (PathNode)node;
-            }
-        }
-        
-        return null;
-    }
-
-    private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
-        minHeap, PathNode node2, long lTot) {
-
-        log.info("decreaseKey in minHeap from key=" + 
-            node2.getKey() + " to key=" + lTot);
-        
-        int prevKey = (int)node2.getKey();
-        minHeap[prevKey].remove(node2);
-        
-        node2.setKey(lTot);
-        
-        insertIntoHeap(minHeap, node2);
-    }
-    
+   
     private void debug(List<LinkedList<PathNode>> cPaths) {
 
         log.info("cPaths.size=" + cPaths.size());
@@ -1727,7 +1650,7 @@ Matchings in G are integral flows in N_G
     }
     
     private void handleSourceForwardLink(
-        DoubleLinkedCircularList[] minHeap,
+        MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, SourceNode node1,
         Integer index2, Map<Integer, LeftNode> leftNodes,
         int lambda, float eps) {
@@ -1748,14 +1671,14 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
     
-    private void handleLeft(DoubleLinkedCircularList[] minHeap,
+    private void handleLeft(MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, PathNode node1,
         Integer index2, Map<Integer, LeftNode> leftNodes,
         int lambda, float eps) {
@@ -1776,14 +1699,14 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
     
-    private void handleRight(DoubleLinkedCircularList[] minHeap,
+    private void handleRight(MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, PathNode node1,
         Integer index2, Map<Integer, RightNode> rightNodes,
         int lambda, float eps) {
@@ -1804,15 +1727,15 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
     
     private void handleSinkBackwardLink(
-        DoubleLinkedCircularList[] minHeap,
+        MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, SinkNode node1,
         Integer index2, Map<Integer, RightNode> rightNodes,
         int lambda, float eps) {
@@ -1833,15 +1756,15 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
     
     private void handleSourceBackwardLink(
-        DoubleLinkedCircularList[] minHeap,
+        MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, PathNode node1,
         SourceNode node2, int lambda, float eps) {
         
@@ -1861,14 +1784,14 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
     
-    private void handleSink(DoubleLinkedCircularList[] minHeap,
+    private void handleSink(MinHeapForRT2012 minHeap,
         FlowNetwork gFlow, PathNode node1,
         SinkNode node2, int lambda, float eps) {
         
@@ -1888,9 +1811,9 @@ Matchings in G are integral flows in N_G
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
                 node2.setKey(lTot);
-                insertIntoHeap(minHeap, node2);
+                minHeap.insert(node2);
             } else {
-                decreaseKeyInHeap(minHeap, node2, lTot);
+                minHeap.decreaseKey(node2, lTot);
             }
         }
     }
