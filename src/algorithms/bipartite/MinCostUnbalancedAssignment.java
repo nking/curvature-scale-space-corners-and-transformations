@@ -453,7 +453,7 @@ public class MinCostUnbalancedAssignment {
             // build a shortest-path forest from the current surpluses S, 
             // stopping when a current deficit in D is reached;
             // (pg 55)
-            DoubleLinkedCircularList[] forest = 
+            Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 terminatingDeficitIdx);
                   
@@ -579,6 +579,81 @@ public class MinCostUnbalancedAssignment {
         return 0;
     }
     
+    private static class Forest {
+    
+        // replaces the array DoubleLinkedCircularList[]
+        // with a sparsely populated structure and
+        // an ordered list of keys
+        
+        //NOTE that the use of this structure is monotonically
+        // increasing,
+        // that is, the keys for inserts are always
+        // the same or increasing, so one only needs to compare
+        // with last item in orderedKeys.
+     
+        private final int upperKeyLimit;
+        
+        private List<Integer> orderedKeys = new ArrayList<Integer>();
+        
+        private Map<Integer, DoubleLinkedCircularList> forest =
+            new HashMap<Integer, DoubleLinkedCircularList>();
+       
+        public Forest(int upperKeyLimit) {
+            this.upperKeyLimit = upperKeyLimit;
+        }
+        
+        public DoubleLinkedCircularList get(int key) {
+            return forest.get(Integer.valueOf(key));
+        }
+        
+        public long add(PathNode node, long lastKey) {
+            
+            /*
+            Section 8.1, pg 57
+            We ignore any paths we find whose lengths exceed forest.length. 
+            We also maintain an integer B, which stores the 
+            value l(v) for the node v that was most recently 
+            added to the forest. 
+            We add nodes v to the forest in nondecreasing 
+            order of l(v), so B never decreases. 
+            To implement insert(v,k), we add v to the list Q[k].
+            */
+        
+            // NOTE: if the same node is inserted more than once,
+            // the forest will be corrupted
+
+            if (node.getKey() < upperKeyLimit) {
+                
+                int k = (int) node.getKey();
+                Integer key = Integer.valueOf(k);
+                                
+                DoubleLinkedCircularList list = forest.get(key);
+                
+                if (list == null) {
+                    list = new DoubleLinkedCircularList();
+                    orderedKeys.add(key);
+                    forest.put(key, list);
+                }
+
+                //NOTE: since some of the nodes are still possibly
+                // nodes still present in the fibonacci heap,
+                // one should copy nodes here to help not corrupt the
+                // heap nodes.
+                node = node.copy();
+
+                list.insert(node);
+
+                lastKey = node.getKey();
+            }
+
+            return lastKey;
+        }
+        
+        public List<Integer> getKeys() {
+            return new ArrayList<Integer>(orderedKeys);
+        }
+    }
+    
     /**
      * 
      * @param gFlow
@@ -592,7 +667,7 @@ public class MinCostUnbalancedAssignment {
      * was added to).
      * @return 
      */
-    protected DoubleLinkedCircularList[] buildForest2(
+    protected Forest buildForest2(
         final FlowNetwork gFlow, ResidualDigraph2 rF,
         List<Integer> surplus, List<Integer> deficit, float eps,
         int[] terminatingDeficitIdx) {
@@ -606,11 +681,14 @@ public class MinCostUnbalancedAssignment {
         if (lambda < 4) {
             lambda = 4;
         }
+        log.info("buildForest2 forest length lambda is set to " + 
+            lambda);
         
         long lastKey = -1;
         
-        DoubleLinkedCircularList[] forest 
-            = new DoubleLinkedCircularList[lambda];
+        // sparsely populated holder for the 
+        // DoubleLinkedCircularList trees
+        Forest forest = new Forest(lambda);
 
         //TODO: revisit this
         // need to use a limit which will always include
@@ -717,10 +795,10 @@ public class MinCostUnbalancedAssignment {
             log.info("add to forest key=" + node1Cp.toString());
             
             //add v to the forest;
-            lastKey = addToForest(forest, node1Cp, lastKey);
+            lastKey = forest.add(node1Cp, lastKey);
 
-            HeapNode rootOfTD = forest[(int)lastKey].getSentinel()
-                .getRight();
+            HeapNode rootOfTD = forest.get((int)lastKey).
+                getSentinel().getRight();
             Integer rootIndex = (Integer)rootOfTD.getData();
             terminatingDeficitIdx[0] = (int)lastKey;
                 
@@ -1529,7 +1607,7 @@ Matchings in G are integral flows in N_G
             minHeap[key] = bucket;
         }
         
-        log.fine("insert into heap=" + node);
+        log.info("insert into minHeap at key =" + key);
         
         bucket.insert(node);        
     }
@@ -1551,7 +1629,8 @@ Matchings in G are integral flows in N_G
     private void decreaseKeyInHeap(DoubleLinkedCircularList[] 
         minHeap, PathNode node2, long lTot) {
 
-        log.fine("decreaseKey=" + node2 + " to key=" + lTot);
+        log.info("decreaseKey in minHeap from key=" + 
+            node2.getKey() + " to key=" + lTot);
         
         int prevKey = (int)node2.getKey();
         minHeap[prevKey].remove(node2);
@@ -1601,6 +1680,30 @@ Matchings in G are integral flows in N_G
                 for (int ii = 0; ii < n2; ++ii) {
                     PathNode node1 = path.get(ii);
                     log.info("forest2[" + i + "] tree branch[" 
+                        + j + "] node[" + ii + "]=" + node1.toString());
+                }                    
+                j++;
+            }
+        }            
+    }
+    
+    private void debug(Forest forest) {
+        
+        for (Integer key : forest.getKeys()) {
+
+            DoubleLinkedCircularList tree = forest.get(key.intValue());
+            
+            long n = tree.getNumberOfNodes();
+            HeapNode node = tree.getSentinel();
+            int j = 0;
+            while (j < n) {
+                node = node.getLeft();
+                
+                List<PathNode> path = extractNodes((PathNode)node);
+                int n2 = path.size();
+                for (int ii = 0; ii < n2; ++ii) {
+                    PathNode node1 = path.get(ii);
+                    log.info("forest2[" + key + "] tree branch[" 
                         + j + "] node[" + ii + "]=" + node1.toString());
                 }                    
                 j++;
@@ -1844,8 +1947,7 @@ Matchings in G are integral flows in N_G
     }
     
     private void modifyPricesAndPathLengths(FlowNetwork gFlow,
-        DoubleLinkedCircularList[] forest, int lt,
-        float eps) {
+        Forest forest, int lt, float eps) {
 
         Map<Integer, Integer> incrLeft = 
             new HashMap<Integer, Integer>();
@@ -1869,11 +1971,12 @@ Matchings in G are integral flows in N_G
             = new HashMap<Integer, Map<Integer, List<PathNode>>>();
 
         // traverse trees in the forest
-        for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
-            DoubleLinkedCircularList tree = forest[forestIdx];
-            if (tree == null) {
-                continue;
-            }
+        for (Integer forestKey : forest.getKeys()) {
+            
+            DoubleLinkedCircularList tree = forest.get(forestKey);
+            
+            int forestIdx = forestKey.intValue();
+            
             long n = tree.getNumberOfNodes();
             HeapNode node = tree.getSentinel();
             int treeIdx = 0;
@@ -2190,18 +2293,17 @@ Matchings in G are integral flows in N_G
     }
     
     private List<LinkedList<PathNode>> extractZeroLengthLinks(
-        DoubleLinkedCircularList[] forest) {
+        Forest forest) {
 
         // each linked list is a pair of 2 path nodes whose link length = 0
         List<LinkedList<PathNode>> pathLists = new
             ArrayList<LinkedList<PathNode>>();
         
         // traverse trees in the forest
-        for (int forestIdx = 0; forestIdx < forest.length; ++forestIdx) {
-            DoubleLinkedCircularList tree = forest[forestIdx];
-            if (tree == null) {
-                continue;
-            }
+        for (Integer forestKey : forest.getKeys()) {
+            
+            DoubleLinkedCircularList tree = forest.get(forestKey);
+            
             long n = tree.getNumberOfNodes();
             HeapNode node = tree.getSentinel();
             int treeIdx = 0;
