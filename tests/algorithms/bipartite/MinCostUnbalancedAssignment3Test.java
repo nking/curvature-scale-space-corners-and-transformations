@@ -68,11 +68,18 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 log.info("size=" + size + " maxCost=" + maxCost);
                 
                 Graph g = getTestGraph1(size, maxCost, sr);
+            
+                long t0 = System.currentTimeMillis();
                 
                 MinCostUnbalancedAssignment bipartite = 
                     new MinCostUnbalancedAssignment();
                 
                 Map<Integer, Integer> m = bipartite.flowAssign(g);
+                
+                long t1 = System.currentTimeMillis();
+                long tSec = (t1 - t0)/1000;
+                System.out.println(tSec + " sec for flowAssign");
+
                 
                 log.info("size=" + size + " scale=" + maxCost + 
                     " m.size=" + m.size());
@@ -84,11 +91,29 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 }
                 
                 assertNotNull(bipartite.getFinalFlowNetwork());
+            
+                float[][] matrix = convert(g);
+                
+                long t2 = System.currentTimeMillis();
+                HungarianAlgorithm ha = new HungarianAlgorithm();
+                int[][] m2 = ha.computeAssignments(matrix);
+                long t3 = System.currentTimeMillis();
+                tSec = (t3 - t2)/1000;
+                System.out.println(tSec + " sec for hungarian");
+                
+                log.info("size=" + size + " scale=" + maxCost + 
+                    " m.size=" + m.size());
+                
+                for (int i = 0; i < size; ++i) {
+                    int idx1 = m2[i][0];
+                    int idx2 = m2[i][1];
+                    assertEquals(idx1, idx2);
+                }
             }
         }
     }
 
-    public void test2() throws Exception {
+    public void est2() throws Exception {
         
         log.info("test2");
         
@@ -328,6 +353,27 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         Graph g = new Graph(size, size, weights, true);
 
         return g;
+    }
+    
+    private float[][] convert(Graph g) {
+        
+        int n1 = g.getNLeft();
+        int n2 = g.getNRight();
+        
+        float[][] cost = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost[i] = new float[n2];
+            Arrays.fill(cost[i], Float.MAX_VALUE);
+        }
+        
+        for (Entry<PairInt, Integer> entry : 
+            g.getEdgeWeights().entrySet()) {
+        
+            PairInt p = entry.getKey();
+            cost[p.getX()][p.getY()] = entry.getValue().intValue();
+        }
+        
+        return cost;
     }
     
     private Graph getTestGraph2(int size, int maxCost, 
