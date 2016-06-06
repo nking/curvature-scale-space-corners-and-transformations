@@ -768,7 +768,7 @@ long t1 = System.currentTimeMillis();
 // if all left vertexes are maidens on the
 // first iteration, then the
 // initialization above takes
-//  |V|*|E|
+//  |V|*|E_per_vertex|
 //  just fixed part of that
 
         do {
