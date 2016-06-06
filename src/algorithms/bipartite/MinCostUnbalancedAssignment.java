@@ -444,15 +444,12 @@ long t0 = System.currentTimeMillis();
             // stopping when a current deficit in D is reached;
             // (pg 55)
 
-//buildForest2 takes too long
-//could further memoization help?
-
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 terminatingDeficitIdx);
 long t1 = System.currentTimeMillis();
-tSec = (t1 - t0)/100;
-System.out.println(tSec + " tenths of sec for buildForest2");
+tSec = (t1 - t0)/10;
+System.out.println(tSec + " 100ths of sec for buildForest2");
 
             //debug(forest);
            
@@ -502,8 +499,8 @@ t0 = System.currentTimeMillis();
             modifyPricesAndPathLengths(gFlow, forest, 
                 terminatingDeficitIdx[0], eps);
 t1 = System.currentTimeMillis();
-tSec = (t1 - t0)/100;
-System.out.println(tSec + " tenths of sec for modifyPricesAndPathLengths");
+tSec = (t1 - t0)/10;
+System.out.println(tSec + " 100ths of sec for modifyPricesAndPathLengths");
 
             //log.info("after modify prices and link lengths");
             //debug(forest);
@@ -524,9 +521,9 @@ t0 = System.currentTimeMillis();
             List<LinkedList<PathNode>> zeroLengthLinks =
                 extractZeroLengthLinks(forest);
 t1 = System.currentTimeMillis();  
-tSec = (t1 - t0)/100;
+tSec = (t1 - t0)/10;
 System.out.println(tSec 
-+ " tenths of sec for extractZeroLengthLinks");
++ " 100ths of sec for extractZeroLengthLinks");
 
             log.fine("srching for zero length paths:");
             //debug(forest);
@@ -543,9 +540,9 @@ t0 = System.currentTimeMillis();
                 zeroLengthLinks,surplus, 
                 new HashSet<Integer>(deficit));
 t1 = System.currentTimeMillis();  
-tSec = (t1 - t0)/100;
+tSec = (t1 - t0)/10;
 System.out.println(tSec 
-+ " tenths of sec for findMaximalSetOfCompatiblePaths");
++ " 100ths of sec for findMaximalSetOfCompatiblePaths");
 
             log.fine("cPaths.size=" + cPaths.size());
             if (cPaths.isEmpty()) {
@@ -578,8 +575,8 @@ t0 = System.currentTimeMillis();
             // within augmentFlow
             augmentFlow(gFlow, cPaths, surplus, deficit);
 t1 = System.currentTimeMillis();  
-tSec = (t1 - t0)/100;
-System.out.println(tSec + " tenths of sec for augmentFlow");
+tSec = (t1 - t0)/10;
+System.out.println(tSec + " 100ths of sec for augmentFlow");
 
             //log.info("after augment flow:");
             //gFlow.printSaturatedLinks();
@@ -695,7 +692,7 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
      * @param deficit
      * @param eps
      * @param terminatingDeficitIdx output array of size 1
-     * to hold th length of the key of the terminating deficit
+     * to hold the length of the key of the terminating deficit
      * node (which is also the index of the forest tree it 
      * was added to).
      * @return 
@@ -763,17 +760,15 @@ long t0 = System.currentTimeMillis();
         }
         
 long t1 = System.currentTimeMillis();
-
-// there is a bottleneck here that is dependent upon the number of nodes       
-// if all left vertexes are maidens on the
-// first iteration, then the
-// initialization above takes
-//  |V|*|E_per_vertex|
-//  just fixed part of that
+long tSec = (t1 - t0)/10;
+System.out.println(tSec + " 100ths of sec for "
+    + "init in buildForest2 heap.size=" +
+    minHeap.getNumberOfNodes());
 
         do {
             PathNode node1 = minHeap.extractMin();
             if (node1 == null) {
+                terminatingDeficitIdx[0] = (int)lastKey;
                 break;
             }
             Integer index1 = (Integer)node1.getData();
@@ -789,15 +784,18 @@ long t1 = System.currentTimeMillis();
             if (nodeIsSource) {        
                 // scan forward source links
                 for (Integer index2 : rF.getForwardLinksSourceRM()) {
-                    handleSourceForwardLink(minHeap, gFlow, 
-                        (SourceNode)node1, index2, 
-                        leftNodes, lambda, eps); 
+                    handlePlusLink(minHeap, 
+                        node1, leftNodes.get(index2),
+                        gFlow.calcSourceNetCost(index2.intValue()),
+                        lambda, eps); 
                 }
             } else if (nodeIsSink) {
                 // scan backward sink links
                 for (Integer index2 : rF.getBackwardLinksSinkRM()) {
-                    handleSinkBackwardLink(minHeap, gFlow, 
-                        (SinkNode)node1, index2, rightNodes, lambda, eps);
+                    handleMinusLink(minHeap, node1, 
+                        rightNodes.get(index2), 
+                        gFlow.calcSinkNetCost(index2.intValue()), 
+                        lambda, eps);
                 }
             } else if (node1IsLeft) {
                 // scan the bipartite arcs forward
@@ -805,8 +803,10 @@ long t1 = System.currentTimeMillis();
                     index1);
                 if (indexes2 != null) {
                     for (Integer index2 : indexes2) {
-                        handleRight(minHeap, gFlow, node1, index2, 
-                            rightNodes, lambda, eps);                        
+                        handlePlusLink(minHeap, node1, 
+                            rightNodes.get(index2), 
+                            gFlow.calcNetCost(idx1, index2.intValue()),
+                            lambda, eps);
                     }
                 }
            
@@ -814,21 +814,25 @@ long t1 = System.currentTimeMillis();
                 if (rF.getBackwardLinksSourceRM().contains(index1)) {
                     // insert a copy of the source node
                     SourceNode sNode2 = sourceNode.copy();
-                    handleSourceBackwardLink(minHeap, gFlow, 
-                        node1, sNode2, lambda, eps);
+                    handleMinusLink(minHeap, node1, sNode2, 
+                        gFlow.calcSourceNetCost(idx1),
+                        lambda, eps);
                 }
             } else {
                 // node1 is a RightNode
                 Integer index2 = rF.getBackwardLinksRM().get(index1);
                 if (index2 != null) {
-                    handleLeft(minHeap, gFlow, node1, index2, 
-                       leftNodes, lambda, eps);                     
+                    handleMinusLink(minHeap, node1, 
+                       leftNodes.get(index2), 
+                       gFlow.calcNetCost(index2.intValue(), idx1),
+                       lambda, eps);                     
                 }
                 // if there is a sink link
                 if (rF.getForwardLinksSinkRM().contains(index1)) {
                     // insert a copy of the sink node
                     SinkNode sNode2 = sinkNode.copy();
-                    handleSink(minHeap, gFlow, node1, sNode2, 
+                    handlePlusLink(minHeap, node1, sNode2, 
+                        gFlow.calcSinkNetCost(idx1),
                         lambda, eps);
                 }
             }
@@ -840,12 +844,8 @@ long t1 = System.currentTimeMillis();
             //add v to the forest;
             lastKey = forest.add(node1Cp, lastKey);
 
-            HeapNode rootOfTD = forest.get((int)lastKey).
-                getSentinel().getRight();
-            Integer rootIndex = (Integer)rootOfTD.getData();
-            terminatingDeficitIdx[0] = (int)lastKey;
-                
             if (d.contains(index1) && !node1IsLeft) {
+                terminatingDeficitIdx[0] = (int)lastKey;
                 if (lastKey != (int)node1Cp.getKey()) {
                     throw new IllegalArgumentException(
                     "forest was not made large enough to hold last key");
@@ -1189,14 +1189,6 @@ Matchings in G are integral flows in N_G
      * 
      * implementing section 3.4, pg 22 of Ramshaw and Tarjan 2012.
      * 
-     * Note that have edited it to not exit at first
-     * unmatched y, to let it continue to fill all augmentable
-     * paths.  the runtime complexity needs to be
-     * adjusted for this.
-     * 
-     * TODO: edit to accept lambda, the largest link length
-     * in the forest.
-     * 
      * @param rM the residual digraph built from the matching 
      * graph M of graph G.
      * 
@@ -1383,7 +1375,9 @@ Matchings in G are integral flows in N_G
             } else {
                 //exit(bachelor β := y reached);
                 log.fine("bachelor y=" + y.toString());
-                
+                if (true) {
+                    break;
+                }
                 if (maidens.contains(topIndex)) {
                     maidens.remove(topIndex);                    
                 } else if (maidens.isEmpty()) {
@@ -1633,24 +1627,15 @@ Matchings in G are integral flows in N_G
         }            
     }
     
-    private void handleSourceForwardLink(
-        MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, SourceNode node1,
-        Integer index2, Map<Integer, LeftNode> leftNodes,
-        int lambda, float eps) {
+    private void handlePlusLink(MinHeapForRT2012 minHeap, 
+        PathNode node1, PathNode node2, float cp, int lambda, 
+        float eps) {
     
         long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = index2.intValue();
         
-        LeftNode node2 = leftNodes.get(index2);
-        float cp = gFlow.calcSourceNetCost(idx2);
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
-        log.fine(String.format("(source,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx2, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
@@ -1662,135 +1647,15 @@ Matchings in G are integral flows in N_G
         }
     }
     
-    private void handleLeft(MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, PathNode node1,
-        Integer index2, Map<Integer, LeftNode> leftNodes,
+    private void handleMinusLink(MinHeapForRT2012 minHeap,
+        PathNode node1, PathNode node2, float cp,
         int lambda, float eps) {
     
         long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = index2.intValue();
         
-        LeftNode node2 = leftNodes.get(index2);
-        float cp = gFlow.calcNetCost(index2.intValue(), idx1);
         long lp = 1 - (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
         long lOld = node2.getKey();
-        log.fine(String.format("(%d,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx2, idx1, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
-        if ((lTot < lambda) && (lTot < lOld)) {
-            node2.pathPredecessor = node1;
-            if (lOld == Long.MAX_VALUE) {
-                node2.setKey(lTot);
-                minHeap.insert(node2);
-            } else {
-                minHeap.decreaseKey(node2, lTot);
-            }
-        }
-    }
-    
-    private void handleRight(MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, PathNode node1,
-        Integer index2, Map<Integer, RightNode> rightNodes,
-        int lambda, float eps) {
-        
-        long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = index2.intValue();
-        
-        RightNode node2 = rightNodes.get(index2);
-        float cp = gFlow.calcNetCost(idx1, idx2);
-        long lp = (long) Math.ceil(cp / eps);
-        long lTot = l1 + lp;
-        long lOld = node2.getKey(); 
-        log.fine(String.format("(%d,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx1, idx2, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
-        if ((lTot < lambda) && (lTot < lOld)) {
-            node2.pathPredecessor = node1;
-            if (lOld == Long.MAX_VALUE) {
-                node2.setKey(lTot);
-                minHeap.insert(node2);
-            } else {
-                minHeap.decreaseKey(node2, lTot);
-            }
-        }
-    }
-    
-    private void handleSinkBackwardLink(
-        MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, SinkNode node1,
-        Integer index2, Map<Integer, RightNode> rightNodes,
-        int lambda, float eps) {
-        
-        long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = index2.intValue();
-        
-        RightNode node2 = rightNodes.get(index2);
-        float cp = gFlow.calcSinkNetCost(idx2);
-        long lp = 1 - (long) Math.ceil(cp / eps);
-        long lTot = l1 + lp;
-        long lOld = node2.getKey();
-        log.fine(String.format("(%d,sink) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx2, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
-        if ((lTot < lambda) && (lTot < lOld)) {
-            node2.pathPredecessor = node1;
-            if (lOld == Long.MAX_VALUE) {
-                node2.setKey(lTot);
-                minHeap.insert(node2);
-            } else {
-                minHeap.decreaseKey(node2, lTot);
-            }
-        }
-    }
-    
-    private void handleSourceBackwardLink(
-        MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, PathNode node1,
-        SourceNode node2, int lambda, float eps) {
-        
-        long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = ((Integer)node2.getData()).intValue();
-
-        float cp = gFlow.calcSourceNetCost(idx1);
-        long lp = 1 - (long) Math.ceil(cp / eps);
-        
-        long lTot = l1 + lp;
-        long lOld = node2.getKey();
-        log.fine(String.format("(source,%d) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx1, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
-        if ((lTot < lambda) && (lTot < lOld)) {
-            node2.pathPredecessor = node1;
-            if (lOld == Long.MAX_VALUE) {
-                node2.setKey(lTot);
-                minHeap.insert(node2);
-            } else {
-                minHeap.decreaseKey(node2, lTot);
-            }
-        }
-    }
-    
-    private void handleSink(MinHeapForRT2012 minHeap,
-        FlowNetwork gFlow, PathNode node1,
-        SinkNode node2, int lambda, float eps) {
-        
-        long l1 = node1.getKey();
-        int idx1 = ((Integer)node1.getData()).intValue();
-        int idx2 = ((Integer)node2.getData()).intValue();
-
-        float cp = gFlow.calcSinkNetCost(idx1);
-        long lp = (long) Math.ceil(cp / eps);
-        
-        long lTot = l1 + lp;
-        long lOld = node2.getKey();
-        log.fine(String.format("(%d,sink) cp=%.1f lp=%s lTot=%s lOld=%s",
-            idx1, cp, Long.toString(lp), Long.toString(lTot), 
-            Long.toString(lOld)));
         if ((lTot < lambda) && (lTot < lOld)) {
             node2.pathPredecessor = node1;
             if (lOld == Long.MAX_VALUE) {
