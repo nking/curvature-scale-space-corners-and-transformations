@@ -1,7 +1,11 @@
 package algorithms.bipartite;
 
 import algorithms.bipartite.MinCostUnbalancedAssignment.Forest;
-import static algorithms.bipartite.MinCostUnbalancedAssignment.extractNodes;
+import algorithms.bipartite.MinCostUnbalancedAssignment.LeftNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.RightNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.SinkNode;
+import algorithms.bipartite.MinCostUnbalancedAssignment.SourceNode;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
@@ -50,8 +54,14 @@ public class HopcroftKarpRT2012 {
                 
         while (true) {
             
+    long t0 = System.currentTimeMillis();
+            
             boolean augmented = buildForestAndAugment(rM, lambda);
 
+     long t1 = System.currentTimeMillis();
+     long t = (t1 - t0)/1000;
+    System.out.println(t + " sec for HK:buildForestAndAugment");
+            
             if (!augmented) {
                 return m;
             }
@@ -68,10 +78,10 @@ public class HopcroftKarpRT2012 {
             Map<Integer, Integer> m2 = rM.extractMatchings();
                         
             //announce(M is a matching)
-            /*
+            
             log.info("nIter=" + nIter + " m2.size=" + m2.size()
                 + " m.size=" + m.size());
-
+            /*
             // debug:
             for (Entry<Integer, Integer> entry : m2.entrySet()) {
                 log.info("m2 match= " + entry.getKey() + "->" + entry.getValue());
@@ -200,20 +210,20 @@ public class HopcroftKarpRT2012 {
         so that all possible foward links are present in 
         the heap.
         */
-        
+     
         // init all nodes to inf length
-        Map<Integer, MinCostUnbalancedAssignment.LeftNode> leftNodes = new HashMap<Integer, MinCostUnbalancedAssignment.LeftNode>();
-        Map<Integer, MinCostUnbalancedAssignment.RightNode> rightNodes = new HashMap<Integer, MinCostUnbalancedAssignment.RightNode>();
+        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
+        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
         for (int i = 0; i < rM.getNRight(); ++i) {
             Integer rNode = Integer.valueOf(i);
-            MinCostUnbalancedAssignment.RightNode node = new MinCostUnbalancedAssignment.RightNode();
+            RightNode node = new RightNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(rNode);
             rightNodes.put(rNode, node);
         }
         for (int i = 0; i < rM.getNLeft(); ++i) {
             Integer lNode = Integer.valueOf(i);
-            MinCostUnbalancedAssignment.LeftNode node = new MinCostUnbalancedAssignment.LeftNode();
+            LeftNode node = new LeftNode();
             node.setKey(Long.MAX_VALUE);
             node.setData(lNode);
             leftNodes.put(lNode, node);
@@ -236,7 +246,9 @@ public class HopcroftKarpRT2012 {
         // married X nodes
         Set<Integer> matchedLeft = new HashSet<Integer>(
             rM.getBackwardLinksRM().values());    
-           
+ 
+ long t0 = System.currentTimeMillis();
+ 
         // for all maidens
         // set key to 0, then ScanAndAdd(index)
         Set<Integer> maidens = new HashSet<Integer>();
@@ -246,7 +258,7 @@ public class HopcroftKarpRT2012 {
                 continue;
             }
             maidens.add(lNode);
-            MinCostUnbalancedAssignment.LeftNode node = leftNodes.get(lNode);
+            LeftNode node = leftNodes.get(lNode);
             node.setKey(0);
             vXY.put(lNode, new HashSet<Integer>());
             prevKey = scanAndAdd(heap, forest, rM, 
@@ -255,7 +267,12 @@ public class HopcroftKarpRT2012 {
                 node, vXY.get(lNode));
             assert(prevKey == 0L);
         }
-          
+ 
+ long t1 = System.currentTimeMillis();
+ long t = (t1 - t0)/1000;
+ System.out.println(t + " sec for "
+     + "HK:buildForestAndAugment insert maidens");
+        
         int nRight = rM.getNRight();
         
         log.fine("done adding " + maidens.size() + 
@@ -271,8 +288,8 @@ public class HopcroftKarpRT2012 {
             // in the heap are men not in the forest who are in
             // an alternating path from a maiden.
             // the key is the length of shortest path so far
-            MinCostUnbalancedAssignment.PathNode y = (MinCostUnbalancedAssignment.PathNode)heap.extractMin();
-            assert(y instanceof MinCostUnbalancedAssignment.RightNode);
+            PathNode y = (PathNode)heap.extractMin();
+            assert(y instanceof RightNode);
             assert(y.getData() != null);
             
             log.fine("heap.size=" + heap.getNumberOfNodes());
@@ -317,7 +334,7 @@ public class HopcroftKarpRT2012 {
             Integer xIndex = rM.getBackwardLinksRM().get(yIndex);
             if (xIndex != null) {
                 
-                MinCostUnbalancedAssignment.LeftNode xNode = leftNodes.get(xIndex);
+                LeftNode xNode = leftNodes.get(xIndex);
                 
                 xNode.setKey(y.getKey());
                 if (xNode.pathPredecessor == null) {
@@ -388,11 +405,11 @@ public class HopcroftKarpRT2012 {
      * @param xNode 
      */
     private long scanAndAdd(Heap heap, Forest forest,
-        ResidualDigraph rM, Map<Integer, MinCostUnbalancedAssignment.RightNode> yNodes, 
-        MinCostUnbalancedAssignment.LeftNode xNode, long prevKey,
+        ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
+        LeftNode xNode, long prevKey,
         Set<Integer> augmentedLeft,
         Set<Integer> augmentedRight,
-        MinCostUnbalancedAssignment.LeftNode topNode, Set<Integer> visitedY) {
+        LeftNode topNode, Set<Integer> visitedY) {
 
         Integer xIndex = (Integer)(xNode.getData());
       
@@ -420,7 +437,7 @@ public class HopcroftKarpRT2012 {
 
                 // l(x) and l(y) are the keys in the heap node
 
-                MinCostUnbalancedAssignment.RightNode yNode = yNodes.get(yIndex);
+                RightNode yNode = yNodes.get(yIndex);
                 long lOld = yNode.getKey();
                 assert(((Integer)yNode.getData()).intValue() ==
                     yIndex.intValue());
@@ -443,8 +460,8 @@ public class HopcroftKarpRT2012 {
                 long ell = lX + cp;
                 if (ell < lOld) {
                     if (lOld == Long.MAX_VALUE) {
-                        assert(yNode instanceof MinCostUnbalancedAssignment.RightNode);
-                        yNode = (MinCostUnbalancedAssignment.RightNode)yNode.copy();
+                        assert(yNode instanceof RightNode);
+                        yNode = (RightNode)yNode.copy();
                         yNode.pathPredecessor = xNode.copy();
                         if (yNode.pathPredecessor.topPredecessor != null) {
                             assert (yNode.pathPredecessor.topPredecessor.getData().equals(
@@ -518,7 +535,7 @@ public class HopcroftKarpRT2012 {
         while (j < n) {
             node = node.getLeft();
             
-            List<MinCostUnbalancedAssignment.PathNode> path = extractNodes((MinCostUnbalancedAssignment.PathNode)node);
+            List<PathNode> path = MinCostUnbalancedAssignment.extractNodes((PathNode)node);
             if (path.size() < 2) {
                 ++j;
                 continue;
@@ -528,12 +545,12 @@ public class HopcroftKarpRT2012 {
             boolean skip = false;
             List<PairInt> tmp = new ArrayList<PairInt>();
             for (int ii = 0; ii < (path.size() - 1); ++ii) {
-                MinCostUnbalancedAssignment.PathNode node1 = path.get(ii);
-                MinCostUnbalancedAssignment.PathNode node2 = path.get(ii + 1);
+                PathNode node1 = path.get(ii);
+                PathNode node2 = path.get(ii + 1);
                 // index1 is the left index of arc
                 // index2 is the right index of the arc
                 Integer index1, index2;
-                if (node1 instanceof MinCostUnbalancedAssignment.LeftNode) {
+                if (node1 instanceof LeftNode) {
                     index1 = (Integer)node1.getData();
                     index2 = (Integer)node2.getData();
                 } else {
