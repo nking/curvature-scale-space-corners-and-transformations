@@ -168,6 +168,7 @@ public class MinCostUnbalancedAssignment {
             return node;
         }
     }
+    
     /**
      * class specializing a fibonacci heap node to identify
      * a sink node
@@ -214,21 +215,11 @@ public class MinCostUnbalancedAssignment {
     (a matching of size s in the graph G corresponds to an 
     integral flow f of value |f| = s in the flow network N_G)
     
-    
     input to Refine is a flow f of value s and prices p
     that together make all arcs (qε)-proper, where q is an integer 
     parameter. Refine builds a new flow f′, also of value s, 
     and prices p′ that together make all arcs ε-proper. 
-    
-    Note:  In FlowAssign, saturated edges will be kept proper, 
-       but not necessarily tight. So, for a saturated edge 
-       (x, y), we will know only that cp(x, y) ≤ 0, and we 
-       will need to define lp(y ⇒ x) := −cp(x, y), to keep 
-       our link lengths nonnegative. That is, for an 
-       alternating path A, we will define
-       lp(A):= summation over arcs X->Y (cp(X,Y)) -
-                  summation over arcs Y->X (cp(X,Y))
-    
+   
     FlowAssign (G, t)
       (M, s) := HopcroftKarp(G, t);
       convert M into an integral flow f on N_G with |f| = s; 
@@ -265,37 +256,47 @@ public class MinCostUnbalancedAssignment {
     /**
      * match the left and right vertices in graph g by
      * minimum cost assignment and return the mappings.
-     * (Note that the final flow network is retained by the 
-     * instance if information more than the matchings
-     * is wanted and can be retrieved.)
-     * @param g bipartite graph with integer weights with
+     * 
+     * @param g bipartite graph with integer weights having
      * values greater than zero.
      * @return map of indexes of left nodes matched to indexes of
      * right nodes
      */
     public Map<Integer, Integer> flowAssign(Graph g) {
 
-        int sz = Math.min(g.getNLeft(), g.getNRight());
+        validateGraph(g);
         
+        if (g.getNLeft() == 1 && g.getNRight() == 1) {
+            return singleNodesSolution(g);
+        }
+        
+        // a first guess at the maximal matching size
+        int sz = Math.min(g.getNLeft(), g.getNRight());
+
+        // hopcroft-karp produces a maximal matching of nodes
+        // without using edge weights, just uses connectivity
         Map<Integer, Integer> m = hopcroftKarp(g, sz);
         
+        // if the code was given a graph created without 
+        // using source and sink, need to transform that here.
         if (g.getSourceNode() == -1) {
             g = g.copyToCreateSourceSink();
         }
         
+        /*
         {//DEBUG
             log.info("hopcroft-karp matches:");
             for (Entry<Integer, Integer> entry : m.entrySet()) {
                 log.info("hk matched " + entry.getKey() + " to "
                     + entry.getValue());
             }
-        }
+        }*/
         
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
         
         log.info("init FlowNetwork:");
-        gFlow.printNetCosts();
+        //gFlow.printNetCosts();
         
         //TODO: estimate of eps may need to be revised
         
@@ -340,6 +341,14 @@ public class MinCostUnbalancedAssignment {
                
         // all nodes V in gFlow have prices = 0
         
+        // S = left nodes matched in gFlow
+        List<Integer> surplus = new ArrayList<Integer>();
+        
+        // D = right nodes matched in gFlow
+        List<Integer> deficit = new ArrayList<Integer>();
+        
+        gFlow.getMatchedLeftRight(surplus, deficit);
+        
         while ((eps > eps_down) && (nIterR < 2*rIter)) {
             
             log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps);
@@ -356,13 +365,12 @@ public class MinCostUnbalancedAssignment {
             
             eps /= ((float)q);
             
-            int ext = refine(gFlow, s, eps, q);
+            int ext = refine(gFlow, s, eps, q, surplus, deficit);
             
             if (ext > 0) {
                 m = gFlow.extractMatches();
-                // if returning gFlow instead:
                 roundFinalPrices(gFlow, eps_down);
-                gFlow.printFlowValueIncludingSrcSnk(m.size());
+                //gFlow.printFlowValueIncludingSrcSnk(m.size());
                 finalFN = gFlow;
                 return m;
             }
@@ -371,9 +379,13 @@ public class MinCostUnbalancedAssignment {
         }
         
         // assert nIter is approx log_q(s * maxC)
-        
+
+long t0 = System.currentTimeMillis(); 
         // round prices to integers that make all arcs proper
         roundFinalPrices(gFlow, eps_down);
+long t1 = System.currentTimeMillis();  
+long tSec = (t1 - t0)/1000;
+System.out.println(tSec + " sec for roundFinalPrices");
         
         m = gFlow.extractMatches();
         
@@ -383,20 +395,12 @@ public class MinCostUnbalancedAssignment {
     }
     
     protected int refine(FlowNetwork gFlow, int s, float eps,
-        int q) {
+        int q, List<Integer> surplus, List<Integer> deficit) {
         
-        log.info("at start of refine, s=" + s + " eps=" + eps
+        log.fine("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
         
-        assert(gFlow.printFlowValueIncludingSrcSnk(s));
-        
-        // S = left nodes matched in gFlow
-        List<Integer> surplus = new ArrayList<Integer>();
-        
-        // D = right nodes matched in gFlow
-        List<Integer> deficit = new ArrayList<Integer>();
-        
-        gFlow.getMatchedLeftRight(surplus, deficit);
+        //assert(gFlow.printFlowValueIncludingSrcSnk(s));
         
         // set the flow of saturated bipartite arcs to 0
         for (int i = 0; i < surplus.size(); ++i) {
@@ -404,10 +408,8 @@ public class MinCostUnbalancedAssignment {
             int idx2 = deficit.get(i);
             gFlow.getFlow().put(new PairInt(idx1, idx2), 
                 Float.valueOf(0));
-            log.info("surplus idx=" + Integer.toString(idx1));
+            log.fine("surplus idx=" + Integer.toString(idx1));
         }
-
-        assert(surplus.size() == s);
         
         /*
         see Figure 7.4 on pg 53.
@@ -415,9 +417,13 @@ public class MinCostUnbalancedAssignment {
         gFlow becomes eps-proper, for the resulting pseudoflow 
         f and for the new, smaller value of eps.
         */
+long t00 = System.currentTimeMillis();
         gFlow.raisePricesUntilEpsProper(eps, q);
-        
-        log.info("after raise prices:");
+long t11 = System.currentTimeMillis();
+long tSec = (t11 - t00)/1000;
+System.out.println(tSec + " sec for raisePricesUntilEpsProper");
+
+        log.fine("after raise prices:");
         //gFlow.printNetCosts();
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));        
         
@@ -427,20 +433,28 @@ public class MinCostUnbalancedAssignment {
         int[] terminatingDeficitIdx = new int[1];
         int h = s;
         int nHIter = 0;
+t00 = System.currentTimeMillis();
         while (h > 0) {
             
             //log.info("nHIter=" + nHIter + " h=" + h);
             
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
-
+long t0 = System.currentTimeMillis();
             // build a shortest-path forest from the current surpluses S, 
             // stopping when a current deficit in D is reached;
             // (pg 55)
+
+//buildForest2 takes too long
+//could further memoization help?
+
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 terminatingDeficitIdx);
-                  
-            debug(forest);
+long t1 = System.currentTimeMillis();
+tSec = (t1 - t0)/100;
+System.out.println(tSec + " tenths of sec for buildForest2");
+
+            //debug(forest);
            
             // raise prices at forest nodes by multiples of ε, 
             // shortening the discovered augmenting path to length 0;
@@ -480,13 +494,17 @@ public class MinCostUnbalancedAssignment {
             //    (and lists to include source and sink?)
             //    of the links with lengths = 0;
             
-            assert(gFlow.printFlowValueIncludingSrcSnk(s));
+            //assert(gFlow.printFlowValueIncludingSrcSnk(s));
          
-            log.info("l(termIndex)=" + terminatingDeficitIdx[0]);
+            log.fine("l(termIndex)=" + terminatingDeficitIdx[0]);
             
+t0 = System.currentTimeMillis();            
             modifyPricesAndPathLengths(gFlow, forest, 
                 terminatingDeficitIdx[0], eps);
-            
+t1 = System.currentTimeMillis();
+tSec = (t1 - t0)/100;
+System.out.println(tSec + " tenths of sec for modifyPricesAndPathLengths");
+
             //log.info("after modify prices and link lengths");
             //debug(forest);
             
@@ -502,15 +520,21 @@ public class MinCostUnbalancedAssignment {
             
             //Let Rf0 denote that subgraph of the residual digraph 
             //formed by links of length zero.
+t0 = System.currentTimeMillis();
             List<LinkedList<PathNode>> zeroLengthLinks =
                 extractZeroLengthLinks(forest);
+t1 = System.currentTimeMillis();  
+tSec = (t1 - t0)/100;
+System.out.println(tSec 
++ " tenths of sec for extractZeroLengthLinks");
 
             log.fine("srching for zero length paths:");
             //debug(forest);
             //debug(zeroLengthLinks);
             
-            assert(gFlow.printSurplusAndDeficit());
+            //assert(gFlow.printSurplusAndDeficit());
             
+t0 = System.currentTimeMillis();              
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             List<LinkedList<PathNode>> cPaths =
                 findMaximalSetOfCompatiblePaths(
@@ -518,10 +542,15 @@ public class MinCostUnbalancedAssignment {
                 gFlow.getSourceNode(), gFlow.getSinkNode(),
                 zeroLengthLinks,surplus, 
                 new HashSet<Integer>(deficit));
-            
-            log.info("cPaths.size=" + cPaths.size());
+t1 = System.currentTimeMillis();  
+tSec = (t1 - t0)/100;
+System.out.println(tSec 
++ " tenths of sec for findMaximalSetOfCompatiblePaths");
+
+            log.fine("cPaths.size=" + cPaths.size());
             if (cPaths.isEmpty()) {
-                log.severe("did not find an augmenting path.  h=" + h);
+                
+                log.warning("did not find an augmenting path.  h=" + h);
                 
                 //gFlow.printSaturatedLinks();
                 
@@ -541,11 +570,17 @@ public class MinCostUnbalancedAssignment {
             }
             
             //debug(cPaths);
-            
+  
+t0 = System.currentTimeMillis();              
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
+            //NOTE that surplus and deficit are modified and updated
+            // within augmentFlow
             augmentFlow(gFlow, cPaths, surplus, deficit);
-            
+t1 = System.currentTimeMillis();  
+tSec = (t1 - t0)/100;
+System.out.println(tSec + " tenths of sec for augmentFlow");
+
             //log.info("after augment flow:");
             //gFlow.printSaturatedLinks();
             
@@ -558,7 +593,10 @@ public class MinCostUnbalancedAssignment {
             
             ++nHIter;
         }
-        
+t11 = System.currentTimeMillis();
+tSec = (t11 - t00)/1000;
+System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
+
         return 0;
     }
     
@@ -576,7 +614,8 @@ public class MinCostUnbalancedAssignment {
      
         private final int upperKeyLimit;
         
-        private List<Integer> orderedKeys = new ArrayList<Integer>();
+        // only allowing a remove operation for top of list
+        private LinkedList<Integer> orderedKeys = new LinkedList<Integer>();
         
         private Map<Integer, DoubleLinkedCircularList> forest =
             new HashMap<Integer, DoubleLinkedCircularList>();
@@ -587,6 +626,17 @@ public class MinCostUnbalancedAssignment {
         
         public DoubleLinkedCircularList get(int key) {
             return forest.get(Integer.valueOf(key));
+        }
+        
+        public void removeFirstItem(int key) {
+           Integer firstKey = orderedKeys.getFirst();
+           if (firstKey == null) {
+               return;
+           }
+           if (firstKey.intValue() == key) {
+               orderedKeys.removeFirst();
+               forest.remove(firstKey);
+           }
         }
         
         public long add(PathNode node, long lastKey) {
@@ -657,6 +707,8 @@ public class MinCostUnbalancedAssignment {
         
         log.fine("buildForest2");
         
+long t0 = System.currentTimeMillis();
+
         Set<Integer> d = new HashSet<Integer>(deficit);
     
         //TODO: revisit this. 
@@ -664,7 +716,7 @@ public class MinCostUnbalancedAssignment {
         if (lambda < 4) {
             lambda = 4;
         }
-        log.info("buildForest2 forest length lambda is set to " + 
+        log.fine("buildForest2 forest length lambda is set to " + 
             lambda);
         
         long lastKey = -1;
@@ -709,7 +761,16 @@ public class MinCostUnbalancedAssignment {
             sNode.setKey(0);
             minHeap.insert(sNode);
         }
-             
+        
+long t1 = System.currentTimeMillis();
+
+// there is a bottleneck here that is dependent upon the number of nodes       
+// if all left vertexes are maidens on the
+// first iteration, then the
+// initialization above takes
+//  |V|*|E|
+//  just fixed part of that
+
         do {
             PathNode node1 = minHeap.extractMin();
             if (node1 == null) {
@@ -774,7 +835,7 @@ public class MinCostUnbalancedAssignment {
             
             PathNode node1Cp = node1.copy();
 
-            log.info("add to forest key=" + node1Cp.toString());
+            log.fine("add to forest key=" + node1Cp.toString());
             
             //add v to the forest;
             lastKey = forest.add(node1Cp, lastKey);
@@ -824,10 +885,9 @@ public class MinCostUnbalancedAssignment {
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
         
+        /*
         if (false) { 
-            //runtime complexity is O(m * sqrt(max matching size))
-            //    where m is number of edges in graph
-            //temporarily, replacing w/ O(m * sqrt(n))
+            //runtime complexity O(m * sqrt(n))
             HopcroftKarp hk = new HopcroftKarp();
             int[] matched = hk.hopcroftKarpV0(new GraphWithoutWeights(g));
             log.info("matched=" + Arrays.toString(matched));
@@ -839,17 +899,17 @@ public class MinCostUnbalancedAssignment {
             }
             return m;
         }
+        */
         
         // runtime complexity O(m * sqrt(s)) where m is number of edges
         // and s is the size of the matching whose target size
         // may be less than the maximum matchable
         ResidualDigraph rM = new ResidualDigraph(g, m);
-                
+        
         return hopcroftKarp(g, rM, s);
     }
         
     /**
-     * NOT READY FOR USE
      * NOTE: this method is not yet throughly tested.
      * Note that if s is an overestimate and the algorithm
      * finds a repeated size upon internal iteration, it
@@ -872,10 +932,7 @@ public class MinCostUnbalancedAssignment {
         // looking at the number of edges with more than
         // one connection.
         int lambda = estimateLambda(rM);
-
-        //NOTE: this is not correct.  does not always produce
-        //  maximal matchings
-        
+                
         while (true) {
             
             boolean augmented = buildForestAndAugment(rM, lambda);
@@ -896,6 +953,7 @@ public class MinCostUnbalancedAssignment {
             Map<Integer, Integer> m2 = rM.extractMatchings();
                         
             //announce(M is a matching)
+            /*
             log.info("nIter=" + nIter + " m2.size=" + m2.size()
                 + " m.size=" + m.size());
 
@@ -906,7 +964,8 @@ public class MinCostUnbalancedAssignment {
             for (Entry<Integer, Integer> entry : m.entrySet()) {
                 log.info("m match= " + entry.getKey() + "->" + entry.getValue());
             }
-    
+            */
+            
             if (m2.size() >= s) {
                 return m2;
             }
@@ -924,7 +983,7 @@ public class MinCostUnbalancedAssignment {
                 }
             }
             
-            log.info("union size=" + tmpM.size());
+            log.fine("union size=" + tmpM.size());
             
             if (tmpM.size() >= s) {
                 return tmpM;
@@ -940,10 +999,10 @@ public class MinCostUnbalancedAssignment {
             }
             
             m = tmpM;
-            log.info("symmetric diff of m and m2.size=" + m.size());
-            for (Entry<Integer, Integer> entry : m.entrySet()) {
+            log.fine("symmetric diff of m and m2.size=" + m.size());
+            /*for (Entry<Integer, Integer> entry : m.entrySet()) {
                 log.info("sym diff m match= " + entry.getKey() + "->" + entry.getValue());
-            }
+            }*/
             
             if (m.size() >= s) {
                 return m;
@@ -1151,8 +1210,7 @@ Matchings in G are integral flows in N_G
     protected boolean buildForestAndAugment(
         final ResidualDigraph rM, int lambda) {
       
-        DoubleLinkedCircularList[] forest 
-            = new DoubleLinkedCircularList[lambda];
+        Forest forest = new Forest(lambda);
         
         Heap heap = new Heap();
         
@@ -1239,7 +1297,7 @@ Matchings in G are integral flows in N_G
           
         int nRight = rM.getNRight();
         
-        log.info("done adding " + maidens.size() + 
+        log.fine("done adding " + maidens.size() + 
             " maiden nodes and their links to heap");
         
         // at this point, the maidens are all in index 0 of
@@ -1256,9 +1314,9 @@ Matchings in G are integral flows in N_G
             assert(y instanceof RightNode);
             assert(y.getData() != null);
             
-            log.info("heap.size=" + heap.getNumberOfNodes());
+            log.fine("heap.size=" + heap.getNumberOfNodes());
             
-            log.info("extractMin=" + y.toString());
+            log.fine("extractMin=" + y.toString());
             
             Integer yIndex = (Integer)(y.getData());
         
@@ -1270,15 +1328,15 @@ Matchings in G are integral flows in N_G
             
             Integer topIndex = (Integer)y.topPredecessor.getData();
         
-            long currentKey = addToForest(forest, y, prevKey);
+            long currentKey = forest.add(y, prevKey);
             
             if (currentKey > prevKey) {
-                log.info("augment forest[" + prevKey + "] " 
+                log.fine("augment forest[" + prevKey + "] " 
                     + debug(augmentedLeft, augmentedRight));
-                debug(forest);
+                //debug(forest);
                 augmentPath(rM, forest, prevKey, augmentedLeft,
                     augmentedRight);
-                forest[(int)prevKey] = null;
+                forest.removeFirstItem((int)prevKey);
                 lastAugKey = prevKey;
                 prevKey = currentKey;    
             }
@@ -1312,41 +1370,42 @@ Matchings in G are integral flows in N_G
                     vXY.get(topIndex));
                 
                 if (currentKey > prevKey) {
-                    log.info("augment forest[" + prevKey + "] " 
+                    log.fine("augment forest[" + prevKey + "] " 
                         + debug(augmentedLeft, augmentedRight));
-                    debug(forest);
+                    //debug(forest);
                     augmentPath(rM, forest, prevKey, augmentedLeft,
                         augmentedRight);
-                    forest[(int)prevKey] = null;
+                    forest.removeFirstItem((int)prevKey);
                     lastAugKey = prevKey;
                     prevKey = currentKey;    
                 }       
                 
             } else {
                 //exit(bachelor β := y reached);
-                log.info("bachelor y=" + y.toString());
+                log.fine("bachelor y=" + y.toString());
+                
                 if (maidens.contains(topIndex)) {
                     maidens.remove(topIndex);                    
                 } else if (maidens.isEmpty()) {
-                    log.info("last maiden's bachelor reached");
-                    debug(forest);
+                    log.fine("last maiden's bachelor reached");
+                    //debug(forest);
                     break;
                 }
             }
         
-            log.info("nIter=" + nIter);
+            log.fine("nIter=" + nIter);
         }
         
         if (lastAugKey < prevKey) {
-            log.info("augment forest[" + prevKey + "] " 
+            log.fine("augment forest[" + prevKey + "] " 
                 + debug(augmentedLeft, augmentedRight));
-            debug(forest);
+            //debug(forest);
             augmentPath(rM, forest, prevKey, 
                 augmentedLeft, augmentedRight);
             lastAugKey = prevKey;
         }
         
-        log.info("lastAugKey=" + lastAugKey);
+        log.fine("lastAugKey=" + lastAugKey);
         
         return !(augmentedLeft.isEmpty() && augmentedRight.isEmpty());
     }
@@ -1366,8 +1425,7 @@ Matchings in G are integral flows in N_G
      * @param yNodes
      * @param xNode 
      */
-    private long scanAndAdd(
-        Heap heap, DoubleLinkedCircularList[] forest,
+    private long scanAndAdd(Heap heap, Forest forest,
         ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
         LeftNode xNode, long prevKey,
         Set<Integer> augmentedLeft,
@@ -1436,7 +1494,7 @@ Matchings in G are integral flows in N_G
                         }
                         yNode.setKey(ell);
                         heap.insert(yNode);
-                        log.info(String.format("HEAP insert: %s",
+                        log.fine(String.format("HEAP insert: %s",
                             yNode.toString()));
                     } else {
                         Integer prev = 
@@ -1454,7 +1512,7 @@ Matchings in G are integral flows in N_G
                             yNode.topPredecessor = xNode.topPredecessor;
                         }
                         heap.decreaseKey(yNode, ell);
-                        log.info(String.format("HEAP decr: %s",
+                        log.fine(String.format("HEAP decr: %s",
                             yNode.toString()));
                     }
                 }
@@ -1462,51 +1520,9 @@ Matchings in G are integral flows in N_G
         }
         
         //add x to the forest;
-        return addToForest(forest, xNode, prevKey);
+        return forest.add(xNode, prevKey);
     }
     
-    private long addToForest(DoubleLinkedCircularList[] forest,
-        PathNode node, long lastKey) {
-        
-        /*
-        Section 8.1, pg 57
-        We ignore any paths we find whose lengths exceed forest.length. 
-        We also maintain an integer B, which stores the 
-        value l(v) for the node v that was most recently 
-        added to the forest. 
-        We add nodes v to the forest in nondecreasing 
-        order of l(v), so B never decreases. 
-        To implement insert(v,k), we add v to the list Q[k].
-        */
-        
-        // NOTE: if the same node is inserted more than once,
-        // the forest will be corrupted
-        
-        if (node.getKey() < forest.length) {
-            int k = (int) node.getKey();
-            DoubleLinkedCircularList list = forest[k];
-            if (list == null) {
-                list = new DoubleLinkedCircularList();
-                forest[k] = list;
-            }
-            
-            //NOTE: since some of the nodes are still possibly
-            // nodes still present in the fibonacci heap,
-            // one should copy nodes here to help not corrupt the
-            // heap nodes.
-            node = node.copy();
-            
-            list.insert(node);
-            
-            lastKey = node.getKey();
-            
-            log.fine("add to forest[" + k + "] " 
-                + " node " + node.toString());
-        }
-        
-        return lastKey;
-    }
-
     private boolean allAreEmpty(DoubleLinkedCircularList[] 
         augmentingPaths) {
         
@@ -1541,13 +1557,13 @@ Matchings in G are integral flows in N_G
             // create a backward link and matched mapping
             rM.getBackwardLinksRM().put(rightIndex, leftIndex);
             
-            log.info("augment to add :" + leftIndex + " to " +
+            log.fine("augment to add :" + leftIndex + " to " +
                 rightIndex);
             
             return;
         }
         
-        log.info("augment to remove :" + leftIndex + " to " +
+        log.fine("augment to remove :" + leftIndex + " to " +
             rightIndex);
         
         // assert that a backward link exists
@@ -1593,38 +1609,6 @@ Matchings in G are integral flows in N_G
         }
     }
 
-    private void debug(DoubleLinkedCircularList[] forest) {
-        
-        for (int i = 0; i < forest.length; ++i) {
-
-            DoubleLinkedCircularList tree = forest[i];
-            if (tree == null) {
-                continue;
-            }
-            long n = tree.getNumberOfNodes();
-            HeapNode node = tree.getSentinel();
-            int j = 0;
-            while (j < n) {
-                node = node.getLeft();
-                if (j == 0 && (!(node instanceof PathNode))) {
-                    // TODO: follow up on this and write test for it
-                    while (!(node instanceof PathNode)) {
-                        node = node.getLeft();
-                    }
-                }
-                   
-                List<PathNode> path = extractNodes((PathNode)node);
-                int n2 = path.size();
-                for (int ii = 0; ii < n2; ++ii) {
-                    PathNode node1 = path.get(ii);
-                    log.info("forest2[" + i + "] tree branch[" 
-                        + j + "] node[" + ii + "]=" + node1.toString());
-                }                    
-                j++;
-            }
-        }            
-    }
-    
     private void debug(Forest forest) {
         
         for (Integer key : forest.getKeys()) {
@@ -2163,7 +2147,7 @@ Matchings in G are integral flows in N_G
             stack.add(xNode);
             B: while (!stack.isEmpty()) {
                 PathNode v = stack.peek();
-                log.info("v=stack.top=" + v.toString());
+                log.fine("v=stack.top=" + v.toString());
                 boolean isLeftNode = (v instanceof LeftNode);
                 boolean isRightNode = (v instanceof RightNode);
                 if (isLeftNode || isRightNode) {
@@ -2186,7 +2170,7 @@ Matchings in G are integral flows in N_G
                     while (!set.isEmpty()) {
                         PathNode w = set.iterator().next();
                         set.remove(w);
-                        log.info("stack.push w = " + w.toString());
+                        log.fine("stack.push w = " + w.toString());
                         if (w.m == 0) {
                             stack.push(w);
                             continue B;
@@ -2318,15 +2302,14 @@ Matchings in G are integral flows in N_G
             }                
         }
         
-        assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
+        //assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
 
         surplus.clear();
         deficit.clear();
-        //gFlow.getMatchedLeftRight(surplus, deficit);
         gFlow.getSurplusLeftIndexes(surplus);
         gFlow.getDeficitRightIndexes(deficit);
         
-        log.info("nSurplus=" + surplus.size() + " nDeficit="
+        log.fine("nSurplus=" + surplus.size() + " nDeficit="
             + deficit.size());
         
         int hAfter = surplus.size();
@@ -2446,8 +2429,7 @@ Matchings in G are integral flows in N_G
         }    
     }
     
-    private void augmentPath(ResidualDigraph rM, 
-        DoubleLinkedCircularList[] forest, 
+    private void augmentPath(ResidualDigraph rM, Forest forest, 
         long foresIdx, Set<Integer> augmentedLeft, 
         Set<Integer> augmentedRight) {
 
@@ -2462,11 +2444,6 @@ Matchings in G are integral flows in N_G
         then augment using each edge, but 
         skipping those violating vertex-disjoint.
         
-        (requires one to renumber the right vertexes.
-         for example: left is 0, 1, 2, right becomes 3,4,5,
-        and creation of adjacency lists with those
-        and edge weights all being 1.)
-        
         since prim's runtime complexity is better for
         |v| < |E|, will use that.
         
@@ -2474,7 +2451,7 @@ Matchings in G are integral flows in N_G
         
         // ---- extract the forest tree as edges ---
         
-        DoubleLinkedCircularList tree = forest[(int)foresIdx];
+        DoubleLinkedCircularList tree = forest.get((int)foresIdx);
 
         assert(tree != null);
         
@@ -2484,18 +2461,13 @@ Matchings in G are integral flows in N_G
         int j = 0;
         while (j < n) {
             node = node.getLeft();
-            if (j == 0 && (!(node instanceof PathNode))) {
-                // TODO: follow up on this and write test for it
-                while (!(node instanceof PathNode)) {
-                    node = node.getLeft();
-                }
-            }
+            
             List<PathNode> path = extractNodes((PathNode)node);
             if (path.size() < 2) {
                 ++j;
                 continue;
             }
-            debugPath(path);
+            //debugPath(path);
             //discard if not vertix disjoint from augmented sets
             boolean skip = false;
             List<PairInt> tmp = new ArrayList<PairInt>();
@@ -2586,7 +2558,7 @@ Matchings in G are integral flows in N_G
             }
             rIndexes.add(rightIndex);
 
-            log.info("augmented to remove :" + leftIndex + " to " +
+            log.fine("augmented to remove :" + leftIndex + " to " +
                 rightIndex);
             
             augmentedLeft.add(leftIndex);
@@ -2628,7 +2600,7 @@ Matchings in G are integral flows in N_G
                 // create a backward link and matched mapping
                 rM.getBackwardLinksRM().put(rightIndex, leftIndex);
 
-                log.info("augmented to add :" + leftIndex + " to " +
+                log.fine("augmented to add :" + leftIndex + " to " +
                     rightIndex);
                 
                 tmpAL.add(leftIndex);
@@ -2713,7 +2685,7 @@ Matchings in G are integral flows in N_G
         prims.calculateMinimumSpanningTree(
             nVertexes, adjCostMap); 
         int[] prev = prims.getPrecessorArray();
-        log.info("predecessors=" + Arrays.toString(prev));
+        log.fine("predecessors=" + Arrays.toString(prev));
         
         edges.clear();
         
@@ -2736,7 +2708,7 @@ Matchings in G are integral flows in N_G
             index1 = revLeftToNew.get(index1);            
             index2 = revRightToNew.get(index2);
          
-            log.info(" passed filter1: " + index1 + ":" + index2);
+            log.fine(" passed filter1: " + index1 + ":" + index2);
             
             edges.add(new PairInt(index1.intValue(),
                 index2.intValue()));            
@@ -2807,7 +2779,7 @@ Matchings in G are integral flows in N_G
                     }
                 }
             }
-            log.info("edges.size=" + edges.size() + " edges2.size="
+            log.fine("edges.size=" + edges.size() + " edges2.size="
                 + edges2.size());
         }
         
@@ -2815,5 +2787,41 @@ Matchings in G are integral flows in N_G
 
         return edges2;
     }
+    
+    private void validateGraph(Graph g) {
 
+        StringBuilder errors = new StringBuilder();
+        if (g.getNLeft() == 0) {
+            errors.append("graph cannot have 0 left nodes.");
+        } 
+        if (g.getNRight() == 0) {
+            errors.append(" graph cannot have 0 rght nodes.");
+        }
+        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
+            if (entry.getValue().intValue() < 1) {
+                errors.append(" all edge weights must be > 0.");
+                break;
+            }
+        }
+        
+        if (g.getEdgeWeights().isEmpty()) {
+            errors.append(" g must have at least one edge.");
+        }
+        
+        if (errors.length() > 0) {
+            throw new IllegalArgumentException(errors.toString());
+        }
+    }
+
+    private Map<Integer, Integer> singleNodesSolution(Graph g) {
+    
+        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        
+        if (g.getEdgeWeights().containsKey(new PairInt(0, 0))) {
+            m.put(Integer.valueOf(0), Integer.valueOf(0));
+        }
+        
+        throw new IllegalStateException("graph only had 1 left"
+            + " and right node, but no edge between them.");
+    }
 }

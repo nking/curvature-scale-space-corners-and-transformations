@@ -452,15 +452,6 @@ public class FlowNetwork {
         
         log.info("bipartite flow sum=" + flow);
         
-        /*flow += calcTotalSourceFlow();
-        
-        log.info("bipartite + source flow sum=" + flow);
-        
-        flow += calcTotalSinkFlow();
-        
-        log.info("bipartite + source + sink flow sum=" + flow);
-        */
-        
         // nSurplus is the number of nodes, excluding the
         // sink where the flow into the node is larger
         // than the flow leaving the sink.
@@ -477,7 +468,7 @@ public class FlowNetwork {
                 
         return (Math.abs(flow - (nMatchingsHK - nSurplus)) < 1);
     }
-        
+    
     public boolean printSurplusAndDeficit() {
     
         List<Integer> surplus = new ArrayList<Integer>();
@@ -561,7 +552,7 @@ public class FlowNetwork {
         
         float qEps = q * eps;
         
-        log.info("delta=" + delta + " qEps=" + qEps);
+        log.fine("delta=" + delta + " qEps=" + qEps);
         
         //see Figure 7.4, pg 53
         // looks like the price raise is multiples of (q-1)*eps
@@ -583,9 +574,8 @@ public class FlowNetwork {
                     while (cp <= -qEps) {
                         pRight[index2.intValue()] += (count * delta);
                         cp = calcNetCost(p);
-                        log.info("raise price of right " + index2 +
+                        log.fine("raise price of right " + index2 +
                             " to cp=" + cp);
-                        //count += 1.f;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated, cp <= qEps
@@ -594,12 +584,9 @@ public class FlowNetwork {
                         float count = 1.f;
                         pLeft[index1.intValue()] += (count * delta);
                         cp = calcNetCost(p);
-                        //count += 1.f;
-                        log.info("lower price of left " + index1 +
+                        log.fine("lower price of left " + index1 +
                             " to cp=" + cp);
                     }
-                } else {
-                    int z = 1;
                 }
             }
         }
@@ -616,8 +603,7 @@ public class FlowNetwork {
                 while (cp <= -qEps) {
                     pLeft[xIndex.intValue()] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
-                    //count += 1.f;
-                    log.info("raise price of left for source arc" 
+                    log.fine("raise price of left for source arc" 
                         + xIndex + " to cp=" + cp);
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
@@ -627,8 +613,7 @@ public class FlowNetwork {
                 while (cp > qEps) {
                     pLeft[sourceNode] += (count * delta);
                     cp = calcSourceNetCost(xIndex.intValue());
-                    //count += 1.f;
-                    log.info("lower price of left for source arc" 
+                    log.fine("lower price of left for source arc" 
                         + xIndex + " to cp=" + cp);
                 }
             }
@@ -647,21 +632,17 @@ public class FlowNetwork {
                 while (cp <= -qEps) {
                     pRight[sinkNode] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
-                    //count += 1.f;
-                    log.info("raise price of right for sink arc" 
+                    log.fine("raise price of right for sink arc" 
                         + sinkNode + " to cp=" + cp);
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 //cp = cost - pdX + pdY so incr pdX
-                //TODO: a single price raise of 2*delta or 3*delta?
-                //      difficult to tell by pg 54 and 53
                 float count = 1.f;
                 while (cp > qEps) {
                     pRight[yIndex.intValue()] += (count * delta);
                     cp = calcSinkNetCost(yIndex.intValue());
-                    //count += 1.f;
-                    log.info("lower price of right for sink arc" 
+                    log.fine("lower price of right for sink arc" 
                         + yIndex + " to cp=" + cp);
                 }
             }

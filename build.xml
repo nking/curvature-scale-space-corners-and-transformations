@@ -607,6 +607,36 @@
         </junit>
     </target>
 
+    <target name="runTest2NoAsserts" if="junit.present" depends="debug,JUnit,compileTests2">
+
+        <record name="${logfile}" append="yes" loglevel="info"/>
+
+        <fail unless="test">
+            Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
+        </fail>
+        <echo message="${src.out.dir}/logging.properties"/>
+        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        
+        <junit fork="true" filtertrace="on" printsummary="yes" 
+            haltonerror="true" haltonfailure="true" showoutput="false">
+            
+            <classpath>
+                <pathelement location="${tests.out.dir}"/>
+                <path refid="test.classpath"/>
+            </classpath>
+            
+            <jvmarg value="-XX:-UseSplitVerifier" />
+            
+            <formatter type="plain" usefile="true"/>
+
+            <sysproperty key="java.util.logging.config.file" value="${src.out.dir}/logging.properties"/>
+            <test name="${test}" fork="true" haltonfailure="yes">
+                <formatter type="plain" usefile="false"/>
+            </test>
+            
+        </junit>
+    </target>
+
     <!-- target that does not recompile if no changes to a class or the class it
          depends upon.  can only be used if a previous runTest was invoked so 
          that the binaries have been built for debugging print mode -->
