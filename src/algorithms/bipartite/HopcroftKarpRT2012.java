@@ -6,6 +6,7 @@ import algorithms.bipartite.MinCostUnbalancedAssignment.RightNode;
 import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import algorithms.bipartite.MinCostUnbalancedAssignment.SinkNode;
 import algorithms.bipartite.MinCostUnbalancedAssignment.SourceNode;
+import static algorithms.bipartite.MinCostUnbalancedAssignment.extractNodes;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
@@ -53,15 +54,9 @@ public class HopcroftKarpRT2012 {
         int lambda = estimateLambda(rM);
                 
         while (true) {
-            
-    long t0 = System.currentTimeMillis();
-            
+                        
             boolean augmented = buildForestAndAugment(rM, lambda);
 
-     long t1 = System.currentTimeMillis();
-     long t = (t1 - t0)/1000;
-    System.out.println(t + " sec for HK:buildForestAndAugment");
-            
             if (!augmented) {
                 return m;
             }
@@ -183,7 +178,7 @@ public class HopcroftKarpRT2012 {
       
         Forest forest = new Forest(lambda);
         
-        Heap heap = new Heap();
+        MinHeapForRT2012 heap = new MinHeapForRT2012(4);
         
         /*
         this class is invoked as the first step in a
@@ -247,8 +242,6 @@ public class HopcroftKarpRT2012 {
         Set<Integer> matchedLeft = new HashSet<Integer>(
             rM.getBackwardLinksRM().values());    
  
- long t0 = System.currentTimeMillis();
- 
         // for all maidens
         // set key to 0, then ScanAndAdd(index)
         Set<Integer> maidens = new HashSet<Integer>();
@@ -267,12 +260,7 @@ public class HopcroftKarpRT2012 {
                 node, vXY.get(lNode));
             assert(prevKey == 0L);
         }
- 
- long t1 = System.currentTimeMillis();
- long t = (t1 - t0)/1000;
- System.out.println(t + " sec for "
-     + "HK:buildForestAndAugment insert maidens");
-        
+     
         int nRight = rM.getNRight();
         
         log.fine("done adding " + maidens.size() + 
@@ -283,12 +271,12 @@ public class HopcroftKarpRT2012 {
         
         int nIter = 0;
         
-        while (!heap.isEmpty()) {
+        while (heap.getNumberOfNodes() > 0) {
                         
             // in the heap are men not in the forest who are in
             // an alternating path from a maiden.
             // the key is the length of shortest path so far
-            PathNode y = (PathNode)heap.extractMin();
+            PathNode y = heap.extractMin();
             assert(y instanceof RightNode);
             assert(y.getData() != null);
             
@@ -309,14 +297,16 @@ public class HopcroftKarpRT2012 {
             long currentKey = forest.add(y, prevKey);
             
             if (currentKey > prevKey) {
-                log.fine("augment forest[" + prevKey + "] " 
-                    + debug(augmentedLeft, augmentedRight));
-                //debug(forest);
-                augmentPath(rM, forest, prevKey, augmentedLeft,
-                    augmentedRight);
+                log.info("augment forest[" + prevKey + "] ");
+                //forest[0] are the maiden nodes alone
+                if (prevKey > 0) {
+                    //debug(forest);
+                    augmentPath(rM, forest, prevKey, augmentedLeft,
+                        augmentedRight);
+                }
                 forest.removeFirstItem((int)prevKey);
                 lastAugKey = prevKey;
-                prevKey = currentKey;    
+                prevKey = currentKey;
             }
             
             /*
@@ -348,11 +338,12 @@ public class HopcroftKarpRT2012 {
                     vXY.get(topIndex));
                 
                 if (currentKey > prevKey) {
-                    log.fine("augment forest[" + prevKey + "] " 
-                        + debug(augmentedLeft, augmentedRight));
-                    //debug(forest);
-                    augmentPath(rM, forest, prevKey, augmentedLeft,
-                        augmentedRight);
+                    log.info("augment forest[" + prevKey + "] ");
+                    if (prevKey > 0) {
+                        //debug(forest);
+                        augmentPath(rM, forest, prevKey, augmentedLeft,
+                            augmentedRight);
+                    }
                     forest.removeFirstItem((int)prevKey);
                     lastAugKey = prevKey;
                     prevKey = currentKey;    
@@ -361,29 +352,30 @@ public class HopcroftKarpRT2012 {
             } else {
                 //exit(bachelor β := y reached);
                 log.fine("bachelor y=" + y.toString());
-                break;
-                /*
+                //break;
+                
                 if (maidens.contains(topIndex)) {
                     maidens.remove(topIndex);                    
                 } else if (maidens.isEmpty()) {
                     log.fine("last maiden's bachelor reached");
                     //debug(forest);
                     break;
-                }*/
+                }
             }
         
             log.fine("nIter=" + nIter);
         }
         
         if (lastAugKey < prevKey) {
-            log.fine("augment forest[" + prevKey + "] " 
-                + debug(augmentedLeft, augmentedRight));
-            //debug(forest);
-            augmentPath(rM, forest, prevKey, 
-                augmentedLeft, augmentedRight);
+            log.info("augment forest[" + prevKey + "] ");
+            if (prevKey > 0) {
+                //debug(forest);
+                augmentPath(rM, forest, prevKey, augmentedLeft,
+                    augmentedRight);
+            }
             lastAugKey = prevKey;
         }
-        
+       
         log.fine("lastAugKey=" + lastAugKey);
         
         return !(augmentedLeft.isEmpty() && augmentedRight.isEmpty());
@@ -404,7 +396,7 @@ public class HopcroftKarpRT2012 {
      * @param yNodes
      * @param xNode 
      */
-    private long scanAndAdd(Heap heap, Forest forest,
+    private long scanAndAdd(MinHeapForRT2012 heap, Forest forest,
         ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
         LeftNode xNode, long prevKey,
         Set<Integer> augmentedLeft,
@@ -426,7 +418,8 @@ public class HopcroftKarpRT2012 {
         
             for (Integer yIndex : forwardLinks) {
 
-                if (visitedY.contains(yIndex)) {
+                if (visitedY.contains(yIndex) ||
+                    augmentedRight.contains(yIndex)) {
                     continue;
                 }
                 visitedY.add(yIndex);
@@ -441,10 +434,6 @@ public class HopcroftKarpRT2012 {
                 long lOld = yNode.getKey();
                 assert(((Integer)yNode.getData()).intValue() ==
                     yIndex.intValue());
-         
-                if (augmentedRight.contains(yIndex)) {
-                    continue;
-                }
                 
                 //L := l(x) + lp(x ⇒ y) 
                 //   = l(x) + cp(x, y)
@@ -531,6 +520,8 @@ public class HopcroftKarpRT2012 {
         Set<PairInt> edges = new HashSet<PairInt>();
         long n = tree.getNumberOfNodes();
         HeapNode node = tree.getSentinel();
+        log.fine("number of branches in tree=" + n);
+ 
         int j = 0;
         while (j < n) {
             node = node.getLeft();
@@ -541,7 +532,7 @@ public class HopcroftKarpRT2012 {
                 continue;
             }
             //debugPath(path);
-            //discard if not vertix disjoint from augmented sets
+            //discard if not vertex disjoint from augmented sets
             boolean skip = false;
             List<PairInt> tmp = new ArrayList<PairInt>();
             for (int ii = 0; ii < (path.size() - 1); ++ii) {
@@ -573,14 +564,15 @@ public class HopcroftKarpRT2012 {
         if (edges.isEmpty()) {
             return;
         }
-        
+
         List<PairInt> edges2;
         if (edges.size() > 2) {
-            edges2 = filterUsingMST(edges);
+            //edges2 = filterUsingMST(edges);
+            edges2 = filter(edges);
         } else {
             edges2 = new ArrayList<PairInt>(edges);
         }
-        
+
         //augment M along path;
 
         //pg 11: "But our augmenting paths will be paths 
@@ -682,6 +674,7 @@ public class HopcroftKarpRT2012 {
         }
         augmentedRight.addAll(tmpAR);
         augmentedLeft.addAll(tmpAL);
+       
     }
     
     private String debug(Set<Integer> aL, Set<Integer> aR) {
@@ -864,6 +857,106 @@ public class HopcroftKarpRT2012 {
         edges2.addAll(edges);
 
         return edges2;
+    }
+    
+    private List<PairInt> filter(Set<PairInt> edges) {
+        
+        List<PairInt> edges2 = new ArrayList<PairInt>();
+        int nIter = 0;
+        int nc = 0;
+        while ((nIter == 0) || (nc > 0)) {
+            nIter++;
+            Map<Integer, Integer> lF = new HashMap<Integer, Integer>();
+            Map<Integer, Integer> rF = new HashMap<Integer, Integer>();
+            for (PairInt edge : edges) {
+                Integer index1 = Integer.valueOf(edge.getX());
+                Integer index2 = Integer.valueOf(edge.getY());
+                Integer count = lF.get(index1);
+                if (count == null) {
+                    lF.put(index1, Integer.valueOf(1));
+                } else {
+                    lF.put(index1, Integer.valueOf(count.intValue() + 1));
+                }
+                count = rF.get(index2);
+                if (count == null) {
+                    rF.put(index2, Integer.valueOf(1));
+                } else {
+                    rF.put(index2, Integer.valueOf(count.intValue() + 1));
+                }
+            }
+            
+            // add to edges2  edges w/
+            // left indexes w/ frequency=1
+            // right indexes w/ frequency=1
+            // and remove those from edges
+            
+            nc = 0;
+            
+            for (Map.Entry<Integer, Integer> entry : lF.entrySet()) {
+                if (entry.getValue().intValue() == 1) {
+                    int idx1 = entry.getKey().intValue();
+                    PairInt p0 = null;
+                    for (PairInt p : edges) {
+                        if (p.getX() == idx1) {
+                            p0 = p;
+                            break;
+                        }
+                    }
+                    assert (p0 != null);
+                    edges2.add(p0);
+                    edges.remove(p0);
+                    nc++;
+                }
+            }
+            
+            for (Map.Entry<Integer, Integer> entry : rF.entrySet()) {
+                if (entry.getValue().intValue() == 1) {
+                    int idx2 = entry.getKey().intValue();
+                    PairInt p0 = null;
+                    for (PairInt p : edges) {
+                        if (p.getY() == idx2) {
+                            p0 = p;
+                            break;
+                        }
+                    }
+                    if (p0 != null) {
+                        edges2.add(p0);
+                        edges.remove(p0);
+                        nc++;
+                    }
+                }
+            }
+            log.fine("edges.size=" + edges.size() + " edges2.size="
+                + edges2.size());
+        }
+        
+        edges2.addAll(edges);
+
+        return edges2;
+    }
+    
+    private void debug(Forest forest) {
+        
+        for (Integer key : forest.getKeys()) {
+
+            DoubleLinkedCircularList tree = forest.get(key.intValue());
+            
+            long n = tree.getNumberOfNodes();
+            HeapNode node = tree.getSentinel();
+            int j = 0;
+            while (j < n) {
+                node = node.getLeft();
+                
+                List<PathNode> path = extractNodes((PathNode)node);
+                int n2 = path.size();
+                for (int ii = 0; ii < n2; ++ii) {
+                    PathNode node1 = path.get(ii);
+                    log.info("forest[" + key + "] tree branch[" 
+                        + j + "] node[" + ii + "]=" + node1.toString());
+                }                    
+                j++;
+            }
+        }            
     }
     
 }
