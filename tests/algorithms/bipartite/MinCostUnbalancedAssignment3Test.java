@@ -6,9 +6,11 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import thirdparty.HungarianAlgorithm;
 
 /**
  *
@@ -22,7 +24,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public MinCostUnbalancedAssignment3Test() {
     }
     
-    public void test0() {
+    public void est0() {
        
         log.info("test0");
         
@@ -52,13 +54,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             .equals(Integer.valueOf(3)));
     }
     
-    public void test1() throws Exception {
+    public void est1() throws Exception {
     
         log.info("test1");
                 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1465157989128L;
+        //seed = 1465192949978L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         
@@ -77,8 +79,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 Map<Integer, Integer> m = bipartite.flowAssign(g);
                 
                 long t1 = System.currentTimeMillis();
-                long tSec = (t1 - t0)/1000;
-                System.out.println(tSec + " sec for flowAssign");
+                long tSec = (t1 - t0);
+                System.out.println(tSec + " msec for flowAssign");
 
                 
                 log.info("size=" + size + " scale=" + maxCost + 
@@ -95,11 +97,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 float[][] matrix = convert(g);
                 
                 long t2 = System.currentTimeMillis();
+                
                 HungarianAlgorithm ha = new HungarianAlgorithm();
                 int[][] m2 = ha.computeAssignments(matrix);
+                
                 long t3 = System.currentTimeMillis();
-                tSec = (t3 - t2)/1000;
-                System.out.println(tSec + " sec for hungarian");
+                tSec = (t3 - t2);
+                System.out.println(tSec + " msec for hungarian");
                 
                 log.info("size=" + size + " scale=" + maxCost + 
                     " m.size=" + m.size());
@@ -113,7 +117,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
 
-    public void est2() throws Exception {
+    public void test2() throws Exception {
         
         log.info("test2");
         
@@ -123,7 +127,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         log.info("size=" + size + " scale=" + scale);
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-        long seed = System.nanoTime();
+        long seed = System.currentTimeMillis();
+        seed = 10070693215754L;
         sr.setSeed(seed);
         log.info("seed=" + seed);
         
@@ -151,7 +156,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
 
-    public void test3() {
+    public void est3() {
         
         log.info("test3");
         
@@ -201,7 +206,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
     
-    public void test00() {
+    public void est00() {
         
         log.info("test00");
         
@@ -390,7 +395,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             = new HashMap<PairInt, Integer>();
                         
         for (int i = 0; i < size; ++i) {
-            int cost = sr.nextInt(maxCost);
+            int cost = sr.nextInt(maxCost - 1) + 1;
             weights.put(new PairInt(i, i), Integer.valueOf(cost));
         }
         

@@ -48,8 +48,7 @@ public class HopcroftKarpTest extends TestCase {
         int s = expectedM.length;
         Graph g2 = getTestGraph0();
         Map<Integer, Integer> m2 = new HashMap<Integer, Integer>();
-        ResidualDigraph rM = new ResidualDigraph(g2, m2);
-        m2 = bipartite2.hopcroftKarp(g2, rM, s);
+        m2 = bipartite2.hopcroftKarp(g2, s);
         for (Entry<Integer, Integer> entry : m2.entrySet()) {
             log.info(entry.getKey() + ":" +
                 entry.getValue());

@@ -700,7 +700,10 @@ public class MiscMathTest extends TestCase {
             
             BigInteger b = new BigInteger(bytes);
             
-            long r = b.longValueExact();
+            if (b.bitLength() > 63) {
+                throw new ArithmeticException("the result will not fit in a long");
+            }
+            long r = b.longValue();
             
             assertTrue(r == v);
         }

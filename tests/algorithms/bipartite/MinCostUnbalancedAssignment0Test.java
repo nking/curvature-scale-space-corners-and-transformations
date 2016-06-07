@@ -25,16 +25,14 @@ public class MinCostUnbalancedAssignment0Test extends TestCase {
         Graph g = getTestGraph();
         
         Map<Integer, Integer> m = new HashMap<Integer, Integer>();
-        
-        ResidualDigraph rM = new ResidualDigraph(g, m);
-        
+                
         MinCostUnbalancedAssignment bipartite = 
             new MinCostUnbalancedAssignment();
         
         // ------------------------------------
         int s = Math.min(g.getNLeft(), g.getNRight());
         Map<Integer, Integer> aMatching = 
-            bipartite.hopcroftKarp(g, rM, s);
+            bipartite.hopcroftKarp(g, s);
         for (Entry<Integer, Integer> entry : aMatching.entrySet()) {
             log.info("matched left " + entry.getKey() + " to right " +
                 entry.getValue());

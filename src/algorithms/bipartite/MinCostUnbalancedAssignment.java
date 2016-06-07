@@ -421,9 +421,12 @@ long t0 = System.currentTimeMillis();
             // stopping when a current deficit in D is reached;
             // (pg 55)
 
+            // pg 57, estimate lambda as size for dial arrays
+            int lambda = (4*q + 4)*s/h;
+            
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
-                terminatingDeficitIdx);
+                terminatingDeficitIdx, lambda);
 long t1 = System.currentTimeMillis();
 tSec = (t1 - t0)/10;
 System.out.println(tSec + " 100ths of sec for buildForest2");
@@ -462,15 +465,16 @@ System.out.println(tSec + " 100ths of sec for buildForest2");
             //    of the links with lengths = 0;
             
             //assert(gFlow.printFlowValueIncludingSrcSnk(s));
-         
-            log.fine("l(termIndex)=" + terminatingDeficitIdx[0]);
-            
+                     
 t0 = System.currentTimeMillis();
 
             List<List<PathNode>> extractedPaths = 
                 modifyPricesAndPathLengths(gFlow, rF, forest, 
                 terminatingDeficitIdx[0], eps);
 
+            log.info("after link length changes");
+            debug(forest);
+        
 t1 = System.currentTimeMillis();
 tSec = (t1 - t0)/10;
 System.out.println(tSec + " 100ths of sec for modifyPricesAndPathLengths");
@@ -661,7 +665,7 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
     protected Forest buildForest2(
         final FlowNetwork gFlow, ResidualDigraph2 rF,
         List<Integer> surplus, List<Integer> deficit, float eps,
-        int[] terminatingDeficitIdx) {
+        int[] terminatingDeficitIdx, int lambda) {
         
         log.fine("buildForest2");
         
@@ -669,12 +673,10 @@ long t0 = System.currentTimeMillis();
 
         Set<Integer> d = new HashSet<Integer>(deficit);
     
-        //TODO: revisit this. 
-        int lambda = (int)Math.ceil(3 * (gFlow.getMaxC()/eps));
         if (lambda < 4) {
             lambda = 4;
         }
-        log.fine("buildForest2 forest length lambda is set to " + 
+        log.info("buildForest2 forest length lambda is set to " + 
             lambda);
         
         long lastKey = -1;
@@ -729,6 +731,8 @@ System.out.println(tSec + " 100ths of sec for "
         do {
             PathNode node1 = minHeap.extractMin();
             if (node1 == null) {
+                // note the key of the root node at
+                // forest[lastKey] may have been reduced
                 terminatingDeficitIdx[0] = (int)lastKey;
                 break;
             }
@@ -736,6 +740,11 @@ System.out.println(tSec + " 100ths of sec for "
             int idx1 = index1.intValue();
          
             log.fine("extractMin = " + node1.toString());
+        
+            if (node1.getKey() > lambda) {
+                terminatingDeficitIdx[0] = (int)lastKey;
+                break;
+            }
             
             boolean node1IsLeft = (node1 instanceof LeftNode);
             boolean nodeIsSource = (node1 instanceof SourceNode);
@@ -799,16 +808,12 @@ System.out.println(tSec + " 100ths of sec for "
             }
             
             log.fine("add to forest key=" + node1.toString());
-            
+
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
 
             if (d.contains(index1) && !node1IsLeft) {
                 terminatingDeficitIdx[0] = (int)lastKey;
-                if (lastKey != (int)node1.getKey()) {
-                    throw new IllegalArgumentException(
-                    "forest was not made large enough to hold last key");
-                }
                 break;
             }
             
@@ -1249,7 +1254,7 @@ Matchings in G are integral flows in N_G
     
     private List<List<PathNode>> modifyPricesAndPathLengths(
         FlowNetwork gFlow, ResidualDigraph2 rF,
-        Forest forest, int lt, float eps) {
+        Forest forest, int ltForestKey, float eps) {
         
         // extract the paths for forest[lt] and modify them
         //  while applying implied price changes to gFlow.
@@ -1273,9 +1278,9 @@ Matchings in G are integral flows in N_G
              for example Right key=1 has predecessor Left key=0.
              the Right node is extracted from the forest and the
              remaining path is derived from the recurence of
-             predecessor nodes.
-             Then the order is reversed so that the first nodes
-             in the path are at the beginning (Left w/ key=0 then Right w/ key=1.
+             predecessor nodes.  Those are reversed.
+             The resulting path is then 
+                 (Left w/ key=0 then Right w/ key=1.
         
           more specifically,
              after the first round of buildForest2, the links
@@ -1362,28 +1367,32 @@ Matchings in G are integral flows in N_G
              
         */
         
-        List<List<PathNode>> ltPathLinks = null;
+        List<List<PathNode>> ltPathLinks = 
+            new ArrayList<List<PathNode>>();;
         
-        if (forest.getKeys().size() > 2) {
-            debug(forest);
-            // if lt is > forestKey > 0, are there redundant paths
-            //   present in different index trees?
-            int z = 1;
-        }
+       debug(forest);
         
         List<Integer> forestIndexes = forest.getKeys();
         int n0 = forestIndexes.size();
         
-        if (n0 == 0 || lt == -1) {
-            return new ArrayList<List<PathNode>>();
+        if (n0 == 0 || ltForestKey == -1) {
+            return ltPathLinks;
         }
+        
+        long lt = forest.get(ltForestKey).getSentinel()
+            .getRight().getKey();
         
         assert(forestIndexes.get(n0 - 1).intValue() == lt);
         
         // apply changes to the lt tree, then the loer index trees
-        for (int idx = (n0 - 1); idx >= 0; --idx) {
+        //for (int idx = (n0 - 1); idx >= 0; --idx) {
+        for (int idx = (n0 - 1); idx < n0; ++idx) {
             
             int forestIdx = forestIndexes.get(idx).intValue();
+            
+            if (forestIdx == 0) {
+                continue;
+            }
             
             List<List<PathNode>> pathLists = extractPathNodes(forest, 
                 forestIdx);
@@ -1394,12 +1403,19 @@ Matchings in G are integral flows in N_G
             
             if (forestIdx == lt) {
                 ltPathLinks = pathLists;
+                if (lt == 0) {
+                    return ltPathLinks;
+                }
             }
         
             for (int pathIdx = 0; pathIdx < pathLists.size(); ++pathIdx) {
             
                 List<PathNode> path = pathLists.get(pathIdx);
-            
+
+                log.info("path " + pathIdx + " (lt=" + lt + ")");
+                
+                debugPath(path);
+                
                 Map<Integer, Float> leftPriceIncreases =
                     new HashMap<Integer, Float>();
             
@@ -1433,8 +1449,7 @@ Matchings in G are integral flows in N_G
                             if (p2I != null) {
                                 p2 = p2I.floatValue();
                             } else {
-                                p2 = gFlow.getLeftPrice(index2.intValue());
-                                p2 += ((lt - l2) * eps);
+                                p2 = ((lt - l2) * eps);
                                 leftPriceIncreases.put(index2, Float.valueOf(p2));
                             }
                             Float p1I = rightPriceIncreases.get(index1);
@@ -1442,8 +1457,7 @@ Matchings in G are integral flows in N_G
                             if (p1I != null) {
                                 p1 = p1I.floatValue();
                             } else {
-                                p1 = gFlow.getRightPrice(index1.intValue());
-                                p1 += ((lt - l1) * eps);
+                                p1 = ((lt - l1) * eps);
                                 rightPriceIncreases.put(index1, Float.valueOf(p2));
                             }
 
@@ -1467,17 +1481,16 @@ Matchings in G are integral flows in N_G
                             // node2 is sink so add to existing price changes?
                             float p2 = gFlow.getRightPrice(index2.intValue());
                             p2 += ((lt - l2) * eps);
-                            if (rightPriceIncreases.containsKey(index2)) {
-                                p2 += rightPriceIncreases.get(index2).floatValue();
-                            }
-                            rightPriceIncreases.put(index2, Float.valueOf(p2));
+                            //if (rightPriceIncreases.containsKey(index2)) {
+                            //    p2 += rightPriceIncreases.get(index2).floatValue();
+                            //}
+                            //rightPriceIncreases.put(index2, Float.valueOf(p2));
                             Float p1I = rightPriceIncreases.get(index1);
                             float p1;
                             if (p1I != null) {
                                 p1 = p1I.floatValue();
                             } else {
-                                p1 = gFlow.getRightPrice(index1.intValue());
-                                p1 += ((lt - l1) * eps);
+                                p1 = ((lt - l1) * eps);
                                 rightPriceIncreases.put(index1, Float.valueOf(p2));
                             }
                             if (rF.getBackwardLinksSinkRM().contains(index1)) {
@@ -1500,8 +1513,7 @@ Matchings in G are integral flows in N_G
                             if (p2I != null) {
                                 p2 = p2I.floatValue();
                             } else {
-                                p2 = gFlow.getRightPrice(index2.intValue());
-                                p2 += ((lt - l2) * eps);
+                                p2 = ((lt - l2) * eps);
                                 rightPriceIncreases.put(index2, Float.valueOf(p2));
                             }
                             Float p1I = leftPriceIncreases.get(index1);
@@ -1509,8 +1521,7 @@ Matchings in G are integral flows in N_G
                             if (p1I != null) {
                                 p1 = p1I.floatValue();
                             } else {
-                                p1 = gFlow.getLeftPrice(index1.intValue());
-                                p1 += ((lt - l1) * eps);
+                                p1 = ((lt - l1) * eps);
                                 leftPriceIncreases.put(index1, Float.valueOf(p2));
                             }
 
@@ -1532,17 +1543,16 @@ Matchings in G are integral flows in N_G
                             // node2 is source so add to existing price changes?
                             float p2 = gFlow.getLeftPrice(index2.intValue());
                             p2 += ((lt - l2) * eps);
-                            if (leftPriceIncreases.containsKey(index2)) {
-                                p2 += leftPriceIncreases.get(index2).floatValue();
-                            }
-                            leftPriceIncreases.put(index2, Float.valueOf(p2));                            
+                            //if (leftPriceIncreases.containsKey(index2)) {
+                            //    p2 += leftPriceIncreases.get(index2).floatValue();
+                            //}
+                            //leftPriceIncreases.put(index2, Float.valueOf(p2));                            
                             Float p1I = leftPriceIncreases.get(index1);
                             float p1;
                             if (p1I != null) {
                                 p1 = p1I.floatValue();
                             } else {
-                                p1 = gFlow.getLeftPrice(index1.intValue());
-                                p1 += ((lt - l1) * eps);
+                                p1 = ((lt - l1) * eps);
                                 leftPriceIncreases.put(index1, Float.valueOf(p2));
                             }
                             if (rF.getBackwardLinksSourceRM().contains(index1)) {
@@ -1564,17 +1574,16 @@ Matchings in G are integral flows in N_G
                         if (p2I != null) {
                             p2 = p2I.floatValue();
                         } else {
-                            p2 = gFlow.getLeftPrice(index2.intValue());
-                            p2 += ((lt - l2) * eps);
+                            p2 = ((lt - l2) * eps);
                             leftPriceIncreases.put(index2, Float.valueOf(p2));
                         }
                         // node1 is source so add to existing price changes?
                         float p1 = gFlow.getLeftPrice(index1.intValue());
                         p1 += ((lt - l1) * eps);
-                        if (leftPriceIncreases.containsKey(index1)) {
-                            p1 += leftPriceIncreases.get(index1).floatValue();
-                        }
-                        leftPriceIncreases.put(index1, Float.valueOf(p1));
+                        //if (leftPriceIncreases.containsKey(index1)) {
+                        //    p1 += leftPriceIncreases.get(index1).floatValue();
+                        //}
+                        //leftPriceIncreases.put(index1, Float.valueOf(p1));
                         if (rF.getBackwardLinksSourceRM().contains(index2)) {
                             // saturated  node1(source) <--- node2(Left)
                             l1 -= (lt - l2);
@@ -1592,17 +1601,16 @@ Matchings in G are integral flows in N_G
                         if (p2I != null) {
                             p2 = p2I.floatValue();
                         } else {
-                            p2 = gFlow.getRightPrice(index2.intValue());
-                            p2 += ((lt - l2) * eps);
+                            p2 = ((lt - l2) * eps);
                             rightPriceIncreases.put(index2, Float.valueOf(p2));
                         }
                         // node1 is sink so add existing price change?
                         float p1 = gFlow.getRightPrice(index1.intValue());
                         p1 += ((lt - l1) * eps);
-                        if (rightPriceIncreases.containsKey(index1)) {
-                            p1 += rightPriceIncreases.get(index1).floatValue();
-                        }
-                        rightPriceIncreases.put(index1, Float.valueOf(p1));
+                        //if (rightPriceIncreases.containsKey(index1)) {
+                        //    p1 += rightPriceIncreases.get(index1).floatValue();
+                        //}
+                        //rightPriceIncreases.put(index1, Float.valueOf(p1));
                         if (rF.getBackwardLinksSinkRM().contains(index2)) {
                             // "saturated" node2(right) <-- node1(sink)
                             l2 -= (lt - l1);
@@ -1629,9 +1637,6 @@ Matchings in G are integral flows in N_G
             }
         }
 
-        log.info("after link length changes:");
-        debug(forest);
-        
         return ltPathLinks;
     }
     
@@ -1947,8 +1952,9 @@ Matchings in G are integral flows in N_G
     private void debugPath(List<PathNode> path) {
         StringBuilder sb = new StringBuilder("path=");
         for (PathNode node : path) {
-            String str = String.format("%s %s", 
-                node.id, node.getData().toString());
+            String str = String.format("%s %s %s", 
+                node.id, Long.toString(node.getKey()),
+                node.getData().toString());
             sb.append(str).append(", ");
         }
         log.info(sb.toString());
