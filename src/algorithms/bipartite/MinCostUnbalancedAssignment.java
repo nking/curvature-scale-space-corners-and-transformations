@@ -467,7 +467,7 @@ System.out.println(tSec + " 100ths of sec for buildForest2");
             
 t0 = System.currentTimeMillis();
 
-            modifyPricesAndPathLengths(gFlow, forest, 
+            modifyPricesAndPathLengths(gFlow, rF, forest, 
                 terminatingDeficitIdx[0], eps);
 
 t1 = System.currentTimeMillis();
@@ -1242,7 +1242,11 @@ Matchings in G are integral flows in N_G
         List<List<PathNode>> pathLists = new ArrayList<List<PathNode>>();
                     
         DoubleLinkedCircularList tree = forest.get(forestIdx);
-                        
+        
+        if (tree == null) {
+            return null;
+        }
+        
         long n = tree.getNumberOfNodes();
         HeapNode node = tree.getSentinel();
         int branchIdx = 0;
@@ -1258,16 +1262,14 @@ Matchings in G are integral flows in N_G
     }
     
     private void modifyPricesAndPathLengths(
-        FlowNetwork gFlow,
+        FlowNetwork gFlow, ResidualDigraph2 rF,
         Forest forest, int lt, float eps) {
 
         debug(forest);
         
         // extract the paths for forest[lt] and modify them
         //  while applying implied price changes to gFlow.
-        
-        List<List<PathNode>> pathLists = extractPathNodes(forest, lt);
-        
+                
         /*
         sect 8.2, pg 57
        
@@ -1292,14 +1294,14 @@ Matchings in G are integral flows in N_G
           and hence candidates for augmenting paths.
         
           more specifically,
-             one the first round of buildForest2, the links
+             after the first round of buildForest2, the links
              inserted into the forest at forest[1] are
              "idle" links from surplus to deficit nodes.
              The inserted Right node w/ key=1 has a 
              predecessor Left node w/ key=0.
                 Lft(0) -> Rgt(1) (is "idle" in this example)
              
-                the Rgt key length was assigned using
+                the Rgt key length which was assigned using
                    leftKey + Math.ceil(cp(left, right) / eps)
                    where cp = costXY - pdX + pdY
                 -> reduce Rgt(1) key by l(term) - l(x), that is
@@ -1346,7 +1348,7 @@ Matchings in G are integral flows in N_G
                       which should bring it to zero.
         
             Looks like the price changes to the FlowNetwork gFlow
-            should be applied on a single path at a time
+            should be applied using a single path at a time
             (so that price changes of nodes within that path are
             only applied once for that path).
         
@@ -1354,7 +1356,7 @@ Matchings in G are integral flows in N_G
             one can see that cannot re-fetch the prices from
             gFlow to re-calculate the netcost, but must instead
             only use the path link lengths to derive relative
-            changes to apply to the gFlow.  gFlow is write only
+            changes to apply to the gFlow prices.  gFlow is write only
             for these price changes.
         
         
@@ -1363,28 +1365,126 @@ Matchings in G are integral flows in N_G
              also at forest[2] and then l(term) is the key
              at root of forest[2] which is '2',
              paths from forest[1] should be discarded?
-             l(term) - l(forest[1].root.key) will be > 0
+             since l(term) - l(forest[1].root.key) will be > 0
+                 couldn't find that stated in the paper yet, so
+             the changes applied to gFlow even from forest
+             trees with smaller keys might still be necessary even
+             though the resulting links will not be 0,
+             but those may have redundant links to highest key tree.
+             need to work further through examples...
+             
         */
         
-        for (int pathIdx = 0; pathIdx < pathLists.size(); ++pathIdx) {
+        List<List<PathNode>> ltPathLinks = null;
+        
+        if (forest.getKeys().size() > 2) {
+            debug(forest);
+            // if lt is > forestKey > 0, are there redundant paths
+            //   present in different index trees?
+            int z = 1;
+        }
+        
+        List<Integer> forestIndexes = forest.getKeys();
+        assert(forestIndexes.get(forestIndexes.size() - 1).intValue()
+            == lt);
+        
+        // apply changes to the lt tree, then the loer index trees
+        for (int idx = (forestIndexes.size() - 1); idx >= 0; --idx) {
             
-            List<PathNode> path = pathLists.get(pathIdx);
+            int forestIdx = forestIndexes.get(idx).intValue();
             
-            Map<Integer, Integer> leftPriceIncreases =
-                new HashMap<Integer, Integer>();
+            List<List<PathNode>> pathLists = extractPathNodes(forest, 
+                forestIdx);
             
-            Map<Integer, Integer> rightPriceIncreases =
-                new HashMap<Integer, Integer>();
+            if (pathLists == null) {
+                continue;
+            }
             
-            for (int i = 0; i < (path.size() - 1); ++i) {
-                PathNode node1 = path.get(i);
-                PathNode node2 = path.get(i + 1);
-                int l1 = (int) node1.getKey();
-                int l2 = (int) node2.getKey();
-                int idx1 = ((Integer) node1.getData()).intValue();
-                int idx2 = ((Integer) node2.getData()).intValue();
-                // determine if node1 -> node2 is "idle" or "saturated"
-                
+            if (forestIdx == lt) {
+                ltPathLinks = pathLists;
+            }
+        
+            for (int pathIdx = 0; pathIdx < pathLists.size(); ++pathIdx) {
+            
+                List<PathNode> path = pathLists.get(pathIdx);
+            
+                Map<Integer, Integer> leftPriceIncreases =
+                    new HashMap<Integer, Integer>();
+            
+                Map<Integer, Integer> rightPriceIncreases =
+                    new HashMap<Integer, Integer>();
+            
+                for (int i = 0; i < (path.size() - 1); ++i) {
+                    PathNode node1 = path.get(i);
+                    PathNode node2 = path.get(i + 1);
+                    int l1 = (int) node1.getKey();
+                    int l2 = (int) node2.getKey();
+                    int index1 = (Integer) node1.getData();
+                    int index2 = (Integer) node2.getData();
+                    
+                    boolean node1IsLeft = (node1 instanceof LeftNode);
+                    boolean node1IsSource = (node1 instanceof SourceNode);
+                    boolean node1IsSink = (node1 instanceof SinkNode);
+                    boolean node2IsLeft = (node2 instanceof LeftNode);
+                    boolean node2IsSource = (node2 instanceof SourceNode);
+                    boolean node2IsSink = (node2 instanceof SinkNode);
+                    
+                    // determine if node1 -> node2 is "idle" or "saturated"
+
+                    if (node1IsSource) {
+                        assert (node2IsLeft);
+                        if (rF.getBackwardLinksSourceRM().contains(index2)) {
+                            // saturated  node1(source) <--- node2(Left)
+
+                        } else {
+                            assert (rF.getForwardLinksSourceRM().contains(index2));
+                            // idle  node1(source) --> node2(left)
+
+                        }
+                    } else if (node1IsSink) {
+                        assert(node2 instanceof RightNode);
+                        if (rF.getBackwardLinksSinkRM().contains(index2)) {
+                            // "saturated" node1(right) --> node2(sink)
+                            
+                        } else {
+                            assert(rF.getForwardLinksSourceRM().contains(index2));
+                            // "idle" node1(right) --> node2(sink)
+                        
+                        }
+                    } else if (node1IsLeft) {
+                        assert(!(node2 instanceof LeftNode));
+                        if (node2IsSource) {
+                            if (rF.getBackwardLinksSourceRM().contains(index1)) {
+                                // saturated  node2(source) <--- node1(Left)
+                                
+                            } else {
+                                assert(rF.getForwardLinksSourceRM().contains(index1));
+                                // idle  node2(source) --> node1(left)
+                            
+                            }
+                        } else {
+                            // else node2 is Right
+                            if (rF.getBackwardLinksRM().containsKey(index2)
+                                && rF.getBackwardLinksRM().get(index2).equals(index1)) {
+                                // saturated link node1(left) <-- node2(right)
+                            
+                            } else {
+                                assert(rF.getForwardLinksRM().get(index1)
+                                    .contains(index2));
+                                // idle link node1(left) --> node2(right)
+                                
+                            }
+                        }
+                    } else {
+                        // else node1 is Right
+                        assert(!(node2 instanceof RightNode));
+                        if (node2IsSink) {
+                        
+                        } else {
+                            assert(node2IsLeft);
+                        }
+                    }    
+                }
             }
         }
         
