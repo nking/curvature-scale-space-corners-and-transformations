@@ -1451,8 +1451,12 @@ Matchings in G are integral flows in N_G
                                 p2 += ((lt - l2) * eps);
                                 leftPriceIncreases.put(index2, Float.valueOf(p2));
                             }
+                            // node1 is source so add to existing price changes?
                             float p1 = gFlow.getLeftPrice(index1.intValue());
                             p1 += ((lt - l1) * eps);
+                            if (leftPriceIncreases.containsKey(index1)) {
+                                p1 += leftPriceIncreases.get(index1).floatValue();
+                            }
                             leftPriceIncreases.put(index1, Float.valueOf(p1));
                             
                             // node 1 link length is reduced by lt - l2
@@ -1477,8 +1481,12 @@ Matchings in G are integral flows in N_G
                                 p2 += ((lt - l2) * eps);
                                 rightPriceIncreases.put(index2, Float.valueOf(p2));
                             }
+                            // node1 is sink so add existing price change?
                             float p1 = gFlow.getRightPrice(index1.intValue());
                             p1 += ((lt - l1) * eps);
+                            if (rightPriceIncreases.containsKey(index1)) {
+                                p1 += rightPriceIncreases.get(index1).floatValue();
+                            }
                             rightPriceIncreases.put(index1, Float.valueOf(p1));
                             
                             // node 1 link length is reduced by lt - l2
@@ -1494,15 +1502,14 @@ Matchings in G are integral flows in N_G
                             } else {
                                 assert(rF.getForwardLinksSourceRM().contains(index1));
                                 // idle  node2(source) --> node1(left)
-                                Float p2I = leftPriceIncreases.get(index2);
-                                float p2;
-                                if (p2I != null) {
-                                    p2 = p2I.floatValue();
-                                } else {
-                                    p2 = gFlow.getLeftPrice(index2.intValue());
-                                    p2 += ((lt - l2) * eps);
-                                    leftPriceIncreases.put(index2, Float.valueOf(p2));
+                                
+                                // node2 is source so add to existing price changes?
+                                float p2 = gFlow.getLeftPrice(index2.intValue());
+                                p2 += ((lt - l2) * eps);
+                                if (leftPriceIncreases.containsKey(index2)) {
+                                    p2 += leftPriceIncreases.get(index2).floatValue();
                                 }
+                                leftPriceIncreases.put(index2, Float.valueOf(p2));                            
                                 Float p1I = leftPriceIncreases.get(index1);
                                 float p1;
                                 if (p1I != null) {
