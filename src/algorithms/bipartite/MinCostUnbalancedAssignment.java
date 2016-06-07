@@ -1503,10 +1503,15 @@ Matchings in G are integral flows in N_G
                                     p2 += ((lt - l2) * eps);
                                     leftPriceIncreases.put(index2, Float.valueOf(p2));
                                 }
-                                float p1 = gFlow.getLeftPrice(index1.intValue());
-                                p1 += ((lt - l1) * eps);
-                                leftPriceIncreases.put(index1, Float.valueOf(p1));
-
+                                Float p1I = leftPriceIncreases.get(index1);
+                                float p1;
+                                if (p1I != null) {
+                                    p1 = p1I.floatValue();
+                                } else {
+                                    p1 = gFlow.getLeftPrice(index1.intValue());
+                                    p1 += ((lt - l1) * eps);
+                                    leftPriceIncreases.put(index1, Float.valueOf(p2));
+                                }
                                 // node 1 link length is reduced by lt - l2
                                 l1 -= (lt - l2);
                                 node1.setKey(l1);
@@ -1520,8 +1525,29 @@ Matchings in G are integral flows in N_G
                             } else {
                                 assert(rF.getForwardLinksRM().get(index1)
                                     .contains(index2));
-                                // idle link node1(left) --> node2(right)
                                 
+                                // idle link node1(left) --> node2(right)
+                                Float p2I = rightPriceIncreases.get(index2);
+                                float p2;
+                                if (p2I != null) {
+                                    p2 = p2I.floatValue();
+                                } else {
+                                    p2 = gFlow.getRightPrice(index2.intValue());
+                                    p2 += ((lt - l2) * eps);
+                                    rightPriceIncreases.put(index2, Float.valueOf(p2));
+                                }
+                                Float p1I = leftPriceIncreases.get(index1);
+                                float p1;
+                                if (p1I != null) {
+                                    p1 = p1I.floatValue();
+                                } else {
+                                    p1 = gFlow.getLeftPrice(index1.intValue());
+                                    p1 += ((lt - l1) * eps);
+                                    leftPriceIncreases.put(index1, Float.valueOf(p2));
+                                }
+                                // node 1 link length is reduced by lt - l2
+                                l1 -= (lt - l2);
+                                node1.setKey(l1);
                             }
                         }
                     } else {
