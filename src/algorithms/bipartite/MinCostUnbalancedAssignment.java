@@ -1435,7 +1435,6 @@ Matchings in G are integral flows in N_G
                         assert (node2IsLeft);
                         if (rF.getBackwardLinksSourceRM().contains(index2)) {
                             // saturated  node1(source) <--- node2(Left)
-
                             
                             
                         } else {
@@ -1568,6 +1567,25 @@ Matchings in G are integral flows in N_G
                                 assert (rF.getForwardLinksSinkRM().contains(index1));
                                 // "idle" node1(right) --> node2(sink)
                                 
+                                // node2 is sink so add to existing price changes?
+                                float p2 = gFlow.getRightPrice(index2.intValue());
+                                p2 += ((lt - l2) * eps);
+                                if (rightPriceIncreases.containsKey(index2)) {
+                                    p2 += rightPriceIncreases.get(index2).floatValue();
+                                }
+                                rightPriceIncreases.put(index2, Float.valueOf(p2));
+                                Float p1I = rightPriceIncreases.get(index1);
+                                float p1;
+                                if (p1I != null) {
+                                    p1 = p1I.floatValue();
+                                } else {
+                                    p1 = gFlow.getRightPrice(index1.intValue());
+                                    p1 += ((lt - l1) * eps);
+                                    rightPriceIncreases.put(index1, Float.valueOf(p2));
+                                }
+                                // node 1 link length is reduced by lt - l2
+                                l1 -= (lt - l2);
+                                node1.setKey(l1);
                             }
                             
                         } else {
@@ -1582,13 +1600,33 @@ Matchings in G are integral flows in N_G
                                 && rF.getForwardLinksRM().get(index2)
                                 .contains(index1));
                                 // "idle" node2(left) --> node1(right) 
-                                
+                                Float p2I = leftPriceIncreases.get(index2);
+                                float p2;
+                                if (p2I != null) {
+                                    p2 = p2I.floatValue();
+                                } else {
+                                    p2 = gFlow.getLeftPrice(index2.intValue());
+                                    p2 += ((lt - l2) * eps);
+                                    leftPriceIncreases.put(index2, Float.valueOf(p2));
+                                }
+                                Float p1I = rightPriceIncreases.get(index1);
+                                float p1;
+                                if (p1I != null) {
+                                    p1 = p1I.floatValue();
+                                } else {
+                                    p1 = gFlow.getRightPrice(index1.intValue());
+                                    p1 += ((lt - l1) * eps);
+                                    rightPriceIncreases.put(index1, Float.valueOf(p2));
+                                }
+                                // node 1 link length is reduced by lt - l2
+                                l1 -= (lt - l2);
+                                node1.setKey(l1);
                             }
                         }
                     }    
                 }
                 // apply leftPriceIncreases and right to gFlow
-                <
+                
             }
         }
         
