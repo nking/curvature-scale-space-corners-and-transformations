@@ -3692,7 +3692,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             tColor = 2.5;//4.;//5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor = 0.05;//0.288;
+            tColor = 0.48;//0.288;
         }
         
         int tLen = 30;//5;
@@ -3702,13 +3702,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             tLen = 1;
         } else if (clrSpace == 1) {
             tR = 0.5*3.0; //0.5*3.0;
-            tLen = 6;
+            tLen = 29;
         } else {
-            // not tested yet
-            tR = 0.6*3.0;
+            tR = 0.5*3.0;
         }
         //
-        double tSmallMerge = 0.005;//0.06;
+        double tSmallMerge = 0.0337;//0.06;
         
         return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
             reduceNoise, tSmallMerge, debugTag);

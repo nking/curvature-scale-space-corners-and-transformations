@@ -785,7 +785,10 @@ public class MiscMath {
         
         if (k > 12 || n > 12) {
             BigInteger result = computeNDivKTimesNMinusKBigIntegerExact(n, k);
-            return result.longValueExact();
+            if (result.bitLength() > 63) {
+                throw new ArithmeticException("the result will not fit in a long");
+            }
+            return result.longValue();
         }
 
         double result = 1;
@@ -2098,7 +2101,10 @@ public class MiscMath {
             return Long.MAX_VALUE;
         }
         
-        return result.longValueExact();
+        if (result.bitLength() > 63) {
+            throw new ArithmeticException("the result will not fit in a long");
+        }
+        return result.longValue();
     }
     
     /**

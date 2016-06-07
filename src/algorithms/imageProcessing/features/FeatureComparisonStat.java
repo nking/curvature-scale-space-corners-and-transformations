@@ -159,9 +159,9 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
             return -1;
         }
         
-        boolean hasIntensity = Float.isFinite(sumIntensitySqDiff);
-        boolean hasTheta = Float.isFinite(sumThetaSqDiff);
-        boolean hasGradient = Float.isFinite(sumGradientSqDiff);
+        boolean hasIntensity = !Float.isInfinite(sumIntensitySqDiff);
+        boolean hasTheta = !Float.isInfinite(sumThetaSqDiff);
+        boolean hasGradient = !Float.isInfinite(sumGradientSqDiff);
         
         if (hasIntensity && !hasTheta && !hasGradient) {
             return compareToUsingIntensity(other);
@@ -271,28 +271,28 @@ public class FeatureComparisonStat implements Comparable<FeatureComparisonStat> 
         if (img2Point != null) {
             sb.append(img2Point.toString()).append(" ");
         }
-        if (Float.isFinite(sumIntensitySqDiff)) {
+        if (!Float.isInfinite(sumIntensitySqDiff)) {
             sb.append(String.format(" ssdInt=%.4f", sumIntensitySqDiff));
         }
-        if (Float.isFinite(img2PointIntensityErr)) {
+        if (!Float.isInfinite(img2PointIntensityErr)) {
             sb.append(String.format(" err2Int=%.4f", img2PointIntensityErr));
         }
-        if (Float.isFinite(sumGradientSqDiff)) {
+        if (!Float.isInfinite(sumGradientSqDiff)) {
             sb.append(String.format(" ssdGrd=%.4f", sumGradientSqDiff));
         }
-        if (Float.isFinite(img2PointGradientErr)) {
+        if (!Float.isInfinite(img2PointGradientErr)) {
             sb.append(String.format(" err2Grd=%.4f", img2PointGradientErr));
         }
-        if (Float.isFinite(sumThetaSqDiff)) {
+        if (!Float.isInfinite(sumThetaSqDiff)) {
             sb.append(String.format(" thtDf=%.4f", sumThetaSqDiff));
         }
-        if (Float.isFinite(img2PointThetaErr)) {
+        if (!Float.isInfinite(img2PointThetaErr)) {
             sb.append(String.format(" thtErr=%.4f", img2PointThetaErr));
         }
-        if (Float.isFinite(img1PointRotInDegrees)) {
+        if (!Float.isInfinite(img1PointRotInDegrees)) {
             sb.append(String.format(" rot1D=%.4f", img1PointRotInDegrees));
         } 
-        if (Float.isFinite(img2PointRotInDegrees)) {
+        if (!Float.isInfinite(img2PointRotInDegrees)) {
             sb.append(String.format(" rot2D=%.4f", img2PointRotInDegrees));
         }
         

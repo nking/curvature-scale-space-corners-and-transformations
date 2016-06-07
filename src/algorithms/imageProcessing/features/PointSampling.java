@@ -161,7 +161,10 @@ public class PointSampling {
                 
         BigInteger maxCumulativeIndex = pv.getMaxValue();
                 
-        int vMax = maxCumulativeIndex.intValueExact();
+        if (maxCumulativeIndex.bitLength() > 31) {
+            throw new ArithmeticException("result does not fit within an int");
+        }
+        int vMax = maxCumulativeIndex.intValue();
         
         // --- randomly choose a number between 0 and 2^nBits. ---
         
