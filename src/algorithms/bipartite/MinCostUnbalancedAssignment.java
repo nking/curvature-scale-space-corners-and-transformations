@@ -1444,11 +1444,11 @@ Matchings in G are integral flows in N_G
                     } else if (node1IsSink) {
                         assert(node2 instanceof RightNode);
                         if (rF.getBackwardLinksSinkRM().contains(index2)) {
-                            // "saturated" node1(right) --> node2(sink)
+                            // "saturated" node2(right) --> node1(sink)
                             
                         } else {
-                            assert(rF.getForwardLinksSourceRM().contains(index2));
-                            // "idle" node1(right) --> node2(sink)
+                            assert(rF.getForwardLinksSinkRM().contains(index2));
+                            // "idle" node2(right) --> node1(sink)
                         
                         }
                     } else if (node1IsLeft) {
@@ -1479,9 +1479,29 @@ Matchings in G are integral flows in N_G
                         // else node1 is Right
                         assert(!(node2 instanceof RightNode));
                         if (node2IsSink) {
-                        
+                            if (rF.getBackwardLinksSinkRM().contains(index1)) {
+                                // "saturated" node1(right) <-- node2(sink)
+
+                            } else {
+                                assert (rF.getForwardLinksSinkRM().contains(index1));
+                                // "idle" node1(right) --> node2(sink)
+                                
+                            }
+                            
                         } else {
                             assert(node2IsLeft);
+                            if (rF.getBackwardLinksRM().containsKey(index1)
+                                && rF.getBackwardLinksRM().get(index1)
+                                .equals(index2)) {
+                                // "saturated" node2(left) <-- node1(right)
+                                
+                            } else {
+                                assert (rF.getForwardLinksRM().get(index2) != null
+                                && rF.getForwardLinksRM().get(index2)
+                                .contains(index1));
+                                // "idle" node2(left) --> node1(right) 
+                                
+                            }
                         }
                     }    
                 }
