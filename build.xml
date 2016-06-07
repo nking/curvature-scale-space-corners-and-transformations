@@ -49,8 +49,7 @@
     <!-- set compiler options -->
     <!--<property name="compile.debug"       value="true"/>-->
     <property name="compile.deprecation" value="true"/>
-    <property name="compile.optimize"    value="false"/>
-    <property name="compile.target"      value="1.7"/>
+    <property name="compile.target"      value="1.8"/>
 
     <!-- build all targets -->
     <!--<target name="all" depends="prepare,clean,compile,compileTests,runTests" />
@@ -130,7 +129,7 @@
     <!-- compile sources -->
     <target name="compile" depends="prepare" description="Compile Java classes">
         <record name="${logfile}" append="yes" loglevel="info"/>
-        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <echo message="COMPILE debug=${compile.debug} "/>
         <javac srcdir="${src.dir}" fork="true"
             destdir="${src.out.dir}"
             source="${compile.target}"
@@ -139,7 +138,7 @@
             includeAntRuntime="false"
             memoryInitialSize="1024m"
             memoryMaximumSize="2048m"
-            optimize="${compile.optimize}" >
+            >
             <classpath refid="compile.classpath"/>
             <include name="**/*.java"/>
             <exclude name="**/*Test*.java"/>
@@ -162,7 +161,7 @@
             excludes="**/*KDTree2Test*java"
             includeAntRuntime="false"
     	    deprecation="${compile.deprecation}"
-    	    optimize="${compile.optimize}" >
+    	    >
     	    <classpath refid="test.classpath"/>
             <src path="${tests.dir}"/>
             <src path="${src.dir}"/>
@@ -536,7 +535,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <echo message="COMPILE debug=${compile.debug} "/>
         <javac srcdir="${src.dir}" fork="true"
             destdir="${src.out.dir}"
             source="${compile.target}"
@@ -545,7 +544,7 @@
             includeAntRuntime="false"
             memoryInitialSize="1024m"
             memoryMaximumSize="2048m"
-            optimize="${compile.optimize}" >
+            >
             <classpath refid="compile.classpath"/>
             <include name="**/*.java"/>
             <exclude name="**/*Test*.java"/>
@@ -560,7 +559,7 @@
             excludes="**/*KDTree2Test*java"
             includeAntRuntime="false"
             deprecation="${compile.deprecation}"
-            optimize="${compile.optimize}" >
+            >
             <classpath refid="test.classpath"/>
             <src path="${tests.dir}"/>
             <src path="${src.dir}"/>
@@ -579,7 +578,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <echo message="COMPILE debug=${compile.debug}" />
         
         <junit fork="true" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="false">
@@ -615,7 +614,7 @@
             Set class to test.  example: -Dtest=algorithms.compression.huffman.HuffmanTest
         </fail>
         <echo message="${src.out.dir}/logging.properties"/>
-        <echo message="COMPILE debug=${compile.debug} optimize=${compile.optimize}"/>
+        <echo message="COMPILE debug=${compile.debug}" />
         
         <junit fork="true" filtertrace="on" printsummary="yes" 
             haltonerror="true" haltonfailure="true" showoutput="false">
@@ -752,7 +751,7 @@
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
-            optimize="${compile.optimize}" >
+            >
     	    <classpath refid="test.classpath"/>
             <src path="${tests.dir}"/>
             <src path="${src.dir}"/>
