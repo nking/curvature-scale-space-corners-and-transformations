@@ -1408,19 +1408,19 @@ Matchings in G are integral flows in N_G
             
                 List<PathNode> path = pathLists.get(pathIdx);
             
-                Map<Integer, Integer> leftPriceIncreases =
-                    new HashMap<Integer, Integer>();
+                Map<Integer, Float> leftPriceIncreases =
+                    new HashMap<Integer, Float>();
             
-                Map<Integer, Integer> rightPriceIncreases =
-                    new HashMap<Integer, Integer>();
+                Map<Integer, Float> rightPriceIncreases =
+                    new HashMap<Integer, Float>();
             
                 for (int i = 0; i < (path.size() - 1); ++i) {
                     PathNode node1 = path.get(i);
                     PathNode node2 = path.get(i + 1);
                     int l1 = (int) node1.getKey();
                     int l2 = (int) node2.getKey();
-                    int index1 = (Integer) node1.getData();
-                    int index2 = (Integer) node2.getData();
+                    Integer index1 = (Integer) node1.getData();
+                    Integer index2 = (Integer) node2.getData();
                     
                     boolean node1IsLeft = (node1 instanceof LeftNode);
                     boolean node1IsSource = (node1 instanceof SourceNode);
@@ -1436,10 +1436,28 @@ Matchings in G are integral flows in N_G
                         if (rF.getBackwardLinksSourceRM().contains(index2)) {
                             // saturated  node1(source) <--- node2(Left)
 
+                            
+                            
                         } else {
                             assert (rF.getForwardLinksSourceRM().contains(index2));
                             // idle  node1(source) --> node2(left)
 
+                            Float p2I = leftPriceIncreases.get(index2);
+                            float p2;
+                            if (p2I != null) {
+                                p2 = p2I.floatValue();
+                            } else {
+                                p2 = gFlow.getLeftPrice(index2.intValue());
+                                p2 += ((lt - l2) * eps);
+                                leftPriceIncreases.put(index2, Float.valueOf(p2));
+                            }
+                            float p1 = gFlow.getLeftPrice(index1.intValue());
+                            p1 += ((lt - l1) * eps);
+                            leftPriceIncreases.put(index1, Float.valueOf(p1));
+                            
+                            // node 1 link length is reduced by lt - l2
+                            l1 -= (lt - l2);
+                            node1.setKey(l1);
                         }
                     } else if (node1IsSink) {
                         assert(node2 instanceof RightNode);
@@ -1449,7 +1467,23 @@ Matchings in G are integral flows in N_G
                         } else {
                             assert(rF.getForwardLinksSinkRM().contains(index2));
                             // "idle" node2(right) --> node1(sink)
-                        
+                            
+                            Float p2I = rightPriceIncreases.get(index2);
+                            float p2;
+                            if (p2I != null) {
+                                p2 = p2I.floatValue();
+                            } else {
+                                p2 = gFlow.getRightPrice(index2.intValue());
+                                p2 += ((lt - l2) * eps);
+                                rightPriceIncreases.put(index2, Float.valueOf(p2));
+                            }
+                            float p1 = gFlow.getRightPrice(index1.intValue());
+                            p1 += ((lt - l1) * eps);
+                            rightPriceIncreases.put(index1, Float.valueOf(p1));
+                            
+                            // node 1 link length is reduced by lt - l2
+                            l1 -= (lt - l2);
+                            node1.setKey(l1);
                         }
                     } else if (node1IsLeft) {
                         assert(!(node2 instanceof LeftNode));
@@ -1460,7 +1494,22 @@ Matchings in G are integral flows in N_G
                             } else {
                                 assert(rF.getForwardLinksSourceRM().contains(index1));
                                 // idle  node2(source) --> node1(left)
-                            
+                                Float p2I = leftPriceIncreases.get(index2);
+                                float p2;
+                                if (p2I != null) {
+                                    p2 = p2I.floatValue();
+                                } else {
+                                    p2 = gFlow.getLeftPrice(index2.intValue());
+                                    p2 += ((lt - l2) * eps);
+                                    leftPriceIncreases.put(index2, Float.valueOf(p2));
+                                }
+                                float p1 = gFlow.getLeftPrice(index1.intValue());
+                                p1 += ((lt - l1) * eps);
+                                leftPriceIncreases.put(index1, Float.valueOf(p1));
+
+                                // node 1 link length is reduced by lt - l2
+                                l1 -= (lt - l2);
+                                node1.setKey(l1);
                             }
                         } else {
                             // else node2 is Right
@@ -1505,8 +1554,11 @@ Matchings in G are integral flows in N_G
                         }
                     }    
                 }
+                // apply leftPriceIncreases and right to gFlow
+                <
             }
         }
+        
         
         throw new UnsupportedOperationException("not yet implemented");
     }
