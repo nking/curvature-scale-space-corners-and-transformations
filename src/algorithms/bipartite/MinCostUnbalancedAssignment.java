@@ -467,15 +467,18 @@ System.out.println(tSec + " 100ths of sec for buildForest2");
             
 t0 = System.currentTimeMillis();
 
-            modifyPricesAndPathLengths(gFlow, rF, forest, 
+            List<List<PathNode>> extractedPaths = 
+                modifyPricesAndPathLengths(gFlow, rF, forest, 
                 terminatingDeficitIdx[0], eps);
 
 t1 = System.currentTimeMillis();
 tSec = (t1 - t0)/10;
 System.out.println(tSec + " 100ths of sec for modifyPricesAndPathLengths");
 
-            //log.info("after modify prices and link lengths");
-            //debug(forest);
+            if (extractedPaths.isEmpty()) {
+                log.warning("extractedPaths is empty.  h=" + h);                               
+                return 1;
+            }
             
             //assert from pg 52 
             //       I1', I2, I3, I4, on FlowNetwork
@@ -491,14 +494,13 @@ System.out.println(tSec + " 100ths of sec for modifyPricesAndPathLengths");
             //formed by links of length zero.
 t0 = System.currentTimeMillis();
             List<LinkedList<PathNode>> zeroLengthLinks =
-                extractZeroLengthLinks(forest);
+                extractZeroLengthLinks(extractedPaths);
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0)/10;
 System.out.println(tSec 
 + " 100ths of sec for extractZeroLengthLinks");
 
             log.fine("srching for zero length paths:");
-            //debug(forest);
             //debug(zeroLengthLinks);
             
             //assert(gFlow.printSurplusAndDeficit());
@@ -518,23 +520,7 @@ System.out.println(tSec
 
             log.fine("cPaths.size=" + cPaths.size());
             if (cPaths.isEmpty()) {
-                
-                log.warning("did not find an augmenting path.  h=" + h);
-                
-                //gFlow.printSaturatedLinks();
-                
-                /*
-                NOTE: when this has number of saturated arcs
-                less than s, where s is the number that we know
-                is the largest possible matching from hopcroft-karp
-                which only cares about connectedness to maximize
-                the number of matches, there were higher cost 
-                edges which had smaller connectivity so dropped
-                out of the solution.
-                because the algorithm goal is min-cost, can
-                just return this smaller set of matchings than s.
-                */
-                
+                log.warning("did not find an augmenting path.  h=" + h);                               
                 return 1;
             }
             
@@ -1261,11 +1247,9 @@ Matchings in G are integral flows in N_G
         return pathLists;
     }
     
-    private void modifyPricesAndPathLengths(
+    private List<List<PathNode>> modifyPricesAndPathLengths(
         FlowNetwork gFlow, ResidualDigraph2 rF,
         Forest forest, int lt, float eps) {
-
-        debug(forest);
         
         // extract the paths for forest[lt] and modify them
         //  while applying implied price changes to gFlow.
@@ -1388,11 +1372,16 @@ Matchings in G are integral flows in N_G
         }
         
         List<Integer> forestIndexes = forest.getKeys();
-        assert(forestIndexes.get(forestIndexes.size() - 1).intValue()
-            == lt);
+        int n0 = forestIndexes.size();
+        
+        if (n0 == 0 || lt == -1) {
+            return new ArrayList<List<PathNode>>();
+        }
+        
+        assert(forestIndexes.get(n0 - 1).intValue() == lt);
         
         // apply changes to the lt tree, then the loer index trees
-        for (int idx = (forestIndexes.size() - 1); idx >= 0; --idx) {
+        for (int idx = (n0 - 1); idx >= 0; --idx) {
             
             int forestIdx = forestIndexes.get(idx).intValue();
             
@@ -1501,6 +1490,7 @@ Matchings in G are integral flows in N_G
                                 l2 -= (lt - l1);
                                 node2.setKey(l2);
                             }
+                        }
                         // end of node1 is right node
                     } else if (node1IsLeft) {
                         assert(!node2IsLeft);
@@ -1523,8 +1513,7 @@ Matchings in G are integral flows in N_G
                                 p1 += ((lt - l1) * eps);
                                 leftPriceIncreases.put(index1, Float.valueOf(p2));
                             }
-X
-                            // else node2 is Right
+
                             if (rF.getBackwardLinksRM().containsKey(index2)
                                 && rF.getBackwardLinksRM().get(index2).equals(index1)) {
 
@@ -1627,12 +1616,23 @@ X
                     } 
                 }
                 // apply leftPriceIncreases and right to gFlow
-                
+                for (Entry<Integer, Float> entry : 
+                    leftPriceIncreases.entrySet()) {
+                    gFlow.addToLeftPrice(entry.getKey().intValue(), 
+                        entry.getValue().floatValue());
+                }
+                for (Entry<Integer, Float> entry : 
+                    rightPriceIncreases.entrySet()) {
+                    gFlow.addToRightPrice(entry.getKey().intValue(), 
+                        entry.getValue().floatValue());
+                }
             }
         }
+
+        log.info("after link length changes:");
+        debug(forest);
         
-        
-        throw new UnsupportedOperationException("not yet implemented");
+        return ltPathLinks;
     }
     
     private List<LinkedList<PathNode>>
@@ -1641,6 +1641,13 @@ X
             int sinkNodeIdx,
             List<LinkedList<PathNode>> pathLinkLists,
             Collection<Integer> surplus, Set<Integer> deficit) {
+            
+        List<LinkedList<PathNode>> augPaths 
+            = new ArrayList<LinkedList<PathNode>>();
+        
+        if (pathLinkLists.isEmpty()) {
+            return augPaths;
+        }
         
         //pseudocode from pg 62 , Figure 8.2
         //   with input = length 0 adj list, the surplus
@@ -1659,9 +1666,6 @@ X
         Set<RightNode> def = new HashSet<RightNode>();
         makeSurplusAndDeficitSubSets(pathLinksMap, 
             surplus, deficit, surp, def);
-        
-        List<LinkedList<PathNode>> augPaths 
-            = new ArrayList<LinkedList<PathNode>>();
         
         Stack<PathNode> stack = new Stack<PathNode>();
         
@@ -1739,40 +1743,27 @@ X
     }
     
     private List<LinkedList<PathNode>> extractZeroLengthLinks(
-        Forest forest) {
+        List<List<PathNode>> paths) {
 
         // each linked list is a pair of 2 path nodes whose link length = 0
         List<LinkedList<PathNode>> pathLists = new
             ArrayList<LinkedList<PathNode>>();
         
-        // traverse trees in the forest
-        for (Integer forestKey : forest.getKeys()) {
-            
-            DoubleLinkedCircularList tree = forest.get(forestKey);
-            
-            long n = tree.getNumberOfNodes();
-            HeapNode node = tree.getSentinel();
-            int treeIdx = 0;
-            while (treeIdx < n) {
-                node = node.getRight();
-                List<PathNode> path = extractNodes((PathNode)node);
-                int n2 = path.size();
-                Misc.<PathNode>reverse(path);
-                for (int branchIdx = 0; branchIdx < (n2 - 1); ++branchIdx) {
-                    PathNode node1 = path.get(branchIdx);
-                    PathNode node2 = path.get(branchIdx + 1);
-                    int l1 = (int) node1.getKey();
-                    int l2 = (int) node2.getKey();
-                    if (l2 != 0) {
-                        continue;
-                    }
-                    LinkedList<PathNode> link =
-                        new LinkedList<PathNode>();
-                    link.add(node1);
-                    link.add(node2);
-                    pathLists.add(link);
+        for (int i = 0; i < paths.size(); ++i) {
+            List<PathNode> path = paths.get(i);
+            int n2 = path.size();
+            for (int idx = 0; idx < (n2 - 1); ++idx) {
+                PathNode node1 = path.get(idx);
+                PathNode node2 = path.get(idx + 1);
+                int l1 = (int) node1.getKey();
+                int l2 = (int) node2.getKey();
+                if (l2 != 0) {
+                    continue;
                 }
-                treeIdx++;
+                LinkedList<PathNode> link = new LinkedList<PathNode>();
+                link.add(node1);
+                link.add(node2);
+                pathLists.add(link);
             }
         }
         

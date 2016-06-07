@@ -334,9 +334,9 @@ public class MedianSmooth {
 
                 a[insIdx - 1] = value;
             }
-
+try {
             n++;
-
+} catch(Throwable t){}
             availSlot = -1;            
         }
 
