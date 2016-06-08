@@ -149,7 +149,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             assertEquals(size, m.size());
 
             for (int i = 0; i < size; ++i) {
-                assertEquals(i, m.get(Integer.valueOf(i)).intValue());
+                assertEquals((size - 1 - i), m.get(Integer.valueOf(i)).intValue());
             }
 
             assertNotNull(bipartite.getFinalFlowNetwork());
@@ -393,10 +393,10 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         
         Map<PairInt, Integer> weights 
             = new HashMap<PairInt, Integer>();
-                        
+                      
         for (int i = 0; i < size; ++i) {
             int cost = sr.nextInt(maxCost - 1) + 1;
-            weights.put(new PairInt(i, i), Integer.valueOf(cost));
+            weights.put(new PairInt(i, (size - 1) - i), Integer.valueOf(cost));
         }
         
         Graph g = new Graph(size, size, weights, true);
