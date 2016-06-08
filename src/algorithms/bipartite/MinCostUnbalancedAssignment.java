@@ -298,15 +298,6 @@ System.out.println(tSec + " sec for hopcroftkarp");
         double eps_down = Math.pow(q, e_down);
         
         float eps = 1.f + (int)Math.floor(eps_up);
-        if (eps > q) {
-            // first iteration through net costs math.ceil(cp/eps)
-            // will be able to distinguish between integer differences
-            // in cost of 1 if the eps it receives is q-1 = 1.
-            // since eps is divided by q before refine,
-            // eps should be approx q here.
-            // TODO: needs testing for a range of max(cost) w.r.t. q
-            eps = q;
-        }
         
         // expected number of iterations without a constant factor
         int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
@@ -400,8 +391,8 @@ long t11 = System.currentTimeMillis();
 long tSec = (t11 - t00)/1000;
 System.out.println(tSec + " sec for raisePricesUntilEpsProper");
 
-        log.fine("after raise prices:");
-        //gFlow.printNetCosts();
+        log.info("after raise prices, w/ eps=" + eps);
+        gFlow.printNetCosts();
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));        
         
         //in [0] holds the length of the terminating deficit
@@ -413,7 +404,7 @@ System.out.println(tSec + " sec for raisePricesUntilEpsProper");
 t00 = System.currentTimeMillis();
         while (h > 0) {
             
-            log.info("nHIter=" + nHIter + " h=" + h);
+            log.info("nHIter=" + nHIter + " h=" + h + " eps=" + eps);
             
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
 long t0 = System.currentTimeMillis();
@@ -739,7 +730,7 @@ System.out.println(tSec + " 100ths of sec for "
             Integer index1 = (Integer)node1.getData();
             int idx1 = index1.intValue();
          
-            log.fine("extractMin = " + node1.toString());
+            log.info("extractMin = " + node1.toString());
         
             if (node1.getKey() > lambda) {
                 terminatingDeficitIdx[0] = (int)lastKey;
