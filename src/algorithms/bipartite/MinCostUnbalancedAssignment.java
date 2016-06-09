@@ -550,12 +550,8 @@ System.out.println(tSec
                 return 1;
             }
             
-            // apply price chnges to gFlow
-            applyPriceChangesForZeroLengthPaths(gFlow, 
-                zeroLengthPathsAndPrices, cPaths);
-            
             //debug(cPaths);
-  
+            
 t0 = System.currentTimeMillis();              
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
@@ -1330,11 +1326,10 @@ Matchings in G are integral flows in N_G
             augmenting paths are chosen and then
             the price changes could be applied for only those
             paths?
-            - it seems as if this must be the case, otherwise, 
-              many price changes that are not synchronized with
-              augmentations occur and will fail subsequent assertions.
-              The next round of correcting prices until they are eps
-              proper occurs before the h loop, not within it.
+            - the simplest design for now is to modify the prices
+              here instead of delaying them until the disjoint vertex set.
+              is made.  the prices are temporarily returned in a list
+              to make it easier to change that if needed.
 
         Need to return these data in a list:
             List<PathNode> paths            
@@ -1823,12 +1818,27 @@ Matchings in G are integral flows in N_G
                         break;
                     }
                 }
-                PathAndPrices obj = new PathAndPrices();
-                obj.path = path;
-                obj.leftPriceIncreases = leftPriceIncreases;
-                obj.rightPriceIncreases = rightPriceIncreases;
-                
-                output.add(obj);
+                if (doStore) {
+                    PathAndPrices obj = new PathAndPrices();
+                    obj.path = path;
+                    obj.leftPriceIncreases = leftPriceIncreases;
+                    obj.rightPriceIncreases = rightPriceIncreases;
+
+                    output.add(obj);
+                    
+                    // modify the prices
+                    // apply leftPriceIncreases and right to gFlow
+                    for (Entry<Integer, Float> entry
+                        : leftPriceIncreases.entrySet()) {
+                        gFlow.addToLeftPrice(entry.getKey().intValue(),
+                            entry.getValue().floatValue());
+                    }
+                    for (Entry<Integer, Float> entry
+                        : rightPriceIncreases.entrySet()) {
+                        gFlow.addToRightPrice(entry.getKey().intValue(),
+                            entry.getValue().floatValue());
+                    }
+                }
             }
         }
 
@@ -1861,15 +1871,15 @@ Matchings in G are integral flows in N_G
             createNewAdjacencyMap(pathsPriceList,
             nLeft, nRight, sourceNodeIdx, sinkNodeIdx);
  
-        //debug(pathLinksMap);
-        
+        debug2(pathLinksMap);
+
         Set<LeftNode> surp = new HashSet<LeftNode>();
         Set<RightNode> def = new HashSet<RightNode>();
         makeSurplusAndDeficitSubSets(pathLinksMap, 
             surplus, deficit, surp, def);
         
         Stack<PathNode> stack = new Stack<PathNode>();
-        
+       
         A: while (!surp.isEmpty()) {
             LeftNode xNode = surp.iterator().next();
             surp.remove(xNode);
@@ -2203,21 +2213,27 @@ Matchings in G are integral flows in N_G
         throw new IllegalStateException("graph only had 1 left"
             + " and right node, but no edge between them.");
     }
+  
+    private void debug2(Map<PathNode, Set<PathNode>> pathLinksMap) {
         
-    private void applyPriceChangesForZeroLengthPaths(FlowNetwork gFlow,
-        List<PathAndPrices> pathsAndPrices,
-        List<LinkedList<PathNode>> cPaths) {
-
-        /*
-        havig edges (and their nodes) in cPaths
-           find the prices to apply to gFlow
-           within pathsAndPrices
+        StringBuilder sb = new StringBuilder();
         
-        no longer hace the relationship between cPaths and pathsAndPrices
-            here 
-        */
-        
-        throw new UnsupportedOperationException("not yet implemented");
+        for (Entry<PathNode, Set<PathNode>> entry : pathLinksMap.entrySet()) {
+            
+            PathNode node1 = entry.getKey();
+            
+            sb.append(String.format("%s %s", node1.id, node1.getData().toString()));
+            sb.append("-->[");
+            
+            Set<PathNode> set = entry.getValue();
+            for (PathNode node2 : set) {
+                sb.append(String.format("%s %s", node2.id, 
+                    node2.getData().toString()));
+                sb.append(", ");
+            }
+            sb.append("]\n");
+        }
+        log.info(sb.toString());
     }
 
 }
