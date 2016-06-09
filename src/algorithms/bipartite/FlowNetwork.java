@@ -100,6 +100,8 @@ public class FlowNetwork {
     private final float[] pRight;
 
     private int maxC = Integer.MIN_VALUE;
+    
+    private int minC = Integer.MAX_VALUE;
 
     /** forward arcs only in the flow graph
     may represent these differently soon.
@@ -204,6 +206,9 @@ public class FlowNetwork {
             if (Math.abs(cost.intValue()) > maxC) {
                 maxC = Math.abs(cost.intValue());
             }
+            if (Math.abs(cost.intValue()) < minC) {
+                minC = Math.abs(cost.intValue());
+            }
 
             sourceForwardArcs.add(index1);
             sinkForwardArcs.add(index2);
@@ -246,6 +251,10 @@ public class FlowNetwork {
     
     public int getMaxC() {
         return maxC;
+    }
+    
+    public int getMinC() {
+        return minC;
     }
 
     /**

@@ -277,6 +277,15 @@ System.out.println(tSec + " sec for hopcroftkarp");
         //gFlow.printNetCosts();
         
         //TODO: estimate of eps may need to be revised
+        /*
+        the discussion of setting eps seems to be for a max-cost problem.
+        
+        for the numerical resolution that enables the smallest cost key
+        to have math.ceil(cost/eps) = 1, eps at that tme must be
+        equal to or less than the minimum cost key.  
+        since eps is divided by q before first use,
+        eps = q * minCost
+        */
         
         int s = m.size();
 
@@ -292,37 +301,25 @@ System.out.println(tSec + " sec for hopcroftkarp");
         // eps_up = q^(e_up) where eps_up is smallest power of
         //    q that exceeds maxC
         // e_up * math.log(q)
-        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        
+        //int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
         double eps_up = Math.pow(q, e_up);
-        // subtracting 1 here from e_up to ensure that c/eps netcosts are distinguishable,
-        //    and not all 0 from poor numerical resolution:
-        eps_up = Math.pow(q, e_up - 1);
-
+        
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
 
         float eps = 1.f + (int)Math.floor(eps_up);
         
         // expected number of iterations without a constant factor
-        int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-            
-        //TODO: reread weight scaling
-        //  for small cost graphs with maxC ~ 3, Math.ceil/cp/eps) cannot distinguish
-        //      between costs.
-        //      if (eps < maxC), consider setting eps=q and eps_down=eps/math.pow(q, rIter)
-        /*if (for some comparison with small maxC) {
-            eps = q;
-            eps_down = eps/Math.pow(q, rIter);
-        }*/
-        // this is also hack-ish: and needs to be revisited after re-reading weight scaling
-        /*if (eps < (q * gFlow.getMaxC() + 1)) {
-            eps = q * gFlow.getMaxC() + 1;
-        }*/
+        int rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
+         
              
         int nIterR = 0;
         
-        log.info("eps=" + eps + " rIter=" + rIter + " maxC=" + 
-            gFlow.getMaxC() + " eps_down=" + eps_down);
+        log.info("eps=" + eps + " rIter=" + rIter 
+            + " minC=" + gFlow.getMinC() + " maxC=" + gFlow.getMaxC() 
+            + " eps_down=" + eps_down);
                
         // all nodes V in gFlow have prices = 0
         

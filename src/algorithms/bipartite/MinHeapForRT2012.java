@@ -119,7 +119,7 @@ public class MinHeapForRT2012 {
             heap0[key] = bucket;
         }
         
-        log.fine("insert into minHeap at key =" + key);
+        log.info("insert into minHeap at key =" + node.toString());
        
         bucket.insert(node);
         n0++;
