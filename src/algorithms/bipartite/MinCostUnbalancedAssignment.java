@@ -679,6 +679,9 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
         
         log.fine("buildForest2");
 
+        log.info("nSurplus=" + surplus.size() + " nDeficit="
+            + deficit.size());
+        
         terminatingKeys.clear();
         
 long t0 = System.currentTimeMillis();
@@ -821,7 +824,7 @@ System.out.println(tSec + " msec for "
                 }
             }
             
-            log.fine("add to forest key=" + node1.toString());
+            log.info("add to forest key=" + node1.toString());
 
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
@@ -831,7 +834,10 @@ System.out.println(tSec + " msec for "
                 
                 terminatingKeys.put(index1, Integer.valueOf((int)lastKey));
                 
-                if (terminatingKeys.size() == surplus.size()) {
+                log.info("terminatingKeys.size=" + terminatingKeys.size()
+                   + " deficit.size=" + deficit.size());
+                
+                if (terminatingKeys.size() == deficit.size()) {
                     break;
                 }                
             }
@@ -1826,6 +1832,7 @@ Matchings in G are integral flows in N_G
                 }
             }
         }
+        /*
         if (maxLeft != Float.MIN_VALUE) {
             float f = gFlow.getLeftPrice(gFlow.getSourceNode());
             if (f < maxLeft) {
@@ -1838,7 +1845,8 @@ Matchings in G are integral flows in N_G
                 gFlow.setRightPrice(gFlow.getSinkNode(), minRight);
             }
         }
-
+        */
+        
         return output;
     }
     
@@ -1996,14 +2004,14 @@ Matchings in G are integral flows in N_G
             }                
         }
         
-        //assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
+        assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
 
         surplus.clear();
         deficit.clear();
         gFlow.getSurplusLeftIndexes(surplus);
         gFlow.getDeficitRightIndexes(deficit);
         
-        log.fine("nSurplus=" + surplus.size() + " nDeficit="
+        log.info("nSurplus=" + surplus.size() + " nDeficit="
             + deficit.size());
         
         int hAfter = surplus.size();
