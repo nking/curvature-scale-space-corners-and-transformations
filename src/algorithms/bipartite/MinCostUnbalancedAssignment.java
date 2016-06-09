@@ -710,7 +710,7 @@ long t0 = System.currentTimeMillis();
             lambda = 4;
         }
         log.info("buildForest2 forest length lambda is set to " + 
-            lambda);
+            lambda + " surplus.size=" + surplus.size());
         
         long lastKey = -1;
         
@@ -858,9 +858,7 @@ System.out.println(tSec + " 100ths of sec for "
                 
                 if (terminatingKeys.size() == surplus.size()) {
                     break;
-                }
-                
-                break;
+                }                
             }
             
         } while (true);
@@ -1838,12 +1836,11 @@ Matchings in G are integral flows in N_G
     }
     
     private List<LinkedList<PathNode>>
-        findMaximalSetOfCompatiblePaths(
-            int nLeft, int nRight, int sourceNodeIdx,
-            int sinkNodeIdx,
+        findMaximalSetOfCompatiblePaths(int nLeft, int nRight, 
+            int sourceNodeIdx, int sinkNodeIdx,
             List<PathAndPrices> pathsPriceList,
             Collection<Integer> surplus, Set<Integer> deficit) {
-        
+       
         List<LinkedList<PathNode>> augPaths 
             = new ArrayList<LinkedList<PathNode>>();
         
@@ -1864,6 +1861,8 @@ Matchings in G are integral flows in N_G
             createNewAdjacencyMap(pathsPriceList,
             nLeft, nRight, sourceNodeIdx, sinkNodeIdx);
  
+        //debug(pathLinksMap);
+        
         Set<LeftNode> surp = new HashSet<LeftNode>();
         Set<RightNode> def = new HashSet<RightNode>();
         makeSurplusAndDeficitSubSets(pathLinksMap, 
@@ -2215,8 +2214,9 @@ Matchings in G are integral flows in N_G
            within pathsAndPrices
         
         no longer hace the relationship between cPaths and pathsAndPrices
-            here so need to refactor further upstream.
+            here 
         */
+        
         throw new UnsupportedOperationException("not yet implemented");
     }
 
