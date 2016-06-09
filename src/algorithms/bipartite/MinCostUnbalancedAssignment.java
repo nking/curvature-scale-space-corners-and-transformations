@@ -491,8 +491,6 @@ System.out.println(tSec + " 100ths of sec for buildForest2");
                      
 t0 = System.currentTimeMillis();
 
-            forest.removeFirstItem(0);
-
             log.info("before modify prices:");
             debug(forest);
 
@@ -569,6 +567,8 @@ System.out.println(tSec + " 100ths of sec for augmentFlow");
 //gFlow.getMatchedLeftRight(surplus, deficit);
 
             h = surplus.size();
+
+            gFlow.printNetCosts();
             
             // pg 63 assert I1', I2, I3
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
@@ -1311,6 +1311,9 @@ Matchings in G are integral flows in N_G
         FlowNetwork gFlow, ResidualDigraph2 rF,
         Forest forest, Map<Integer, Integer> spIndexes, 
         float eps) {
+
+        //TODO: ix errors below.  have neglected to modify
+        // source and sink when adjacent node prices change
         
         /*
         NOTE:
@@ -1519,7 +1522,7 @@ Matchings in G are integral flows in N_G
                                 p1 = p1I.floatValue();
                             } else {
                                 p1 = ((lt - l1) * eps);
-                                rightPriceIncreases.put(index1, Float.valueOf(p2));
+                                rightPriceIncreases.put(index1, Float.valueOf(p1));
                             }
 
                             if (rF.getBackwardLinksRM().containsKey(index1)
@@ -1572,7 +1575,7 @@ Matchings in G are integral flows in N_G
                                 p1 = p1I.floatValue();
                             } else {
                                 p1 = ((lt - l1) * eps);
-                                rightPriceIncreases.put(index1, Float.valueOf(p2));
+                                rightPriceIncreases.put(index1, Float.valueOf(p1));
                             }
                             if (rF.getBackwardLinksSinkRM().contains(index1)) {
                                 // "saturated" node1(right) <-- node2(sink)
@@ -1623,7 +1626,7 @@ Matchings in G are integral flows in N_G
                                 p1 = p1I.floatValue();
                             } else {
                                 p1 = ((lt - l1) * eps);
-                                leftPriceIncreases.put(index1, Float.valueOf(p2));
+                                leftPriceIncreases.put(index1, Float.valueOf(p1));
                             }
 
                             if (rF.getBackwardLinksRM().containsKey(index2)
@@ -1647,6 +1650,13 @@ Matchings in G are integral flows in N_G
                                     .contains(index2));
                                 // idle link node1(left) --> node2(right)
                                 l2 -= (lt - l1);
+
+             log.info("L(" + index1 + ")" + " to " + "R(" + index2 + ") "
+                 + " p1=" + p1 + " p2=" + p2 
+                 + " l1=" + node1.getKey()
+                 + " l2=" + node2.getKey() 
+                 + " lt=" + lt
+                 + " ==> l2=" + l2);
                                 
                                 if (l2 < 0) {
                                     //X=N1  Y=N2
@@ -1674,7 +1684,7 @@ Matchings in G are integral flows in N_G
                                 p1 = p1I.floatValue();
                             } else {
                                 p1 = ((lt - l1) * eps);
-                                leftPriceIncreases.put(index1, Float.valueOf(p2));
+                                leftPriceIncreases.put(index1, Float.valueOf(p1));
                             }
                             if (rF.getBackwardLinksSourceRM().contains(index1)) {
                                 // saturated  node2(source) <--- node1(Left)
