@@ -15,7 +15,8 @@ import java.util.logging.Logger;
  * All operations for the "Dial" mode are essentially O(1),
  * else, the extractMin operation is O(lg_2(N_nodes))
  * for the internal Fibonacci heap.
- * 
+ *  NOTE: in the future, will replace the fibonacci heap here
+    with MLB.
  * @author nichole
  */
 public class MinHeapForRT2012 {
