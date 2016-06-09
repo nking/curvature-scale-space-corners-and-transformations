@@ -556,6 +556,34 @@ public class FlowNetwork {
         
         //see Figure 7.4, pg 53
         // looks like the price raise is multiples of (q-1)*eps
+
+        // calc for source dummy arcs
+        for (Integer xIndex : sourceForwardArcs) {
+            float unitFlow = sourceToLeftF.get(xIndex);
+            float cp = calcSourceNetCost(xIndex.intValue());
+        
+            if (unitFlow == 0) {
+                // idle, cp > -qEps
+                //cp = cost - pdX + pdY so inr pdY
+                float count = 1.f;
+                while (cp <= -qEps) {
+                    pLeft[xIndex.intValue()] += (count * delta);
+                    cp = calcSourceNetCost(xIndex.intValue());
+                    log.fine("raise price of left for source arc" 
+                        + xIndex + " to cp=" + cp);
+                }
+            } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                // saturated
+                //cp = cost - pdX + pdY so incr pdX
+                float count = 1.f;
+                while (cp > qEps) {
+                    pLeft[sourceNode] += (count * delta);
+                    cp = calcSourceNetCost(xIndex.intValue());
+                    log.fine("lower price of left for source arc" 
+                        + xIndex + " to cp=" + cp);
+                }
+            }
+        }
         
         for (Map.Entry<Integer, Set<Integer>> entry : 
             forwardArcs.entrySet()) {
@@ -587,34 +615,6 @@ public class FlowNetwork {
                         log.fine("lower price of left " + index1 +
                             " to cp=" + cp);
                     }
-                }
-            }
-        }
-        
-        // calc for source dummy arcs
-        for (Integer xIndex : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(xIndex);
-            float cp = calcSourceNetCost(xIndex.intValue());
-        
-            if (unitFlow == 0) {
-                // idle, cp > -qEps
-                //cp = cost - pdX + pdY so inr pdY
-                float count = 1.f;
-                while (cp <= -qEps) {
-                    pLeft[xIndex.intValue()] += (count * delta);
-                    cp = calcSourceNetCost(xIndex.intValue());
-                    log.fine("raise price of left for source arc" 
-                        + xIndex + " to cp=" + cp);
-                }
-            } else if (Math.abs(unitFlow - 1) < 0.01f) {
-                // saturated
-                //cp = cost - pdX + pdY so incr pdX
-                float count = 1.f;
-                while (cp > qEps) {
-                    pLeft[sourceNode] += (count * delta);
-                    cp = calcSourceNetCost(xIndex.intValue());
-                    log.fine("lower price of left for source arc" 
-                        + xIndex + " to cp=" + cp);
                 }
             }
         }
@@ -652,14 +652,11 @@ public class FlowNetwork {
     /**
      * assert pg 44 I3.
      * Every arc of NG, idle or saturated, is eps-proper.
-     * all bipartite arcs should be eps-proper.
+     * all bipartite arcs and sink and source arcs should be eps-proper.
      * @param eps
      * @return 
      */
     boolean integralFlowIsEpsProper(float eps) {
-        
-        //NOTE that the flow is min-cost when eps < 1/6s
-        //  and all integral arcs are "eps-proper"
         
         for (Map.Entry<Integer, Set<Integer>> entry : 
             forwardArcs.entrySet()) {
@@ -681,6 +678,38 @@ public class FlowNetwork {
                     if (cp > eps) {
                         return false;
                     }
+                }
+            }
+        }
+
+        for (Integer index1 : sourceForwardArcs) {
+            float unitFlow = sourceToLeftF.get(index1);
+            float cp = calcSourceNetCost(index1.intValue());
+            if (unitFlow == 0) {
+                // idle, cp > -epsT
+                if (cp <= -eps) {
+                    return false;
+                }
+            } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                // saturated
+                if (cp > eps) {
+                    return false;
+                }
+            }
+        }
+        
+        for (Integer index1 : sinkForwardArcs) {
+            float unitFlow = rightToSinkF.get(index1);
+            float cp = calcSinkNetCost(index1.intValue());
+            if (unitFlow == 0) {
+                // idle, cp > -epsT
+                if (cp <= -eps) {
+                    return false;
+                }
+            } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                // saturated
+                if (cp > eps) {
+                    return false;
                 }
             }
         }
@@ -718,6 +747,7 @@ public class FlowNetwork {
                 }
             }
         }
+        
         return true;
     }
     

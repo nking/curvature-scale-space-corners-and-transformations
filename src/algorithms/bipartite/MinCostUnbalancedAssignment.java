@@ -38,6 +38,7 @@ import java.util.logging.Logger;
  The code below follows the paper of
  "On Minimum-Cost Assignments in Unbalanced Bipartite Graphs"
  by Ramshaw and Tarjan, 2012.
+(HPL-2012-40)
 
  <e>NOTE: for the best performance, the user should make sure
  that the maximum cost in their graph is less than roughly
@@ -280,8 +281,10 @@ System.out.println(tSec + " sec for hopcroftkarp");
         int s = m.size();
 
         // q >= 2.  consider q = O(log_2(n)) pg 41 par 3.
-        int q = 2;
-
+        // the 2nd, shorter paper states:
+        // q > 1 ,  "q=8 or q=16" might be good choices
+        int q = 8;//1 + (int)Math.floor(Math.log(s)/Math.log(2));
+        
         // pg 32, the weight scaling techinique
         // starts w/ eps ~ maxC and reduces to ~1/s or 1/(6*s)
         // w/ nIter ~ log_q(s*maxC)
@@ -291,31 +294,37 @@ System.out.println(tSec + " sec for hopcroftkarp");
         // e_up * math.log(q)
         int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
         double eps_up = Math.pow(q, e_up);
-        
-        int e_down = -(1 + (int)Math.floor(
-            Math.log(s + 2)/Math.log(q)));
-        
+        // subtracting 1 here from e_up to ensure that c/eps netcosts are distinguishable,
+        //    and not all 0 from poor numerical resolution:
+        eps_up = Math.pow(q, e_up - 1);
+
+        int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
-        
+
         float eps = 1.f + (int)Math.floor(eps_up);
         
         // expected number of iterations without a constant factor
         int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-                  
+            
+        //TODO: reread weight scaling
+        //  for small cost graphs with maxC ~ 3, Math.ceil/cp/eps) cannot distinguish
+        //      between costs.
+        //      if (eps < maxC), consider setting eps=q and eps_down=eps/math.pow(q, rIter)
+        /*if (for some comparison with small maxC) {
+            eps = q;
+            eps_down = eps/Math.pow(q, rIter);
+        }*/
+        // this is also hack-ish: and needs to be revisited after re-reading weight scaling
+        /*if (eps < (q * gFlow.getMaxC() + 1)) {
+            eps = q * gFlow.getMaxC() + 1;
+        }*/
+             
         int nIterR = 0;
         
         log.info("eps=" + eps + " rIter=" + rIter + " maxC=" + 
             gFlow.getMaxC() + " eps_down=" + eps_down);
                
         // all nodes V in gFlow have prices = 0
-        
-        // S = left nodes matched in gFlow
-        List<Integer> surplus = new ArrayList<Integer>();
-        
-        // D = right nodes matched in gFlow
-        List<Integer> deficit = new ArrayList<Integer>();
-        
-        gFlow.getMatchedLeftRight(surplus, deficit);
         
         while ((eps > eps_down) && (nIterR < 2*rIter)) {
             
@@ -333,7 +342,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
             
             eps /= ((float)q);
             
-            int ext = refine(gFlow, s, eps, q, surplus, deficit);
+            int ext = refine(gFlow, s, eps, q);
             
             if (ext > 0) {
                 m = gFlow.extractMatches();
@@ -362,13 +371,20 @@ System.out.println(tSec + " sec for roundFinalPrices");
         return m;
     }
     
-    protected int refine(FlowNetwork gFlow, int s, float eps,
-        int q, List<Integer> surplus, List<Integer> deficit) {
+    protected int refine(FlowNetwork gFlow, int s, float eps, int q) {
         
         log.fine("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
         
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));
+        
+        // S = left nodes matched in gFlow
+        List<Integer> surplus = new ArrayList<Integer>();
+        
+        // D = right nodes matched in gFlow
+        List<Integer> deficit = new ArrayList<Integer>();
+        
+        gFlow.getMatchedLeftRight(surplus, deficit);
         
         // set the flow of saturated bipartite arcs to 0
         for (int i = 0; i < surplus.size(); ++i) {
@@ -378,15 +394,21 @@ System.out.println(tSec + " sec for roundFinalPrices");
                 Float.valueOf(0));
             log.fine("surplus idx=" + Integer.toString(idx1));
         }
+
+        // assert I4 and I5
+        assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
         
+long t00 = System.currentTimeMillis();
+
         /*
         see Figure 7.4 on pg 53.
         raise prices so that every arc in 
         gFlow becomes eps-proper, for the resulting pseudoflow 
         f and for the new, smaller value of eps.
+        this makes I3 true.
         */
-long t00 = System.currentTimeMillis();
         gFlow.raisePricesUntilEpsProper(eps, q);
+
 long t11 = System.currentTimeMillis();
 long tSec = (t11 - t00)/1000;
 System.out.println(tSec + " sec for raisePricesUntilEpsProper");
@@ -402,6 +424,13 @@ System.out.println(tSec + " sec for raisePricesUntilEpsProper");
         int h = s;
         int nHIter = 0;
 t00 = System.currentTimeMillis();
+
+        // this should only execute sqrt(s) times
+        // TODO: buildForest2 single path terminating conditions
+        //       are leading to a decrease of h by 1 only here,
+        //       giving a higher runtime complexity of O(s).
+        //       There may be errors in modifyPrices too that
+        //
         while (h > 0) {
             
             log.info("nHIter=" + nHIter + " h=" + h + " eps=" + eps);
@@ -459,10 +488,15 @@ System.out.println(tSec + " 100ths of sec for buildForest2");
                      
 t0 = System.currentTimeMillis();
 
+            forest.removeFirstItem(0);
+
+            log.info("before modify prices:");
+            debug(forest);
+
             List<List<PathNode>> extractedPaths = 
                 modifyPricesAndPathLengths(gFlow, rF, forest, 
                 terminatingDeficitIdx[0], eps);
-
+           
             log.info("after link length changes");
             debug(forest);
         
@@ -472,6 +506,8 @@ System.out.println(tSec + " 100ths of sec for modifyPricesAndPathLengths");
 
             if (extractedPaths.isEmpty()) {
                 log.warning("extractedPaths is empty.  h=" + h);                               
+                // h > 0 so the matching is unbalanced and one-sided
+                // perfect or is imperfect
                 return 1;
             }
             
@@ -516,6 +552,8 @@ System.out.println(tSec
             log.fine("cPaths.size=" + cPaths.size());
             if (cPaths.isEmpty()) {
                 log.warning("did not find an augmenting path.  h=" + h);                               
+                // h > 0 so the matching is unbalanced and one-sided
+                // perfect or is imperfect
                 return 1;
             }
             
@@ -539,7 +577,7 @@ System.out.println(tSec + " 100ths of sec for augmentFlow");
 
             h = surplus.size();
             
-            // pg 63 assert I1', I2, I34  (not I3, but I4?)
+            // pg 63 assert I1', I2, I3
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
             assert(gFlow.integralFlowIsEpsProper(eps));
@@ -592,6 +630,13 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
            }
         }
         
+        /**
+         * node and it's predecessors are copied and node is inserted
+         * into the forest.
+         * @param node
+         * @param lastKey
+         * @return 
+         */
         public long add(PathNode node, long lastKey) {
             
             /*
@@ -803,6 +848,19 @@ System.out.println(tSec + " 100ths of sec for "
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
 
+            /*
+            TODO: looks like this has to allow each shortest
+            path to terminate, that is one terminate for each
+            surplus until they've all terminated or not more
+            heap nodes.
+            
+            - need to be able to discard extractMin when
+              node top predecessor has found the deficit (term) node
+            
+            -- need to store the terminating deficit node for each
+               surplus path
+            
+            */
             if (d.contains(index1) && !node1IsLeft) {
                 terminatingDeficitIdx[0] = (int)lastKey;
                 break;
@@ -1218,6 +1276,12 @@ Matchings in G are integral flows in N_G
         }
     }
      
+    /**
+     * NOTE any paths in the tree with only a single link are discarded
+     * @param forest
+     * @param forestIdx
+     * @return 
+     */
     private List<List<PathNode>> extractPathNodes(Forest forest,
         int forestIdx) {
         
@@ -1235,8 +1299,11 @@ Matchings in G are integral flows in N_G
         while (branchIdx < n) {
             node = node.getRight();
             List<PathNode> path = extractNodes((PathNode)node);
-            Misc.<PathNode>reverse(path);
-            pathLists.add(path);
+            
+            if (path.size() > 1) {
+                Misc.<PathNode>reverse(path);
+                pathLists.add(path);
+            }
             ++branchIdx;
         }
         
@@ -1249,7 +1316,20 @@ Matchings in G are integral flows in N_G
         
         // extract the paths for forest[lt] and modify them
         //  while applying implied price changes to gFlow.
-                
+        
+        /*
+        NOTE:
+            There may be a problem below with applying price 
+            changes to a node in gFlow more than once due
+            to the node being present in more than one path in
+            the forest.
+        
+        Also note that the above will have to change if buildForest
+        is modified to allow all surplus paths to find their
+        deficit node.
+        */
+        
+        
         /*
         sect 8.2, pg 57
        
@@ -1361,8 +1441,6 @@ Matchings in G are integral flows in N_G
         List<List<PathNode>> ltPathLinks = 
             new ArrayList<List<PathNode>>();;
         
-       debug(forest);
-        
         List<Integer> forestIndexes = forest.getKeys();
         int n0 = forestIndexes.size();
         
@@ -1376,8 +1454,8 @@ Matchings in G are integral flows in N_G
         assert(forestIndexes.get(n0 - 1).intValue() == lt);
         
         // apply changes to the lt tree, then the loer index trees
-        //for (int idx = (n0 - 1); idx >= 0; --idx) {
-        for (int idx = (n0 - 1); idx < n0; ++idx) {
+        for (int idx = (n0 - 1); idx >= 0; --idx) {
+        //for (int idx = (n0 - 1); idx < n0; ++idx) {
             
             int forestIdx = forestIndexes.get(idx).intValue();
             
@@ -1458,6 +1536,16 @@ Matchings in G are integral flows in N_G
 
                                 // "saturated" node2(left) <-- node1(right)
                                 l2 -= (lt - l1);
+                                
+                                if (l2 < 0) {
+                                    //X=N2  Y=N1
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for saturated link X=" + node2.getData() + " to Y="
+                                        + node1.getData() + " results in l(X)=" + l2);
+                                }
+                                
                                 node2.setKey(l2);
                             } else {
                                 assert (rF.getForwardLinksRM().get(index2) != null
@@ -1466,6 +1554,16 @@ Matchings in G are integral flows in N_G
 
                                 // "idle" node2(left) --> node1(right) 
                                 l1 -= (lt - l2);
+                                
+                                if (l1 < 0) {
+                                    //X=N2 Y=N1
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for idle link X=" + node2.getData() + " to Y="
+                                        + node1.getData() + " results in l(Y)=" + l1);
+                                }
+                                
                                 node1.setKey(l1);
                             }
                         } else if (node2IsSink) {
@@ -1487,11 +1585,31 @@ Matchings in G are integral flows in N_G
                             if (rF.getBackwardLinksSinkRM().contains(index1)) {
                                 // "saturated" node1(right) <-- node2(sink)
                                 l1 -= (lt - l2);
+                                
+                                if (l1 < 0) {
+                                    // Y=N1  Y=N2=SINK
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for saturated link Y=" + node1.getData() + " to sink="
+                                        + node2.getData() + " results in l(Y)=" + l1);
+                                }
+                                
                                 node1.setKey(l1);
                             } else {
                                 assert (rF.getForwardLinksSinkRM().contains(index1));
                                 // "idle" node1(right) --> node2(sink)
                                 l2 -= (lt - l1);
+                                
+                                if (l2 < 0) {
+                                    // Y=N1  Y=N2=SINK
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for idle link Y=" + node1.getData() + " to sink="
+                                        + node2.getData() + " results in l(sink)=" + l2);
+                                }
+                                
                                 node2.setKey(l2);
                             }
                         }
@@ -1521,12 +1639,32 @@ Matchings in G are integral flows in N_G
 
                                 // saturated link node1(left) <-- node2(right)
                                 l1 -= (lt - l2);
+                                
+                                if (l1 < 0) {
+                                    //X=N1  Y=N2
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for saturated link X=" + node1.getData() + " to Y="
+                                        + node2.getData() + " results in l(X)=" + l1);
+                                }
+                                
                                 node1.setKey(l1);
                             } else {
                                 assert(rF.getForwardLinksRM().get(index1)
                                     .contains(index2));
                                 // idle link node1(left) --> node2(right)
                                 l2 -= (lt - l1);
+                                
+                                if (l2 < 0) {
+                                    //X=N1  Y=N2
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for idle link X=" + node1.getData() + " to Y="
+                                        + node2.getData() + " results in l(Y)=" + l2);
+                                }
+                                
                                 node2.setKey(l2);
                             }
 
@@ -1549,11 +1687,32 @@ Matchings in G are integral flows in N_G
                             if (rF.getBackwardLinksSourceRM().contains(index1)) {
                                 // saturated  node2(source) <--- node1(Left)
                                 l2 -= (lt - l1);
+                            
+                                if (l2 < 0) {
+                                    //X=N1  N2=SOURCE
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for saturated link source=" + node2.getData() 
+                                            + " to X="
+                                        + node1.getData() + " results in l(source)=" + l2);
+                                }
+                                
                                 node2.setKey(l2);
                             } else {
                                 assert(rF.getForwardLinksSourceRM().contains(index1));
                                 // idle  node2(source) --> node1(left)
                                 l1 -= (lt - l2);
+                                
+                                if (l1 < 0) {
+                                    //X=N1  N2=SOURCE
+                                    log.info("forest at time of error:");
+                                    debug(forest);
+                                    throw new IllegalStateException(
+                                        "for idle link source=" + node2.getData() + " to X="
+                                        + node1.getData() + " results in l(X)=" + l1);
+                                }
+                                
                                 node1.setKey(l1);
                             }
                         }
@@ -1578,11 +1737,31 @@ Matchings in G are integral flows in N_G
                         if (rF.getBackwardLinksSourceRM().contains(index2)) {
                             // saturated  node1(source) <--- node2(Left)
                             l1 -= (lt - l2);
+                            
+                            if (l1 < 0) {
+                                //N1=SOURCE  N2=X
+                                log.info("forest at time of error:");
+                                debug(forest);
+                                throw new IllegalStateException(
+                                    "for saturated link source=" + node1.getData() + " ro X="
+                                    + node2.getData() + " results in l(source)=" + l1);
+                            }
+                            
                             node1.setKey(l1);
                         } else {
                             assert (rF.getForwardLinksSourceRM().contains(index2));
                             // idle  node1(source) --> node2(left)
                             l2 -= (lt - l1);
+                            
+                            if (l2 < 0) {
+                                //N1=SOURCE  N2=X
+                                log.info("forest at time of error:");
+                                debug(forest);
+                                throw new IllegalStateException(
+                                    "for idle link source=" + node1.getData() + " ro X="
+                                    + node2.getData() + " results in l(X)=" + l2);
+                            }
+                            
                             node2.setKey(l2);
                         }
                     } else if (node1IsSink) {
@@ -1605,11 +1784,33 @@ Matchings in G are integral flows in N_G
                         if (rF.getBackwardLinksSinkRM().contains(index2)) {
                             // "saturated" node2(right) <-- node1(sink)
                             l2 -= (lt - l1);
+                            
+                            if (l2 < 0) {
+                                //N2=Y  N1=SINK
+                                log.info("forest at time of error:");
+                                debug(forest);
+                                throw new IllegalStateException(
+                                    "for saturated link Y=" + node2.getData() 
+                                    + " to sink="
+                                    + node1.getData() + " results in l(Y)=" + l2);
+                            }
+                            
                             node2.setKey(l2);
                         } else {
                             assert(rF.getForwardLinksSinkRM().contains(index2));
                             // "idle" node2(right) --> node1(sink)
                             l1 -= (lt - l2);
+                            
+                            if (l1 < 0) {
+                                //N2=Y  N1=SINK
+                                log.info("forest at time of error:");
+                                debug(forest);
+                                throw new IllegalStateException(
+                                    "for saturated link Y=" + node2.getData() 
+                                    + " to sink="
+                                    + node1.getData() + " results in l(sink)=" + l1);
+                            }
+                            
                             node1.setKey(l1);
                         }
                     } 
@@ -1960,15 +2161,20 @@ Matchings in G are integral flows in N_G
         if (g.getNRight() == 0) {
             errors.append(" graph cannot have 0 rght nodes.");
         }
-        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
-            if (entry.getValue().intValue() < 1) {
-                errors.append(" all edge weights must be > 0.");
-                break;
-            }
-        }
-        
         if (g.getEdgeWeights().isEmpty()) {
-            errors.append(" g must have at least one edge.");
+            errors.append(" every vertex in g must have at least one edge.");
+        } else {
+            // every vertex must be part of at least one edge
+            Set<Integer> xInEdges = new HashSet<Integer>();
+            Set<Integer> yInEdges = new HashSet<Integer>();
+            for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
+                PairInt p = entry.getKey();
+                xInEdges.add(Integer.valueOf(p.getX()));
+                yInEdges.add(Integer.valueOf(p.getY()));
+            }
+            if (g.getNLeft() > xInEdges.size() || g.getNRight() > yInEdges.size()) {
+                errors.append(" every vertex in g must have at least one edge.");
+            }
         }
         
         if (errors.length() > 0) {
