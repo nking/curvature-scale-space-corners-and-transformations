@@ -532,7 +532,7 @@ public class FlowNetwork {
             float p = pLeft[i];
             float div = p/eps;
             double r = div - Math.floor(div);
-            if (r > 0.01) {
+            if (r > 0.05) {
                 return false;
             }
         }
@@ -650,13 +650,12 @@ public class FlowNetwork {
     }
     
     /**
-     * assert pg 44 I3.
      * Every arc of NG, idle or saturated, is eps-proper.
-     * all bipartite arcs and sink and source arcs should be eps-proper.
+     * all bipartite arcs are asserted, but not sink and source
      * @param eps
      * @return 
      */
-    boolean integralFlowIsEpsProper(float eps) {
+    boolean integralBipartiteFlowIsEpsProper(float eps) {
         
         for (Map.Entry<Integer, Set<Integer>> entry : 
             forwardArcs.entrySet()) {
@@ -682,17 +681,63 @@ public class FlowNetwork {
             }
         }
 
+        return true;
+    }
+    /**
+     * assert pg 44 I3.
+     * Every arc of NG, idle or saturated, is eps-proper.
+     * all bipartite arcs and sink and source arcs should be eps-proper.
+     * @param eps
+     * @return 
+     */
+    boolean integralFlowIsEpsProper(float eps) {
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            
+            for (Integer index2 : entry.getValue()) {
+                
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (unitFlow == 0) {
+                    // idle, cp > -epsT
+                    if (cp <= -eps) {
+    log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
+    unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        return false;
+                    }
+                } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    if (cp > eps) {
+     log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
+    unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        return false;
+                    }
+                }
+            }
+        }
+
         for (Integer index1 : sourceForwardArcs) {
             float unitFlow = sourceToLeftF.get(index1);
             float cp = calcSourceNetCost(index1.intValue());
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
-                    return false;
+    log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s", 
+    unitFlow, cp, eps, index1.toString()));
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
+    log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s", 
+    unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             }
@@ -704,15 +749,54 @@ public class FlowNetwork {
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
+                    log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink", 
+    unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
+                    log.info(String.format
+    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink", 
+    unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             }
         }
+        return true;
+    }
+    /**
+     * Every arc of the network flow, idle or saturated, is proper.
+     * @param eps
+     * @return 
+     */
+    public boolean integralFlowIsProper() {
+        
+        for (Map.Entry<Integer, Set<Integer>> entry : 
+            forwardArcs.entrySet()) {
+            
+            Integer index1 = entry.getKey();
+            
+            for (Integer index2 : entry.getValue()) {
+                
+                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+                if (unitFlow == 0) {
+                    // idle, cp >= 0
+                    if (cp < 0) {
+                        return false;
+                    }
+                } else if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated
+                    if (cp > 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
     
@@ -742,6 +826,9 @@ public class FlowNetwork {
                     // saturated
                     // snug is -eps < cp <= eps
                     if ((cp <= -eps) || (cp > eps)) {
+    log.info(String.format
+    ("NOT EPS-SNUG f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
+    unitFlow, cp, eps, index1.toString(), index2.toString()));
                         return false;
                     }
                 }
@@ -889,11 +976,27 @@ public class FlowNetwork {
     }
 
     public void setRightPrice(int idx, float value) {
+        log.info("add to right " + idx + " : " + pRight[idx] + " + " + value + " = " + 
+            (pRight[idx] + value));
         pRight[idx] = value;
     }
     
     public void addToLeftPrice(int idx, float value) {
+        log.info("add to left " + idx + " : " + pLeft[idx] + " + " + value + " = " + 
+            (pLeft[idx] + value));
         pLeft[idx] += value;
+    }
+
+    public void addToSourcePrice(float value) {
+        log.info("add to source : " + pLeft[sourceNode] + " + " + value + " = " + 
+            (pLeft[sourceNode] + value));
+        pLeft[sourceNode] += value;
+    }
+
+    public void addToSinkPrice(float value) {
+        log.info("add to sink : " + pLeft[sinkNode] + " + " + value + " = " + 
+            (pLeft[sinkNode] + value));
+        pLeft[sinkNode] += value;
     }
 
     public void addToRightPrice(int idx, float value) {
@@ -1085,9 +1188,26 @@ public class FlowNetwork {
                 PairInt p = new PairInt(index1.intValue(), index2.intValue());
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
-                sb.append(String.format("%d to %d cp=%.2f\n",
-                    index1.intValue(), index2.intValue(), cp));
+                sb.append(String.format("%d to %d cp=%.2f f=%.2f\n",
+                    index1.intValue(), index2.intValue(), cp, unitFlow));
             }
+        }
+        log.info(sb.toString());
+
+        sb = new StringBuilder();
+        for (Integer index1 : sourceForwardArcs) {
+            float unitFlow = sourceToLeftF.get(index1);
+            float cp = calcSourceNetCost(index1.intValue());
+            sb.append(String.format("source to %d cp=%.2f f=%.2f\n",
+                index1.intValue(), cp, unitFlow));
+        }
+        log.info(sb.toString());
+
+        for (Integer index1 : sinkForwardArcs) {
+            float unitFlow = rightToSinkF.get(index1);
+            float cp = calcSinkNetCost(index1.intValue());
+            sb.append(String.format("%d to sink cp=%.2f f=%.2f\n",
+                index1.intValue(), cp, unitFlow));
         }
         log.info(sb.toString());
     }
