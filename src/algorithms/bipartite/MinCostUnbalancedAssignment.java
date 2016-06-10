@@ -304,25 +304,15 @@ System.out.println(tSec + " sec for hopcroftkarp");
         // eps_up = q^(e_up) where eps_up is smallest power of
         //    q that exceeds maxC
         // e_up * math.log(q)
-        
-        boolean useMaxCostStart = false;
-        
+                
          // expected number of iterations without a constant factor
         int rIter;
         int e_up;
         double eps_up;
-        if (useMaxCostStart) {
-            e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
-            eps_up = Math.pow(q, e_up - 1);
-            rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-        } else {
-            // the assertions may fail for this case (eps-proper rules are for maxC scaling)
-            // but it finds the best match on first invocation of buildForest2
-            e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
-            eps_up = Math.pow(q, e_up);
-            rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
-        }
-            
+        e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        eps_up = Math.pow(q, e_up - 1);
+        rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
+         
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
 
