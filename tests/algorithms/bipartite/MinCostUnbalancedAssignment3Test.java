@@ -24,7 +24,30 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     public MinCostUnbalancedAssignment3Test() {
     }
     
-    public void est0() {
+    
+    public void test00() {
+        
+        log.info("test00");
+        
+        Graph g = getTestGraph00();
+        
+        GraphWithoutWeights g2 = new GraphWithoutWeights(g);
+        
+        HopcroftKarp hk = new HopcroftKarp();
+        int[] matched = hk.hopcroftKarpV0(g2);
+        log.info("hk matched=" + Arrays.toString(matched));
+
+        MinCostUnbalancedAssignment bipartite = 
+            new MinCostUnbalancedAssignment();
+        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        ResidualDigraph rM = new ResidualDigraph(g, m);
+        m = bipartite.hopcroftKarp(g, 3);
+        
+        
+        assertEquals(3, m.size());             
+    }
+
+    public void test0() {
        
         log.info("test0");
         
@@ -45,7 +68,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         
         Map<Integer, Integer> m = bipartite.flowAssign(g);
         
-        assertEquals(3, m.size());
+        assertTrue(3 <= m.size());
         assertTrue(m.get(Integer.valueOf(1))
             .equals(Integer.valueOf(2)));
         assertTrue(m.get(Integer.valueOf(3))
@@ -54,18 +77,18 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             .equals(Integer.valueOf(3)));
     }
     
-    public void est1() throws Exception {
+    public void test1() throws Exception {
     
         log.info("test1");
                 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1465192949978L;
+        //seed = 14655055297L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         
-        for (int size = 100; size <= 100; size *= 10) {
-            for (int maxCost = 10; maxCost <= 10; maxCost *= 10) {
+        for (int size = 10; size <= 100; size *= 10) {
+            for (int maxCost = 10; maxCost <= 10000; maxCost *= 10) {
                 
                 log.info("size=" + size + " maxCost=" + maxCost);
                 
@@ -89,7 +112,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 assertEquals(size, m.size());
                 
                 for (int i = 0; i < size; ++i) {
-                    assertEquals(i, m.get(Integer.valueOf(i)).intValue());
+                    assertEquals((size - 1 - i), m.get(Integer.valueOf(i)).intValue());
                 }
                 
                 assertNotNull(bipartite.getFinalFlowNetwork());
@@ -111,14 +134,15 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 for (int i = 0; i < size; ++i) {
                     int idx1 = m2[i][0];
                     int idx2 = m2[i][1];
-                    assertEquals(idx1, idx2);
+                    assertEquals((size - 1 - idx1), idx2);
                 }
             }
         }
     }
 
-    public void test2() throws Exception {
+    public void test2()  {
         
+        try {
         log.info("test2");
         
         int size = 10;
@@ -128,7 +152,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 10070693215754L;
+        //seed = 10070693215754L;
         sr.setSeed(seed);
         log.info("seed=" + seed);
         
@@ -154,9 +178,14 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
 
             assertNotNull(bipartite.getFinalFlowNetwork());
         }
+        
+        } catch(Throwable t) {
+            t.printStackTrace();
+            fail(t.getMessage());  
+        }
     }
 
-    public void est3() {
+    public void test3() {
         
         log.info("test3");
         
@@ -206,28 +235,6 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         }
     }
     
-    public void est00() {
-        
-        log.info("test00");
-        
-        Graph g = getTestGraph00();
-        
-        GraphWithoutWeights g2 = new GraphWithoutWeights(g);
-        
-        HopcroftKarp hk = new HopcroftKarp();
-        int[] matched = hk.hopcroftKarpV0(g2);
-        log.info("hk matched=" + Arrays.toString(matched));
-
-        MinCostUnbalancedAssignment bipartite = 
-            new MinCostUnbalancedAssignment();
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
-        ResidualDigraph rM = new ResidualDigraph(g, m);
-        m = bipartite.hopcroftKarp(g, 3);
-        
-        
-        assertEquals(3, m.size());             
-    }
-
     private Graph getTestGraph00() {
         
         Map<PairInt, Integer> weights 
@@ -345,7 +352,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         for (int i = 0; i < size; ++i) {
             for (int j = 0; j < size; ++j) {
                 int cost;
-                if (j == i) {
+                if (j == (size - 1 - i)) {
                     cost = sr.nextInt(minCostUpper - 1) + 1;
                 } else {
                     cost = minCostUpper +
@@ -396,7 +403,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                       
         for (int i = 0; i < size; ++i) {
             int cost = sr.nextInt(maxCost - 1) + 1;
-            weights.put(new PairInt(i, (size - 1) - i), Integer.valueOf(cost));
+            weights.put(new PairInt(i, (size - 1 - i)), Integer.valueOf(cost));
         }
         
         Graph g = new Graph(size, size, weights, true);

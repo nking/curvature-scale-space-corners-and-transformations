@@ -791,15 +791,15 @@ public class FlowNetwork {
                 
                 PairInt p = new PairInt(index1.intValue(), index2.intValue());
                 float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
+                int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
                     // idle, cp >= 0
-                    if (cp < 0) {
+                    if (cp < -0.0f) {
                         return false;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
-                    if (cp > 0) {
+                    if (cp > 0.0f) {
                         return false;
                     }
                 }
@@ -830,7 +830,7 @@ public class FlowNetwork {
                 }
                 PairInt p = new PairInt(index1.intValue(), index2.intValue());
                 float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
+                int cp = (int)Math.ceil(calcNetCost(p));
                 if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     // snug is -eps < cp <= eps
