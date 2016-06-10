@@ -4,6 +4,7 @@ import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import algorithms.util.QuadInt;
 import algorithms.util.TrioInt;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -312,7 +313,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
         e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
         eps_up = Math.pow(q, e_up - 1);
         rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-         
+        
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
 
@@ -472,13 +473,10 @@ t0 = System.currentTimeMillis();
             log.info("before modify prices:");
             debug(forest);
 
-            List<List<PathNode>> zeroLengthPaths = 
-                modifyPricesAndPathLengths(gFlow, rF, forest, 
+            List<PathsAndPrices> zeroLengthPaths = 
+                modifyPathLengths(gFlow, rF, forest, 
                 spIndexes, eps);
            
-            log.info("after link length changes");
-            debug(forest);
-        
 t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for modifyPricesAndPathLengths");
@@ -490,29 +488,41 @@ System.out.println(tSec + " msec for modifyPricesAndPathLengths");
                 return 1;
             }
             
-            gFlow.printNetCosts();
+            /*
+            NOTE: 
+            paper has already modified prices by this point and then 
+            asserts from pg 52:
+            I1', I2, I3, I4, on FlowNetwork
             
-            //assert from pg 52 
-            //       I1', I2, I3, I4, on FlowNetwork
-            //       and I5 on ResidualDigraph2
-  //NOTE: either modifyPrices is incorrect, or eps-proper rules should wait until after augmenttion 
-  // or, the starting eps should be larger (cannot increase that to larger than maxC though)
-            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(eps));
-            //assert(gFlow.integralFlowIsEpsProper(eps));
-            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
-            // assert I5: Rf has no cycles of length zero.
-            
+            This method is instead, caching the price changes and 
+            applying them only for the paths which are found as the
+            maximal set of length 0 disjoit vertex paths
+            (then will apply assertions).
+            */
+          
             assert(gFlow.printSurplusAndDeficit());
             
 t0 = System.currentTimeMillis();              
             // --- Sect 8.3, create maximal set of compatible augmenting paths
+            
             List<LinkedList<PathNode>> cPaths =
                 findMaximalSetOfCompatiblePaths(
                 gFlow.getNLeft(), gFlow.getNRight(),
                 gFlow.getSourceNode(), gFlow.getSinkNode(),
                 zeroLengthPaths, surplus, 
                 new HashSet<Integer>(deficit));
+            
+            raisePricesForMaximalSet(gFlow, cPaths, zeroLengthPaths);
+              
+            // postponed assertions:
+            //assert from pg 52 
+            //       I1', I2, I3, I4, on FlowNetwork
+            //       and I5 on ResidualDigraph2
+            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
+            //assert(gFlow.integralFlowIsEpsProper(eps));
+            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+            //assert I5: Rf has no cycles of length zero
             
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
@@ -535,6 +545,17 @@ t0 = System.currentTimeMillis();
             //NOTE that surplus and deficit are modified and updated
             // within augmentFlow
             augmentFlow(gFlow, cPaths, surplus, deficit);
+            
+            log.info("after augmentation");
+            //debug(forest);
+            gFlow.printNetCosts();
+                        
+            // pg 63 assert I1', I2, I3
+            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
+            assert(gFlow.integralFlowIsEpsProper(eps));            
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+                        
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for augmentFlow");
@@ -552,13 +573,6 @@ System.out.println(tSec + " msec for augmentFlow");
                     return 2;
                 }
             }
-
-            gFlow.printNetCosts();
-            
-            // pg 63 assert I1', I2, I3
-            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(eps));
-            assert(gFlow.integralFlowIsEpsProper(eps));
             
             ++nHIter;
         }
@@ -688,8 +702,17 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
         
 long t0 = System.currentTimeMillis();
 
+        /*
+        if a surplus node has been inserted into the forest, any further
+        paths with higher end path keys and with same surplus node as a 
+        predecessort will be skipped because it's a longer path.
+        TODO: there is overlapping logic in surplusForestKeys
+        and terminatingKeys so this could be made more concise later.
+        */
+        Set<Integer> s = new HashSet<Integer>(surplus);
         Set<Integer> d = new HashSet<Integer>(deficit);
-    
+        Map<Integer, Integer> surplusForestKeys = new HashMap<Integer, Integer>();
+            
         if (lambda < 4) {
             lambda = 4;
         }
@@ -719,7 +742,7 @@ long t0 = System.currentTimeMillis();
             node.setKey(Long.MAX_VALUE);
             node.setData(index);
             rightNodes.put(index, node);
-        }    
+        }
         
         SourceNode sourceNode = new SourceNode();
         sourceNode.setKey(Long.MAX_VALUE);
@@ -749,7 +772,7 @@ System.out.println(tSec + " msec for "
                 break;
             }
             Integer index1 = (Integer)node1.getData();
-          
+                                
             if (terminatingKeys.containsKey(index1)){
                 continue;
             } else if (
@@ -759,6 +782,18 @@ System.out.println(tSec + " msec for "
                 (Integer)node1.pathPredecessor.getData()
                 )) {
                 continue;
+            } else if (node1.pathPredecessor != null) {
+                if (node1.pathPredecessor instanceof LeftNode &&
+                surplusForestKeys.containsKey(
+                (Integer)node1.pathPredecessor.getData()
+                )) {
+                    continue;
+                } else if (node1.pathPredecessor.pathPredecessor 
+                instanceof LeftNode && surplusForestKeys.containsKey(
+                (Integer)node1.pathPredecessor.pathPredecessor.getData()
+                )) {
+                    continue;
+                }
             }
                      
             log.info("extractMin = " + node1.toString());
@@ -785,6 +820,9 @@ System.out.println(tSec + " msec for "
             if (nodeIsSource) {        
                 // scan forward source links
                 for (Integer index2 : rF.getForwardLinksSourceRM()) {
+                    if (surplusForestKeys.containsKey(index2)) {
+                        continue;
+                    }
                     handlePlusLink(minHeap, 
                         node1, leftNodes.get(index2),
                         gFlow.calcSourceNetCost(index2.intValue()),
@@ -842,12 +880,19 @@ System.out.println(tSec + " msec for "
 
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
-            
-            if (node1 instanceof RightNode &&
-                idx1 == 98) {
-                int z = 1;
-            }
 
+            if (lastKey > 0) {
+                // if a single shortest path root node is being inserted:
+                if ((node1.pathPredecessor != null) &&
+                    (node1.pathPredecessor instanceof LeftNode) && 
+                    s.contains(
+                    (Integer)node1.pathPredecessor.getData())) {
+                    surplusForestKeys.put(
+                        (Integer)node1.pathPredecessor.getData(), 
+                        Integer.valueOf((int)lastKey));
+                }
+            }
+            
             // store each shortest oath's terminating forest index
             if (d.contains(index1) && !node1IsLeft) {
                 
@@ -1305,39 +1350,31 @@ Matchings in G are integral flows in N_G
         return pathLists;
     }
     
-    private List<List<PathNode>> modifyPricesAndPathLengths(
+    private class PathsAndPrices {
+        List<PathNode> path;
+        Map<Integer, Float> leftPriceIncreases;
+        Map<Integer, Float> rightPriceIncreases;
+    }
+
+    private List<PathsAndPrices> modifyPathLengths(
         FlowNetwork gFlow, ResidualDigraph2 rF,
         Forest forest, Map<Integer, Integer> spIndexes, 
         float eps) {
-
-        //NOTE: there may still be errors here.  
  
         /*
         NOTE:
-           2 decisions need to be made here that aren't clear
-        in the papers.
+        In this method, the links are reduced to 0 along terminating
+        paths and thw implied price changes are cached until later.
+        When the maximal set of vertex disjoint paths are chosen,
+        will apply their cached price change to the FlowNetwork gFlow.
         
-        (1) should only the forest trees which are in spIndexes
-            be processed?
-            - for now, implementing this only for the spIndexes
-        
-        (2) should the prices implied by the link length changes
-            be stored until a later stage when the final
-            augmenting paths are chosen and then
-            the price changes could be applied for only those
-            paths?
-            - the simplest design for now is to modify the prices
-              here instead of delaying them until the disjoint vertex set.
-              is made.  the prices are temporarily returned in a list
-              to make it easier to change that if needed.
-
         Need to return these data in a list:
             List<PathNode> paths            
             Map<Integer, Float> leftPriceIncreases
             Map<Integer, Float> rightPriceIncreases
         */
         
-        List<List<PathNode>> output = new ArrayList<List<PathNode>>();
+        List<PathsAndPrices> output = new ArrayList<PathsAndPrices>();
         
         /*
         sect 8.2, pg 57
@@ -1522,7 +1559,7 @@ Matchings in G are integral flows in N_G
                                 p1 = ((lt - l1) * eps);
                                 rightPriceIncreases.put(index1, Float.valueOf(p1));
                             }
-
+                            
                             if (rF.getBackwardLinksRM().containsKey(index1)
                                 && rF.getBackwardLinksRM().get(index1)
                                 .equals(index2)) {
@@ -1827,44 +1864,16 @@ Matchings in G are integral flows in N_G
                     }
                 }
                 if (doStore) {
-                    output.add(path);
-
-                    // modify the prices
-                    // apply leftPriceIncreases and right to gFlow
-                    for (Entry<Integer, Float> entry
-                        : leftPriceIncreases.entrySet()) {
-                        float f = entry.getValue().floatValue();
-                        gFlow.addToLeftPrice(entry.getKey().intValue(), f);
-                        if (f > maxLeft) {    
-                            maxLeft = f;
-                        }
-                    }
                     
-                    for (Entry<Integer, Float> entry
-                        : rightPriceIncreases.entrySet()) {
-                        float f = entry.getValue().floatValue();
-                        gFlow.addToRightPrice(entry.getKey().intValue(), f);
-                        if (f < minRight) {    
-                            minRight = f;
-                        }
-                    }
+                    PathsAndPrices p = new PathsAndPrices();
+                    p.path = path;
+                    p.leftPriceIncreases = leftPriceIncreases;
+                    p.rightPriceIncreases = rightPriceIncreases;
+                    
+                    output.add(p);                    
                 }
             }
         }
-        /*
-        if (maxLeft != Float.MIN_VALUE) {
-            float f = gFlow.getLeftPrice(gFlow.getSourceNode());
-            if (f < maxLeft) {
-                gFlow.setLeftPrice(gFlow.getSourceNode(), maxLeft);
-            }
-        }
-        if (minRight != Float.MAX_VALUE) {
-            float f = gFlow.getRightPrice(gFlow.getSinkNode());
-            if (f > minRight) {
-                gFlow.setRightPrice(gFlow.getSinkNode(), minRight);
-            }
-        }
-        */
         
         return output;
     }
@@ -1872,7 +1881,7 @@ Matchings in G are integral flows in N_G
     private List<LinkedList<PathNode>>
         findMaximalSetOfCompatiblePaths(int nLeft, int nRight, 
             int sourceNodeIdx, int sinkNodeIdx,
-            List<List<PathNode>> pathsList,
+            List<PathsAndPrices> pathsList,
             Collection<Integer> surplus, Set<Integer> deficit) {
        
         List<LinkedList<PathNode>> augPaths 
@@ -2038,14 +2047,12 @@ Matchings in G are integral flows in N_G
     }
 
     private Map<PathNode, Set<PathNode>> createNewAdjacencyMap(
-        List<List<PathNode>> pathsList,
+        List<PathsAndPrices> pathsList,
         int nLeft, int nRight, int sinkNodeIdx, int sourceNodeIdx) {
         
-        Map<Integer, LeftNode> leftNodes = 
-            new HashMap<Integer, LeftNode>();
+        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         
-        Map<Integer, RightNode> rightNodes = 
-            new HashMap<Integer, RightNode>();
+        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
         
         SinkNode sinkNode = new SinkNode();
         sinkNode.setData(Integer.valueOf(sinkNodeIdx));
@@ -2053,11 +2060,10 @@ Matchings in G are integral flows in N_G
         SourceNode sourceNode = new SourceNode();
         sourceNode.setData(Integer.valueOf(sourceNodeIdx));
         
-        Map<PathNode, Set<PathNode>> pathLinksMap =
-            new HashMap<PathNode, Set<PathNode>>();
+        Map<PathNode, Set<PathNode>> pathLinksMap = new HashMap<PathNode, Set<PathNode>>();
         
-        for (List<PathNode> path : pathsList) {
-            
+        for (PathsAndPrices p : pathsList) {
+            List<PathNode> path = p.path;
             for (int i = 0; i < path.size() - 1; ++i) {            
                 PathNode node1 = path.get(i);
                 PathNode node2 = path.get(i + 1);
@@ -2227,6 +2233,112 @@ Matchings in G are integral flows in N_G
             sb.append("]\n");
         }
         log.info(sb.toString());
+    }
+
+    private void raisePricesForMaximalSet(FlowNetwork gFlow, 
+        List<LinkedList<PathNode>> cPaths, 
+        List<PathsAndPrices> cachedPriceChanges) {
+        
+        /*
+        Need a lookup structure to find the
+        price maps in cachedPriceChanges for a path/
+        
+        The individual path lengths will be at most 4 (min cost edge
+        plus possible zero length edge of sink and source arcs.
+        
+        identity for a lookup is class extending PathNode and the index.
+        since sink and source indexes are unique within right and left,
+        respectively, can simplify the key for a node being left or right and the index.
+       
+        The number of the vertices in the graph is assumed to be much less
+        than (1<<31) - 1.
+       
+        to make a key Will use the index and make it negative sign for
+        a RightNode.
+        TODO: consider compressed keys.
+        */
+    
+        //TODO: consider whether max of left added should be 
+        //  waht source price is at least
+        //  and min of right added should be min of sink at most
+        
+        Map<QuadInt, Integer> priceLookupMap = createPriceLookupMap(cachedPriceChanges);
+        
+        for (LinkedList path : cPaths) {
+            
+            Misc.reverse(path);
+            
+            QuadInt key = createKey(path);
+            
+            Integer index = priceLookupMap.get(key);
+            
+            if (index == null) {
+                throw new IllegalStateException("error in algorithm."
+                    + "  partial paths need to be considered");
+            }
+            
+            PathsAndPrices p = cachedPriceChanges.get(index.intValue());
+            
+            Map<Integer, Float> leftP = p.leftPriceIncreases;
+            for (Entry<Integer, Float> entry : leftP.entrySet()) {
+                float f = entry.getValue().floatValue();
+                gFlow.addToLeftPrice(entry.getKey().intValue(), f);
+            }
+            
+            Map<Integer, Float> rightP = p.rightPriceIncreases;
+            for (Entry<Integer, Float> entry
+                : rightP.entrySet()) {
+                float f = entry.getValue().floatValue();
+                gFlow.addToRightPrice(entry.getKey().intValue(), f);
+            }
+        }
+    }
+    
+    private QuadInt createKey(List<PathNode> path) {
+        
+        QuadInt q = new QuadInt();
+        
+        for (int i = 0; i < path.size(); ++i) {
+            PathNode node = path.get(i);
+            int idx = ((Integer)node.getData()).intValue();
+            if (node instanceof RightNode || node instanceof SinkNode) {
+                idx *= -1;
+            }
+            switch(i) {
+                case 0:
+                    q.setA(idx);
+                    break;
+                case 1:
+                    q.setB(idx);
+                    break;
+                case 2:
+                    q.setC(idx);
+                    break;
+                case 3:
+                    q.setD(idx);
+                    break;
+                default:
+                    throw new IllegalStateException("Error in algorithm"
+                        + ".  Expecting path length < 5");
+            }
+        }
+        
+        return q;
+    }
+    
+    private Map<QuadInt, Integer> createPriceLookupMap(
+        List<PathsAndPrices> cachedPriceChanges) {
+        
+        Map<QuadInt, Integer> map = new HashMap<QuadInt, Integer>();
+        
+        for (int i = 0; i < cachedPriceChanges.size(); ++i) {
+            
+            PathsAndPrices p = cachedPriceChanges.get(i);
+            
+            map.put(createKey(p.path), Integer.valueOf(i));
+        }
+        
+        return map;
     }
 
 }

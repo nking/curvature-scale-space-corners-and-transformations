@@ -1212,6 +1212,7 @@ public class FlowNetwork {
         }
         log.info(sb.toString());
 
+        sb = new StringBuilder();
         for (Integer index1 : sinkForwardArcs) {
             float unitFlow = rightToSinkF.get(index1);
             float cp = calcSinkNetCost(index1.intValue());
