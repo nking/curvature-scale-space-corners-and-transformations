@@ -337,7 +337,8 @@ System.out.println(tSec + " sec for hopcroftkarp");
             // if using a smaller eps than maxC, cannot assert
             //    these on first round
             if ((nIterR > 0) || (eps > gFlow.getMaxC())) {
-                assert(gFlow.integralFlowIsEpsProper(eps));
+                //assert(gFlow.integralFlowIsEpsProper(eps));
+                assert(gFlow.integralBipartiteFlowIsEpsProper(eps));
                 assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             }
             
@@ -553,7 +554,8 @@ t0 = System.currentTimeMillis();
             // pg 63 assert I1', I2, I3
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
             assert(gFlow.assertPricesAreQuantizedEps(eps));
-            assert(gFlow.integralFlowIsEpsProper(eps));            
+            //assert(gFlow.integralFlowIsEpsProper(eps));  
+            assert(gFlow.integralBipartiteFlowIsEpsProper(eps));  
             assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
                         
 t1 = System.currentTimeMillis();  
@@ -2186,13 +2188,19 @@ Matchings in G are integral flows in N_G
             // every vertex must be part of at least one edge
             Set<Integer> xInEdges = new HashSet<Integer>();
             Set<Integer> yInEdges = new HashSet<Integer>();
+            boolean lessThan1 = false;
             for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
                 PairInt p = entry.getKey();
+                if (entry.getValue().intValue() < 1) {
+                    errors.append(" edge wriths should be larger than 0.");
+                }
                 xInEdges.add(Integer.valueOf(p.getX()));
                 yInEdges.add(Integer.valueOf(p.getY()));
             }
-            if (g.getNLeft() > xInEdges.size() || g.getNRight() > yInEdges.size()) {
-                errors.append(" every vertex in g must have at least one edge.");
+            if (!lessThan1) {
+                if (g.getNLeft() > xInEdges.size() || g.getNRight() > yInEdges.size()) {
+                    errors.append(" every vertex in g must have at least one edge.");
+                }
             }
         }
         
@@ -2258,9 +2266,8 @@ Matchings in G are integral flows in N_G
         TODO: consider compressed keys.
         */
     
-        //TODO: consider whether max of left added should be 
-        //  waht source price is at least
-        //  and min of right added should be min of sink at most
+        float maxLeft = Float.MIN_VALUE;
+        float minRight = Float.MAX_VALUE;
         
         Map<QuadInt, Integer> priceLookupMap = createPriceLookupMap(cachedPriceChanges);
         
@@ -2283,6 +2290,9 @@ Matchings in G are integral flows in N_G
             for (Entry<Integer, Float> entry : leftP.entrySet()) {
                 float f = entry.getValue().floatValue();
                 gFlow.addToLeftPrice(entry.getKey().intValue(), f);
+                if (f > maxLeft) {
+                    maxLeft = f;
+                }
             }
             
             Map<Integer, Float> rightP = p.rightPriceIncreases;
@@ -2290,8 +2300,26 @@ Matchings in G are integral flows in N_G
                 : rightP.entrySet()) {
                 float f = entry.getValue().floatValue();
                 gFlow.addToRightPrice(entry.getKey().intValue(), f);
+                if (f < minRight) {
+                    minRight = f;
+                }
             }
         }
+        
+        /*
+        if (maxLeft > Float.MIN_VALUE) {
+            float f = gFlow.getLeftPrice(gFlow.getSourceNode());
+            if (f < maxLeft) {
+                gFlow.setLeftPrice(gFlow.getSourceNode(), maxLeft);
+            }
+        }
+        if (minRight < Float.MAX_VALUE) {
+            float f = gFlow.getRightPrice(gFlow.getSinkNode());
+            if (f > minRight) {
+                gFlow.setRightPrice(gFlow.getSinkNode(), minRight);
+            }
+        }
+        */
     }
     
     private QuadInt createKey(List<PathNode> path) {
