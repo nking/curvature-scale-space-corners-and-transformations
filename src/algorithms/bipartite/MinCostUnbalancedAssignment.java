@@ -305,20 +305,29 @@ System.out.println(tSec + " sec for hopcroftkarp");
         //    q that exceeds maxC
         // e_up * math.log(q)
         
-        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
-        double eps_up = Math.pow(q, e_up - 1);
+        boolean useMaxCostStart = false;
         
-        //int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
-        //double eps_up = Math.pow(q, e_up);
-        
+         // expected number of iterations without a constant factor
+        int rIter;
+        int e_up;
+        double eps_up;
+        if (useMaxCostStart) {
+            e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+            eps_up = Math.pow(q, e_up - 1);
+            rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
+        } else {
+            // the assertions may fail for this case (eps-proper rules are for maxC scaling)
+            // but it finds the best match on first invocation of buildForest2
+            e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
+            eps_up = Math.pow(q, e_up);
+            rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
+        }
+            
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
 
         float eps = 1.f + (int)Math.floor(eps_up);
-        
-        // expected number of iterations without a constant factor
-        int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
-             
+                     
         int nIterR = 0;
         
         log.info("eps=" + eps + " rIter=" + rIter 
@@ -750,8 +759,15 @@ System.out.println(tSec + " msec for "
                 break;
             }
             Integer index1 = (Integer)node1.getData();
-            
+          
             if (terminatingKeys.containsKey(index1)){
+                continue;
+            } else if (
+                node1.pathPredecessor != null &&
+                node1.pathPredecessor instanceof RightNode &&
+                terminatingKeys.containsKey(
+                (Integer)node1.pathPredecessor.getData()
+                )) {
                 continue;
             }
                      
@@ -836,6 +852,11 @@ System.out.println(tSec + " msec for "
 
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
+            
+            if (node1 instanceof RightNode &&
+                idx1 == 98) {
+                int z = 1;
+            }
 
             // store each shortest oath's terminating forest index
             if (d.contains(index1) && !node1IsLeft) {
