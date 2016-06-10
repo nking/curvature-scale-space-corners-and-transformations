@@ -285,6 +285,9 @@ System.out.println(tSec + " sec for hopcroftkarp");
         equal to or less than the minimum cost key.  
         since eps is divided by q before first use,
         eps = q * minCost
+        but then the top=down assertions of "eprs-proper" from large eps to 
+        smaller would possibly fail if eps were set with the minimum cost of
+        the flow.
         */
         
         int s = m.size();
@@ -302,9 +305,11 @@ System.out.println(tSec + " sec for hopcroftkarp");
         //    q that exceeds maxC
         // e_up * math.log(q)
         
-        //int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
-        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
-        double eps_up = Math.pow(q, e_up);
+        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        double eps_up = Math.pow(q, e_up - 1);
+        
+        //int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
+        //double eps_up = Math.pow(q, e_up);
         
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
@@ -312,8 +317,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
         float eps = 1.f + (int)Math.floor(eps_up);
         
         // expected number of iterations without a constant factor
-        int rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
-         
+        int rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
              
         int nIterR = 0;
         
@@ -337,25 +341,27 @@ System.out.println(tSec + " sec for hopcroftkarp");
                 assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             }
             
-            eps /= ((float)q);
-            
+            eps /= ((float) q);
+
             int ext = refine(gFlow, s, eps, q);
-            
+
             if (ext > 0) {
                 m = gFlow.extractMatches();
                 roundFinalPrices(gFlow, eps_down);
                 finalFN = gFlow;
                 return m;
-             }
-            
+            }
+
             ++nIterR;
         }
-        
+
         // assert nIter is approx log_q(s * maxC)
 
 t0 = System.currentTimeMillis(); 
+
         // round prices to integers that make all arcs proper
         roundFinalPrices(gFlow, eps_down);
+        
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0)/1000;
 System.out.println(tSec + " sec for roundFinalPrices");
@@ -757,6 +763,11 @@ System.out.println(tSec + " msec for "
                 //terminatingKeys.put(index1, Integer.valueOf((int) lastKey));
                 break;
             }
+            
+            /*
+            TODO: for first invocation within refine and first invocation
+            of refine, can exclude the source and sink arc inserts here.
+            */
             
             int idx1 = index1.intValue();
              
