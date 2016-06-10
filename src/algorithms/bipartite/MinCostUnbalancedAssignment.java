@@ -844,10 +844,16 @@ System.out.println(tSec + " msec for "
                     index1);
                 if (indexes2 != null) {
                     for (Integer index2 : indexes2) {
-                        handlePlusLink(minHeap, node1, 
-                            rightNodes.get(index2), 
-                            gFlow.calcNetCost(idx1, index2.intValue()),
-                            lambda, eps);
+                        float cp = gFlow.calcNetCost(idx1, index2.intValue());
+                       
+        if (cp < 0) {
+            int idx2 = index2.intValue();
+            gFlow.calcNetCost(idx1, index2.intValue());
+            int z = 1;
+        }
+        
+                        handlePlusLink(minHeap, node1, rightNodes.get(index2), 
+                            cp, lambda, eps);
                     }
                 }
            
@@ -1220,6 +1226,7 @@ Matchings in G are integral flows in N_G
         
         long lp = (long) Math.ceil(cp / eps);
         long lTot = l1 + lp;
+        
         long lOld = node2.getKey();
         if ((lTot < lambda) && (lTot < lOld)) {
             node2.pathPredecessor = node1;
@@ -1407,82 +1414,7 @@ Matchings in G are integral flows in N_G
              "idle" links from surplus to deficit nodes.
              The inserted Right node w/ key=1 has a 
              predecessor Left node w/ key=0 and is extracted and reversed:
-                Lft(0) -> Rgt(1) (is "idle" in this example)
-             
-                the Rgt key length which was assigned using
-                   leftKey + Math.ceil(cp(left, right) / eps)
-                   where cp = costXY - pdX + pdY
-                -> reduce Rgt(1) key by l(term) - l(x), that is
-                   by 1 - 0
-                   -> by first increasing the price pd(X) (that is the
-                      left node price)
-                      by (l(term) - l(X))*eps
-                      (that reduces the netcost along XY)
-        
-            or p0d(v) := p(d) + (l(term) - l(x))*eps
-            pdX += (l(term) - l(x))*eps which is pdX += eps here
-            then pdY += (l(term) - l(y))*eps doesn't change
-            recalculated cost is lower by +eps
-            so l(y) is lowered by 1 (from (l(term) - l(x)))
-
-            that link is then handled...
-
-            to address "saturated links" and multiple links in a path:
-
-            the left node gets inserted into forest and has predecessor right node
-            and then their order is reversed.
-            N2     N1
-            L <---- R
-            cp = gFlow.calcNetCost(index2.intValue(), idx1)
-            where cp = costXY - pdX + pdY
-            lp = 1 - math.ceil(cp/eps)
-            key of node2 = key of node1 + lp
-            l(term) = node2.key
-            
-            pd_N2 += 0.  pd_N1 += (l(term) - l(N1))*eps
-            cp is increased by (l(term) - l(N1))*eps
-                so the term math.ceil(cp/eps) is + (l(term) - l(N1))
-            so lp is -((l(term) - l(N1)))
-            reducing key of node2 by (l(term) - l(N1))
-        
-            to continue that if there is a previous node to N1:
-            N2     N1
-            L <---- R  <---- prevL
-        
-                    then for N1, an idle link into it from node prevL.
-                      we already have pd_N1 += (l(term) - l(N1))*eps
-                      pd_prevL += (l(term) - l(prevL))*eps
-                      cp change is -(l(term) - l(prevL))*eps
-                           +(l(term) - l(N1))*eps
-                           = (l(prevL)-l(N1))*eps
-                      then the N1.key changes by (l(prevL)-l(N1))
-                      which should bring it to zero.
-        
-            Looks like the price changes to the FlowNetwork gFlow
-            should be applied using a single path at a time
-            (so that price changes of nodes within that path are
-            only applied once for that path).
-        
-            For another path with the same node in it,
-            one can see that cannot re-fetch the prices from
-            gFlow to re-calculate the netcost, but must instead
-            only use the path link lengths to derive relative
-            changes to apply to the gFlow prices.  gFlow is write only
-            for these price changes.
-        
-        
-             One thing that is not obvious is that if 
-             there was a tree of paths at forest[1] and
-             also at forest[2] and then l(term) is the key
-             at root of forest[2] which is '2',
-             paths from forest[1] should be discarded?
-             since l(term) - l(forest[1].root.key) will be > 0
-                 couldn't find that stated in the paper yet, so
-             the changes applied to gFlow even from forest
-             trees with smaller keys might still be necessary even
-             though the resulting links will not be 0,
-             but those may have redundant links to highest key tree.
-             need to work further through examples...    
+                Lft(0) -> Rgt(1) (is "idle" in this example)  
         */
         
         List<Integer> forestIndexes = forest.getKeys();
@@ -1539,6 +1471,8 @@ Matchings in G are integral flows in N_G
                     boolean node2IsLeft = (node2 instanceof LeftNode);
                     boolean node2IsSource = (node2 instanceof SourceNode);
                     boolean node2IsSink = (node2 instanceof SinkNode);
+                    long delta2 = (lt - l2);
+                    long delta1 = (lt - l1);
                     
                     // determine if node1 -> node2 is "idle" or "saturated"
 
@@ -1546,19 +1480,13 @@ Matchings in G are integral flows in N_G
                         assert(!node2IsRight);
                         if (node2IsLeft) {
                             Float p2I = leftPriceIncreases.get(index2);
-                            float p2;
-                            if (p2I != null) {
-                                p2 = p2I.floatValue();
-                            } else {
-                                p2 = ((lt - l2) * eps);
+                            if (p2I == null && delta2 > 0) {
+                                float p2 = (delta2 * eps);
                                 leftPriceIncreases.put(index2, Float.valueOf(p2));
                             }
                             Float p1I = rightPriceIncreases.get(index1);
-                            float p1;
-                            if (p1I != null) {
-                                p1 = p1I.floatValue();
-                            } else {
-                                p1 = ((lt - l1) * eps);
+                            if (p1I == null && delta1 > 0) {
+                                float p1 = (delta1 * eps);
                                 rightPriceIncreases.put(index1, Float.valueOf(p1));
                             }
                             
@@ -1600,18 +1528,10 @@ Matchings in G are integral flows in N_G
                             }
                         } else if (node2IsSink) {
                             // node2 is sink so add to existing price changes?
-                            float p2 = gFlow.getRightPrice(index2.intValue());
-                            p2 += ((lt - l2) * eps);
-                            //if (rightPriceIncreases.containsKey(index2)) {
-                            //    p2 += rightPriceIncreases.get(index2).floatValue();
-                            //}
-                            //rightPriceIncreases.put(index2, Float.valueOf(p2));
+                            
                             Float p1I = rightPriceIncreases.get(index1);
-                            float p1;
-                            if (p1I != null) {
-                                p1 = p1I.floatValue();
-                            } else {
-                                p1 = ((lt - l1) * eps);
+                            if (p1I == null && delta1 > 0) {
+                                float p1 = (delta1 * eps);
                                 rightPriceIncreases.put(index1, Float.valueOf(p1));
                             }
                             if (rF.getBackwardLinksSinkRM().contains(index1)) {
@@ -1649,20 +1569,19 @@ Matchings in G are integral flows in N_G
                     } else if (node1IsLeft) {
                         assert(!node2IsLeft);
                         if (node2IsRight) {
+                            
+    if (index1.intValue() == 0 && index2.intValue() == 9) {
+        int z = 1;    
+    }   
+    
                             Float p2I = rightPriceIncreases.get(index2);
-                            float p2;
-                            if (p2I != null) {
-                                p2 = p2I.floatValue();
-                            } else {
-                                p2 = ((lt - l2) * eps);
+                            if (p2I == null && delta2 > 0) {
+                                float p2 = (delta2 * eps);
                                 rightPriceIncreases.put(index2, Float.valueOf(p2));
                             }
                             Float p1I = leftPriceIncreases.get(index1);
-                            float p1;
-                            if (p1I != null) {
-                                p1 = p1I.floatValue();
-                            } else {
-                                p1 = ((lt - l1) * eps);
+                            if (p1I == null && delta1 > 0) {
+                                float p1 = (delta1 * eps);
                                 leftPriceIncreases.put(index1, Float.valueOf(p1));
                             }
 
@@ -1687,13 +1606,6 @@ Matchings in G are integral flows in N_G
                                     .contains(index2));
                                 // idle link node1(left) --> node2(right)
                                 l2 -= (lt - l1);
-
-             log.info("L(" + index1 + ")" + " to " + "R(" + index2 + ") "
-                 + " p1=" + p1 + " p2=" + p2 
-                 + " l1=" + node1.getKey()
-                 + " l2=" + node2.getKey() 
-                 + " lt=" + lt
-                 + " ==> l2=" + l2);
                                 
                                 if (l2 < 0) {
                                     //X=N1  Y=N2
@@ -1709,18 +1621,9 @@ Matchings in G are integral flows in N_G
 
                         } else if (node2IsSource) {
                             // node2 is source so add to existing price changes?
-                            float p2 = gFlow.getLeftPrice(index2.intValue());
-                            p2 += ((lt - l2) * eps);
-                            //if (leftPriceIncreases.containsKey(index2)) {
-                            //    p2 += leftPriceIncreases.get(index2).floatValue();
-                            //}
-                            //leftPriceIncreases.put(index2, Float.valueOf(p2));                            
                             Float p1I = leftPriceIncreases.get(index1);
-                            float p1;
-                            if (p1I != null) {
-                                p1 = p1I.floatValue();
-                            } else {
-                                p1 = ((lt - l1) * eps);
+                            if (p1I == null && delta1 > 0) {
+                                float p1 = (delta1 * eps);
                                 leftPriceIncreases.put(index1, Float.valueOf(p1));
                             }
                             if (rF.getBackwardLinksSourceRM().contains(index1)) {
@@ -1759,20 +1662,11 @@ Matchings in G are integral flows in N_G
                     } else if (node1IsSource) {
                         assert (node2IsLeft);
                         Float p2I = leftPriceIncreases.get(index2);
-                        float p2;
-                        if (p2I != null) {
-                            p2 = p2I.floatValue();
-                        } else {
-                            p2 = ((lt - l2) * eps);
+                        if (p2I == null && delta2 > 0) {
+                            float p2 = ((lt - l2) * eps);
                             leftPriceIncreases.put(index2, Float.valueOf(p2));
                         }
                         // node1 is source so add to existing price changes?
-                        float p1 = gFlow.getLeftPrice(index1.intValue());
-                        p1 += ((lt - l1) * eps);
-                        //if (leftPriceIncreases.containsKey(index1)) {
-                        //    p1 += leftPriceIncreases.get(index1).floatValue();
-                        //}
-                        //leftPriceIncreases.put(index1, Float.valueOf(p1));
                         if (rF.getBackwardLinksSourceRM().contains(index2)) {
                             // saturated  node1(source) <--- node2(Left)
                             l1 -= (lt - l2);
@@ -1806,20 +1700,11 @@ Matchings in G are integral flows in N_G
                     } else if (node1IsSink) {
                         assert(node2IsRight);
                         Float p2I = rightPriceIncreases.get(index2);
-                        float p2;
-                        if (p2I != null) {
-                            p2 = p2I.floatValue();
-                        } else {
-                            p2 = ((lt - l2) * eps);
+                        if (p2I == null && delta2 > 0) {
+                            float p2 = (delta2 * eps);
                             rightPriceIncreases.put(index2, Float.valueOf(p2));
                         }
                         // node1 is sink so add existing price change?
-                        float p1 = gFlow.getRightPrice(index1.intValue());
-                        p1 += ((lt - l1) * eps);
-                        //if (rightPriceIncreases.containsKey(index1)) {
-                        //    p1 += rightPriceIncreases.get(index1).floatValue();
-                        //}
-                        //rightPriceIncreases.put(index1, Float.valueOf(p1));
                         if (rF.getBackwardLinksSinkRM().contains(index2)) {
                             // "saturated" node2(right) <-- node1(sink)
                             l2 -= (lt - l1);
