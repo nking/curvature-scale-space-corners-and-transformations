@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -248,14 +249,16 @@ public class MinCostUnbalancedAssignment {
         // a first guess at the maximal matching size
         int sz = Math.min(g.getNLeft(), g.getNRight());
 
-long t0 = System.currentTimeMillis();        
+long t0 = System.currentTimeMillis();
+
         // hopcroft-karp produces a maximal matching of nodes
         // without using edge weights, just uses connectivity
         Map<Integer, Integer> m = hopcroftKarp(g, sz);
+
 long t1 = System.currentTimeMillis();
 long tSec = (t1 - t0)/1000;
 System.out.println(tSec + " sec for hopcroftkarp");
-        
+
         // if the code was given a graph created without 
         // using source and sink, need to transform that here.
         if (g.getSourceNode() == -1) {
@@ -285,8 +288,20 @@ System.out.println(tSec + " sec for hopcroftkarp");
         to have math.ceil(cost/eps) = 1, eps at that tme must be
         equal to or less than the minimum cost key.  
         since eps is divided by q before first use,
-        eps = q * minCost
-        but then the top=down assertions of "eprs-proper" from large eps to 
+        eps = q * minCost.
+        The problem is then that lambda as the key range and hence size
+        of minHeap in buildForest2 would need to be larger by a factor
+        of eps_from_max_cost/eps_from_min_cost.
+           SO, need a double key minHeap insert, and a FIFO extractMin
+           from a bucket.
+           (the eps_from_max_cost is the eps suggested by the authors,
+           and that would be the main key + 1 to use to locate the
+           minHeap bucket.  Then order within the bucket needs to
+           be determined by the eps_from_min_cost.
+           SO, need to think of how to scale the 2nd key so that can use
+           the "coutning sort" O(1) performance.
+        
+        another caveat is that the top=down assertions of "eprs-proper" from large eps to 
         smaller would possibly fail if eps were set with the minimum cost of
         the flow.
         */
@@ -307,21 +322,25 @@ System.out.println(tSec + " sec for hopcroftkarp");
         // e_up * math.log(q)
                 
          // expected number of iterations without a constant factor
-        int rIter;
-        int e_up;
-        double eps_up;
-        e_up = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
-        eps_up = Math.pow(q, e_up - 1);
-        rIter = (int)(Math.log(s * gFlow.getMaxC())/Math.log(q));
+        
+        int e_up_large = 1 + (int)Math.floor(Math.log(gFlow.getMaxC())/Math.log(q));
+        double eps_up_large = Math.pow(q, e_up_large - 1);
+        float epsLarge = 1.f + (int)Math.floor(eps_up_large);
+        
+        int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
+        double eps_up = Math.pow(q, e_up - 1);
+        int rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
+        
         
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
 
         float eps = 1.f + (int)Math.floor(eps_up);
-                     
+                  
         int nIterR = 0;
         
-        log.info("eps=" + eps + " rIter=" + rIter 
+        log.info("eps=" + eps + " epsLarge=" + epsLarge
+            + " rIter=" + rIter 
             + " minC=" + gFlow.getMinC() + " maxC=" + gFlow.getMaxC() 
             + " eps_down=" + eps_down);
                
@@ -329,7 +348,8 @@ System.out.println(tSec + " sec for hopcroftkarp");
         
         while ((eps > eps_down) && (nIterR < 2*rIter)) {
             
-            log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps);
+            log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps
+                + " epsLarge=" + epsLarge);
             
             // pg 44, assertions I1, I2, I3, and I4
             assert(gFlow.assertFlowValue(s));
@@ -343,8 +363,9 @@ System.out.println(tSec + " sec for hopcroftkarp");
             }
             
             eps /= ((float) q);
+            epsLarge /= ((float)q);
 
-            int ext = refine(gFlow, s, eps, q);
+            int ext = refine(gFlow, s, eps, epsLarge, q);
 
             if (ext > 0) {
                 m = gFlow.extractMatches();
@@ -374,7 +395,8 @@ System.out.println(tSec + " sec for roundFinalPrices");
         return m;
     }
     
-    protected int refine(FlowNetwork gFlow, int s, float eps, int q) {
+    protected int refine(FlowNetwork gFlow, int s, float eps, 
+        float epsLarge, int q) {
         
         log.fine("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
@@ -399,7 +421,7 @@ System.out.println(tSec + " sec for roundFinalPrices");
         }
 
         // assert I4 and I5
-        assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
+        assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
         
 long t00 = System.currentTimeMillis();
 
@@ -410,14 +432,14 @@ long t00 = System.currentTimeMillis();
         f and for the new, smaller value of eps.
         this makes I3 true.
         */
-        gFlow.raisePricesUntilEpsProper(eps, q);
+        gFlow.raisePricesUntilEpsProper(epsLarge, q);
 
 long t11 = System.currentTimeMillis();
 long tSec = (t11 - t00)/1000;
 System.out.println(tSec + " sec for raisePricesUntilEpsProper");
 
-        log.info("after raise prices, w/ eps=" + eps);
-        gFlow.printNetCosts();
+        //log.info("after raise prices, w/ eps=" + eps);
+        //gFlow.printNetCosts();
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));        
         
         //in [0] holds the length of the terminating deficit
@@ -425,13 +447,15 @@ System.out.println(tSec + " sec for raisePricesUntilEpsProper");
         //    added to.
         int h = s;
         int nHIter = 0;
+        
 t00 = System.currentTimeMillis();
 
         // this should only execute sqrt(s) times
  
         while (h > 0) {
             
-            log.info("nHIter=" + nHIter + " h=" + h + " eps=" + eps);
+            log.fine("nHIter=" + nHIter + " h=" + h + " eps=" + eps
+                + " epsLarge-" + epsLarge);
             
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
 long t0 = System.currentTimeMillis();
@@ -452,8 +476,6 @@ long t0 = System.currentTimeMillis();
 long t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for buildForest2");
-
-            //debug(forest);
            
             // raise prices at forest nodes by multiples of ε, 
             // shortening the discovered augmenting path to length 0;
@@ -471,12 +493,13 @@ System.out.println(tSec + " msec for buildForest2");
                      
 t0 = System.currentTimeMillis();
 
-            log.info("before modify prices:");
+            log.fine("before modify prices:");
             debug(forest);
-
+            gFlow.printNetCosts();
+            
             List<PathsAndPrices> zeroLengthPaths = 
                 modifyPathLengths(gFlow, rF, forest, 
-                spIndexes, eps);
+                spIndexes, epsLarge);
            
 t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
@@ -500,9 +523,7 @@ System.out.println(tSec + " msec for modifyPricesAndPathLengths");
             maximal set of length 0 disjoit vertex paths
             (then will apply assertions).
             */
-          
-            assert(gFlow.printSurplusAndDeficit());
-            
+                      
 t0 = System.currentTimeMillis();              
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             
@@ -512,24 +533,33 @@ t0 = System.currentTimeMillis();
                 gFlow.getSourceNode(), gFlow.getSinkNode(),
                 zeroLengthPaths, surplus, 
                 new HashSet<Integer>(deficit));
-            
-            raisePricesForMaximalSet(gFlow, cPaths, zeroLengthPaths);
-              
-            // postponed assertions:
-            //assert from pg 52 
-            //       I1', I2, I3, I4, on FlowNetwork
-            //       and I5 on ResidualDigraph2
-            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(eps));
-            //assert(gFlow.integralFlowIsEpsProper(eps));
-            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
-            //assert I5: Rf has no cycles of length zero
-            
+
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
 System.out.println(tSec 
 + " msec for findMaximalSetOfCompatiblePaths");
 
+t0 = System.currentTimeMillis();
+
+            raisePricesForMaximalSet(gFlow, cPaths, zeroLengthPaths);
+
+t1 = System.currentTimeMillis();  
+tSec = (t1 - t0);
+System.out.println(tSec 
++ " msec for raisePricesForMaximalSet");
+
+            assert(gFlow.printSurplusAndDeficit());
+            
+            // postponed assertions:
+            // assert from pg 52 
+            //       I1', I2, I3, I4, on FlowNetwork
+            //       and I5 on ResidualDigraph2
+            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
+            assert(gFlow.assertPricesAreQuantizedEps(epsLarge));
+            //assert(gFlow.integralFlowIsEpsProper(epsLarge));
+            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
+            //assert I5: Rf has no cycles of length zero
+            
             log.fine("cPaths.size=" + cPaths.size());
             if (cPaths.isEmpty()) {
                 log.warning("did not find an augmenting path.  h=" + h);                               
@@ -537,9 +567,7 @@ System.out.println(tSec
                 // perfect or is imperfect
                 return 1;
             }
-            
-            //debug(cPaths);
-            
+                        
 t0 = System.currentTimeMillis();              
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
@@ -547,23 +575,23 @@ t0 = System.currentTimeMillis();
             // within augmentFlow
             augmentFlow(gFlow, cPaths, surplus, deficit);
             
-            log.info("after augmentation");
-            //debug(forest);
-            gFlow.printNetCosts();
-                        
-            // pg 63 assert I1', I2, I3
-            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(eps));
-            //assert(gFlow.integralFlowIsEpsProper(eps));  
-            assert(gFlow.integralBipartiteFlowIsEpsProper(eps));  
-            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
-                        
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for augmentFlow");
 
+            log.info("after augmentation");
+            debug(forest);
+            gFlow.printNetCosts();
+            
+            // pg 63 assert I1', I2, I3
+            assert(gFlow.assertFlowValueIncludingSrcSnk(s));
+            assert(gFlow.assertPricesAreQuantizedEps(epsLarge));
+            //assert(gFlow.integralFlowIsEpsProper(epsLarge));  
+            assert(gFlow.integralBipartiteFlowIsEpsProper(epsLarge));  
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
+                        
             //log.info("after augment flow:");
-            gFlow.printSaturatedLinks();
+            //gFlow.printSaturatedLinks();
 
             h = surplus.size();
 
@@ -578,6 +606,7 @@ System.out.println(tSec + " msec for augmentFlow");
             
             ++nHIter;
         }
+        
 t11 = System.currentTimeMillis();
 tSec = (t11 - t00)/1000;
 System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
@@ -697,7 +726,7 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
         
         log.fine("buildForest2");
 
-        log.info("nSurplus=" + surplus.size() + " nDeficit="
+        log.fine("nSurplus=" + surplus.size() + " nDeficit="
             + deficit.size());
         
         terminatingKeys.clear();
@@ -798,7 +827,7 @@ System.out.println(tSec + " msec for "
                 }
             }
                      
-            log.info("extractMin = " + node1.toString());
+            log.fine("extractMin = " + node1.toString());
         
             if (node1.getKey() > lambda) {
                 // since this path did not reach a deficit
@@ -845,13 +874,7 @@ System.out.println(tSec + " msec for "
                 if (indexes2 != null) {
                     for (Integer index2 : indexes2) {
                         float cp = gFlow.calcNetCost(idx1, index2.intValue());
-                       
-        if (cp < 0) {
-            int idx2 = index2.intValue();
-            gFlow.calcNetCost(idx1, index2.intValue());
-            int z = 1;
-        }
-        
+                               
                         handlePlusLink(minHeap, node1, rightNodes.get(index2), 
                             cp, lambda, eps);
                     }
@@ -884,7 +907,7 @@ System.out.println(tSec + " msec for "
                 }
             }
             
-            log.info("add to forest key=" + node1.toString());
+            log.fine("add to forest key=" + node1.toString());
 
             //add v to the forest;
             lastKey = forest.add(node1, lastKey);
@@ -906,7 +929,7 @@ System.out.println(tSec + " msec for "
                 
                 terminatingKeys.put(index1, Integer.valueOf((int)lastKey));
                 
-                log.info("terminatingKeys.size=" + terminatingKeys.size()
+                log.fine("terminatingKeys.size=" + terminatingKeys.size()
                    + " deficit.size=" + deficit.size());
                 
                 if (terminatingKeys.size() == deficit.size()) {
@@ -1105,7 +1128,6 @@ Matchings in G are integral flows in N_G
      and c(M) = c(f)
      Thus, a min-cost matching of some size s corresponds to 
      a min-cost integral flow of value s.
--------    
     */
     
     private boolean allAreEmpty(DoubleLinkedCircularList[] 
@@ -1424,9 +1446,6 @@ Matchings in G are integral flows in N_G
             return output;
         }
 
-        float maxLeft = Float.MIN_VALUE;
-        float minRight = Float.MAX_VALUE;
-        
         Set<Integer> spForestIndexes = new HashSet<Integer>(spIndexes.values());
 
         for (Integer ltForestKey : spForestIndexes) {
@@ -1443,9 +1462,10 @@ Matchings in G are integral flows in N_G
             
                 List<PathNode> path = pathLists.get(pathIdx);
 
-                log.info("path " + pathIdx + " (lt=" + lt + ")");
-                
-                debugPath(path);
+                log.fine("path " + pathIdx + " (lt=" + lt + ")");
+                if (log.isLoggable(Level.FINE)) {                
+                    debugPath(path);
+                }
                 
                 // these get stored for every path, but not applied to
                 // the gFlow at this time
@@ -1499,7 +1519,7 @@ Matchings in G are integral flows in N_G
                                 
                                 if (l2 < 0) {
                                     //X=N2  Y=N1
-                                    log.info("forest at time of error:");
+                                    log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
                                         "for saturated link X=" + node2.getData() + " to Y="
@@ -1517,7 +1537,7 @@ Matchings in G are integral flows in N_G
                                 
                                 if (l1 < 0) {
                                     //X=N2 Y=N1
-                                    log.info("forest at time of error:");
+                                    log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
                                         "for idle link X=" + node2.getData() + " to Y="
@@ -1540,7 +1560,7 @@ Matchings in G are integral flows in N_G
                                 
                                 if (l1 < 0) {
                                     // Y=N1  Y=N2=SINK
-                                    log.info("forest at time of error:");
+                                    log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
                                         "for saturated link Y=" + node1.getData() + " to sink="
@@ -1555,7 +1575,7 @@ Matchings in G are integral flows in N_G
                                 
                                 if (l2 < 0) {
                                     // Y=N1  Y=N2=SINK
-                                    log.info("forest at time of error:");
+                                    log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
                                         "for idle link Y=" + node1.getData() + " to sink="
@@ -1568,11 +1588,7 @@ Matchings in G are integral flows in N_G
                         // end of node1 is right node
                     } else if (node1IsLeft) {
                         assert(!node2IsLeft);
-                        if (node2IsRight) {
-                            
-    if (index1.intValue() == 0 && index2.intValue() == 9) {
-        int z = 1;    
-    }   
+                        if (node2IsRight) {   
     
                             Float p2I = rightPriceIncreases.get(index2);
                             if (p2I == null && delta2 > 0) {
@@ -1926,7 +1942,7 @@ Matchings in G are integral flows in N_G
         gFlow.getSurplusLeftIndexes(surplus);
         gFlow.getDeficitRightIndexes(deficit);
         
-        log.info("nSurplus=" + surplus.size() + " nDeficit="
+        log.fine("nSurplus=" + surplus.size() + " nDeficit="
             + deficit.size());
         
         int hAfter = surplus.size();
@@ -2151,9 +2167,6 @@ Matchings in G are integral flows in N_G
         TODO: consider compressed keys.
         */
     
-        float maxLeft = Float.MIN_VALUE;
-        float minRight = Float.MAX_VALUE;
-        
         Map<QuadInt, Integer> priceLookupMap = createPriceLookupMap(cachedPriceChanges);
         
         for (LinkedList path : cPaths) {
@@ -2175,9 +2188,6 @@ Matchings in G are integral flows in N_G
             for (Entry<Integer, Float> entry : leftP.entrySet()) {
                 float f = entry.getValue().floatValue();
                 gFlow.addToLeftPrice(entry.getKey().intValue(), f);
-                if (f > maxLeft) {
-                    maxLeft = f;
-                }
             }
             
             Map<Integer, Float> rightP = p.rightPriceIncreases;
@@ -2185,26 +2195,9 @@ Matchings in G are integral flows in N_G
                 : rightP.entrySet()) {
                 float f = entry.getValue().floatValue();
                 gFlow.addToRightPrice(entry.getKey().intValue(), f);
-                if (f < minRight) {
-                    minRight = f;
-                }
             }
         }
         
-        /*
-        if (maxLeft > Float.MIN_VALUE) {
-            float f = gFlow.getLeftPrice(gFlow.getSourceNode());
-            if (f < maxLeft) {
-                gFlow.setLeftPrice(gFlow.getSourceNode(), maxLeft);
-            }
-        }
-        if (minRight < Float.MAX_VALUE) {
-            float f = gFlow.getRightPrice(gFlow.getSinkNode());
-            if (f > minRight) {
-                gFlow.setRightPrice(gFlow.getSinkNode(), minRight);
-            }
-        }
-        */
     }
     
     private QuadInt createKey(List<PathNode> path) {
