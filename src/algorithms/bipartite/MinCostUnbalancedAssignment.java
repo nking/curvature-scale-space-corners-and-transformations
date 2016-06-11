@@ -295,7 +295,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
         could continue to use the eps as defined by max cost, but
         further sort the items within a bucket by the eps derived from
         the minimum cost.
-           SO, need a double key minHeap insert, and a FIFO extractMin
+           SO, need a double key minHeap insert, and a extractMin by order
            from a bucket.
            (the eps_from_max_cost is the eps suggested by the authors,
            and that would be the main key + 1 to use to locate the
@@ -334,7 +334,9 @@ System.out.println(tSec + " sec for hopcroftkarp");
         int e_up = 1 + (int)Math.floor(Math.log(gFlow.getMinC())/Math.log(q));
         double eps_up = Math.pow(q, e_up - 1);
         int rIter = (int)(Math.log(s * gFlow.getMinC())/Math.log(q));
-        
+        if (rIter == 0) {
+            rIter = 1;
+        }
         
         int e_down = -(1 + (int)Math.floor( Math.log(s + 2)/Math.log(q)));
         double eps_down = Math.pow(q, e_down);
@@ -350,7 +352,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
                
         // all nodes V in gFlow have prices = 0
         
-        while ((eps > eps_down) && (nIterR < 2*rIter)) {
+        while ((epsLarge > eps_down) && (nIterR < 2*rIter)) {
             
             log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps
                 + " epsLarge=" + epsLarge);
@@ -474,6 +476,9 @@ long t0 = System.currentTimeMillis();
             //   their paths are stored
             Map<Integer, Integer> spIndexes = new HashMap<Integer, Integer>();
             
+            float maxDivMin = gFlow.getMaxC()/gFlow.getMinC();
+            lambda = 1 + (int)Math.floor(maxDivMin * lambda);
+            
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 spIndexes, lambda);
@@ -500,10 +505,10 @@ t0 = System.currentTimeMillis();
             log.fine("before modify prices:");
             debug(forest);
             gFlow.printNetCosts();
-            
+                
             List<PathsAndPrices> zeroLengthPaths = 
                 modifyPathLengths(gFlow, rF, forest, 
-                spIndexes, epsLarge);
+                spIndexes, eps);
            
 t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
@@ -551,17 +556,15 @@ t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
 System.out.println(tSec 
 + " msec for raisePricesForMaximalSet");
-
-            assert(gFlow.printSurplusAndDeficit());
             
             // postponed assertions:
             // assert from pg 52 
             //       I1', I2, I3, I4, on FlowNetwork
             //       and I5 on ResidualDigraph2
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(epsLarge));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
             //assert(gFlow.integralFlowIsEpsProper(epsLarge));
-            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
+            //assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
             //assert I5: Rf has no cycles of length zero
             
             log.fine("cPaths.size=" + cPaths.size());
@@ -583,16 +586,16 @@ t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for augmentFlow");
 
-            log.info("after augmentation");
+            log.info("after augmentation (eps=" + eps + " epsLarge=" + epsLarge);
             debug(forest);
             gFlow.printNetCosts();
             
             // pg 63 assert I1', I2, I3
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
-            assert(gFlow.assertPricesAreQuantizedEps(epsLarge));
+            assert(gFlow.assertPricesAreQuantizedEps(eps));
             //assert(gFlow.integralFlowIsEpsProper(epsLarge));  
-            assert(gFlow.integralBipartiteFlowIsEpsProper(epsLarge));  
-            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
+            assert(gFlow.integralBipartiteFlowIsEpsProper(eps));  
+            assert(gFlow.assertSaturatedBipartiteIsEpsSnug(eps));
                         
             //log.info("after augment flow:");
             //gFlow.printSaturatedLinks();
@@ -713,7 +716,10 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
     }
     
     /**
-     * runtime complexity is O(surplus * lg2(surplus_edges))
+     * runtime complexity is O(surplus * lg2(surplus_edges)).
+     * NOTE: NOTE READY FOR USE YET.
+     * The minHeap will be replaced with a multi-level bucket 
+     * soon.
      * @param gFlow
      * @param rF
      * @param surplus
