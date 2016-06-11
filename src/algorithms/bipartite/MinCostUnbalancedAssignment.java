@@ -291,7 +291,10 @@ System.out.println(tSec + " sec for hopcroftkarp");
         eps = q * minCost.
         The problem is then that lambda as the key range and hence size
         of minHeap in buildForest2 would need to be larger by a factor
-        of eps_from_max_cost/eps_from_min_cost.
+        of eps_from_max_cost/eps_from_min_cost.  Instead of doing that,
+        could continue to use the eps as defined by max cost, but
+        further sort the items within a bucket by the eps derived from
+        the minimum cost.
            SO, need a double key minHeap insert, and a FIFO extractMin
            from a bucket.
            (the eps_from_max_cost is the eps suggested by the authors,
@@ -300,6 +303,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
            be determined by the eps_from_min_cost.
            SO, need to think of how to scale the 2nd key so that can use
            the "coutning sort" O(1) performance.
+           MLB implementations exist...
         
         another caveat is that the top=down assertions of "eprs-proper" from large eps to 
         smaller would possibly fail if eps were set with the minimum cost of
