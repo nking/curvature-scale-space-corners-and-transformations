@@ -196,6 +196,10 @@ public class HeapNode {
     public void setMark(boolean mark) {
         this.mark = mark;
     }
+
+    public static Class getType() {
+        return HeapNode.class;
+    }
     
     @Override
     public String toString() {
