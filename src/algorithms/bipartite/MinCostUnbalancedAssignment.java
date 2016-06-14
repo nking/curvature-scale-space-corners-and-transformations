@@ -716,7 +716,7 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
     }
     
     /**
-     * runtime complexity is O(surplus * lg2(surplus_edges)).
+     * runtime complexity is O(surplus * lg2(avg_n_connections_out_of_surplus_node))
      * NOTE: NOTE READY FOR USE YET.
      * The minHeap will be replaced with a multi-level bucket 
      * soon.

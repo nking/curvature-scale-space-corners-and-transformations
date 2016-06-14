@@ -37,7 +37,7 @@ public class MinHeapForRT2012 {
     private final Heap heap1;
     
     void printLastKnownMinMax() {
-        System.out.println("min=" + lastKnownMinKey0
+        log.info("min=" + lastKnownMinKey0
             + " max=" + lastKnownMaxKey0);
     }
     
@@ -53,7 +53,7 @@ public class MinHeapForRT2012 {
             
             heap1 = null;
 
-            System.out.println("useDial=" + useDial + " cap=" + capacity);
+            log.fine("useDial=" + useDial + " cap=" + capacity);
              
         } else {
             
@@ -119,7 +119,7 @@ public class MinHeapForRT2012 {
             heap0[key] = bucket;
         }
         
-        log.info("insert into minHeap at key =" + node.toString());
+        log.fine("insert into minHeap at key =" + node.toString());
        
         bucket.insert(node);
         n0++;

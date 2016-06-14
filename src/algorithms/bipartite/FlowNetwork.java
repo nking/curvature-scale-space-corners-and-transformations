@@ -675,7 +675,7 @@ public class FlowNetwork {
                 
                 PairInt p = new PairInt(index1.intValue(), index2.intValue());
                 float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
+                int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
                     // idle, cp > -epsT
                     if (cp <= -eps) {
@@ -692,6 +692,7 @@ public class FlowNetwork {
 
         return true;
     }
+    
     /**
      * assert pg 44 I3.
      * Every arc of NG, idle or saturated, is eps-proper.
@@ -710,21 +711,19 @@ public class FlowNetwork {
                 
                 PairInt p = new PairInt(index1.intValue(), index2.intValue());
                 float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
+                int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
                     // idle, cp > -epsT
                     if (cp <= -eps) {
-    log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
-    unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
+                            unitFlow, cp, eps, index1.toString(), index2.toString()));
                         return false;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     if (cp > eps) {
-     log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
-    unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
+                            unitFlow, cp, eps, index1.toString(), index2.toString()));
                         return false;
                     }
                 }
@@ -733,20 +732,18 @@ public class FlowNetwork {
 
         for (Integer index1 : sourceForwardArcs) {
             float unitFlow = sourceToLeftF.get(index1);
-            float cp = calcSourceNetCost(index1.intValue());
+            int cp = (int)Math.ceil(calcSourceNetCost(index1.intValue()));
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
-    log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s", 
-    unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s",
+                        unitFlow, cp, eps, index1.toString()));
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
-    log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s", 
-    unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s",
+                        unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             }
@@ -754,30 +751,29 @@ public class FlowNetwork {
         
         for (Integer index1 : sinkForwardArcs) {
             float unitFlow = rightToSinkF.get(index1);
-            float cp = calcSinkNetCost(index1.intValue());
+            int cp = (int)Math.ceil(calcSinkNetCost(index1.intValue()));
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
-                    log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink", 
-    unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink",
+                        unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
-                    log.info(String.format
-    ("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink", 
-    unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink",
+                        unitFlow, cp, eps, index1.toString()));
                     return false;
                 }
             }
         }
+        
         return true;
     }
+    
     /**
      * Every arc of the network flow, idle or saturated, is proper.
-     * @param eps
      * @return 
      */
     public boolean integralFlowIsProper() {
@@ -835,9 +831,8 @@ public class FlowNetwork {
                     // saturated
                     // snug is -eps < cp <= eps
                     if ((cp <= -eps) || (cp > eps)) {
-    log.info(String.format
-    ("NOT EPS-SNUG f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s", 
-    unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format("NOT EPS-SNUG f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
+                            unitFlow, cp, eps, index1.toString(), index2.toString()));
                         return false;
                     }
                 }
@@ -985,25 +980,25 @@ public class FlowNetwork {
     }
 
     public void setRightPrice(int idx, float value) {
-        log.info("add to right " + idx + " : " + pRight[idx] + " + " + value + " = " + 
+        log.fine("add to right " + idx + " : " + pRight[idx] + " + " + value + " = " + 
             (pRight[idx] + value));
         pRight[idx] = value;
     }
     
     public void addToLeftPrice(int idx, float value) {
-        log.info("add to left " + idx + " : " + pLeft[idx] + " + " + value + " = " + 
+        log.fine("add to left " + idx + " : " + pLeft[idx] + " + " + value + " = " + 
             (pLeft[idx] + value));
         pLeft[idx] += value;
     }
 
     public void addToSourcePrice(float value) {
-        log.info("add to source : " + pLeft[sourceNode] + " + " + value + " = " + 
+        log.fine("add to source : " + pLeft[sourceNode] + " + " + value + " = " + 
             (pLeft[sourceNode] + value));
         pLeft[sourceNode] += value;
     }
 
     public void addToSinkPrice(float value) {
-        log.info("add to sink : " + pLeft[sinkNode] + " + " + value + " = " + 
+        log.fine("add to sink : " + pLeft[sinkNode] + " + " + value + " = " + 
             (pLeft[sinkNode] + value));
         pLeft[sinkNode] += value;
     }

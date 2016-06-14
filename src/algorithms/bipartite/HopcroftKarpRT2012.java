@@ -4,11 +4,8 @@ import algorithms.bipartite.MinCostUnbalancedAssignment.Forest;
 import algorithms.bipartite.MinCostUnbalancedAssignment.LeftNode;
 import algorithms.bipartite.MinCostUnbalancedAssignment.RightNode;
 import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
-import algorithms.bipartite.MinCostUnbalancedAssignment.SinkNode;
-import algorithms.bipartite.MinCostUnbalancedAssignment.SourceNode;
 import static algorithms.bipartite.MinCostUnbalancedAssignment.extractNodes;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.mst.PrimsMST;
 import algorithms.util.PairInt;
@@ -74,7 +71,7 @@ public class HopcroftKarpRT2012 {
                         
             //announce(M is a matching)
             
-            log.info("nIter=" + nIter + " m2.size=" + m2.size()
+            log.fine("nIter=" + nIter + " m2.size=" + m2.size()
                 + " m.size=" + m.size());
             /*
             // debug:
@@ -297,7 +294,7 @@ public class HopcroftKarpRT2012 {
             long currentKey = forest.add(y, prevKey);
             
             if (currentKey > prevKey) {
-                log.info("augment forest[" + prevKey + "] ");
+                log.fine("augment forest[" + prevKey + "] ");
                 //forest[0] are the maiden nodes alone
                 if (prevKey > 0) {
                     //debug(forest);
@@ -338,7 +335,7 @@ public class HopcroftKarpRT2012 {
                     vXY.get(topIndex));
                 
                 if (currentKey > prevKey) {
-                    log.info("augment forest[" + prevKey + "] ");
+                    log.fine("augment forest[" + prevKey + "] ");
                     if (prevKey > 0) {
                         //debug(forest);
                         augmentPath(rM, forest, prevKey, augmentedLeft,
@@ -367,7 +364,7 @@ public class HopcroftKarpRT2012 {
         }
         
         if (lastAugKey < prevKey) {
-            log.info("augment forest[" + prevKey + "] ");
+            log.fine("augment forest[" + prevKey + "] ");
             if (prevKey > 0) {
                 //debug(forest);
                 augmentPath(rM, forest, prevKey, augmentedLeft,
