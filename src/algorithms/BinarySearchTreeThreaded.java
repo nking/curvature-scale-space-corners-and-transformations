@@ -18,6 +18,11 @@ import java.util.Stack;
  * GNU General Public License as
    published by the Free Software Foundation; either version 2.
  * 
+ * TODO:
+ * The class is not completely tested yet.  Need to
+ * test more thoroughly for integrity of the bst 
+ * after root node deletions.
+ * 
  * @author nichole
  */
 public class BinarySearchTreeThreaded<T extends HeapNode> {
