@@ -15,16 +15,16 @@ public class YFastTrie {
         start from 0 extending to last one holding maxC.
       - each tree has a representative if it has any nodes
         and those are stored
-        in the XFastTrie of this yFastTrie.
-      - because the xfast trie only holds w xft values,
-         the space complexity is reduced.
+        in the XFastTrie of this YFastTrie.
+      - because the XFastTrie only holds w xft values,
+        the space complexity is reduced.
 -------------------------------
 YFastTrie
 -------------------------------
 -w : int // num bits
 -maxC : int // max vlue corresponding to w
 -binSize : int // maxC/w
--bt : XFastTrie
+-xft : XFastTrie
 -rbKeys : int[w]
 -rbs : List<TreeMap<Integer, LinkedList<HeapNode>>> // size is w
 --------------------------------
@@ -54,7 +54,7 @@ yfast trie
       - will choose the min within each tree (min heap is current use case)
       - this needs to be updated on insert and on delete
         because the remaining queries rely on these being minimima
-   - xfasttrie node:
+   - XFastTrieNode:
       - rbIndex is needed as additional field
         (that may require edits to sfastttrie to
          make sure data is copied when new nodes are created...removed most of those).
@@ -76,7 +76,7 @@ yfast trie
             in the rb tree.
             assert that.
     - find value:
-       - search for exact value in xft
+       - xft.find for exact value in xft
             and if found, return node from found rb tree index and key
        - else 
           - find the largest min value (==repr) smaller than value.
@@ -91,7 +91,7 @@ yfast trie
         xft.maximum gives rbIndex and node value.  get the node from
         the rb tree and delete it
    - successor value:
-       - find successor repr in xfastrie:
+       - xft.successor to find repr
           r    r    r
          |    |    |    |
          - rbIndex is the tree the successor should be
@@ -99,7 +99,7 @@ yfast trie
            in which case the successor is the min value of next tree,
            else is successor of value in current rb tree.
    - predecessor value:
-       - find predecessor repr in xfastrie:
+       - xft.predecessor to find repr
           r    r    r
          |    |    |    |
          - if value is the minimum value in rb tree,
@@ -108,9 +108,9 @@ yfast trie
     - minimum value:
         - xft.minimum
     - maximum value:
-        - search for value maxC and if found, return node
+        - xft.find for value maxC and if found, return node
         - else,
-          predecessor(maxC) find the rb tree index,
+          xft.predecessor(maxC) find the rb tree index,
           then max of that tree is the maximum
     
     NOTE: topics to consider for improvements:
@@ -129,12 +129,11 @@ yfast trie
           papers too, so gathering all the specs for his
           algorithm is not complete...)
           -- one possible work around without making dynamic
-          partitions would be to know or estimate the population
-          of data ahead of time and then make separate
-          YFastTrie's for manually partitioned data
-          (changing zero-points, a.k.a. bias levels as needed
-          before and after use of more than one 
-          YFastTries)
+          partitions in the YFastTrie would be to know or 
+          estimate the population of data ahead of time and 
+          then make separate YFastTrie's for manually partitioned 
+          data (changing zero-points, a.k.a. bias levels as needed
+          before and after use of more than one YFastTrie)
     */
     
 }
