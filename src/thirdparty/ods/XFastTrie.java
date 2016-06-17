@@ -58,18 +58,74 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	}
 	
 	public boolean add(T x) {
-		if (super.add(x)) {
-			int i, c = 0, ix = it.intValue(x);
-			S u = (S)r.child[(ix>>>w-1) & 1];
-			for (i = 1; i <= w; i++) {
-				u.prefix = ix >>> w-i;
-				t.get(i).put(Integer.valueOf(u.prefix), u);
-				c = (ix >>> w-i-1) & 1;
-				u = (u.child[c] != null) ? (S)u.child[c] : null;
+        final int ix = it.intValue(x);
+        if (ix > maxC) {
+            throw new IllegalArgumentException("w=" + w
+               + " so max value can add is " + maxC);
+        }
+        S u = r;
+        S v;
+        int i;
+        int l = 0, h = w+1;
+        int prefix = -1;
+        // binary search over range w;  rt is < O(lg_2(w))
+		while (h-l > 1) {
+			i = (l+h)/2;
+			prefix = ix >>> w-i;
+            v = t.get(i).get(Integer.valueOf(prefix));
+			if (v == null) {
+				h = i;
+			} else {
+				u = v;
+				l = i;
 			}
-			return true;
 		}
-		return false;
+        
+        if (l == w) return false; // already contains x - abort
+       
+        int c = (ix >>> w-l-1) & 1;
+        
+        S pred = (c == right) ? (S)u.jump : (S)u.jump.child[0];
+		u.jump = null;  // u will have two children shortly
+        i = l;
+        // 2 - add path to ix. rt is O(w-l)
+		for (; i < w; i++) {
+			c = (ix >>> w-i-1) & 1;
+			u.child[c] = newNode();
+			u.child[c].parent = u;
+			u = (S) u.child[c];
+		}
+		u.x = x;
+		// 3 - add u to linked list
+		u.child[prev] = pred;
+		u.child[next] = pred.child[next];
+		u.child[prev].child[next] = u;
+		u.child[next].child[prev] = u;
+		// 4 - walk back up, updating jump pointers
+	    v = (u.parent != null) ? (S)u.parent : null;
+		while (v != null) {
+			if ((v.child[left] == null 
+	        	&& (v.jump == null ||
+                it.intValue((T)v.jump.x) > ix))
+			|| (v.child[right] == null 
+	    		&& (v.jump == null || 
+                (v.jump.x != null && it.intValue((T)v.jump.x) < ix))
+                )) {
+				v.jump = u;
+            }
+			v = (v.parent != null) ? (S)v.parent : null;
+		}
+        
+		n++;
+       
+        u = (S) r.child[(ix >>> w - 1) & 1];
+        for (i = 1; i <= w; i++) {
+            u.prefix = ix >>> w - i;
+            t.get(i).put(Integer.valueOf(u.prefix), u);
+            c = (ix >>> w - i - 1) & 1;
+            u = (u.child[c] != null) ? (S) u.child[c] : null;
+        }
+        return true;
 	}
 	
 	public boolean remove(T x) {
