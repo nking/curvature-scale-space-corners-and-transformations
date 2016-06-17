@@ -25,16 +25,16 @@ YFastTrie
 -binSize : int // maxC/w
 -bt : XFastTrie
 -rbKeys : int[w]
--rbs : List<TreeMap<Integer, LinkedList<Hea[Node>>> // size is w
+-rbs : List<TreeMap<Integer, LinkedList<HeapNode>>> // size is w
 --------------------------------
 +insert(HeapNode) : boolean
 +extractMin(HeapNode) : HeapNode
 +extractMax(HeapNode) : HeapNode
 +successor(int key) : HeapNpde
 +predecessor(int key) : HeapNpde
-+find(int key) : HeaNode
-+minimum() : HeaNode
-+maximum() : HeaNode
++find(int key) : HeapNode
++minimum() : HeapNode
++maximum() : HeapNode
 +delete(HeapNode) : boolean
 +size() : int
 ---------------------------------
@@ -47,26 +47,26 @@ yfast trie
    - one xfast trie to hold the representives (at most w in number)
    - w red black trees to keep ordered points.
      - because some of the items added may have more than
-       one with same key value, the values in teh red black tree
+       one with same key value, the values in the red black tree
        will be linked lists.
    - choosing representatives:
       - will choose the min within each tree (min heap is current use case)
       - this needs to be updated on insert and on delete
         because the remaining queries rely on these being minimima
    - xfasttrie node:
-      - rbIndex is needed as additional field OR
+      - rbIndex is needed as additional field
         (that may require edits to sfastttrie to
          make sure data is copied when new nodes are created...removed most of those).
       - an array of size w rb key values is needed to check whether
         a representative exists quickly.
    - insert node:
-        - the rb tree is found by index = maxC/w (no query to xft)
+        - the rb tree is found by index = key/w (no query to xft)
         - if there is no representative for the tree,
           one is added,
           else if key is smaller than existing repr, replace existing
         - node is added to rb tree at index key/w
    - delete node:
-        - the rb tree is found by index = maxC/w (no query to xft)
+        - the rb tree is found by index = key/w (no query to xft)
         - remove key from rb tree.
         - if its linked list is empty, remove the key from rb tree.
         - if this key is the repr for the tree,
@@ -76,13 +76,18 @@ yfast trie
             assert that.
     - find value:
        - search for exact value in xft
-            and if found, return node from found index
-       - else search the repr which are all min values of their trees.
-       - find the largest min value (==repr) smaller than value.
-         search the repr rbIndex tree.
+            and if found, return node from found rb tree index and key
+       - else 
+          - find the largest min value (==repr) smaller than value.
+            (== xft.predecessor). 
+            then with the found rbtree index, search the tree.
    - extractMin:
      - find min of the repr keys:
         xft.minimum gives rbIndex and node value.  get the node from
+        the rb tree and delete it
+   - extractMax:
+     - find max of the repr keys:
+        xft.maximum gives rbIndex and node value.  get the node from
         the rb tree and delete it
    - successor value:
        - find successor repr in xfastrie:
@@ -97,8 +102,14 @@ yfast trie
           r    r    r
          |    |    |    |
          - if value is the minimum value in rb tree,
-             return max value of preceding populated rb trr,
+             return max value of preceding populated rb tree,
            else, return predecessor of value within the rb tree.
-    puased here...
+    - minimum value:
+        - xft.minimum
+    - maximum value:
+        - search for value maxC and if found, return node
+        - else,
+          predecessor(maxC) find the rb tree index,
+          then max of that tree is the maximum
     */
 }
