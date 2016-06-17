@@ -64,8 +64,6 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 			for (i = 1; i <= w; i++) {
 				u.prefix = ix >>> w-i;
 				t.get(i).put(Integer.valueOf(u.prefix), u);
-   System.out.println("prefix=" + u.prefix + " ix=" + ix
-   + " ht.sizd=" + t.get(i).size());         
 				c = (ix >>> w-i-1) & 1;
 				u = (u.child[c] != null) ? (S)u.child[c] : null;
 			}
@@ -82,11 +80,22 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
                + " so max value can remove is " + maxC);
         }
 		S u = r;
-		for (i = 0; i < w; i++) {
-			c = (ix >>> w-i-1) & 1;
-			if (u.child[c] == null) return false;
-			u = (S)u.child[c];
+        S v;		
+        int l = 0, h = w+1;
+        int prefix = -1;
+        // binary search over range w
+		while (h-l > 1) {
+			i = (l+h)/2;
+			prefix = ix >>> w-i;
+            v = t.get(i).get(Integer.valueOf(prefix));
+			if (v == null) {
+				h = i;
+			} else {
+				u = v;
+				l = i;
+			}
 		}
+       
 		// 2 - remove u from linked list
 		S pred = (u.child[prev] != null) ?
             (S)u.child[prev] : null;   // predecessor
@@ -103,7 +112,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
             } else { // u == u.parent.child[right] 
 				w.parent.child[right] = null;
             }
-            int prefix = w.prefix;
+            prefix = w.prefix;
 			t.get(i--).remove(Integer.valueOf(w.prefix));
 			w = (w.parent != null) ? (S)w.parent : null;
 		}
@@ -177,12 +186,13 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         }
 		// find lowest node that is an ancestor of ix
 		int l = 0, h = w+1;
-		S v, u = r, q = newNode();
+		S v, u = r;
+        int prefix;
         // binary search over range w
 		while (h-l > 1) {
 			int i = (l+h)/2;
-			q.prefix = ix >>> w-i;
-            v = t.get(i).get(Integer.valueOf(q.prefix));
+			prefix = ix >>> w-i;
+            v = t.get(i).get(Integer.valueOf(prefix));
 			if (v == null) {
 				h = i;
 			} else {
@@ -293,7 +303,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	
     /**
      * print out the dummy link keys then print the
-     * root tree in level  traversal
+     * root tree in level traversal
      */
     void debugNodes() {
         Set<Integer> dummyHashCodes = new HashSet<Integer>();
