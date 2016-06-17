@@ -5,6 +5,7 @@ package algorithms;
  * @author nichole
  */
 public class YFastTrie {
+
     /*    
     designing from browsing a few different lecture notes
     online. the yfast trie uses same w and maxC as
@@ -111,5 +112,25 @@ yfast trie
         - else,
           predecessor(maxC) find the rb tree index,
           then max of that tree is the maximum
+    
+    NOTE: topics to consider for improvements:
+          the distribution of rb trees, that is their parttions,
+          could be improved dynamically.
+          For example, if maxC were value 127, but the majority
+          of nodes at some point in time were in bin 0 at values
+          near 4, one would prefer to divide that tree 
+          into more than one tree to speed up searches.
+          This begins to look like a good reason to
+          compare to multi-level-buckets.  The only implementation
+          I could find was the Andrew Goldberg MLB offered 
+          under a license that prohibits commercial use
+          (so I didn't download and read the code)...
+          -- one possible work around without making dynamic
+          partitions would be to know or estimate the population
+          of data ahead of time and then make separate
+          YFastTrie's for manually partitioned data
+          (changing zero-points, a.k.a. bias levels as needed
+          before and after "partitioning of YFastTries"....
     */
+    
 }
