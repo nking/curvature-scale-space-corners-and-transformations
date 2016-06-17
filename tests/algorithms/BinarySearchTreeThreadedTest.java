@@ -57,7 +57,21 @@ public class BinarySearchTreeThreadedTest extends TestCase {
     }
     
     public void test0() throws NoSuchAlgorithmException {
+
+        /*
+        if use n = 6, here is the bst structure:
         
+              r 0
+       0                 1
+                     0            2
+                              1            5
+                                      4        null
+                                   3     5
+                                 2   4
+                               1  5
+
+        */
+
         BinarySearchTreeThreaded<HeapNode> bst 
             = new BinarySearchTreeThreaded<HeapNode>();
         
@@ -158,7 +172,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
                     HeapNode next = bst.successor(node);
                     int expected = i + 1;
                     while (expected < n) {
-                        if (rm.contains(nodes[expected])) {
+                        if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
                             assertEquals((long)expected, next.getKey());
@@ -226,7 +240,7 @@ public class BinarySearchTreeThreadedTest extends TestCase {
                     HeapNode next = bst.successor(node);
                     int expected = i + 1;
                     while (expected < n) {
-                        if (rm.contains(nodes[expected])) {
+                        if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
                             assertEquals((long)expected, next.getKey());

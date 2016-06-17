@@ -131,7 +131,7 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		int i, c = 0, ix = it.intValue(x);
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so min value can add is " + maxC);
+               + " so max value can add is " + maxC);
         }
 		BinaryTrieNode<T> u = r;
 		// 1 - search for ix until falling out of the trie
@@ -191,7 +191,7 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		int i, c = 0;
 		if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so min value can find is " + maxC);
+               + " so max value can find is " + maxC);
         }
         BinaryTrieNode<T> u = r;
 		for (i = 0; i < w; i++) {
@@ -213,7 +213,7 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		int i, c, ix = it.intValue(x);
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so min value can remove is " + maxC);
+               + " so max value can remove is " + maxC);
         }
 		BinaryTrieNode<T> u = r;
 		for (i = 0; i < w; i++) {
@@ -272,11 +272,11 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 	 * @return The node before the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	protected S predecessor(T x) {
+	public S predecessor(T x) {
 		int i, c = 0, ix = it.intValue(x);
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so min value argument is " + maxC);
+               + " so max value argument is " + maxC);
         }
 		BinaryTrieNode<T> u = r;
 		for (i = 0; i < w; i++) {
@@ -297,11 +297,11 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 	 * @return The node after the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	protected S successor(T x) {
+	public S successor(T x) {
 		int i, c = 0, ix = it.intValue(x);
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
-               + " so min value argument is " + maxC);
+               + " so max value argument is " + maxC);
         }
 		BinaryTrieNode<T> u = r;
 		for (i = 0; i < w; i++) {
