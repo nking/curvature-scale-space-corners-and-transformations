@@ -124,13 +124,17 @@ yfast trie
           compare to multi-level-buckets.  The only implementation
           I could find was the Andrew Goldberg MLB offered 
           under a license that prohibits commercial use
-          (so I didn't download and read the code)...
+          (so I didn't download and read the code.  am reading
+          his 2 papers on the subject, but they depend upon other
+          papers too, so gathering all the specs for his
+          algorithm is not complete...)
           -- one possible work around without making dynamic
           partitions would be to know or estimate the population
           of data ahead of time and then make separate
           YFastTrie's for manually partitioned data
           (changing zero-points, a.k.a. bias levels as needed
-          before and after "partitioning of YFastTries"....
+          before and after use of more than one 
+          YFastTries)
     */
     
 }
