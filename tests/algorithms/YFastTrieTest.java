@@ -1,9 +1,12 @@
-package thirdparty.ods;
+package algorithms;
 
+import algorithms.imageProcessing.HeapNode;
+import thirdparty.ods.*;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
@@ -13,167 +16,140 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class XFastTrieTest extends TestCase {
+public class YFastTrieTest extends TestCase {
     
-    public XFastTrieTest() {
+    public YFastTrieTest() {
     }
 
     public void test0() {
         
         System.out.println("test0");
         
-		XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
-		
-        Integerizer<Integer> it = new Integerizer<Integer>() {
-            @Override
-            public int intValue(Integer x) {
-                return x;
-            }
-        };
-        
         int w = 4;
 		
-        XFastTrie<XFastTrieNode<Integer>, Integer> bt
-            = new XFastTrie<XFastTrieNode<Integer>, Integer>(node, it, w);
+        YFastTrie bt = new YFastTrie(w);
         
         assertEquals(0, bt.size());
   
         System.out.println("add 2 0010");
         
-        boolean added = bt.add(Integer.valueOf(2));
+        HeapNode node2 = new HeapNode();
+        node2.setKey(2);
+        
+        HeapNode node3 = new HeapNode();
+        node3.setKey(3);
+        
+        HeapNode node4 = new HeapNode();
+        node4.setKey(4);
+        
+        HeapNode node5 = new HeapNode();
+        node5.setKey(5);
+        
+        HeapNode node6 = new HeapNode();
+        node6.setKey(6);
+        
+        boolean added = bt.add(node2);
         assertTrue(added);
         
         assertEquals(1, bt.size());
                 
         System.out.println("add 3 0011");
         
-        added = bt.add(Integer.valueOf(3));
+        added = bt.add(node3);
         assertTrue(added);
                 
         assertEquals(2, bt.size());
         
         System.out.println("add 5 0101");
          
-        added = bt.add(Integer.valueOf(5));
+        added = bt.add(node5);
         assertTrue(added);
                 
         assertEquals(3, bt.size());
         
         System.out.println("add 4 0100");
        
-        added = bt.add(Integer.valueOf(4));
+        added = bt.add(node4);
         assertTrue(added);
        
         assertEquals(4, bt.size());
         
-        bt.debugNodes();
+        assertEquals(node3, bt.find(node3));
+        assertEquals(node2, bt.find(node2));
+        assertEquals(node4, bt.find(node4));
+        assertEquals(node5, bt.find(node5));
         
-        /*
-        add "2", 0010
-                                               r
-                               0(pad)                   null
-                       0(pad)       
-                           1                  
-                          0            
-        -----------
-        add "2", 0010
-        add "3", 0011
-                                               r
-                               0(pad)                   null
-                       0(pad)       
-                           1                  
-                         0   1                  
-        ------------
-        add "2", 0010
-        add "3", 0011
-        add "5", 0101
-                                               r
-                               0(pad)                   null
-                       0(pad)              1     
-                           1           0    
-                         0   1           1
-        ------------
-        add "2", 0010
-        add "3", 0011
-        add "5", 0101
-        add "4", 0100
-                                               r
-                               0(pad)                   null
-                       0(pad)              1     
-                           1           0    
-                         0   1       0   1
-        */
-        
-        assertEquals(3, bt.find(Integer.valueOf(3)).intValue());
-        assertEquals(2, bt.find(Integer.valueOf(2)).intValue());
-        assertEquals(4, bt.find(Integer.valueOf(4)).intValue());
-        assertEquals(5, bt.find(Integer.valueOf(5)).intValue());
-        
-        Integer next = bt.successor(4);
-        assertEquals(5, it.intValue(next));
+        HeapNode next = bt.successor(node4);
+        assertEquals(node5, next);
         
         next = bt.successor(0);
-        assertEquals(2, it.intValue(next));
+        assertEquals(node2, next);
         
-        next = bt.successor(2);
-        assertEquals(3, it.intValue(next));
+        next = bt.successor(node2);
+        assertEquals(node3, next);
         
-        next = bt.successor(3);
-        assertEquals(4, it.intValue(next));
+        next = bt.successor(node3);
+        assertEquals(node4, next);
         
-        next = bt.successor(4);
-        assertEquals(5, it.intValue(next));
+        next = bt.successor(node4);
+        assertEquals(node5, next);
         
-        Integer prev;
+        HeapNode prev;
        
         prev = bt.predecessor((1<<(w-1)) - 1);
-        assertEquals(5, it.intValue(prev));
+        assertEquals(node5, prev);
         
-        prev = bt.predecessor(6);
-        assertEquals(5, it.intValue(prev));
+        prev = bt.predecessor(node6);
+        assertEquals(node5, prev);
        
-        prev = bt.predecessor(5);
-        assertEquals(4, it.intValue(prev));
+        prev = bt.predecessor(node5);
+        assertEquals(node4, prev);
         
-        prev = bt.predecessor(4);
-        assertEquals(3, it.intValue(prev));
+        prev = bt.predecessor(node4);
+        assertEquals(node3, prev);
         
-        prev = bt.predecessor(3);
-        assertEquals(2, it.intValue(prev));
+        prev = bt.predecessor(node3);
+        assertEquals(node2, prev);
         
-        prev = bt.predecessor(2);
+        prev = bt.predecessor(node2);
         assertNull(prev);
         
-        assertEquals(2, bt.minimum().intValue());
-        assertEquals(5, bt.maximum().intValue());
+        assertEquals(node2, bt.minimum());
+        assertEquals(node5, bt.maximum());
         
-        assertTrue(bt.remove(3));
+        assertTrue(bt.remove(node3));
         assertEquals(3, bt.size());
-        assertNull(bt.find(Integer.valueOf(3)));
-        assertEquals(2, bt.find(Integer.valueOf(2)).intValue());
-        assertEquals(4, bt.find(Integer.valueOf(4)).intValue());
-        assertEquals(5, bt.find(Integer.valueOf(5)).intValue());
-
-        assertNull(bt.find(Integer.valueOf(0)));
+        assertNull(bt.find(node3));
+        assertEquals(node2, bt.find(node2));
+        assertEquals(node4, bt.find(node4));
+        assertEquals(node5, bt.find(node5));
         
-        added = bt.add(Integer.valueOf(3));
+        added = bt.add(node3);
         assertTrue(added);
-        assertEquals(3, bt.find(Integer.valueOf(3)).intValue());
+        assertEquals(node3, bt.find(node3));
         
-        assertTrue(bt.remove(5));
-        assertNull(bt.find(Integer.valueOf(5)));
-        assertTrue(bt.remove(4));
-        assertNull(bt.find(Integer.valueOf(4)));
+        assertTrue(bt.remove(node5));
+        assertNull(bt.find(node5));
+        
+        HeapNode node4r = bt.extractMaximum();
+        assertEquals(node4, node4r);
+        assertNull(bt.find(node4));
         
         prev = bt.predecessor((1<<(w-1)) - 1);
-        assertEquals(3, it.intValue(prev));
+        assertEquals(node3, prev);
         
-        assertEquals(2, bt.minimum().intValue());
-        assertEquals(3, bt.maximum().intValue());
+        assertEquals(node2, bt.minimum());
+        assertEquals(node3, bt.maximum());
+        
+        HeapNode node2r = bt.extractMinimum();
+        assertEquals(node2, node2r);
+        assertNull(bt.find(node2));
     }
         
-    public void test1() throws Exception {
+    public void est1() throws Exception {
     
+        //TODO: update these for YFastTrie
+        
         System.out.println("test1");
         
 		XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();

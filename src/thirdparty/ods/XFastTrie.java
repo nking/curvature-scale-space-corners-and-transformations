@@ -58,7 +58,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	}
 	
     /**
-     * runtime complexity is O(log_2(w)) + O(l-w)
+     * runtime complexity is O(log_2(w)) + O(w-l)
      * where w is the number of
      * bits set in the constructor, else is 32
      * and l is the prefix tree already filled leading
@@ -138,7 +138,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	}
 	
     /**
-     * runtime complexity is O(log_2(w)) + O(l-w)
+     * runtime complexity is O(log_2(w)) + O(w-l)
      * where w is the number of
      * bits set in the constructor, else is 32
      * and l is the prefix tree already filled leading
@@ -309,6 +309,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	public T predecessor(T x) {
         S q = predecessorNode(x);
         if (q != null) {
+            // root node will return null here too
             return q.x;
         }
         return null;
@@ -365,14 +366,12 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         if (c == 1 && u.jump != null) {
             return (S)u.jump;
         }
-        
-        //TODO: revisit this.  below never occurs
-        
+                
         XFastTrieNode<T> pred;	
-        if (u.jump.child[1] == null) {
+        if (u.jump.child[0] == null) {
             pred = null;
         } else {
-            pred = (XFastTrieNode<T>) u.jump.child[1];
+            pred = (XFastTrieNode<T>) u.jump.child[0];
         }
 		return (pred != null) ? (S)pred : null;
 	}

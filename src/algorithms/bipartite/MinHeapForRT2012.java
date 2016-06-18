@@ -21,6 +21,22 @@ import java.util.logging.Logger;
  */
 public class MinHeapForRT2012 {
 
+    
+    /*    
+    notes for the bipartite weighted min-cost matching:
+    for best insert and extractMin until have MLB implemented:
+    if maxC < approx 4000,
+       the dial algorithm has insert O(1) and extractMin O(1)
+    else 
+   
+     * For large N, the XFastTrie by itself (plus an external
+     * hashmao to store HeapNodes) is a better result because
+     * the term O(w-l) will be smaller.
+     * 
+     * For mid to small N, the fibonacci heap has better insert and
+     * extractMin performance (O(1) and O(log_2(N)), respectively). 
+    */
+    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     private final boolean useDial;
