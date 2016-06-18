@@ -12,26 +12,25 @@ these rights is attribution: you must acknowledge that the derived work
 contains code and/or text from opendatastructures.org.
 https://github.com/patmorin/ods
 */
-import java.util.Comparator;
-import java.util.Iterator;
 
 /**
- * The SSet<T> interface is a simple interface that allows a class to implement
- * all the functionality of the (more complicated) SortedSet<T> interface. Any
- * class that implements SSet<T> can be wrapped in a SortedSSet<T> to obtain an
- * implementation of SortedSet<T>
- * 
+ * The interface is adapted from the open datastructures source code
+http://opendatastructures.org/ods-java.pdf
+
+"The source code available there is released under a Creative Commons
+Attribution license, meaning that anyone is free to share: to copy, distribute
+and transmit the work; and to remix: to adapt the work, including
+the right to make commercial use of the work. The only condition on
+these rights is attribution: you must acknowledge that the derived work
+contains code and/or text from opendatastructures.org.
+http://github.com/patmorin/ods
  * @author morin
  * 
  * @param <T>
  * @see SortedSSet<T>
  */
-public interface SSet<T> extends Iterable<T> {
-	/**
-	 * @return the comparator used by this SSet
-	 */
-	public Comparator<? super T> comparator();
-
+public interface SSet<T> {
+	
 	/**
 	 * @return the number of elements in this SSet
 	 */
@@ -45,27 +44,6 @@ public interface SSet<T> extends Iterable<T> {
 	 *         x or null if no such element exists
 	 */
 	public T find(T x);
-
-	/**
-	 * Find the smallest element in the SSet that is greater than or equal to x.
-	 * If x is null, return the smallest element in the SSet
-	 * 
-	 * @param x
-	 * @return the smallest element in the SSet that is greater than or equal to
-	 *         x or null if no such element exists. If x is null then the
-	 *         smallest element in the SSet
-	 */
-	public T findGE(T x);
-
-	/**
-	 * Find the largest element in the SSet that is greater than to x. If x is
-	 * null, return the largest element in the SSet
-	 * 
-	 * @param x
-	 * @return the largest element in the SSet that is less than x. If x is null
-	 *         then the smallest element in the SSet
-	 */
-	public T findLT(T x);
 
 	/**
 	 * Add the element x to the SSet
@@ -90,9 +68,30 @@ public interface SSet<T> extends Iterable<T> {
 	 */
 	public void clear();
 
-	/**
-	 * Return an iterator that iterates over the elements in sorted order,
-	 * starting at the first element that is greater than or equal to x.
-	 */
-	public Iterator<T> iterator(T x);
+    /**
+     * find the key of the node before the value x.
+     * @param x
+     * @return 
+     */
+    public T predecessor(T x);
+    
+    /**
+     * find the key of the node after the value x.
+     * @param x
+     * @return 
+     */
+    public T successor(T x);
+	
+    /**
+     * find the minimum key within the nodes.
+     * @return 
+     */
+    public T minimum();
+    
+    /**
+     * find the maximum key within the nodes.
+     * @return 
+     */
+    public T maximum();
+    
 }

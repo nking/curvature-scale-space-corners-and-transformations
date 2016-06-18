@@ -57,6 +57,15 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 		this((S)new XFastTrieNode<T>(), it);
 	}
 	
+    /**
+     * runtime complexity is O(log_2(w)) + O(l-w)
+     * where w is the number of
+     * bits set in the constructor, else is 32
+     * and l is the prefix tree already filled leading
+     * up to the value x.
+     * @param x
+     * @return 
+     */
 	public boolean add(T x) {
         final int ix = it.intValue(x);
         if (ix > maxC) {
@@ -128,6 +137,17 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         return true;
 	}
 	
+    /**
+     * runtime complexity is O(log_2(w)) + O(l-w)
+     * where w is the number of
+     * bits set in the constructor, else is 32
+     * and l is the prefix tree already filled leading
+     * up to the value x.
+     * 
+     * @param x
+     * @return 
+     */
+    @Override
 	public boolean remove(T x) {
 		// 1 - find leaf, u, containing x
 		int i = 0, c, ix = it.intValue(x);
@@ -217,25 +237,36 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
     }
     
     /**
-	 * Find the node that contains the successor of x.
-	 * runtime complexity is O(log_2(w)).
+	 * Find the key of the node that contains the successor of x.
+	 * runtime complexity is O(log_2(w)) where w is the number of
+     * bits set in the constructor, else is 32.
      * @param x
-	 * @return The node after the node that contains x w.r.t. 
+	 * @return The node before the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	public S successor(T x) {
-        int ix = it.intValue(x);
-        return successor(ix);
+    @Override
+	public T successor(T x) {
+        S q = successorNode(x);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
+   
+	protected T successor(int ix) {
+        S q = successorNode(ix);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
     }
     
-    /**
-	 * Find the node that contains the successor of x.
-	 * runtime complexity is O(log_2(w)).
-     * @param ix
-	 * @return The node after the node that contains x w.r.t. 
-     * nodes in the internal the linked list.
-	 */
-	protected S successor(int ix) {
+	protected S successorNode(T x) {
+        int ix = it.intValue(x);
+        return successorNode(ix);
+    }
+    
+	protected S successorNode(int ix) {
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
                + " so max value can search for is " + maxC);
@@ -267,25 +298,36 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	}
     
     /**
-	 * Find the node that contains the predecessor of x.
-	 * runtime complexity is O(log2(w)).
+	 * Find the key of the node that contains the predecessor of x.
+	 * runtime complexity is O(log_2(w)) where w is the number of
+     * bits set in the constructor, else is 32.
      * @param x
 	 * @return The node before the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	public S predecessor(T x) {
-		int ix = it.intValue(x);
-        return predecessor(ix);
+    @Override
+	public T predecessor(T x) {
+        S q = predecessorNode(x);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
     }
     
-    /**
-	 * Find the node that contains the predecessor of x.
-	 * runtime complexity is O(log2(w)).
-     * @param ix
-	 * @return The node before the node that contains x w.r.t. 
-     * nodes in the internal the linked list.
-	 */
-	protected S predecessor(int ix) {
+	protected T predecessor(int ix) {
+        S q = predecessorNode(ix);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
+    
+	protected S predecessorNode(T x) {
+        int ix = it.intValue(x);
+        return predecessorNode(ix);
+    }
+    
+	protected S predecessorNode(int ix) {
 		
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
@@ -341,20 +383,32 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 			m.clear();
 	}
     
+    /**
+     * find the key of the minimum value node.
+     * runtime complexity is O(log_2(w)) where w is the number of
+     * bits set in the constructor, else is 32.
+     * @return 
+     */
+    @Override
     public T minimum() {
         if (t.get(w).containsKey(Integer.valueOf(0))) {
             return t.get(w).get(Integer.valueOf(0)).x;
         }
-        S min = successor(0);
-        return (min != null) ? min.x : null;
+        return successor(0);
     }
     
+    /**
+     * find the key of the minimum value node.
+     * runtime complexity is O(log_2(w)) where w is the number of
+     * bits set in the constructor, else is 32.
+     * @return 
+     */
+    @Override
     public T maximum() {
         if (t.get(w).containsKey(Integer.valueOf(maxC))) {
             return t.get(w).get(Integer.valueOf(maxC)).x;
         }
-        S max = predecessor(maxC);
-        return (max != null) ? max.x : null;
+        return predecessor(maxC);
     }
 	
     /**

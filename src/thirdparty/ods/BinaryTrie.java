@@ -13,10 +13,8 @@ contains code and/or text from opendatastructures.org.
 http://github.com/patmorin/ods
 */
 import java.util.ArrayDeque;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 @SuppressWarnings({"unchecked"})
@@ -95,21 +93,24 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 	}
 	
     /**
-     * 
+     * constructor that accepts a sample node type for
+     * internal nodes and accepts the maximum number of bits
+     * that a value added will have.
      * @param sampleNode a node instance that is used for 
      * its class type when creating other nodes, such as the 
      * root and linked-list sentinel nodes.
      * @param it class to provide inner node keys which the
      * prefixes are extracted from
-     * @param smallerWordSize when a word size smaller than
-     * 32 bits is known a priori, can set this.
+     * @param maxNumBits maximum number of bits a value that is
+     * added to the trie will have when it is known to be less than
+     * 32 (else, can use default constructor);
      */
 	public BinaryTrie(S sampleNode, Integerizer<T> it,
-        int smallerWordSize) {
-        if (smallerWordSize < 32 && smallerWordSize > 1) {
-            this.w = smallerWordSize;
+        int maxNumBits) {
+        if (maxNumBits <= 32 && maxNumBits > 1) {
+            this.w = maxNumBits;
         } else {
-            throw new IllegalStateException("smallerWordSize "
+            throw new IllegalStateException("maxNumBits "
                 + " shoulw be greater than 1 and less than 32");
         }
         maxC = (1 << (w - 1)) - 1;
@@ -123,10 +124,13 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 	}
 	
     /**
-     * add x to the tree.  runtime complexity is O(w).
+     * add x to the tree.  runtime complexity is O(w)
+     * where w is the number of
+     * bits set in the constructor, else is 32.
      * @param x
      * @return 
      */
+    @Override
 	public boolean add(T x) {
 		int i, c = 0, ix = it.intValue(x);
         if (ix > maxC) {
@@ -176,6 +180,15 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		return true;
 	}
 
+    /**
+     * find the node if it exists in the trie.
+     * runtime complexity is O(w)
+     * where w is the number of
+     * bits set in the constructor, else is 32.
+     * @param x
+     * @return 
+     */
+    @Override
     public T find(T x) {
         int ix = it.intValue(x);
         T v = findValue(ix);
@@ -208,6 +221,15 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		return u == dummy ? null : u.x;
 	}
 
+    /**
+     * remove node from the trie.
+     * runtime complexity is O(w) 
+     * where w is the number of
+     * bits set in the constructor, else is 32.
+     * @param x
+     * @return 
+     */
+    @Override
 	public boolean remove(T x) {
 		// 1 - find leaf, u, containing x
 		int i, c, ix = it.intValue(x);
@@ -247,33 +269,40 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		n--;
 		return true;
 	}
+    
+    protected T predecessor(int ix) {
+        S q = predecessorNode(ix);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
 
-	/**
-	 * Part of SSet interface, but not really relevant here
-	 * TODO: We can still implement this
-	 */
-	public Comparator<? super T> comparator() {
-		return new Comparator<T>() {
-			public int compare(T a, T b) {
-				return it.intValue(a) - it.intValue(b);
-			}
-		};
-	}
-
-	public T findGE(T x) {
-        int ix = it.intValue(x);
-		return findValue(ix);
-	}
-
-	/**
-	 * Find the node that contains the predecessor of x.
-	 * runtime complexity is O(w).
+    /**
+	 * Find the key of the node that contains the predecessor of x.
+	 * runtime complexity is O(w) 
+     * where w is the number of
+     * bits set in the constructor, else is 32.
      * @param x
 	 * @return The node before the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	public S predecessor(T x) {
+    @Override
+	public T predecessor(T x) {
+        S q = predecessorNode(x);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
+    
+    protected S predecessorNode(T x) {
 		int i, c = 0, ix = it.intValue(x);
+        return predecessorNode(ix); 
+   }
+    
+	protected S predecessorNode(int ix) {
+		int i, c = 0;
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
                + " so max value argument is " + maxC);
@@ -290,15 +319,39 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		return (pred != null) ? (S)pred : null;
 	}
     
+    protected T successor(int ix) {
+        S q = successorNode(ix);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
+    
     /**
-	 * Find the node that contains the successor of x.
-	 * runtime complexity is O(w).
+	 * Find the key of the node that contains the successor of x.
+	 * runtime complexity is O(w)
+     * where w is the number of
+     * bits set in the constructor, else is 32.
      * @param x
-	 * @return The node after the node that contains x w.r.t. 
+	 * @return The key of the node before the node that contains x w.r.t. 
      * nodes in the internal the linked list.
 	 */
-	public S successor(T x) {
+    @Override
+	public T successor(T x) {
+        S q = successorNode(x);
+        if (q != null) {
+            return q.x;
+        }
+        return null;
+    }
+    
+    protected S successorNode(T x) {
 		int i, c = 0, ix = it.intValue(x);
+        return successorNode(ix);
+    }
+    
+	protected S successorNode(int ix) {
+		int i, c = 0;
         if (ix > maxC) {
             throw new IllegalArgumentException("w=" + w
                + " so max value argument is " + maxC);
@@ -314,51 +367,39 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
 		else successor = (c == 0) ? u.jump : u.jump.child[1]; 
 		return (successor != null) ? (S)successor : null;
 	}
-	
+
+    /**
+     * find the maximum key within the nodes. 
+     * runtime complexity is O(w) where w is the number of
+     * bits set in the constructor, else is 32.
+     * @return 
+     */
     @Override
-	public T findLT(T x) {
-		S pred = predecessor(x);
-		return (pred == dummy) ? null : ((S)(pred.child[next])).x;
-	}
-
-	/**
-	 * This is just a simple linked-list iterator
-	 * @author morin
-	 *
-	 */
-	protected class TrieIterator implements Iterator<T> {
-		
-        protected BinaryTrieNode<T> p;
-		
-		public TrieIterator(S p) {
-			this.p = p;
-		}
-		
-		public boolean hasNext() {
-			return !p.equals(dummy);
-		}
-
-        @Override
-		public T next() {
-			T x = p.x;
-			p = p.child[1];
-			return x;
-		}
-		
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-	}
-
-	public Iterator<T> iterator(T x) {
-		BinaryTrieNode<T> pred = predecessor(x);
-		return new TrieIterator((S)pred.child[next]);
-	}
-
-	public Iterator<T> iterator() {
-		return new TrieIterator((S)dummy.child[next]);
-	}
-	
+    public T maximum() {
+        // O(w)
+        T q = findValue(maxC);
+        if (q != null) {
+            return q;
+        }
+        return predecessor(maxC);
+    }
+    
+    /**
+     * find the minimum key within the nodes. 
+     * runtime complexity is O(w) where w is the maximum
+     * word size set in the constructor, else 32.
+     * @return 
+     */
+    @Override
+    public T minimum() {
+        // O(w)
+        T q = findValue(0);
+        if (q != null) {
+            return q;
+        }
+        return successor(0);
+    }
+    
 	public int size() {
 		return n;
 	}

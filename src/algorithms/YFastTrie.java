@@ -1,5 +1,14 @@
 package algorithms;
 
+import algorithms.imageProcessing.HeapNode;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeMap;
+import thirdparty.ods.Integerizer;
+import thirdparty.ods.XFastTrie;
+import thirdparty.ods.XFastTrieNode;
+
 /**
  *
  * @author nichole
@@ -114,7 +123,7 @@ yfast trie
           then max of that tree is the maximum
     
     NOTE: topics to consider for improvements:
-          the distribution of rb trees, that is their parttions,
+          the distribution of rb trees, that is their partitions,
           could be improved dynamically.
           For example, if maxC were value 127, but the majority
           of nodes at some point in time were in bin 0 at values
@@ -136,4 +145,88 @@ yfast trie
           before and after use of more than one YFastTrie)
     */
     
+    private final int w;
+    
+    private final int maxC;
+
+    // TODO: edit XFastTrie where new nodes are created or
+    //   identity transferred to make sure
+    //   files in YXFTNode get copied
+    private final XFastTrie<YXFTNode, Integer> xft;
+    
+    private final int[] rbKeys;
+    
+    private final List<TreeMap<Integer, LinkedList<HeapNode>>> rbs;
+    
+    public YFastTrie(int wBits) {
+        if (wBits < 32 && wBits > 1) {
+            this.w = wBits;
+        } else {
+            throw new IllegalStateException("wBits "
+                + " shoulw be greater than 1 and less than 32");
+        }
+        maxC = (1 << (w - 1)) - 1;
+        rbKeys = new int[w];
+        rbs = new ArrayList<TreeMap<Integer, LinkedList<HeapNode>>>(w);
+        for (int i = 0; i < w; ++i) {
+            rbs.add(new TreeMap<Integer, LinkedList<HeapNode>>());
+        }
+        
+        YXFTNode clsNode = new YXFTNode();
+        Integerizer<Integer> it = new Integerizer<Integer>() {
+            @Override
+            public int intValue(Integer x) {
+                return x;
+            }
+        };
+        
+        xft = new XFastTrie<YXFTNode, Integer>(clsNode, it, w);
+    }
+    
+    public YFastTrie() {
+        
+        this.w = 32;
+        
+        maxC = (1 << (w - 1)) - 1;
+        rbKeys = new int[w];
+        rbs = new ArrayList<TreeMap<Integer, LinkedList<HeapNode>>>(w);
+        for (int i = 0; i < w; ++i) {
+            rbs.add(new TreeMap<Integer, LinkedList<HeapNode>>());
+        }
+        
+        YXFTNode clsNode = new YXFTNode();
+        Integerizer<Integer> it = new Integerizer<Integer>() {
+            @Override
+            public int intValue(Integer x) {
+                return x;
+            }
+        };
+        
+        xft = new XFastTrie<YXFTNode, Integer>(clsNode, it, w);
+    }
+    
+    /*
+    --------------------------------
++insert(HeapNode) : boolean
++extractMin(HeapNode) : HeapNode
++extractMax(HeapNode) : HeapNode
++successor(int key) : HeapNpde
++predecessor(int key) : HeapNpde
++find(int key) : HeapNode
++minimum() : HeapNode
++maximum() : HeapNode
++delete(HeapNode) : boolean
++size() : int
+    */
+    
+    public class YXFTNode extends XFastTrieNode<Integer> {
+        protected int rbIndex;
+        public YXFTNode() {};
+        public int getRBIndex() {
+            return rbIndex;
+        }
+        public void setRBIndex(int idx) {
+            this.rbIndex = idx;
+        }
+    }
 }
