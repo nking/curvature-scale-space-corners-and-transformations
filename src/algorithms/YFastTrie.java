@@ -8,12 +8,13 @@ import java.util.TreeMap;
 import thirdparty.ods.Integerizer;
 import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
+import thirdparty.ods.SSet;
 
 /**
  *
  * @author nichole
  */
-public class YFastTrie {
+public class YFastTrie implements SSet<HeapNode>{
 
     /*    
     designing from browsing a few different lecture notes
@@ -29,32 +30,9 @@ public class YFastTrie {
         the space complexity is reduced.
 -------------------------------
 YFastTrie
--------------------------------
--w : int // num bits
--maxC : int // max vlue corresponding to w
--binSize : int // maxC/w
--xft : XFastTrie
--rbKeys : int[w]
--rbs : List<TreeMap<Integer, LinkedList<HeapNode>>> // size is w
---------------------------------
-+insert(HeapNode) : boolean
-+extractMin(HeapNode) : HeapNode
-+extractMax(HeapNode) : HeapNode
-+successor(int key) : HeapNpde
-+predecessor(int key) : HeapNpde
-+find(int key) : HeapNode
-+minimum() : HeapNode
-+maximum() : HeapNode
-+delete(HeapNode) : boolean
-+size() : int
----------------------------------
-note: find, min, max, successor are O(log log maxC)
-      insert, delete are O(1)
----------------------------------
-    
-yfast trie
+
    - w bits set by maximum expected value to be added.
-   - one xfast trie to hold the representives (at most w in number)
+   - one XFastTrie to hold the representives (at most w in number)
    - w red black trees to keep ordered points.
      - because some of the items added may have more than
        one with same key value, the values in the red black tree
@@ -65,8 +43,6 @@ yfast trie
         because the remaining queries rely on these being minimima
    - XFastTrieNode:
       - rbIndex is needed as additional field
-        (that may require edits to sfastttrie to
-         make sure data is copied when new nodes are created...removed most of those).
       - an array of size w rb key values is needed to check whether
         a representative exists quickly.
    - insert node:
@@ -145,13 +121,12 @@ yfast trie
           before and after use of more than one YFastTrie)
     */
     
+    private int n = 0;
+    
     private final int w;
     
     private final int maxC;
 
-    // TODO: edit XFastTrie where new nodes are created or
-    //   identity transferred to make sure
-    //   files in YXFTNode get copied
     private final XFastTrie<YXFTNode, Integer> xft;
     
     private final int[] rbKeys;
@@ -204,20 +179,54 @@ yfast trie
         
         xft = new XFastTrie<YXFTNode, Integer>(clsNode, it, w);
     }
+
+    @Override
+    public HeapNode find(HeapNode x) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean add(HeapNode x) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean remove(HeapNode x) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public HeapNode predecessor(HeapNode x) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public HeapNode successor(HeapNode x) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public HeapNode minimum() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public HeapNode maximum() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     
-    /*
-    --------------------------------
-+insert(HeapNode) : boolean
-+extractMin(HeapNode) : HeapNode
-+extractMax(HeapNode) : HeapNode
-+successor(int key) : HeapNpde
-+predecessor(int key) : HeapNpde
-+find(int key) : HeapNode
-+minimum() : HeapNode
-+maximum() : HeapNode
-+delete(HeapNode) : boolean
-+size() : int
-    */
+    public HeapNode extractMinimum() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    public HeapNode extractMaximum() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Override
+    public int size() {
+        return n;
+    }
     
     public class YXFTNode extends XFastTrieNode<Integer> {
         protected int rbIndex;

@@ -157,19 +157,19 @@ public class BinaryTrieTest extends TestCase {
             */
             
             if (index.intValue() < (n - 1)) {
-                BinaryTrieNode<Integer> next = bt.successor(index);
+                Integer next = bt.successor(index);
                 assertEquals((index.intValue() + 1), 
-                    it.intValue(next.x));
+                    it.intValue(next));
             }
+            
             /*
             the largest element in the tree with key smaller 
             than node.key
             */
             if (index.intValue() > 0) {
-                BinaryTrieNode<Integer> prev 
-                    = bt.predecessor(index);
+                Integer prev = bt.predecessor(index);
                 assertEquals((index.intValue() - 1), 
-                    it.intValue(prev.x));
+                    it.intValue(prev));
             }
         }
         
@@ -206,13 +206,13 @@ public class BinaryTrieTest extends TestCase {
             } else {
                 assertEquals(index.intValue(), foundIndex.intValue());
                 if (index.intValue() < (n - 1)) {
-                    BinaryTrieNode<Integer> next = bt.successor(index);
+                    Integer next = bt.successor(index);
                     int expected = index.intValue() + 1;
                     while (expected < n) {
                         if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
-                            assertEquals(expected, it.intValue(next.x));
+                            assertEquals(expected, it.intValue(next));
                             break;
                         }
                     }
@@ -239,9 +239,9 @@ public class BinaryTrieTest extends TestCase {
             Integer foundIndex = bt.find(index);
             assertEquals(index.intValue(), foundIndex.intValue());
             if (index.intValue() < (n - 1)) {
-                BinaryTrieNode<Integer> next = bt.successor(index);
+                Integer next = bt.successor(index);
                 assertEquals(index.intValue() + 1, 
-                    it.intValue(next.x));
+                    it.intValue(next));
             }
         }
 
@@ -266,13 +266,13 @@ public class BinaryTrieTest extends TestCase {
                 assertEquals(index.intValue(), foundIndex.intValue());
 
                 if (index.intValue() < (n - 1)) {
-                    BinaryTrieNode<Integer> next = bt.successor(index);
+                    Integer next = bt.successor(index);
                     int expected = index.intValue() + 1;
                     while (expected < n) {
                         if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
-                            assertEquals(expected, it.intValue(next.x));
+                            assertEquals(expected, it.intValue(next));
                             break;
                         }
                     }

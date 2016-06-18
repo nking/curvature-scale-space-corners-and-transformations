@@ -1,6 +1,5 @@
 package thirdparty.ods;
 
-import algorithms.imageProcessing.HeapNode;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -111,37 +110,37 @@ public class XFastTrieTest extends TestCase {
         assertEquals(4, bt.find(Integer.valueOf(4)).intValue());
         assertEquals(5, bt.find(Integer.valueOf(5)).intValue());
         
-        XFastTrieNode<Integer> next = bt.successor(4);
-        assertEquals(5, it.intValue(next.x));
+        Integer next = bt.successor(4);
+        assertEquals(5, it.intValue(next));
         
         next = bt.successor(0);
-        assertEquals(2, it.intValue(next.x));
+        assertEquals(2, it.intValue(next));
         
         next = bt.successor(2);
-        assertEquals(3, it.intValue(next.x));
+        assertEquals(3, it.intValue(next));
         
         next = bt.successor(3);
-        assertEquals(4, it.intValue(next.x));
+        assertEquals(4, it.intValue(next));
         
         next = bt.successor(4);
-        assertEquals(5, it.intValue(next.x));
+        assertEquals(5, it.intValue(next));
         
-        XFastTrieNode<Integer> prev;
+        Integer prev;
        
         prev = bt.predecessor((1<<(w-1)) - 1);
-        assertEquals(5, it.intValue(prev.x));
+        assertEquals(5, it.intValue(prev));
         
         prev = bt.predecessor(6);
-        assertEquals(5, it.intValue(prev.x));
+        assertEquals(5, it.intValue(prev));
        
         prev = bt.predecessor(5);
-        assertEquals(4, it.intValue(prev.x));
+        assertEquals(4, it.intValue(prev));
         
         prev = bt.predecessor(4);
-        assertEquals(3, it.intValue(prev.x));
+        assertEquals(3, it.intValue(prev));
         
         prev = bt.predecessor(3);
-        assertEquals(2, it.intValue(prev.x));
+        assertEquals(2, it.intValue(prev));
         
         prev = bt.predecessor(2);
         assertNull(prev);
@@ -168,7 +167,7 @@ public class XFastTrieTest extends TestCase {
         assertNull(bt.find(Integer.valueOf(4)));
         
         prev = bt.predecessor((1<<(w-1)) - 1);
-        assertEquals(3, it.intValue(prev.x));
+        assertEquals(3, it.intValue(prev));
         
         assertEquals(2, bt.minimum().intValue());
         assertEquals(3, bt.maximum().intValue());
@@ -223,19 +222,18 @@ public class XFastTrieTest extends TestCase {
             */
             
             if (index.intValue() < (n - 1)) {
-                XFastTrieNode<Integer> next = bt.successor(index);
+                Integer next = bt.successor(index);
                 assertEquals((index.intValue() + 1), 
-                    it.intValue(next.x));
+                    it.intValue(next));
             }
             /*
             the largest element in the tree with key smaller 
             than node.key
             */
             if (index.intValue() > 0) {
-                XFastTrieNode<Integer> prev 
-                    = bt.predecessor(index);
+                Integer prev = bt.predecessor(index);
                 assertEquals((index.intValue() - 1), 
-                    it.intValue(prev.x));
+                    it.intValue(prev));
             }
         }
         
@@ -279,13 +277,13 @@ public class XFastTrieTest extends TestCase {
                 }
                 assertEquals(index.intValue(), foundIndex.intValue());
                 if (index.intValue() < (n - 1)) {
-                    XFastTrieNode<Integer> next = bt.successor(index);
+                    Integer next = bt.successor(index);
                     int expected = index.intValue() + 1;
                     while (expected < n) {
                         if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
-                            assertEquals(expected, it.intValue(next.x));
+                            assertEquals(expected, it.intValue(next));
                             break;
                         }
                     }
@@ -314,9 +312,9 @@ public class XFastTrieTest extends TestCase {
             Integer foundIndex = bt.find(index);
             assertEquals(index.intValue(), foundIndex.intValue());
             if (index.intValue() < (n - 1)) {
-                XFastTrieNode<Integer> next = bt.successor(index);
+                Integer next = bt.successor(index);
                 assertEquals(index.intValue() + 1, 
-                    it.intValue(next.x));
+                    it.intValue(next));
             }
         }
 
@@ -348,76 +346,19 @@ public class XFastTrieTest extends TestCase {
                 assertEquals(index.intValue(), foundIndex.intValue());
 
                 if (index.intValue() < (n - 1)) {
-                    XFastTrieNode<Integer> next = bt.successor(index);
+                    Integer next = bt.successor(index);
                     int expected = index.intValue() + 1;
                     while (expected < n) {
                         if (rm.contains(Integer.valueOf(expected))) {
                             ++expected;
                         } else {
-                            assertEquals(expected, it.intValue(next.x));
+                            assertEquals(expected, it.intValue(next));
                             break;
                         }
                     }
                 }
             }
         }
-    }
-    
-    public void estMain() {
-        System.out.println("main");
-        
-        int n = 20;
-		
-		XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
-		
-        Integerizer<Integer> it = new Integerizer<Integer>() {
-            @Override
-            public int intValue(Integer x) {
-                return x;
-            }
-        };
-		
-        BinaryTrie<XFastTrieNode<Integer>, Integer> t
-            = new BinaryTrie<XFastTrieNode<Integer>, Integer>(node, it);
-        
-		System.out.println(t.getClass());
-		Random rand = new Random(0);
-		System.out.println("Adding: ");
-		for (int i = 0; i < n; i++) {
-			int x = rand.nextInt(100*n);
-			System.out.print(x + ((i < n - 1) ? "," : ""));
-			t.add(x);
-			//t.checkIt();
-		}
-		System.out.println();
-		System.out.println(t);
-		System.out.print("Searching: ");
-		for (int i = 0; i < n; i++) {
-			int x = rand.nextInt(100*n);
-			System.out.print(x + "=>" + t.find(x) + ",");
-		}
-		System.out.println();
-		System.out.println(t);
-		System.out.print("Removing: ");
-		for (int i = 0; i < n/2; i++) {
-			Integer x = t.find(rand.nextInt(100*n));
-			if (x != null) {
-				System.out.print(x + ((i < n/2-1) ? "," : ""));
-				System.out.flush();
-				t.remove(x);
-			}
-			//t.checkIt();
-		}
-		System.out.println();
-		System.out.println("Size = " + t.size());
-		System.out.println(t);
-		System.out.print("Searching: ");
-		for (int i = 0; i < n; i++) {
-			int x = rand.nextInt(100*n);
-			System.out.print(x + "=>" + t.find(x) + ",");
-		}
-		System.out.println();
-		System.out.println("done");
     }
     
 }

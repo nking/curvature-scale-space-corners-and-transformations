@@ -63,11 +63,6 @@ public interface SSet<T> {
 	 */
 	public boolean remove(T x);
 
-	/**
-	 * Clear the SSet, removing all elements from the set
-	 */
-	public void clear();
-
     /**
      * find the key of the node before the value x.
      * @param x
