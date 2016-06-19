@@ -4,6 +4,7 @@ import algorithms.util.PairInt;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -139,6 +140,14 @@ public class ResidualDigraph2 {
                 forwardLinksSinkRM.add(yNode);
             }
         }
+    }
+    
+    public int countOfForwardBipartiteLinks() {
+        int n = 0;
+        for (Entry<Integer, Set<Integer>> entry : forwardLinksRM.entrySet()) {
+           n += entry.getValue().size();
+        }
+        return n;
     }
   
     /**

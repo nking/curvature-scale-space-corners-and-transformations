@@ -2305,7 +2305,7 @@ public class MiscMath {
         }
         
         if (maxV < (count * Math.log(count)/Math.log(2))) {
-            CountingSort.sort(values, maxV);
+            values = CountingSort.sort(values, maxV);
         } else {
             Arrays.sort(values);
         }

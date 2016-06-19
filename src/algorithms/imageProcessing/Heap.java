@@ -281,7 +281,8 @@ public class Heap {
         }
     }
 
-    protected void remove(HeapNode x) {
+    // runtime is that of extractMin, O(lg2(n))
+    public void remove(HeapNode x) {
         // runtime O(1)
         decreaseKey(x, DoubleLinkedCircularList.minValue);
 

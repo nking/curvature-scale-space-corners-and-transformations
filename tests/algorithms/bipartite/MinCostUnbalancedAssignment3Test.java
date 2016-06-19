@@ -83,13 +83,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1465604582887L;
+        //seed = 1466321947621L;
         sr.setSeed(seed);
         log.info("SEED=" + seed);
         
         for (int size = 10; size <= 100; size *= 10) {
             for (int maxCost = 10; maxCost <= 10000; maxCost *= 10) {
-                
+                    
                 log.info("size=" + size + " maxCost=" + maxCost);
                 
                 Graph g = getTestGraph1(size, maxCost, sr);

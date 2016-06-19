@@ -91,6 +91,14 @@ public class ResidualDigraph {
         }
     }
  
+    public int countOfForwardBipartiteLinks() {
+        int n = 0;
+        for (Entry<Integer, Set<Integer>> entry : forwardLinksRM.entrySet()) {
+           n += entry.getValue().size();
+        }
+        return n;
+    }
+    
     /**
      * @return nLeft number of left nodes
      */

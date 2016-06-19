@@ -241,7 +241,7 @@ public class MinCostUnbalancedAssignment {
     public Map<Integer, Integer> flowAssign(Graph g) {
 
         validateGraph(g);
-        
+                
         if (g.getNLeft() == 1 && g.getNRight() == 1) {
             return singleNodesSolution(g);
         }
@@ -273,6 +273,8 @@ System.out.println(tSec + " sec for hopcroftkarp");
                     + entry.getValue());
             }
         }*/
+        
+        GraphUtil.condenseEdgeWeights(g);
         
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
@@ -342,7 +344,7 @@ System.out.println(tSec + " sec for hopcroftkarp");
         double eps_down = Math.pow(q, e_down);
 
         float eps = 1.f + (int)Math.floor(eps_up);
-                  
+                
         int nIterR = 0;
         
         log.info("eps=" + eps + " epsLarge=" + epsLarge
@@ -404,7 +406,7 @@ System.out.println(tSec + " sec for roundFinalPrices");
     protected int refine(FlowNetwork gFlow, int s, float eps, 
         float epsLarge, int q) {
         
-        log.fine("at start of refine, s=" + s + " eps=" + eps
+        log.info("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
         
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));
@@ -766,7 +768,8 @@ long t0 = System.currentTimeMillis();
         // DoubleLinkedCircularList trees
         Forest forest = new Forest(lambda);
 
-        MinHeapForRT2012 minHeap = new MinHeapForRT2012(lambda);
+        MinHeapForRT2012 minHeap = new MinHeapForRT2012(lambda,
+            rF.countOfForwardBipartiteLinks());
          
         Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
         Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
@@ -2041,7 +2044,13 @@ Matchings in G are integral flows in N_G
         return pathLinksMap;
     }
     
-    public FlowNetwork getFinalFlowNetwork() {
+    /**
+     * NOTE: the weights were condensed to make the min Heaps
+     * faster, so corrections for that must be done before user
+     * can use the flow network results
+     * @return 
+     */
+    protected FlowNetwork getFinalFlowNetwork() {
         return finalFN;
     }
     

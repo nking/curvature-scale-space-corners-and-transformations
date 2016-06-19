@@ -167,7 +167,7 @@ public class HopcroftKarpRT2012 {
      * are the path lengths and whose items hold at the root, the
      * remaining maidens, that is unmatched left nodes (a.k.a. G's
      * X nodes).
-     * @param lambda the length to use for a countins sort of
+     * @param lambda the length to use for a counting sort of
      * augmenting path lengths
      */
     protected boolean buildForestAndAugment(
@@ -175,7 +175,8 @@ public class HopcroftKarpRT2012 {
       
         Forest forest = new Forest(lambda);
         
-        MinHeapForRT2012 heap = new MinHeapForRT2012(4);
+        MinHeapForRT2012 heap = new MinHeapForRT2012(4, 
+            rM.countOfForwardBipartiteLinks());
         
         /*
         this class is invoked as the first step in a
