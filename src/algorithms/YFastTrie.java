@@ -222,7 +222,7 @@ YFastTrie
      * extractMin runtime complexities (O(1) and O(1), respectively).
      * 
      * For large N, the XFastTrie by itself (plus an external
-     * hashmao to store HeapNodes) is a better result because
+     * hashmao to store HeapNodes) is a better choice because
      * the term O(w-l) will be smaller.
      * 
      * For mid to small N, the fibonacci heap has better insert and

@@ -2,7 +2,6 @@ package algorithms.bipartite;
 
 import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import java.util.logging.Logger;
 
@@ -15,31 +14,19 @@ import java.util.logging.Logger;
  * All operations for the "Dial" mode are essentially O(1),
  * else, the extractMin operation is O(lg_2(N_nodes))
  * for the internal Fibonacci heap.
- *  NOTE: in the future, will replace the fibonacci heap here
-    with MLB.
+ * 
+ * NOTE: in the future, would like to include MLB for
+ * another option that improves the extractMin runtime
+ * complexity.
+ * 
  * @author nichole
  */
 public class MinHeapForRT2012 {
 
-    
-    /*    
-    notes for the bipartite weighted min-cost matching:
-    for best insert and extractMin until have MLB implemented:
-    if maxC < approx 4000,
-       the dial algorithm has insert O(1) and extractMin O(1)
-    else 
-   
-     * For large N, the XFastTrie by itself (plus an external
-     * hashmao to store HeapNodes) is a better result because
-     * the term O(w-l) will be smaller.
-     * 
-     * For mid to small N, the fibonacci heap has better insert and
-     * extractMin performance (O(1) and O(log_2(N)), respectively). 
-    */
-    
     private Logger log = Logger.getLogger(this.getClass().getName());
     
-    private final boolean useDial;
+    // 0 = use Dial, 1 = use Fibonacci, 2 = use XFastTrie
+    private final int algorithm;
     
     private final DoubleLinkedCircularList[] heap0;
     
@@ -50,53 +37,91 @@ public class MinHeapForRT2012 {
     
     private long n0 = 0;
     
-    private final Heap heap1;
+    private final FibonacciHeapWrapper heap1;
+
+    private final XFastTrieWrapper heap2;
     
     void printLastKnownMinMax() {
         log.info("min=" + lastKnownMinKey0
             + " max=" + lastKnownMaxKey0);
     }
     
-    public MinHeapForRT2012(int capacity) {
-        
-        // using OO composition instead of specialization
-        
+    /**
+     * 
+     * @param capacity estimate of maximum value to store.
+     * @param approxN approximate number of nodes expected
+     * to be in the heap as a rough maximum at a given time.
+     * (it's used to help determine which algorithm to use
+     * internally).
+     */
+    public MinHeapForRT2012(int capacity, int approxN) {
+                
         if (capacity < 46300) {
-            
-            useDial = true;
+        
+            // the 1 level Dial algorithm has O(1) inserts and
+            //    constant time extractMin.
+            algorithm = 0;
         
             heap0 = new DoubleLinkedCircularList[capacity];
             
             heap1 = null;
+            
+            heap2 = null;
 
-            log.fine("useDial=" + useDial + " cap=" + capacity);
-             
+            log.fine("useDial=true cap=" + capacity + " approxN=" + approxN);
+            
+        } else if (approxN > ((1<<(6-1))-1)) {
+            // wanting the base of the prefix tree to be filled
+            // to improve performance.   for larger N and
+            // this range of maxC the XFastTrie has better extractMin
+            // could reduce the conditional to '5' instead of '6' 
+            
+            algorithm = 2;
+            
+            heap2 = new XFastTrieWrapper(capacity);
+            
+            heap0 = null;
+            
+            heap1 = null;
+            
         } else {
             
-            useDial = false;
+            algorithm = 1;
         
             heap0 = null;
             
-            heap1 = new Heap();
+            heap1 = new FibonacciHeapWrapper(approxN, capacity);
+        
+            heap2 = null;
         }
     }
     
     public void insert(PathNode node) {
         
-        if (useDial) {
-            insert0(node);
-        } else {
-            insert1(node);
+        switch(algorithm) {
+            case 0:
+                insert0(node);
+                break;
+            case 1:
+                insert1(node);
+                break;
+            default:
+                insert2(node);
+                break;
         }
     }
     
     public PathNode extractMin() {
         
-        if (useDial) {
-            return extractMin0();
-        } else {
-            return extractMin1();
+        switch(algorithm) {
+            case 0:
+                return extractMin0();
+            case 1:
+                return extractMin1();
+            default:
+                return extractMin2();
         }
+        
     }
     
     private PathNode extractMin0() {
@@ -123,6 +148,10 @@ public class MinHeapForRT2012 {
         } else {
             return null;
         }
+    }
+    
+    private PathNode extractMin2() {        
+        return heap2.extractMin();
     }
     
     private void insert0(PathNode node) {
@@ -157,12 +186,27 @@ public class MinHeapForRT2012 {
         log.fine("insert into minHeap at key =" + key);        
     }
     
+    private void insert2(PathNode node) {
+         
+        int key = (int)node.getKey();
+        
+        heap2.insert(node);
+        
+        log.fine("insert into minHeap at key =" + key);        
+    }
+    
     public void decreaseKey(PathNode node, long key2) {
     
-        if (useDial) {
-            decreaseKey0(node, key2);
-        } else {
-            decreaseKey1(node, key2);
+        switch(algorithm) {
+            case 0:
+                decreaseKey0(node, key2);
+                break;
+            case 1:
+                decreaseKey1(node, key2);
+                break;
+            default:
+                decreaseKey2(node, key2);
+                break;
         }
     }
      
@@ -187,11 +231,23 @@ public class MinHeapForRT2012 {
         heap1.decreaseKey(node, key2);
     }
     
+    private void decreaseKey2(PathNode node, long key2) {
+
+        log.fine("decreaseKey in fibHeap from key=" + 
+            node.getKey() + " to key=" + key2);
+        
+        heap2.decreaseKey(node, key2);
+    }
+    
     public long getNumberOfNodes() {
-        if (useDial) {
-            return n0;
-        } else {
-            return heap1.getNumberOfNodes();
+        
+        switch(algorithm) {
+            case 0:
+                return n0;
+            case 1:
+                return heap1.getNumberOfNodes();
+            default:
+                return heap2.getNumberOfNodes();
         }
     }
 }
