@@ -41,32 +41,25 @@ import java.util.logging.Logger;
  "On Minimum-Cost Assignments in Unbalanced Bipartite Graphs"
  by Ramshaw and Tarjan, 2012.
 (HPL-2012-40)
-
- <e>NOTE: for the best performance, the user should make sure
- that the maximum cost in their graph is less than roughly
- 46340 because that is the limit wherein the an internal
- data structure switches to using an O(lg2(N_nodes))
- * extract min operation rather than the approximiately
- * O(1) for smaller maximum costs.
- </b>
-* 
+ 
 * 
  Note that the min-cost is the optimized goal, so if a 
  graph is given that has a possible solution with more 
  matches than the number of min-cost matches, this 
  * solver will not completely match the nodes in that
- * graph.
- * (in that case, one might want to create a pre-processing
- * stage to filter the graph...pre-matching those edges
+ * graph
+ * (it is not a maximum cardinality, min-cost matching).
+ * (To preprocess the data for larger cardinality, one 
+ * might want ro consider pre-matching those edges
  * that must be matched inspite of cost because no other
- * edges are connected to those nodes for example.
+ * edges are connected to certain nodes else would be unmatched.
  * might consider the very fast state management
  * present in the conflict analysis of the fastest boolean
  * sat solvers to design a fast pre-filter).
  * 
  * A strength of the algorithm to note is that it does not
  * artificially double the graph in order to handle
- * unequally sized left and right sets (it does not use
+ * unequally sized left and right sets (that is, it does not use
  * Bipartite double cover).
  </pre>
  * @author nichole
@@ -406,7 +399,7 @@ System.out.println(tSec + " sec for roundFinalPrices");
     protected int refine(FlowNetwork gFlow, int s, float eps, 
         float epsLarge, int q) {
         
-        log.info("at start of refine, s=" + s + " eps=" + eps
+        log.fine("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
         
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));
@@ -505,8 +498,8 @@ System.out.println(tSec + " msec for buildForest2");
 t0 = System.currentTimeMillis();
 
             log.fine("before modify prices:");
-            debug(forest);
-            gFlow.printNetCosts();
+            //debug(forest);
+            //gFlow.printNetCosts();
                 
             List<PathsAndPrices> zeroLengthPaths = 
                 modifyPathLengths(gFlow, rF, forest, 
@@ -588,9 +581,9 @@ t1 = System.currentTimeMillis();
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for augmentFlow");
 
-            log.info("after augmentation (eps=" + eps + " epsLarge=" + epsLarge);
-            debug(forest);
-            gFlow.printNetCosts();
+            log.fine("after augmentation (eps=" + eps + " epsLarge=" + epsLarge);
+            //debug(forest);
+            //gFlow.printNetCosts();
             
             // pg 63 assert I1', I2, I3
             assert(gFlow.assertFlowValueIncludingSrcSnk(s));
@@ -759,7 +752,7 @@ long t0 = System.currentTimeMillis();
         if (lambda < 4) {
             lambda = 4;
         }
-        log.info("buildForest2 forest length lambda is set to " + 
+        log.fine("buildForest2 forest length lambda is set to " + 
             lambda + " surplus.size=" + surplus.size());
         
         long lastKey = -1;
@@ -1068,8 +1061,7 @@ System.out.println(tSec + " msec for "
                     if ((pdX2 < pdX) && (pdY2 > pdY)) {
                         keep = false;
                         break;
-                    }
-                    
+                    }            
                 }
             }
             if (keep) {
