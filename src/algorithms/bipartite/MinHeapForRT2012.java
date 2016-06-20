@@ -56,7 +56,9 @@ public class MinHeapForRT2012 {
      */
     public MinHeapForRT2012(int capacity, int approxN) {
                 
-        if (capacity < 46300) {
+        if (capacity < 10) {
+        //if (capacity < 46300) {
+            //TODO:  need MLB for this...
         
             // the 1 level Dial algorithm has O(1) inserts and
             //    constant time extractMin.
@@ -73,7 +75,7 @@ public class MinHeapForRT2012 {
         } else if (approxN > ((1<<(6-1))-1)) {
             // wanting the base of the prefix tree to be filled
             // to improve performance.   for larger N and
-            // this range of maxC the XFastTrie has better extractMin
+            // this range of maxC the XFastTrie has better extractMin.
             // could reduce the conditional to '5' instead of '6' 
             
             algorithm = 2;

@@ -8,7 +8,6 @@ import algorithms.util.QuadInt;
 import algorithms.util.TrioInt;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -62,6 +61,11 @@ import java.util.logging.Logger;
  * unequally sized left and right sets (that is, it does not use
  * Bipartite double cover).
  </pre>
+ * 
+ * Note, the class is not thread safe.  For example, the instance
+ * of NetworkFlow passed to methods should only be used by
+ * that method and thread at the given time.
+ * 
  * @author nichole
  */
 public class MinCostUnbalancedAssignment {
@@ -89,6 +93,18 @@ public class MinCostUnbalancedAssignment {
         LeftNode topPredecessor = null;
         // m = 0 is unmarked, m=1 is marked
         int m = 0;
+        public void resetExceptData() {
+            m = 0;
+            pathPredecessor = null;
+            topPredecessor = null;
+            setKey(DoubleLinkedCircularList.noValue);
+            setRight(null);
+            setLeft(null);
+            setParent(null);
+            setChildren(null);
+            setMark(false);
+            setNumberOfChildren(0);
+        }
         public abstract PathNode construct();
         // id is only used in toString fr debug statements
         String id = "";        
@@ -347,6 +363,15 @@ System.out.println(tSec + " sec for hopcroftkarp");
                
         // all nodes V in gFlow have prices = 0
         
+t0 = System.currentTimeMillis();
+ 
+        gFlow.createPathNodes();
+ 
+t1 = System.currentTimeMillis();
+tSec = (t1 - t0);
+System.out.println(tSec + " msec for createPathNodes");
+       
+        
         while ((epsLarge > eps_down) && (nIterR < 2*rIter)) {
             
             log.info("nIterR=" + nIterR + " s=" + s + " eps=" + eps
@@ -369,8 +394,12 @@ System.out.println(tSec + " sec for hopcroftkarp");
             int ext = refine(gFlow, s, eps, epsLarge, q);
 
             if (ext > 0) {
+long t2 = System.currentTimeMillis();
                 m = gFlow.extractMatches();
+long t3 = System.currentTimeMillis();
                 roundFinalPrices(gFlow, eps_down);
+long t4 = System.currentTimeMillis();
+System.out.println((t4 - t3) + " for mmsec for roundFinalPrices");
                 finalFN = gFlow;
                 return m;
             }
@@ -464,7 +493,7 @@ long t0 = System.currentTimeMillis();
             
             float maxDivMin = gFlow.getMaxC()/gFlow.getMinC();
             lambda = 1 + (int)Math.floor(maxDivMin * lambda);
-            
+       
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 spIndexes, lambda);
@@ -515,7 +544,7 @@ System.out.println(tSec + " msec for modifyPricesAndPathLengths");
             
             This method is instead, caching the price changes and 
             applying them only for the paths which are found as the
-            maximal set of length 0 disjoit vertex paths
+            maximal set of length 0 disjoimt vertex paths
             (then will apply assertions).
             */
                       
@@ -523,11 +552,8 @@ t0 = System.currentTimeMillis();
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             
             List<LinkedList<PathNode>> cPaths =
-                findMaximalSetOfCompatiblePaths(
-                gFlow.getNLeft(), gFlow.getNRight(),
-                gFlow.getSourceNode(), gFlow.getSinkNode(),
-                zeroLengthPaths, surplus, 
-                deficit);
+                findMaximalSetOfCompatiblePaths(gFlow,
+                zeroLengthPaths, surplus, deficit);
 
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
@@ -604,6 +630,8 @@ System.out.println(tSec + " msec for augmentFlow");
                     return 2;
                 }
             }
+            
+            gFlow.resetPathNodes(Long.MAX_VALUE);
             
             ++nHIter;
         }
@@ -710,10 +738,14 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
     }
     
     /**
-     * runtime complexity is O(surplus * lg2(avg_n_connections_out_of_surplus_node))
-     * NOTE: NOTE READY FOR USE YET.
-     * The minHeap will be replaced with a multi-level bucket 
-     * soon.
+     * runtime complexity is 
+     * 
+     * O(surplus * 
+     *   (minHeap.extractMin +
+     *   lg2(avg_n_connections_out_of_surplus_node * minHeap.insert (or decrKey))))
+     * 
+     * The minHeap extractMin could be improved with multi-level buckets.
+     * 
      * @param gFlow
      * @param rF
      * @param surplus
@@ -757,47 +789,37 @@ long t0 = System.currentTimeMillis();
         // sparsely populated holder for the 
         // DoubleLinkedCircularList trees
         Forest forest = new Forest(lambda);
-
+     
         MinHeapForRT2012 minHeap = new MinHeapForRT2012(lambda,
             rF.countOfForwardBipartiteLinks());
-         
-        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
-        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
-        for (int i = 0; i < gFlow.getNLeft(); ++i) {
-            Integer index = Integer.valueOf(i);
-            LeftNode node = new LeftNode();
-            node.setKey(Long.MAX_VALUE);
-            node.setData(index);
-            leftNodes.put(index, node);
-        }
-        for (int i = 0; i < gFlow.getNRight(); ++i) {
-            Integer index = Integer.valueOf(i);
-            RightNode node = new RightNode();
-            node.setKey(Long.MAX_VALUE);
-            node.setData(index);
-            rightNodes.put(index, node);
-        }
+           
+        PathNodes pathNodes = gFlow.getPathNodes();
+     
+        Map<Integer, LeftNode> leftNodes = pathNodes.getLeftNodes();
         
-        SourceNode sourceNode = new SourceNode();
-        sourceNode.setKey(Long.MAX_VALUE);
-        sourceNode.setData(Integer.valueOf(gFlow.getNLeft()));
+        Map<Integer, RightNode> rightNodes = pathNodes.getRightNodes();
         
-        SinkNode sinkNode = new SinkNode();
-        sinkNode.setKey(Long.MAX_VALUE);
-        sinkNode.setData(Integer.valueOf(gFlow.getNRight()));
-       
+        SourceNode sourceNode = pathNodes.getSourceNode();
+        
+        SinkNode sinkNode = pathNodes.getSinkNode();
+        
+long tIns = 0;
         for (Integer sigma : surplus) {
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
+ long ta0 = System.currentTimeMillis();
             minHeap.insert(sNode);
+  tIns += (System.currentTimeMillis() - ta0);
         }
-        
+       
 long t1 = System.currentTimeMillis();
+System.out.println(tIns + " for msec minHeap.insert in init");   
 long tSec = (t1 - t0);
-System.out.println(tSec + " msec for "
-    + "init in buildForest2 heap.size=" +
-    minHeap.getNumberOfNodes());
+System.out.println(tSec + " msec for init in buildForest2 heap.size=" +
+minHeap.getNumberOfNodes());
 
+        // V * minHeap,extractMin +
+        //     V * n_edges_per_V * minHeap.insert (or decr Key)
         do {
             PathNode node1 = minHeap.extractMin();
             if (node1 == null) {
@@ -829,7 +851,7 @@ System.out.println(tSec + " msec for "
                     continue;
                 }
             }
-                     
+                 
             log.fine("extractMin = " + node1.toString());
         
             if (node1.getKey() > lambda) {
@@ -857,8 +879,7 @@ System.out.println(tSec + " msec for "
                     if (surplusForestKeys.containsKey(index2)) {
                         continue;
                     }
-                    handlePlusLink(minHeap, 
-                        node1, leftNodes.get(index2),
+                    handlePlusLink(minHeap, node1, leftNodes.get(index2),
                         gFlow.calcSourceNetCost(index2.intValue()),
                         lambda, eps); 
                 }
@@ -1784,8 +1805,7 @@ Matchings in G are integral flows in N_G
     }
     
     private List<LinkedList<PathNode>>
-        findMaximalSetOfCompatiblePaths(int nLeft, int nRight, 
-            int sourceNodeIdx, int sinkNodeIdx,
+        findMaximalSetOfCompatiblePaths(FlowNetwork gFlow,
             List<PathsAndPrices> pathsList,
             Set<Integer> surplus, Set<Integer> deficit) {
        
@@ -1806,8 +1826,7 @@ Matchings in G are integral flows in N_G
         //    - identity (== Left or Right or Source or Sink)
 
         Map<PathNode, Set<PathNode>> pathLinksMap =
-            createNewAdjacencyMap(pathsList,
-            nLeft, nRight, sourceNodeIdx, sinkNodeIdx);
+            createNewAdjacencyMap(pathsList, gFlow);
  
         //debug2(pathLinksMap);
 
@@ -1936,19 +1955,17 @@ Matchings in G are integral flows in N_G
 
     private Map<PathNode, Set<PathNode>> createNewAdjacencyMap(
         List<PathsAndPrices> pathsList,
-        int nLeft, int nRight, int sinkNodeIdx, int sourceNodeIdx) {
+        FlowNetwork gFlow) {
         
-        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
+        PathNodes pathNodes = gFlow.getPathNodes();
+        pathNodes.resetNodeExceptData(Long.MAX_VALUE);
+   
+        SinkNode sinkNode = pathNodes.getSinkNode();      
         
-        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
+        SourceNode sourceNode = pathNodes.getSourceNode();
         
-        SinkNode sinkNode = new SinkNode();
-        sinkNode.setData(Integer.valueOf(sinkNodeIdx));
-        
-        SourceNode sourceNode = new SourceNode();
-        sourceNode.setData(Integer.valueOf(sourceNodeIdx));
-        
-        Map<PathNode, Set<PathNode>> pathLinksMap = new HashMap<PathNode, Set<PathNode>>();
+        Map<PathNode, Set<PathNode>> pathLinksMap 
+            = new HashMap<PathNode, Set<PathNode>>();
         
         for (PathsAndPrices p : pathsList) {
             List<PathNode> path = p.path;
@@ -1966,42 +1983,18 @@ Matchings in G are integral flows in N_G
                 } else if (node1 instanceof SourceNode) {
                     node1 = sourceNode;
                 } else if (node1 instanceof LeftNode) {
-                    node1 = leftNodes.get(index1);
-                    if (node1 == null) {
-                        node1 = new LeftNode();
-                        node1.setData(index1);
-                        node1.m = 0;
-                        leftNodes.put(index1, (LeftNode)node1);
-                    }
+                    node1 = pathNodes.getLeftNodes().get(index1);
                 } else {
-                    node1 = rightNodes.get(index1);
-                    if (node1 == null) {
-                        node1 = new RightNode();
-                        node1.setData(index1);
-                        node1.m = 0;
-                        rightNodes.put(index1, (RightNode)node1);
-                    }
+                    node1 = pathNodes.getRightNodes().get(index1);
                 }
                 if (node2 instanceof SinkNode) {
                     node2 = sinkNode;
                 } else if (node2 instanceof SourceNode) {
                     node2 = sourceNode;
                 } else if (node2 instanceof LeftNode) {
-                    node2 = leftNodes.get(index2);
-                    if (node2 == null) {
-                        node2 = new LeftNode();
-                        node2.setData(index2);
-                        node2.m = 0;
-                        leftNodes.put(index2, (LeftNode)node2);
-                    }
+                    node2 = pathNodes.getLeftNodes().get(index2);
                 } else {
-                    node2 = rightNodes.get(index2);
-                    if (node2 == null) {
-                        node2 = new RightNode();
-                        node2.setData(index2);
-                        node2.m = 0;
-                        rightNodes.put(index2, (RightNode)node2);
-                    }
+                    node2 = pathNodes.getRightNodes().get(index2);
                 }
 
                 Set<PathNode> values = pathLinksMap.get(node1);
