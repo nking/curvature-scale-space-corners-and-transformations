@@ -405,21 +405,12 @@ System.out.println(tSec + " sec for roundFinalPrices");
         //assert(gFlow.printFlowValueIncludingSrcSnk(s));
         
         // S = left nodes matched in gFlow
-        List<Integer> surplus = new ArrayList<Integer>();
+        Set<Integer> surplus = new HashSet<Integer>();
         
         // D = right nodes matched in gFlow
-        List<Integer> deficit = new ArrayList<Integer>();
-        
-        gFlow.getMatchedLeftRight(surplus, deficit);
-        
-        // set the flow of saturated bipartite arcs to 0
-        for (int i = 0; i < surplus.size(); ++i) {
-            int idx1 = surplus.get(i);
-            int idx2 = deficit.get(i);
-            gFlow.getFlow().put(new PairInt(idx1, idx2), 
-                Float.valueOf(0));
-            log.fine("surplus idx=" + Integer.toString(idx1));
-        }
+        Set<Integer> deficit = new HashSet<Integer>();
+       
+        gFlow.xeroTheMatchedBipartiteFlow(surplus, deficit);
 
         // assert I4 and I5
         assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
@@ -536,7 +527,7 @@ t0 = System.currentTimeMillis();
                 gFlow.getNLeft(), gFlow.getNRight(),
                 gFlow.getSourceNode(), gFlow.getSinkNode(),
                 zeroLengthPaths, surplus, 
-                new HashSet<Integer>(deficit));
+                deficit);
 
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
@@ -575,11 +566,19 @@ t0 = System.currentTimeMillis();
             //   reducing |S| = |D| = h by |P|;
             //NOTE that surplus and deficit are modified and updated
             // within augmentFlow
-            augmentFlow(gFlow, cPaths, surplus, deficit);
+            augmentFlow(gFlow, cPaths);
             
 t1 = System.currentTimeMillis();  
 tSec = (t1 - t0);
 System.out.println(tSec + " msec for augmentFlow");
+
+            surplus.clear();
+            deficit.clear();
+            gFlow.getSurplusLeftIndexes(surplus);
+            gFlow.getDeficitRightIndexes(deficit);
+
+            log.fine("nSurplus=" + surplus.size() + " nDeficit="
+                + deficit.size());
 
             log.fine("after augmentation (eps=" + eps + " epsLarge=" + epsLarge);
             //debug(forest);
@@ -726,7 +725,7 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
      */
     protected Forest buildForest2(
         final FlowNetwork gFlow, ResidualDigraph2 rF,
-        List<Integer> surplus, List<Integer> deficit, float eps,
+        Set<Integer> surplus, Set<Integer> deficit, float eps,
         Map<Integer, Integer> terminatingKeys, int lambda) {
         
         log.fine("buildForest2");
@@ -745,8 +744,6 @@ long t0 = System.currentTimeMillis();
         TODO: there is overlapping logic in surplusForestKeys
         and terminatingKeys so this could be made more concise later.
         */
-        Set<Integer> s = new HashSet<Integer>(surplus);
-        Set<Integer> d = new HashSet<Integer>(deficit);
         Map<Integer, Integer> surplusForestKeys = new HashMap<Integer, Integer>();
             
         if (lambda < 4) {
@@ -922,8 +919,8 @@ System.out.println(tSec + " msec for "
                 // if a single shortest path root node is being inserted:
                 if ((node1.pathPredecessor != null) &&
                     (node1.pathPredecessor instanceof LeftNode) && 
-                    s.contains(
-                    (Integer)node1.pathPredecessor.getData())) {
+                    surplus.contains(
+                        (Integer)node1.pathPredecessor.getData())) {
                     surplusForestKeys.put(
                         (Integer)node1.pathPredecessor.getData(), 
                         Integer.valueOf((int)lastKey));
@@ -931,7 +928,7 @@ System.out.println(tSec + " msec for "
             }
             
             // store each shortest oath's terminating forest index
-            if (d.contains(index1) && !node1IsLeft) {
+            if (deficit.contains(index1) && !node1IsLeft) {
                 
                 terminatingKeys.put(index1, Integer.valueOf((int)lastKey));
                 
@@ -1790,7 +1787,7 @@ Matchings in G are integral flows in N_G
         findMaximalSetOfCompatiblePaths(int nLeft, int nRight, 
             int sourceNodeIdx, int sinkNodeIdx,
             List<PathsAndPrices> pathsList,
-            Collection<Integer> surplus, Set<Integer> deficit) {
+            Set<Integer> surplus, Set<Integer> deficit) {
        
         List<LinkedList<PathNode>> augPaths 
             = new ArrayList<LinkedList<PathNode>>();
@@ -1894,12 +1891,8 @@ Matchings in G are integral flows in N_G
     }
     
     private void augmentFlow(FlowNetwork gFlow, 
-        List<LinkedList<PathNode>> cPaths,
-        List<Integer> surplus, List<Integer> deficit) {
+        List<LinkedList<PathNode>> cPaths) {
 
-        int hBefore = surplus.size();
-        assert(hBefore == deficit.size());
-        
         // see pg 63, Sect 8.4
         
         // - reverse forward-backward of links along paths
@@ -1939,19 +1932,6 @@ Matchings in G are integral flows in N_G
                 }
             }                
         }
-        
-        assert(gFlow.printFlowValueIncludingSrcSnk(hBefore));
-
-        surplus.clear();
-        deficit.clear();
-        gFlow.getSurplusLeftIndexes(surplus);
-        gFlow.getDeficitRightIndexes(deficit);
-        
-        log.fine("nSurplus=" + surplus.size() + " nDeficit="
-            + deficit.size());
-        
-        int hAfter = surplus.size();
-        assert((hBefore - hAfter) == cPaths.size());
     }
 
     private Map<PathNode, Set<PathNode>> createNewAdjacencyMap(
@@ -2048,26 +2028,23 @@ Matchings in G are integral flows in N_G
     
     private void makeSurplusAndDeficitSubSets(
         Map<PathNode, Set<PathNode>> pathLinksMap, 
-        Collection<Integer> surplus, Set<Integer> deficit, 
+        Set<Integer> surplus, Set<Integer> deficit, 
         Set<LeftNode> outputSurplus, 
         Set<RightNode> outputDeficit) {
-
-        Set<Integer> sSet = new HashSet<Integer>(surplus);
-        Set<Integer> dSet = new HashSet<Integer>(deficit);
-        
+  
         for (Entry<PathNode, Set<PathNode>> entry : pathLinksMap.entrySet()) {
             PathNode node1 = entry.getKey();
             Integer index1 = (Integer)node1.getData();
-            if (node1 instanceof LeftNode && sSet.contains(index1)) {
+            if (node1 instanceof LeftNode && surplus.contains(index1)) {
                 outputSurplus.add((LeftNode)node1);
-            } else if (node1 instanceof RightNode && dSet.contains(index1)) {
+            } else if (node1 instanceof RightNode && deficit.contains(index1)) {
                 outputDeficit.add((RightNode)node1);
             }
             for (PathNode node2 : entry.getValue()) {
                 Integer index2 = (Integer)node2.getData();
-                if (node2 instanceof LeftNode && sSet.contains(index2)) {
+                if (node2 instanceof LeftNode && surplus.contains(index2)) {
                     outputSurplus.add((LeftNode)node2);
-                } else if (node2 instanceof RightNode && dSet.contains(index2)) {
+                } else if (node2 instanceof RightNode && deficit.contains(index2)) {
                     outputDeficit.add((RightNode)node2);
                 }
             }
