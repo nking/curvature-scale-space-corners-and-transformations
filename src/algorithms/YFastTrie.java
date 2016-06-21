@@ -64,11 +64,13 @@ YFastTrie
           This begins to look like a good reason to
           compare to multi-level-buckets.  The only implementation
           I could find was the Andrew Goldberg MLB offered 
-          under a license that prohibits commercial use
+          under a license that is freely available for non-commercial
+          use, else need to contact for permission... not wanting
+          to include mixed license restrictions for now...
           (so I didn't download and read the code.  am reading
           his 2 papers on the subject, but they depend upon other
-          papers too, so gathering all the specs for his
-          algorithm is not complete...)
+          papers too, so gathering all the specs for the MLB
+          algorithms is not complete...)
           -- one possible work around without making dynamic
           partitions in the YFastTrie would be to know or 
           estimate the population of data ahead of time and 
