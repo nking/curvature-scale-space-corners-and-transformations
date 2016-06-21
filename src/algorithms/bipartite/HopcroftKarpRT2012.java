@@ -88,7 +88,7 @@ public class HopcroftKarpRT2012 {
             }
             
             TIntIntMap tmpM = new TIntIntHashMap(m);
-                    
+            
             TIntSet mR = new TIntHashSet(m.values());
             // if m2 has a match that does not conflict with m,
             // add it to m (== vertex disjoint)
@@ -190,21 +190,12 @@ public class HopcroftKarpRT2012 {
         hopcroft-karp matching algorithm and there are
         at first no matching nodes,
         so all X nodes are maiden nodes.
-        but other uses my give the method a residual graph
+        but other uses may give the method a residual graph
         that has matched arcs in it.
         
         The code below treats each maiden X node as a single
         source shortest path problem.
-        
-        The storage of the found paths is a little more complex
-        in that an array indexed by calculated path lengths
-        is created and each item is a doubly linked list of
-        paths (this is array indexing pattern of the "Dial" 
-        algorithm and it's similar to part of "counting sort").
-        so forest[0] holds a doubly linked list.
-           each item in that doubly linked list is a maiden 
-             node without a predecessor and having dist=0.        
-        
+           
         Note that book-keeping for the predecessors requires
         a copy be made upon insert of a node into the heap
         so that all possible foward links are present in 
@@ -274,22 +265,20 @@ public class HopcroftKarpRT2012 {
             // the key is the length of shortest path so far
             PathNode y = heap.extractMin();
             assert(y instanceof RightNode);
-            assert(y.getData() != null);
             
             log.fine("heap.size=" + heap.getNumberOfNodes());
             
             log.fine("extractMin=" + y.toString());
             
-            Integer yIndex = (Integer)(y.getData());
+            int yIdx = y.index;
         
-            if (augmentedRight.contains(yIndex.intValue())) {
+            if (augmentedRight.contains(yIdx)) {
                 continue;
             }
             
             assert(y.topPredecessor != null);
             
-            Integer topIndex = (Integer)y.topPredecessor.getData();
-            int topIdx = topIndex.intValue();
+            int topIdx = y.topPredecessor.index;
             
             long currentKey = forest.add(y, prevKey);
             
@@ -318,8 +307,8 @@ public class HopcroftKarpRT2012 {
             
             // the married nodes are the keys in the backward
             // links of the residual digraph
-            if (rM.getBackwardLinksRM().containsKey(yIndex.intValue())) {
-                int xIdx = rM.getBackwardLinksRM().get(yIndex.intValue());
+            if (rM.getBackwardLinksRM().containsKey(yIdx)) {
+                int xIdx = rM.getBackwardLinksRM().get(yIdx);
                 LeftNode xNode = leftNodes.get(xIdx);
                 
                 xNode.setKey(y.getKey());
@@ -348,9 +337,8 @@ public class HopcroftKarpRT2012 {
             } else {
                 //exit(bachelor β := y reached);
                 log.fine("bachelor y=" + y.toString());
-                //break;
                 
-                if (maidens.contains(topIndex)) {
+                if (maidens.contains(topIdx)) {
                     maidens.remove(topIdx);                    
                 } else if (maidens.isEmpty()) {
                     log.fine("last maiden's bachelor reached");
@@ -399,9 +387,9 @@ public class HopcroftKarpRT2012 {
         TIntSet augmentedRight,
         LeftNode topNode, TIntSet visitedY) {
 
-        Integer xIndex = (Integer)(xNode.getData());
+        int xIdx = xNode.index;
       
-        if (augmentedLeft.contains(xIndex.intValue())) {
+        if (augmentedLeft.contains(xIdx)) {
             return prevKey;
         }
         
@@ -409,7 +397,7 @@ public class HopcroftKarpRT2012 {
         assert(lX < Long.MAX_VALUE);
         
         TIntSet forwardLinks 
-            = rM.getForwardLinksRM().get(xIndex.intValue());
+            = rM.getForwardLinksRM().get(xIdx);
         
         if (forwardLinks != null) {
             TIntIterator iter = forwardLinks.iterator();
@@ -429,8 +417,7 @@ public class HopcroftKarpRT2012 {
 
                 RightNode yNode = yNodes.get(yIdx);
                 long lOld = yNode.getKey();
-                assert(((Integer)yNode.getData()).intValue() ==
-                    yIdx);
+                assert(yNode.index == yIdx);
                 
                 //L := l(x) + lp(x ⇒ y) 
                 //   = l(x) + cp(x, y)
@@ -450,8 +437,8 @@ public class HopcroftKarpRT2012 {
                         yNode = (RightNode)yNode.copy();
                         yNode.pathPredecessor = xNode.copy();
                         if (yNode.pathPredecessor.topPredecessor != null) {
-                            assert (yNode.pathPredecessor.topPredecessor.getData().equals(
-                                topNode.getData()));
+                            assert (yNode.pathPredecessor.topPredecessor.index ==
+                                topNode.index);
                             yNode.topPredecessor
                                 = yNode.pathPredecessor.topPredecessor;
                         } else {
@@ -462,17 +449,17 @@ public class HopcroftKarpRT2012 {
                         log.fine(String.format("HEAP insert: %s",
                             yNode.toString()));
                     } else {
-                        Integer prev = 
+                        int prev = 
                             (yNode.pathPredecessor == null) ?
                             null :
-                            (Integer)yNode.pathPredecessor.getData();
-                        Integer top = 
+                            yNode.pathPredecessor.index;
+                        int top = 
                             (yNode.topPredecessor == null) ?
                             null :
-                            (Integer)yNode.topPredecessor.getData();
-                        assert(prev != null);
-                        assert(top != null);
-                        if (prev.intValue() != xIndex) {
+                            yNode.topPredecessor.index;
+                        assert(prev != -1);
+                        assert(top != -1);
+                        if (prev != xIdx) {
                             yNode.pathPredecessor = xNode;
                             yNode.topPredecessor = xNode.topPredecessor;
                         }
@@ -539,11 +526,11 @@ public class HopcroftKarpRT2012 {
                 // index2 is the right index of the arc
                 int idx1, idx2;
                 if (node1 instanceof LeftNode) {
-                    idx1 = ((Integer)node1.getData()).intValue();
-                    idx2 = ((Integer)node2.getData()).intValue();
+                    idx1 = node1.index;
+                    idx2 = node2.index;
                 } else {
-                    idx1 = ((Integer)node2.getData()).intValue();
-                    idx2 = ((Integer)node1.getData()).intValue();
+                    idx1 = node2.index;
+                    idx2 = node1.index;
                 }
                 if (augmentedLeft.contains(idx1) ||
                     augmentedRight.contains(idx2)) {
@@ -969,5 +956,4 @@ public class HopcroftKarpRT2012 {
             }
         }            
     }
-    
 }

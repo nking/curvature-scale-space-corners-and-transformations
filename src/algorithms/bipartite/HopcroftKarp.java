@@ -44,7 +44,7 @@ public class HopcroftKarp {
     http://en.wikipedia.org/wiki/Symmetric_difference
     
     if M is a matching within G and P is an augmenting path,
-    then the summetric difference of M with P is a matching
+    then the symmetric difference of M with P is a matching
     of size |M| + 1.
     
     input G

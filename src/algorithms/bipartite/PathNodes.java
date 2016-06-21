@@ -34,25 +34,23 @@ public class PathNodes {
     private void init(int nLeft, int nRight) {
      
         for (int i = 0; i < nLeft; ++i) {
-            Integer index = Integer.valueOf(i);
             LeftNode node = new LeftNode();
             node.setKey(Long.MAX_VALUE);
-            node.setData(index);
+            node.index = i;
             leftNodes.put(i, node);
         }
         for (int i = 0; i < nRight; ++i) {
-            Integer index = Integer.valueOf(i);
             RightNode node = new RightNode();
             node.setKey(Long.MAX_VALUE);
-            node.setData(index);
+            node.index = i;
             rightNodes.put(i, node);
         }
         
         sourceNode.setKey(Long.MAX_VALUE);
-        sourceNode.setData(Integer.valueOf(nLeft));
+        sourceNode.index = nLeft;
         
         sinkNode.setKey(Long.MAX_VALUE);
-        sinkNode.setData(Integer.valueOf(nRight));       
+        sinkNode.index = nRight;       
     }
     
     public void resetNodeExceptData(long key) {
@@ -71,10 +69,8 @@ public class PathNodes {
         }
         
         sourceNode.setKey(key);
-        sourceNode.setData(Integer.valueOf(leftNodes.size()));
         
         sinkNode.setKey(key);
-        sinkNode.setData(Integer.valueOf(rightNodes.size()));   
     }
 
     /**

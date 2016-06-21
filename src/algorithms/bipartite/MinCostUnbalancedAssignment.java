@@ -5,7 +5,6 @@ import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.QuadInt;
-import algorithms.util.TrioInt;
 import gnu.trove.iterator.TIntFloatIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -102,6 +101,7 @@ public class MinCostUnbalancedAssignment {
     }
     
     static abstract class PathNode extends HeapNode {
+        int index = -1;
         PathNode pathPredecessor = null;
         LeftNode topPredecessor = null;
         // m = 0 is unmarked, m=1 is marked
@@ -124,7 +124,10 @@ public class MinCostUnbalancedAssignment {
         public PathNode copy() {
             PathNode node = construct();
             node.setKey(getKey());
-            node.setData(getData());
+            node.index = index;
+            if (getData() != null) {
+                node.setData(getData());
+            }
             if (pathPredecessor != null) {
                 PathNode p = pathPredecessor;
                 PathNode pNode = node;
@@ -144,11 +147,11 @@ public class MinCostUnbalancedAssignment {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append(id).append(" key=").append(Long.toString(getKey()));
-            sb.append(" index=").append(getData().toString());
+            sb.append(" index=").append(Integer.toBinaryString(index));
             PathNode prev = pathPredecessor;
             while (prev != null) {
-                String str = String.format("\n   [prev=%s %d %s]", 
-                    prev.id, (int)prev.getKey(), prev.getData());
+                String str = String.format("\n   [prev=%s %d %d]", 
+                    prev.id, (int)prev.getKey(), prev.index);
                 sb.append(str);
                 prev = prev.pathPredecessor;
             }
@@ -262,6 +265,10 @@ public class MinCostUnbalancedAssignment {
      */
     public TIntIntMap flowAssign(Graph g) {
 
+        boolean isFirstInvoc = true;
+        
+final long t0 = System.currentTimeMillis();
+
         validateGraph(g);
                 
         if (g.getNLeft() == 1 && g.getNRight() == 1) {
@@ -271,15 +278,13 @@ public class MinCostUnbalancedAssignment {
         // a first guess at the maximal matching size
         int sz = Math.min(g.getNLeft(), g.getNRight());
 
-long t0 = System.currentTimeMillis();
-
         // hopcroft-karp produces a maximal matching of nodes
         // without using edge weights, just uses connectivity
         TIntIntMap m = hopcroftKarp(g, sz);
 
 long t1 = System.currentTimeMillis();
-long tSec = (t1 - t0)/1000;
-System.out.println(tSec + " sec for hopcroftkarp");
+long tMSec = (t1 - t0);
+System.out.println(tMSec + " msec for hopcroftkarp");
 
         // if the code was given a graph created without 
         // using source and sink, need to transform that here.
@@ -287,8 +292,14 @@ System.out.println(tSec + " sec for hopcroftkarp");
             g = g.copyToCreateSourceSink();
         }
         
+t1 = System.currentTimeMillis();        
+
         GraphUtil.condenseEdgeWeights(g);
         
+long t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println(tMSec + " msec for condenseEdgeWeights");
+
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
         
@@ -366,15 +377,14 @@ System.out.println(tSec + " sec for hopcroftkarp");
             + " eps_down=" + eps_down);
 
         // all nodes V in gFlow have prices = 0
-        
-t0 = System.currentTimeMillis();
- 
-        gFlow.createPathNodes();
- 
+         
 t1 = System.currentTimeMillis();
-tSec = (t1 - t0);
-System.out.println(tSec + " msec for createPathNodes");
-       
+
+        gFlow.createPathNodes();
+        
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println(tMSec + " msec for createPathNodes");      
         
         while ((epsLarge > eps_down) && (nIterR < 2*rIter)) {
             
@@ -395,10 +405,17 @@ System.out.println(tSec + " msec for createPathNodes");
             eps /= ((float) q);
             epsLarge /= ((float)q);
 
-            int ext = refine(gFlow, s, eps, epsLarge, q);
+t1 = System.currentTimeMillis();
+
+            int ext = refine(gFlow, s, eps, epsLarge, q, 
+                isFirstInvoc);
+            
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println(tMSec + " msec for refine"); 
 
             if (ext > 0) {
-long t2 = System.currentTimeMillis();
+t2 = System.currentTimeMillis();
                 m = gFlow.extractMatches();
 long t3 = System.currentTimeMillis();
                 roundFinalPrices(gFlow, eps_down);
@@ -413,14 +430,14 @@ System.out.println((t4 - t3) + " for mmsec for roundFinalPrices");
 
         // assert nIter is approx log_q(s * maxC)
 
-t0 = System.currentTimeMillis(); 
+t1 = System.currentTimeMillis(); 
 
         // round prices to integers that make all arcs proper
         roundFinalPrices(gFlow, eps_down);
         
-t1 = System.currentTimeMillis();  
-tSec = (t1 - t0)/1000;
-System.out.println(tSec + " sec for roundFinalPrices");
+t2 = System.currentTimeMillis();  
+tMSec = (t2 - t1);
+System.out.println(tMSec + " sec for roundFinalPrices");
         
         m = gFlow.extractMatches();
         
@@ -430,7 +447,7 @@ System.out.println(tSec + " sec for roundFinalPrices");
     }
     
     protected int refine(FlowNetwork gFlow, int s, float eps, 
-        float epsLarge, int q) {
+        float epsLarge, int q, boolean isFirstInvoc) {
         
         log.fine("at start of refine, s=" + s + " eps=" + eps
             + " q=" + q);
@@ -443,13 +460,17 @@ System.out.println(tSec + " sec for roundFinalPrices");
         // D = right nodes matched in gFlow
         TIntSet deficit = new TIntHashSet();
        
+long t1 = System.currentTimeMillis();
+
         gFlow.zeroTheMatchedBipartiteFlow(surplus, deficit);
+
+long t2 = System.currentTimeMillis();
+long tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for zero the biapartite flow"); 
 
         // assert I4 and I5
         assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
         
-long t00 = System.currentTimeMillis();
-
         /*
         see Figure 7.4 on pg 53.
         raise prices so that every arc in 
@@ -457,11 +478,14 @@ long t00 = System.currentTimeMillis();
         f and for the new, smaller value of eps.
         this makes I3 true.
         */
+        
+t1 = System.currentTimeMillis();
+        
         gFlow.raisePricesUntilEpsProper(epsLarge, q);
 
-long t11 = System.currentTimeMillis();
-long tSec = (t11 - t00)/1000;
-System.out.println(tSec + " sec for raisePricesUntilEpsProper");
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec raise prics until eps proper"); 
 
         //log.info("after raise prices, w/ eps=" + eps);
         //gFlow.printNetCosts();
@@ -473,17 +497,22 @@ System.out.println(tSec + " sec for raisePricesUntilEpsProper");
         int h = s;
         int nHIter = 0;
         
-t00 = System.currentTimeMillis();
-
         // this should only execute sqrt(s) times
  
         while (h > 0) {
             
             log.fine("nHIter=" + nHIter + " h=" + h + " eps=" + eps
                 + " epsLarge-" + epsLarge);
-            
+
+t1 = System.currentTimeMillis();
+
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
-long t0 = System.currentTimeMillis();
+            
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for create RD2"); 
+
+
             // build a shortest-path forest from the current surpluses S, 
             // stopping when a current deficit in D is reached;
             // (pg 55)
@@ -497,14 +526,19 @@ long t0 = System.currentTimeMillis();
             
             float maxDivMin = gFlow.getMaxC()/gFlow.getMinC();
             lambda = 1 + (int)Math.floor(maxDivMin * lambda);
-       
+
+t1 = System.currentTimeMillis();
+
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
-                spIndexes, lambda);
-long t1 = System.currentTimeMillis();
-tSec = (t1 - t0);
-System.out.println(tSec + " msec for buildForest2");
-           
+                spIndexes, lambda, isFirstInvoc);
+            
+            isFirstInvoc = false;
+
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for buildForest2"); 
+
             // raise prices at forest nodes by multiples of ε, 
             // shortening the discovered augmenting path to length 0;
             // array i[v] for all nodes in V (==left nodes)
@@ -518,20 +552,20 @@ System.out.println(tSec + " msec for buildForest2");
             //     and raises by 1 the length of any link that enters v.
             
             //assert(gFlow.printFlowValueIncludingSrcSnk(s));
-                     
-t0 = System.currentTimeMillis();
 
             log.fine("before modify prices:");
             //debug(forest);
             //gFlow.printNetCosts();
-                
+
+t1 = System.currentTimeMillis();
+
             List<PathsAndPrices> zeroLengthPaths = 
                 modifyPathLengths(gFlow, rF, forest, 
                 spIndexes, eps);
            
-t1 = System.currentTimeMillis();
-tSec = (t1 - t0);
-System.out.println(tSec + " msec for modifyPricesAndPathLengths");
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for modifyPathLengths"); 
 
             if (zeroLengthPaths.isEmpty()) {
                 log.warning("extractedPaths is empty.  h=" + h);                               
@@ -551,27 +585,26 @@ System.out.println(tSec + " msec for modifyPricesAndPathLengths");
             maximal set of length 0 disjoimt vertex paths
             (then will apply assertions).
             */
-                      
-t0 = System.currentTimeMillis();              
+                             
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             
+t1 = System.currentTimeMillis();
+
             List<LinkedList<PathNode>> cPaths =
                 findMaximalSetOfCompatiblePaths(gFlow,
                 zeroLengthPaths, surplus, deficit);
 
-t1 = System.currentTimeMillis();  
-tSec = (t1 - t0);
-System.out.println(tSec 
-+ " msec for findMaximalSetOfCompatiblePaths");
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for find maximal set of paths"); 
 
-t0 = System.currentTimeMillis();
+t1 = System.currentTimeMillis();
 
             raisePricesForMaximalSet(gFlow, cPaths, zeroLengthPaths);
 
-t1 = System.currentTimeMillis();  
-tSec = (t1 - t0);
-System.out.println(tSec 
-+ " msec for raisePricesForMaximalSet");
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for rais prices of maximal"); 
             
             // postponed assertions:
             // assert from pg 52 
@@ -591,16 +624,17 @@ System.out.println(tSec
                 return 1;
             }
         
-t0 = System.currentTimeMillis();              
+t1 = System.currentTimeMillis();  
+
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
             //NOTE that surplus and deficit are modified and updated
             // within augmentFlow
             augmentFlow(gFlow, cPaths);
             
-t1 = System.currentTimeMillis();  
-tSec = (t1 - t0);
-System.out.println(tSec + " msec for augmentFlow");
+t2 = System.currentTimeMillis();
+tMSec = (t2 - t1);
+System.out.println("    " + tMSec + " msec for augment flow"); 
 
             surplus.clear();
             deficit.clear();
@@ -640,10 +674,6 @@ System.out.println(tSec + " msec for augmentFlow");
             ++nHIter;
         }
         
-t11 = System.currentTimeMillis();
-tSec = (t11 - t00)/1000;
-System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
-
         return 0;
     }
     
@@ -755,6 +785,9 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
      * @param surplus
      * @param deficit
      * @param eps
+     * @param terminatingKeys
+     * @param lambda
+     * @param isFirstInvoc
      * @terminatingKeys map of keu=surplus index, value = terminating 
      * deficit forest index
      * @return 
@@ -762,7 +795,8 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
     protected Forest buildForest2(
         final FlowNetwork gFlow, ResidualDigraph2 rF,
         TIntSet surplus, TIntSet deficit, float eps,
-        TIntIntMap terminatingKeys, int lambda) {
+        TIntIntMap terminatingKeys, int lambda,
+        boolean isFirstInvoc) {
         
         log.fine("buildForest2");
 
@@ -770,8 +804,6 @@ System.out.println(tSec + " sec for h block, nHIter=" + nHIter);
             + deficit.size());
         
         terminatingKeys.clear();
-        
-long t0 = System.currentTimeMillis();
 
         /*
         if a surplus node has been inserted into the forest, any further
@@ -808,19 +840,22 @@ long t0 = System.currentTimeMillis();
         SinkNode sinkNode = pathNodes.getSinkNode();
         
 long tIns = 0;
+long t1 = System.currentTimeMillis();
+
         TIntIterator iter = surplus.iterator();
         while (iter.hasNext()) {
             int sigma = iter.next();        
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
- long ta0 = System.currentTimeMillis();
+long ta0 = System.currentTimeMillis();
             minHeap.insert(sNode);
-  tIns += (System.currentTimeMillis() - ta0);
+tIns += (System.currentTimeMillis() - ta0);
         }
-       
-long t1 = System.currentTimeMillis();
+
+long t2 = System.currentTimeMillis();
+
 System.out.println(tIns + " for msec minHeap.insert in init");   
-long tSec = (t1 - t0);
+long tSec = (t2 - t1);
 System.out.println(tSec + " msec for init in buildForest2 heap.size=" +
 minHeap.getNumberOfNodes());
 
@@ -833,27 +868,24 @@ minHeap.getNumberOfNodes());
                 //   lastKey is needed
                 break;
             }
-            Integer index1 = (Integer)node1.getData();
+            int idx1 = node1.index;
                                 
-            if (terminatingKeys.containsKey(index1.intValue())) {
+            if (terminatingKeys.containsKey(idx1)) {
                 continue;
             } else if (
                 node1.pathPredecessor != null &&
                 node1.pathPredecessor instanceof RightNode &&
                 terminatingKeys.containsKey(
-                (Integer)node1.pathPredecessor.getData()
-                )) {
+                node1.pathPredecessor.index)) {
                 continue;
             } else if (node1.pathPredecessor != null) {
                 if (node1.pathPredecessor instanceof LeftNode &&
                 surplusForestKeys.containsKey(
-                (Integer)node1.pathPredecessor.getData()
-                )) {
+                node1.pathPredecessor.index)) {
                     continue;
                 } else if (node1.pathPredecessor.pathPredecessor 
                 instanceof LeftNode && surplusForestKeys.containsKey(
-                (Integer)node1.pathPredecessor.pathPredecessor.getData()
-                )) {
+                node1.pathPredecessor.pathPredecessor.index)) {
                     continue;
                 }
             }
@@ -871,8 +903,6 @@ minHeap.getNumberOfNodes());
             TODO: for first invocation within refine and first invocation
             of refine, can exclude the source and sink arc inserts here.
             */
-            
-            int idx1 = index1.intValue();
              
             boolean node1IsLeft = (node1 instanceof LeftNode);
             boolean nodeIsSource = (node1 instanceof SourceNode);
@@ -881,7 +911,8 @@ minHeap.getNumberOfNodes());
             //scan all links leaving node1:
             if (nodeIsSource) {
                 // scan forward source links
-                TIntIterator iter2 = rF.getForwardLinksSourceRM().iterator();
+                TIntIterator iter2 = 
+                    rF.getForwardLinksSourceRM().iterator();
                 while (iter2.hasNext()) {
                     int idx2 = iter2.next();
                     if (surplusForestKeys.containsKey(idx2)) {
@@ -915,13 +946,15 @@ minHeap.getNumberOfNodes());
                     }
                 }
            
-                // if there's a source link
-                if (rF.getBackwardLinksSourceRM().contains(idx1)) {
-                    // insert a copy of the source node
-                    PathNode sNode2 = sourceNode.copy();
-                    handleMinusLink(minHeap, node1, sNode2, 
-                        gFlow.calcSourceNetCost(idx1),
-                        lambda, eps);
+                if (!isFirstInvoc) {
+                    // if there's a source link
+                    if (rF.getBackwardLinksSourceRM().contains(idx1)) {
+                        // insert a copy of the source node
+                        PathNode sNode2 = sourceNode.copy();
+                        handleMinusLink(minHeap, node1, sNode2, 
+                            gFlow.calcSourceNetCost(idx1),
+                            lambda, eps);
+                    }
                 }
             } else {
                 // node1 is a RightNode
@@ -932,13 +965,15 @@ minHeap.getNumberOfNodes());
                        gFlow.calcNetCost(idx2, idx1),
                        lambda, eps);                     
                 }
-                // if there is a sink link
-                if (rF.getForwardLinksSinkRM().contains(idx1)) {
-                    // insert a copy of the sink node
-                    PathNode sNode2 = sinkNode.copy();
-                    handlePlusLink(minHeap, node1, sNode2, 
-                        gFlow.calcSinkNetCost(idx1),
-                        lambda, eps);
+                if (!isFirstInvoc) {
+                    // if there is a sink link
+                    if (rF.getForwardLinksSinkRM().contains(idx1)) {
+                        // insert a copy of the sink node
+                        PathNode sNode2 = sinkNode.copy();
+                        handlePlusLink(minHeap, node1, sNode2, 
+                            gFlow.calcSinkNetCost(idx1),
+                            lambda, eps);
+                    }
                 }
             }
             
@@ -952,10 +987,9 @@ minHeap.getNumberOfNodes());
                 if ((node1.pathPredecessor != null) &&
                     (node1.pathPredecessor instanceof LeftNode) && 
                     surplus.contains(
-                        (Integer)node1.pathPredecessor.getData())) {
+                        node1.pathPredecessor.index)) {
                     surplusForestKeys.put(
-                        (Integer)node1.pathPredecessor.getData(), 
-                        (int)lastKey);
+                        node1.pathPredecessor.index, (int)lastKey);
                 }
             }
             
@@ -1400,8 +1434,8 @@ Matchings in G are integral flows in N_G
                     PathNode node2 = path.get(i + 1);
                     int l1 = (int) node1.getKey();
                     int l2 = (int) node2.getKey();
-                    int idx1 = ((Integer) node1.getData()).intValue();
-                    int idx2 = ((Integer) node2.getData()).intValue();
+                    int idx1 = node1.index;
+                    int idx2 = node2.index;
                     
                     boolean node1IsRight = (node1 instanceof RightNode);
                     boolean node1IsLeft = (node1 instanceof LeftNode);
@@ -1440,8 +1474,8 @@ Matchings in G are integral flows in N_G
                                     log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for saturated link X=" + node2.getData() + " to Y="
-                                        + node1.getData() + " results in l(X)=" + l2);
+                                        "for saturated link X=" + node2.index + " to Y="
+                                        + node1.index + " results in l(X)=" + l2);
                                 }
                                 
                                 node2.setKey(l2);
@@ -1458,8 +1492,8 @@ Matchings in G are integral flows in N_G
                                     log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for idle link X=" + node2.getData() + " to Y="
-                                        + node1.getData() + " results in l(Y)=" + l1);
+                                        "for idle link X=" + node2.index + " to Y="
+                                        + node1.index + " results in l(Y)=" + l1);
                                 }
                                 
                                 node1.setKey(l1);
@@ -1480,8 +1514,8 @@ Matchings in G are integral flows in N_G
                                     log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for saturated link Y=" + node1.getData() + " to sink="
-                                        + node2.getData() + " results in l(Y)=" + l1);
+                                        "for saturated link Y=" + node1.index + " to sink="
+                                        + node2.index + " results in l(Y)=" + l1);
                                 }
                                 
                                 node1.setKey(l1);
@@ -1495,8 +1529,8 @@ Matchings in G are integral flows in N_G
                                     log.severe("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for idle link Y=" + node1.getData() + " to sink="
-                                        + node2.getData() + " results in l(sink)=" + l2);
+                                        "for idle link Y=" + node1.index + " to sink="
+                                        + node2.index + " results in l(sink)=" + l2);
                                 }
                                 
                                 node2.setKey(l2);
@@ -1527,8 +1561,8 @@ Matchings in G are integral flows in N_G
                                     log.info("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for saturated link X=" + node1.getData() + " to Y="
-                                        + node2.getData() + " results in l(X)=" + l1);
+                                        "for saturated link X=" + node1.index + " to Y="
+                                        + node2.index + " results in l(X)=" + l1);
                                 }
                                 
                                 node1.setKey(l1);
@@ -1543,8 +1577,8 @@ Matchings in G are integral flows in N_G
                                     log.info("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for idle link X=" + node1.getData() + " to Y="
-                                        + node2.getData() + " results in l(Y)=" + l2);
+                                        "for idle link X=" + node1.index + " to Y="
+                                        + node2.index + " results in l(Y)=" + l2);
                                 }
                                 
                                 node2.setKey(l2);
@@ -1565,9 +1599,9 @@ Matchings in G are integral flows in N_G
                                     log.info("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for saturated link source=" + node2.getData() 
+                                        "for saturated link source=" + node2.index 
                                             + " to X="
-                                        + node1.getData() + " results in l(source)=" + l2);
+                                        + node1.index + " results in l(source)=" + l2);
                                 }
                                 
                                 node2.setKey(l2);
@@ -1581,8 +1615,8 @@ Matchings in G are integral flows in N_G
                                     log.info("forest at time of error:");
                                     debug(forest);
                                     throw new IllegalStateException(
-                                        "for idle link source=" + node2.getData() + " to X="
-                                        + node1.getData() + " results in l(X)=" + l1);
+                                        "for idle link source=" + node2.index + " to X="
+                                        + node1.index + " results in l(X)=" + l1);
                                 }
                                 
                                 node1.setKey(l1);
@@ -1605,8 +1639,8 @@ Matchings in G are integral flows in N_G
                                 log.info("forest at time of error:");
                                 debug(forest);
                                 throw new IllegalStateException(
-                                    "for saturated link source=" + node1.getData() + " ro X="
-                                    + node2.getData() + " results in l(source)=" + l1);
+                                    "for saturated link source=" + node1.index + " ro X="
+                                    + node2.index + " results in l(source)=" + l1);
                             }
                             
                             node1.setKey(l1);
@@ -1620,8 +1654,8 @@ Matchings in G are integral flows in N_G
                                 log.info("forest at time of error:");
                                 debug(forest);
                                 throw new IllegalStateException(
-                                    "for idle link source=" + node1.getData() + " ro X="
-                                    + node2.getData() + " results in l(X)=" + l2);
+                                    "for idle link source=" + node1.index + " ro X="
+                                    + node2.index + " results in l(X)=" + l2);
                             }
                             
                             node2.setKey(l2);
@@ -1642,9 +1676,9 @@ Matchings in G are integral flows in N_G
                                 log.info("forest at time of error:");
                                 debug(forest);
                                 throw new IllegalStateException(
-                                    "for saturated link Y=" + node2.getData() 
+                                    "for saturated link Y=" + node2.index 
                                     + " to sink="
-                                    + node1.getData() + " results in l(Y)=" + l2);
+                                    + node1.index + " results in l(Y)=" + l2);
                             }
                             
                             node2.setKey(l2);
@@ -1658,9 +1692,9 @@ Matchings in G are integral flows in N_G
                                 log.info("forest at time of error:");
                                 debug(forest);
                                 throw new IllegalStateException(
-                                    "for saturated link Y=" + node2.getData() 
+                                    "for saturated link Y=" + node2.index 
                                     + " to sink="
-                                    + node1.getData() + " results in l(sink)=" + l1);
+                                    + node1.index + " results in l(sink)=" + l1);
                             }
                             
                             node1.setKey(l1);
@@ -1811,8 +1845,8 @@ Matchings in G are integral flows in N_G
             PathNode node2 = link.pollFirst();
             PathNode node1 = link.pollFirst();
             assert(link.isEmpty());
-            int idx1 = ((Integer)node1.getData()).intValue();
-            int idx2 = ((Integer)node2.getData()).intValue();
+            int idx1 = node1.index;
+            int idx2 = node2.index;
         
             if (node1 instanceof SourceNode) {
                 assert(!(node2 instanceof SourceNode));
@@ -1865,25 +1899,25 @@ Matchings in G are integral flows in N_G
                 // replace node1 and node2 
                 //     with nodes above to have same identity
                 //     and field m
-                Integer index1 = (Integer)node1.getData();
-                Integer index2 = (Integer)node2.getData();
+                int idx1 = node1.index;
+                int idx2 = node2.index;
                 if (node1 instanceof SinkNode) {
                     node1 = sinkNode;
                 } else if (node1 instanceof SourceNode) {
                     node1 = sourceNode;
                 } else if (node1 instanceof LeftNode) {
-                    node1 = pathNodes.getLeftNodes().get(index1);
+                    node1 = pathNodes.getLeftNodes().get(idx1);
                 } else {
-                    node1 = pathNodes.getRightNodes().get(index1);
+                    node1 = pathNodes.getRightNodes().get(idx1);
                 }
                 if (node2 instanceof SinkNode) {
                     node2 = sinkNode;
                 } else if (node2 instanceof SourceNode) {
                     node2 = sourceNode;
                 } else if (node2 instanceof LeftNode) {
-                    node2 = pathNodes.getLeftNodes().get(index2);
+                    node2 = pathNodes.getLeftNodes().get(idx2);
                 } else {
-                    node2 = pathNodes.getRightNodes().get(index2);
+                    node2 = pathNodes.getRightNodes().get(idx2);
                 }
 
                 Set<PathNode> values = pathLinksMap.get(node1);
@@ -1916,8 +1950,7 @@ Matchings in G are integral flows in N_G
   
         for (Entry<PathNode, Set<PathNode>> entry : pathLinksMap.entrySet()) {
             PathNode node1 = entry.getKey();
-            Integer index1 = (Integer)node1.getData();
-            int idx1 = index1.intValue();
+            int idx1 = node1.index;
             if (node1 instanceof LeftNode && 
                 surplus.contains(idx1)) {
                 outputSurplus.add((LeftNode)node1);
@@ -1926,8 +1959,7 @@ Matchings in G are integral flows in N_G
                 outputDeficit.add((RightNode)node1);
             }
             for (PathNode node2 : entry.getValue()) {
-                Integer index2 = (Integer)node2.getData();
-                int idx2 = index2.intValue();
+                int idx2 = node2.index;
                 if (node2 instanceof LeftNode && 
                     surplus.contains(idx2)) {
                     outputSurplus.add((LeftNode)node2);
@@ -1942,9 +1974,9 @@ Matchings in G are integral flows in N_G
     private void debugPath(List<PathNode> path) {
         StringBuilder sb = new StringBuilder("path=");
         for (PathNode node : path) {
-            String str = String.format("%s %s %s", 
+            String str = String.format("%s %s %d", 
                 node.id, Long.toString(node.getKey()),
-                node.getData().toString());
+                node.index);
             sb.append(str).append(", ");
         }
         log.info(sb.toString());
@@ -2011,13 +2043,13 @@ Matchings in G are integral flows in N_G
             
             PathNode node1 = entry.getKey();
             
-            sb.append(String.format("%s %s", node1.id, node1.getData().toString()));
+            sb.append(String.format("%s %d", node1.id, node1.index));
             sb.append("-->[");
             
             Set<PathNode> set = entry.getValue();
             for (PathNode node2 : set) {
-                sb.append(String.format("%s %s", node2.id, 
-                    node2.getData().toString()));
+                sb.append(String.format("%s %d", node2.id, 
+                    node2.index));
                 sb.append(", ");
             }
             sb.append("]\n");
@@ -2091,7 +2123,7 @@ Matchings in G are integral flows in N_G
         
         for (int i = 0; i < path.size(); ++i) {
             PathNode node = path.get(i);
-            int idx = ((Integer)node.getData()).intValue();
+            int idx = node.index;
             if (node instanceof RightNode || node instanceof SinkNode) {
                 idx *= -1;
             }
