@@ -28,7 +28,10 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * NOTE:  this class is NOT READY FOR USE YET
+ * NOTE:  this class is NOT READY FOR USE YET.
+ * It needs an implementation of "multi-level buckets"
+ * to reduce the minHeap's extractMin and should possibly
+ * be refactored to use primitives.
  * 
  * @author nichole
  */
@@ -40,7 +43,10 @@ public class HopcroftKarpRT2012 {
      * NOT READY FOR USE.
      runtime complexity O(m * sqrt(s)) where m is number of edges
      and s is the size of the matching whose target size
-     may be less than the maximum matchable
+     may be less than the maximum matchable.
+     * It needs an implementation of "multi-level buckets"
+     * to reduce the minHeap's extractMin and should possibly
+     * be refactored to use primitives.
      * @param g
      * @return 
      */
@@ -611,8 +617,8 @@ public class HopcroftKarpRT2012 {
             }
             rIndexes.add(rightIdx);
 
-            log.fine("augmented to remove :" + leftIdx + " to " +
-                rightIdx);
+            log.fine("augmented to remove :" + leftIdx 
+                + " to " + rightIdx);
             
             augmentedLeft.add(leftIdx);
             augmentedRight.add(rightIdx);

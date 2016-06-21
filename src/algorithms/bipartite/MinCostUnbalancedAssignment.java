@@ -78,6 +78,13 @@ import java.util.logging.Logger;
  * of NetworkFlow passed to methods should only be used by
  * that method and thread at the given time.
  * 
+ * Also note that the class needs an implementation of
+ * "multi-level buckets" in the minHeap used in buildForest2
+ * and the graphs should be consolidated and refactored
+ * to use primitives where possible.  The current
+ * runtime is longer than the Hungarian implementation 
+ * in this project.
+ * 
  * @author nichole
  */
 public class MinCostUnbalancedAssignment {
@@ -267,8 +274,6 @@ public class MinCostUnbalancedAssignment {
 
         boolean isFirstInvoc = true;
         
-final long t0 = System.currentTimeMillis();
-
         validateGraph(g);
                 
         if (g.getNLeft() == 1 && g.getNRight() == 1) {
@@ -282,24 +287,14 @@ final long t0 = System.currentTimeMillis();
         // without using edge weights, just uses connectivity
         TIntIntMap m = hopcroftKarp(g, sz);
 
-long t1 = System.currentTimeMillis();
-long tMSec = (t1 - t0);
-System.out.println(tMSec + " msec for hopcroftkarp");
-
         // if the code was given a graph created without 
         // using source and sink, need to transform that here.
         if (g.getSourceNode() == -1) {
             g = g.copyToCreateSourceSink();
         }
         
-t1 = System.currentTimeMillis();        
-
         GraphUtil.condenseEdgeWeights(g);
         
-long t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println(tMSec + " msec for condenseEdgeWeights");
-
         FlowNetwork gFlow = new FlowNetwork(g, m);
         //assert(gFlow.printFlowValueIncludingSrcSnk(m.size()));
         
@@ -378,13 +373,7 @@ System.out.println(tMSec + " msec for condenseEdgeWeights");
 
         // all nodes V in gFlow have prices = 0
          
-t1 = System.currentTimeMillis();
-
         gFlow.createPathNodes();
-        
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println(tMSec + " msec for createPathNodes");      
         
         while ((epsLarge > eps_down) && (nIterR < 2*rIter)) {
             
@@ -405,22 +394,12 @@ System.out.println(tMSec + " msec for createPathNodes");
             eps /= ((float) q);
             epsLarge /= ((float)q);
 
-t1 = System.currentTimeMillis();
-
             int ext = refine(gFlow, s, eps, epsLarge, q, 
                 isFirstInvoc);
             
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println(tMSec + " msec for refine"); 
-
             if (ext > 0) {
-t2 = System.currentTimeMillis();
                 m = gFlow.extractMatches();
-long t3 = System.currentTimeMillis();
                 roundFinalPrices(gFlow, eps_down);
-long t4 = System.currentTimeMillis();
-System.out.println((t4 - t3) + " for mmsec for roundFinalPrices");
                 finalFN = gFlow;
                 return m;
             }
@@ -430,14 +409,8 @@ System.out.println((t4 - t3) + " for mmsec for roundFinalPrices");
 
         // assert nIter is approx log_q(s * maxC)
 
-t1 = System.currentTimeMillis(); 
-
         // round prices to integers that make all arcs proper
         roundFinalPrices(gFlow, eps_down);
-        
-t2 = System.currentTimeMillis();  
-tMSec = (t2 - t1);
-System.out.println(tMSec + " sec for roundFinalPrices");
         
         m = gFlow.extractMatches();
         
@@ -460,13 +433,7 @@ System.out.println(tMSec + " sec for roundFinalPrices");
         // D = right nodes matched in gFlow
         TIntSet deficit = new TIntHashSet();
        
-long t1 = System.currentTimeMillis();
-
         gFlow.zeroTheMatchedBipartiteFlow(surplus, deficit);
-
-long t2 = System.currentTimeMillis();
-long tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for zero the biapartite flow"); 
 
         // assert I4 and I5
         assert(gFlow.assertSaturatedBipartiteIsEpsSnug(epsLarge));
@@ -478,14 +445,8 @@ System.out.println("    " + tMSec + " msec for zero the biapartite flow");
         f and for the new, smaller value of eps.
         this makes I3 true.
         */
-        
-t1 = System.currentTimeMillis();
-        
+                
         gFlow.raisePricesUntilEpsProper(epsLarge, q);
-
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec raise prics until eps proper"); 
 
         //log.info("after raise prices, w/ eps=" + eps);
         //gFlow.printNetCosts();
@@ -504,15 +465,8 @@ System.out.println("    " + tMSec + " msec raise prics until eps proper");
             log.fine("nHIter=" + nHIter + " h=" + h + " eps=" + eps
                 + " epsLarge-" + epsLarge);
 
-t1 = System.currentTimeMillis();
-
             ResidualDigraph2 rF = new ResidualDigraph2(gFlow);
             
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for create RD2"); 
-
-
             // build a shortest-path forest from the current surpluses S, 
             // stopping when a current deficit in D is reached;
             // (pg 55)
@@ -527,17 +481,11 @@ System.out.println("    " + tMSec + " msec for create RD2");
             float maxDivMin = gFlow.getMaxC()/gFlow.getMinC();
             lambda = 1 + (int)Math.floor(maxDivMin * lambda);
 
-t1 = System.currentTimeMillis();
-
             Forest forest = 
                 buildForest2(gFlow, rF, surplus, deficit, eps,
                 spIndexes, lambda, isFirstInvoc);
             
             isFirstInvoc = false;
-
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for buildForest2"); 
 
             // raise prices at forest nodes by multiples of ε, 
             // shortening the discovered augmenting path to length 0;
@@ -557,16 +505,10 @@ System.out.println("    " + tMSec + " msec for buildForest2");
             //debug(forest);
             //gFlow.printNetCosts();
 
-t1 = System.currentTimeMillis();
-
             List<PathsAndPrices> zeroLengthPaths = 
                 modifyPathLengths(gFlow, rF, forest, 
                 spIndexes, eps);
-           
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for modifyPathLengths"); 
-
+    
             if (zeroLengthPaths.isEmpty()) {
                 log.warning("extractedPaths is empty.  h=" + h);                               
                 // h > 0 so the matching is unbalanced and one-sided
@@ -588,24 +530,12 @@ System.out.println("    " + tMSec + " msec for modifyPathLengths");
                              
             // --- Sect 8.3, create maximal set of compatible augmenting paths
             
-t1 = System.currentTimeMillis();
-
             List<LinkedList<PathNode>> cPaths =
                 findMaximalSetOfCompatiblePaths(gFlow,
                 zeroLengthPaths, surplus, deficit);
 
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for find maximal set of paths"); 
-
-t1 = System.currentTimeMillis();
-
             raisePricesForMaximalSet(gFlow, cPaths, zeroLengthPaths);
-
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for rais prices of maximal"); 
-            
+         
             // postponed assertions:
             // assert from pg 52 
             //       I1', I2, I3, I4, on FlowNetwork
@@ -624,18 +554,12 @@ System.out.println("    " + tMSec + " msec for rais prices of maximal");
                 return 1;
             }
         
-t1 = System.currentTimeMillis();  
-
             //augment f along each of the paths in P in turn, thereby 
             //   reducing |S| = |D| = h by |P|;
             //NOTE that surplus and deficit are modified and updated
             // within augmentFlow
             augmentFlow(gFlow, cPaths);
             
-t2 = System.currentTimeMillis();
-tMSec = (t2 - t1);
-System.out.println("    " + tMSec + " msec for augment flow"); 
-
             surplus.clear();
             deficit.clear();
             gFlow.getSurplusLeftIndexes(surplus);
@@ -839,25 +763,13 @@ System.out.println("    " + tMSec + " msec for augment flow");
         
         SinkNode sinkNode = pathNodes.getSinkNode();
         
-long tIns = 0;
-long t1 = System.currentTimeMillis();
-
         TIntIterator iter = surplus.iterator();
         while (iter.hasNext()) {
             int sigma = iter.next();        
             LeftNode sNode = leftNodes.get(sigma);
             sNode.setKey(0);
-long ta0 = System.currentTimeMillis();
             minHeap.insert(sNode);
-tIns += (System.currentTimeMillis() - ta0);
         }
-
-long t2 = System.currentTimeMillis();
-
-System.out.println(tIns + " for msec minHeap.insert in init");   
-long tSec = (t2 - t1);
-System.out.println(tSec + " msec for init in buildForest2 heap.size=" +
-minHeap.getNumberOfNodes());
 
         // V * minHeap,extractMin +
         //     V * n_edges_per_V * minHeap.insert (or decr Key)
