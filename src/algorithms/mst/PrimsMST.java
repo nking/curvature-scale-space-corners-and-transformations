@@ -3,6 +3,11 @@ package algorithms.mst;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +42,7 @@ public class PrimsMST {
 
     private int[] prev = null;
     
-    private Map<Integer, Set<PairInt>> adjCostMap;
+    private TIntObjectMap<Set<PairInt>> adjCostMap;
     
     /**
      * 
@@ -48,7 +53,7 @@ public class PrimsMST {
      * @return 
      */
     public void calculateMinimumSpanningTree(
-        final int nVertexes, final Map<Integer, Set<PairInt>>
+        final int nVertexes, final TIntObjectMap<Set<PairInt>>
             adjCostMap) {
 
         this.adjCostMap = adjCostMap;
@@ -82,7 +87,7 @@ public class PrimsMST {
             Integer uIndex = (Integer)u.getData();
             inQ[uIndex.intValue()] = false;
             
-            Set<PairInt> adjSet = adjCostMap.get(uIndex);
+            Set<PairInt> adjSet = adjCostMap.get(uIndex.intValue());
             if (adjSet == null) {
                 continue;
             }
@@ -93,7 +98,7 @@ public class PrimsMST {
                 long distV = nodes.get(vIdx).getKey();
                 if (inQ[vIdx] && (cost < distV)) {
                     prev[vIdx] = uIndex.intValue();
-                    heap.decreaseKey(nodes.get(vIdx), cost);            
+                    heap.decreaseKey(nodes.get(vIdx), cost);      
                 }
             }
         }
@@ -108,23 +113,22 @@ public class PrimsMST {
         return Arrays.copyOf(prev, prev.length);
     }
     
-    private Map<Integer, Set<Integer>> createReverseMap(
+    private TIntObjectMap<TIntSet> createReverseMap(
         int[] pi) {
     
-        Map<Integer, Set<Integer>> revPrevMap 
-            = new HashMap<Integer, Set<Integer>>();
+        TIntObjectMap<TIntSet> revPrevMap 
+            = new TIntObjectHashMap<TIntSet>();
         for (int i = 0; i < pi.length; ++i) {
             int idx = pi[i];
             if (idx == -1) {
                 continue;
             }
-            Integer index = Integer.valueOf(idx);
-            Set<Integer> indexes = revPrevMap.get(index);
+            TIntSet indexes = revPrevMap.get(idx);
             if (indexes == null) {
-                indexes = new HashSet<Integer>();
-                revPrevMap.put(index, indexes);
+                indexes = new TIntHashSet();
+                revPrevMap.put(idx, indexes);
             }
-            indexes.add(Integer.valueOf(i));
+            indexes.add(i);
         }
         return revPrevMap;
     }
@@ -136,7 +140,7 @@ public class PrimsMST {
         // or can return a list of edges,
         
         // make a reverse map of prev
-        Map<Integer, Set<Integer>> revPrevMap 
+        TIntObjectMap<TIntSet> revPrevMap 
             = createReverseMap(prev);
         
         // here, the keys are the indexes
@@ -171,14 +175,15 @@ public class PrimsMST {
                 int currentParentIdx = (int)currentParentNode.getKey();
 
                 //revPrevMap has key = prev[i], values=set{i}
-                Set<Integer> childrenIndexes = 
-                    revPrevMap.get(Integer.valueOf(currentParentIdx));
+                TIntSet childrenIndexes = 
+                    revPrevMap.get(currentParentIdx);
                 if (childrenIndexes == null) {
                     continue;
                 }
-                for (Integer childIndex : childrenIndexes) {
-                    HeapNode currentChildNode = 
-                        tmp[childIndex.intValue()];
+                TIntIterator iter = childrenIndexes.iterator();
+                while (iter.hasNext()) {
+                    int childIdx = iter.next();                
+                    HeapNode currentChildNode = tmp[childIdx];
                     currentParentNode.addChild(currentChildNode);
                     queue.add(currentChildNode);
                     removed = set.remove(currentChildNode);
@@ -191,14 +196,15 @@ public class PrimsMST {
                 int currentParentIdx = (int)currentParentNode.getKey();
                 boolean removed = set.remove(currentParentNode);
                 
-                Set<Integer> childrenIndexes = 
-                    revPrevMap.get(Integer.valueOf(currentParentIdx));
+                TIntSet childrenIndexes = 
+                    revPrevMap.get(currentParentIdx);
                 if (childrenIndexes == null) {
                     continue;
                 }
-                for (Integer childIndex : childrenIndexes) {
-                    HeapNode currentChildNode = 
-                        tmp[childIndex.intValue()];
+                TIntIterator iter2 = childrenIndexes.iterator();
+                while (iter2.hasNext()) {
+                    int childIdx = iter2.next();
+                    HeapNode currentChildNode = tmp[childIdx];
                     currentParentNode.addChild(currentChildNode);
                     queue.add(currentChildNode);
                     removed = set.remove(currentChildNode);

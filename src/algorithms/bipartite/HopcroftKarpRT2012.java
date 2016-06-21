@@ -9,6 +9,15 @@ import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.mst.PrimsMST;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,9 +44,9 @@ public class HopcroftKarpRT2012 {
      * @param g
      * @return 
      */
-    public Map<Integer, Integer> findMaxMatching(Graph g, int s) {
+    public TIntIntMap findMaxMatching(Graph g, int s) {
     
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        TIntIntMap m = new TIntIntHashMap();
                  
         ResidualDigraph rM = new ResidualDigraph(g, m);
         
@@ -67,34 +76,28 @@ public class HopcroftKarpRT2012 {
             now applying the symmetric difference to m and m2
             */
             
-            Map<Integer, Integer> m2 = rM.extractMatchings();
+            TIntIntMap m2 = rM.extractMatchings();
                         
             //announce(M is a matching)
             
             log.fine("nIter=" + nIter + " m2.size=" + m2.size()
                 + " m.size=" + m.size());
-            /*
-            // debug:
-            for (Entry<Integer, Integer> entry : m2.entrySet()) {
-                log.info("m2 match= " + entry.getKey() + "->" + entry.getValue());
-            }
-            for (Entry<Integer, Integer> entry : m.entrySet()) {
-                log.info("m match= " + entry.getKey() + "->" + entry.getValue());
-            }
-            */
             
             if (m2.size() >= s) {
                 return m2;
             }
             
-            Map<Integer, Integer> tmpM = new HashMap<Integer, Integer>(m);
+            TIntIntMap tmpM = new TIntIntHashMap(m);
                     
-            Set<Integer> mR = new HashSet<Integer>(m.values());
+            TIntSet mR = new TIntHashSet(m.values());
             // if m2 has a match that does not conflict with m,
             // add it to m (== vertex disjoint)
-            for (Map.Entry<Integer, Integer> entry : m2.entrySet()) {
-                Integer key = entry.getKey();
-                Integer value = entry.getValue();
+
+            TIntIntIterator iter = m2.iterator();
+            for (int i = m2.size(); i-- > 0;) {
+                iter.advance();
+                int key = iter.key();
+                int value = iter.value();
                 if (!tmpM.containsKey(key) && !mR.contains(value)) {
                     tmpM.put(key, value);
                 }
@@ -107,19 +110,18 @@ public class HopcroftKarpRT2012 {
             }
             
             // remove the intersection of m and m2
-            for (Map.Entry<Integer, Integer> entry : m.entrySet()) {
-                Integer key = entry.getKey();
+            iter = m.iterator();
+            for (int i = m.size(); i-- > 0;) {
+                iter.advance();
+                int key = iter.key();
                 if (m2.containsKey(key) &&
-                    m2.get(key).equals(entry.getValue())) {
+                    m2.get(key)== iter.value()) {
                     tmpM.remove(key);
                 }
             }
             
             m = tmpM;
             log.fine("symmetric diff of m and m2.size=" + m.size());
-            /*for (Entry<Integer, Integer> entry : m.entrySet()) {
-                log.info("sym diff m match= " + entry.getKey() + "->" + entry.getValue());
-            }*/
             
             if (m.size() >= s) {
                 return m;
@@ -145,9 +147,14 @@ public class HopcroftKarpRT2012 {
     private int estimateLambda(ResidualDigraph rM) {
         //TODO: this may need to be revised
         int n = 0;
-        for (Map.Entry<Integer, Set<Integer>> entry :
-            rM.getForwardLinksRM().entrySet()) {
-            if (entry.getValue().size() > 1) {
+
+        TIntObjectIterator<TIntSet> iter = rM.getForwardLinksRM().
+            iterator();
+
+        for (int i = rM.getForwardLinksRM().size(); i-- > 0;) {
+            iter.advance();
+            TIntSet set = iter.value();
+            if (set.size() > 1) {
                 n++;
             }
         }
@@ -205,23 +212,14 @@ public class HopcroftKarpRT2012 {
         */
      
         // init all nodes to inf length
-        Map<Integer, LeftNode> leftNodes = new HashMap<Integer, LeftNode>();
-        Map<Integer, RightNode> rightNodes = new HashMap<Integer, RightNode>();
-        for (int i = 0; i < rM.getNRight(); ++i) {
-            Integer rNode = Integer.valueOf(i);
-            RightNode node = new RightNode();
-            node.setKey(Long.MAX_VALUE);
-            node.setData(rNode);
-            rightNodes.put(rNode, node);
-        }
-        for (int i = 0; i < rM.getNLeft(); ++i) {
-            Integer lNode = Integer.valueOf(i);
-            LeftNode node = new LeftNode();
-            node.setKey(Long.MAX_VALUE);
-            node.setData(lNode);
-            leftNodes.put(lNode, node);
-        }
+        PathNodes pathNodes = new PathNodes(rM.getNLeft(), 
+            rM.getNRight());
         
+        TIntObjectMap<LeftNode> leftNodes 
+            = pathNodes.getLeftNodes();
+        TIntObjectMap<RightNode> rightNodes 
+            = pathNodes.getRightNodes();
+       
         /*
         for the bfs and tracking "visited", need to track
         individually for each maiden as its own single shortest
@@ -229,33 +227,33 @@ public class HopcroftKarpRT2012 {
         key = maiden node index (== X index)
         value = visited nodes along key path
         */
-        Map<Integer, Set<Integer>> vXY = new HashMap<Integer, Set<Integer>>();
+        TIntObjectMap<TIntSet> vXY = 
+            new TIntObjectHashMap<TIntSet>();
         
-        Set<Integer> augmentedLeft = new HashSet<Integer>();
-        Set<Integer> augmentedRight = new HashSet<Integer>();
+        TIntSet augmentedLeft = new TIntHashSet();
+        TIntSet augmentedRight = new TIntHashSet();
         long prevKey = -1;
         long lastAugKey = -1;
         
         // married X nodes
-        Set<Integer> matchedLeft = new HashSet<Integer>(
+        TIntSet matchedLeft = new TIntHashSet(
             rM.getBackwardLinksRM().values());    
  
         // for all maidens
         // set key to 0, then ScanAndAdd(index)
-        Set<Integer> maidens = new HashSet<Integer>();
+        TIntSet maidens = new TIntHashSet();
         for (int i = 0; i < rM.getNLeft(); ++i) {
-            Integer lNode = Integer.valueOf(i);
-            if (matchedLeft.contains(lNode)) {
+            if (matchedLeft.contains(i)) {
                 continue;
             }
-            maidens.add(lNode);
-            LeftNode node = leftNodes.get(lNode);
+            maidens.add(i);
+            LeftNode node = leftNodes.get(i);
             node.setKey(0);
-            vXY.put(lNode, new HashSet<Integer>());
+            vXY.put(i, new TIntHashSet());
             prevKey = scanAndAdd(heap, forest, rM, 
                 rightNodes, node, prevKey,
                 augmentedLeft, augmentedRight, 
-                node, vXY.get(lNode));
+                node, vXY.get(i));
             assert(prevKey == 0L);
         }
      
@@ -270,7 +268,7 @@ public class HopcroftKarpRT2012 {
         int nIter = 0;
         
         while (heap.getNumberOfNodes() > 0) {
-                        
+             
             // in the heap are men not in the forest who are in
             // an alternating path from a maiden.
             // the key is the length of shortest path so far
@@ -284,14 +282,15 @@ public class HopcroftKarpRT2012 {
             
             Integer yIndex = (Integer)(y.getData());
         
-            if (augmentedRight.contains(yIndex)) {
+            if (augmentedRight.contains(yIndex.intValue())) {
                 continue;
             }
             
             assert(y.topPredecessor != null);
             
             Integer topIndex = (Integer)y.topPredecessor.getData();
-        
+            int topIdx = topIndex.intValue();
+            
             long currentKey = forest.add(y, prevKey);
             
             if (currentKey > prevKey) {
@@ -319,10 +318,9 @@ public class HopcroftKarpRT2012 {
             
             // the married nodes are the keys in the backward
             // links of the residual digraph
-            Integer xIndex = rM.getBackwardLinksRM().get(yIndex);
-            if (xIndex != null) {
-                
-                LeftNode xNode = leftNodes.get(xIndex);
+            if (rM.getBackwardLinksRM().containsKey(yIndex.intValue())) {
+                int xIdx = rM.getBackwardLinksRM().get(yIndex.intValue());
+                LeftNode xNode = leftNodes.get(xIdx);
                 
                 xNode.setKey(y.getKey());
                 if (xNode.pathPredecessor == null) {
@@ -333,7 +331,7 @@ public class HopcroftKarpRT2012 {
                 currentKey = scanAndAdd(heap, forest, 
                     rM, rightNodes, xNode, prevKey,
                     augmentedLeft, augmentedRight, y.topPredecessor, 
-                    vXY.get(topIndex));
+                    vXY.get(topIdx));
                 
                 if (currentKey > prevKey) {
                     log.fine("augment forest[" + prevKey + "] ");
@@ -353,7 +351,7 @@ public class HopcroftKarpRT2012 {
                 //break;
                 
                 if (maidens.contains(topIndex)) {
-                    maidens.remove(topIndex);                    
+                    maidens.remove(topIdx);                    
                 } else if (maidens.isEmpty()) {
                     log.fine("last maiden's bachelor reached");
                     //debug(forest);
@@ -395,32 +393,33 @@ public class HopcroftKarpRT2012 {
      * @param xNode 
      */
     private long scanAndAdd(MinHeapForRT2012 heap, Forest forest,
-        ResidualDigraph rM, Map<Integer, RightNode> yNodes, 
+        ResidualDigraph rM, TIntObjectMap<RightNode> yNodes, 
         LeftNode xNode, long prevKey,
-        Set<Integer> augmentedLeft,
-        Set<Integer> augmentedRight,
-        LeftNode topNode, Set<Integer> visitedY) {
+        TIntSet augmentedLeft,
+        TIntSet augmentedRight,
+        LeftNode topNode, TIntSet visitedY) {
 
         Integer xIndex = (Integer)(xNode.getData());
       
-        if (augmentedLeft.contains(xIndex)) {
+        if (augmentedLeft.contains(xIndex.intValue())) {
             return prevKey;
         }
         
         long lX = xNode.getKey();
         assert(lX < Long.MAX_VALUE);
         
-        Set<Integer> forwardLinks = rM.getForwardLinksRM().get(xIndex);
+        TIntSet forwardLinks 
+            = rM.getForwardLinksRM().get(xIndex.intValue());
         
         if (forwardLinks != null) {
-        
-            for (Integer yIndex : forwardLinks) {
-
-                if (visitedY.contains(yIndex) ||
-                    augmentedRight.contains(yIndex)) {
+            TIntIterator iter = forwardLinks.iterator();
+            while (iter.hasNext()) {
+                int yIdx = iter.next();
+                if (visitedY.contains(yIdx) ||
+                    augmentedRight.contains(yIdx)) {
                     continue;
                 }
-                visitedY.add(yIndex);
+                visitedY.add(yIdx);
                 
                 //link length = net cost of the edge 
                 //    (lp(x ⇒ y) = cp(X,Y))
@@ -428,10 +427,10 @@ public class HopcroftKarpRT2012 {
 
                 // l(x) and l(y) are the keys in the heap node
 
-                RightNode yNode = yNodes.get(yIndex);
+                RightNode yNode = yNodes.get(yIdx);
                 long lOld = yNode.getKey();
                 assert(((Integer)yNode.getData()).intValue() ==
-                    yIndex.intValue());
+                    yIdx);
                 
                 //L := l(x) + lp(x ⇒ y) 
                 //   = l(x) + cp(x, y)
@@ -490,8 +489,8 @@ public class HopcroftKarpRT2012 {
     }
     
     private void augmentPath(ResidualDigraph rM, Forest forest, 
-        long foresIdx, Set<Integer> augmentedLeft, 
-        Set<Integer> augmentedRight) {
+        long foresIdx, TIntSet augmentedLeft, 
+        TIntSet augmentedRight) {
 
         /*
         will extract the paths, that is the branches in the
@@ -538,20 +537,20 @@ public class HopcroftKarpRT2012 {
                 PathNode node2 = path.get(ii + 1);
                 // index1 is the left index of arc
                 // index2 is the right index of the arc
-                Integer index1, index2;
+                int idx1, idx2;
                 if (node1 instanceof LeftNode) {
-                    index1 = (Integer)node1.getData();
-                    index2 = (Integer)node2.getData();
+                    idx1 = ((Integer)node1.getData()).intValue();
+                    idx2 = ((Integer)node2.getData()).intValue();
                 } else {
-                    index1 = (Integer)node2.getData();
-                    index2 = (Integer)node1.getData();
+                    idx1 = ((Integer)node2.getData()).intValue();
+                    idx2 = ((Integer)node1.getData()).intValue();
                 }
-                if (augmentedLeft.contains(index1) ||
-                    augmentedRight.contains(index2)) {
+                if (augmentedLeft.contains(idx1) ||
+                    augmentedRight.contains(idx2)) {
                     skip = true;
                     break;
                 }
-                tmp.add(new PairInt(index1.intValue(), index2.intValue()));
+                tmp.add(new PairInt(idx1, idx2));
             }
             if (!skip) {
                 edges.addAll(tmp);
@@ -594,12 +593,16 @@ public class HopcroftKarpRT2012 {
         List<PairInt> makeSaturated = new ArrayList<PairInt>();
         
         for (PairInt edge : edges2) {
-            Integer leftIndex = Integer.valueOf(edge.getX());
-            Integer rightIndex = Integer.valueOf(edge.getY());
-            Integer bLeftIndex = rM.getBackwardLinksRM().get(
-                rightIndex);
-            if (bLeftIndex != null && bLeftIndex.equals(leftIndex)) {
-                undoSaturated.add(edge);
+            int leftIdx = edge.getX();
+            int rightIdx = edge.getY();
+            if (rM.getBackwardLinksRM().containsKey(rightIdx)) {
+                int bLeftIdx = rM.getBackwardLinksRM().get(
+                    rightIdx);
+                if (bLeftIdx == leftIdx) {
+                    undoSaturated.add(edge);
+                } else {
+                    makeSaturated.add(edge);
+                }
             } else {
                 makeSaturated.add(edge);
             }
@@ -607,67 +610,65 @@ public class HopcroftKarpRT2012 {
                 
         for (PairInt edge : undoSaturated) {
 
-            Integer leftIndex = Integer.valueOf(edge.getX());
-            Integer rightIndex = Integer.valueOf(edge.getY());
+            int leftIdx = edge.getX();
+            int rightIdx = edge.getY();
 
             // remove backwards link and mapping
-            rM.getBackwardLinksRM().remove(rightIndex);
+            rM.getBackwardLinksRM().remove(rightIdx);
 
-            Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
+            TIntSet rIndexes = rM.getForwardLinksRM().get(leftIdx);
             // create a forward link        
             if (rIndexes == null) {
-                rIndexes = new HashSet<Integer>();
-                rM.getForwardLinksRM().put(leftIndex, rIndexes);
+                rIndexes = new TIntHashSet();
+                rM.getForwardLinksRM().put(leftIdx, rIndexes);
             }
-            rIndexes.add(rightIndex);
+            rIndexes.add(rightIdx);
 
-            log.fine("augmented to remove :" + leftIndex + " to " +
-                rightIndex);
+            log.fine("augmented to remove :" + leftIdx + " to " +
+                rightIdx);
             
-            augmentedLeft.add(leftIndex);
-            augmentedRight.add(rightIndex);
+            augmentedLeft.add(leftIdx);
+            augmentedRight.add(rightIdx);
         }
         
-        Set<Integer> tmpAR = new HashSet<Integer>();
-        Set<Integer> tmpAL = new HashSet<Integer>();
+        TIntSet tmpAR = new TIntHashSet();
+        TIntSet tmpAL = new TIntHashSet();
         
         for (PairInt edge : makeSaturated) {
 
-            Integer rightIndex = Integer.valueOf(edge.getY());
+            int rightIdx = edge.getY();
 
-            if (tmpAR.contains(rightIndex)) {
+            if (tmpAR.contains(rightIdx)) {
                 continue;
             }
             
-            Integer leftIndex = Integer.valueOf(edge.getX());
+            int leftIdx = edge.getX();
             
-            if (tmpAL.contains(leftIndex)) {
+            if (tmpAL.contains(leftIdx)) {
                 continue;
             }
             
             // assert saturated mapping for right node doesn't exist
-            Integer v2 = rM.getBackwardLinksRM().get(rightIndex);
-            /*if (v2 != null) {
-                continue;
-            }*/
-            assert(v2 == null);            
+            assert(rM.getBackwardLinksRM().containsKey(rightIdx));
+            int v2 = rM.getBackwardLinksRM().get(rightIdx);
             
-            Set<Integer> rIndexes = rM.getForwardLinksRM().get(leftIndex);
+            TIntSet rIndexes = rM.getForwardLinksRM().get(leftIdx);
         
-            boolean forwardFound = (rIndexes != null) && rIndexes.contains(rightIndex);
+            boolean forwardFound = (rIndexes != null) && 
+                rIndexes.contains(rightIdx);
         
             if (forwardFound) {
                 // remove existing "idle" forward link
-                rIndexes.remove(rightIndex);
+                rIndexes.remove(rightIdx);
 
                 // create a backward link and matched mapping
-                rM.getBackwardLinksRM().put(rightIndex, leftIndex);
+                rM.getBackwardLinksRM().put(rightIdx, leftIdx);
 
-                log.fine("augmented to add :" + leftIndex + " to " +
-                    rightIndex);
+                log.fine("augmented to add :" + leftIdx + " to " +
+                    rightIdx);
                 
-                tmpAL.add(leftIndex);
-                tmpAR.add(rightIndex);
+                tmpAL.add(leftIdx);
+                tmpAR.add(rightIdx);
             }
         }
         augmentedRight.addAll(tmpAR);
@@ -675,16 +676,20 @@ public class HopcroftKarpRT2012 {
        
     }
     
-    private String debug(Set<Integer> aL, Set<Integer> aR) {
+    private String debug(TIntSet aL, TIntSet aR) {
         StringBuilder sb = new StringBuilder();
         sb.append("aL=[");
-        for (Integer index : aL) {
-            sb.append(index).append(",");
+        TIntIterator iter = aL.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            sb.append(Integer.toString(idx)).append(",");
         }
         sb.append("]");
         sb.append(" aR=[");
-        for (Integer index : aR) {
-            sb.append(index).append(",");
+        iter = aR.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            sb.append(Integer.valueOf(idx)).append(",");
         }
         sb.append("]");
         return sb.toString();
@@ -698,55 +703,53 @@ public class HopcroftKarpRT2012 {
         // re-number the vertexes and make an adjacency map or matrix
         // populate these from Set<PairInt> edges
         int nVertexes = 0;
-        Map<Integer, Integer> leftToNew = new HashMap<Integer, Integer>();
-        Map<Integer, Integer> revLeftToNew = new HashMap<Integer, Integer>();
+        TIntIntMap leftToNew = new TIntIntHashMap();
+        TIntIntMap revLeftToNew = new TIntIntHashMap();
         for (PairInt edge : edges) {
-            Integer index = Integer.valueOf(edge.getX());
-            if (!leftToNew.containsKey(index)) {
-                Integer index2 = Integer.valueOf(nVertexes);
-                leftToNew.put(index, index2);
-                revLeftToNew.put(index2, index);
+            int idx = edge.getX();
+            if (!leftToNew.containsKey(idx)) {
+                leftToNew.put(idx, nVertexes);
+                revLeftToNew.put(nVertexes, idx);
                 nVertexes++;
             }
         }
         int nL = nVertexes;        
-        Map<Integer, Integer> rightToNew = new HashMap<Integer, Integer>();
-        Map<Integer, Integer> revRightToNew = new HashMap<Integer, Integer>();
+        TIntIntMap rightToNew = new TIntIntHashMap();
+        TIntIntMap revRightToNew = new TIntIntHashMap();
         
         for (PairInt edge : edges) {
-            Integer index = Integer.valueOf(edge.getY());
-            if (!rightToNew.containsKey(index)) {
-                Integer index2 = Integer.valueOf(nVertexes);
-                rightToNew.put(index, index2);
-                revRightToNew.put(index2, index);
+            int idx = edge.getY();
+            if (!rightToNew.containsKey(idx)) {
+                rightToNew.put(idx, nVertexes);
+                revRightToNew.put(nVertexes, idx);
                 nVertexes++;
             }
         }
         
-        Map<Integer, Set<PairInt>> adjCostMap =
-            new HashMap<Integer, Set<PairInt>>();
+        TIntObjectMap<Set<PairInt>> adjCostMap =
+            new TIntObjectHashMap<Set<PairInt>>();
         
         for (PairInt edge : edges) {
-            Integer index1 = Integer.valueOf(edge.getX());
-            index1 = leftToNew.get(index1);
-            Integer index2 = Integer.valueOf(edge.getY());
-            index2 = rightToNew.get(index2);
+            int idx1 = edge.getX();
+            idx1 = leftToNew.get(idx1);
+            int idx2 = edge.getY();
+            idx2 = rightToNew.get(idx2);
             
-            Set<PairInt> set2 = adjCostMap.get(index1);
+            Set<PairInt> set2 = adjCostMap.get(idx1);
             if (set2 == null) {
                 set2 = new HashSet<PairInt>();
-                adjCostMap.put(index1, set2);
+                adjCostMap.put(idx1, set2);
             }
             // using a cost of 1 for all edges
-            set2.add(new PairInt(index2.intValue(), 1));
+            set2.add(new PairInt(idx2, 1));
             
-            set2 = adjCostMap.get(index2);
+            set2 = adjCostMap.get(idx2);
             if (set2 == null) {
                 set2 = new HashSet<PairInt>();
-                adjCostMap.put(index2, set2);
+                adjCostMap.put(idx2, set2);
             }
             // using a cost of 1 for all edges
-            set2.add(new PairInt(index1.intValue(), 1));
+            set2.add(new PairInt(idx1, 1));
         }
                 
         // use prim's mst to make a maximal set of edges
@@ -763,24 +766,23 @@ public class HopcroftKarpRT2012 {
             if (idx1 == -1) {
                 continue;
             }
-            Integer index1, index2;
+            int t1, t2;
             if (idx2 < nL) {
                 //[left] = right
-                index1 = Integer.valueOf(idx2);
-                index2 = Integer.valueOf(idx1);
+                t1 = idx2;
+                t2 = idx1;
             } else {
                 //[right] = left
-                index1 = Integer.valueOf(idx1);
-                index2 = Integer.valueOf(idx2);
+                t1 = idx1;
+                t2 = idx2;
             }
             
-            index1 = revLeftToNew.get(index1);            
-            index2 = revRightToNew.get(index2);
+            t1 = revLeftToNew.get(t1);            
+            t2 = revRightToNew.get(t2);
          
-            log.fine(" passed filter1: " + index1 + ":" + index2);
+            log.fine(" passed filter1: " + t1 + ":" + t2);
             
-            edges.add(new PairInt(index1.intValue(),
-                index2.intValue()));            
+            edges.add(new PairInt(t1, t2));            
         }
         
         List<PairInt> edges2 = new ArrayList<PairInt>();
@@ -788,22 +790,24 @@ public class HopcroftKarpRT2012 {
         int nc = 0;
         while ((nIter == 0) || (nc > 0)) {
             nIter++;
-            Map<Integer, Integer> lF = new HashMap<Integer, Integer>();
-            Map<Integer, Integer> rF = new HashMap<Integer, Integer>();
+            TIntIntMap lF = new TIntIntHashMap();
+            TIntIntMap rF = new TIntIntHashMap();
             for (PairInt edge : edges) {
-                Integer index1 = Integer.valueOf(edge.getX());
-                Integer index2 = Integer.valueOf(edge.getY());
-                Integer count = lF.get(index1);
-                if (count == null) {
-                    lF.put(index1, Integer.valueOf(1));
+                int idx1 = edge.getX();
+                int idx2 = edge.getY();
+                
+                if (!lF.containsKey(idx1)) {
+                    lF.put(idx1, 1);
                 } else {
-                    lF.put(index1, Integer.valueOf(count.intValue() + 1));
+                    int count = lF.get(idx1);
+                    lF.put(idx1, count + 1);
                 }
-                count = rF.get(index2);
-                if (count == null) {
-                    rF.put(index2, Integer.valueOf(1));
+                
+                if (!rF.containsKey(idx2)) {
+                    rF.put(idx2, 1);
                 } else {
-                    rF.put(index2, Integer.valueOf(count.intValue() + 1));
+                    int count = rF.get(idx2);
+                    rF.put(idx2, count + 1);
                 }
             }
             
@@ -814,9 +818,11 @@ public class HopcroftKarpRT2012 {
             
             nc = 0;
             
-            for (Map.Entry<Integer, Integer> entry : lF.entrySet()) {
-                if (entry.getValue().intValue() == 1) {
-                    int idx1 = entry.getKey().intValue();
+            TIntIntIterator iter = lF.iterator();
+            for (int i = lF.size(); i-- > 0;) {
+                iter.advance();                
+                if (iter.value() == 1) {
+                    int idx1 = iter.key();
                     PairInt p0 = null;
                     for (PairInt p : edges) {
                         if (p.getX() == idx1) {
@@ -831,9 +837,11 @@ public class HopcroftKarpRT2012 {
                 }
             }
             
-            for (Map.Entry<Integer, Integer> entry : rF.entrySet()) {
-                if (entry.getValue().intValue() == 1) {
-                    int idx2 = entry.getKey().intValue();
+            TIntIntIterator iter2 = rF.iterator();
+            for (int i = rF.size(); i-- > 0;) {
+                iter2.advance();                
+                if (iter2.value() == 1) {
+                    int idx2 = iter2.key();
                     PairInt p0 = null;
                     for (PairInt p : edges) {
                         if (p.getY() == idx2) {
@@ -864,22 +872,23 @@ public class HopcroftKarpRT2012 {
         int nc = 0;
         while ((nIter == 0) || (nc > 0)) {
             nIter++;
-            Map<Integer, Integer> lF = new HashMap<Integer, Integer>();
-            Map<Integer, Integer> rF = new HashMap<Integer, Integer>();
+            TIntIntMap lF = new TIntIntHashMap();
+            TIntIntMap rF = new TIntIntHashMap();
             for (PairInt edge : edges) {
-                Integer index1 = Integer.valueOf(edge.getX());
-                Integer index2 = Integer.valueOf(edge.getY());
-                Integer count = lF.get(index1);
-                if (count == null) {
-                    lF.put(index1, Integer.valueOf(1));
+                int idx1 = edge.getX();
+                int idx2 = edge.getY();
+                if (lF.containsKey(idx1)) {
+                    lF.put(idx1, 1);
                 } else {
-                    lF.put(index1, Integer.valueOf(count.intValue() + 1));
+                    int count = lF.get(idx1);
+                    lF.put(idx1, count + 1);
                 }
-                count = rF.get(index2);
-                if (count == null) {
-                    rF.put(index2, Integer.valueOf(1));
+                
+                if (rF.containsKey(idx2)) {
+                    rF.put(idx2, 1);
                 } else {
-                    rF.put(index2, Integer.valueOf(count.intValue() + 1));
+                    int count = rF.get(idx2);
+                    rF.put(idx2, count + 1);
                 }
             }
             
@@ -890,9 +899,11 @@ public class HopcroftKarpRT2012 {
             
             nc = 0;
             
-            for (Map.Entry<Integer, Integer> entry : lF.entrySet()) {
-                if (entry.getValue().intValue() == 1) {
-                    int idx1 = entry.getKey().intValue();
+            TIntIntIterator iter = lF.iterator();
+            for (int i = lF.size(); i-- > 0;) {
+                iter.advance();
+                if (iter.value() == 1) {
+                    int idx1 = iter.key();
                     PairInt p0 = null;
                     for (PairInt p : edges) {
                         if (p.getX() == idx1) {
@@ -907,9 +918,11 @@ public class HopcroftKarpRT2012 {
                 }
             }
             
-            for (Map.Entry<Integer, Integer> entry : rF.entrySet()) {
-                if (entry.getValue().intValue() == 1) {
-                    int idx2 = entry.getKey().intValue();
+            iter = rF.iterator();
+            for (int i = rF.size(); i-- > 0;) {
+                iter.advance();                
+                if (iter.value() == 1) {
+                    int idx2 = iter.key();
                     PairInt p0 = null;
                     for (PairInt p : edges) {
                         if (p.getY() == idx2) {

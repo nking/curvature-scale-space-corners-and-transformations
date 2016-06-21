@@ -1,8 +1,8 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
-import java.util.HashMap;
-import java.util.Map;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 
 /**
  * class to hold a bipartite weighted graph.  Note that
@@ -43,14 +43,14 @@ public class Graph {
      * map of edge weights with key = pairint of left index and right index and
      * value being the edge weight.
      */
-    private Map<PairInt, Integer> edgeWeights
-        = new HashMap<PairInt, Integer>();
+    private TObjectIntHashMap<PairInt> edgeWeights
+        = new TObjectIntHashMap<PairInt>();
 
-    private Map<PairInt, Integer> sourceEdgeWeights = null;
-    private Map<PairInt, Integer> sinkEdgeWeights = null;
+    private TObjectIntHashMap<PairInt> sourceEdgeWeights = null;
+    private TObjectIntHashMap<PairInt> sinkEdgeWeights = null;
 
     public Graph(int nLeftVertices, int nRightVertices,
-        Map<PairInt, Integer> theEdgeWeights, 
+        TObjectIntMap<PairInt> theEdgeWeights, 
         boolean createSourceAndSinkEdges) {
         
         this.nLeft = nLeftVertices;
@@ -71,8 +71,8 @@ public class Graph {
         if (createSourceAndSinkEdges) {
             this.sourceNode = nLeft;
             this.sinkNode = nRight;
-            sourceEdgeWeights = new HashMap<PairInt, Integer>();
-            sinkEdgeWeights = new HashMap<PairInt, Integer>();
+            sourceEdgeWeights = new TObjectIntHashMap<PairInt>();
+            sinkEdgeWeights = new TObjectIntHashMap<PairInt>();
             for (int i = 0; i < nLeft; ++i) {
                 PairInt p = new PairInt(sourceNode, i);
                 sourceEdgeWeights.put(p, 0);
@@ -104,21 +104,21 @@ public class Graph {
     /**
      * @return the edgeWeights
      */
-    public Map<PairInt, Integer> getEdgeWeights() {
+    public TObjectIntHashMap<PairInt> getEdgeWeights() {
         return edgeWeights;
     }
 
     /**
      * @return the sourceEdgeWeights
      */
-    public Map<PairInt, Integer> getSourceEdgeWeights() {
+    public TObjectIntHashMap<PairInt> getSourceEdgeWeights() {
         return sourceEdgeWeights;
     }
 
     /**
      * @return the sinkEdgeWeights
      */
-    public Map<PairInt, Integer> getSinkEdgeWeights() {
+    public TObjectIntHashMap<PairInt> getSinkEdgeWeights() {
         return sinkEdgeWeights;
     }
 

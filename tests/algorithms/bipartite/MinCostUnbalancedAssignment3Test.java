@@ -1,6 +1,11 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TObjectIntIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -38,10 +43,9 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
 
         MinCostUnbalancedAssignment bipartite = 
             new MinCostUnbalancedAssignment();
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+        TIntIntMap m = new TIntIntHashMap();
         ResidualDigraph rM = new ResidualDigraph(g, m);
         m = bipartite.hopcroftKarp(g, 3);
-        
         
         assertEquals(3, m.size());             
     }
@@ -65,15 +69,12 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         MinCostUnbalancedAssignment bipartite = 
             new MinCostUnbalancedAssignment();
         
-        Map<Integer, Integer> m = bipartite.flowAssign(g);
+       TIntIntMap m = bipartite.flowAssign(g);
         
         assertTrue(3 <= m.size());
-        assertTrue(m.get(Integer.valueOf(1))
-            .equals(Integer.valueOf(2)));
-        assertTrue(m.get(Integer.valueOf(3))
-            .equals(Integer.valueOf(0)));
-        assertTrue(m.get(Integer.valueOf(4))
-            .equals(Integer.valueOf(3)));
+        assertEquals(m.get(1), 2);
+        assertEquals(m.get(3), 0);
+        assertEquals(m.get(4), 3);
     }
     
     public void test1() throws Exception {
@@ -98,7 +99,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 MinCostUnbalancedAssignment bipartite = 
                     new MinCostUnbalancedAssignment();
                 
-                Map<Integer, Integer> m = bipartite.flowAssign(g);
+                TIntIntMap m = bipartite.flowAssign(g);
                 
                 long t1 = System.currentTimeMillis();
                 long tSec = (t1 - t0);
@@ -111,7 +112,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 assertEquals(size, m.size());
                 
                 for (int i = 0; i < size; ++i) {
-                    assertEquals((size - 1 - i), m.get(Integer.valueOf(i)).intValue());
+                    assertEquals((size - 1 - i), m.get(i));
                 }
                 
                 assertNotNull(bipartite.getFinalFlowNetwork());
@@ -164,7 +165,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             MinCostUnbalancedAssignment bipartite = 
                 new MinCostUnbalancedAssignment();
 
-            Map<Integer, Integer> m = bipartite.flowAssign(g);
+            TIntIntMap m = bipartite.flowAssign(g);
 
             log.info("size=" + size + " scale=" + scale + 
                 " m.size=" + m.size());
@@ -172,7 +173,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             assertEquals(size, m.size());
 
             for (int i = 0; i < size; ++i) {
-                assertEquals((size - 1 - i), m.get(Integer.valueOf(i)).intValue());
+                assertEquals((size - 1 - i), m.get(i));
             }
 
             assertNotNull(bipartite.getFinalFlowNetwork());
@@ -220,7 +221,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         int nExpected = matched.length;
         log.info("size=" + size + " hk size=" + nExpected);
         
-        Map<Integer, Integer> m = bipartite.flowAssign(g);
+        TIntIntMap m = bipartite.flowAssign(g);
 
         log.info("size=" + size + " hk size=" + nExpected 
             + " m.size=" + m.size());
@@ -236,21 +237,21 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     
     private Graph getTestGraph00() {
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
         
         /*
         0  1   2  L
         
         0  1   2  R
         */
-        weights.put(new PairInt(0, 0), Integer.valueOf(1));
-        weights.put(new PairInt(0, 1), Integer.valueOf(2));
-        weights.put(new PairInt(1, 0), Integer.valueOf(2));
-        weights.put(new PairInt(1, 1), Integer.valueOf(1));
-        weights.put(new PairInt(1, 2), Integer.valueOf(1));
-        weights.put(new PairInt(2, 1), Integer.valueOf(2));
-        weights.put(new PairInt(2, 2), Integer.valueOf(1));
+        weights.put(new PairInt(0, 0), 1);
+        weights.put(new PairInt(0, 1), 2);
+        weights.put(new PairInt(1, 0), 2);
+        weights.put(new PairInt(1, 1), 1);
+        weights.put(new PairInt(1, 2), 1);
+        weights.put(new PairInt(2, 1), 2);
+        weights.put(new PairInt(2, 2), 1);
         
         Graph g = new Graph(3, 3, weights, true);
 
@@ -259,8 +260,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
     
     private Graph getTestGraph0() {
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
         
         /*
         for best cost, w/o regard to maximizing nMatches:
@@ -291,22 +292,22 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                      but it prevents 5 3 
         */
                 
-        weights.put(new PairInt(0, 0), Integer.valueOf(2));
-        weights.put(new PairInt(0, 2), Integer.valueOf(3));
+        weights.put(new PairInt(0, 0), 2);
+        weights.put(new PairInt(0, 2), 3);
         
-        weights.put(new PairInt(1, 1), Integer.valueOf(2));
-        weights.put(new PairInt(1, 2), Integer.valueOf(1));
+        weights.put(new PairInt(1, 1), 2);
+        weights.put(new PairInt(1, 2), 1);
         
-        weights.put(new PairInt(2, 3), Integer.valueOf(2));
+        weights.put(new PairInt(2, 3), 2);
         
-        weights.put(new PairInt(3, 0), Integer.valueOf(1));
-        weights.put(new PairInt(3, 1), Integer.valueOf(2));
-        weights.put(new PairInt(3, 4), Integer.valueOf(3));
+        weights.put(new PairInt(3, 0), 1);
+        weights.put(new PairInt(3, 1), 2);
+        weights.put(new PairInt(3, 4), 3);
     
-        weights.put(new PairInt(4, 3), Integer.valueOf(1));
-        weights.put(new PairInt(4, 4), Integer.valueOf(2));
+        weights.put(new PairInt(4, 3), 1);
+        weights.put(new PairInt(4, 4), 2);
         
-        weights.put(new PairInt(5, 3), Integer.valueOf(2));
+        weights.put(new PairInt(5, 3), 2);
         
         /*
         5  3   or  2 3 is equivalent
@@ -340,8 +341,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             1 million.
         */
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
         
         int minCostUpper = maxCost/10;
         if (minCostUpper < 2) {
@@ -357,8 +358,29 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                     cost = minCostUpper +
                         sr.nextInt(maxCost - minCostUpper);
                 }
-                weights.put(new PairInt(i, j), Integer.valueOf(cost));
+                weights.put(new PairInt(i, j), cost);
             }
+        }
+
+        // add an extra edge with same answer as best answer for the node
+        //  0  --> 3 --> 9
+        //  0  --> 3 --> 8
+        //  1  --> 3 --> 8
+        PairInt p = new PairInt(0, size-1);
+        int c = weights.get(p);
+        PairInt p1 = new PairInt(1, size-2);
+        int c1 = weights.get(p1);
+        PairInt p2 = new PairInt(2, size-3);
+        int c2 = weights.get(p2);
+        if ((c <= c1) && (c <= c2)) {
+            weights.put(p1, c);
+            weights.put(p2, c);
+        } else if ((c1 <= c) && (c1 <= c2)) {
+            weights.put(p, c1);
+            weights.put(p2, c1);
+        } else if ((c2 <= c) && (c2 <= c1)) {
+            weights.put(p1, c2);
+            weights.put(p2, c2);
         }
         
         Graph g = new Graph(size, size, weights, true);
@@ -376,12 +398,13 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
             cost[i] = new float[n2];
             Arrays.fill(cost[i], Float.MAX_VALUE);
         }
+
+        TObjectIntIterator<PairInt> iter = g.getEdgeWeights().iterator();
         
-        for (Entry<PairInt, Integer> entry : 
-            g.getEdgeWeights().entrySet()) {
-        
-            PairInt p = entry.getKey();
-            cost[p.getX()][p.getY()] = entry.getValue().intValue();
+        for (int i = g.getEdgeWeights().size(); i-- > 0;) {
+            iter.advance();
+            PairInt p = iter.key();
+            cost[p.getX()][p.getY()] = iter.value();
         }
         
         return cost;
@@ -397,12 +420,12 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         - graphs of size powers of 10, from 10 to 100,000?
         */
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
                       
         for (int i = 0; i < size; ++i) {
             int cost = sr.nextInt(maxCost - 1) + 1;
-            weights.put(new PairInt(i, (size - 1 - i)), Integer.valueOf(cost));
+            weights.put(new PairInt(i, (size - 1 - i)), cost);
         }
         
         Graph g = new Graph(size, size, weights, true);
@@ -420,8 +443,8 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
         --> expecting same results as hopcroft-karp
         */
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
         
         int cost = sr.nextInt(maxCost - 1) + 1;
         
@@ -430,7 +453,7 @@ public class MinCostUnbalancedAssignment3Test extends TestCase {
                 if (sr.nextBoolean()) {
                     continue;
                 }
-                weights.put(new PairInt(i, j), Integer.valueOf(cost));
+                weights.put(new PairInt(i, j), cost);
             }
         }
         

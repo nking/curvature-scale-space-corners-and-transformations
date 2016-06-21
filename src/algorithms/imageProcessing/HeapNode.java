@@ -26,7 +26,7 @@ public class HeapNode {
     public HeapNode(long key) {
         this.key = key;
     }
-
+    
     /**
      * add node to list of children.  numberOfChildren is incremented.
      *

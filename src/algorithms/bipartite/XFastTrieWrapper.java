@@ -1,10 +1,9 @@
 package algorithms.bipartite;
 
 import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
-import java.util.HashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
 import java.util.Set;
 import thirdparty.ods.Integerizer;
 import thirdparty.ods.XFastTrie;
@@ -23,8 +22,8 @@ public class XFastTrieWrapper {
     
     private final XFastTrie<XFastTrieNode<Integer>, Integer> xft;
     
-    private final Map<Integer, Set<PathNode>> map =
-        new HashMap<Integer, Set<PathNode>>();
+    private final TIntObjectHashMap<Set<PathNode>> map =
+        new TIntObjectHashMap<Set<PathNode>>();
     
     private long lastKnownMinKey = 0;
     private long lastKnownMaxKey = -1;
@@ -67,17 +66,18 @@ public class XFastTrieWrapper {
      */
     public void insert(PathNode node) {
         
-        Integer key = Integer.valueOf((int)node.getKey());
+        int keyIdx = (int)node.getKey();
         
-        Set<PathNode> set = map.get(key);
+        Set<PathNode> set = map.get(keyIdx);
         
         if (set == null) {
+            Integer key = Integer.valueOf(keyIdx);
             // O(log_2(w)) + O(w-l)
             boolean added = xft.add(key);
             assert(added);
             
             set = new HashSet<PathNode>();
-            map.put(key, set);
+            map.put(keyIdx, set);
         }
         
         //O(1)
@@ -85,11 +85,11 @@ public class XFastTrieWrapper {
         
         n++;
         
-        if (key < lastKnownMinKey) {
-            lastKnownMinKey = key;
+        if (keyIdx < lastKnownMinKey) {
+            lastKnownMinKey = keyIdx;
         }
-        if (key > lastKnownMaxKey) {
-            lastKnownMaxKey = key;
+        if (keyIdx > lastKnownMaxKey) {
+            lastKnownMaxKey = keyIdx;
         }
     }
     
@@ -107,38 +107,38 @@ public class XFastTrieWrapper {
      */
     public void decreaseKey(PathNode node, long key2) {
 
-        Integer key = Integer.valueOf((int)node.getKey());
-        
-        Set<PathNode> set0 = map.get(key);
+        int keyIdx = (int)node.getKey();
+                
+        Set<PathNode> set0 = map.get(keyIdx);
         
         assert(set0 != null);
         
         set0.remove(node);
         
         if (set0.size() == 0) {
-            boolean removed = xft.remove(key);
+            boolean removed = xft.remove(Integer.valueOf(keyIdx));
             assert(removed);
-            map.remove(key);
+            map.remove(keyIdx);
         }
                         
         node.setKey(key2);
         
         Integer index2 = Integer.valueOf((int)key2);
         
-        Set<PathNode> set2 = map.get(index2);
+        Set<PathNode> set2 = map.get((int)key2);
          
         if (set2 == null) {
             boolean added = xft.add(index2);
             assert(added);
             
             set2 = new HashSet<PathNode>();
-            map.put(index2, set2);
+            map.put((int)key2, set2);
         }
         
         set2.add(node);
      
-        if (key < lastKnownMinKey) {
-            lastKnownMinKey = key;
+        if (key2 < lastKnownMinKey) {
+            lastKnownMinKey = key2;
         }
     }
     
@@ -162,13 +162,13 @@ public class XFastTrieWrapper {
      
         Integer key = xft.minimum();
         
-        Set<PathNode> set = map.get(key);
+        Set<PathNode> set = map.get(key.intValue());
         
         PathNode node = set.iterator().next();
         set.remove(node);
         
         if (set.isEmpty()) {
-            map.remove(key);
+            map.remove(key.intValue());
             xft.remove(key);
         }
        

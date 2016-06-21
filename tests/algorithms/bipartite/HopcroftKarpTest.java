@@ -3,6 +3,14 @@ package algorithms.bipartite;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,11 +55,13 @@ public class HopcroftKarpTest extends TestCase {
         
         int s = expectedM.length;
         Graph g2 = getTestGraph0();
-        Map<Integer, Integer> m2 = new HashMap<Integer, Integer>();
+        TIntIntMap m2 = new TIntIntHashMap();
         m2 = bipartite2.hopcroftKarp(g2, s);
-        for (Entry<Integer, Integer> entry : m2.entrySet()) {
-            log.info(entry.getKey() + ":" +
-                entry.getValue());
+        
+        TIntIntIterator iter = m2.iterator();
+        for (int i = m2.size(); i-- > 0;) {
+            iter.advance();
+            log.info(iter.key() + ":" + iter.value());
         }
         log.info("bfs/dfs hk-> " + Arrays.toString(m));
     
@@ -72,58 +82,47 @@ public class HopcroftKarpTest extends TestCase {
         int n1 = g.getNLeft();
         int n2 = g.getNRight();
         
-        Map<Integer, Set<Integer>> adjMap = g.getAdjacencyMap();
+        TIntObjectMap<TIntSet> adjMap = g.getAdjacencyMap();
         for (int i = 0; i < n1; ++i) {
-            Integer index = Integer.valueOf(i);
-            adjMap.put(index, new HashSet<Integer>());
+            adjMap.put(i, new TIntHashSet());
         }
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(0));
-        adjMap.get(Integer.valueOf(0))
-            .add(Integer.valueOf(1));
+        adjMap.get(0).add(0);
+        adjMap.get(0).add(1);
         
-        adjMap.get(Integer.valueOf(1))
-            .add(Integer.valueOf(0));
-        adjMap.get(Integer.valueOf(1))
-            .add(Integer.valueOf(4));
+        adjMap.get(1).add(0);
+        adjMap.get(1).add(4);
         
-        adjMap.get(Integer.valueOf(2))
-            .add(Integer.valueOf(2));
-        adjMap.get(Integer.valueOf(2))
-            .add(Integer.valueOf(3));
+        adjMap.get(2).add(2);
+        adjMap.get(2).add(3);
         
-        adjMap.get(Integer.valueOf(3))
-            .add(Integer.valueOf(0));
-        adjMap.get(Integer.valueOf(3))
-            .add(Integer.valueOf(4));
+        adjMap.get(3).add(0);
+        adjMap.get(3).add(4);
         
-        adjMap.get(Integer.valueOf(4))
-            .add(Integer.valueOf(0));
-        adjMap.get(Integer.valueOf(4))
-            .add(Integer.valueOf(3));
+        adjMap.get(4).add(0);
+        adjMap.get(4).add(3);
         
         return g;
     }
     
     private Graph getTestGraph0() {
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
         
-        weights.put(new PairInt(0, 0), Integer.valueOf(2));
-        weights.put(new PairInt(0, 1), Integer.valueOf(3));
+        weights.put(new PairInt(0, 0), 2);
+        weights.put(new PairInt(0, 1), 3);
         
-        weights.put(new PairInt(1, 0), Integer.valueOf(2));
-        weights.put(new PairInt(1, 4), Integer.valueOf(1));
+        weights.put(new PairInt(1, 0), 2);
+        weights.put(new PairInt(1, 4), 1);
         
-        weights.put(new PairInt(2, 2), Integer.valueOf(2));
-        weights.put(new PairInt(2, 3), Integer.valueOf(2));
+        weights.put(new PairInt(2, 2), 2);
+        weights.put(new PairInt(2, 3), 2);
         
-        weights.put(new PairInt(3, 0), Integer.valueOf(1));
-        weights.put(new PairInt(3, 4), Integer.valueOf(3));
+        weights.put(new PairInt(3, 0), 1);
+        weights.put(new PairInt(3, 4), 3);
     
-        weights.put(new PairInt(4, 0), Integer.valueOf(1));
-        weights.put(new PairInt(4, 3), Integer.valueOf(2));
+        weights.put(new PairInt(4, 0), 1);
+        weights.put(new PairInt(4, 3), 2);
                 
         /*
         0 1

@@ -1,11 +1,14 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 
 /**
  * a residual digraph for use within refine method in
@@ -44,16 +47,15 @@ public class ResidualDigraph2 {
      * arcs, f=0, in the flow network N_G. They correspond to 
      * "unmarried" in the matched M graph.
      */
-    private Map<Integer, Set<Integer>> forwardLinksRM
-        = new HashMap<Integer, Set<Integer>>();
+    private TIntObjectMap<TIntSet> forwardLinksRM
+        = new TIntObjectHashMap<TIntSet>();
 
     /**
      * links Y to X (that is, right to left). These are "saturated" 
      * arcs, f=1, in the flow network N_G. They correspond to "married" 
      * in the matched M graph.
      */
-    private Map<Integer, Integer> backwardLinksRM
-        = new HashMap<Integer, Integer>();
+    private TIntIntMap backwardLinksRM = new TIntIntHashMap();
 
     /**
      * source to Left links are represented by this
@@ -61,30 +63,30 @@ public class ResidualDigraph2 {
      * Left vertexes at initialization from being
      * connected to a matched node.
      */
-    private Set<Integer> forwardLinksSourceRM =
-        new HashSet<Integer>();
+    private TIntSet forwardLinksSourceRM =
+        new TIntHashSet();
     
     /**
      * Left to source links are represented by this set of
      * Left vertexes.  These are "idle" Left vertexes.
      */
-    private Set<Integer> backwardLinksSourceRM =
-        new HashSet<Integer>();
+    private TIntSet backwardLinksSourceRM =
+        new TIntHashSet();
     
     /**
      * Right to sink links are represented by this set of
      * right vertexes.  These are "saturated" Right vertexes
      * at initialization, from being connected to a matched node.
      */
-    private Set<Integer> forwardLinksSinkRM =
-        new HashSet<Integer>();
+    private TIntSet forwardLinksSinkRM =
+        new TIntHashSet();
     
     /**
      * sink to Right links are represented by this set of
      * Right vertexes.  These are "idle" Right vertexes.
      */
-    private Set<Integer> backwardLinksSinkRM =
-        new HashSet<Integer>();
+    private TIntSet backwardLinksSinkRM =
+        new TIntHashSet();
     
     public ResidualDigraph2(FlowNetwork gFlow) {
     
@@ -93,34 +95,39 @@ public class ResidualDigraph2 {
         this.sourceNode = gFlow.getSourceNode();
         this.sinkNode = gFlow.getSinkNode();
        
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            gFlow.getForwardArcs().entrySet()) {
-          
-            Integer index1 = entry.getKey();
-            
-            for (Integer index2 : entry.getValue()) {
-               
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = gFlow.getForwardArcs()
+            .iterator();
+        
+        for (int i = gFlow.getForwardArcs().size(); i-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntIterator iter2 = iter.value().iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = gFlow.getFlow().get(p);
                 if (unitFlow == 0) {
                     // idle
-                    Set<Integer> indexes2 = forwardLinksRM.get(index1);
+                    TIntSet indexes2 = forwardLinksRM.get(idx1);
                     if (indexes2 == null) {
-                        indexes2 = new HashSet<Integer>();
-                        forwardLinksRM.put(index1, indexes2);
+                        indexes2 = new TIntHashSet();
+                        forwardLinksRM.put(idx1, indexes2);
                     }
-                    indexes2.add(index2);
+                    indexes2.add(idx2);
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
-                    backwardLinksRM.put(index2, index1);
+                    backwardLinksRM.put(idx2, idx1);
                 }
             }
         }
         
         // see Figure 7.2 pg 49
         
-        for (Integer xNode : gFlow.getSourceForwardArcs()) {
-            float unitFlow = gFlow.getFlow(sourceNode, xNode.intValue());                
+        TIntIterator iter2 = gFlow.getSourceForwardArcs().iterator();
+        while (iter2.hasNext()) {
+            int xNode = iter2.next();
+                    
+            float unitFlow = gFlow.getFlow(sourceNode, xNode);                
             if (unitFlow == 0) {
                 // idle
                 backwardLinksSourceRM.add(xNode);
@@ -130,8 +137,10 @@ public class ResidualDigraph2 {
             }
         }
 
-        for (Integer yNode : gFlow.getSinkForwardArcs()) {
-            float unitFlow = gFlow.getFlow(yNode.intValue(), sinkNode);                
+        iter2 = gFlow.getSinkForwardArcs().iterator();
+        while (iter2.hasNext()) {
+            int yNode = iter2.next();
+            float unitFlow = gFlow.getFlow(yNode, sinkNode);                
             if (unitFlow == 0) {
                 // idle
                 backwardLinksSinkRM.add(yNode);
@@ -144,8 +153,14 @@ public class ResidualDigraph2 {
     
     public int countOfForwardBipartiteLinks() {
         int n = 0;
-        for (Entry<Integer, Set<Integer>> entry : forwardLinksRM.entrySet()) {
-           n += entry.getValue().size();
+        
+        TIntObjectIterator<TIntSet> iter = forwardLinksRM
+            .iterator();
+        
+        for (int i = forwardLinksRM.size(); i-- > 0;) {
+            iter.advance();
+            TIntSet set = iter.value();
+            n += set.size();
         }
         return n;
     }
@@ -153,7 +168,7 @@ public class ResidualDigraph2 {
     /**
      * @return the forwardLinksRM
      */
-    public Map<Integer, Set<Integer>> getForwardLinksRM() {
+    public TIntObjectMap<TIntSet> getForwardLinksRM() {
         return forwardLinksRM;
     }
 
@@ -162,7 +177,7 @@ public class ResidualDigraph2 {
      * Left (==X) index node.
      * @return the backwardLinksRM
      */
-    public Map<Integer, Integer> getBackwardLinksRM() {
+    public TIntIntMap getBackwardLinksRM() {
         return backwardLinksRM;
     }
 
@@ -186,14 +201,14 @@ public class ResidualDigraph2 {
      * are in "saturated" arcs.
      * @return the forwardLinksSourceRM
      */
-    public Set<Integer> getForwardLinksSourceRM() {
+    public TIntSet getForwardLinksSourceRM() {
         return forwardLinksSourceRM;
     }
 
     /**
      * @return the backwardLinksSourceRM
      */
-    public Set<Integer> getBackwardLinksSourceRM() {
+    public TIntSet getBackwardLinksSourceRM() {
         return backwardLinksSourceRM;
     }
 
@@ -203,14 +218,14 @@ public class ResidualDigraph2 {
      * are in "saturated" arcs.
      * @return the forwardLinksSinkRM
      */
-    public Set<Integer> getForwardLinksSinkRM() {
+    public TIntSet getForwardLinksSinkRM() {
         return forwardLinksSinkRM;
     }
 
     /**
      * @return the backwardLinksSinkRM
      */
-    public Set<Integer> getBackwardLinksSinkRM() {
+    public TIntSet getBackwardLinksSinkRM() {
         return backwardLinksSinkRM;
     }
 

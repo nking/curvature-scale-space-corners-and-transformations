@@ -75,7 +75,15 @@ public class FibonacciHeapWrapper {
             lastKnownMaxKey = key;
         }
     }
-    
+
+    /**
+     * note, depending upon number of bins, this may
+     * not be an O(1) decrease key, but may be a
+     * delete and insert, so should be reconsidered...
+     * 
+     * @param node
+     * @param key2 
+     */
     public void decreaseKey(PathNode node, long key2) {
         
         int key = (int)node.getKey();
@@ -87,22 +95,29 @@ public class FibonacciHeapWrapper {
             binIdx = key/binSz;
         }
         
-        heaps[binIdx].remove(node);
+        if (key == key2) {
+            
+            heaps[binIdx].decreaseKey(node, key2);
+            
+        } else {
+        
+            heaps[binIdx].remove(node);
                 
-        node.setKey(key2);
+            node.setKey(key2);
         
-        if (heaps.length > 1) {
-            binIdx = (int)key2/binSz;
-        }
+            if (heaps.length > 1) {
+                binIdx = (int)key2/binSz;
+            }
      
-        if (heaps[binIdx] == null) {
-            heaps[binIdx] = new Heap();
+            if (heaps[binIdx] == null) {
+               heaps[binIdx] = new Heap();
+            }
+        
+            heaps[binIdx].insert(node);
         }
         
-        heaps[binIdx].insert(node);
-        
-        if (key < lastKnownMinKey) {
-            lastKnownMinKey = key;
+        if (key2 < lastKnownMinKey) {
+            lastKnownMinKey = key2;
             lastKnownMinKeyIdx = binIdx;
         }
     }

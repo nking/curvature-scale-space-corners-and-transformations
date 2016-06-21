@@ -1,7 +1,8 @@
 package algorithms.bipartite;
 
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -90,7 +91,7 @@ public class HopcroftKarp {
 		int[] match12 = new int[n1];
         Arrays.fill(match12, -1);
         
-		for (int res = 0; ; ) {
+        for (int res = 0; ; ) {
 			
             bfs(g, match12, match21, dist);
 			
@@ -99,16 +100,16 @@ public class HopcroftKarp {
             int f = 0;
 			
             for (int u = 0; u < n1; ++u) {
-				if ((match12[u] == -1) && 
+                if ((match12[u] == -1) && 
                     dfs(g, vis, match12, match21, dist, u)) {
-					++f;
+                    ++f;
                 }
             }
-			
+
             if (f == 0) {
-				return match12;
+                return match12;
             }
-			res += f;
+            res += f;
         }        
     }
     
@@ -119,52 +120,54 @@ public class HopcroftKarp {
      * @param match21
      * @param dist 
      */
-    private void bfs(GraphWithoutWeights g, int[] match12, 
+    private void bfs(GraphWithoutWeights g, int[] match12,
         int[] match21, int[] dist) {
-		Arrays.fill(dist, -1);
-		int n1 = g.getNLeft();
-		int[] Q = new int[n1];
-		int sizeQ = 0;
+        Arrays.fill(dist, -1);
+        int n1 = g.getNLeft();
+        int[] Q = new int[n1];
+        int sizeQ = 0;
         for (int u = 0; u < n1; ++u) {
-			if (match12[u] == -1) {
-				Q[sizeQ++] = u;
-				dist[u] = 0;
-			}
-		}
-		for (int i = 0; i < sizeQ; i++) {
-			int u1 = Q[i];
-            Set<Integer> neighbors = g.getAdjacencyMap().get(
-                Integer.valueOf(u1));
+            if (match12[u] == -1) {
+                Q[sizeQ++] = u;
+                dist[u] = 0;
+            }
+        }
+        for (int i = 0; i < sizeQ; i++) {
+            int u1 = Q[i];
+            TIntSet neighbors = g.getAdjacencyMap().get(u1);
             if (neighbors == null) {
                 continue;
             }
-			for (Integer vIndex : neighbors) {
-                int v = vIndex.intValue();
-                log.fine(String.format("bfs visiting (%d, %d)", u1, v));
-				int u2 = match21[v];
-				if (u2 > -1 && dist[u2] < 0) {
-					dist[u2] = dist[u1] + 1;
-					Q[sizeQ++] = u2;
-				}
-			}
-		}
-	}
+            TIntIterator iter = neighbors.iterator();
+            while (iter.hasNext()) {
+                int vIdx = iter.next();
+                log.fine(String.format(
+                    "bfs visiting (%d, %d)", u1, vIdx));
+                int u2 = match21[vIdx];
+                if (u2 > -1 && dist[u2] < 0) {
+                    dist[u2] = dist[u1] + 1;
+                    Q[sizeQ++] = u2;
+                }
+            }
+        }
+    }
 
-	private boolean dfs(GraphWithoutWeights g, boolean[] vis, 
+    private boolean dfs(GraphWithoutWeights g, boolean[] vis, 
         int[] match12, int[] match21, int[] dist, int u1) {
-		
+
         vis[u1] = true;
 		
-        Set<Integer> neighbors = g.getAdjacencyMap().get(
-            Integer.valueOf(u1));
+        TIntSet neighbors = g.getAdjacencyMap().get(u1);
         if (neighbors != null) {
-            
-            for (Integer vIndex : neighbors) {
-                int v = vIndex.intValue();
-                log.fine(String.format("DFS visiting (%d, %d)", u1, v));
+            TIntIterator iter = neighbors.iterator(); 
+            while (iter.hasNext()) {
+                int v = iter.next();
+                log.fine(String.format(
+                    "DFS visiting (%d, %d)", u1, v));
                 int u2 = match21[v];
                 log.fine(String.format("u2=%d", u2));
-                if (u2 < 0 || !vis[u2] && (dist[u2] == (dist[u1] + 1)) 
+                if (u2 < 0 || !vis[u2] && (dist[u2] 
+                    == (dist[u1] + 1)) 
                     && dfs(g, vis, match12, match21, dist, u2)) {
                     
                     log.fine(String.format("m[%d]=%d", v, u1));
@@ -176,7 +179,7 @@ public class HopcroftKarp {
             }
         }
         
-		return false;
-	}
+        return false;
+    }
 
 }

@@ -1,6 +1,10 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -23,10 +27,10 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         // test graphs on pg 21
         Graph g = getTestGraph(false);
         
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
-        m.put(Integer.valueOf(3), Integer.valueOf(0));
-        m.put(Integer.valueOf(1), Integer.valueOf(2));
-        m.put(Integer.valueOf(4), Integer.valueOf(3));
+        TIntIntMap m = new TIntIntHashMap();
+        m.put(3, 0);
+        m.put(1, 2);
+        m.put(4, 3);
         
         ResidualDigraph rM = new ResidualDigraph(g, m);
         
@@ -34,30 +38,26 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
         assertEquals(3, rM.getBackwardLinksRM().size());
        
         
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(0)) 
-            .contains(Integer.valueOf(0)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(0)) 
-            .contains(Integer.valueOf(2)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(1)) 
-            .contains(Integer.valueOf(1)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(2)) 
-            .contains(Integer.valueOf(3)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(3)) 
-            .contains(Integer.valueOf(1)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(3)) 
-            .contains(Integer.valueOf(4)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(4)) 
-            .contains(Integer.valueOf(4)));
-        assertTrue(rM.getForwardLinksRM().get(Integer.valueOf(5)) 
-            .contains(Integer.valueOf(3)));
+        assertTrue(rM.getForwardLinksRM().get(0) 
+            .contains(0));
+        assertTrue(rM.getForwardLinksRM().get(0) 
+            .contains(2));
+        assertTrue(rM.getForwardLinksRM().get(1) 
+            .contains(1));
+        assertTrue(rM.getForwardLinksRM().get(2) 
+            .contains(3));
+        assertTrue(rM.getForwardLinksRM().get(3) 
+            .contains(1));
+        assertTrue(rM.getForwardLinksRM().get(3) 
+            .contains(4));
+        assertTrue(rM.getForwardLinksRM().get(4) 
+            .contains(4));
+        assertTrue(rM.getForwardLinksRM().get(5) 
+            .contains(3));
         
-        assertTrue(rM.getBackwardLinksRM().get(Integer.valueOf(0))
-            .equals(Integer.valueOf(3)));
-        assertTrue(rM.getBackwardLinksRM().get(Integer.valueOf(2))
-            .equals(Integer.valueOf(1)));
-        assertTrue(rM.getBackwardLinksRM().get(Integer.valueOf(3))
-            .equals(Integer.valueOf(4)));
-               
+        assertEquals(rM.getBackwardLinksRM().get(0), 3);
+        assertEquals(rM.getBackwardLinksRM().get(2), 1);
+        assertEquals(rM.getBackwardLinksRM().get(3), 4);
         
         // ---------------------------------------------------
         /*
@@ -89,25 +89,25 @@ public class MinCostUnbalancedAssignmentTest extends TestCase {
 
     private Graph getTestGraph(boolean createSourceAndSinkEdges) {
         
-        Map<PairInt, Integer> weights 
-            = new HashMap<PairInt, Integer>();
-                
-        weights.put(new PairInt(0, 0), Integer.valueOf(1));
-        weights.put(new PairInt(0, 2), Integer.valueOf(1));
+        TObjectIntMap<PairInt> weights 
+            = new TObjectIntHashMap<PairInt>();
+         
+        weights.put(new PairInt(0, 0), 1);
+        weights.put(new PairInt(0, 2), 1);
         
-        weights.put(new PairInt(1, 1), Integer.valueOf(2));
-        weights.put(new PairInt(1, 2), Integer.valueOf(1));
+        weights.put(new PairInt(1, 1), 2);
+        weights.put(new PairInt(1, 2), 1);
         
-        weights.put(new PairInt(2, 3), Integer.valueOf(2));
+        weights.put(new PairInt(2, 3), 2);
         
-        weights.put(new PairInt(3, 0), Integer.valueOf(1));
-        weights.put(new PairInt(3, 1), Integer.valueOf(2));
-        weights.put(new PairInt(3, 4), Integer.valueOf(3));
+        weights.put(new PairInt(3, 0), 1);
+        weights.put(new PairInt(3, 1), 2);
+        weights.put(new PairInt(3, 4), 3);
     
-        weights.put(new PairInt(4, 3), Integer.valueOf(2));
-        weights.put(new PairInt(4, 4), Integer.valueOf(1));
+        weights.put(new PairInt(4, 3), 2);
+        weights.put(new PairInt(4, 4), 1);
         
-        weights.put(new PairInt(5, 3), Integer.valueOf(2));
+        weights.put(new PairInt(5, 3), 2);
         
         Graph g = new Graph(6, 5, weights, createSourceAndSinkEdges);
 

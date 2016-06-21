@@ -1,13 +1,18 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.iterator.TObjectIntIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntFloatHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectFloatHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.logging.Logger;
 
 /**
@@ -107,21 +112,21 @@ public class FlowNetwork {
     may represent these differently soon.
     they are also known as "bipartite arcs".
     */
-    private final Map<Integer, Set<Integer>> forwardArcs
-        = new HashMap<Integer, Set<Integer>>();
+    private final TIntObjectHashMap<TIntSet> forwardArcs
+        = new TIntObjectHashMap<TIntSet>();
 
     /** forward arcs from source to the left (a.k.a. X nodes).
      * If an arc is saturated, it will have flux=1 along this
      * arc.
     */
-    private final Set<Integer> sourceForwardArcs = 
-        new HashSet<Integer>();
+    private final TIntSet sourceForwardArcs = 
+        new TIntHashSet();
 
     /** forward arcs from the right (a.k.a. Y nodes) to sink node
     If an arc is saturated, it will have flux=1 along this arc.
     */
-    private final Set<Integer> sinkForwardArcs =
-        new HashSet<Integer>();
+    private final TIntSet sinkForwardArcs =
+        new TIntHashSet();
 
     /**
      * per unit flow costs are the same as the edges given in G. 
@@ -129,8 +134,8 @@ public class FlowNetwork {
      * value = cost of the arc. might
      * change to use sparse matrix format
      */
-    private final Map<PairInt, Integer> c
-        = new HashMap<PairInt, Integer>();
+    private final TObjectIntHashMap<PairInt> c
+        = new TObjectIntHashMap<PairInt>();
 
     /**
      * the flow on the arc. key = index in left (==X==v) and index in right
@@ -141,8 +146,8 @@ public class FlowNetwork {
      * specified in format right to left). might change to use sparse matrix
      * format
      */
-    private final Map<PairInt, Float> f
-        = new HashMap<PairInt, Float>();
+    private final TObjectFloatHashMap<PairInt> f
+        = new TObjectFloatHashMap<PairInt>();
     
     /**
      * per unit dummy flow costs from source to X nodes
@@ -151,8 +156,8 @@ public class FlowNetwork {
      * value = cost of the arc. might
      * change to use sparse matrix format
      */
-    private final Map<Integer, Integer> sourceToLeftC =
-        new HashMap<Integer, Integer>();
+    private final TIntIntHashMap sourceToLeftC =
+        new TIntIntHashMap();
    
     /**
      * per unit dummy flow costs from sink to X nodes
@@ -160,22 +165,26 @@ public class FlowNetwork {
      * key = index of right node (== Y)
      * value = cost of the arc
      */
-    private final Map<Integer, Integer> rightToSinkC =
-        new HashMap<Integer, Integer>();
+    private final TIntIntHashMap rightToSinkC =
+        new TIntIntHashMap();
 
     /**
      * flux from source to x node
      */
-    private final Map<Integer, Float> sourceToLeftF =
-        new HashMap<Integer, Float>();
+    private final TIntFloatHashMap sourceToLeftF =
+        new TIntFloatHashMap();
     
     /**
      * flux from y node to sink
      */
-    private final Map<Integer, Float> rightToSinkF =
-        new HashMap<Integer, Float>();
+    private final TIntFloatHashMap rightToSinkF =
+        new TIntFloatHashMap();
     
-    public FlowNetwork(Graph g, Map<Integer, Integer> m) {
+    // nodes placed here for convenience.  they're an adaptation of
+    // the graph used in path algorithms.
+    private PathNodes pathNodes = null;
+    
+    public FlowNetwork(Graph g, TIntIntMap m) {
 
         this.nLeft = g.getNLeft();
         this.nRight = g.getNRight();
@@ -184,54 +193,56 @@ public class FlowNetwork {
         pLeft = new float[nLeft + 1];
         pRight = new float[nRight + 1];
                 
-        for (Map.Entry<PairInt, Integer> entry : 
-            g.getEdgeWeights().entrySet()) {
+        TObjectIntIterator<PairInt> iter = g.getEdgeWeights().iterator();
+        for (int i = g.getEdgeWeights().size(); i-- > 0;) {
+            
+            iter.advance();
+            
+            PairInt p = iter.key();
 
-            PairInt p = entry.getKey();
+            int idx1 = p.getX();
+            int idx2 = p.getY();
 
-            Integer index1 = Integer.valueOf(p.getX());
-            Integer index2 = Integer.valueOf(p.getY());
-
-            Set<Integer> indexes2 = forwardArcs.get(index1);
+            TIntSet indexes2 = forwardArcs.get(idx1);
             if (indexes2 == null) {
-                indexes2 = new HashSet<Integer>();
-                forwardArcs.put(index1, indexes2);
+                indexes2 = new TIntHashSet();
+                forwardArcs.put(idx1, indexes2);
             }
-            indexes2.add(index2);
+            indexes2.add(idx2);
 
-            Integer cost = g.getEdgeWeights().get(p);
+            int cost = g.getEdgeWeights().get(p);
             c.put(p, cost);
-            f.put(p, Float.valueOf(0));
+            f.put(p, 0);
 
-            if (Math.abs(cost.intValue()) > maxC) {
-                maxC = Math.abs(cost.intValue());
+            if (Math.abs(cost) > maxC) {
+                maxC = Math.abs(cost);
             }
-            if (Math.abs(cost.intValue()) < minC) {
-                minC = Math.abs(cost.intValue());
+            if (Math.abs(cost) < minC) {
+                minC = Math.abs(cost);
             }
 
-            sourceForwardArcs.add(index1);
-            sinkForwardArcs.add(index2);
+            sourceForwardArcs.add(idx1);
+            sinkForwardArcs.add(idx2);
             
             // set source and sink arcs to 0 and overwrite
             // those for matched vertexes in next block
-            sourceToLeftF.put(index1, Float.valueOf(0));
-            rightToSinkF.put(index2, Float.valueOf(0));
+            sourceToLeftF.put(idx1, 0);
+            rightToSinkF.put(idx2, 0);
             
             // cost of dummy edge is 0
-            sourceToLeftC.put(index1, Integer.valueOf(0));
-            rightToSinkC.put(index2, Integer.valueOf(0));
+            sourceToLeftC.put(idx1, 0);
+            rightToSinkC.put(idx2, 0);
         }
         
-        for (Entry<Integer, Integer> entry : m.entrySet()) {
-            Integer leftIndex = entry.getKey();
-            sourceToLeftF.put(leftIndex, Float.valueOf(1));
-            PairInt p = new PairInt(leftIndex.intValue(),
-                entry.getValue().intValue());
-            f.put(p, Float.valueOf(1));
-        }
-        for (Integer rightIndex : m.values()) {
-            rightToSinkF.put(rightIndex, Float.valueOf(1));
+        TIntIntIterator iter2 = m.iterator();
+        for (int ii = m.size(); ii-- > 0;) {
+            iter2.advance();
+            int leftIdx = iter2.key();
+            int rightIdx = iter2.value();
+            sourceToLeftF.put(leftIdx, 1);
+            PairInt p = new PairInt(leftIdx, rightIdx);
+            f.put(p, 1);
+            rightToSinkF.put(rightIdx, 1);
         }
 
         assert (maxC > 1);
@@ -284,10 +295,16 @@ public class FlowNetwork {
         
         double sum = 0;
         
-        for (Map.Entry<Integer, Set<Integer>> entry : forwardArcs.entrySet()) {
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter3 = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter3.advance();
+            int idx1 = iter3.key();
+            TIntSet idxs2 = iter3.value();
+            
+            TIntIterator iter4 = idxs2.iterator();
+            while (iter4.hasNext()) {
+                int idx2 = iter4.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 sum += unitFlow;
             }
@@ -306,25 +323,34 @@ public class FlowNetwork {
         
         double sum = 0;
         
-        for (Map.Entry<Integer, Set<Integer>> entry : forwardArcs.entrySet()) {
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int i = forwardArcs.size(); i-- > 0;) {
+            
+            iter.advance();
+            int idx1 = iter.key();
+            TIntIterator iter2 = iter.value().iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cost = c.get(p);
                 sum += (unitFlow * cost);
             }
         }
         
-        for (Integer index1 : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index1);
-            float cost = sourceToLeftC.get(index1);
+        TIntIterator iter2 = sourceForwardArcs.iterator();
+        while (iter2.hasNext()) {
+            int idx1 = iter2.next();        
+            float unitFlow = sourceToLeftF.get(idx1);
+            float cost = sourceToLeftC.get(idx1);
             sum += (unitFlow * cost);
         }
         
-        for (Integer index1 : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index1);
-            float cost = rightToSinkC.get(index1);
+        iter2 = sinkForwardArcs.iterator();
+        while (iter2.hasNext()) {
+            int idx1 = iter2.next();
+            float unitFlow = rightToSinkF.get(idx1);
+            float cost = rightToSinkC.get(idx1);
             sum += (unitFlow * cost);
         }
         
@@ -332,13 +358,13 @@ public class FlowNetwork {
     }
     
     public float getSourceToLeftFlow(int idx) {
-        return sourceToLeftF.get(Integer.valueOf(idx));
+        return sourceToLeftF.get(idx);
     }
     public float getRightToSinkFlow(int idx) {
-        return rightToSinkF.get(Integer.valueOf(idx));
+        return rightToSinkF.get(idx);
     }
     public int getSourceToLeftCost(int idx) {
-        return sourceToLeftC.get(Integer.valueOf(idx));
+        return sourceToLeftC.get(idx);
     }
     
     public float calcNetCost(int u, int v) {
@@ -362,9 +388,9 @@ public class FlowNetwork {
     public float getFlow(int u, int v) {
 
         if (u == sourceNode) {
-            return sourceToLeftF.get(Integer.valueOf(v));
+            return sourceToLeftF.get(v);
         } else if (v == sinkNode) {
-            return rightToSinkF.get(Integer.valueOf(u));
+            return rightToSinkF.get(u);
         } 
         
         return f.get(new PairInt(u, v));
@@ -372,7 +398,7 @@ public class FlowNetwork {
     
     protected float calcSourceNetCost(int v) {
 
-        int cost = sourceToLeftC.get(Integer.valueOf(v));
+        int cost = sourceToLeftC.get(v);
         float pdX = pLeft[sourceNode];
         float pdY = pLeft[v];
        
@@ -383,7 +409,7 @@ public class FlowNetwork {
 
     protected float calcSinkNetCost(int u) {
 
-        int cost = rightToSinkC.get(Integer.valueOf(u));
+        int cost = rightToSinkC.get(u);
         float pdX = pRight[u];
         float pdY = pRight[sinkNode];
        
@@ -465,7 +491,7 @@ public class FlowNetwork {
         // sink where the flow into the node is larger
         // than the flow leaving the sink.
         
-        List<Integer> surplus = new ArrayList<Integer>();
+        TIntHashSet surplus = new TIntHashSet();
         getSurplusRightIndexes(surplus);
         assert(surplus.isEmpty());
         
@@ -480,22 +506,26 @@ public class FlowNetwork {
     
     public boolean printSurplusAndDeficit() {
     
-        List<Integer> surplus = new ArrayList<Integer>();
+        TIntHashSet surplus = new TIntHashSet();
         getSurplusLeftIndexes(surplus);
         
-        List<Integer> deficit = new ArrayList<Integer>();
+        TIntHashSet deficit = new TIntHashSet();
         getDeficitRightIndexes(deficit);
         
         StringBuilder sb = new StringBuilder("surplus=(");
-        for (Integer s : surplus) {
-            sb.append(s.toString()).append(", ");
+        TIntIterator iter = surplus.iterator();
+        while (iter.hasNext()) {
+            int s = iter.next();
+            sb.append(Integer.toString(s)).append(", ");
         }
         sb.append(")");
         log.info(sb.toString());
         
         sb = new StringBuilder("deficit=(");
-        for (Integer d : deficit) {
-            sb.append(d.toString()).append(", ");
+        iter = deficit.iterator();
+        while (iter.hasNext()) {
+            int d = iter.next();
+            sb.append(Integer.toString(d)).append(", ");
         }
         sb.append(")");
         log.info(sb.toString());
@@ -507,8 +537,10 @@ public class FlowNetwork {
                 
         double flow = 0;
         
-        for (Integer index : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index);
+        TIntIterator iter = sourceForwardArcs.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            float unitFlow = sourceToLeftF.get(idx);
             flow += unitFlow;
         }
                 
@@ -519,8 +551,10 @@ public class FlowNetwork {
                 
         double flow = 0;
         
-        for (Integer index : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index);
+        TIntIterator iter = sinkForwardArcs.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            float unitFlow = rightToSinkF.get(idx);
             flow += unitFlow;
         }
                 
@@ -566,20 +600,22 @@ public class FlowNetwork {
         //see Figure 7.4, pg 53
         // looks like the price raise is multiples of (q-1)*eps
 
+        TIntIterator iter = sourceForwardArcs.iterator();
         // calc for source dummy arcs
-        for (Integer xIndex : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(xIndex);
-            float cp = calcSourceNetCost(xIndex.intValue());
+        while (iter.hasNext()) {
+            int xIdx = iter.next();
+            float unitFlow = sourceToLeftF.get(xIdx);
+            float cp = calcSourceNetCost(xIdx);
         
             if (unitFlow == 0) {
                 // idle, cp > -qEps
                 //cp = cost - pdX + pdY so inr pdY
                 float count = 1.f;
                 while (cp <= -qEps) {
-                    pLeft[xIndex.intValue()] += (count * delta);
-                    cp = calcSourceNetCost(xIndex.intValue());
+                    pLeft[xIdx] += (count * delta);
+                    cp = calcSourceNetCost(xIdx);
                     log.fine("raise price of left for source arc" 
-                        + xIndex + " to cp=" + cp);
+                        + xIdx + " to cp=" + cp);
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
@@ -587,21 +623,21 @@ public class FlowNetwork {
                 float count = 1.f;
                 while (cp > qEps) {
                     pLeft[sourceNode] += (count * delta);
-                    cp = calcSourceNetCost(xIndex.intValue());
+                    cp = calcSourceNetCost(xIdx);
                     log.fine("lower price of left for source arc" 
-                        + xIndex + " to cp=" + cp);
+                        + xIdx + " to cp=" + cp);
                 }
             }
         }
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            
-            for (Integer index2 : entry.getValue()) {
-                
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter2 = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter2.advance();
+            int idx1 = iter2.key();
+            TIntIterator iter3 = iter2.value().iterator();
+            while (iter3.hasNext()) {
+                int idx2 = iter3.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
                 if (unitFlow == 0) {
@@ -609,9 +645,9 @@ public class FlowNetwork {
                     //cp = cost - pdX + pdY, so incr pdY
                     float count = 1.f;
                     while (cp <= -qEps) {
-                        pRight[index2.intValue()] += (count * delta);
+                        pRight[idx2] += (count * delta);
                         cp = calcNetCost(p);
-                        log.fine("raise price of right " + index2 +
+                        log.fine("raise price of right " + idx2 +
                             " to cp=" + cp);
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
@@ -619,19 +655,21 @@ public class FlowNetwork {
                     //cp = cost - pdX + pdY, so incr pdX
                     while (cp > qEps) {
                         float count = 1.f;
-                        pLeft[index1.intValue()] += (count * delta);
+                        pLeft[idx1] += (count * delta);
                         cp = calcNetCost(p);
-                        log.fine("lower price of left " + index1 +
+                        log.fine("lower price of left " + idx1 +
                             " to cp=" + cp);
                     }
                 }
             }
         }
         
+        TIntIterator iter3 = sinkForwardArcs.iterator();
         // calc for sink dummy arcs
-        for (Integer yIndex : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(yIndex);
-            float cp = calcSinkNetCost(yIndex.intValue());
+        while (iter3.hasNext()) {
+            int yIdx = iter3.next();
+            float unitFlow = rightToSinkF.get(yIdx);
+            float cp = calcSinkNetCost(yIdx);
         
             if (unitFlow == 0) {
                 // idle, cp > -qEps
@@ -640,7 +678,7 @@ public class FlowNetwork {
                 float count = 1.f;
                 while (cp <= -qEps) {
                     pRight[sinkNode] += (count * delta);
-                    cp = calcSinkNetCost(yIndex.intValue());
+                    cp = calcSinkNetCost(yIdx);
                     log.fine("raise price of right for sink arc" 
                         + sinkNode + " to cp=" + cp);
                 }
@@ -649,10 +687,10 @@ public class FlowNetwork {
                 //cp = cost - pdX + pdY so incr pdX
                 float count = 1.f;
                 while (cp > qEps) {
-                    pRight[yIndex.intValue()] += (count * delta);
-                    cp = calcSinkNetCost(yIndex.intValue());
+                    pRight[yIdx] += (count * delta);
+                    cp = calcSinkNetCost(yIdx);
                     log.fine("lower price of right for sink arc" 
-                        + yIndex + " to cp=" + cp);
+                        + yIdx + " to cp=" + cp);
                 }
             }
         }
@@ -666,14 +704,15 @@ public class FlowNetwork {
      */
     boolean integralBipartiteFlowIsEpsProper(float eps) {
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            
-            for (Integer index2 : entry.getValue()) {
-                
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter2 = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter2.advance();
+            int idx1 = iter2.key();
+            TIntIterator iter3 = iter2.value().iterator();
+            while (iter3.hasNext()) {
+                int idx2 = iter3.next();
+                                
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
@@ -702,68 +741,79 @@ public class FlowNetwork {
      */
     boolean integralFlowIsEpsProper(float eps) {
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            
-            for (Integer index2 : entry.getValue()) {
-                
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter2 = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter2.advance();
+            int idx1 = iter2.key();
+            TIntIterator iter3 = iter2.value().iterator();
+            while (iter3.hasNext()) {
+                int idx2 = iter3.next();
+          
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
                     // idle, cp > -epsT
                     if (cp <= -eps) {
-                        log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
-                            unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format(
+                            "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%d to %d",
+                            unitFlow, cp, eps, idx1, idx2));
                         return false;
                     }
                 } else if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     if (cp > eps) {
-                        log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
-                            unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format(
+                            "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f idx=%s td %d",
+                            unitFlow, cp, eps, idx1, idx2));
                         return false;
                     }
                 }
             }
         }
 
-        for (Integer index1 : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index1);
-            int cp = (int)Math.ceil(calcSourceNetCost(index1.intValue()));
+        TIntIterator iter = sourceForwardArcs.iterator();
+        while (iter.hasNext()) {
+            int idx1 = iter.next();
+            float unitFlow = sourceToLeftF.get(idx1);
+            int cp = (int)Math.ceil(calcSourceNetCost(idx1));
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
-                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s",
-                        unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format(
+                        "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %d",
+                        unitFlow, cp, eps, idx1));
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
-                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %s",
-                        unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format(
+                        "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f source to %d",
+                        unitFlow, cp, eps, idx1));
                     return false;
                 }
             }
         }
         
-        for (Integer index1 : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index1);
-            int cp = (int)Math.ceil(calcSinkNetCost(index1.intValue()));
+        TIntIterator iter1 = sinkForwardArcs.iterator();
+        while (iter1.hasNext()) {
+            int idx1 = iter1.next();
+            float unitFlow = rightToSinkF.get(idx1);
+            int cp = (int)Math.ceil(calcSinkNetCost(idx1));
             if (unitFlow == 0) {
                 // idle, cp > -epsT
                 if (cp <= -eps) {
-                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink",
-                        unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format(
+                        "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %d to sink",
+                        unitFlow, cp, eps, idx1));
                     return false;
                 }
             } else if (Math.abs(unitFlow - 1) < 0.01f) {
                 // saturated
                 if (cp > eps) {
-                    log.severe(String.format("NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %s to sink",
-                        unitFlow, cp, eps, index1.toString()));
+                    log.severe(String.format(
+                        "NOT EPS-PROPER f=%.2f  cp=%.3f  eps=%.3f %d to sink",
+                        unitFlow, cp, eps, idx1));
                     return false;
                 }
             }
@@ -778,14 +828,14 @@ public class FlowNetwork {
      */
     public boolean integralFlowIsProper() {
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            
-            for (Integer index2 : entry.getValue()) {
-                
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntIterator iter2 = iter.value().iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 int cp = (int)Math.ceil(calcNetCost(p));
                 if (unitFlow == 0) {
@@ -813,26 +863,31 @@ public class FlowNetwork {
      */
     boolean assertSaturatedBipartiteIsEpsSnug(float eps) {
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
             
-            Integer index1 = entry.getKey();
-            if (index1.intValue() == sourceNode) {
+            if (idx1 == sourceNode) {
                 continue;
             }
-            for (Integer index2 : entry.getValue()) {
-                if (index2.intValue() == sinkNode) {
+            
+            TIntIterator iter3 = iter.value().iterator();
+            while (iter3.hasNext()) {
+                int idx2 = iter3.next();            
+                if (idx2 == sinkNode) {
                     continue;
                 }
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 int cp = (int)Math.ceil(calcNetCost(p));
                 if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated
                     // snug is -eps < cp <= eps
                     if ((cp <= -eps) || (cp > eps)) {
-                        log.severe(String.format("NOT EPS-SNUG f=%.2f  cp=%.3f  eps=%.3f idx=%s to %s",
-                            unitFlow, cp, eps, index1.toString(), index2.toString()));
+                        log.severe(String.format(
+                            "NOT EPS-SNUG f=%.2f  cp=%.3f  eps=%.3f idx=%d to %d",
+                            unitFlow, cp, eps, idx1, idx2));
                         return false;
                     }
                 }
@@ -842,111 +897,87 @@ public class FlowNetwork {
         return true;
     }
     
-    /**
-     * populate given lists with the bipartite nodes of 
-     * saturated arcs.
-     * @param surplus
-     * @param deficit 
-     */
-    public void getMatchedLeftRight(List<Integer> surplus, List<Integer> deficit) {
-
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
-                float unitFlow = f.get(p);
-                float cp = calcNetCost(p);
-                if (Math.abs(unitFlow - 1) < 0.01f) {
-                    // saturated are matched arcs
-                    surplus.add(index1);
-                    deficit.add(index2);
-                }
-            }
-        }
-    }
-
-    public void getSurplusLeftIndexes(List<Integer> surplus) {
+    public void getSurplusLeftIndexes(TIntSet surplus) {
 
         for (int i = 0; i < nLeft; ++i) {
-            
-            Integer index = Integer.valueOf(i);        
-            
+                        
             float flowInto = 0;
             float flowOutOf = 0;
             // flow into left from source
-            if (sourceForwardArcs.contains(index)) {
-                flowInto += sourceToLeftF.get(index);
+            if (sourceForwardArcs.contains(i)) {
+                flowInto += sourceToLeftF.get(i);
             }
-            Set<Integer> set = forwardArcs.get(index);
+            TIntSet set = forwardArcs.get(i);
             if (set != null) {
-                for (Integer index2 : set) {
-                    PairInt p = new PairInt(index.intValue(), index2.intValue());
+                TIntIterator iter2 = set.iterator();
+                while (iter2.hasNext()) {
+                    int idx2 = iter2.next();
+                    PairInt p = new PairInt(i, idx2);
                     flowOutOf += f.get(p);
                 }
             }
             if (flowInto > flowOutOf) {
-                surplus.add(index);
+                surplus.add(i);
             }
         }
     }  
     
-    public void getDeficitRightIndexes(List<Integer> deficit) {
+    public void getDeficitRightIndexes(TIntSet deficit) {
 
         // key = right, values = left
-        Map<Integer, Set<Integer>> revMap =
+        TIntObjectHashMap<TIntSet> revMap = 
             createReverseMapOfForwardArcs();
         
         for (int i = 0; i < nRight; ++i) {
-            
-            Integer index = Integer.valueOf(i);        
-            
+                        
             float flowInto = 0;
             float flowOutOf = 0;
             // flow out of right to sink
-            if (sinkForwardArcs.contains(index)) {
-                flowOutOf += rightToSinkF.get(index);
+            if (sinkForwardArcs.contains(i)) {
+                flowOutOf += rightToSinkF.get(i);
             }
-            Set<Integer> set = revMap.get(index);
+            TIntSet set = revMap.get(i);
             if (set != null) {
-                for (Integer left : set) {
-                    PairInt p = new PairInt(left.intValue(), index.intValue());
+                TIntIterator iter2 = set.iterator();
+                while (iter2.hasNext()) {
+                    int left = iter2.next();                
+                    PairInt p = new PairInt(left, i);
                     flowInto += f.get(p);
                 }
             }
             
             if (flowInto < flowOutOf) {
-                deficit.add(index);
+                deficit.add(i);
             }
         }
-    }  
+    }
     
-    private void getSurplusRightIndexes(List<Integer> surplus) {
+    private void getSurplusRightIndexes(TIntSet surplus) {
 
         for (int i = 0; i < nRight; ++i) {
-            
-            Integer index = Integer.valueOf(i);        
-            
+                        
             float flowInto = 0;
             float flowOutOf = 0;
             // flow into right from left node
-            for (Entry<Integer, Set<Integer>> entry :
-                forwardArcs.entrySet()) {
-                if (entry.getValue().contains(index)) {
-                    PairInt p = new PairInt(entry.getKey().intValue(), 
-                        index.intValue());
+            
+            TIntObjectIterator<TIntSet> iter2 = forwardArcs.iterator();
+            for (int ii = forwardArcs.size(); ii-- > 0;) {
+                iter2.advance();
+                int idx1 = iter2.key();
+                TIntSet set = iter2.value();
+                if (set.contains(i)) {
+                    PairInt p = new PairInt(idx1, i);
                     flowInto += f.get(p);
                 }
             }
             
             // flow from right to sink            
-            if (sinkForwardArcs.contains(index)) {
-                flowOutOf += rightToSinkF.get(index);
+            if (sinkForwardArcs.contains(i)) {
+                flowOutOf += rightToSinkF.get(i);
             }
             
             if (flowInto > flowOutOf) {
-                surplus.add(index);
+                surplus.add(i);
             }
         }
     }  
@@ -963,15 +994,15 @@ public class FlowNetwork {
      NOTE that eps-tight arcs are just barely eps-proper.
     */
     
-    public Map<Integer, Set<Integer>> getForwardArcs() {
+    public TIntObjectHashMap<TIntSet> getForwardArcs() {
         return forwardArcs;
     }
 
-    public Map<PairInt, Integer> getCosts() {
+    public TObjectIntHashMap<PairInt> getCosts() {
         return c;
     }
 
-    public Map<PairInt, Float> getFlow() {
+    public TObjectFloatHashMap<PairInt> getFlow() {
         return f;
     }
 
@@ -980,26 +1011,26 @@ public class FlowNetwork {
     }
 
     public void setRightPrice(int idx, float value) {
-        log.fine("add to right " + idx + " : " + pRight[idx] + " + " + value + " = " + 
-            (pRight[idx] + value));
+        log.fine("add to right " + idx + " : " + pRight[idx] 
+            + "  + " + value + " = " + (pRight[idx] + value));
         pRight[idx] = value;
     }
     
     public void addToLeftPrice(int idx, float value) {
-        log.fine("add to left " + idx + " : " + pLeft[idx] + " + " + value + " = " + 
-            (pLeft[idx] + value));
+        log.fine("add to left " + idx + " : " + pLeft[idx] 
+            + " + " + value + " = " + (pLeft[idx] + value));
         pLeft[idx] += value;
     }
 
     public void addToSourcePrice(float value) {
-        log.fine("add to source : " + pLeft[sourceNode] + " + " + value + " = " + 
-            (pLeft[sourceNode] + value));
+        log.fine("add to source : " + pLeft[sourceNode] 
+            + " + " + value + " = " + (pLeft[sourceNode] + value));
         pLeft[sourceNode] += value;
     }
 
     public void addToSinkPrice(float value) {
-        log.fine("add to sink : " + pLeft[sinkNode] + " + " + value + " = " + 
-            (pLeft[sinkNode] + value));
+        log.fine("add to sink : " + pLeft[sinkNode] 
+            + " + " + value + " = " + (pLeft[sinkNode] + value));
         pLeft[sinkNode] += value;
     }
 
@@ -1037,71 +1068,71 @@ public class FlowNetwork {
         return sourceNode;
     }
 
-    public Set<Integer> getSourceForwardArcs() {
+    public TIntSet getSourceForwardArcs() {
         return sourceForwardArcs;
     }
 
-    public Set<Integer> getSinkForwardArcs() {
+    public TIntSet getSinkForwardArcs() {
         return sinkForwardArcs;
     }
 
     public void augmentSourceToLeftFlowAndArc(int idx) {
         
-        Integer index = Integer.valueOf(idx);
-        
-        Float flow = sourceToLeftF.get(index);
-        if (flow == null || (Math.abs(flow.floatValue()) < 0.01)) {
-            // idle, so change to "saturated"
-            sourceToLeftF.put(index, Float.valueOf(1));
-            sourceForwardArcs.add(index);
-        } else if (Math.abs(flow.floatValue() - 1.) < 0.01) {
-            // saturated, so change to "idle"
-            sourceToLeftF.put(index, Float.valueOf(0));
-            //TODO: consider not removing this
-            //sourceForwardArcs.remove(index);
-        } else {
-            throw new IllegalStateException(
+        if (sourceToLeftC.containsKey(idx)) {
+            float flow = sourceToLeftF.get(idx);
+            if (Math.abs(flow) < 0.01) {
+                // idle, so change to "saturated"
+                sourceToLeftF.put(idx, 1);
+                sourceForwardArcs.add(idx);
+            } else if (Math.abs(flow - 1.) < 0.01) {
+                // saturated, so change to "idle"
+                sourceToLeftF.put(idx, 0);
+                //TODO: consider not removing this
+                //sourceForwardArcs.remove(index);
+            } else {
+                throw new IllegalStateException(
                 "Error in algorithm.  not expecting"
                 + " a fractional flow");
+            }
         }
     }
     
     public void augmentRightToSinkFlowAndArc(int idx) {
-        
-        Integer index = Integer.valueOf(idx);
-        
-        Float flow = rightToSinkF.get(index);
-        if (flow == null || (Math.abs(flow.floatValue()) < 0.01)) {
-            // idle, so change to "saturated"
-            rightToSinkF.put(index, Float.valueOf(1));
-            sinkForwardArcs.add(index);
-        } else if (Math.abs(flow.floatValue() - 1.) < 0.01) {
-            // saturated, so change to "idle"
-            rightToSinkF.put(index, Float.valueOf(0));
-            // TODO: consider not removing this:
-            //sinkForwardArcs.remove(index);
-        } else {
-            throw new IllegalStateException(
-                "Error in algorithm.  not expecting"
-                + " a fractional flow");
+            
+        if (rightToSinkF.containsKey(idx)) {
+            float flow = rightToSinkF.get(idx);
+            if (Math.abs(flow) < 0.01) {
+                // idle, so change to "saturated"
+                rightToSinkF.put(idx, 1);
+                sinkForwardArcs.add(idx);
+            } else if (Math.abs(flow - 1.) < 0.01) {
+                // saturated, so change to "idle"
+                rightToSinkF.put(idx, 0);
+                // TODO: consider not removing this:
+                //sinkForwardArcs.remove(idx);
+            } else {
+                throw new IllegalStateException(
+                    "Error in algorithm.  not expecting"
+                    + " a fractional flow");
+            }
         }
     }
     
     public void augmentFlowAndArc(int idx1, int idx2) {
         
-        assert(forwardArcs.containsKey(Integer.valueOf(idx1))
-            && forwardArcs.get(Integer.valueOf(idx1))
-            .contains(Integer.valueOf(idx2)));
+        assert(forwardArcs.containsKey(idx1)
+            && forwardArcs.get(idx1)
+            .contains(idx2));
         
         PairInt p = new PairInt(idx1, idx2);
         
         float flow = f.get(p);
         if (Math.abs(flow - 1.) < 0.01) {
             // saturated, so change to "idle"
-            f.put(p, Float.valueOf(0));
+            f.put(p, 0);
         } else if (Math.abs(flow) < 0.01) {
             // idle, so change to "saturated"
-            f.put(p, Float.valueOf(1));
+            f.put(p, 1);
             
             // should the source and sink
             // arcs be reversed too?
@@ -1113,26 +1144,28 @@ public class FlowNetwork {
         }
     }
 
-    private Map<Integer, Set<Integer>> 
-        createReverseMapOfForwardArcs() {
+    private TIntObjectHashMap createReverseMapOfForwardArcs() {
         
         //key=right   values=left
-        Map<Integer, Set<Integer>> revMap
-            = new HashMap<Integer, Set<Integer>>();
-    
-        for (Entry<Integer, Set<Integer>> entry :
-            forwardArcs.entrySet()) {
-            
-            Integer leftIndex = entry.getKey();
-            Set<Integer> rightIndexes = entry.getValue();
-            
-            for (Integer rightIndex : rightIndexes) {
-                Set<Integer> leftIndexes = revMap.get(rightIndex);
-                if (leftIndexes == null) {
-                    leftIndexes = new HashSet<Integer>();
-                    revMap.put(rightIndex, leftIndexes);
-                }
-                leftIndexes.add(leftIndex);
+        TIntObjectHashMap<TIntSet> revMap 
+              = new TIntObjectHashMap<TIntSet>();
+
+        TIntObjectIterator<TIntSet> iter2 = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter2.advance();
+            int leftIdx = iter2.key();
+            TIntSet rightIdxs = iter2.value();
+            TIntIterator iter3 = rightIdxs.iterator();
+            while (iter3.hasNext()) {
+                int rightIdx = iter3.next();
+                TIntSet leftIdxs;
+                if (!revMap.containsKey(rightIdx)) {
+                    leftIdxs = new TIntHashSet();
+                    revMap.put(rightIdx, leftIdxs);
+                } else {
+                    leftIdxs = revMap.get(rightIdx);
+                } 
+                leftIdxs.add(leftIdx);
             }
         }
         
@@ -1143,12 +1176,15 @@ public class FlowNetwork {
     
         int n = 0;
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntSet rightIdxs = iter.value();
+            TIntIterator iter2 = rightIdxs.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
                 if (Math.abs(unitFlow - 1) < 0.01f) {
@@ -1162,18 +1198,21 @@ public class FlowNetwork {
 
     public void printSaturatedLinks() {
 
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntSet rightIdxs = iter.value();
+            TIntIterator iter2 = rightIdxs.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
                 if (Math.abs(unitFlow - 1) < 0.01f) {
                     // saturated are matched arcs
                     log.info("saturated bipartite arc from " +
-                        index1 + " to " + index2);
+                        idx1 + " to " + idx2);
                 }
             }
         }
@@ -1184,53 +1223,66 @@ public class FlowNetwork {
 
         StringBuilder sb = new StringBuilder();
         
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntSet rightIdxs = iter.value();
+            TIntIterator iter2 = rightIdxs.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
+
                 sb.append(String.format("%d to %d cp=%.2f f=%.2f\n",
-                    index1.intValue(), index2.intValue(), cp, unitFlow));
+                    idx1, idx2, cp, unitFlow));
             }
         }
         log.info(sb.toString());
 
         sb = new StringBuilder();
-        for (Integer index1 : sourceForwardArcs) {
-            float unitFlow = sourceToLeftF.get(index1);
-            float cp = calcSourceNetCost(index1.intValue());
+
+        TIntIterator iter2 = sourceForwardArcs.iterator();
+        while (iter2.hasNext()) {
+            int idx1 = iter2.next();
+
+            float unitFlow = sourceToLeftF.get(idx1);
+            float cp = calcSourceNetCost(idx1);
             sb.append(String.format("source to %d cp=%.2f f=%.2f\n",
-                index1.intValue(), cp, unitFlow));
+                idx1, cp, unitFlow));
         }
         log.info(sb.toString());
 
         sb = new StringBuilder();
-        for (Integer index1 : sinkForwardArcs) {
-            float unitFlow = rightToSinkF.get(index1);
-            float cp = calcSinkNetCost(index1.intValue());
+        iter2 = sinkForwardArcs.iterator();
+        while (iter2.hasNext()) {
+            int idx1 = iter2.next();
+            float unitFlow = rightToSinkF.get(idx1);
+            float cp = calcSinkNetCost(idx1);
             sb.append(String.format("%d to sink cp=%.2f f=%.2f\n",
-                index1.intValue(), cp, unitFlow));
+                idx1, cp, unitFlow));
         }
         log.info(sb.toString());
     }
 
-    public Map<Integer, Integer> extractMatches() {
-        
-        Map<Integer, Integer> m = new HashMap<Integer, Integer>();
+    public TIntIntMap extractMatches() {
 
-        for (Map.Entry<Integer, Set<Integer>> entry : 
-            forwardArcs.entrySet()) {
-            
-            Integer index1 = entry.getKey();
-            for (Integer index2 : entry.getValue()) {
-                PairInt p = new PairInt(index1.intValue(), index2.intValue());
+        TIntIntMap m = new TIntIntHashMap();
+
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntSet rightIdxs = iter.value();
+            TIntIterator iter2 = rightIdxs.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
                 float unitFlow = f.get(p);
                 float cp = calcNetCost(p);
                 if (Math.abs(unitFlow - 1) < 0.01f) {
-                    m.put(index1, index2);
+                    m.put(idx1, idx2);
                 }
             }
         }
@@ -1254,4 +1306,50 @@ public class FlowNetwork {
         }
     }
 
+    public void zeroTheMatchedBipartiteFlow(TIntSet outPutSurplus, 
+        TIntSet outPutDeficit) {
+        
+        outPutSurplus.clear();
+        outPutDeficit.clear();
+
+        TIntObjectIterator<TIntSet> iter = forwardArcs.iterator();
+        for (int ii = forwardArcs.size(); ii-- > 0;) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntSet rightIdxs = iter.value();
+            TIntIterator iter2 = rightIdxs.iterator();
+            while (iter2.hasNext()) {
+                int idx2 = iter2.next();
+                PairInt p = new PairInt(idx1, idx2);
+                float unitFlow = f.get(p);
+                float cp = calcNetCost(p);
+        
+                if (Math.abs(unitFlow - 1) < 0.01f) {
+                    // saturated are matched arcs
+                    outPutSurplus.add(idx1);
+                    outPutDeficit.add(idx2);
+                    f.put(p, 0);
+                }
+            }
+        }
+    }
+
+    public void createPathNodes() {
+        if (pathNodes == null) {
+            pathNodes = new PathNodes(nLeft, nRight);
+        }
+    }
+    
+    public void resetPathNodes(long key) {
+        if (pathNodes == null) {
+            pathNodes = new PathNodes(nLeft, nRight);
+        } else {
+            pathNodes.resetNodeExceptData(key);
+        }
+    }
+    
+    public PathNodes getPathNodes() {
+        return pathNodes;
+    }
+    
 }

@@ -12,6 +12,8 @@ these rights is attribution: you must acknowledge that the derived work
 contains code and/or text from opendatastructures.org.
 http://github.com/patmorin/ods
 */
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -416,14 +418,14 @@ public class BinaryTrie<S extends BinaryTrieNode<T>, T>
      * root tree in level  traversal
      */
     void debugNodes() {
-        Set<Integer> dummyHashCodes = new HashSet<Integer>();
+        TIntSet dummyHashCodes = new TIntHashSet();
         S node = dummy;
         //System.out.println("dummy.hashCode=" + dummy.hashCode());
         System.out.print("\ndummy=");
         do {
             int dhc = node.hashCode();
             System.out.print(node.x + ", ");
-            dummyHashCodes.add(Integer.valueOf(dhc));
+            dummyHashCodes.add(dhc);
             node = (S)node.child[1];
         } while (!node.equals(dummy));
         

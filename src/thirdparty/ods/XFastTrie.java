@@ -1,11 +1,12 @@
 package thirdparty.ods;
 
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 /*
@@ -27,29 +28,29 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 	/**
 	 * The hash tables used to store prefixes
 	 */
-    protected final List<Map<Integer, S>> t;
+    protected final List<TIntObjectHashMap<S>> t;
 	
 	public XFastTrie(S sampleNode, Integerizer<T> it)  {
 		super(sampleNode, it);
-        t = new ArrayList<Map<Integer, S>>();
+        t = new ArrayList<TIntObjectHashMap<S>>();
 		S nil = (S)new XFastTrieNode<T>();
 		nil.prefix = Integer.MIN_VALUE;
 		for (int i = 0; i <= w; i++) {
-            t.add(new HashMap<Integer, S>());
+            t.add(new TIntObjectHashMap<S>());
 		}
-		t.get(0).put(Integer.valueOf(0), r);
+		t.get(0).put(0, r);
 	}
     
     public XFastTrie(S sampleNode, Integerizer<T> it,
         int smallerWordSize)  {
 		super(sampleNode, it, smallerWordSize);
-        t = new ArrayList<Map<Integer, S>>();
+        t = new ArrayList<TIntObjectHashMap<S>>();
 		S nil = (S)new XFastTrieNode<T>();
 		nil.prefix = Integer.MIN_VALUE;
 		for (int i = 0; i <= w; i++) {
-            t.add(new HashMap<Integer, S>());
+            t.add(new TIntObjectHashMap<S>());
 		}
-		t.get(0).put(Integer.valueOf(0), r);
+		t.get(0).put(0, r);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -81,7 +82,8 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 		while (h-l > 1) {
 			i = (l+h)/2;
 			prefix = ix >>> w-i;
-            v = t.get(i).get(Integer.valueOf(prefix));
+            
+            v = t.get(i).get(prefix);
 			if (v == null) {
 				h = i;
 			} else {
@@ -130,7 +132,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         u = (S) r.child[(ix >>> w - 1) & 1];
         for (i = 1; i <= w; i++) {
             u.prefix = ix >>> w - i;
-            t.get(i).put(Integer.valueOf(u.prefix), u);
+            t.get(i).put(u.prefix, u);
             c = (ix >>> w - i - 1) & 1;
             u = (u.child[c] != null) ? (S) u.child[c] : null;
         }
@@ -156,14 +158,14 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
                + " so max value can remove is " + maxC);
         }
 		S u = r;
-        S v;		
+        S v;
         int l = 0, h = w+1;
         int prefix = -1;
         // binary search over range w
 		while (h-l > 1) {
 			i = (l+h)/2;
 			prefix = ix >>> w-i;
-            v = t.get(i).get(Integer.valueOf(prefix));
+            v = t.get(i).get(prefix);
 			if (v == null) {
 				h = i;
 			} else {
@@ -189,7 +191,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 				w.parent.child[right] = null;
             }
             prefix = w.prefix;
-			t.get(i--).remove(Integer.valueOf(w.prefix));
+			t.get(i--).remove(w.prefix);
 			w = (w.parent != null) ? (S)w.parent : null;
 		}
 		// 4 - update jump pointers
@@ -215,7 +217,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
             throw new IllegalArgumentException("w=" + w
                + " so max value can search for is " + maxC);
         }
-		S q = t.get(w).get(Integer.valueOf(ix));
+		S q = t.get(w).get(ix);
         return q;
 	}
 	
@@ -279,7 +281,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 		while (h-l > 1) {
 			int i = (l+h)/2;
 			prefix = ix >>> w-i;
-            v = t.get(i).get(Integer.valueOf(prefix));
+            v = t.get(i).get(prefix);
 			if (v == null) {
 				h = i;
 			} else {
@@ -342,7 +344,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 		while (h-l > 1) {
 			int i = (l+h)/2;
 			prefix = ix >>> w-i;
-            v = t.get(i).get(Integer.valueOf(prefix));
+            v = t.get(i).get(prefix);
 			if (v == null) {
 				h = i;
 			} else {
@@ -378,7 +380,7 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
 
 	public void clear() {
 		super.clear();
-		for (Map<Integer, S> m : t) 
+		for (TIntObjectHashMap<S> m : t) 
 			m.clear();
 	}
     
@@ -390,8 +392,8 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
      */
     @Override
     public T minimum() {
-        if (t.get(w).containsKey(Integer.valueOf(0))) {
-            return t.get(w).get(Integer.valueOf(0)).x;
+        if (t.get(w).containsKey(0)) {
+            return t.get(w).get(0).x;
         }
         return successor(0);
     }
@@ -404,8 +406,8 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
      */
     @Override
     public T maximum() {
-        if (t.get(w).containsKey(Integer.valueOf(maxC))) {
-            return t.get(w).get(Integer.valueOf(maxC)).x;
+        if (t.get(w).containsKey(maxC)) {
+            return t.get(w).get(maxC).x;
         }
         return predecessor(maxC);
     }
@@ -415,14 +417,14 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
      * root tree in level traversal
      */
     void debugNodes() {
-        Set<Integer> dummyHashCodes = new HashSet<Integer>();
+        TIntSet dummyHashCodes = new TIntHashSet();
         S node = dummy;
         //System.out.println("dummy.hashCode=" + dummy.hashCode());
         System.out.print("\ndummy=");
         do {
             int dhc = node.hashCode();
             System.out.print(node.x + ", ");
-            dummyHashCodes.add(Integer.valueOf(dhc));
+            dummyHashCodes.add(dhc);
             node = (S)node.child[1];
         } while (!node.equals(dummy));
         
@@ -434,9 +436,12 @@ public class XFastTrie<S extends XFastTrieNode<T>, T>
         
         for (int i = 1; i <= w; ++i) {
             System.out.println("level=" + i);
-            Map<Integer, S> nodesMap = t.get(i);
-            for (Entry<Integer, S> entry : nodesMap.entrySet()) {
-                S nodeL = entry.getValue();
+            TIntObjectHashMap<S> nodesMap = t.get(i);
+           
+            TIntObjectIterator<S> iter = nodesMap.iterator();
+            for (int ii = nodesMap.size(); ii-- > 0;) {
+                iter.advance();
+                S nodeL = iter.value();
                 System.out.println(nodeL.toString2());
             }
         }

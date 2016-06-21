@@ -244,7 +244,8 @@
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
-                <!-- jree needs the servlet jar -->
+                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
+                <!-- jfreechart needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
@@ -331,6 +332,7 @@
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
+                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
                 <!-- jree needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
         	</inpath>
@@ -395,7 +397,8 @@
                 <pathelement location="${lib.dir}/jfreechart-1.0.19.jar"/>
                 <pathelement location="${lib.dir}/jcommon-1.0.23.jar"/>
                 <pathelement location="${lib.dir}/com.climbwithyourfeet.clustering.jar"/>
-                <!-- jree needs the servlet jar -->
+                <pathelement location="${lib.dir}/trove4j-3.0.3.jar"/>
+                <!-- jfreechart needs the servlet jar -->
                 <pathelement location="${lib.dir}/servlet-api-2.5.jar"/>
             </inpath>
             <classpath>
@@ -717,6 +720,7 @@
         <unjar src="${lib.dir}/LAML-1.6.2.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jfreechart-1.0.19.jar" dest="${classes.dir}/tmp"/>
         <unjar src="${lib.dir}/jcommon-1.0.23.jar" dest="${classes.dir}/tmp"/>
+        <unjar src="${lib.dir}/trove4j-3.0.3.jar" dest="${classes.dir}/tmp"/>
         
         <!-- jfree needs the servlet jar -->
         <unjar src="${lib.dir}/servlet-api-2.5.jar" dest="${classes.dir}/tmp"/>
@@ -728,6 +732,7 @@
             <fileset dir="${basedir}" includes="README.txt"/>
             <fileset dir="${lib.dir}" includes="EJML_LICENSE.txt"/>
             <fileset dir="${lib.dir}" includes="LAML_LICENSE.txt"/>
+            <fileset dir="${lib.dir}" includes="TROVE4J_LICENSE.txt"/>
             <fileset dir="${lib.dir}" includes="JFREECHART_LICENSE.txt"/>
             <fileset dir="${classes.dir}/tmp" includes="**"/>
         </jar>

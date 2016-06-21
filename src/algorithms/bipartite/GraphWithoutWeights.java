@@ -1,11 +1,11 @@
 package algorithms.bipartite;
 
 import algorithms.util.PairInt;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import gnu.trove.iterator.TObjectIntIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 
 /**
  *
@@ -23,10 +23,11 @@ public class GraphWithoutWeights {
      */
     private final int nRight;
 
-    private Map<Integer, Set<Integer>> adjacencyMap
-        = new HashMap<Integer, Set<Integer>>();
+    private TIntObjectMap<TIntSet> adjacencyMap = new
+        TIntObjectHashMap();
 
-    public GraphWithoutWeights(int nLeftVertices, int nRightVertices) {
+    public GraphWithoutWeights(int nLeftVertices, 
+        int nRightVertices) {
         this.nLeft = nLeftVertices;
         this.nRight = nRightVertices;
     }
@@ -36,20 +37,25 @@ public class GraphWithoutWeights {
         this.nLeft = g.getNLeft();
         this.nRight = g.getNRight();
                 
-        for (Entry<PairInt, Integer> entry : 
-            g.getEdgeWeights().entrySet()) {
-            
-            Integer index1 = entry.getKey().getX();
-            Integer index2 = entry.getKey().getY();
-            
-            Set<Integer> indexes2 = adjacencyMap.get(index1);
+        TObjectIntIterator<PairInt> iter = 
+            g.getEdgeWeights().iterator();
+
+        for (int i = g.getEdgeWeights().size(); i-- > 0;) {
+
+            iter.advance();
+
+            PairInt p = iter.key();
+
+            int idx1 = p.getX();
+            int idx2 = p.getY();
+
+            TIntSet indexes2 = adjacencyMap.get(idx1);
             if (indexes2 == null) {
-                indexes2 = new HashSet<Integer>();
-                adjacencyMap.put(index1, indexes2);
+                indexes2 = new TIntHashSet();
+                adjacencyMap.put(idx1, indexes2);
             }
-            indexes2.add(index2);
+            indexes2.add(idx2);
         }
-        
     }
     
     /**
@@ -69,7 +75,7 @@ public class GraphWithoutWeights {
     /**
      * @return the adjacencyMap
      */
-    public Map<Integer, Set<Integer>> getAdjacencyMap() {
+    public TIntObjectMap<TIntSet> getAdjacencyMap() {
         return adjacencyMap;
     }
 }

@@ -2,12 +2,13 @@ package algorithms.bipartite;
 
 import algorithms.CountingSort;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TObjectIntIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  *
@@ -24,14 +25,21 @@ public class GraphUtil {
      */
     public static void condenseEdgeWeights(Graph g) {
                 
-        Set<Integer> values = new HashSet<Integer>();
+        TIntSet values = new TIntHashSet();
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         
-        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
-            Integer w = entry.getValue();
+        TObjectIntIterator<PairInt> iter = 
+            g.getEdgeWeights().iterator();
+        for (int i = g.getEdgeWeights().size(); i-- > 0;) {
+            iter.advance();
+            PairInt p = iter.key();
+            int idx1 = p.getX();
+            int idx2 = p.getY();
+
+            int w = iter.value();
             values.add(w);
-            int wInt = w.intValue();
+            int wInt = w;
             if (wInt < min) {
                 min = wInt;
             }
@@ -42,8 +50,10 @@ public class GraphUtil {
         
         int[] sortedValues = new int[values.size()];
         int count = 0;
-        for (Integer v : values) {
-            sortedValues[count] = v.intValue();
+        TIntIterator iter2 = values.iterator();
+        while (iter2.hasNext()) {
+            int v = iter2.next();
+            sortedValues[count] = v;
             count++;
         }
         double nlg2n = sortedValues.length * 
@@ -58,17 +68,20 @@ public class GraphUtil {
         }
         
         count = 1;
-        Map<Integer, Integer> map0To1 = new HashMap<Integer, Integer>();
+        TIntIntMap map0To1 = new TIntIntHashMap();
         for (int v : sortedValues) {
-            map0To1.put(Integer.valueOf(v), Integer.valueOf(count));
+            map0To1.put(v, count);
             count++;
         }
-        
-        for (Entry<PairInt, Integer> entry : g.getEdgeWeights().entrySet()) {
-            Integer w = entry.getValue();
-            Integer w2 = map0To1.get(w);
-            PairInt p = entry.getKey();
-            entry.setValue(w2);
+
+        TObjectIntIterator<PairInt> iter3 = 
+            g.getEdgeWeights().iterator();
+        for (int i = g.getEdgeWeights().size(); i-- > 0;) {
+            iter3.advance();
+            PairInt p = iter3.key();
+            int w = iter3.value();
+            int w2 = map0To1.get(w);
+            iter3.setValue(w2);
         }
     }
 }
