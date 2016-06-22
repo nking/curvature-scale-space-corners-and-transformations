@@ -32,7 +32,7 @@ public class XFastTrieWrapper {
     
     public XFastTrieWrapper(int maxC) {
             
-        w = (int)Math.ceil(Math.log(maxC)/Math.log(2)) + 1;
+        w = 1 + (int)Math.floor(Math.log(maxC)/Math.log(2));
         
         this.maxC = maxC;
         

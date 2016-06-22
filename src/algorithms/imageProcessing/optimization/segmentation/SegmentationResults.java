@@ -1,15 +1,25 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.compGeometry.PerimeterFinder;
+import algorithms.imageProcessing.FixedSizeSortedIntVector;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
+import thirdparty.ods.Integerizer;
+import thirdparty.ods.XFastTrie;
+import thirdparty.ods.XFastTrieNode;
 
 /**
  *
@@ -20,7 +30,10 @@ public class SegmentationResults {
     private final int[] xCentroids;
     private final int[] yCentroids;
     private final int[] nPoints;
-    private List<Set<PairInt>> points;
+    private List<Set<PairInt>> perimeters;
+    
+    private int maxY = Integer.MIN_VALUE;
+    private int maxX = Integer.MIN_VALUE;
     
     public SegmentationResults(List<Set<PairInt>> segmentedSets) {
         
@@ -29,9 +42,12 @@ public class SegmentationResults {
         xCentroids = new int[n];
         yCentroids = new int[n];
         nPoints = new int[n];
-        points = new ArrayList<Set<PairInt>>();
+        perimeters = new ArrayList<Set<PairInt>>();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+        
+        int yMax = Integer.MIN_VALUE;
+        int xMax = Integer.MIN_VALUE;
         
         for (int i = 0; i < segmentedSets.size(); ++i) {
             
@@ -44,8 +60,20 @@ public class SegmentationResults {
             yCentroids[i] = (int)Math.round(xyCen[1]);
             
             nPoints[i] = set.size();
+        
+            Set<PairInt> border = extractBorder(set);
             
-            points.add(new HashSet<PairInt>(set));
+            perimeters.add(border);
+            
+            //int[]{xMin, xMax, yMin, yMax}
+            int[] xMinMaxYMinMax = MiscMath.findMinMaxXY(border);
+            
+            if (xMinMaxYMinMax[1] < xMax) {
+                xMax = xMinMaxYMinMax[1];
+            }
+            if (xMinMaxYMinMax[3] < yMax) {
+                yMax = xMinMaxYMinMax[3];
+            }
         }
     }
     
@@ -54,15 +82,130 @@ public class SegmentationResults {
     }
     
     public List<Set<PairInt>> getPointsList() {
-        return this.points;
+        return this.perimeters;
     }
     
     /**
-     * calculate the difference between other and this instance
-     * using an optimal O(N^3) bipartite matching and a penalty for haivng
-     * different sizes of solutions.  Note that if the number of items
-     * in the solution is large, this method needs to be altered to 
-     * determine when to use a greedy O(N^2) method.
+     * see notes in BenchmarkMeasurer.java
+     * 
+     * @param expected
+     * @return 
+     */
+    public double evaluate(SegmentationResults expected) {
+        
+        if (true) {
+            throw new UnsupportedOperationException(
+                "chaging the cost function to the precisiona nd recall");
+        }
+        
+        /*
+        for each point in perimeters, find the 6 nearest
+        neighbors in expected.perimeters.
+
+        discard those larger than dMax=2
+        
+        after have the set of candidates,
+            discard those with no candidate neighbors
+        
+        int[] dist  x0 -> y0
+        */
+        
+        int nPerimeterPoints = sumNPerimeters();
+        
+        int dMax = 2;
+        int dMaxSq = dMax * dMax;
+           
+        /*
+        need a k nearest neighbors search to make the cost
+        matrix input for the min cost bipartite matching.
+        
+        choices are:
+        (1) for each point in a boundary in perimeters,
+           iteratate over a region x += dMax and y +- dMax
+           and test membership in expected.perimeters set.
+           can use a fixedsortedintvector to keep the top k
+           (smallest distances).
+           For dMax = 2, the scan over neighbors is O(24)
+           and each insert into sorted vector is O(lg_2(k)).
+           so the maximum runtime complexity is O(24 * lg_2(k)).
+           for k=3 --> O(38)
+        (2) use XFastTries for predecessor and successor
+            searches over x and y separately, then
+            look for which results within dMax are a valid
+            (x,y) pair in expected.perimeters.
+            The runtime complexity is dependent upon the
+            size of the image and upon k.
+            For 2048, w, the max number of bits needed is
+            12 (signed numbers...) for example.
+            maximum runtime complexity is
+              O(2 * k * lg_2(w)) + O(k*k)
+            so for k=3 and large image of 2048 --> O(22)
+            and for an image closer to 400 x 600 --> O(20) so
+            does not change much with increasing max dimension.
+        
+        Note that both of the above have a factor of
+        N_perimeter_points not included in notes above.
+        */
+        
+        Set<PairInt> allExpectedPoints = getAllPoints(expected);
+          
+        int n1 = nPerimeterPoints;
+        int n2 = allExpectedPoints.size();
+        float[][] cost = new float[n1][n2];        
+        
+        XFastTrie<XFastTrieNode<Integer>, Integer> xbt
+            = loadWithXPoints();
+        
+        XFastTrie<XFastTrieNode<Integer>, Integer> ybt
+            = loadWithYPoints();
+        
+        // r.t. complexity is m*m + O(2*m*lg_2(w)), 
+        // so approx O(21) for maxDimension = 2048
+        // or 
+        int m = 3;
+        int[] xIdxs = new int[m];
+        int[] yIdxs = new int[m];
+        
+        for (Set<PairInt> perimeter : expected.perimeters) {
+        
+            for (PairInt p : perimeter) {
+                int x = p.getX();
+                int y = p.getY();
+                
+                int nX = findClosest(x, xbt, dMax, xIdxs);
+                int nY = findClosest(y, ybt, dMax, yIdxs);
+                
+                for (int i = 0; i < nX; ++i) {
+                    int x2 = xIdxs[i];
+                    for (int j = 0; j < nY; ++j) {
+                        int y2 = yIdxs[i];
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (allExpectedPoints.contains(p2)) {
+        
+                            int diffX = x2 - x;
+                            int diffY = y2 - y;
+                            int distSq = (diffX * diffX) + (diffY * diffY);
+                            if (distSq > dMaxSq) {
+                                continue;
+                            }
+                            
+                            /*
+                            store in cost matrix... need indexed points
+                            */
+                        }
+                    }
+                }
+            }
+        }
+        
+        //TODO: return fMeasure
+        return 1;
+    }
+    
+    /**
+     * calculate the difference between other and this instance.
+     * edits are in progress.
+     * 
      * @param expected
      * @return 
      */
@@ -72,7 +215,6 @@ public class SegmentationResults {
             throw new UnsupportedOperationException(
                 "chaging the cost function to the precisiona nd recall");
         }
-        
         
         boolean doNormalize = false;
         
@@ -282,6 +424,155 @@ public class SegmentationResults {
         diffSum += penalty2;
                 
         return diffSum;
+    }
+
+    private Set<PairInt> extractBorder(Set<PairInt> set) {
+        
+        PerimeterFinder perimeterFinder = new PerimeterFinder();
+        
+        Set<PairInt> outputEmbeddedGapPoints = new HashSet<PairInt>();
+
+        //int[]{xMin, xMax, yMin, yMax}
+        int[] xMinMaxYMinMax = MiscMath.findMinMaxXY(set);
+        int imageMaxColumn = xMinMaxYMinMax[1] - 1;
+        int imageMaxRow = xMinMaxYMinMax[3] - 1;
+       
+        int[] rowMinMax = new int[2];
+                
+        Map<Integer, List<PairInt>> rowColRanges = 
+            perimeterFinder.find(set, rowMinMax, imageMaxColumn, 
+            outputEmbeddedGapPoints);
+
+        if (!outputEmbeddedGapPoints.isEmpty()) {
+            // update the perimeter for "filling in" embedded points
+            perimeterFinder.updateRowColRangesForAddedPoints(rowColRanges, 
+                rowMinMax, imageMaxColumn, outputEmbeddedGapPoints);
+        }
+       
+        Set<PairInt> borderPixels = perimeterFinder.getBorderPixels(
+            rowColRanges, rowMinMax, imageMaxColumn, imageMaxRow);
+        
+        /*
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(borderPixels, 0, imageMaxColumn, 0, imageMaxRow);
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc.correctForExtCorner(borderPixels, imageMaxColumn + 1, imageMaxRow + 1);
+        */ 
+        
+        return borderPixels;
+    }
+
+    private int sumNPerimeters() {
+
+        int n = 0;
+        
+        for (Set<PairInt> perimeter : perimeters) {
+            n += perimeter.size();
+        }
+        
+        return n;
+    }
+
+    private XFastTrie<XFastTrieNode<Integer>, Integer> loadWithXPoints() {
+        
+        int xW = 1 + (int)(Math.floor(Math.log(maxX)/Math.log(2)));
+        
+        Integerizer<Integer> it = new Integerizer<Integer>() {
+            @Override
+            public int intValue(Integer x) {
+                return x;
+            }
+        };
+        
+        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
+        
+        XFastTrie<XFastTrieNode<Integer>, Integer> xbt = 
+            new XFastTrie<XFastTrieNode<Integer>, Integer>(
+            node, it, xW);
+        
+        for (Set<PairInt> set : perimeters) {
+            for (PairInt p : set) {
+                int x = p.getX();
+                xbt.add(Integer.valueOf(x));
+            }
+        }
+        
+        return xbt;
+    }
+    
+    private XFastTrie<XFastTrieNode<Integer>, Integer> 
+        loadWithYPoints() {
+        
+        int yW = 1 + (int)(Math.floor(Math.log(maxY)/Math.log(2)));
+        
+        Integerizer<Integer> it = new Integerizer<Integer>() {
+            @Override
+            public int intValue(Integer x) {
+                return x;
+            }
+        };
+        
+        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
+        
+        XFastTrie<XFastTrieNode<Integer>, Integer> ybt = 
+            new XFastTrie<XFastTrieNode<Integer>, Integer>(
+            node, it, yW);
+        
+        for (Set<PairInt> set : perimeters) {
+            for (PairInt p : set) {
+                int y = p.getY();
+                ybt.add(Integer.valueOf(y));
+            }
+        }
+        
+        return ybt;
+    }
+
+    private int findClosest(int value, 
+        XFastTrie<XFastTrieNode<Integer>, Integer> bt, 
+        int dMax, int[] output) {
+        
+        Integer vIndex = Integer.valueOf(value);
+       
+        int k = output.length;
+        
+        int n = 0;
+        Integer v0 = bt.find(vIndex);
+        if (v0 != null) {
+            output[n] = v0.intValue();
+            n++;
+        }
+        
+        v0 = vIndex;
+        for (int i = 0; i < k/2; ++k) {
+            v0 = bt.predecessor(v0);
+            if (v0 == null || v0.intValue() > dMax) {
+                break;
+            } 
+            output[n] = v0.intValue();
+            n++;
+        }
+        v0 = vIndex;
+        for (int i = 0; i < (k - n); ++k) {
+            v0 = bt.successor(v0);
+            if (v0 == null || v0.intValue() > dMax) {
+                break;
+            } 
+            output[n] = v0.intValue();
+            n++;
+        }
+        return n;
+    }
+
+    private Set<PairInt> getAllPoints(SegmentationResults expected) {
+
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        for (Set<PairInt> set : expected.perimeters) {
+            output.addAll(set);
+        }
+        
+        return output;
     }
     
 }

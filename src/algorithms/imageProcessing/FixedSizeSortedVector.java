@@ -42,7 +42,7 @@ public class FixedSizeSortedVector<T extends Comparable<T>> {
         n = 0;
 
         availSlot = -1;
-
+       
         a = (T[]) Array.newInstance(classTypeToHold, size);
 
     }

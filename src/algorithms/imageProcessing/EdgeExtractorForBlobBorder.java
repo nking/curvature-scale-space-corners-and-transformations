@@ -249,6 +249,11 @@ int z = 1;
 } catch(java.io.IOException e){}
 }
 
+        //TODO: rewrite this section with a path algorithm
+        // one day.
+        // need to find the longest non-crossing tour that
+        // includes all thinned perimeter points.
+
         // one more pass after line thinner and spur remover
         finder = new ButterflySectionFinder();
         List<Routes> butterFlySections2 = finder.findButterflySections(
