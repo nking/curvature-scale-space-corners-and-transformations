@@ -143,14 +143,21 @@ public class SegmentationResults {
             so for k=3 and large image of 2048 --> O(22)
             and for an image closer to 400 x 600 --> O(20) so
             does not change much with increasing max dimension.
+        
+        Note that both of the above have a factor of
+        N_perimeter_points not included in notes above.
+        
         (3) KDTree range search at worst
             is O(k * N^(1 - (1/k))).
             for k = 3 and N = 10000 -> 1400
             for k = 3 and N = 1000, -> 300
-        (4) Quadtree or other spatial indexing structure
-            ...
-        Note that both of the above have a factor of
-        N_perimeter_points not included in notes above.
+        (4) Fractional Cascading
+            a range query runtime complexity is O(log_2(N) + k)
+        
+       ==> will implement a Fractional Cascding layered tree
+           And, encapsulate the XFastTrie search to make
+           an approx search and make a more definite search
+           with a worse runtime.
         */
         
         Set<PairInt> allExpectedPoints = getAllPoints(expected);
