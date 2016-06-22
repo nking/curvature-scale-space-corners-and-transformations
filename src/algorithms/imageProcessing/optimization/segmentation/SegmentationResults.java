@@ -129,7 +129,8 @@ public class SegmentationResults {
            and each insert into sorted vector is O(lg_2(k)).
            so the maximum runtime complexity is O(24 * lg_2(k)).
            for k=3 --> O(38)
-        (2) use XFastTries for predecessor and successor
+        (2) this is incomplete search, so needs edits...
+            use XFastTries for predecessor and successor
             searches over x and y separately, then
             look for which results within dMax are a valid
             (x,y) pair in expected.perimeters.
@@ -142,7 +143,10 @@ public class SegmentationResults {
             so for k=3 and large image of 2048 --> O(22)
             and for an image closer to 400 x 600 --> O(20) so
             does not change much with increasing max dimension.
-        (3) ?
+        (3) KDTree range search at worst
+            is O(k * N^(1 - (1/k))).
+            for k = 3 and N = 10000 -> 1400
+            for k = 3 and N = 1000, -> 300
         
         Note that both of the above have a factor of
         N_perimeter_points not included in notes above.
@@ -169,7 +173,7 @@ public class SegmentationResults {
             for (PairInt p : perimeter) {
                 int x = p.getX();
                 int y = p.getY();
-                
+               
                 int nX = findClosest(x, xbt, dMax, xIdxs);
                 int nY = findClosest(y, ybt, dMax, yIdxs);
                 
