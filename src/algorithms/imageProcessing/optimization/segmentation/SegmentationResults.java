@@ -129,7 +129,7 @@ public class SegmentationResults {
            and each insert into sorted vector is O(lg_2(k)).
            so the maximum runtime complexity is O(24 * lg_2(k)).
            for k=3 --> O(38)
-        (2) this is incomplete search, so needs edits...
+        (2) this is an incomplete search, so needs edits...
             use XFastTries for predecessor and successor
             searches over x and y separately, then
             look for which results within dMax are a valid
@@ -147,7 +147,8 @@ public class SegmentationResults {
             is O(k * N^(1 - (1/k))).
             for k = 3 and N = 10000 -> 1400
             for k = 3 and N = 1000, -> 300
-        
+        (4) Quadtree or other spatial indexing structure
+            ...
         Note that both of the above have a factor of
         N_perimeter_points not included in notes above.
         */
