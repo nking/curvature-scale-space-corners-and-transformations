@@ -142,6 +142,7 @@ public class SegmentationResults {
             so for k=3 and large image of 2048 --> O(22)
             and for an image closer to 400 x 600 --> O(20) so
             does not change much with increasing max dimension.
+        (3) ?
         
         Note that both of the above have a factor of
         N_perimeter_points not included in notes above.
@@ -158,10 +159,7 @@ public class SegmentationResults {
         
         XFastTrie<XFastTrieNode<Integer>, Integer> ybt
             = loadWithYPoints();
-        
-        // r.t. complexity is m*m + O(2*m*lg_2(w)), 
-        // so approx O(21) for maxDimension = 2048
-        // or 
+         
         int m = 3;
         int[] xIdxs = new int[m];
         int[] yIdxs = new int[m];
@@ -178,7 +176,7 @@ public class SegmentationResults {
                 for (int i = 0; i < nX; ++i) {
                     int x2 = xIdxs[i];
                     for (int j = 0; j < nY; ++j) {
-                        int y2 = yIdxs[i];
+                        int y2 = yIdxs[j];
                         PairInt p2 = new PairInt(x2, y2);
                         if (allExpectedPoints.contains(p2)) {
         
