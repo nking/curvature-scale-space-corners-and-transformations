@@ -179,11 +179,15 @@ public class VoronoiFortunesSweep {
     }
     
     /*
-     * implicit parameters: nsites, sqrt_nsites, xmin, xmax, ymin, ymax, deltax,
-     * deltay (can all be estimates). Performance suffers if they are wrong;
-     * better to make nsites, deltax, and deltay too big than too small. (?)
+       implicit parameters: nsites, sqrt_nsites, 
+       xmin, xmax, ymin, ymax, deltax,
+       deltay (can all be estimates). 
+       Performance suffers if they are wrong;
+       better to make nsites, deltax, 
+       and deltay too big than too small. (?)
      */
     private boolean voronoi() {
+        
         Site newsite, bot, top, temp, p;
         Site v;
         PairFloat newintstar = null;
@@ -223,7 +227,6 @@ public class VoronoiFortunesSweep {
                 rbnd = lbnd.ELright;
                 
                 // if this halfedge has no edge,bot =bottom site 
-                //(whatever that is)
                 bot = rightReg(lbnd);
                 
                 // create a new edge that bisects
@@ -537,8 +540,7 @@ public class VoronoiFortunesSweep {
         //  instead of a linked list
         //  and use binarySearch and the comparator with
         //  a small scan to find the last node matching
-        // the criteria.  still reading on other options
-        // such as MLB ...
+        // the criteria.
         while ((next = last.PQnext) != null
             && (he.ystar > next.ystar
                || (he.ystar == next.ystar

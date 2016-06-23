@@ -23,7 +23,7 @@ public class VoronoiFortunesSweepTest extends TestCase {
     public VoronoiFortunesSweepTest() {
     }
     
-    public void est0() throws FileNotFoundException, IOException {
+    public void test0() throws FileNotFoundException, IOException {
         
         int nCities = 129;
         float[] x = new float[nCities];
@@ -182,7 +182,7 @@ public class VoronoiFortunesSweepTest extends TestCase {
         }
         plotter.addPlot(xPolygon, yPolygon, 
             xPolygon, yPolygon, "edhes");
-        String filePath = plotter.writeFile();
+        String filePath = plotter.writeFile2();
         System.out.println("wrote file=" + filePath);
     }
 }
