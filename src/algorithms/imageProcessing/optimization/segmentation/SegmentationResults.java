@@ -2,13 +2,17 @@ package algorithms.imageProcessing.optimization.segmentation;
 
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.imageProcessing.FixedSizeSortedIntVector;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.search.KNearestNeighbors2D;
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,15 +124,16 @@ public class SegmentationResults {
         matrix input for the min cost bipartite matching.
         
         choices are:
+        
         (1) for each point in a boundary in perimeters,
-           iteratate over a region x += dMax and y +- dMax
-           and test membership in expected.perimeters set.
-           can use a fixedsortedintvector to keep the top k
-           (smallest distances).
-           For dMax = 2, the scan over neighbors is O(24)
-           and each insert into sorted vector is O(lg_2(k)).
-           so the maximum runtime complexity is O(24 * lg_2(k)).
-           for k=3 --> O(38)
+            iteratate over a region x += dMax and y +- dMax
+            and test membership in expected.perimeters set.
+            can use a fixedsortedintvector to keep the top k
+            (smallest distances).
+            For dMax = 2, the scan over neighbors is O(24)
+            and each insert into sorted vector is O(lg_2(k)).
+            so the maximum runtime complexity is O(24 * lg_2(k)).
+            for k=3 --> O(38)
         (2) this is an incomplete search, so needs edits...
             use XFastTries for predecessor and successor
             searches over x and y separately, then
@@ -154,59 +159,33 @@ public class SegmentationResults {
         (4) Fractional Cascading
             a range query runtime complexity is O(log_2(N) + k)
         
-       ==> will implement a Fractional Cascding layered tree
-           And, encapsulate the XFastTrie search to make
-           an approx search and make a more definite search
-           with a worse runtime.
+        ==> will implement a Fractional Cascding layered tree
+            And, encapsulate the XFastTrie search to make
+            an approx search and make a more definite search
+            with a worse runtime.
         */
         
         Set<PairInt> allExpectedPoints = getAllPoints(expected);
-          
-        int n1 = nPerimeterPoints;
-        int n2 = allExpectedPoints.size();
-        float[][] cost = new float[n1][n2];        
-        
-        XFastTrie<XFastTrieNode<Integer>, Integer> xbt
-            = loadWithXPoints();
-        
-        XFastTrie<XFastTrieNode<Integer>, Integer> ybt
-            = loadWithYPoints();
+
+        TObjectIntMap<PairInt> indexes1 = 
+            new TObjectIntHashMap<PairInt>();
+        int n1 = 0;
+        TObjectIntMap<PairInt> indexes2 = 
+            new TObjectIntHashMap<PairInt>();
+        int n2 = 0;
          
-        int m = 3;
-        int[] xIdxs = new int[m];
-        int[] yIdxs = new int[m];
+        int k = 3;
         
         for (Set<PairInt> perimeter : expected.perimeters) {
         
             for (PairInt p : perimeter) {
                 int x = p.getX();
                 int y = p.getY();
-               
-                int nX = findClosest(x, xbt, dMax, xIdxs);
-                int nY = findClosest(y, ybt, dMax, yIdxs);
                 
-                for (int i = 0; i < nX; ++i) {
-                    int x2 = xIdxs[i];
-                    for (int j = 0; j < nY; ++j) {
-                        int y2 = yIdxs[j];
-                        PairInt p2 = new PairInt(x2, y2);
-                        if (allExpectedPoints.contains(p2)) {
-        
-                            int diffX = x2 - x;
-                            int diffY = y2 - y;
-                            int distSq = (diffX * diffX) + (diffY * diffY);
-                            if (distSq > dMaxSq) {
-                                continue;
-                            }
-                            
-                            /*
-                            store in cost matrix... need indexed points
-                            */
-                        }
-                    }
-                }
             }
         }
+        
+        float[][] cost = new float[n1][n2];
         
         //TODO: return fMeasure
         return 1;
@@ -481,98 +460,7 @@ public class SegmentationResults {
         }
         
         return n;
-    }
-
-    private XFastTrie<XFastTrieNode<Integer>, Integer> loadWithXPoints() {
-        
-        int xW = 1 + (int)(Math.floor(Math.log(maxX)/Math.log(2)));
-        
-        Integerizer<Integer> it = new Integerizer<Integer>() {
-            @Override
-            public int intValue(Integer x) {
-                return x;
-            }
-        };
-        
-        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
-        
-        XFastTrie<XFastTrieNode<Integer>, Integer> xbt = 
-            new XFastTrie<XFastTrieNode<Integer>, Integer>(
-            node, it, xW);
-        
-        for (Set<PairInt> set : perimeters) {
-            for (PairInt p : set) {
-                int x = p.getX();
-                xbt.add(Integer.valueOf(x));
-            }
-        }
-        
-        return xbt;
-    }
-    
-    private XFastTrie<XFastTrieNode<Integer>, Integer> 
-        loadWithYPoints() {
-        
-        int yW = 1 + (int)(Math.floor(Math.log(maxY)/Math.log(2)));
-        
-        Integerizer<Integer> it = new Integerizer<Integer>() {
-            @Override
-            public int intValue(Integer x) {
-                return x;
-            }
-        };
-        
-        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
-        
-        XFastTrie<XFastTrieNode<Integer>, Integer> ybt = 
-            new XFastTrie<XFastTrieNode<Integer>, Integer>(
-            node, it, yW);
-        
-        for (Set<PairInt> set : perimeters) {
-            for (PairInt p : set) {
-                int y = p.getY();
-                ybt.add(Integer.valueOf(y));
-            }
-        }
-        
-        return ybt;
-    }
-
-    private int findClosest(int value, 
-        XFastTrie<XFastTrieNode<Integer>, Integer> bt, 
-        int dMax, int[] output) {
-        
-        Integer vIndex = Integer.valueOf(value);
-       
-        int k = output.length;
-        
-        int n = 0;
-        Integer v0 = bt.find(vIndex);
-        if (v0 != null) {
-            output[n] = v0.intValue();
-            n++;
-        }
-        
-        v0 = vIndex;
-        for (int i = 0; i < k/2; ++k) {
-            v0 = bt.predecessor(v0);
-            if (v0 == null || v0.intValue() > dMax) {
-                break;
-            } 
-            output[n] = v0.intValue();
-            n++;
-        }
-        v0 = vIndex;
-        for (int i = 0; i < (k - n); ++k) {
-            v0 = bt.successor(v0);
-            if (v0 == null || v0.intValue() > dMax) {
-                break;
-            } 
-            output[n] = v0.intValue();
-            n++;
-        }
-        return n;
-    }
+    }    
 
     private Set<PairInt> getAllPoints(SegmentationResults expected) {
 
