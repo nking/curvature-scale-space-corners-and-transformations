@@ -572,6 +572,21 @@ public class MultiArrayMergeSortTest extends TestCase {
         assertTrue(Arrays.equals(expectedC, c));
     }
     
+    public void testSortBy1stArg_2() throws Exception {
+        
+        float[] a = new float[]{6, 5, 4, 3, 2, 1};
+    	float[] b = new float[]{0, 1, 2, 3, 4, 5};
+
+    	MultiArrayMergeSort.sortBy1stArg(a, b);
+    	assertTrue(a.length == b.length);
+
+    	float[] expectedA = new float[]{1, 2, 3, 4, 5, 6};
+        float[] expectedB = new float[]{5, 4, 3, 2, 1, 0};
+        
+        assertTrue(Arrays.equals(expectedA, a));
+        assertTrue(Arrays.equals(expectedB, b));
+    }
+    
     /**
      * Test suite
      * @return static Test

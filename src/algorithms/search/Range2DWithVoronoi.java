@@ -17,13 +17,15 @@ public class Range2DWithVoronoi {
      then have a list of edges containing site pairs
      and can retrieve the list of sites
     
-     map a map w/ key site indexes and value = edges.
+     make a map w/ key site indexes and value = pther site index.
     
      The sites are already ordered by x and y so use
      those for input to anything else.
         
      -> to find nearest site, could make an alternate constructor
      for kd tree to accept sorted x,y.
+     (see divide and conquer for closest points...there,
+     the sorts for x and y partitions are minimized)
     
      when find closest site,
        then examine all of its edges
