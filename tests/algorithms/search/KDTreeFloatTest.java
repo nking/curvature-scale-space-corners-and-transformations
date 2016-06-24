@@ -30,7 +30,7 @@ public class KDTreeFloatTest extends TestCase {
 		
 	}
     
-    public void est2() {
+    public void test2() {
         
 		float[] x = new float[] {5, 5, 9, 3, 4, 1, 7, 2};
     	float[] y = new float[] {5, 5, 6, 6, 9, 1, 9, 9};

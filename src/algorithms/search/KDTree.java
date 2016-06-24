@@ -4,6 +4,7 @@ import algorithms.QuickSort;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Arrays;
 
 /**
  * k-dimension tree is a binary tree used to store coordinates for quick nearest
@@ -12,51 +13,17 @@ import java.util.Set;
  *    -- the meaning of an internal node depends upon the depth of the
  *       node within the tree.
  *       
- * Note that learning the true medium while constructing the tree takes more
+ * Note that learning the true medium while 
+ * constructing the tree takes more
  * time, but leads to a better balanced tree.
  * 
  * adapted from pseudocode from
  * http://ldots.org/kdtree which licenses the content as:
  * http://creativecommons.org/licenses/by-sa/2.0/
  * 
- * 
- *  Memory requirements:
- *    
- *        array arguments allocated elsewhere and modifed in this class (but not copied):
- *            x:  8 bytes for a reference to array location, then 4*N bytes for items
- *            y:  8 bytes for a reference to array location, then 4*N bytes for items
- *            arrays total = 2 * (8 + 4*N)
- *                         = 8N + 16 bytes   where N is the number of points (point is one x,y pair)
- *                         
- *        KDTreeNodes:  16 bytes for each object + 2 int = 8 bytes = 24 bytes.
- *                      * Each node has 3 references = 24 bytes, for total = 48 bytes
- *                      * A leaf will have one reference = 8 bytes, for total = 32 bytes.
- *                      * A root will have 2 references = 16 bytes, for total = 40 bytes.
- *                      (the total for a class has to round up to an 8 byte multiple too if needed.)
- *                      A tree has 1 root, and <= 2^(height-1) leaves.
- *                      where height = log_2(N+1).
- *                      
- *                      *
- *                  *       *
- *                *  *    *   *
- *               **  **  **   **    
- *                   height = 3, leafs = 4
- *                   height = 4, leafs = 8  <=== 2^(height-1)
- *                      
- *                   nleafs = 2^(height-1) = 2**( log_2(N+1) - 1) = N/2
- *                   
- *                   256 nodes, have height = 8 and nleafs = 128
- *                   
- *            tree memory total = 40 + nleafs*32  + nnodes*48 
- *                              = 40 + (N/2)*32 + (N-N/2-1)*32
- *                              = 40 + 16*N + (N/2 - 1)*32
- *                              = 40 + 32N - 32
- *                              = 32N + 8 bytes
- *                              
- *            
- *            Tree + arguments given to tree:
- *                  8N + 16 bytes + 32N + 8 = 40*N + 24 bytes
- *        
+ * useful reading regarding best distances in nearest neighbor search:
+ *    http://web.stanford.edu/class/cs106l/handouts/assignment-3-kdtree.pdf
+ *     
  * @author nichole
  */
 public class KDTree {
@@ -80,8 +47,13 @@ public class KDTree {
 	    
 		int lastUsableIndex = reduceToUniqueWithMoveUp(x, y);
 
+        if (lastUsableIndex < (x.length - 1)) {
+            x = Arrays.copyOf(x, lastUsableIndex + 1);
+            y = Arrays.copyOf(y, lastUsableIndex + 1);
+        }
+
         this.root = buildTree(0, x, y, 0, lastUsableIndex);
-	}
+    }
 
 	public KDTreeNode getRoot() {
 		return root;
@@ -169,7 +141,7 @@ public class KDTree {
 		int index = startSortRange + (n >> 1); // rounds towards zero
 		int yMedian = y[index];
 		while ((index+1) < stopSortRangeExclusive) {
-			if (x[index + 1] == yMedian) {
+			if (y[index + 1] == yMedian) {
 				index++;
 			} else {
 				break;
@@ -189,7 +161,7 @@ public class KDTree {
 	 * @return
 	 */
 	protected KDTreeNode buildTree(int depth, int[] x, int[] y, int startSortRange, int stopSortRangeExclusive) {
-				
+
 		if (x == null || y == null || x.length == 0 || y.length == 0) {
 			return null;
 		}
@@ -240,41 +212,113 @@ public class KDTree {
 	    
 	    return parent;
 	}
-	
+    
+    private KDTreeNode bestNode = null;
+    private double bestDist = Double.MAX_VALUE;
+        
 	public KDTreeNode findNearestNeighbor(int x, int y) {
-		return nearestNeighborSearch(root, x, y);
+        bestNode = null;
+        bestDist = Double.MAX_VALUE;
+        return nearestNeighborSearch(root, x, y, 0);
 	}
 	
-	protected KDTreeNode nearestNeighborSearch(KDTreeNode tree, int leftValue, int rightValue) {
-		if ( tree.nChildren == 0 ) {
+	protected KDTreeNode nearestNeighborSearch(KDTreeNode tree, int leftValue, 
+        int rightValue, int depth) {
+		
+        if (tree.nChildren == 0 ) {
 			return tree;
 		}
 		
 		int medianValue = tree.getKey();
 		
-		KDTreeNode subTree;
+		float diffMedValSq;
 		
-		if (leftValue < medianValue) {
-			subTree = tree.left;
-		} else {
-			subTree = tree.right;
-		}
+		KDTreeNode subTree1, subTree2;
+
+        if ((depth & 1) == 0) {
+            diffMedValSq = medianValue - leftValue;
+            if (leftValue <= medianValue) {
+                subTree1 = tree.left;
+                subTree2 = tree.right;
+            } else {
+                subTree1 = tree.right;
+                subTree2 = tree.left;
+            }
+        } else {
+            diffMedValSq = medianValue - rightValue;
+            if (rightValue <= medianValue) {
+                subTree1 = tree.left;
+                subTree2 = tree.right;
+            } else {
+                subTree1 = tree.right;
+                subTree2 = tree.left;
+            }
+        }
+        diffMedValSq *= diffMedValSq;
+	
+        KDTreeNode retVal1 = nearestNeighborSearch(
+            subTree1, leftValue, rightValue, depth + 1);
 		
-		// swap left and right values
-		KDTreeNode retVal = nearestNeighborSearch(subTree, rightValue, leftValue);
-		
-		if (retVal == null) {
-			if (tree.left == null) {
-				subTree = tree.right;
-			} else if (tree.right == null) {
-				subTree = tree.left;
-			}
-			retVal = nearestNeighborSearch(subTree, rightValue, leftValue);
-		}
-		
-		return retVal;
-	}
-        		
+        double dist1 = Double.MAX_VALUE;
+        if (retVal1 != null) {
+            dist1 = distanceSq(retVal1, leftValue, rightValue);
+            // TODO: consider a tolerance
+            if (dist1 == 0) {
+                // this is the point
+                bestDist = dist1;
+                bestNode = retVal1;
+                return retVal1;
+            }
+        }
+        
+        System.out.println("dist1=" + dist1 
+            + "  med-key="+ diffMedValSq + 
+            "  bestdist=" + bestDist);
+        
+        //TODO: this may need to be revised for a radius.
+        //   basically, if (leftValue, rightValue) is closer to
+        //      the median than it is to retVal1,
+        //      search the other tree too.
+        
+		if ((2*diffMedValSq) < dist1) {
+            
+			KDTreeNode retVal2 = nearestNeighborSearch(
+                subTree2, leftValue, rightValue, depth + 1);
+            
+            double dist2 = Double.MAX_VALUE;
+            if (retVal2 != null) {
+                dist2 = distanceSq(retVal2, leftValue, rightValue);
+                // TODO: consider a tolerance
+                if (dist2 == 0) {
+                    // this is the point
+                    bestDist = dist2;
+                    bestNode = retVal2;
+                    return bestNode;
+                }
+                if (dist2 < dist1) {
+                    dist1 = dist2;
+                    retVal1 = retVal2;
+                }
+            }
+        }
+        
+        if (dist1 < bestDist) {
+            bestDist = dist1;
+            bestNode = retVal1;
+        }
+        
+		return bestNode;
+    }
+    
+    private double distanceSq(KDTreeNode tree, 
+        float leftValue, float rightValue) {
+
+        float diffX = tree.getX() - leftValue;
+        float diffY = tree.getY() - rightValue;
+        
+        return (diffX * diffX) + (diffY * diffY);
+    }
+    
 	public void printTree() {
 		printTree(root, " ");
 	}

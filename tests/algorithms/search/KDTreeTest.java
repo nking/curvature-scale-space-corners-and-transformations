@@ -204,14 +204,27 @@ public class KDTreeTest extends TestCase {
     	int[] y = new int[] {1, 5, 6, 6, 9, 0, 9, 9};
     	
     	KDTree kdtree = new KDTree(x, y);
-    	KDTreeNode node = kdtree.findNearestNeighbor(5, 7);
+    	KDTreeNode node = kdtree.findNearestNeighbor(6, 8);
     	assertNotNull(node);
-    	assertTrue(node.x == 7);
-    	assertTrue(node.y == 9);
+    	assertEquals(7, node.x);
+    	assertEquals(9, node.y);
     }
+    	
+    public void test3() {
+        
+		int[] x = new int[] {5, 5, 9, 13, 14, 21, 27, 32};
+    	int[] y = new int[] {5, 5, 6,  6,  9,  1,  9,  9};
+    	
+        KDTree kdTree = new KDTree(x, y);
+    	
+        kdTree.printTree();
+        
+        KDTreeNode node = kdTree.findNearestNeighbor(12, 7);
+    	assertNotNull(node);
+    	assertEquals(13, node.x);
+    	assertEquals(6, node.y);
+	}
     
-	
-	
     /**
      * Test suite
      * @return static Test
