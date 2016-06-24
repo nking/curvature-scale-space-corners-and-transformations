@@ -20,6 +20,11 @@ public class NearestNeighbor2DUsingDistTrans {
       - *NOTE that the runtime complexity for calculating the
          distance transform is then max x times max y,
          so this method should not be used on very large axes data.
+         - it's primarily interesting as an efficient means of
+           calculating distances for elongated data
+           (when shorter on one axis, the runtime complexity is
+           possibly better than the O(N^2) of brute force or the
+           O(N*log_2(N)) of a kdtree...for kNN queries setup).
     - calculate distance transform.
     
     - nn queries:
