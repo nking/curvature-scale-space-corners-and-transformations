@@ -11,6 +11,8 @@ import java.util.Set;
 /**
  * k-dimension tree is a binary tree used to store coordinates for quick nearest
  * neighbor or range searches.
+ * This one is a 2D tree only.
+ * 
  *    -- values are always stored in leaves
  *    -- the meaning of an internal node depends upon the depth of the
  *       node within the tree.
@@ -53,6 +55,9 @@ public class KDTreeFloat {
             xPoints = Arrays.copyOf(xPoints, lastUsableIndex + 1);
             yPoints = Arrays.copyOf(yPoints, lastUsableIndex + 1);
         }
+        
+        //TODO: to better handle space for large number of points,
+        //  could change out the merge sorts for quick sorts
         
         if (!alreadySorted) {
             MultiArrayMergeSort.sortBy1stArgThen2nd(xPoints, yPoints);
@@ -267,10 +272,7 @@ public class KDTreeFloat {
             }
         }
         diffMedValSq *= diffMedValSq;
-	
-  System.out.println("\n medianValue=" + medianValue);
-  printTree(subTree1, " ");
-        
+	 
 		KDTreeNodeFloat retVal1 = nearestNeighborSearch(
             subTree1, leftValue, rightValue, depth + 1);
 		
@@ -286,14 +288,14 @@ public class KDTreeFloat {
             }
         }
         
-        System.out.println("dist1=" + dist1 
-            + "  med-key="+ diffMedValSq + 
-            "  bestdist=" + bestDist);
+        //System.out.println("dist1=" + dist1 
+        //    + "  med-key="+ diffMedValSq + 
+        //    "  bestdist=" + bestDist);
         
         //TODO: this may need to be revised for a radius.
         //   basically, if (leftValue, rightValue) is closer to
         //      the median than it is to retVal1,
-        //      search the other tree too.
+        //      search subtree2 too.
         
 		if ((2*diffMedValSq) < dist1) {
 			KDTreeNodeFloat retVal2 = nearestNeighborSearch(
