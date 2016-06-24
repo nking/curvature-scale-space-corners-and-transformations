@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 /**
- * A voronai diagram is a partitioning of points
+ * A voroni diagram is a partitioning of points
  * into cells defined by seed centers.  The cells
  * edges are defined as perpendicular bisectors
  * between 2 seeds, which results in the cells 
@@ -71,30 +71,30 @@ public class VoronoiFortunesSweep {
     private static int LE = 0;
     private static int RE = 1;
 
-	private HalfEdge ELleftend = null;
+    private HalfEdge ELleftend = null;
     private HalfEdge ELrightend = null;
-	private int ELhashsize;
-	private float xmin, xmax, ymin, ymax, deltax, deltay;
+    private int ELhashsize;
+    private float xmin, xmax, ymin, ymax, deltax, deltay;
 
-	private Site[] sites = null;
-	private int nSites = 0;
-	private int siteIdx = 0;
-	private int sqrtNSites;
-	private int nVertices = 0;
-	private int nEdges = 0;
+    private Site[] sites = null;
+    private int nSites = 0;
+    private int siteIdx = 0;
+    private int sqrtNSites;
+    private int nVertices = 0;
+    private int nEdges = 0;
     
     private Site bottomsite;
 	
-	private int	PQcount;
-	private int	PQmin;
+    private int	PQcount;
+    private int	PQmin;
     private int PQhashsize;
     private HalfEdge[] PQhash;
 
-	private float borderMinX, borderMaxX, borderMinY, borderMaxY;
+    private float borderMinX, borderMaxX, borderMinY, borderMaxY;
 
-	private LinkedList<GraphEdge> allEdges = null;
+    private LinkedList<GraphEdge> allEdges = null;
 
-	private float minDistanceBetweenSites = 0;
+    private float minDistanceBetweenSites = 0;
     
     private HalfEdge[] ELhash = null;
     
@@ -398,7 +398,6 @@ public class VoronoiFortunesSweep {
     }
     
     private class Site {
-        // consider changing to ints w/ PairInt
         PairFloat coord;
         int	sitenbr;
 	    int	refcnt;
