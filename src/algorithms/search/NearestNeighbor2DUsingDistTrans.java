@@ -25,6 +25,8 @@ public class NearestNeighbor2DUsingDistTrans {
            (when shorter on one axis, the runtime complexity is
            possibly better than the O(N^2) of brute force or the
            O(N*log_2(N)) of a kdtree...for kNN queries setup).
+           the better performance for elongated data suggests this is useful
+           for some LDA problems.
     - calculate distance transform.
     
     - nn queries:
