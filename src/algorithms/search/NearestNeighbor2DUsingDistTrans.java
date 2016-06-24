@@ -9,6 +9,10 @@ package algorithms.search;
 public class NearestNeighbor2DUsingDistTrans {
     
     /*
+    
+    NOTE: can only be used to search for a point
+    that does not exist in the original set of points.
+    
     - accepts integer arrays of x and y
     - transforms if needed to make sure there is at least
       a gap of 1 between each point.
