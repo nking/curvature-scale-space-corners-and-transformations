@@ -229,25 +229,58 @@ public class KDTreeFloat {
 		return index;
 	}	
     
-    private KDTreeNodeFloat bestNode = null;
+    private Set<KDTreeNodeFloat> bestNode = null;
     private double bestDist = Double.MAX_VALUE;
+
+    /**
+     * find the nearest neighbor, and if it is equidistant to
+     * others, return those too.
+     * Note that in the worse case, a brute force search over
+     * all members would be faster than this which can follow
+     * each branch if the equidistant points are left and
+     * right of root and close to equidistant to the median split for each level.
+     * @param x
+     * @param y
+     * @return 
+     */
+	public Set<PairFloat> findNearestNeighbor(float x, float y) {
         
-	public KDTreeNodeFloat findNearestNeighbor(float x, float y) {
-        bestNode = null;
+        bestNode = new HashSet<KDTreeNodeFloat>();
         bestDist = Double.MAX_VALUE;
-        return nearestNeighborSearch(root, x, y, 0);
+        
+        Set<KDTreeNodeFloat> nodes = 
+            nearestNeighborSearch(root, x, y, 0);
+        
+        if (nodes == null || nodes.size() == 0) {
+            return null;
+        }
+        
+        Set<PairFloat> set = new HashSet<PairFloat>(nodes.size());
+        for (KDTreeNodeFloat node : nodes) {
+            PairFloat p = new PairFloat(node.getX(), node.getY());    
+            set.add(p);
+        }
+        return set;
 	}
-	
-	protected KDTreeNodeFloat nearestNeighborSearch(
+
+	protected Set<KDTreeNodeFloat> nearestNeighborSearch(
         KDTreeNodeFloat tree, float leftValue, float rightValue,
         int depth) {
-        
+ 
 		if (tree.nChildren == 0 ) {
-			return tree;
+            double dist = distanceSq(tree, leftValue, rightValue);
+			if (dist == bestDist) {
+                bestNode.add(tree);
+            } else if (dist < bestDist) {
+                bestNode.clear();
+                bestDist = dist;
+                bestNode.add(tree);
+            }
+            return bestNode;
 		}
         
 		float medianValue = tree.getKey();
-        
+
         float diffMedValSq;
 		
 		KDTreeNodeFloat subTree1, subTree2;
@@ -273,12 +306,17 @@ public class KDTreeFloat {
         }
         diffMedValSq *= diffMedValSq;
 	 
-		KDTreeNodeFloat retVal1 = nearestNeighborSearch(
-            subTree1, leftValue, rightValue, depth + 1);
-		
+        Set<KDTreeNodeFloat> retVal1 = null;
+        if (!subTree1.visited) {
+		    retVal1 = nearestNeighborSearch(
+                subTree1, leftValue, rightValue, depth + 1);
+		    subTree1.visited = true;
+        }
+        
         double dist1 = Double.MAX_VALUE;
-        if (retVal1 != null) {
-            dist1 = distanceSq(retVal1, leftValue, rightValue);
+        if (retVal1 != null && !retVal1.isEmpty()) {
+            dist1 = distanceSq(retVal1.iterator().next(), 
+                leftValue, rightValue);
             // TODO: consider a tolerance
             if (dist1 == 0) {
                 // this is the point
@@ -288,22 +326,25 @@ public class KDTreeFloat {
             }
         }
         
-        //System.out.println("dist1=" + dist1 
-        //    + "  med-key="+ diffMedValSq + 
-        //    "  bestdist=" + bestDist);
-        
         //TODO: this may need to be revised for a radius.
         //   basically, if (leftValue, rightValue) is closer to
         //      the median than it is to retVal1,
         //      search subtree2 too.
         
-		if ((2*diffMedValSq) < dist1) {
-			KDTreeNodeFloat retVal2 = nearestNeighborSearch(
+     System.out.println("dist1=" + dist1 + " (med-val)=" + diffMedValSq
+     + " best=" + bestDist);        
+        
+		if (!subTree2.visited && diffMedValSq < dist1) {
+			
+            Set<KDTreeNodeFloat> retVal2 = nearestNeighborSearch(
                 subTree2, leftValue, rightValue, depth + 1);
             
+            subTree2.visited = true;
+            
             double dist2 = Double.MAX_VALUE;
-            if (retVal2 != null) {
-                dist2 = distanceSq(retVal2, leftValue, rightValue);
+            if (retVal2 != null && !retVal2.isEmpty()) {
+                dist2 = distanceSq(retVal2.iterator().next(), 
+                    leftValue, rightValue);
                 // TODO: consider a tolerance
                 if (dist2 == 0) {
                     // this is the point
@@ -311,16 +352,27 @@ public class KDTreeFloat {
                     bestNode = retVal2;
                     return bestNode;
                 }
-                if (dist2 < dist1) {
+                if (dist2 == dist1) {
+                    if (dist1 == bestDist) {
+                        bestNode.addAll(retVal2);
+                    } else if (dist1 < bestDist) {
+                        bestNode.clear();
+                        bestDist = dist2;
+                        bestNode.addAll(retVal2);
+                    }
+                } else if (dist2 < dist1) {
                     dist1 = dist2;
                     retVal1 = retVal2;
                 }
             }
         }
         
-        if (dist1 < bestDist) {
+        if (dist1 == bestDist) {
+            bestNode.addAll(retVal1);
+        } else if (dist1 < bestDist && retVal1 != null) {
+            bestNode.clear();
             bestDist = dist1;
-            bestNode = retVal1;
+            bestNode.addAll(retVal1);
         }
         
 		return bestNode;

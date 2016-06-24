@@ -11,7 +11,8 @@ public class KDTreeNodeFloat {
 	float key = -1; // median value
 	int nChildren = 0;
     int depth = 0;
-
+    boolean visited = false;
+    
     /**
      * @return the x
      */
