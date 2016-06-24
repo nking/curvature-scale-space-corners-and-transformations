@@ -17,6 +17,9 @@ public class NearestNeighbor2DUsingDistTrans {
     - transforms if needed to make sure there is at least
       a gap of 1 between each point.
       - stores the scale factpr if any
+      - *NOTE that the runtime complexity for calculating the
+         distance transform is then max x times max y,
+         so this method should not be used on very large axes data.
     - calculate distance transform.
     
     - nn queries:
