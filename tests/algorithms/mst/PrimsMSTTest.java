@@ -3,10 +3,12 @@ package algorithms.mst;
 import algorithms.imageProcessing.DoubleLinkedCircularList;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import junit.framework.TestCase;
@@ -45,45 +47,45 @@ public class PrimsMSTTest extends TestCase {
          */
 
         int nVertexes = 9;
-        Map<Integer, Set<PairInt>> adjCostMap 
-            = new HashMap<Integer, Set<PairInt>>();
+        TIntObjectMap<Set<PairInt>> adjCostMap 
+            = new TIntObjectHashMap<Set<PairInt>>();
         
-        adjCostMap.put(Integer.valueOf(0), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(1, 4));
-        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(7, 8));
+        adjCostMap.put(0, new HashSet<PairInt>());
+        adjCostMap.get(0).add(new PairInt(1, 4));
+        adjCostMap.get(0).add(new PairInt(7, 8));
         
-        adjCostMap.put(Integer.valueOf(1), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(1)).add(new PairInt(0, 4));
-        adjCostMap.get(Integer.valueOf(1)).add(new PairInt(7, 11));
+        adjCostMap.put(1, new HashSet<PairInt>());
+        adjCostMap.get(1).add(new PairInt(0, 4));
+        adjCostMap.get(1).add(new PairInt(7, 11));
         
-        adjCostMap.put(Integer.valueOf(2), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(3, 7));
-        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(5, 4));
-        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(8, 2));
+        adjCostMap.put(2, new HashSet<PairInt>());
+        adjCostMap.get(2).add(new PairInt(3, 7));
+        adjCostMap.get(2).add(new PairInt(5, 4));
+        adjCostMap.get(2).add(new PairInt(8, 2));
         
-        adjCostMap.put(Integer.valueOf(3), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(3)).add(new PairInt(2, 7));
-        adjCostMap.get(Integer.valueOf(3)).add(new PairInt(4, 9));
-        adjCostMap.get(Integer.valueOf(3)).add(new PairInt(5, 14));
+        adjCostMap.put(3, new HashSet<PairInt>());
+        adjCostMap.get(3).add(new PairInt(2, 7));
+        adjCostMap.get(3).add(new PairInt(4, 9));
+        adjCostMap.get(3).add(new PairInt(5, 14));
         
-        adjCostMap.put(Integer.valueOf(4), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(4)).add(new PairInt(5, 10));
-        adjCostMap.get(Integer.valueOf(4)).add(new PairInt(3, 9));
+        adjCostMap.put(4, new HashSet<PairInt>());
+        adjCostMap.get(4).add(new PairInt(5, 10));
+        adjCostMap.get(4).add(new PairInt(3, 9));
         
-        adjCostMap.put(Integer.valueOf(5), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(5)).add(new PairInt(4, 10));
-        adjCostMap.get(Integer.valueOf(5)).add(new PairInt(2, 4));
-        adjCostMap.get(Integer.valueOf(5)).add(new PairInt(6, 2));
+        adjCostMap.put(5, new HashSet<PairInt>());
+        adjCostMap.get(5).add(new PairInt(4, 10));
+        adjCostMap.get(5).add(new PairInt(2, 4));
+        adjCostMap.get(5).add(new PairInt(6, 2));
         
-        adjCostMap.put(Integer.valueOf(6), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(6)).add(new PairInt(5, 2));
-        adjCostMap.get(Integer.valueOf(6)).add(new PairInt(7, 1));
+        adjCostMap.put(6, new HashSet<PairInt>());
+        adjCostMap.get(6).add(new PairInt(5, 2));
+        adjCostMap.get(6).add(new PairInt(7, 1));
         
-        adjCostMap.put(Integer.valueOf(7), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(0, 8));        
-        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(1, 11));
-        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(8, 7));
-        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(6, 1));
+        adjCostMap.put(7, new HashSet<PairInt>());
+        adjCostMap.get(7).add(new PairInt(0, 8));        
+        adjCostMap.get(7).add(new PairInt(1, 11));
+        adjCostMap.get(7).add(new PairInt(8, 7));
+        adjCostMap.get(7).add(new PairInt(6, 1));
       
         PrimsMST prims = new PrimsMST();
         prims.calculateMinimumSpanningTree(
@@ -132,27 +134,27 @@ public class PrimsMSTTest extends TestCase {
         assertEquals(2, mst.getNumberOfChildren());
         
         // map of expected parent and child keys
-        Map<Integer, Set<Integer>> expected = 
-            new HashMap<Integer, Set<Integer>>();
-        expected.put(Integer.valueOf(0), new HashSet<Integer>());
-        expected.get(Integer.valueOf(0)).add(Integer.valueOf(1));
-        expected.get(Integer.valueOf(0)).add(Integer.valueOf(7));
+        TIntObjectMap<TIntSet> expected 
+            = new TIntObjectHashMap<TIntSet>();
+        expected.put(0, new TIntHashSet());
+        expected.get(0).add(1);
+        expected.get(0).add(7);
         
-        expected.put(Integer.valueOf(7), new HashSet<Integer>());
-        expected.get(Integer.valueOf(7)).add(Integer.valueOf(6));
+        expected.put(7, new TIntHashSet());
+        expected.get(7).add(6);
         
-        expected.put(Integer.valueOf(6), new HashSet<Integer>());
-        expected.get(Integer.valueOf(6)).add(Integer.valueOf(5));
+        expected.put(6, new TIntHashSet());
+        expected.get(6).add(5);
         
-        expected.put(Integer.valueOf(5), new HashSet<Integer>());
-        expected.get(Integer.valueOf(5)).add(Integer.valueOf(2));
+        expected.put(5, new TIntHashSet());
+        expected.get(5).add(2);
         
-        expected.put(Integer.valueOf(2), new HashSet<Integer>());
-        expected.get(Integer.valueOf(2)).add(Integer.valueOf(8));
-        expected.get(Integer.valueOf(2)).add(Integer.valueOf(3));
+        expected.put(2, new TIntHashSet());
+        expected.get(2).add(8);
+        expected.get(2).add(3);
         
-        expected.put(Integer.valueOf(3), new HashSet<Integer>());
-        expected.get(Integer.valueOf(3)).add(Integer.valueOf(4));
+        expected.put(3, new TIntHashSet());
+        expected.get(3).add(4);
          
         // traverse the tree using pre-order traversal
         //  root then left to right children
@@ -187,13 +189,13 @@ public class PrimsMSTTest extends TestCase {
         HeapNode node = mst;
         HeapNode parentNode = null;
         Stack<HeapNode> stack = new Stack<HeapNode>();
-        Set<Integer> visited = new HashSet<Integer>();
+        TIntSet visited = new TIntHashSet();
         while (!stack.isEmpty() || (node != null)) {
             if (node != null) {
 
                 // process node: add to visited and 
                 // remove all node->children values in expectedMap
-                Integer index = Integer.valueOf((int)node.getKey());
+                int index = (int)node.getKey();
                 
                 visited.add(index);
                 
@@ -205,7 +207,7 @@ public class PrimsMSTTest extends TestCase {
                     // and remove from expected map
                     HeapNode nodeC = children.getSentinel().getRight();
                     node = nodeC;
-                    Integer indexC = Integer.valueOf((int)nodeC.getKey());
+                    int indexC = (int)nodeC.getKey();
                     
                     assertTrue(expected.containsKey(index));
                     assertTrue(expected.get(index).remove(indexC));
@@ -217,7 +219,7 @@ public class PrimsMSTTest extends TestCase {
                         nodeC = nodeC.getRight();
                         stack.add(nodeC);
                         
-                        indexC = Integer.valueOf((int)nodeC.getKey());
+                        indexC = (int)nodeC.getKey();
                        
                         assertTrue(expected.containsKey(index));
                         assertTrue(expected.get(index).remove(indexC));
@@ -230,10 +232,10 @@ public class PrimsMSTTest extends TestCase {
                 }
             } else {
                 node = stack.pop();
-                Integer index = Integer.valueOf((int)node.getKey());
+                int index = (int)node.getKey();
                 while (visited.contains(index)) {
                     node = stack.pop();
-                    index = Integer.valueOf((int)node.getKey());
+                    index = (int)node.getKey();
                 }
             }
         }
@@ -270,28 +272,28 @@ public class PrimsMSTTest extends TestCase {
          */
 
         int nVertexes = 9;
-        Map<Integer, Set<PairInt>> adjCostMap 
-            = new HashMap<Integer, Set<PairInt>>();
+        TIntObjectMap<Set<PairInt>> adjCostMap 
+            = new TIntObjectHashMap<Set<PairInt>>();
         
-        adjCostMap.put(Integer.valueOf(0), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(1, 4));
-        adjCostMap.get(Integer.valueOf(0)).add(new PairInt(7, 8));
+        adjCostMap.put(0, new HashSet<PairInt>());
+        adjCostMap.get(0).add(new PairInt(1, 4));
+        adjCostMap.get(0).add(new PairInt(7, 8));
         
-        adjCostMap.put(Integer.valueOf(2), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(3, 7));
-        adjCostMap.get(Integer.valueOf(2)).add(new PairInt(8, 2));
+        adjCostMap.put(2, new HashSet<PairInt>());
+        adjCostMap.get(2).add(new PairInt(3, 7));
+        adjCostMap.get(2).add(new PairInt(8, 2));
         
-        adjCostMap.put(Integer.valueOf(3), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(3)).add(new PairInt(4, 9));
+        adjCostMap.put(3, new HashSet<PairInt>());
+        adjCostMap.get(3).add(new PairInt(4, 9));
         
-        adjCostMap.put(Integer.valueOf(5), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(5)).add(new PairInt(2, 4));
+        adjCostMap.put(5, new HashSet<PairInt>());
+        adjCostMap.get(5).add(new PairInt(2, 4));
         
-        adjCostMap.put(Integer.valueOf(6), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(6)).add(new PairInt(5, 2));
+        adjCostMap.put(6, new HashSet<PairInt>());
+        adjCostMap.get(6).add(new PairInt(5, 2));
         
-        adjCostMap.put(Integer.valueOf(7), new HashSet<PairInt>());
-        adjCostMap.get(Integer.valueOf(7)).add(new PairInt(6, 1));
+        adjCostMap.put(7, new HashSet<PairInt>());
+        adjCostMap.get(7).add(new PairInt(6, 1));
       
         PrimsMST prims = new PrimsMST();
         prims.calculateMinimumSpanningTree(
