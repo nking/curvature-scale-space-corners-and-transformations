@@ -545,14 +545,14 @@ public class VoronoiFortunesSweep {
         he.ystar = (v.coord.getY() + offset);
         last = PQhash[PQBucket(he)];
   
-        // NOTE: for the cases where the number
+        // TODO: for the cases where the number
         //  of items in the linked list is getting
         //  large enough that this is not approx O(1),
         //  could initialize a specialized comparator
         //  with v.coord.getX()
-        //  and store the nodes as an array in this bin
+        //  and store the nodes in a java LinkedList in this bin
         //  instead of a linked list
-        //  and use binarySearch and the comparator with
+        //  and use Collections.binarySearch and the comparator with
         //  a small scan to find the last node matching
         // the criteria.
         while ((next = last.PQnext) != null
