@@ -221,14 +221,12 @@ public class KDTree {
         bestDist = Double.MAX_VALUE;
         
         KDTreeNode node = nearestNeighborSearch(root, x, y, 0);
-System.out.println("nIter=" + nIter);
         return node;
     }
 	
-int nIter = 0;    
 	protected KDTreeNode nearestNeighborSearch(KDTreeNode tree, int leftValue, 
         int rightValue, int depth) {
-nIter++;
+
         if (tree.nChildren == 0 ) {
 			return tree;
 		}

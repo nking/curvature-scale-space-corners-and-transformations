@@ -161,8 +161,25 @@ public class PolygonAndPointPlotter {
         addPlot(xPoints, yPoints, Null, Null, x1, y1, plotLabel);
     }
     
-    public void addPlot(float[] xPoints, float[] yPoints, float[] xErrPoints, 
-        float[] yErrPoints, float[] xPolygon, float[] yPolygon, 
+    public void addPlotWithLines(float[] xPoints, float[] yPoints, 
+        float[] xLinePairs, float[] yLinePairs, 
+        String plotLabel) {
+        
+        float[] xErrPoints = null; 
+        float[] yErrPoints = null;
+
+        addPlot(xPoints, yPoints, xErrPoints, yErrPoints,
+            xLinePairs, yLinePairs, plotLabel);
+        
+        String srch = "renderPlot('";
+        int srchIdx = this.plotContent.lastIndexOf(srch);
+        plotContent.insert(srchIdx + srch.length() - 2, 
+            "WithLines");
+    }
+    
+    public void addPlot(float[] xPoints, float[] yPoints, 
+        float[] xErrPoints, float[] yErrPoints, 
+        float[] xPolygon, float[] yPolygon, 
         String plotLabel) {
         
         if (!dataMinMaxAreSet) {
@@ -198,7 +215,8 @@ public class PolygonAndPointPlotter {
      * @param plotLabel 
      */
     public void addPlot(float xmn, float xmx, float ymn, float ymx,
-        float[] xPoints, float[] yPoints, float[] xErrPoints, float[] yErrPoints,
+        float[] xPoints, float[] yPoints, 
+        float[] xErrPoints, float[] yErrPoints,
         float[] xPolygon, float[] yPolygon, String plotLabel) {
 
         StringBuffer dataSB = new StringBuffer("\n");
@@ -239,7 +257,8 @@ public class PolygonAndPointPlotter {
                 if (ii > 0) {
                     dataSB.append(", ");
                 }
-                dataSB.append("    {x:").append(xStr).append(", y:").append(yStr).append("}");
+                dataSB.append("    {x:").append(xStr)
+                    .append(", y:").append(yStr).append("}");
             }
             dataSB.append("],\n ");
             dataSB.append("];\n");

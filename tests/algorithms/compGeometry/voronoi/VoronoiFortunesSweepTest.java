@@ -133,7 +133,7 @@ public class VoronoiFortunesSweepTest extends TestCase {
             yPolygon[count + 1] = edge.y2;
             count += 2;
         }
-        plotter.addPlot(xPolygon, yPolygon, xPolygon, yPolygon, 
+        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
             "edhes");
         String filePath = plotter.writeFile();
         System.out.println("wrote file=" + filePath);
@@ -180,9 +180,71 @@ public class VoronoiFortunesSweepTest extends TestCase {
             yPolygon[count + 1] = edge.y2;
             count += 2;
         }
-        plotter.addPlot(xPolygon, yPolygon, 
+        plotter.addPlotWithLines(x, y, 
             xPolygon, yPolygon, "edhes");
         String filePath = plotter.writeFile2();
+        System.out.println("wrote file=" + filePath);
+    }
+    
+    public void test2() throws FileNotFoundException, IOException {
+        
+        // extracted from:
+        // https://en.wikipedia.org/wiki/Voronoi_diagram#/media/File:Euclidean_Voronoi_diagram.svg
+        // donated by Balu Ertl
+        // a few points are different than in his image
+        
+        float[] x = new float[]{
+            130, 165, 200, 310, 330, 345, 411,
+            189, 235, 174, 242, 261, 371, 619,
+            675, 305, 314, 420, 650, 143};
+        float[] y = new float[]
+            {90, 59, 212, 92, 67, 111, 214,
+            270, 261, 210, 349, 414, 401, 319,
+            333, 520, 578, 511, 489, 694};
+        
+        for (int i = 0; i < y.length; ++i) {
+            y[i] = 700 - y[i];
+        }
+
+        float xmin = 0.f;
+        float xmax = 700.f;
+        float ymin = 0.f;
+        float ymax = 700.f;
+
+        //TODO: revise this
+        int minDist = 1;
+
+        VoronoiFortunesSweep voronoi = 
+            new VoronoiFortunesSweep();
+        
+        voronoi.generateVoronoi(x, y, xmin, xmax, ymin, ymax, 
+            minDist);
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        assertNotNull(edges);
+        
+        PolygonAndPointPlotter plotter = 
+            new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+        
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+        
+        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
+        
+        int n = edges.size();
+        xPolygon = new float[2*n];
+        yPolygon = new float[2*n];
+        int count = 0;
+        for (GraphEdge edge : edges) {
+            xPolygon[count] = edge.x1;
+            yPolygon[count] = edge.y1;
+            xPolygon[count + 1] = edge.x2;
+            yPolygon[count + 1] = edge.y2;        
+            count += 2;
+        }
+        plotter.addPlotWithLines(x, y, 
+            xPolygon, yPolygon, "edhes");
+        String filePath = plotter.writeFile3();
         System.out.println("wrote file=" + filePath);
     }
 }

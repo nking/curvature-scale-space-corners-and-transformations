@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 /**
- * A voroni diagram is a partitioning of points
+ * A voronoi diagram is a partitioning of points
  * into cells defined by seed centers.  The cells
  * edges are defined as perpendicular bisectors
  * between 2 seeds, which results in the cells 
@@ -219,10 +219,7 @@ public class VoronoiFortunesSweep {
                 newsite.coord.getX() < newintstar.getX()))) {
                 
                 // new site is smallest -this is a site event
-         
- System.out.println("new site = (" + newsite.getCoord().getX() +
- ", " + newsite.getCoord().getY());         
-                
+                         
                 // get the first HalfEdge to the LEFT of the new site
                 lbnd = ELLeftBnd((newsite.coord));
                 
@@ -246,11 +243,6 @@ public class VoronoiFortunesSweep {
                 // remove the left edge's vertex, and put in the new one
                 if ((p = intersect(lbnd, bisector)) != null) {
                     PQDelete(lbnd);
-                    
-System.out.println("new bisector vertex = " 
-+ p.coord.toString()
-+ " " + p.coord.toString());                     
-                    
                     PQInsert(lbnd, p, dist(p, newsite));
                 }
                 lbnd = bisector;
@@ -348,11 +340,7 @@ System.out.println("new bisector vertex = "
                 
                 // insert the new bisector to the
                 // right of the left HE
-                ELInsert(llbnd, bisector); 
-                
-System.out.println("(2) insert bisector vertex = " 
-+ bisector.ELedge.reg[0].coord.toString()
-+ " " + bisector.ELedge.reg[1].coord.toString());                
+                ELInsert(llbnd, bisector);               
                 
                 // set one endpoint to the new edge
                 // to be the vector point 'v'.
@@ -869,19 +857,7 @@ System.out.println("(2) insert bisector vertex = "
             + ((y2 - y1) * (y2 - y1))) < minDistanceBetweenSites) {
             return;
         }
-
-if (
-    (x1 == 0) || (y1 == 0) || (x1 == xmax) || (y1 == ymax)
-    ||
-    (x2 == 0) || (y2 == 0) || (x2 == xmax) || (y2 == ymax)
-    ){
-    // TODO: these either need to be filtered after all
-    // edges are made,
-    // or find where an earlier intersection test needs edits
-    System.out.println("(" + x1 + "," + y1 + ")  (" + x2 + "," + y2 + ")");
-    System.out.println("adding edge that connects to boundaries:");
-}
-        
+       
         pushGraphEdge(e.reg[0], e.reg[1], x1, y1, x2, y2);
     }
 
