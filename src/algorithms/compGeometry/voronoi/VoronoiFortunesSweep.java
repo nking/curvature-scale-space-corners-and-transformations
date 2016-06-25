@@ -64,7 +64,13 @@ import java.util.LinkedList;
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
  * 
- * @author nichole
+ * in this project:
+ * changes to the above java port are essentially 
+ * the comparator and sorting, and an extra check for
+ * zero length edges at the end of the method clipLine.
+ * Format changes such as camel case are present 
+ * here.  Also moved the data classes to inner classes
+ * here.
  */
 public class VoronoiFortunesSweep {
     
