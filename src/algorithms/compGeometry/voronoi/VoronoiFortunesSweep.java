@@ -219,6 +219,9 @@ public class VoronoiFortunesSweep {
                 newsite.coord.getX() < newintstar.getX()))) {
                 
                 // new site is smallest -this is a site event
+         
+ System.out.println("new site = (" + newsite.getCoord().getX() +
+ ", " + newsite.getCoord().getY());         
                 
                 // get the first HalfEdge to the LEFT of the new site
                 lbnd = ELLeftBnd((newsite.coord));
@@ -243,6 +246,11 @@ public class VoronoiFortunesSweep {
                 // remove the left edge's vertex, and put in the new one
                 if ((p = intersect(lbnd, bisector)) != null) {
                     PQDelete(lbnd);
+                    
+System.out.println("new bisector vertex = " 
++ p.coord.toString()
++ " " + p.coord.toString());                     
+                    
                     PQInsert(lbnd, p, dist(p, newsite));
                 }
                 lbnd = bisector;
@@ -342,6 +350,10 @@ public class VoronoiFortunesSweep {
                 // right of the left HE
                 ELInsert(llbnd, bisector); 
                 
+System.out.println("(2) insert bisector vertex = " 
++ bisector.ELedge.reg[0].coord.toString()
++ " " + bisector.ELedge.reg[1].coord.toString());                
+                
                 // set one endpoint to the new edge
                 // to be the vector point 'v'.
                 // If the site to the left of this bisector is higher than the
@@ -397,10 +409,13 @@ public class VoronoiFortunesSweep {
         Arrays.sort(sites, comp);
     }
     
-    private class Site {
+    public class Site {
         PairFloat coord;
         int	sitenbr;
 	    int	refcnt;
+        public PairFloat getCoord() {
+            return coord;
+        }
     }
 
     private class Edge {
@@ -486,6 +501,10 @@ public class VoronoiFortunesSweep {
         nEdges += 1;
         
         return newEdge;
+    }
+    
+    public Site[] getSites() {
+        return sites;
     }
 
     private void makeVertex(Site v) {
@@ -751,9 +770,11 @@ public class VoronoiFortunesSweep {
         y1 = e.reg[0].coord.getY();
         y2 = e.reg[1].coord.getY();
 
-        // if the distance between the two points this line was created from is
+        // if the distance between the two points this line 
+        // was created from is
         // less than the square root of 2, then ignore it
-        if (Math.sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1))) < minDistanceBetweenSites) {
+        if (Math.sqrt(((x2 - x1) * (x2 - x1)) 
+            + ((y2 - y1) * (y2 - y1))) < minDistanceBetweenSites) {
             return;
         }
         pxmin = borderMinX;
@@ -843,7 +864,24 @@ public class VoronoiFortunesSweep {
                 x2 = (e.c - y2) / e.a;
             }
         }
+        
+        if (Math.sqrt(((x2 - x1) * (x2 - x1)) 
+            + ((y2 - y1) * (y2 - y1))) < minDistanceBetweenSites) {
+            return;
+        }
 
+if (
+    (x1 == 0) || (y1 == 0) || (x1 == xmax) || (y1 == ymax)
+    ||
+    (x2 == 0) || (y2 == 0) || (x2 == xmax) || (y2 == ymax)
+    ){
+    // TODO: these either need to be filtered after all
+    // edges are made,
+    // or find where an earlier intersection test needs edits
+    System.out.println("(" + x1 + "," + y1 + ")  (" + x2 + "," + y2 + ")");
+    System.out.println("adding edge that connects to boundaries:");
+}
+        
         pushGraphEdge(e.reg[0], e.reg[1], x1, y1, x2, y2);
     }
 
