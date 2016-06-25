@@ -1,9 +1,27 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.imageProcessing.util.MatrixUtil;
+import algorithms.misc.Misc;
+import algorithms.search.KNearestNeighbors;
+import algorithms.util.PairFloat;
+import algorithms.util.PairInt;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import thirdparty.HungarianAlgorithm;
+
 /**
  Class to estimate the difference between 
  regions in images segmented by humans and by a segmentation
- algorithm.
+ algorithm following the practices of the Berkeley
+ Segmentation Group.  Details are on their web site
+ and published:
  http://www.cs.berkeley.edu/projects/vision/grouping/papers/mfm-pami-boundary.pdf
 
  The class follows the benchmark map comparison section
@@ -25,9 +43,9 @@ package algorithms.imageProcessing.optimization.segmentation;
           be removed from the graph.
           For any node in the graph, only 6 of the nearest points are
           kept before matching.
-          - traditionally, one would make the boundary 9 or 1
-            by choosing a threshhold, but that has 2 problems:
-            - the optimal threshhold is dependent upon app use
+          - traditionally, one would make the boundary 0 or 1
+            by choosing a threshold, but that has 2 problems:
+            - the optimal threshold is dependent upon app use
             - removing low level thresholds removes too much information
           - the "threshold" is calculated by trying many "levels"
             (e.g. 30) and treating those above the threshold as '1's
@@ -66,4 +84,200 @@ package algorithms.imageProcessing.optimization.segmentation;
  */
 public class BenchmarkMeasurer {
     
+    public int evaluate(SegmentationResults data,
+        SegmentationResults model) {
+        
+        /*
+        for each point in perimeters, find the 6 nearest
+        neighbors in expected.perimeters.
+
+        discard those more distant than dMax=2
+        
+        after have the set of candidates,
+            discard those with no candidate neighbors        
+        */
+        
+        int nDataPerimeterPoints = data.sumNPerimeters();
+        
+        int dMax = 2;
+        int dMaxSq = dMax * dMax;
+        
+        Set<PairInt> allExpectedPoints = model.getAllPoints();
+
+        int k = 6;
+        
+        // searching the data for expected points
+        KNearestNeighbors kNN = data.createKNN();
+        
+        //key = expected point, value = data point and distance
+        Map<PairInt, Map<PairInt, Float>> nearestNeighbors
+             = new HashMap<PairInt, Map<PairInt, Float>>();
+         
+        for (PairInt p : allExpectedPoints) {
+                
+            int x = p.getX();
+            int y = p.getY();
+
+            // search data for model (x, y)
+            List<PairFloat> nearestMatches = kNN.findNearest(k, x, y, dMax);
+
+            if (nearestMatches == null) {
+                continue;
+            }
+            
+            for (PairFloat p2 : nearestMatches) {
+
+                float dist = distance(p2, x, y);
+
+                assert(dist <= dMax);
+                    
+                // Map<PairInt, Map<PairInt, Float>> nearestNeighbors
+                Map<PairInt, Float> map = nearestNeighbors.get(p);
+
+                if (map == null) {
+                    map = new HashMap<PairInt, Float>();
+                    nearestNeighbors.put(p, map);
+                }
+
+                PairInt p3 = new PairInt(Math.round(p2.getX()), 
+                    Math.round(p2.getY()));
+
+                map.put(p3, Float.valueOf(dist));
+            }
+        }
+        
+        // discard the isolated points
+        removeIsolatedPoints(nearestNeighbors); 
+         
+        /*
+        number these:
+            Map<PairInt, Map<PairInt, Float>> nearestNeighbors
+            Set<PairInt> nnValueKeys = new HashSet<PairInt>();
+        
+        and put in cost array
+        */
+        int n1 = nearestNeighbors.size();
+        int n2 = countUniqueValues(nearestNeighbors);
+        float[][] cost = new float[n1][n2];
+        for (int i = 0; i < n1; ++i) {
+            cost[i] = new float[n2];
+            Arrays.fill(cost[i], -1);
+        }
+        
+        Map<PairInt, Integer> p1Map = new HashMap<PairInt,Integer>();
+        Map<PairInt, Integer> p2Map = new HashMap<PairInt,Integer>();
+        n1 = 0;
+        n2 = 0;
+        for (Entry<PairInt, Map<PairInt, Float>> entry :
+            nearestNeighbors.entrySet()) {
+            PairInt p1 = entry.getKey();
+            
+            Integer i1 = p1Map.get(p1);
+            if (i1 == null) {
+                i1 = Integer.valueOf(n1);
+                p1Map.put(p1, i1);
+                n1++;
+            }
+            
+            for (Entry<PairInt, Float> entry2 : entry.getValue().entrySet()) {
+                PairInt p2 = entry2.getKey();
+                Float c = entry2.getValue();
+                
+                Integer i2 = p1Map.get(p2);
+                if (i2 == null) {
+                    i2 = Integer.valueOf(n2);
+                    p2Map.put(p2, i2);
+                    n2++;
+                }
+                cost[i1.intValue()][i2.intValue()] = c.floatValue();
+            }
+        }
+        boolean transposed = false;
+        if (cost.length > cost[0].length) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
+        }
+                        
+        // find min cost matches
+        HungarianAlgorithm ha = new HungarianAlgorithm();
+        int[][] match = ha.computeAssignments(cost);
+
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt pI = new PairInt(idx1, idx2);
+            
+            //calc stats for fMeasure
+             if (true) {
+                throw new UnsupportedOperationException(
+                    "not yet implementec");
+            }
+        }
+        
+        // return fMeasure
+        return 1;
+    }
+    
+    private float distance(PairFloat p2, int x, int y) {
+
+        float diffX = p2.getX() - x;
+        float diffY = p2.getY() - y;
+        
+        double dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        
+        return (float)dist;
+    }
+
+    private void removeIsolatedPoints(
+        Map<PairInt, Map<PairInt, Float>> nearestNeighbors) {
+
+        Set<PairInt> rm = new HashSet<PairInt>();
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (Entry<PairInt, Map<PairInt, Float>> entry :
+            nearestNeighbors.entrySet()) {
+            
+            PairInt p = entry.getKey();
+            int n = 0;
+            for (int i = 0; i < dxs.length; ++i) {
+                PairInt p2 = new PairInt
+                    (p.getX() + dxs[i], p.getY() + dys[i]);
+                if (nearestNeighbors.containsKey(p2)) {
+                    n++;
+                    break;
+                }
+            }
+            if (n == 0) {
+                rm.add(p);
+            }
+        }
+        
+        for (PairInt p : rm) {
+            nearestNeighbors.remove(p);
+        }
+    }
+
+    private int countUniqueValues(
+        Map<PairInt, Map<PairInt, Float>> nearestNeighbors) {
+        
+        Set<PairInt> v = new HashSet<PairInt>();
+        
+        for (Entry<PairInt, Map<PairInt, Float>> entry :
+            nearestNeighbors.entrySet()) {
+            
+            v.addAll(entry.getValue().keySet());
+        }
+        
+        return v.size();
+    }
 }

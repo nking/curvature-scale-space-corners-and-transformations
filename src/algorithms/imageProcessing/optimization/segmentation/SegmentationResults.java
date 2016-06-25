@@ -1,16 +1,12 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
 import algorithms.compGeometry.PerimeterFinder;
-import algorithms.imageProcessing.FixedSizeSortedIntVector;
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
-import algorithms.search.KNearestNeighbors2D;
+import algorithms.search.KNearestNeighbors;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
@@ -19,11 +15,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
-import thirdparty.ods.Integerizer;
-import thirdparty.ods.XFastTrie;
-import thirdparty.ods.XFastTrieNode;
 
 /**
  *
@@ -96,99 +90,18 @@ public class SegmentationResults {
      * @return 
      */
     public double evaluate(SegmentationResults expected) {
-        
+            
         if (true) {
             throw new UnsupportedOperationException(
-                "chaging the cost function to the precisiona nd recall");
+                "changing the cost function to use "
+                    + "precision and recall");
         }
         
-        /*
-        for each point in perimeters, find the 6 nearest
-        neighbors in expected.perimeters.
-
-        discard those larger than dMax=2
+        BenchmarkMeasurer measurer = new BenchmarkMeasurer();
         
-        after have the set of candidates,
-            discard those with no candidate neighbors
+        int fMeasure = measurer.evaluate(this, expected);
         
-        int[] dist  x0 -> y0
-        */
-        
-        int nPerimeterPoints = sumNPerimeters();
-        
-        int dMax = 2;
-        int dMaxSq = dMax * dMax;
-           
-        /*
-        need a k nearest neighbors search to make the cost
-        matrix input for the min cost bipartite matching.
-        
-        choices are:
-        
-        (1) for each point in a boundary in perimeters,
-            iteratate over a region x += dMax and y +- dMax
-            and test membership in expected.perimeters set.
-            can use a fixedsortedintvector to keep the top k
-            (smallest distances).
-            For dMax = 2, the scan over neighbors is O(24)
-            and each insert into sorted vector is O(lg_2(k)).
-            so the maximum runtime complexity is O(24 * lg_2(k)).
-            for k=3 --> O(38)
-        (2) this is an incomplete search, so needs edits...
-            use XFastTries for predecessor and successor
-            searches over x and y separately, then
-            look for which results within dMax are a valid
-            (x,y) pair in expected.perimeters.
-            The runtime complexity is dependent upon the
-            size of the image and upon k.
-            For 2048, w, the max number of bits needed is
-            12 (signed numbers...) for example.
-            maximum runtime complexity is
-              O(2 * k * lg_2(w)) + O(k*k)
-            so for k=3 and large image of 2048 --> O(22)
-            and for an image closer to 400 x 600 --> O(20) so
-            does not change much with increasing max dimension.
-        
-        Note that both of the above have a factor of
-        N_perimeter_points not included in notes above.
-        
-        (3) KDTree range search at worst
-            is O(k * N^(1 - (1/k))).
-            for k = 3 and N = 10000 -> 1400
-            for k = 3 and N = 1000, -> 300
-        (4) Fractional Cascading
-            a range query runtime complexity is O(log_2(N) + k)
-        
-        ==> will implement a Fractional Cascding layered tree
-            And, encapsulate the XFastTrie search to make
-            an approx search and make a more definite search
-            with a worse runtime.
-        */
-        
-        Set<PairInt> allExpectedPoints = getAllPoints(expected);
-
-        TObjectIntMap<PairInt> indexes1 = 
-            new TObjectIntHashMap<PairInt>();
-        int n1 = 0;
-        TObjectIntMap<PairInt> indexes2 = 
-            new TObjectIntHashMap<PairInt>();
-        int n2 = 0;
-         
-        int k = 3;
-        
-        for (Set<PairInt> perimeter : expected.perimeters) {
-        
-            for (PairInt p : perimeter) {
-                int x = p.getX();
-                int y = p.getY();
-                
-            }
-        }
-        
-        float[][] cost = new float[n1][n2];
-        
-        //TODO: return fMeasure
-        return 1;
+        return fMeasure;
     }
     
     /**
@@ -197,6 +110,7 @@ public class SegmentationResults {
      * 
      * @param expected
      * @return 
+     * @deprecated 
      */
     public double calculateDifference(SegmentationResults expected) {
         
@@ -451,7 +365,7 @@ public class SegmentationResults {
         return borderPixels;
     }
 
-    private int sumNPerimeters() {
+    public int sumNPerimeters() {
 
         int n = 0;
         
@@ -462,15 +376,35 @@ public class SegmentationResults {
         return n;
     }    
 
-    private Set<PairInt> getAllPoints(SegmentationResults expected) {
+    public Set<PairInt> getAllPoints() {
 
         Set<PairInt> output = new HashSet<PairInt>();
         
-        for (Set<PairInt> set : expected.perimeters) {
+        for (Set<PairInt> set : perimeters) {
             output.addAll(set);
         }
         
         return output;
     }
     
+    public List<Set<PairInt>> getPerimeters() {
+        return perimeters;
+    }
+    
+    public KNearestNeighbors createKNN() {
+        int n = sumNPerimeters();
+        float[] x = new float[n];
+        float[] y = new float[n];
+        int count = 0;
+        for (Set<PairInt> perimeter : perimeters) {
+            for (PairInt p : perimeter) {
+                x[count] = p.getX();
+                y[count] = p.getY();
+                count++;
+            }
+        }
+        KNearestNeighbors kNN = new KNearestNeighbors(x, y);
+        return kNN;
+    }
+
 }
