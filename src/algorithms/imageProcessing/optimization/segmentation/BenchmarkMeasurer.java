@@ -84,7 +84,7 @@ import thirdparty.HungarianAlgorithm;
  */
 public class BenchmarkMeasurer {
     
-    public int evaluate(SegmentationResults data,
+    public float evaluate(SegmentationResults data,
         SegmentationResults model) {
         
         /*
@@ -202,6 +202,7 @@ public class BenchmarkMeasurer {
         HungarianAlgorithm ha = new HungarianAlgorithm();
         int[][] match = ha.computeAssignments(cost);
 
+        int nMatched = 0;
         for (int i = 0; i < match.length; i++) {
             int idx1 = match[i][0];
             int idx2 = match[i][1];
@@ -215,15 +216,43 @@ public class BenchmarkMeasurer {
             }
             PairInt pI = new PairInt(idx1, idx2);
             
-            //calc stats for fMeasure
-             if (true) {
-                throw new UnsupportedOperationException(
-                    "not yet implementec");
-            }
+            nMatched++;
         }
+        /*
+        precision: probability that a machine=generated boundary
+          pixel is a true boundary pixel.
+          it's the fraction of detections which are true positives
+          using a distance tolerance of 2 pixels.
+          (= number of correct positive results/number of all positive results)
+        recall: probability that a true boundary pixel is detected.
+          (= number of correct positive results/number of all results)
+          for example, 7 objects total, and 4 are correctly identified
+          is recall 4/7
+        recipe is to make a precision vs recall curve and look at the
+          value furthest from the origin.
+        F-measure: harmonic mean of precision and recall.
+          defined at all points on the precision-recall curve.
+          the maximum is the summary statistic.
+          defined as F = P * R / (alpha * R + (1 - alpha)*P).
+          where P is precision and r is recall. authors use alpha=0.5.
+          The location of the maximum F-measure along
+          the curve provides the optimal threshold given,
+          which they set to 0.5 in their experiments.
+        Here, not using several levels of thresholding.
+        */
         
-        // return fMeasure
-        return 1;
+        float recall = (float)nMatched/
+            (float)nDataPerimeterPoints;
+            
+        float precision = (float)nMatched/
+            (float)allExpectedPoints.size();
+        
+        float alpha = 0.5f;
+        
+        float fMeasure = (precision * recall)/ 
+            (alpha * recall + (1.f - alpha)*precision);
+        
+        return fMeasure;
     }
     
     private float distance(PairFloat p2, int x, int y) {

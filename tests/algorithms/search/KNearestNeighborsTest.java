@@ -2,6 +2,7 @@ package algorithms.search;
 
 import algorithms.util.PairFloat;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertEquals;
@@ -43,7 +44,7 @@ public class KNearestNeighborsTest extends TestCase {
        
         KNearestNeighbors kNN = new KNearestNeighbors(x, y);
         
-        Set<PairFloat> nearest = kNN.findNearest(k, 4, 4);
+        List<PairFloat> nearest = kNN.findNearest(k, 4, 4);
         
         assertEquals(5, nearest.size());
         

@@ -384,7 +384,7 @@ public class DownhillSimplexSolver {
             
             SegmentationResults exp = expected[i];
             
-            sumDifference += sr0.calculateDifference(exp);
+            sumDifference += sr0.evaluate(exp);
         }
    
         SFit sFit = new SFit();

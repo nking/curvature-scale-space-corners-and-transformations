@@ -589,6 +589,14 @@ public class MiscDebug {
             List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
             
             boolean empty = (colRanges == null) || colRanges.isEmpty();
+           
+            if (empty) {
+                System.out.println("error: row " + row + 
+                    " has no columns.  row min=" +
+                    rowMinMax[0] + " row max=" + 
+                    rowMinMax[1] + " col max=" +
+                    imageMaxColumn);
+            }
             
             assert(!empty);
         }        

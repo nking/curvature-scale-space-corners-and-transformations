@@ -5,9 +5,12 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.util.PairFloat;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,15 +20,15 @@ import java.util.Set;
  * to find the neighbors of the nearest point to the
  * query point and returns the k closest to the query point.
  * 
- * <pre>
- * constructor, one time cost, runtime complexity:
- *     O(N * log_2(N))
- * kNN query best runtime complexity:
- *     O(log_2(N) + O(n_nearest_edges * log_2(k))
- * kNN query worse runtime complexity:
- *     O(N) + O(n_nearest_edges * log_2(k))
- * </pre>
- * 
+  <pre>
+  constructor, one time cost, runtime complexity:
+      O(N * log_2(N))
+  kNN query best runtime complexity:
+      O(log_2(N)) + O(n_nearest_edges * log_2(k))
+  kNN query worse runtime complexity:
+      O(N) + O(n_nearest_edges * log_2(k))
+  </pre>
+  
  * @author nichole
  */
 public class KNearestNeighbors {
@@ -140,7 +143,7 @@ public class KNearestNeighbors {
     private float dist(float x, float y, PairFloat p) {
         float diffX = x - p.getX();
         float diffY = y - p.getY();
-        return (diffX * diffX) + (diffY * diffY);
+        return (float)Math.sqrt(diffX * diffX) + (diffY * diffY);
     }
     
     private class PairDist implements Comparable<PairDist>{
@@ -157,26 +160,46 @@ public class KNearestNeighbors {
         }
     }
     
-    public Set<PairFloat> findNearest(int k, float x, float y) {
+    public List<PairFloat> findNearest(int k, float x, float y) {
+        return findNearest(k, x, y, Float.MAX_VALUE);
+    }
+    
+    public List<PairFloat> findNearest(int k, float x, float y,
+        float maxDistance) {
              
         // O(log_2(N) at best, but some extreme queries are O(N)
         // this returns one or equidistant multiple answers
         Set<PairFloat> nearest = kdTree.findNearestNeighbor(x, y);
       
+        if (nearest == null) {
+            return null;
+        }
+        
         // less than O(n_nearest)edges*log_2(k))
         FixedSizeSortedVector<PairDist> vec = 
             new FixedSizeSortedVector<PairDist>(k, PairDist.class);
         
         Site[] sites = voronoi.getSites();
         
+        Set<PairFloat> added = new HashSet<PairFloat>();
+        
         // sites are in siteIndexesMap
         for (PairFloat site : nearest) {
             
             float dist = dist(x, y, site);
-            PairDist pd = new PairDist();
-            pd.s1 = site;
-            pd.dist = dist;
-            vec.add(pd);
+            
+            if (dist > maxDistance) {
+                continue;
+            }
+            
+            if (!added.contains(site)) {
+                PairDist pd = new PairDist();
+                pd.s1 = site;
+                pd.dist = dist;
+                vec.add(pd);
+                
+                added.add(site);
+            }
             
             Set<Integer> siteIndexes = siteIndexesMap.get(site);
             
@@ -189,14 +212,21 @@ public class KNearestNeighbors {
             for (Integer index2 : siteIndexes) {
                 PairFloat site2 = sites[index2.intValue()].getCoord();
                 dist = dist(x, y, site2);
-                pd = new PairDist();
-                pd.s1 = site2;
-                pd.dist = dist;
-                vec.add(pd);
+                if (dist > maxDistance) {
+                    continue;
+                }
+                if (!added.contains(site2)) {
+                    PairDist pd = new PairDist();
+                    pd.s1 = site2;
+                    pd.dist = dist;
+                    vec.add(pd);
+                
+                    added.add(site2);
+                }
             }
         }
         
-        Set<PairFloat> output = new HashSet<PairFloat>();
+        List<PairFloat> output = new ArrayList<PairFloat>();
         PairDist[] a = vec.getArray();
         for (int i = 0; i < vec.getNumberOfItems(); ++i) {
             output.add(a[i].s1);

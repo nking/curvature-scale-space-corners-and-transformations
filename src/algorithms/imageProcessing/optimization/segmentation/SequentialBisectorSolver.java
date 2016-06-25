@@ -321,7 +321,7 @@ public class SequentialBisectorSolver {
             
             SegmentationResults exp = expected[i];
             
-            sumDifference += sr0.calculateDifference(exp);
+            sumDifference += sr0.evaluate(exp);
         }
         
         return sumDifference;
