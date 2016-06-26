@@ -203,6 +203,9 @@ public class SegmentationNNTest extends TestCase {
                 SegmentationResults modelResults 
                     = new SegmentationResults(modelSet);
             
+ //TODO: can see clearly that need to improve
+ // or replace the perimeter algorithm
+                
                 MiscDebug.writeAlternatingColor(
                     img.createWithDimensions(), 
                     modelResults.getPerimeters(), "_model_" + tst + "_" + rootName);
