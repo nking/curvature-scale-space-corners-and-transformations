@@ -1,6 +1,5 @@
 package algorithms.search;
 
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.util.PairInt;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,9 +10,9 @@ import static org.junit.Assert.*;
  *
  * @author nichole
  */
-public class KNearestNeighbors2DTest extends TestCase {
+public class NearestNeighbor2DTest extends TestCase {
     
-    public KNearestNeighbors2DTest() {
+    public NearestNeighbor2DTest() {
     }
     
     public void test0() {
@@ -32,50 +31,62 @@ public class KNearestNeighbors2DTest extends TestCase {
         int maxX = 10;
         int maxY = 10;
         int k = 5;
+
+        points.remove(new PairInt(4, 4));
         
-        KNearestNeighbors2D knn2D = new
-            KNearestNeighbors2D(points, maxX, maxY);
+        NearestNeighbor2D knn2D = new
+            NearestNeighbor2D(points, maxX, maxY);
         
-        // reuse the vector
-        FixedSizeSortedVector<PairDistance> vec =
-            new FixedSizeSortedVector<PairDistance>(
-                2*k, PairDistance.class);
+        Set<PairInt> nearest = knn2D.findClosest(4, 4);
         
-        knn2D.findClosest(4, 4, 2, vec);
-        
-        assertEquals(5, vec.getNumberOfItems());
+        assertEquals(4, nearest.size());
         
         Set<PairInt> expected = new HashSet<PairInt>();
-        expected.add(new PairInt(4, 4));
         expected.add(new PairInt(4, 2));
         expected.add(new PairInt(4, 6));
         expected.add(new PairInt(2, 4));
         expected.add(new PairInt(6, 4));
     
-        PairDistance[] r = vec.getArray();
-        for (int i = 0; i < k; ++i) {
-            PairDistance pd = r[i];
-            assertTrue(expected.remove(pd.p2));
+        for (PairInt p2 : nearest) {
+            assertTrue(expected.remove(p2));
         }
        
         assertEquals(0, expected.size());
-
-        PairDistance[] output = new PairDistance[k];
         
-        knn2D.findClosestUsingGreedy(4, 4, 2, k, output);
-    
+        // -----------------------------------
+        nearest = knn2D.findClosest(4, 4, 2);
+        
+        assertEquals(4, nearest.size());
+        
         expected = new HashSet<PairInt>();
-        expected.add(new PairInt(4, 4));
         expected.add(new PairInt(4, 2));
         expected.add(new PairInt(4, 6));
         expected.add(new PairInt(2, 4));
         expected.add(new PairInt(6, 4));
     
-        r = output;
-        for (int i = 0; i < k; ++i) {
-            PairDistance pd = r[i];
-            assertTrue(expected.remove(pd.p2));
+        for (PairInt p2 : nearest) {
+            assertTrue(expected.remove(p2));
         }
+       
+        assertEquals(0, expected.size());
+        
+        // -----------------------------------
+        points.add(new PairInt(4, 4));
+        
+        knn2D = new NearestNeighbor2D(points, maxX, maxY);
+        
+        nearest = knn2D.findClosest(4, 4);
+        
+        assertEquals(1, nearest.size());
+        
+        expected = new HashSet<PairInt>();
+        expected.add(new PairInt(4, 4));
+    
+        for (PairInt p2 : nearest) {
+            assertTrue(expected.remove(p2));
+        }
+       
+        assertEquals(0, expected.size());
     }
     
     private Set<PairInt> getTestData() {

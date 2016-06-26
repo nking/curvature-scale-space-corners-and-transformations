@@ -90,26 +90,30 @@ public class SegmentationNNTest extends TestCase {
                
         SData[] data = getDetailedTrainingData();
         
+        boolean useLowNoiseEdges = false;
+        
         DownhillSimplexSolver solver = 
-            new DownhillSimplexSolver(true, true, data);
+            new DownhillSimplexSolver(true, useLowNoiseEdges, data);
         
         SFit fit = solver.solve();
         double diff = fit.costF;
         
         System.out.println(
-            "hsv, reduceNoise=true, difference=" + diff +
+            "hsv, reduceNoise=" + useLowNoiseEdges + 
+            " difference=" + diff +
             "  params=" + Arrays.toString(solver.getParameters()));
         
         // --------
         solver = new DownhillSimplexSolver(false, 
-            true, data);
+            useLowNoiseEdges, data);
         
         fit = solver.solve();
         diff = fit.costF;
         
         System.out.println(
-            "cie, reduceNoise=true, difference=" + diff +
-            "  parmaeters=" + Arrays.toString(solver.getParameters()));
+            "cie, reduceNoise=" + useLowNoiseEdges
+            + " difference=" + diff +
+            "  parameters=" + Arrays.toString(solver.getParameters()));
         
         /*
         normalize = false:

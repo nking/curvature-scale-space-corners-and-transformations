@@ -3689,25 +3689,29 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         double tColor;
         if (clrSpace == 0) {
             // JND for deltaE is ~2.3
-            tColor = 2.5;//4.;//5.5;
+            tColor = 5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor = 0.48;//0.288;
+            tColor =  0.35;
         }
         
-        int tLen = 30;//5;
+        int tLen = 21;
         double tR;
+        double tSmallMerge;
         if (clrSpace == 0) {
-            tR = 0.5*3.0; //0.5*3.0;
-            tLen = 1;
+            tR = 0.5*3.0;
+            tLen = 21;
+            tSmallMerge = 0.025;
         } else if (clrSpace == 1) {
-            tR = 0.5*3.0; //0.5*3.0;
-            tLen = 29;
+            tR = 0.5*3.0;
+            tLen = 21;
+            tSmallMerge = 0.025;
         } else {
             tR = 0.5*3.0;
+            tSmallMerge = 0.025;
         }
         //
-        double tSmallMerge = 0.0337;//0.06;
+        
         
         return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
             reduceNoise, tSmallMerge, debugTag);

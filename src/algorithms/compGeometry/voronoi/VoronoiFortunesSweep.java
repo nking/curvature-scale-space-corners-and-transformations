@@ -122,6 +122,10 @@ public class VoronoiFortunesSweep {
             throw new IllegalArgumentException(
             "xValues and yValues must be same length");
         }
+        if (xValues.length == 0) {
+             throw new IllegalArgumentException(
+            "xValues and yValues must not be empty");
+        }
 
         minDistanceBetweenSites = minDist;
     

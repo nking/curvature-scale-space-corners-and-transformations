@@ -51,6 +51,13 @@ public class KNearestNeighbors {
     
     private void init(int[] x, int[] y) {
         
+        if (x == null || x.length == 0 || y == null
+            || y.length == 0 || (x.length != y.length)) {
+            throw new IllegalArgumentException(
+                "x and y cannot be null or empty "
+                    + "and must be same lengths");
+        }
+        
         int n = x.length;
         
         float[] x2 = new float[n];
@@ -65,6 +72,13 @@ public class KNearestNeighbors {
     }
     
     private void init(float[] x, float[] y) {
+        
+        if (x == null || x.length == 0 || y == null
+            || y.length == 0 || (x.length != y.length)) {
+            throw new IllegalArgumentException(
+                "x and y cannot be null or empty "
+                    + "and must be same lengths");
+        }
         
         int n = x.length;
         
@@ -124,10 +138,9 @@ public class KNearestNeighbors {
             }
             indexes.add(s1);
         }
-        if (siteIndexesMap.size() != x.length) {
-            int z = 1;
-        }
-        assert(siteIndexesMap.size() == x.length);
+        
+        // there may be redundant points
+        //assert(siteIndexesMap.size() == x.length);
         
         // retrieve the points from voronoi sites because they are sorted
         n = sites.length;

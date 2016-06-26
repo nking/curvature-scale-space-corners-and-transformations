@@ -3,6 +3,7 @@ package algorithms.imageProcessing.optimization.segmentation;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -314,6 +315,10 @@ public class DownhillSimplexSolver {
         System.out.println("nIter=" + nIter + " bestFit=" +
             yFits[0].toString());
         
+        if (true) {
+            debugImages(yFits[0], edgesList);
+        }
+        
         return yFits[0];
     }
         
@@ -384,7 +389,10 @@ public class DownhillSimplexSolver {
             
             SegmentationResults exp = expected[i];
             
-            sumDifference += sr0.evaluate(exp);
+            // going to use 1 - fMeasure for now to convert
+            // the score into a cost
+            double fMeasure = sr0.evaluate(exp);
+            sumDifference += (1. - fMeasure);
         }
    
         SFit sFit = new SFit();
@@ -533,6 +541,33 @@ public class DownhillSimplexSolver {
         }
         
         return false;
+    }
+
+    private void debugImages(SFit sFit, 
+        List<List<PairIntArray>> edgesList) throws Exception {
+              
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        long ts = MiscDebug.getCurrentTimeFormatted();
+                
+        for (int i = 0; i < trainingData.length; ++i) {
+            
+            String rootName = trainingData[i].imgFileName.split("\\.")[0];
+            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imgFileName;        
+            
+            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
+            
+            List<Set<PairInt>> results = 
+                imageSegmentation.createColorEdgeSegmentation(img, 
+                    edgesList.get(i),
+                    colorSpace, sFit.tLenF, sFit.tColorF, sFit.tRF, 
+                    reduceNoise, sFit.tSmallMergeF, rootName);
+            
+            img = img.createWithDimensions();
+            
+            MiscDebug.writeAlternatingColor(
+                img, results, "seg_" + rootName + "_" + ts);
+        }
     }
 
     private static class Parameter {

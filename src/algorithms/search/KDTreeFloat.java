@@ -331,8 +331,8 @@ public class KDTreeFloat {
         //      the median than it is to retVal1,
         //      search subtree2 too.
         
-     System.out.println("dist1=" + dist1 + " (med-val)=" + diffMedValSq
-     + " best=" + bestDist);        
+        //System.out.println("dist1=" + dist1 + " (med-val)=" + diffMedValSq
+        //+ " best=" + bestDist);        
         
 		if (!subTree2.visited && diffMedValSq < dist1) {
 			

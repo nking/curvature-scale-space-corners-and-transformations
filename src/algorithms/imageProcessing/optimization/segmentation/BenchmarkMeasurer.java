@@ -99,6 +99,10 @@ public class BenchmarkMeasurer {
         
         int nDataPerimeterPoints = data.sumNPerimeters();
         
+        if (nDataPerimeterPoints == 0) {
+            return 0;
+        }
+        
         int dMax = 2;
         int dMaxSq = dMax * dMax;
         
@@ -256,6 +260,8 @@ public class BenchmarkMeasurer {
         
         float fMeasure = (precision * recall)/ 
             (alpha * recall + (1.f - alpha)*precision);
+        
+        System.out.println("fMeasure=" + fMeasure);
         
         return fMeasure;
     }

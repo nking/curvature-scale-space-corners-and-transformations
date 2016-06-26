@@ -1,23 +1,16 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
 import algorithms.compGeometry.PerimeterFinder;
-import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.MatrixUtil;
-import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.KNearestNeighbors;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import thirdparty.HungarianAlgorithm;
 
@@ -53,12 +46,13 @@ public class SegmentationResults {
                     yMax = xMinMaxYMinMax[3];
                 }
             }
+            /*
             if (n > 0) {
                 Image img = new Image(xMax + 1, yMax + 1);
                 long ts = MiscDebug.getCurrentTimeFormatted();
                 MiscDebug.writeAlternatingColor(
                     img, segmentedSets, "seg_" + ts);
-            }
+            }*/
         }
                 
         xCentroids = new int[n];
@@ -411,7 +405,14 @@ public class SegmentationResults {
     }
     
     public KNearestNeighbors createKNN() {
+        
         int n = sumNPerimeters();
+        
+        if (n == 0) {
+            throw new IllegalStateException("perimeters "
+                + "cannot be empty");
+        }
+        
         float[] x = new float[n];
         float[] y = new float[n];
         int count = 0;

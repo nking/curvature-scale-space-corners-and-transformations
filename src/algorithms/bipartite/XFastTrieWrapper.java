@@ -2,7 +2,6 @@ package algorithms.bipartite;
 
 import algorithms.bipartite.MinCostUnbalancedAssignment.PathNode;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
 import java.util.HashSet;
 import java.util.Set;
 import thirdparty.ods.Integerizer;
@@ -32,7 +31,7 @@ public class XFastTrieWrapper {
     
     public XFastTrieWrapper(int maxC) {
             
-        w = 1 + (int)Math.floor(Math.log(maxC)/Math.log(2));
+        w = 1 + (int)Math.ceil(Math.log(maxC)/Math.log(2));
         
         this.maxC = maxC;
         

@@ -296,8 +296,9 @@ public class SequentialBisectorSolver {
         return output;
     }
     
-    private double invoke(float tLenValue, float tColorValue, float tRValue,
-        float tSmallMergeValue, SegmentationResults[] expected,
+    private double invoke(float tLenValue, float tColorValue, 
+        float tRValue, float tSmallMergeValue, 
+        SegmentationResults[] expected,
         List<List<PairIntArray>> edgesList) throws Exception {
                 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
@@ -321,7 +322,10 @@ public class SequentialBisectorSolver {
             
             SegmentationResults exp = expected[i];
             
-            sumDifference += sr0.evaluate(exp);
+            // going to use 1 - fMeasure for now to convert
+            // the score into a cost
+            double fMeasure = sr0.evaluate(exp);
+            sumDifference += (1. - fMeasure);
         }
         
         return sumDifference;
