@@ -7,6 +7,7 @@ import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.optimization.segmentation.DownhillSimplexSolver.SFit;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.IOException;
 import java.util.Arrays;
@@ -80,7 +81,7 @@ public class SegmentationNNTest extends TestCase {
         */
     }
     
-    public void testNelderMeadeSolver() throws Exception {
+    public void estNelderMeadeSolver() throws Exception {
         
         boolean enabled = true;
         
@@ -104,6 +105,7 @@ public class SegmentationNNTest extends TestCase {
             "  params=" + Arrays.toString(solver.getParameters()));
         
         // --------
+        /*
         solver = new DownhillSimplexSolver(false, 
             useLowNoiseEdges, data);
         
@@ -114,7 +116,7 @@ public class SegmentationNNTest extends TestCase {
             "cie, reduceNoise=" + useLowNoiseEdges
             + " difference=" + diff +
             "  parameters=" + Arrays.toString(solver.getParameters()));
-        
+        */
         /*
         normalize = false:
            hsv, nIter=3 bestFit=cost=2.7239726540785525E7 
@@ -127,6 +129,98 @@ public class SegmentationNNTest extends TestCase {
              tR=1.5 reduceNoiseF=true colorSpace=0.0
             
         */
+    }
+    
+    public void testBenchmark() throws Exception {
+        
+        // simple test that fMeasure is larger
+        //   for a better fit
+        
+        int dMax = 2;
+        
+        SData[] data = getDetailedTrainingData();
+        
+        String imgNumber = "101087";
+        
+        boolean useLowNoiseEdges = false;
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        BerkeleySegmentationFileReader reader = new BerkeleySegmentationFileReader();
+        
+        boolean reduceNoise = false;
+                
+        double[] fMeasures = new double[2];
+        
+        for (int tst = 0; tst < 2; ++tst) {
+            int tLen;
+            double tClr;
+            double tR;  
+            double tSMerge;
+            if (tst == 0) {
+                // expecting better results for these params.
+                // which is a higher fMeasure
+                tLen = 11;
+                tClr = 0.135;
+                tR = 2.25;
+                tSMerge = 0.025;
+            } else {
+                tLen = 40;
+                tClr = 0.35;
+                tR = 0.5;
+                tSMerge = 0.125;
+            }
+            
+            for (int i = 0; i < data.length; ++i) {
+
+                String rootName = data[i].imgFileName.split("\\.")[0];
+
+                if (!rootName.contains(imgNumber)) {
+                    continue;
+                }
+
+                String imgFilePath = data[i].dirPath + "/" + data[i].imgFileName;
+
+                String segFilePath = data[i].dirPath + "/" + data[i].segFileName;
+
+                ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
+
+                List<Set<PairInt>> modelSet = reader.readFile(segFilePath);
+
+                List<PairIntArray> edges = imageSegmentation.extractEdges(img, 
+                    reduceNoise, rootName);
+                
+                List<Set<PairInt>> dataSet = 
+                    imageSegmentation.createColorEdgeSegmentation(img, 
+                        edges,
+                        1, (int)Math.round(tLen), tClr, tR, 
+                        reduceNoise, tSMerge, rootName);
+            
+                // reduces the sets to perimeters for comparisons              
+                SegmentationResults dataResults 
+                    = new SegmentationResults(dataSet);
+            
+                SegmentationResults modelResults 
+                    = new SegmentationResults(modelSet);
+            
+                MiscDebug.writeAlternatingColor(
+                    img.createWithDimensions(), 
+                    modelResults.getPerimeters(), "_model_" + tst + "_" + rootName);
+                
+                MiscDebug.writeAlternatingColor(
+                    img.createWithDimensions(), 
+                    dataResults.getPerimeters(), "_test_" + tst + "_" + rootName);
+                
+                double fMeasure = dataResults.evaluate(
+                    modelResults, dMax);
+                
+                fMeasures[tst] = fMeasure;
+                
+                System.out.println("test=" + tst + " fMeasure=" + fMeasure);
+                
+            }
+        }
+        
     }
     
     public void estResults() throws Exception {

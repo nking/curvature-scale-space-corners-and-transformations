@@ -23,11 +23,12 @@ import java.util.Set;
  */
 public class DownhillSimplexSolver {
         
-    private final Parameter tLen = new Parameter(1, 40, 5);
+    private final Parameter tLen = new Parameter(1, 20, 5);
     
     private final Parameter tColor;
     
-    private final Parameter tR = new Parameter(0.5f * 3.0f, 0.95f * 3.0f, 0.5f * 3.0f);
+    private final Parameter tR = new Parameter(0.5f * 3.0f, 
+        1.05f * 3.0f, 0.25f);
     
     private final Parameter tSmallMerge = new Parameter(0.005f, 0.05f, 0.005f);
     
@@ -46,7 +47,7 @@ public class DownhillSimplexSolver {
         this.trainingData = trainingData;
         
         if (useHSV) {
-            tColor = new Parameter(0.05f, 0.7f, 0.05f);
+            tColor = new Parameter(0.1f, 0.175f, 0.005f);
         } else {
             tColor = new Parameter(2.5f, 9.f, 0.5f);
         }
@@ -372,6 +373,8 @@ public class DownhillSimplexSolver {
         
         double sumDifference = 0;
         
+        int dMax = 2;
+        
         for (int i = 0; i < trainingData.length; ++i) {
             
             String rootName = trainingData[i].imgFileName.split("\\.")[0];
@@ -391,7 +394,7 @@ public class DownhillSimplexSolver {
             
             // going to use 1 - fMeasure for now to convert
             // the score into a cost
-            double fMeasure = sr0.evaluate(exp);
+            double fMeasure = sr0.evaluate(exp, dMax);
             sumDifference += (1. - fMeasure);
         }
    

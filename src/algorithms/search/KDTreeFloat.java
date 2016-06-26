@@ -231,7 +231,8 @@ public class KDTreeFloat {
     
     private Set<KDTreeNodeFloat> bestNode = null;
     private double bestDist = Double.MAX_VALUE;
-
+    protected Set<KDTreeNodeFloat> visited = null;
+    
     /**
      * find the nearest neighbor, and if it is equidistant to
      * others, return those too.
@@ -247,6 +248,7 @@ public class KDTreeFloat {
         
         bestNode = new HashSet<KDTreeNodeFloat>();
         bestDist = Double.MAX_VALUE;
+        visited = new HashSet<KDTreeNodeFloat>();
         
         Set<KDTreeNodeFloat> nodes = 
             nearestNeighborSearch(root, x, y, 0);
@@ -307,10 +309,10 @@ public class KDTreeFloat {
         diffMedValSq *= diffMedValSq;
 	 
         Set<KDTreeNodeFloat> retVal1 = null;
-        if (!subTree1.visited) {
+        if (!visited.contains(subTree1)) {
 		    retVal1 = nearestNeighborSearch(
                 subTree1, leftValue, rightValue, depth + 1);
-		    subTree1.visited = true;
+		    visited.add(subTree1);
         }
         
         double dist1 = Double.MAX_VALUE;
@@ -334,12 +336,12 @@ public class KDTreeFloat {
         //System.out.println("dist1=" + dist1 + " (med-val)=" + diffMedValSq
         //+ " best=" + bestDist);        
         
-		if (!subTree2.visited && diffMedValSq < dist1) {
+		if (!visited.contains(subTree2) && diffMedValSq < dist1) {
 			
             Set<KDTreeNodeFloat> retVal2 = nearestNeighborSearch(
                 subTree2, leftValue, rightValue, depth + 1);
             
-            subTree2.visited = true;
+            visited.add(subTree2);
             
             double dist2 = Double.MAX_VALUE;
             if (retVal2 != null && !retVal2.isEmpty()) {

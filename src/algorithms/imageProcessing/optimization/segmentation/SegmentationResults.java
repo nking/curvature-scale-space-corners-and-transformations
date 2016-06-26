@@ -104,7 +104,8 @@ public class SegmentationResults {
      * @param expected
      * @return 
      */
-    public double evaluate(SegmentationResults expected) {
+    public double evaluate(SegmentationResults expected,
+        int dMax) {
             
         if (perimeters.size() == 0) {
             return 0;
@@ -112,7 +113,7 @@ public class SegmentationResults {
         
         BenchmarkMeasurer measurer = new BenchmarkMeasurer();
         
-        float fMeasure = measurer.evaluate(this, expected);
+        float fMeasure = measurer.evaluate(this, expected, dMax);
         
         return fMeasure;
     }

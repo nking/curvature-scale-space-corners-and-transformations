@@ -85,7 +85,7 @@ import thirdparty.HungarianAlgorithm;
 public class BenchmarkMeasurer {
     
     public float evaluate(SegmentationResults data,
-        SegmentationResults model) {
+        SegmentationResults model, int dMax) {
         
         /*
         for each point in perimeters, find the 6 nearest
@@ -103,7 +103,6 @@ public class BenchmarkMeasurer {
             return 0;
         }
         
-        int dMax = 2;
         int dMaxSq = dMax * dMax;
         
         Set<PairInt> allExpectedPoints = model.getAllPoints();
@@ -121,9 +120,15 @@ public class BenchmarkMeasurer {
                 
             int x = p.getX();
             int y = p.getY();
+            
+//57,118
+if ((Math.abs(57 - x) < 10) && (Math.abs(118 - y) < 10)) {
+    int z = 1;
+}       
 
             // search data for model (x, y)
-            List<PairFloat> nearestMatches = kNN.findNearest(k, x, y, dMax);
+            List<PairFloat> nearestMatches = 
+                kNN.findNearest(k, x, y, dMax);
 
             if (nearestMatches == null) {
                 continue;
@@ -179,6 +184,7 @@ public class BenchmarkMeasurer {
         n2 = 0;
         for (Entry<PairInt, Map<PairInt, Float>> entry :
             nearestNeighbors.entrySet()) {
+            
             PairInt p1 = entry.getKey();
             
             Integer i1 = p1Map.get(p1);
@@ -188,11 +194,13 @@ public class BenchmarkMeasurer {
                 n1++;
             }
             
-            for (Entry<PairInt, Float> entry2 : entry.getValue().entrySet()) {
+            for (Entry<PairInt, Float> entry2 : 
+                entry.getValue().entrySet()) {
+                
                 PairInt p2 = entry2.getKey();
                 Float c = entry2.getValue();
                 
-                Integer i2 = p1Map.get(p2);
+                Integer i2 = p2Map.get(p2);
                 if (i2 == null) {
                     i2 = Integer.valueOf(n2);
                     p2Map.put(p2, i2);

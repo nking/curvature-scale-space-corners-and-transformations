@@ -3682,7 +3682,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         String debugTag) {
         
         // 0 is CIE LAB, 1 is HSV
-        int clrSpace = 1;
+        final int clrSpace = 1;
                 
         boolean reduceNoise = true;//false;
         
@@ -3692,26 +3692,24 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             tColor = 5.5;
         } else {
             // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor =  0.35;
+            tColor =  0.135;//0.15;  between 0.1 and 0.175
         }
         
-        int tLen = 21;
+        int tLen = 1;//21;
         double tR;
         double tSmallMerge;
         if (clrSpace == 0) {
             tR = 0.5*3.0;
-            tLen = 21;
+            tLen = 1;//21;
             tSmallMerge = 0.025;
         } else if (clrSpace == 1) {
-            tR = 0.5*3.0;
-            tLen = 21;
+            tR = 2.25;//0.5*3.0;
+            tLen = 1;
             tSmallMerge = 0.025;
         } else {
             tR = 0.5*3.0;
             tSmallMerge = 0.025;
         }
-        //
-        
         
         return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
             reduceNoise, tSmallMerge, debugTag);
