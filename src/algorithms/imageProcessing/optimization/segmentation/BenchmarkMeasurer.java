@@ -120,12 +120,7 @@ public class BenchmarkMeasurer {
                 
             int x = p.getX();
             int y = p.getY();
-            
-//57,118
-if ((Math.abs(57 - x) < 10) && (Math.abs(118 - y) < 10)) {
-    int z = 1;
-}       
-
+     
             // search data for model (x, y)
             List<PairFloat> nearestMatches = 
                 kNN.findNearest(k, x, y, dMax);
@@ -172,9 +167,16 @@ if ((Math.abs(57 - x) < 10) && (Math.abs(118 - y) < 10)) {
             return 0;
         }
         
-        float[][] cost = new float[n1][n2];
-        for (int i = 0; i < n1; ++i) {
-            cost[i] = new float[n2];
+        boolean transposed = false;
+        float[][] cost;
+        if (n1 > n2) {
+            transposed = true;
+            cost = new float[n2][n1];
+        } else {
+            cost = new float[n1][n2];
+        }
+        for (int i = 0; i < cost.length; ++i) {
+            cost[i] = new float[cost[0].length];
             Arrays.fill(cost[i], -1);
         }
         
@@ -206,15 +208,16 @@ if ((Math.abs(57 - x) < 10) && (Math.abs(118 - y) < 10)) {
                     p2Map.put(p2, i2);
                     n2++;
                 }
-                cost[i1.intValue()][i2.intValue()] = c.floatValue();
+                if (transposed) {
+                    cost[i2.intValue()][i1.intValue()] 
+                        = c.floatValue();
+                } else {
+                    cost[i1.intValue()][i2.intValue()] 
+                        = c.floatValue();
+                }
             }
         }
-        boolean transposed = false;
-        if (cost.length > cost[0].length) {
-            cost = MatrixUtil.transpose(cost);
-            transposed = true;
-        }
-                        
+        
         // find min cost matches
         HungarianAlgorithm ha = new HungarianAlgorithm();
         int[][] match = ha.computeAssignments(cost);

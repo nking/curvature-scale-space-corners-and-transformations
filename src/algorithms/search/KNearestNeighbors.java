@@ -103,7 +103,7 @@ public class KNearestNeighbors {
             }
         }
         
-        int minDist = 1;
+        int minDist = 0;
 
         voronoi = new VoronoiFortunesSweep();
 
@@ -129,18 +129,21 @@ public class KNearestNeighbors {
                 indexes = new HashSet<Integer>();
                 siteIndexesMap.put(p1, indexes);
             }
-            indexes.add(s2);
+            indexes.add(Integer.valueOf(s2));
             
             indexes = siteIndexesMap.get(p2);
             if (indexes == null) {
                 indexes = new HashSet<Integer>();
                 siteIndexesMap.put(p2, indexes);
             }
-            indexes.add(s1);
+            indexes.add(Integer.valueOf(s1));
         }
         
-        // there may be redundant points
-        //assert(siteIndexesMap.size() == x.length);
+        assert(sites.length == x.length);
+
+        // points closer than minDist are not present,
+        // so the map is possibly smaller than all points
+        assert(siteIndexesMap.size() == x.length);
         
         // retrieve the points from voronoi sites because they are sorted
         n = sites.length;

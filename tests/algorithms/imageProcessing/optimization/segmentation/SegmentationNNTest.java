@@ -81,7 +81,7 @@ public class SegmentationNNTest extends TestCase {
         */
     }
     
-    public void estNelderMeadeSolver() throws Exception {
+    public void testNelderMeadeSolver() throws Exception {
         
         boolean enabled = true;
         
@@ -131,7 +131,7 @@ public class SegmentationNNTest extends TestCase {
         */
     }
     
-    public void testBenchmark() throws Exception {
+    public void estBenchmark() throws Exception {
         
         // simple test that fMeasure is larger
         //   for a better fit
@@ -203,16 +203,17 @@ public class SegmentationNNTest extends TestCase {
                 SegmentationResults modelResults 
                     = new SegmentationResults(modelSet);
             
- //TODO: can see clearly that need to improve
- // or replace the perimeter algorithm
-                
+                img = img.createWithDimensions();
+                img.fill(255, 255, 255);
                 MiscDebug.writeAlternatingColor(
-                    img.createWithDimensions(), 
-                    modelResults.getPerimeters(), "_model_" + tst + "_" + rootName);
+                    img, modelResults.getPerimeters(), 
+                    "_model_" + tst + "_" + rootName);
                 
+                img = img.createWithDimensions();
+                img.fill(255, 255, 255);
                 MiscDebug.writeAlternatingColor(
-                    img.createWithDimensions(), 
-                    dataResults.getPerimeters(), "_test_" + tst + "_" + rootName);
+                    img, dataResults.getPerimeters(), 
+                    "_test_" + tst + "_" + rootName);
                 
                 double fMeasure = dataResults.evaluate(
                     modelResults, dMax);
@@ -224,6 +225,8 @@ public class SegmentationNNTest extends TestCase {
             }
         }
         
+        // the first fit should be better
+        assertTrue(fMeasures[0] > fMeasures[1]);
     }
     
     public void estResults() throws Exception {
