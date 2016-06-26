@@ -304,7 +304,7 @@ public class KDTree {
             }
         }
         
-        if (dist1 < bestDist) {
+        if (dist1 < bestDist && retVal1 != null) {
             bestDist = dist1;
             bestNode = retVal1;
         }

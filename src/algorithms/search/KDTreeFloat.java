@@ -367,7 +367,7 @@ public class KDTreeFloat {
             }
         }
         
-        if (dist1 == bestDist) {
+        if (dist1 == bestDist && retVal1 != null) {
             bestNode.addAll(retVal1);
         } else if (dist1 < bestDist && retVal1 != null) {
             bestNode.clear();

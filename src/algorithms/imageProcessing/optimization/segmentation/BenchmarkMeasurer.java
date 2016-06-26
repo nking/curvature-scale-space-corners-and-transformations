@@ -158,6 +158,11 @@ public class BenchmarkMeasurer {
         */
         int n1 = nearestNeighbors.size();
         int n2 = countUniqueValues(nearestNeighbors);
+        
+        if (n1 == 0 || n2 == 0) {
+            return 0;
+        }
+        
         float[][] cost = new float[n1][n2];
         for (int i = 0; i < n1; ++i) {
             cost[i] = new float[n2];

@@ -984,9 +984,19 @@ public class PerimeterFinder {
             return borderPixels;
         }
 
-        if (debug) {
-            algorithms.misc.MiscDebug.assertAllRowsPopulated(rowColRanges,
-                rowMinMax, imageMaxColumn);
+        /*
+        If there is a large background region that extends
+        across the image and the other consecutive blobs are
+        embedded in it, the concavity may cause a fail here
+        until this alforithm is improved.
+        the large background perimeter is
+        redundant to the smaller embedded perimeters, so f
+        or now, will drop it.
+        TODO: improve the perimeter finding algorithm.
+        */
+        if (!allRowsArePopulated(rowColRanges,
+            rowMinMax, imageMaxColumn)) {
+            return borderPixels;
         }
 
         /*
@@ -2336,4 +2346,26 @@ MiscDebug.writeImage(tmp, "tmp");
         }
     }
 
+    protected boolean allRowsArePopulated(
+        Map<Integer, List<PairInt>> rowColRanges, int[] rowMinMax, 
+        int imageMaxColumn) {
+        
+        for (int row = rowMinMax[0]; row <= rowMinMax[1]; row++) {
+            
+            List<PairInt> colRanges = rowColRanges.get(Integer.valueOf(row));
+            
+            boolean empty = (colRanges == null) || colRanges.isEmpty();
+           
+            if (empty) {
+                System.out.println("error: row " + row + 
+                    " has no columns.  row min=" +
+                    rowMinMax[0] + " row max=" + 
+                    rowMinMax[1] + " col max=" +
+                    imageMaxColumn);
+                return false;
+            }            
+        }
+        
+        return true;
+    }
 }
