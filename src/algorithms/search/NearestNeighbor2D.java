@@ -4,6 +4,8 @@ import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import java.util.HashSet;
 import java.util.Set;
 import thirdparty.ods.Integerizer;
@@ -11,7 +13,7 @@ import thirdparty.ods.XFastTrie;
 import thirdparty.ods.XFastTrieNode;
 
 /**
- * a k-nearest neighbors using XFastTrie
+ * a nearest neighbor's algorithm using XFastTrie
  * for predecessor and successor queries
  * on spatially indexed numbers.
  * 
@@ -27,7 +29,7 @@ import thirdparty.ods.XFastTrieNode;
  * and the last point in the last row and last 
  * column is the query point.
  * In this worst case, the query time would scale
- * roughly as maxY * O(log_2(log_2(w))
+ * roughly as maxY * O(log_2(w))
  
   The algorithm starts with a predecessor and successor 
   call on the query point.  The minimum distance among
@@ -51,9 +53,9 @@ import thirdparty.ods.XFastTrieNode;
                                      13.succ='15', not closer than 12.
      20  21  22  23  24              23.pred and 23.succ not closer than 12
                              ans='12'.  queries: 3 pred, 3 succ queries.
-                                     at O(log_2 log_2(w)) + O(w-l) each
+                                     at O(log_2(w)) each
                                      complexity was 
-                                           6 * ( O(loglogw) + O(w-l) )
+                                           6 * O(log_2(w))
                                      for max index = 24, have w = 6 
  </ore>
  * @author nichole
@@ -67,6 +69,11 @@ public class NearestNeighbor2D {
     private final int maxY;
     
     private final int maxIndex;
+    
+    private boolean useCache = true;
+    
+    private TIntIntMap pCache = new TIntIntHashMap();
+    private TIntIntMap sCache = new TIntIntHashMap();
     
     /**
      * 
@@ -103,7 +110,11 @@ public class NearestNeighbor2D {
         }
     }
     
-    public int getInternalIndex(int col, int row) {
+    public void doNotUseCache() {
+        useCache = false;
+    }
+    
+    protected int getInternalIndex(int col, int row) {
         return (row * maxX) + col;
     }
     
@@ -121,8 +132,21 @@ public class NearestNeighbor2D {
     /**
     <pre>
       runtime complexity is
-      
-     
+         best case: 2 * O(log_2(maxW)).
+            Note that caching leads to an O(1) term
+            over time instead of the logarithmic term.
+            
+         worst case: nRows * 2 * O(log_2(maxW))
+         
+         Note, worst case is: first column
+         filled with points and all else is empty and
+         the number of rows is same or larger than 
+         number of columns and the
+         query is for the point in the last column and
+         last row... a predecessor call is necessary for
+         each row in the worst case.
+          
+     Note: maxW = 1 + Math.ceil(Math.log(maxX * maxY)/Math.log(2));            
      </ore>
     
      * @param x
@@ -140,9 +164,11 @@ public class NearestNeighbor2D {
                 + " maxY given in constructor, " + maxY);
         }
         
-        int index = getInternalIndex(x, y);
+        int idx = getInternalIndex(x, y);
+        Integer index = Integer.valueOf(idx);
         
-        Integer q = xbt.find(Integer.valueOf(index));
+        //O(1)
+        Integer q = xbt.find(index);
         if (q != null) {
             Set<PairInt> results = new HashSet<PairInt>();
             results.add(new PairInt(x, y));
@@ -153,8 +179,27 @@ public class NearestNeighbor2D {
         
         double closestDistance = Double.MAX_VALUE;
         
-        Integer predecessor = xbt.predecessor(index);
-        Integer successor = xbt.successor(index);
+        Integer predecessor = null;
+        Integer successor = null;
+        
+        if (useCache && pCache.containsKey(idx)) {
+            predecessor = Integer.valueOf(pCache.get(idx));
+        } else {
+            //O(log_2(maxW))
+            predecessor = xbt.predecessor(index);
+            if (useCache && predecessor != null) {
+                pCache.put(idx, predecessor.intValue());
+            }
+        }
+        if (useCache && sCache.containsKey(idx)) {
+            successor = Integer.valueOf(sCache.get(idx));
+        } else {
+            //O(log_2(maxW))
+            successor = xbt.successor(index);
+            if (useCache && successor != null){
+                sCache.put(idx, successor.intValue());
+            }
+        }
         
         double dp2 = dist(x, y, predecessor);
         double ds2 = dist(x, y, successor);
@@ -182,15 +227,34 @@ public class NearestNeighbor2D {
         Integer p2 = null; 
         Integer s2 = null;
         while (yCurrent >= yLow) {
-            int cIndex = getInternalIndex(x, yCurrent);
-            q = xbt.find(Integer.valueOf(cIndex));
+            int cIdx = getInternalIndex(x, yCurrent);
+            Integer cIndex = Integer.valueOf(cIdx);
+            
+            //O(1)
+            q = xbt.find(cIndex);
             if (q != null) {
                 p2 = q;
                 dp2 = dist(x, y, p2);
                 ds2 = Double.MAX_VALUE;
             } else {
-                p2 = xbt.predecessor(cIndex);
-                s2 = xbt.successor(cIndex);
+                if (useCache && pCache.containsKey(cIdx)) {
+                    p2 = Integer.valueOf(pCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    p2 = xbt.predecessor(cIndex);
+                    if (useCache && p2 != null) {
+                        pCache.put(cIdx, p2.intValue());
+                    }
+                }
+                if (useCache && sCache.containsKey(cIdx)) {
+                    s2 = Integer.valueOf(sCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    s2 = xbt.successor(cIndex);
+                    if (useCache && s2 != null) {
+                        sCache.put(cIdx, s2.intValue());
+                    }
+                }
                 dp2 = dist(x, y, p2);
                 ds2 = dist(x, y, s2);
             }
@@ -233,15 +297,34 @@ public class NearestNeighbor2D {
         int yHigh = estimateHighBound(y, goal);
         
         while (yCurrent <= yHigh) {
-            int cIndex = getInternalIndex(x, yCurrent);
-            q = xbt.find(Integer.valueOf(cIndex));
+            int cIdx = getInternalIndex(x, yCurrent);
+            Integer cIndex = Integer.valueOf(cIdx);
+            
+            //O(1)
+            q = xbt.find(cIndex);
             if (q != null) {
                 p2 = q;
                 dp2 = dist(x, y, p2);
                 ds2 = Double.MAX_VALUE;
             } else {
-                p2 = xbt.predecessor(cIndex);
-                s2 = xbt.successor(cIndex);
+                if (useCache && pCache.containsKey(cIdx)) {
+                    p2 = Integer.valueOf(pCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    p2 = xbt.predecessor(cIndex);
+                    if (useCache && p2 != null) {
+                        pCache.put(cIdx, p2.intValue());
+                    }
+                }
+                if (useCache && sCache.containsKey(cIdx)) {
+                    s2 = Integer.valueOf(sCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    s2 = xbt.successor(cIndex);
+                    if (useCache && s2 != null) {
+                        sCache.put(cIdx, s2.intValue());
+                    }
+                }
                 dp2 = dist(x, y, p2);
                 ds2 = dist(x, y, s2);
             }
@@ -293,8 +376,13 @@ public class NearestNeighbor2D {
     /**
     <pre>
       runtime complexity is
-      
-     
+         best case: 2 * O(log_2(maxW)).
+            Note that caching leads to an O(1) term
+            over time instead of the logarithmic term.
+            
+         worst case: dMax * 4 * O(log_2(maxW))
+         
+      Note: maxW = 1 + Math.ceil(Math.log(maxX * maxY)/Math.log(2));
      </ore>
     
      * @param x
@@ -313,9 +401,10 @@ public class NearestNeighbor2D {
                 + " maxY given in constructor, " + maxY);
         }
         
-        int index = getInternalIndex(x, y);
+        int idx = getInternalIndex(x, y);
+        Integer index = Integer.valueOf(idx);
         
-        Integer q = xbt.find(Integer.valueOf(index));
+        Integer q = xbt.find(index);
         if (q != null) {
             Set<PairInt> results = new HashSet<PairInt>();
             results.add(new PairInt(x, y));
@@ -326,8 +415,27 @@ public class NearestNeighbor2D {
         
         double closestDistance = Double.MAX_VALUE;
         
-        Integer predecessor = xbt.predecessor(index);
-        Integer successor = xbt.successor(index);
+        Integer predecessor = null;
+        Integer successor = null;
+        
+        if (useCache && pCache.containsKey(idx)) {
+            predecessor = Integer.valueOf(pCache.get(idx));
+        } else {
+            //O(log_2(maxW))
+            predecessor = xbt.predecessor(index);
+            if (useCache && predecessor != null) {
+                pCache.put(idx, predecessor.intValue());
+            }
+        }
+        if (useCache && sCache.containsKey(idx)) {
+            successor = Integer.valueOf(sCache.get(idx));
+        } else {
+            //O(log_2(maxW))
+            successor = xbt.successor(index);
+            if (useCache && successor != null) {
+                sCache.put(idx, successor.intValue());
+            }
+        }
         
         double dp2 = dist(x, y, predecessor);
         double ds2 = dist(x, y, successor);
@@ -359,15 +467,33 @@ public class NearestNeighbor2D {
         Integer p2 = null; 
         Integer s2 = null;
         while (yCurrent >= yLow) {
-            int cIndex = getInternalIndex(x, yCurrent);
-            q = xbt.find(Integer.valueOf(cIndex));
+            int cIdx = getInternalIndex(x, yCurrent);
+            Integer cIndex = Integer.valueOf(cIdx);
+            
+            q = xbt.find(cIndex);
             if (q != null) {
                 p2 = q;
                 dp2 = dist(x, y, p2);
                 ds2 = Double.MAX_VALUE;
             } else {
-                p2 = xbt.predecessor(cIndex);
-                s2 = xbt.successor(cIndex);
+                if (useCache && pCache.containsKey(cIdx)) {
+                    p2 = Integer.valueOf(pCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    p2 = xbt.predecessor(cIndex);
+                    if (useCache && p2 != null) {
+                        pCache.put(cIdx, p2.intValue());
+                    }
+                }
+                if (useCache && sCache.containsKey(cIdx)) {
+                    s2 = Integer.valueOf(sCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    s2 = xbt.successor(cIndex);
+                    if (useCache && s2 != null) {
+                        sCache.put(cIdx, s2.intValue());
+                    }
+                }
                 dp2 = dist(x, y, p2);
                 ds2 = dist(x, y, s2);
             }
@@ -416,15 +542,33 @@ public class NearestNeighbor2D {
         int yHigh = estimateHighBound(y, goal);
         
         while (yCurrent <= yHigh) {
-            int cIndex = getInternalIndex(x, yCurrent);
-            q = xbt.find(Integer.valueOf(cIndex));
+            int cIdx = getInternalIndex(x, yCurrent);
+            Integer cIndex = Integer.valueOf(cIdx);
+            
+            q = xbt.find(cIndex);
             if (q != null) {
                 p2 = q;
                 dp2 = dist(x, y, p2);
                 ds2 = Double.MAX_VALUE;
             } else {
-                p2 = xbt.predecessor(cIndex);
-                s2 = xbt.successor(cIndex);
+                if (useCache && pCache.containsKey(cIdx)) {
+                    p2 = Integer.valueOf(pCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    p2 = xbt.predecessor(cIndex);
+                    if (useCache && p2 != null) {
+                        pCache.put(cIdx, p2.intValue());
+                    }
+                }
+                if (useCache && sCache.containsKey(cIdx)) {
+                    s2 = Integer.valueOf(sCache.get(cIdx));
+                } else {
+                    //O(log_2(maxW))
+                    s2 = xbt.successor(cIndex);
+                    if (useCache && s2 != null) {
+                        sCache.put(cIdx, s2.intValue());
+                    }
+                }
                 dp2 = dist(x, y, p2);
                 ds2 = dist(x, y, s2);
             }
