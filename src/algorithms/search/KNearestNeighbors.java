@@ -6,6 +6,7 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,7 +19,8 @@ import java.util.Set;
  * A class to find the k nearest neighbors of a given
  * query point.  Internally, it uses a voronoi diagram
  * to find the neighbors of the nearest point to the
- * query point and returns the k closest to the query point.
+ * query point and returns the k closest to the query 
+ * point by adjacent voronoi sites.
  * 
   <pre>
   constructor, one time cost, runtime complexity:
@@ -142,7 +144,8 @@ public class KNearestNeighbors {
         assert(sites.length == x.length);
 
         // points closer than minDist are not present,
-        // so the map is possibly smaller than all points
+        // so the map is possibly smaller than all points.
+        // therefore, for this use of voronoi, need minDist=0.
         assert(siteIndexesMap.size() == x.length);
         
         // retrieve the points from voronoi sites because they are sorted
@@ -186,61 +189,76 @@ public class KNearestNeighbors {
     public List<PairFloat> findNearest(int k, float x, float y,
         float maxDistance) {
              
-        // O(log_2(N) at best, but some extreme queries are O(N)
-        // this returns one or equidistant multiple answers
+        // O(log_2(N) at best, but some extreme queries are O(N).
+        // nearest site(s). (if same distances, returns more than one).
         Set<PairFloat> nearest = kdTree.findNearestNeighbor(x, y);
       
         if (nearest == null) {
             return null;
         }
         
-        // less than O(n_nearest)edges*log_2(k))
+        /*
+        a fixed vector of size k tracks the nearest and nearest
+        adjacent.
+        
+        the search for k nearest continues in the adjacent sites
+        as long as the adjacent site (whose neighbors should be
+        searched) is nearer than the last item in the fixed vector.
+        
+        */
+        
+        // each fixed size vector comparison on insert is O(log_2(k))
         FixedSizeSortedVector<PairDist> vec = 
             new FixedSizeSortedVector<PairDist>(k, PairDist.class);
         
         Site[] sites = voronoi.getSites();
         
-        Set<PairFloat> added = new HashSet<PairFloat>();
+        Set<PairFloat> visited = new HashSet<PairFloat>();
         
-        // sites are in siteIndexesMap
-        for (PairFloat site : nearest) {
+        ArrayDeque<PairFloat> queue = new ArrayDeque<PairFloat>();
+        queue.addAll(nearest);
+        
+        while (!queue.isEmpty()) {
+            
+            PairFloat site = queue.pop();
+            
+            if (visited.contains(site)) {
+                continue;
+            }
+            visited.add(site);
             
             float dist = dist(x, y, site);
-            
+
             if (dist > maxDistance) {
                 continue;
             }
             
-            if (!added.contains(site)) {
+            // if vec is not full or if site is closer than
+            //  last full vec member, add site and add it's neighbors
+            //  to queue
+            
+            int nV = vec.getNumberOfItems();
+            if ((nV < k) || ((nV > 0) && 
+                (dist < vec.getArray()[nV-1].dist))) {
+            
                 PairDist pd = new PairDist();
                 pd.s1 = site;
                 pd.dist = dist;
-                vec.add(pd);
+                vec.add(pd);                
+            
+                // add neighbors to queue
                 
-                added.add(site);
-            }
+                Set<Integer> siteIndexes = siteIndexesMap.get(site);
             
-            Set<Integer> siteIndexes = siteIndexesMap.get(site);
-            
-            if (siteIndexes == null) {
-                throw new IllegalStateException("error in algorithm:"
-                    + " voronoi diagram has no neighbors for "
-                    + " (" + site.getX() + "," + site.getY() + ")");
-            }
-            
-            for (Integer index2 : siteIndexes) {
-                PairFloat site2 = sites[index2.intValue()].getCoord();
-                dist = dist(x, y, site2);
-                if (dist > maxDistance) {
-                    continue;
+                if (siteIndexes == null) {
+                    throw new IllegalStateException("error in algorithm:"
+                        + " voronoi diagram has no neighbors for "
+                        + " (" + site.getX() + "," + site.getY() + ")");
                 }
-                if (!added.contains(site2)) {
-                    PairDist pd = new PairDist();
-                    pd.s1 = site2;
-                    pd.dist = dist;
-                    vec.add(pd);
-                
-                    added.add(site2);
+            
+                for (Integer index2 : siteIndexes) {
+                    PairFloat site2 = sites[index2.intValue()].getCoord();
+                    queue.add(site2);
                 }
             }
         }
