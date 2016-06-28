@@ -708,5 +708,4 @@ public class AndroidStatuesTest extends TestCase {
             }
         }        
     }
-
 }

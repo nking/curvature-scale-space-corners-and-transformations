@@ -54,7 +54,7 @@ public class SegmentationNNTest extends TestCase {
         }
     }
     
-    public void estBisectionSolver() throws Exception {
+    public void testBisectionSolver() throws Exception {
         
         boolean enabled = true;
         
@@ -69,14 +69,16 @@ public class SegmentationNNTest extends TestCase {
         double diff;
         SequentialBisectorSolver solver;
         
-        solver = new SequentialBisectorSolver(true, 
+        /*solver = new SequentialBisectorSolver(true, 
             useLowNoiseEdges, data);
         
         diff = solver.solve();
         
         System.out.println(
-            "hsv, reduceNoise=true, difference=" + diff +
+            "hsv, reduceNoise=" + useLowNoiseEdges 
+             + ", difference=" + diff +
             "  params=" + Arrays.toString(solver.getParameters()));
+        */
         
         // --------
         solver = new SequentialBisectorSolver(false, 
@@ -85,7 +87,8 @@ public class SegmentationNNTest extends TestCase {
         diff = solver.solve();
         
         System.out.println(
-            "cie, reduceNoise=true, difference=" + diff +
+            "cie, reduceNoise=" + useLowNoiseEdges + 
+            "  difference=" + diff +
             "  parmaeters=" + Arrays.toString(solver.getParameters()));
         
     }
@@ -133,7 +136,7 @@ public class SegmentationNNTest extends TestCase {
       
     }
     
-    public void testBenchmark() throws Exception {
+    public void estBenchmark() throws Exception {
         
         // simple test that fMeasure is larger
         //   for a better fit

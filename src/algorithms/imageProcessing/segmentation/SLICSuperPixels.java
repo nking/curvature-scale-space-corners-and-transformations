@@ -88,7 +88,7 @@ public class SLICSuperPixels {
         nYs = Math.round((float)img.getHeight()/(float)s);
         this.k = nXs * nYs;
         
-        log.info("k = " + k);
+        log.info("k = " + k + " s=" + this.s + " nXs=" + nXs + " nYs=" + nYs);
         
         this.img = img;
         
@@ -556,7 +556,9 @@ public class SLICSuperPixels {
                     }
                     int pixIdx2 = img.getInternalIndex(x2, y2);
                     if (labels[pixIdx2] == -1) {
-                        queue1.add(new PairInt(x2, y2));
+                        PairInt p2 = new PairInt(x2, y2);
+                        queue1.add(p2);
+                        assert(!visited.contains(p2));
                     }
                 }
                 nIter++;

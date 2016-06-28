@@ -6,10 +6,14 @@ import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.ResourceFinder;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * given training datasets, finds the best combination of
@@ -40,8 +44,10 @@ public class SequentialBisectorSolver {
     
     private SData[] trainingData;
     
+    private FileWriter writer = null;
+    
     public SequentialBisectorSolver(boolean useHSV, boolean useLowNoiseEdges,
-        SData[] trainingData) {
+        SData[] trainingData) throws IOException {
         colorSpace = useHSV ? 1 : 0;
         reduceNoise = useLowNoiseEdges;
         this.trainingData = trainingData;
@@ -51,6 +57,9 @@ public class SequentialBisectorSolver {
         } else {
             tColor = new Parameter(1.5f, 9.f, 0.1f);
         }
+        
+        String dir = ResourceFinder.findOutputTestDirectory();
+        writer = new FileWriter(dir + "/opt_log.txt");
     }
     
     /*
@@ -79,17 +88,21 @@ public class SequentialBisectorSolver {
             tLen, tColor, tR, tSmallMerge};
         
         int np = 1 << parameters.length;
-    
-        boolean hasConverged = false;
-      
+          
         SegmentationResults[] expected = readTrainingFiles();
         
         List<List<PairIntArray>> edgesList = extractEdges();
         
         double lastDifference = Double.MAX_VALUE;
+
+        int nIter = 0;
         
-        while (!hasConverged) {
+        while (true) {
             
+            //if ((nIter % 10) == 0) {
+               print(parameters);
+            //}
+
             double minDiff = Double.MAX_VALUE;
 
             boolean[] minDiffIsLow = new boolean[parameters.length];
@@ -163,6 +176,9 @@ public class SequentialBisectorSolver {
                         highIdx = tIdx;
                     } else if (highIdx == tIdx) {
                         highIdx--;
+                        if (highIdx < lowIdx) {
+                            highIdx = lowIdx;
+                        }
                     } else {
                         highIdx = tIdx;
                     }
@@ -173,6 +189,9 @@ public class SequentialBisectorSolver {
                         highIdx = tIdx;
                     } else if (lowIdx == tIdx) {
                         lowIdx++;
+                        if (lowIdx > highIdx) {
+                            lowIdx = highIdx;
+                        }
                     } else {
                         lowIdx = tIdx;
                     }
@@ -187,7 +206,7 @@ public class SequentialBisectorSolver {
                 break;
             }                              
             // check for convergence
-            hasConverged = true;
+            boolean hasConverged = true;
             for (int pIdx = 0; pIdx < parameters.length; ++pIdx) {
                 //if (parameters[pIdx].lowIdx != parameters[pIdx].highIdx) {
                 if (parameters[pIdx].lowIdx < parameters[pIdx].highIdx) {
@@ -195,6 +214,12 @@ public class SequentialBisectorSolver {
                     break;
                 }
             }
+            
+            if (hasConverged) {
+                break;
+            }
+
+            nIter++;
         }
         
         if (true) {
@@ -324,7 +349,8 @@ public class SequentialBisectorSolver {
             List<Set<PairInt>> results = 
                 imageSegmentation.createColorEdgeSegmentation(img, 
                     edgesList.get(i),
-                    colorSpace, Math.round(tLenValue), tColorValue, tRValue, 
+                    colorSpace, Math.round(tLenValue), 
+                    tColorValue, tRValue, 
                     reduceNoise, tSmallMergeValue, rootName);
             
             SegmentationResults sr0 = new SegmentationResults(results);
@@ -352,22 +378,37 @@ public class SequentialBisectorSolver {
     }
 
     private void print(Parameter[] parameters) {
+        StringBuilder sb = new StringBuilder("\n");
         //tLen, tColor, tR, tSmallMerge
         for (int i = 0; i < parameters.length; ++i) {
             if (i == 0) {
-                System.out.print("tLen: ");
+                sb.append("tLen: ");
             } else if (i == 1) {
-                System.out.print("tColor: ");
+                sb.append("tColor: ");
             } else if (i == 2) {
-                System.out.print("tR: ");
+                sb.append("tR: ");
             } else if (i == 3) {
-                System.out.print("tSmallMerge: ");
+                sb.append("tSmallMerge: ");
             }
-            System.out.println(parameters[i].getMidValue()
-               + " loIdx=" + parameters[i].lowIdx
-               + " hiIdx=" + parameters[i].highIdx);
+            sb.append(parameters[i].getMidValue())
+               .append(" loIdx=").append(parameters[i].lowIdx)
+               .append(" hiIdx=").append(parameters[i].highIdx)
+               .append("\n");
         }
+        try {
+            writer.write(sb.toString());
+            writer.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(SequentialBisectorSolver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        //System.out.println(sb.toString());
     }
+
+    @Override
+    protected void finalize() throws Throwable {
+        writer.close();
+        super.finalize(); //To change body of generated methods, choose Tools | Templates.
+    }    
 
     private static class Parameter {
         final float vFirst;
