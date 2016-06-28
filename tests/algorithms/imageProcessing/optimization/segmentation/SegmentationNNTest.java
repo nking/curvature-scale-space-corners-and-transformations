@@ -1,16 +1,29 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.imageProcessing.DFSConnectedGroupsFinder;
+import algorithms.imageProcessing.DFSConnectedGroupsFinder2;
+import algorithms.imageProcessing.DFSContiguousValueFinder;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.optimization.segmentation.DownhillSimplexSolver.SFit;
+import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -41,9 +54,6 @@ public class SegmentationNNTest extends TestCase {
         }
     }
     
-    public void testNN() throws Exception {
-    }
-    
     public void estBisectionSolver() throws Exception {
         
         boolean enabled = true;
@@ -51,13 +61,18 @@ public class SegmentationNNTest extends TestCase {
         if (!enabled) {
             return;
         }
+        
+        boolean useLowNoiseEdges = true;
                
         SData[] data = getDetailedTrainingData();
         
-        SequentialBisectorSolver solver = new SequentialBisectorSolver(true, 
-            true, data);
+        double diff;
+        SequentialBisectorSolver solver;
         
-        double diff = solver.solve();
+        solver = new SequentialBisectorSolver(true, 
+            useLowNoiseEdges, data);
+        
+        diff = solver.solve();
         
         System.out.println(
             "hsv, reduceNoise=true, difference=" + diff +
@@ -65,7 +80,7 @@ public class SegmentationNNTest extends TestCase {
         
         // --------
         solver = new SequentialBisectorSolver(false, 
-            true, data);
+            useLowNoiseEdges, data);
         
         diff = solver.solve();
         
@@ -73,31 +88,30 @@ public class SegmentationNNTest extends TestCase {
             "cie, reduceNoise=true, difference=" + diff +
             "  parmaeters=" + Arrays.toString(solver.getParameters()));
         
-        /*
-        normalize = false:
-            hsv, reduceNoise=true, difference=33097.4442013048  params=[6.0, 0.05, 1.5, 0.005]
-
-            cie, reduceNoise=true, difference=2397540.564264881  parmaeters=[1.0, 2.5, 1.5, 0.005]
-        */
     }
     
-    public void testNelderMeadeSolver() throws Exception {
+    public void estNelderMeadeSolver() throws Exception {
         
         boolean enabled = true;
         
         if (!enabled) {
             return;
         }
-               
+        
         SData[] data = getDetailedTrainingData();
         
-        boolean useLowNoiseEdges = false;
+        boolean useLowNoiseEdges = true;
         
         DownhillSimplexSolver solver = 
-            new DownhillSimplexSolver(true, useLowNoiseEdges, data);
+            new DownhillSimplexSolver(true, 
+                useLowNoiseEdges, data);
         
-        SFit fit = solver.solve();
-        double diff = fit.costF;
+        SFit fit;
+        double diff;
+        
+        /*
+        fit = solver.solve();
+        diff = fit.costF;
         
         System.out.println(
             "hsv, reduceNoise=" + useLowNoiseEdges + 
@@ -105,7 +119,7 @@ public class SegmentationNNTest extends TestCase {
             "  params=" + Arrays.toString(solver.getParameters()));
         
         // --------
-        /*
+        */
         solver = new DownhillSimplexSolver(false, 
             useLowNoiseEdges, data);
         
@@ -116,19 +130,7 @@ public class SegmentationNNTest extends TestCase {
             "cie, reduceNoise=" + useLowNoiseEdges
             + " difference=" + diff +
             "  parameters=" + Arrays.toString(solver.getParameters()));
-        */
-        /*
-        normalize = false:
-           hsv, nIter=3 bestFit=cost=2.7239726540785525E7 
-              tLen=29 tColor=0.48000000019868216 
-              tSmallMerge=0.03366666678339243 tR=1.5 
-              reduceNoiseF=true colorSpace=1.0
-            
-           cie nIter=2 bestFit=cost=1.947937187996745E7 
-             tLen=11 tColor=4.0 tSmallMerge=0.03500000014901161 
-             tR=1.5 reduceNoiseF=true colorSpace=0.0
-            
-        */
+      
     }
     
     public void estBenchmark() throws Exception {
@@ -193,7 +195,7 @@ public class SegmentationNNTest extends TestCase {
                 List<Set<PairInt>> dataSet = 
                     imageSegmentation.createColorEdgeSegmentation(img, 
                         edges,
-                        1, (int)Math.round(tLen), tClr, tR, 
+                        1, Math.round(tLen), tClr, tR, 
                         reduceNoise, tSMerge, rootName);
             
                 // reduces the sets to perimeters for comparisons              
@@ -227,6 +229,66 @@ public class SegmentationNNTest extends TestCase {
         
         // the first fit should be better
         assertTrue(fMeasures[0] > fMeasures[1]);
+    }
+    
+    public void testEvalNormalizedCuts() throws Exception {
+        
+        int dMax = 2;
+        
+        SData[] data = getDetailedTrainingData();
+        
+        String imgNumber = "101087";
+                
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        BerkeleySegmentationFileReader reader = new BerkeleySegmentationFileReader();
+                
+        for (int i = 0; i < data.length; ++i) {
+
+            String rootName = data[i].imgFileName.split("\\.")[0];
+
+            if (!rootName.contains(imgNumber)) {
+                continue;
+            }
+
+            String imgFilePath = data[i].dirPath + "/" + data[i].imgFileName;
+
+            String segFilePath = data[i].dirPath + "/" + data[i].segFileName;
+
+            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
+
+            List<Set<PairInt>> modelSet = reader.readFile(segFilePath);
+
+            int[] labels = imageSegmentation.
+                calcSuperPixelsAndNormalizedCutsLabels(img);
+            List<Set<PairInt>> dataSet =            
+                createContiguousGroups(labels, img);
+            
+            // reduces the sets to perimeters for comparisons              
+            SegmentationResults dataResults 
+                = new SegmentationResults(dataSet);
+
+            SegmentationResults modelResults 
+                = new SegmentationResults(modelSet);
+
+            img = img.createWithDimensions();
+            img.fill(255, 255, 255);
+            MiscDebug.writeAlternatingColor(
+                img, modelResults.getPerimeters(), 
+                "_model_" + rootName);
+
+            img = img.createWithDimensions();
+            img.fill(255, 255, 255);
+            MiscDebug.writeAlternatingColor(
+                img, dataResults.getPerimeters(), 
+                "_test_norm_cuts_" + rootName);
+
+            double fMeasure = dataResults.evaluate(
+                modelResults, dMax);
+
+            System.out.println("normalized cuts on " + 
+                rootName + " fMeasure=" + fMeasure);
+        }
     }
     
     public void estResults() throws Exception {
@@ -528,5 +590,44 @@ public class SegmentationNNTest extends TestCase {
         ImageIOHelper.addAlternatingColorPointSetsToImage(sets, 0, 0, 0, img);
         
         MiscDebug.writeImage(img, fileRootName + "_seg_");
+    }
+
+    private List<Set<PairInt>> createContiguousGroups(
+        int[] labels, ImageExt img) {
+       
+        TIntObjectMap<Set<PairInt>> valuePixMap = 
+            new TIntObjectHashMap<Set<PairInt>>();
+        
+        for (int idx = 0; idx < labels.length; ++idx) {
+
+            PairInt p = new PairInt(img.getCol(idx),
+                img.getRow(idx));
+
+            Set<PairInt> points = valuePixMap.get(labels[idx]);
+            if (points == null) {
+                points = new HashSet<PairInt>();
+                valuePixMap.put(labels[idx], points);
+            }
+            points.add(p);
+        }
+        
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
+        
+        TIntObjectIterator<Set<PairInt>> iter =
+            valuePixMap.iterator();
+        
+        for (int i = valuePixMap.size(); i-- > 0;) {
+             iter.advance();
+             Set<PairInt> set = iter.value();
+             DFSConnectedGroupsFinder finder = 
+                 new DFSConnectedGroupsFinder();
+             finder.findConnectedPointGroups(set);
+             for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
+                 Set<PairInt> group = finder.getXY(j);
+                 output.add(group);
+             }
+        }
+        
+        return output;
     }
 }

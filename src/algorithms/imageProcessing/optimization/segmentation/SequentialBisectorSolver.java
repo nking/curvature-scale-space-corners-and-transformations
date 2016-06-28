@@ -3,6 +3,7 @@ package algorithms.imageProcessing.optimization.segmentation;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.io.IOException;
@@ -25,9 +26,11 @@ public class SequentialBisectorSolver {
     
     private final Parameter tColor;
     
-    private final Parameter tR = new Parameter(0.5f * 3.0f, 0.95f * 3.0f, 0.5f * 3.0f);
+    private final Parameter tR = new Parameter(0.5f * 3.0f, 
+        1.05f * 3.0f, 0.125f);
     
-    private final Parameter tSmallMerge = new Parameter(0.005f, 0.05f, 0.005f);
+    private final Parameter tSmallMerge = new Parameter(
+        0.005f, 0.1f, 0.01f);
     
     private double difference = Double.MAX_VALUE;
     
@@ -44,9 +47,9 @@ public class SequentialBisectorSolver {
         this.trainingData = trainingData;
         
         if (useHSV) {
-            tColor = new Parameter(0.05f, 0.7f, 0.05f);
+            tColor = new Parameter(0.05f, 1.0f, 0.05f);
         } else {
-            tColor = new Parameter(2.5f, 9.f, 0.5f);
+            tColor = new Parameter(1.5f, 9.f, 0.1f);
         }
     }
     
@@ -194,6 +197,10 @@ public class SequentialBisectorSolver {
             }
         }
         
+        if (true) {
+            debugImages(parameters, edgesList);
+        }
+        
         return lastDifference;
     }
 
@@ -303,6 +310,8 @@ public class SequentialBisectorSolver {
                 
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
+        int dMax = 2;
+        
         double sumDifference = 0;
         
         for (int i = 0; i < trainingData.length; ++i) {
@@ -324,7 +333,7 @@ public class SequentialBisectorSolver {
             
             // going to use 1 - fMeasure for now to convert
             // the score into a cost
-            double fMeasure = sr0.evaluate(exp);
+            double fMeasure = sr0.evaluate(exp, dMax);
             sumDifference += (1. - fMeasure);
         }
         
@@ -340,6 +349,24 @@ public class SequentialBisectorSolver {
         output[3] = tSmallMerge.getMidValue();
         
         return output;
+    }
+
+    private void print(Parameter[] parameters) {
+        //tLen, tColor, tR, tSmallMerge
+        for (int i = 0; i < parameters.length; ++i) {
+            if (i == 0) {
+                System.out.print("tLen: ");
+            } else if (i == 1) {
+                System.out.print("tColor: ");
+            } else if (i == 2) {
+                System.out.print("tR: ");
+            } else if (i == 3) {
+                System.out.print("tSmallMerge: ");
+            }
+            System.out.println(parameters[i].getMidValue()
+               + " loIdx=" + parameters[i].lowIdx
+               + " hiIdx=" + parameters[i].highIdx);
+        }
     }
 
     private static class Parameter {
@@ -370,4 +397,42 @@ public class SequentialBisectorSolver {
             return v;
         }
     }
+    
+    private void debugImages(Parameter[] parameters, 
+        List<List<PairIntArray>> edgesList) throws Exception {
+              
+        //tLen, tColor, tR, tSmallMerge
+        print(parameters);
+        
+        int tLen = (int)parameters[0].getMidValue();
+        float tColor = parameters[1].getMidValue();
+        float tR = parameters[2].getMidValue();
+        float tSmallMerge = parameters[3].getMidValue();
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        long ts = MiscDebug.getCurrentTimeFormatted();
+                
+        for (int i = 0; i < trainingData.length; ++i) {
+            
+            String rootName = trainingData[i].imgFileName.split("\\.")[0];
+            String imgFilePath = trainingData[i].dirPath + "/" + trainingData[i].imgFileName;        
+            
+            ImageExt img = ImageIOHelper.readImageExt(imgFilePath);
+            
+            List<Set<PairInt>> results = 
+                imageSegmentation.createColorEdgeSegmentation(img, 
+                    edgesList.get(i),
+                    colorSpace, 
+                    tLen, tColor, tR, 
+                    reduceNoise, 
+                    tSmallMerge, rootName);
+            
+            img = img.createWithDimensions();
+            
+            MiscDebug.writeAlternatingColor(
+                img, results, "seg_" + rootName + "_" + ts);
+        }
+    }
+
 }

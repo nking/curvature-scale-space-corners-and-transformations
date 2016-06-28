@@ -6,6 +6,9 @@ import algorithms.imageProcessing.Gaussian1DFirstDeriv;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,7 +22,7 @@ import java.util.logging.Logger;
  * a variant of kmeans whose goal is to make k super-pixels in the image
  * based upon CIE Lab color similarity and x,y proximity.
  * 
- * The code follows the algorithm of:
+ * The code implements the algorithm of:
  * "SLIC Superpixels Compared to State-of-the-Art Superpixel Methods"
    by Achanta, Appu Shaji,Smith,  Lucchi, Fua, and Su ̈sstrunk,
  *  
@@ -359,8 +362,8 @@ public class SLICSuperPixels {
            gradient[x1][y1] = gr;
        }
        
-       return gradient;
-   }
+        return gradient;
+    }
     
     private void assignPixelsNearSeeds() {
 
@@ -475,7 +478,7 @@ public class SLICSuperPixels {
 
     private void assignTheUnassigned() {
         
-        Map<PairInt, Set<Integer>> unassignedMap = new HashMap<PairInt, Set<Integer>>();
+        Map<PairInt, TIntSet> unassignedMap = new HashMap<PairInt, TIntSet>();
         
         int w = img.getWidth();
         int h = img.getHeight();
@@ -515,21 +518,22 @@ public class SLICSuperPixels {
                 int x1 = p.getX();
                 int y1 = p.getY();
 
-                Set<Integer> adjLabels;
+                TIntSet adjLabels;
                 if (nIter == 0) {
                     adjLabels = unassignedMap.get(p);
                     assert(adjLabels != null);
                 } else {
-                    adjLabels = new HashSet<Integer>();
+                    adjLabels = new TIntHashSet();
                     addNeighobLabelsForPoint(adjLabels, x1, y1, dxs, dys);
                 }
 
                 double minD = Double.MAX_VALUE;
-                Integer minLabel2 = null;
+                int minLabel2 = -1;
 
-                for (Integer label2 : adjLabels) {
-
-                    double dist = calcDist(seedDescriptors[label2.intValue()], 
+                TIntIterator iter = adjLabels.iterator();
+                while (iter.hasNext()) {
+                    int label2 = iter.next();
+                    double dist = calcDist(seedDescriptors[label2], 
                         img.getCIELAB(x1, y1), x1, y1);
 
                     if (dist < minD) {
@@ -539,7 +543,7 @@ public class SLICSuperPixels {
                 }
 
                 int pixIdx1 = img.getInternalIndex(p.getX(), p.getY());
-                labels[pixIdx1] = minLabel2.intValue();
+                labels[pixIdx1] = minLabel2;
                 distances[pixIdx1] = minD;
 
                 unassignedMap.remove(p);
@@ -568,7 +572,7 @@ public class SLICSuperPixels {
     }
 
     private ArrayDeque<PairInt> populateByNumberOfNeighbors(
-        Map<PairInt, Set<Integer>> unassignedMap) {
+        Map<PairInt, TIntSet> unassignedMap) {
         
         int n = unassignedMap.size();
         
@@ -576,7 +580,7 @@ public class SLICSuperPixels {
         int[] nN = new int[n];
         
         int count = 0;
-        for (Entry<PairInt, Set<Integer>> entry : unassignedMap.entrySet()) {
+        for (Entry<PairInt, TIntSet> entry : unassignedMap.entrySet()) {
             points[count] = entry.getKey();
             nN[count] = entry.getValue().size();
             count++;
@@ -603,7 +607,7 @@ public class SLICSuperPixels {
         return labels;
     }
 
-    private void addNeighobLabelsForPoint(Map<PairInt, Set<Integer>> unassignedMap, 
+    private void addNeighobLabelsForPoint(Map<PairInt, TIntSet> unassignedMap, 
         int i, int j, int[] dxs, int[] dys) {
         
         int w = img.getWidth();
@@ -611,16 +615,16 @@ public class SLICSuperPixels {
         
         PairInt p = new PairInt(i, j);
 
-        Set<Integer> adjLabels = unassignedMap.get(p);
+        TIntSet adjLabels = unassignedMap.get(p);
         if (adjLabels == null) {
-            adjLabels = new HashSet<Integer>();
+            adjLabels = new TIntHashSet();
             unassignedMap.put(p, adjLabels);
         }
         
         addNeighobLabelsForPoint(adjLabels, i, j, dxs, dys);
     }
     
-    private void addNeighobLabelsForPoint(Set<Integer> adjLabels, 
+    private void addNeighobLabelsForPoint(TIntSet adjLabels, 
         int i, int j, int[] dxs, int[] dys) {
         
         int w = img.getWidth();
@@ -636,7 +640,7 @@ public class SLICSuperPixels {
             }
             int pixIdx2 = img.getInternalIndex(x2, y2);
             if (labels[pixIdx2] > -1) {
-                adjLabels.add(Integer.valueOf(labels[pixIdx2]));
+                adjLabels.add(labels[pixIdx2]);
             }
         }
     }

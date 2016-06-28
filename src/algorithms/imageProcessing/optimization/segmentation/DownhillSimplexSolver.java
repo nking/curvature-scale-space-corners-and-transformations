@@ -23,14 +23,15 @@ import java.util.Set;
  */
 public class DownhillSimplexSolver {
         
-    private final Parameter tLen = new Parameter(1, 20, 5);
+    private final Parameter tLen = new Parameter(1, 40, 5);
     
     private final Parameter tColor;
     
     private final Parameter tR = new Parameter(0.5f * 3.0f, 
-        1.05f * 3.0f, 0.25f);
+        1.05f * 3.0f, 0.125f);
     
-    private final Parameter tSmallMerge = new Parameter(0.005f, 0.05f, 0.005f);
+    private final Parameter tSmallMerge = new Parameter(
+        0.005f, 0.1f, 0.01f);
     
     private double difference = Double.MAX_VALUE;
     
@@ -47,9 +48,9 @@ public class DownhillSimplexSolver {
         this.trainingData = trainingData;
         
         if (useHSV) {
-            tColor = new Parameter(0.1f, 0.175f, 0.005f);
+            tColor = new Parameter(0.05f, 1.0f, 0.05f);
         } else {
-            tColor = new Parameter(2.5f, 9.f, 0.5f);
+            tColor = new Parameter(1.5f, 9.f, 0.1f);
         }
     }
     

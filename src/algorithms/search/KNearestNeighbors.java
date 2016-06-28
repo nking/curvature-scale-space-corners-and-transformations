@@ -5,7 +5,6 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.util.PairFloat;
-import algorithms.util.PairInt;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
