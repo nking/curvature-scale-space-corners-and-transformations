@@ -33,7 +33,7 @@ public class BerkeleySegmentationFileReaderTest extends TestCase {
        
         String fileRoot = "241004";
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() +
             "/berkeleySegSubset";
             
         String imgFilePath = dir + "/" + fileRoot + "/" + fileRoot + ".jpg";

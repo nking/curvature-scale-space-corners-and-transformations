@@ -1,0 +1,19 @@
+format {*ascii|binary} {*cr|map}
+	date <date string>
+	image <int>	# image ID number
+	user <int>	# user ID number
+	width <int>	# width of image
+	height <int>	# height of image
+	segments <int>	# number of segments
+	gray {*0|1}	# image presented in grayscale?
+	invert {*0|1}	# image presented with pixel values inverted?
+	flipflop {*0|1}	# image presented upside-down and backwards?
+
+<s> <r> <c1> <c2>
+
+All values start counting at 0.  <s> is the segment number; <r> is the
+row; <c1> and <c2> are column numbers.  The line means that columns
+[<c1>..<c2>] of row <r> belong to segment <s>.  Lines of this sort can
+appear in any order, and can be reordered without harm.  The only
+restriction is that each pixel must be named exactly once.
+

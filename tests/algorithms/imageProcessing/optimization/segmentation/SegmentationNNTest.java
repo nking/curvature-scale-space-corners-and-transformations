@@ -39,7 +39,7 @@ public class SegmentationNNTest extends TestCase {
     
     public void est0() throws Exception {
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() + 
             "/berkeleySegSubset";
         
         String[][] data = getTrainingData();
@@ -133,7 +133,7 @@ public class SegmentationNNTest extends TestCase {
       
     }
     
-    public void estBenchmark() throws Exception {
+    public void testBenchmark() throws Exception {
         
         // simple test that fMeasure is larger
         //   for a better fit
@@ -231,7 +231,7 @@ public class SegmentationNNTest extends TestCase {
         assertTrue(fMeasures[0] > fMeasures[1]);
     }
     
-    public void testEvalNormalizedCuts() throws Exception {
+    public void estEvalNormalizedCuts() throws Exception {
         
         int dMax = 2;
         
@@ -247,9 +247,9 @@ public class SegmentationNNTest extends TestCase {
 
             String rootName = data[i].imgFileName.split("\\.")[0];
 
-            if (!rootName.contains(imgNumber)) {
-                continue;
-            }
+            //if (!rootName.contains(imgNumber)) {
+            //    continue;
+            //}
 
             String imgFilePath = data[i].dirPath + "/" + data[i].imgFileName;
 
@@ -441,7 +441,7 @@ public class SegmentationNNTest extends TestCase {
     
     public SData[] getDetailedTrainingData() throws IOException {
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() + 
             "/berkeleySegSubset";
         
         SData[] data = new SData[11];
@@ -506,7 +506,7 @@ public class SegmentationNNTest extends TestCase {
     
     public SData[] getLessDetailedTrainingData() throws IOException {
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() + 
             "/berkeleySegSubset";
         
         SData[] data = new SData[11];

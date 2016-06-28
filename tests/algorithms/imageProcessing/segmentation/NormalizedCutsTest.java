@@ -107,7 +107,7 @@ public class NormalizedCutsTest extends TestCase {
     
     public SData[] getDetailedTrainingData() throws IOException {
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() + 
             "/berkeleySegSubset";
         
         SData[] data = new SData[11];
@@ -172,7 +172,7 @@ public class NormalizedCutsTest extends TestCase {
     
      public SData[] getLessDetailedTrainingData() throws IOException {
         
-        String dir = ResourceFinder.findTmpDataDirectory() + 
+        String dir = ResourceFinder.findTestResourcesDirectory() + 
             "/berkeleySegSubset";
         
         SData[] data = new SData[11];
