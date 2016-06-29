@@ -3675,6 +3675,9 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * The algorithm follows the general outline given by
      * Jie and Peng-fei 2003, "Natural Color Image Segmentation",
        http://www-labs.iro.umontreal.ca/~mignotte/IFT6150/Articles/TRASH/ARTICLES_2010/cr1231.pdf
+     * 
+     * NOTE: parameters in this algorithm are sensitive to
+     * the PSF.
      * @param input
      * @return 
      */
@@ -3687,28 +3690,21 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         boolean reduceNoise = true;//false;
         
         double tColor;
-        if (clrSpace == 0) {
-            // JND for deltaE is ~2.3
-            tColor = 5.5;
-        } else {
-            // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
-            tColor =  0.135;//0.15;  between 0.1 and 0.175
-        }
-        
-        int tLen = 1;//21;
+        int tLen;
         double tR;
         double tSmallMerge;
         if (clrSpace == 0) {
-            tR = 0.5*3.0;
-            tLen = 1;//21;
-            tSmallMerge = 0.025;
-        } else if (clrSpace == 1) {
-            tR = 2.25;//0.5*3.0;
-            tLen = 1;
-            tSmallMerge = 0.025;
+            // JND for deltaE is ~2.3
+            tColor = 3.1;//5.5;
+            tR = 1.5;
+            tLen = 6;
+            tSmallMerge = 0.095;
         } else {
-            tR = 0.5*3.0;
-            tSmallMerge = 0.025;
+            // what is JND for HSV (a.k.a. HSB) ?  each range of values is 0:1
+            tColor =  0.175;//0.15;  between 0.1 and 0.175
+            tR = 2.25;//0.5*3.0;
+            tLen = 3;
+            tSmallMerge = 0.055;
         }
         
         return createColorEdgeSegmentation(input, clrSpace, tLen, tColor, tR, 
@@ -8178,7 +8174,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         float[][] clusterDescriptors, int clrSpace, double tColor,
         List<Integer> edgeIndexes) {
         
-        System.out.println(edgeIndexes.size() + " edges");
+        log.fine(edgeIndexes.size() + " edges");
         
         if (edgeIndexes.isEmpty()) {
             return;
@@ -8611,10 +8607,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     }
                     if (!shortPointIndexMap.isEmpty()) {
                         if (shortPointIndexMap.size() == lastInnerQ) {
-                            int z = 1;
+                            return;
                         }
                         innerQueue.addAll(shortPointIndexMap.keySet());
-                        lastInnerQ = shortEdgeIndexes.size();
+                        lastInnerQ = shortPointIndexMap.size();
                     } else {
                         lastInnerQ = 0;
                         break;
@@ -8974,7 +8970,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             nMerged++;
         }
        
-        System.out.println("color histogram nMerged=" + nMerged);
+        log.fine("color histogram nMerged=" + nMerged);
     }
 
     private int[][][] calculateColorHistograms(ImageExt input, 
