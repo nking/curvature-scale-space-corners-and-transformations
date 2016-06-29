@@ -389,14 +389,19 @@ public class DownhillSimplexSolver {
                     colorSpace, (int)Math.round(tLenValue), tColorValue, tRValue, 
                     reduceNoise, tSmallMergeValue, rootName);
             
-            SegmentationResults sr0 = new SegmentationResults(results);
-            
-            SegmentationResults exp = expected[i];
-            
-            // going to use 1 - fMeasure for now to convert
-            // the score into a cost
-            double fMeasure = sr0.evaluate(exp, dMax);
-            sumDifference += (1. - fMeasure);
+            if (results.size() > 1) {
+                SegmentationResults sr0 = new SegmentationResults(results);
+
+                SegmentationResults exp = expected[i];
+
+                // going to use 1 - fMeasure for now to convert
+                // the score into a cost
+                double fMeasure = sr0.evaluate(exp, dMax);
+                sumDifference += (1. - fMeasure);
+            } else {
+                // no edges, so cost is maximum
+                sumDifference += 1;
+            }
         }
    
         SFit sFit = new SFit();

@@ -199,9 +199,9 @@ public class SequentialBisectorSolver {
                 parameters[pIdx].lowIdx = lowIdx;
                 parameters[pIdx].highIdx = highIdx;
             }
-           
+
             lastDifference = minDiff;
-            
+
             if (minDiff == 0) {
                 break;
             }                              
@@ -214,7 +214,7 @@ public class SequentialBisectorSolver {
                     break;
                 }
             }
-            
+
             if (hasConverged) {
                 break;
             }
@@ -353,14 +353,20 @@ public class SequentialBisectorSolver {
                     tColorValue, tRValue, 
                     reduceNoise, tSmallMergeValue, rootName);
             
-            SegmentationResults sr0 = new SegmentationResults(results);
-            
-            SegmentationResults exp = expected[i];
-            
-            // going to use 1 - fMeasure for now to convert
-            // the score into a cost
-            double fMeasure = sr0.evaluate(exp, dMax);
-            sumDifference += (1. - fMeasure);
+            if (results.size() > 1) {
+                
+                SegmentationResults sr0 = new SegmentationResults(results);
+
+                SegmentationResults exp = expected[i];
+
+                // going to use 1 - fMeasure for now to convert
+                // the score into a cost
+                double fMeasure = sr0.evaluate(exp, dMax);
+                sumDifference += (1. - fMeasure);
+            } else {
+                // no edges, so cost is maximum cost
+                sumDifference += 1;
+            }
         }
         
         return sumDifference;
