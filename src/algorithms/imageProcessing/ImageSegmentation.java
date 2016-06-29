@@ -8358,6 +8358,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         Map<PairInt, Integer> pointIndexMap, int clrSpace, double tColor, 
         List<Integer> shortEdgeIndexes, List<Integer> longEdgeIndexes) {
     
+        if (pointIndexMap.isEmpty()) {
+            return;
+        }
+        
         /*
         traverse all image points to make a map of unassigned pixels and the
             cluster indexes they are adjacent to if any.
@@ -8748,12 +8752,14 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         ColorHistogram ch = new ColorHistogram();
         
-        // the histogram intersection range of values is 0 : nColors * 1
+        // the histogram intersection range of values 
+        //   is 0 : nColors * 1
         // so for 3 colors, expect that max similarity is 3.0.
-        // need to merge by higher similarity, so need to invert the keys.
+        // need to merge by higher similarity, so need to invert 
+        //   the keys.
         // 3 - similairty bcomes the new key.
         // a tR of 0.7*3.0 = 2.1 becomes 0.9 and any values larger than
-        //    that are less similar.
+        //    that are less similar...smalled values are more similar
         double tRInv = 3.0 - tR;
         
         long heapKeyFactor = input.getNPixels();
@@ -9181,6 +9187,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         List<Set<PairInt>> clusterPoints, float[][] clusterDescriptors, 
         int clrSpace, int tNumber, String debugTag) {
 
+        if (clusterPoints.isEmpty()) {
+            return;
+        }
+        
         Map<Integer, Set<Integer>> adjacencyMap = createAdjacencyMap(
             clusterPoints);
         
@@ -11091,10 +11101,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         if (avgDimension < 25) {
             kCell = 2 * avgDimension;
         } else if (avgDimension < 100) {
-            kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 100);
+            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 10);
+            kCell = 200;
+        } else if (avgDimension < 200) {
+            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 10);
+            kCell = 200;
+        } else if (avgDimension < 301) {
+            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 100);
+            kCell = 1050;
+        } else if (avgDimension < 400) {
+            //kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 350);
+            kCell = 750;
         } else if (avgDimension < 500) {
             kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);
-            //kCell *= 2;  // creates a more segmented defined labelling
+            kCell *= 2;  // creates a more segmented defined labelling
         } else {
             // this section has not been tested well yet
             kCell = Math.round((float) (img.getWidth() * img.getHeight()) / 1000);
@@ -11103,9 +11123,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             }
         }
 
-        System.out.println("kCell=" + kCell);
+        System.out.println("kCell=" + kCell + " avgDim=" + avgDimension);
 
-        SLICSuperPixels slic = new SLICSuperPixels(img, kCell);
+        int clNorm = 1;
+
+        SLICSuperPixels slic = new SLICSuperPixels(img, kCell, clNorm);
         slic.calculate();
         int[] labels = slic.getLabels();
 
