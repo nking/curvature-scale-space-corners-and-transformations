@@ -97,6 +97,22 @@ public class SequentialBisectorSolver {
 
         int nIter = 0;
         
+        // one high and one low eval for each param
+        // in combination
+        // 4 params each of two possible states:
+        //   2^4 combinations = 16
+        int nComb = 16;
+        int[][] tIdxs = new int[nComb][];
+        int[][] lowIdxs = new int[nComb][];
+        int[][] highIdxs = new int[nComb][];
+        int[][] loc = new int[nComb][];
+        for (int i = 0; i < nComb; ++i) {
+            tIdxs[i] = new int[4];
+            lowIdxs[i] = new int[4];
+            highIdxs[i] = new int[4];
+            loc[i] = new int[4];
+        }
+        
         while (true) {
             
             //if ((nIter % 10) == 0) {
@@ -104,12 +120,12 @@ public class SequentialBisectorSolver {
             //}
 
             double minDiff = Double.MAX_VALUE;
-
-            boolean[] minDiffIsLow = new boolean[parameters.length];
+            int minDiffIdx = -1;
             
+            int count = 0;
             for (int p0 = 0; p0 < 2; ++p0) {
-                int lowIdx0 = parameters[p0].lowIdx;
-                int highIdx0 = parameters[p0].highIdx;
+                int lowIdx0 = parameters[0].lowIdx;
+                int highIdx0 = parameters[0].highIdx;
                 int midIdx0 = (highIdx0 + lowIdx0) >> 1;
                 int tIdx0;
                 if (p0 == 0) {
@@ -118,8 +134,8 @@ public class SequentialBisectorSolver {
                     tIdx0 = (midIdx0 + highIdx0) >> 1;
                 }
                 for (int p1 = 0; p1 < 2; ++p1) {
-                    int lowIdx1 = parameters[p1].lowIdx;
-                    int highIdx1 = parameters[p1].highIdx;
+                    int lowIdx1 = parameters[1].lowIdx;
+                    int highIdx1 = parameters[1].highIdx;
                     int midIdx1 = (highIdx1 + lowIdx1) >> 1;
                     int tIdx1;
                     if (p1 == 0) {
@@ -128,8 +144,8 @@ public class SequentialBisectorSolver {
                         tIdx1 = (midIdx1 + highIdx1) >> 1;
                     }
                     for (int p2 = 0; p2 < 2; ++p2) {
-                        int lowIdx2 = parameters[p2].lowIdx;
-                        int highIdx2 = parameters[p2].highIdx;
+                        int lowIdx2 = parameters[2].lowIdx;
+                        int highIdx2 = parameters[2].highIdx;
                         int midIdx2 = (highIdx2 + lowIdx2) >> 1;
                         int tIdx2;
                         if (p2 == 0) {
@@ -138,8 +154,8 @@ public class SequentialBisectorSolver {
                             tIdx2 = (midIdx2 + highIdx2) >> 1;
                         }
                         for (int p3 = 0; p3 < 2; ++p3) {
-                            int lowIdx3 = parameters[p3].lowIdx;
-                            int highIdx3 = parameters[p3].highIdx;
+                            int lowIdx3 = parameters[3].lowIdx;
+                            int highIdx3 = parameters[3].highIdx;
                             int midIdx3 = (highIdx3 + lowIdx3) >> 1;
                             int tIdx3;
                             if (p3 == 0) {
@@ -147,21 +163,45 @@ public class SequentialBisectorSolver {
                             } else {
                                 tIdx3 = (midIdx3 + highIdx3) >> 1;
                             }
-                            double diff = invoke(
-                                parameters[0].getValue(tIdx0),
-                                parameters[1].getValue(tIdx1),
-                                parameters[2].getValue(tIdx2),
-                                parameters[3].getValue(tIdx3),
-                                expected, edgesList);
-                            if (diff < minDiff) {
-                                minDiff = diff;
-                                minDiffIsLow[0] = (p0 == 0);
-                                minDiffIsLow[1] = (p1 == 0);
-                                minDiffIsLow[2] = (p2 == 0);
-                                minDiffIsLow[3] = (p3 == 0);
-                            }
+                          
+                            lowIdxs[count][0] = lowIdx0; 
+                            highIdxs[count][0] = highIdx0;
+                            tIdxs[count][0] = tIdx0;
+                            loc[count][0] = p0;
+                            
+                            lowIdxs[count][1] = lowIdx1; 
+                            highIdxs[count][1] = highIdx1;
+                            tIdxs[count][1] = tIdx1;
+                            loc[count][1] = p1;
+                            
+                            lowIdxs[count][2] = lowIdx2; 
+                            highIdxs[count][2] = highIdx2;
+                            tIdxs[count][2] = tIdx2;
+                            loc[count][2] = p2;
+                            
+                            lowIdxs[count][3] = lowIdx3; 
+                            highIdxs[count][3] = highIdx3;
+                            tIdxs[count][3] = tIdx3;
+                            loc[count][3] = p3;
+                            
+                            ++count;
                         }
                     }
+                }
+            }
+
+            for (int i = 0; i < nComb; ++i) {
+                            
+               double diff = invoke(
+                    parameters[0].getValue(tIdxs[i][0]),
+                    parameters[1].getValue(tIdxs[i][1]),
+                    parameters[2].getValue(tIdxs[i][2]),
+                    parameters[3].getValue(tIdxs[i][3]),
+                    expected, edgesList);
+               
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    minDiffIdx = i;
                 }
             }
             
@@ -169,7 +209,7 @@ public class SequentialBisectorSolver {
                 int lowIdx = parameters[pIdx].lowIdx;
                 int highIdx = parameters[pIdx].highIdx;
                 int midIdx = (highIdx + lowIdx) >> 1;
-                if (minDiffIsLow[pIdx]) {
+                if (loc[minDiffIdx][pIdx] == 0) {
                     int tIdx = (midIdx + lowIdx) >> 1;
                     if (minDiff == 0) {
                         lowIdx = tIdx;
@@ -201,7 +241,11 @@ public class SequentialBisectorSolver {
             }
 
             lastDifference = minDiff;
-
+            
+            if (true) {
+                debugImages(parameters, edgesList);
+            }
+        
             if (minDiff == 0) {
                 break;
             }                              
@@ -220,10 +264,6 @@ public class SequentialBisectorSolver {
             }
 
             nIter++;
-        }
-        
-        if (true) {
-            debugImages(parameters, edgesList);
         }
         
         return lastDifference;
