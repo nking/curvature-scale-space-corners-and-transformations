@@ -26,15 +26,20 @@ import java.util.logging.Logger;
  */
 public class SequentialBisectorSolver {
         
-    private final Parameter tLen = new Parameter(1, 40, 5);
+    //private final Parameter tLen = new Parameter(1, 40, 5);
+    private final Parameter tLen = new Parameter(1, 10, 2);
     
     private final Parameter tColor;
     
-    private final Parameter tR = new Parameter(0.5f * 3.0f, 
-        1.05f * 3.0f, 0.125f);
+    //private final Parameter tR = new Parameter(0.5f * 3.0f, 
+    //    1.05f * 3.0f, 0.125f);
+    private final Parameter tR = new Parameter(1.0f, 
+        2.5f, 0.125f);
     
+    //private final Parameter tSmallMerge = new Parameter(
+    //    0.005f, 0.1f, 0.01f);
     private final Parameter tSmallMerge = new Parameter(
-        0.005f, 0.1f, 0.01f);
+        0.01f, 0.1f, 0.01f);
     
     private double difference = Double.MAX_VALUE;
     
@@ -53,9 +58,9 @@ public class SequentialBisectorSolver {
         this.trainingData = trainingData;
         
         if (useHSV) {
-            tColor = new Parameter(0.05f, 1.0f, 0.05f);
+            tColor = new Parameter(0.1f, 0.2f, 0.05f);
         } else {
-            tColor = new Parameter(1.5f, 9.f, 0.1f);
+            tColor = new Parameter(2.5f, 6.f, 0.25f);
         }
         
         String dir = ResourceFinder.findOutputTestDirectory();
@@ -191,7 +196,7 @@ public class SequentialBisectorSolver {
             }
 
             for (int i = 0; i < nComb; ++i) {
-                            
+               System.out.println("i=" + i);            
                double diff = invoke(
                     parameters[0].getValue(tIdxs[i][0]),
                     parameters[1].getValue(tIdxs[i][1]),
