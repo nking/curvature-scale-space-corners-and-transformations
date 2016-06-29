@@ -3841,6 +3841,19 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                
         int nEdges = edges.size();
         List<Set<PairInt>> clusterPoints = new ArrayList<Set<PairInt>>();
+        
+        if (nEdges == 0) {
+            // add all picels to one set
+             Set<PairInt> set = new HashSet<PairInt>();
+            for (int i = 0; i < w; ++i) {
+                for (int j = 0; j < h; ++j) {
+                    set.add(new PairInt(i, j));
+                }
+            }
+            clusterPoints.add(set);
+            return clusterPoints;
+        }
+        
         float[][] clusterDescriptors = new float[nEdges][];
         
         populateEdgeLists(input, edges, clusterPoints, clusterDescriptors, 
@@ -8167,6 +8180,10 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         System.out.println(edgeIndexes.size() + " edges");
         
+        if (edgeIndexes.isEmpty()) {
+            return;
+        }
+        
         final long heapKeyFactor = 1000000l;
         Heap heap = new Heap();  
         Map<PairInt, HeapNode> pairEdgePindexNodes = new HashMap<PairInt, HeapNode>();
@@ -8423,10 +8440,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         most similar in color.
         */
         
+        int lastInnerQ = 0;
+        
         for (int nIter = 0; nIter < 2; ++nIter) {
         
             Map<PairInt, Set<Integer>> unassignedAndIndexes = 
                 findUnassignedPixelsAndAdjacentIndexes(img, pointIndexMap); 
+            
+            if (unassignedAndIndexes.isEmpty()) {
+                return;
+            }
             
             assert(img.getNPixels() == (unassignedAndIndexes.size() +
                 pointIndexMap.size()));
@@ -8587,8 +8610,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                         break;
                     }
                     if (!shortPointIndexMap.isEmpty()) {
+                        if (shortPointIndexMap.size() == lastInnerQ) {
+                            int z = 1;
+                        }
                         innerQueue.addAll(shortPointIndexMap.keySet());
+                        lastInnerQ = shortEdgeIndexes.size();
                     } else {
+                        lastInnerQ = 0;
                         break;
                     }
                 }
