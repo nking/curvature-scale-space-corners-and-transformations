@@ -19,6 +19,11 @@ import java.util.Set;
  * the solution converges.
  * It assumes the there is one global solution and no local minima.
  * 
+ * NOTE: for the NelderMead algorithm to work as well as the
+ * bisection solver, the parameters need to be scaled such that
+ * the delta's in the "actions" are the needed size (and then
+ * transformed for use...).
+ * 
  * @author nichole
  */
 public class DownhillSimplexSolver {
