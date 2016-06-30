@@ -248,7 +248,7 @@ public class AndroidStatuesTest extends TestCase {
             int w1 = img1.getWidth();
             int h1 = img1.getHeight();
 
-            int maxDimension = 350;
+            int maxDimension = 256;
             int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
                 (float) h1 / maxDimension));
 

@@ -145,7 +145,7 @@ public class ColorHistogram {
                     "hist0 and hist1 must be same dimensions");
             }
         }
-        
+                
         // the values need to be normalized by the total number of points
         // in the histogram, so calculat that first
         int[] n0 = new int[hist0.length];
@@ -157,18 +157,31 @@ public class ColorHistogram {
             }
         }
         
-        //summation over each bin min(a_i, b_i)
+        /*
+        After histograms are normalized to same total number
+        
+        K(a,b) = 
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
             
         float sum = 0;
+        float sum0 = 0;
+        float sum1 = 0;
         for (int i = 0; i < hist0.length; ++i) {
             for (int j = 0; j < hist0[i].length; ++j) {
                 float y0 = (float)hist0[i][j]/(float)n0[i];
                 float y1 = (float)hist1[i][j]/(float)n1[i];
-                sum += Math.min(y0, y1);                
+                sum += Math.min(y0, y1);
+                sum0 += y0;
+                sum1 += y1;
             }
         }
         
-        return sum;
+        float sim = sum / ((float)Math.min(sum0, sum1));
+        
+        return sim;
     }
 
     public int[][] histogramRGB(ImageExt img, Set<PairInt> points) {

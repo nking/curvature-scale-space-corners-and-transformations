@@ -54,7 +54,7 @@ public class SegmentationNNTest extends TestCase {
         }
     }
     
-    public void testBisectionSolver() throws Exception {
+    public void estBisectionSolver() throws Exception {
         
         boolean enabled = true;
         
@@ -136,7 +136,7 @@ public class SegmentationNNTest extends TestCase {
       
     }
     
-    public void estBenchmark() throws Exception {
+    public void testBenchmark() throws Exception {
         
         // simple test that fMeasure is larger
         //   for a better fit

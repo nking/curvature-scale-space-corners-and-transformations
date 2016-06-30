@@ -51,7 +51,7 @@ public class ColorHistogramTest extends TestCase {
         
         float sim = ch.intersection(hist0, hist1);
                 
-        float expected = 2.f*(6.f/9.f);
+        float expected = (6.f/9.f);
                 
         assertTrue(Math.abs(sim - expected) < 0.1);
     }
