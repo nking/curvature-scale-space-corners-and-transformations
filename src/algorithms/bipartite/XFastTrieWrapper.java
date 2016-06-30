@@ -174,7 +174,7 @@ public class XFastTrieWrapper {
         lastKnownMinKey = key.intValue();
         n--;
         
-        return (PathNode)node;
+        return node;
     }
     
     public long getNumberOfNodes() {

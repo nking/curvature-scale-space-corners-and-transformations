@@ -1144,7 +1144,7 @@ public class FlowNetwork {
         }
     }
 
-    private TIntObjectHashMap createReverseMapOfForwardArcs() {
+    private TIntObjectHashMap<TIntSet> createReverseMapOfForwardArcs() {
         
         //key=right   values=left
         TIntObjectHashMap<TIntSet> revMap 

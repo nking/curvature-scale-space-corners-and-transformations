@@ -19,6 +19,7 @@ import java.util.Stack;
  *
  * @author nichole
  */
+@SuppressWarnings({"unchecked"})
 public class BinarySearchTree<T extends HeapNode> {
     
     protected int n = 0;

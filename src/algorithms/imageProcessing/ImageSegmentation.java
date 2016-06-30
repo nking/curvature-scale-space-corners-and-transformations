@@ -4,12 +4,10 @@ import algorithms.CountingSort;
 import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.HoughTransform;
-import algorithms.compGeometry.NearestPoints1D;
 import algorithms.compGeometry.NearestPointsInLists;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
-import algorithms.compGeometry.clustering.KMeansPlusPlusFloat;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
@@ -28,7 +26,6 @@ import algorithms.misc.MedianSmooth;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.search.KDTree;
 import algorithms.search.KDTreeNode;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
@@ -55,6 +52,9 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import thirdparty.ods.Integerizer;
+import thirdparty.ods.XFastTrie;
+import thirdparty.ods.XFastTrieNode;
 
 /**
  * class holding several different image segmentation methods.  Note that
@@ -78,12 +78,12 @@ public class ImageSegmentation {
     public void applyUsingKMPP(GreyscaleImage input, int kBands)
         throws IOException, NoSuchAlgorithmException {
 
-        KMeansPlusPlus instance = new KMeansPlusPlus();
-        instance.computeMeans(kBands, input);
+        KMeansPlusPlus kmpp = new KMeansPlusPlus();
+        kmpp.computeMeans(kBands, input);
         
-        int[] seeds = instance.getCenters();
+        int[] seeds = kmpp.getCenters();
         
-        int[] imgSeedIndexAssignments = instance.getImgPixelSeedIndexes();
+        int[] imgSeedIndexAssignments = kmpp.getImgPixelSeedIndexes();
 
         for (int pixIdx = 0; pixIdx < input.getNPixels(); ++pixIdx) {
 
@@ -227,17 +227,52 @@ public class ImageSegmentation {
      * @param input
      * @param binCenters
      */
-    public void assignToNearestCluster(GreyscaleImage input, int[] binCenters) {
+    public void assignToNearestCluster(GreyscaleImage input, 
+        int[] binCenters) {
 
-        NearestPoints1D np = new NearestPoints1D(binCenters);
+        int maxC = input.getMax();
+        
+        Integerizer<Integer> it = new Integerizer<Integer>() {
+            @Override
+            public int intValue(Integer x) {return x;}
+        };
+        
+        XFastTrieNode<Integer> node = new XFastTrieNode<Integer>();
 
+        int w = 1 + (int)Math.ceil(Math.log(maxC)/Math.log(2));
+        
+        XFastTrie<XFastTrieNode<Integer>, Integer> xft 
+            = new XFastTrie<XFastTrieNode<Integer>, Integer>(node, it, w);
+        
         for (int col = 0; col < input.getWidth(); col++) {
 
             for (int row = 0; row < input.getHeight(); row++) {
 
                 int v = input.getValue(col, row);
 
-                int vc = np.findClosestValue(v);
+                Integer key = Integer.valueOf(v);
+                
+                Integer vc = xft.find(key);
+                if (vc == null) {
+                    Integer vP = xft.predecessor(key);
+                    Integer vS = xft.successor(key);
+                    if (vP != null && vS != null) {
+                        int diffP = Math.abs(vP.intValue() - v);
+                        int diffS = Math.abs(vS.intValue() - v);
+                        if (diffP < diffS) {
+                            vc = vP;
+                        } else {
+                            vc = vS;
+                        }
+                    } else if (vP != null) {
+                        vc = vP;
+                    } else if (vS != null) {
+                        vc = vS;
+                    } else {
+                        throw new IllegalArgumentException(
+                            "closest not found");
+                    }
+                }
 
                 input.setValue(col, row, vc);
             }
@@ -481,7 +516,7 @@ public class ImageSegmentation {
      * @return
      */
     public GreyscaleImage applyUsingCIEXYPolarThetaThenKMPPThenHistEq(ImageExt
-        input) {
+        input) throws IOException, NoSuchAlgorithmException {
 
         int kColors = 8;
 
@@ -501,8 +536,10 @@ public class ImageSegmentation {
      * @param useBlur
      * @return
      */
-    public GreyscaleImage applyUsingCIEXYPolarThetaThenKMPPThenHistEq(ImageExt input,
-        int kColors, boolean useBlur) {
+    public GreyscaleImage applyUsingCIEXYPolarThetaThenKMPPThenHistEq(
+        ImageExt input,
+        int kColors, boolean useBlur) 
+        throws IOException, NoSuchAlgorithmException {
 
         if (kColors > 253) {
             throw new IllegalArgumentException("kColors must be <= 253");
@@ -712,7 +749,8 @@ public class ImageSegmentation {
      * The minimum allowed value is 2 and the maximum allowed value is 253.
      * @return
      */
-    public GreyscaleImage applyUsingCIEXYPolarThetaThenKMPP(Image input, int kColors) {
+    public GreyscaleImage applyUsingCIEXYPolarThetaThenKMPP(Image input, 
+        int kColors) throws IOException, NoSuchAlgorithmException {
 
         if (kColors > 253) {
             throw new IllegalArgumentException("kColors must be <= 253");
@@ -735,11 +773,11 @@ public class ImageSegmentation {
 
         GreyscaleImage output = new GreyscaleImage(w, h);
 
-        Map<PairInt, Float> pixThetaMap = new HashMap<PairInt, Float>();
+        Map<PairInt, Integer> pixThetaMap = new HashMap<PairInt, Integer>();
 
         CIEChromaticity cieC = new CIEChromaticity();
 
-        float[] thetaValues = new float[input.getNPixels()];
+        int[] thetaValues = new int[input.getNPixels()];
         int thetaCount = 0;
 
         for (int col = 0; col < w; col++) {
@@ -767,9 +805,11 @@ public class ImageSegmentation {
 
                     double thetaRadians = cieC.calculateXYTheta(cieXY[0], cieXY[1]);
 
-                    thetaValues[thetaCount] = (float)thetaRadians;
+                    int thetaDegrees = Math.round(
+                        (float)(thetaRadians * 180./Math.PI));
+                    thetaValues[thetaCount] = thetaDegrees;
 
-                    pixThetaMap.put(p, Float.valueOf((float)thetaRadians));
+                    pixThetaMap.put(p, Integer.valueOf(thetaDegrees));
 
                     thetaCount++;
                 }
@@ -778,72 +818,34 @@ public class ImageSegmentation {
 
         thetaValues = Arrays.copyOf(thetaValues, thetaCount);
 
-        createAndApplyKMPPMapping(output, pixThetaMap, thetaValues, kColors);
+        createAndApplyKMPPMapping(output, pixThetaMap, thetaValues,
+            kColors);
 
         return output;
     }
 
     private void createAndApplyKMPPMapping(GreyscaleImage output,
-        Map<PairInt, Float> pixThetaMap, float[] thetaValues,
-        final int kColors) {
+        Map<PairInt, Integer> pixThetaMap, int[] thetaValues,
+        final int kColors) throws IOException, NoSuchAlgorithmException {
 
         //TODO: assert kColors.  The invoker is reserving 2 bands for
         // B & W, so nBins should probably be (kColors - 2)...
         // correct this for the invoker when testing
         int nBins = kColors;
 
-        KMeansPlusPlusFloat kmpp = new KMeansPlusPlusFloat();
+        KMeansPlusPlus kmpp = new KMeansPlusPlus();
         kmpp.computeMeans(nBins, thetaValues);
 
-        float minValue = kmpp.getMinValue();
-        float maxValue = kmpp.getMaxValue();
+        int[] imgPixelAssignmentIndexes =
+            kmpp.getImgPixelSeedIndexes();
+        
+        for (int i = 0; i < imgPixelAssignmentIndexes.length; ++i) {
+        
+            int assigned = imgPixelAssignmentIndexes[i];
+            
+            int mappedValue = 255 - nBins + assigned;
 
-        float[] binCenters = kmpp.getCenters();
-
-        Iterator<Map.Entry<PairInt, Float> > iter = pixThetaMap.entrySet().iterator();
-
-        while (iter.hasNext()) {
-
-            Map.Entry<PairInt, Float> entry = iter.next();
-
-            PairInt p = entry.getKey();
-
-            float theta = entry.getValue().floatValue();
-
-            for (int i = 0; i < binCenters.length; i++) {
-
-                float vc = binCenters[i];
-
-                float bisectorBelow = ((i - 1) > -1) ?
-                    ((binCenters[i - 1] + vc) / 2) : minValue;
-
-                float bisectorAbove = ((i + 1) > (binCenters.length - 1)) ?
-                    maxValue : ((binCenters[i + 1] + vc) / 2);
-
-                if ((theta >= bisectorBelow) && (theta <= bisectorAbove)) {
-
-                    //TODO: check this
-                    int mappedValue = 255 - nBins + i;
-
-                    output.setValue(p.getX(), p.getY(), mappedValue);
-
-                    break;
-                }
-            }
-
-            /*
-            // if binCenters is ordered, use binary search for faster results
-            int idx = Arrays.binarySearch(startBins, theta);
-
-            // if it's negative, (-(insertion point) - 1)
-            if (idx < 0) {
-                // idx = -*idx2 - 1
-                idx = -1*(idx + 1);
-            }
-            int mappedValue = 255 - startBins.length + idx;
-
-            output.setValue(p.getX(), p.getY(), mappedValue);
-            */
+            output.setValue(i, mappedValue);
         }
     }
 

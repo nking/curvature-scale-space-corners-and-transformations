@@ -87,6 +87,7 @@ import java.util.logging.Logger;
  * 
  * @author nichole
  */
+@SuppressWarnings({"unchecked"})
 public class MinCostUnbalancedAssignment {
 
     private Logger log = Logger.getLogger(this.getClass().getName());

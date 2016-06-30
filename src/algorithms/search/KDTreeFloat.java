@@ -269,6 +269,8 @@ public class KDTreeFloat {
         KDTreeNodeFloat tree, float leftValue, float rightValue,
         int depth) {
  
+        //TODO: make this iterative for java...
+        
 		if (tree.nChildren == 0 ) {
             double dist = distanceSq(tree, leftValue, rightValue);
 			if (dist == bestDist) {
