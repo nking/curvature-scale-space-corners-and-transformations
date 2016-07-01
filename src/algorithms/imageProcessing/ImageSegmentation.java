@@ -8,6 +8,7 @@ import algorithms.compGeometry.NearestPointsInLists;
 import algorithms.compGeometry.PerimeterFinder;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.features.BlobMedialAxes;
 import algorithms.imageProcessing.features.BlobsAndPerimeters;
@@ -33,10 +34,13 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TIntHashSet;
 import gnu.trove.set.hash.TLongHashSet;
 import java.awt.Color;
 import java.io.IOException;
@@ -11237,9 +11241,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * blocks and does not precisely follow object outlines.
      * 
      * @param img
+     * @param outputLabeledContiguous
      * @return 
      */
-    public int[] roughObjectsByColorSegmentation(ImageExt img) {
+    public int[] roughObjectsByColorSegmentation(ImageExt img,
+        List<PairIntArray> outputLabeledContiguous,
+        List<GroupAverageColors> outputLabeledColors) {
        
         ImageProcessor imageProcessor = new ImageProcessor();
         
@@ -11269,19 +11276,22 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
 
         long ts = MiscDebug.getCurrentTimeFormatted();
         
-        Image img2 = imgBinned.createWithDimensions();
+        /*Image img2 = imgBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img2, labels);
         MiscDebug.writeImage(img2, "_super_pixels_" + ts);
-
+        */
+        
         NormalizedCuts normCuts = new NormalizedCuts();
         int[] labelsBinned = normCuts.normalizedCut(imgBinned, labels);
 
+        /*
         img2 = imgBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img2, labelsBinned);
         MiscDebug.writeImage(img2, "a" + ts + "_normalized_cuts_");
-
+        */
+        
         // ------
         kCells = (imgBinned2.getWidth() / sz)
             + (imgBinned2.getHeight() / sz);
@@ -11301,28 +11311,35 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         int n1 = labels3Exp.length;
         int n2 = imgBinned.getNPixels();
 
+        /*
         img2 = imgBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img2, labels3Exp);
         MiscDebug.writeImage(img2, "a" + ts
             + "_normalized_cuts_2_");
-
-        img2 = imgBinned.createWithDimensions();
+        */
+        
         int[] relabeled = relabel(labelsBinned, labels3Exp);
+        
+        /*
+        img2 = imgBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img2, relabeled);
         MiscDebug.writeImage(img2, "a" + ts
             + "_normalized_cuts_3_");
-
+        */
+        
         normCuts = new NormalizedCuts();
         int[] labels4 = normCuts.normalizedCut(imgBinned, relabeled);
 
+        /*
         img2 = imgBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img2, labels4);
         MiscDebug.writeImage(img2, "a" + ts
             + "_normalized_cuts_4_");
-
+        */
+        
         // ----- replace single pixels w/ adjacent nearest in color -----
         int[] dx2 = Misc.dx8;
         int[] dy2 = Misc.dy8;
@@ -11375,18 +11392,83 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
-
+        
+        // before expand to full image size, do the more
+        // expensive DFS search for contiguous same labels.
+        List<PairIntArray> contigBinnedList = 
+            findContiguousSameLabels(labels4,
+            imgBinned.getWidth(), imgBinned.getHeight());
+        
+        // --- also, general color information ---
+        for (PairIntArray a : contigBinnedList) {
+            GroupAverageColors g = new GroupAverageColors(
+                imgBinned, a);
+            
+            // put the centroids into the full frame
+            //    reference
+            int x2 = g.getXCen() * binFactor;
+            int y2 = g.getYCen() * binFactor;
+            g.setXCen(x2);
+            g.setYCen(y2);
+            
+            outputLabeledColors.add(g);
+        }
+        
+        // --- expand labels to full size image ---
         int[] labelsFull = imageProcessor.unbinArray(labels4,
             imgBinned, binFactor, img.getWidth(), 
                 img.getHeight());
 
-        img2 = img.createWithDimensions();
+        //this needs to be changed to
+        //only operate on perimeters,
+        //else takes too long
+        
+        List<PairIntArray> contigList = 
+            imageProcessor.unbinArrays(contigBinnedList,
+            imgBinned, binFactor, img.getWidth(), 
+            img.getHeight());
+        
+        outputLabeledContiguous.addAll(contigList);
+        
+        ImageExt img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labelsFull);
-        MiscDebug.writeImage(img2, "a" + ts
+            img3, labelsFull);
+        MiscDebug.writeImage(img3, "a" + ts
             + "_normalized_cuts_5_");
 
         return labelsFull;
+    }
+    
+    public List<PairIntArray> findContiguousSameLabels(int[] labels,
+        int imgWidth, int imgHeight) {
+        
+        //TODO: this same logic is used in a few places elsewhere
+        // so edit to use this
+        
+        TIntSet uniqueLabels = new TIntHashSet();
+        for (int label : labels) {
+            uniqueLabels.add(label);
+        }
+        
+        List<PairIntArray> list = new ArrayList<PairIntArray>();
+        
+        TIntIterator iter = uniqueLabels.iterator();
+        while (iter.hasNext()) {
+            
+            int label = iter.next();
+            
+            DFSContiguousIntValueFinder finder = new 
+                 DFSContiguousIntValueFinder(labels, imgWidth, 
+                 imgHeight);
+            finder.findClusters(label);
+            
+            for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
+                PairIntArray xy = finder.getXY(i);
+                list.add(xy);
+            }
+        }
+        
+        return list;
     }
     
     private int[] relabel(int[] labels1, int[] labels2) {

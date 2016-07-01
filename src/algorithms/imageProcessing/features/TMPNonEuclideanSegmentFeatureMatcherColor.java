@@ -71,7 +71,8 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
      * image1 is transformed to using the resulting parameters,
      * @param settings
      */
-    public TMPNonEuclideanSegmentFeatureMatcherColor(ImageExt img1, ImageExt img2,
+    public TMPNonEuclideanSegmentFeatureMatcherColor(ImageExt img1, 
+        ImageExt img2,
         FeatureMatcherSettings settings) {
 
         this.img1 = img1;
@@ -363,6 +364,8 @@ public class TMPNonEuclideanSegmentFeatureMatcherColor {
                 pixels.size());
         }
         
+//TODO: PAUSED here in changes
+
         // join those grouped points into larger groups where possible
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         BoundingRegions largerBoundingRegion = imageSegmentation

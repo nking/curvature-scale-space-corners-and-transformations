@@ -72,9 +72,10 @@ public class DFSContiguousValueFinder {
         
         this.log = Logger.getLogger(this.getClass().getName());
         
-        this.exclude = new HashSet<PairInt>(mask);
+        this.exclude = (mask == null) ?
+            new HashSet<PairInt>() : new HashSet<PairInt>(mask);
     }
-        
+   
     public void setMinimumNumberInCluster(int n) {
         this.minimumNumberInCluster = n;
     }

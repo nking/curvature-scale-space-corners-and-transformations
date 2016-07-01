@@ -10,6 +10,7 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.SegmentedCellMerger;
 import algorithms.imageProcessing.WaterShed;
@@ -18,6 +19,7 @@ import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
@@ -30,6 +32,7 @@ import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -284,6 +287,12 @@ public class AndroidStatuesTest extends TestCase {
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
         int maxDimension = 64;
+        
+        List<List<PairIntArray>> segmentedPointLists =
+            new ArrayList<List<PairIntArray>>();
+        
+        List<List<GroupAverageColors>> segmentedPointColorLists =
+            new ArrayList<List<GroupAverageColors>>();
 
         for (int i = 0; i < fileNames.length; ++i) {
             
@@ -293,13 +302,52 @@ public class AndroidStatuesTest extends TestCase {
                 fileName.lastIndexOf("."));
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             
-            int[] labels = imageSegmentation.roughObjectsByColorSegmentation(img);
+            List<PairIntArray> segmentedPoints =
+                new ArrayList<PairIntArray>();
             
-            /*
-            ImageExt img2 = imgBinned.copyToImageExt();
-            MiscDebug.writeImage(img2,  "_no_segmentation_" 
-                + fileNameRoot);
-            */
+            List<GroupAverageColors> segmentedPointColors =
+                new ArrayList<GroupAverageColors>();
+  
+ //TODO: need to keep as much of these calcs
+ // at smaller size images when possible
+            
+            int[] labels = imageSegmentation
+                .roughObjectsByColorSegmentation(img,
+                    segmentedPoints, segmentedPointColors);
+            
+            segmentedPointLists.add(segmentedPoints);
+       
+            segmentedPointColorLists.add(segmentedPointColors);
+            
+            /*    
+            if (i == 0) {
+                if (!((Math.abs(241. - xyCen[0]) < 10) 
+                    &&
+                    (Math.abs(157. - xyCen[1]) < 10))) {
+                    continue;
+                }
+            } else if (i == 1) {
+                if (!((Math.abs(541.19 - xyCen[0]) < 10) 
+                    &&
+                    (Math.abs(169.46 - xyCen[1]) < 10))) {
+                    continue;
+                }
+            } else if (i == 2) {
+                if (!((Math.abs(191.69 - xyCen[0]) < 10) 
+                    &&
+                    (Math.abs(417.72 - xyCen[1]) < 10))) {
+                    continue;
+                }
+            } else {
+                if (!((Math.abs(951.04 - xyCen[0]) < 10) 
+                    &&
+                    (Math.abs(397.19 - xyCen[1]) < 10))) {
+                    continue;
+                }
+            }
+            */    
+
+            
             /*
             wanting to look at color similarity of pixels
                 holding known objects that have different
@@ -308,6 +356,7 @@ public class AndroidStatuesTest extends TestCase {
                 -- android
                 -- ice cream
                 -- eclair
+                -- cupcake
             bigger goal is to use segmentation to find object
             outlines then identify the object in other images
             and follow that with detailed feature matching.
@@ -317,26 +366,10 @@ public class AndroidStatuesTest extends TestCase {
             
             the method may need some form of contour matching
             for pure sillouhette conditions
-            but would need to allow for occulsion.
+            but would need to allow for occlision.
             */
         
-            /*            
-            ImageExt img2 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels);
-            MiscDebug.writeImage(img2,  "_slic_" + fileNameRoot);
-            int w = img.getWidth();
-            int h = img.getHeight();
             
-            NormalizedCuts normCuts = new NormalizedCuts();
-            int labels2 = normCuts.normalizedCut(img, labels);
-            labels = labels2;
-
-            System.out.println("labels2=" + Arrays.toString(labels2));
-
-            img2 = ImageIOHelper.readImageExt(filePath);
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels2);
-            MiscDebug.writeImage(img2, "_ncuts_" + fileNameRoot + "_" + nIter);
-            */
         }
         
     }

@@ -2430,6 +2430,77 @@ if (sum > 511) {
         return output;
     }
 
+    /**
+     * given an array with indexes of pixels in reference
+     * frame of img, expand the array to the size of
+     * an image with (resultWidth, resultHeight) which
+     * is roughly a factor of binFactor (number resolution loss
+     * means need to pass in the result width and height
+     * to calculate the output pixel indexes).
+     * @param input
+     * @param img
+     * @param binFactor
+     * @param resultWidth
+     * @param resultHeight
+     * @return 
+     */
+    public List<PairIntArray> unbinArrays(List<PairIntArray> input, 
+        Image img, int binFactor, int resultWidth,
+        int resultHeight) {
+
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
+
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+
+        int w1 = resultWidth;
+        int h1 = resultHeight;
+        
+        List<PairIntArray> output = new ArrayList<PairIntArray>();
+
+        for (PairIntArray a : input) {
+            
+            PairIntArray aOut = new PairIntArray(a.getN() * binFactor);
+            output.add(aOut);
+            
+            for (int idx = 0; idx < a.getN(); ++idx) {
+                int i = a.getX(idx);
+                int j = a.getY(idx);
+                int pixIdx = img.getInternalIndex(i, j);
+
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        aOut.add(ii, jj);
+                    }
+                    if (j == (h0 - 1)) {
+                        // just in case excess unset past binFactor
+                        for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                            aOut.add(ii, jj);
+                        }
+                    }
+                }
+                if (i == (w0 - 1)) {
+                    // just in case excess unset past binFastor
+                    for (int ii = ((i + 1)*binFactor); ii < resultWidth; ii++) {
+                        for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                            aOut.add(ii, jj);
+                        }
+                        if (j == (h0 - 1)) {
+                            // just in case excess unset
+                            for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                                aOut.add(ii, jj);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return output;
+    }
+
     private void binImage(Image inputImg,  int binFactor, Image outputImg) {
 
         if (inputImg == null) {
@@ -5458,4 +5529,27 @@ if (sum > 511) {
         // apply post thinning corrections?
     }
 
+    public int[] getAverageRGB(Image img, PairIntArray pia) {
+    
+        if (pia.getN() == 0) {
+            return null;
+        }
+        
+        int rSum = 0;
+        int gSum = 0;
+        int bSum = 0;
+        for (int i = 0; i < pia.getN(); ++i) {
+            int x = pia.getX(i);
+            int y = pia.getY(i);
+            rSum += img.getR(x, y);
+            gSum += img.getG(x, y);
+            bSum += img.getB(x, y);
+        }
+        rSum /= pia.getN();
+        gSum /= pia.getN();
+        bSum /= pia.getN();
+        
+        return new int[]{rSum, gSum, bSum};
+    }
+    
 }
