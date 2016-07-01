@@ -13,15 +13,23 @@ import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.SegmentedCellMerger;
 import algorithms.imageProcessing.WaterShed;
+import algorithms.imageProcessing.segmentation.NormalizedCuts;
+import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -52,7 +60,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void test0() throws Exception {
+    public void est0() throws Exception {
 
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
@@ -262,6 +270,77 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
     
+    public void testColorLayout() throws Exception {
+
+        String[] fileNames = new String[]{
+            "android_statues_01.jpg",
+            "android_statues_02.jpg", 
+            "android_statues_03.jpg",
+            "android_statues_04.jpg"
+        };
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        int maxDimension = 64;
+
+        for (int i = 0; i < fileNames.length; ++i) {
+            
+            String fileName = fileNames[i];
+            String filePath = ResourceFinder.findFileInTestResources(fileName);
+            String fileNameRoot = fileName.substring(0, 
+                fileName.lastIndexOf("."));
+            ImageExt img = ImageIOHelper.readImageExt(filePath);
+            
+            int[] labels = imageSegmentation.roughObjectsByColorSegmentation(img);
+            
+            /*
+            ImageExt img2 = imgBinned.copyToImageExt();
+            MiscDebug.writeImage(img2,  "_no_segmentation_" 
+                + fileNameRoot);
+            */
+            /*
+            wanting to look at color similarity of pixels
+                holding known objects that have different
+                orientation and lighting in different
+                images.
+                -- android
+                -- ice cream
+                -- eclair
+            bigger goal is to use segmentation to find object
+            outlines then identify the object in other images
+            and follow that with detailed feature matching.
+            
+            the method has to work on objects that have changed
+            position and possibly also lighting.
+            
+            the method may need some form of contour matching
+            for pure sillouhette conditions
+            but would need to allow for occulsion.
+            */
+        
+            /*            
+            ImageExt img2 = img.copyToImageExt();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels);
+            MiscDebug.writeImage(img2,  "_slic_" + fileNameRoot);
+            int w = img.getWidth();
+            int h = img.getHeight();
+            
+            NormalizedCuts normCuts = new NormalizedCuts();
+            int labels2 = normCuts.normalizedCut(img, labels);
+            labels = labels2;
+
+            System.out.println("labels2=" + Arrays.toString(labels2));
+
+            img2 = ImageIOHelper.readImageExt(filePath);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img2, labels2);
+            MiscDebug.writeImage(img2, "_ncuts_" + fileNameRoot + "_" + nIter);
+            */
+        }
+        
+    }
+    
     public void estMatching() throws Exception {
 
         String fileName1, fileName2;
@@ -270,7 +349,8 @@ public class AndroidStatuesTest extends TestCase {
         settings.setDebug(true);
         settings.setStartWithBinnedImages(true);
         settings.setToUse2ndDerivCorners();
-        for (int i = 0; i < 7; ++i) {
+        //for (int i = 0; i < 7; ++i) {
+        for (int i = 0; i < 3; ++i) {
             switch(i) {
                 case 0: {
                     fileName1 = "android_statues_02.jpg";
@@ -708,4 +788,5 @@ public class AndroidStatuesTest extends TestCase {
             }
         }        
     }
+
 }

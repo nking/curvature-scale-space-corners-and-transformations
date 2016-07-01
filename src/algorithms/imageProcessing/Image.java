@@ -2,7 +2,6 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
 
 /**
  * space conserving image data holder.

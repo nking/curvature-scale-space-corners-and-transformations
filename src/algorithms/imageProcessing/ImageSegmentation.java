@@ -33,6 +33,11 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
+import gnu.trove.iterator.TLongIterator;
+import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import java.awt.Color;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -11222,5 +11227,203 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return labels;
+    }
+    
+    /**
+     * segmentation performed at decimated image levels
+     * to find the main image objects, useful for general
+     * regions of comparison followed by feature matching.
+     * Note that the resulting segmentation is in large
+     * blocks and does not precisely follow object outlines.
+     * 
+     * @param img
+     * @return 
+     */
+    public int[] roughObjectsByColorSegmentation(ImageExt img) {
+       
+        ImageProcessor imageProcessor = new ImageProcessor();
+        
+        int maxDimension = 64;
+        
+        int binFactor = (int) Math.ceil(
+            Math.max((float) img.getWidth() / (float) maxDimension,
+                (float) img.getHeight() / (float) maxDimension));
+
+        // binned to size near 64
+        ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
+
+        // binned to size near 32
+        ImageExt imgBinned2 = imageProcessor.binImage(imgBinned, 2);
+
+        int clrNorm = 1;
+        int sz = 1;
+
+        // ------
+        int kCells = (imgBinned.getWidth() / sz)
+            + (imgBinned.getHeight() / sz);
+
+        SLICSuperPixels slic = new SLICSuperPixels(imgBinned,
+            kCells, clrNorm);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+
+        long ts = MiscDebug.getCurrentTimeFormatted();
+        
+        Image img2 = imgBinned.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, labels);
+        MiscDebug.writeImage(img2, "_super_pixels_" + ts);
+
+        NormalizedCuts normCuts = new NormalizedCuts();
+        int[] labelsBinned = normCuts.normalizedCut(imgBinned, labels);
+
+        img2 = imgBinned.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, labelsBinned);
+        MiscDebug.writeImage(img2, "a" + ts + "_normalized_cuts_");
+
+        // ------
+        kCells = (imgBinned2.getWidth() / sz)
+            + (imgBinned2.getHeight() / sz);
+
+        slic = new SLICSuperPixels(imgBinned2, kCells, clrNorm);
+        slic.calculate();
+        labels = slic.getLabels();
+
+        normCuts = new NormalizedCuts();
+        int[] labels3 = normCuts.normalizedCut(imgBinned2, labels);
+
+        // expand scale of labels3
+        int[] labels3Exp = imageProcessor.unbinArray(
+            labels3, imgBinned2, 2,
+            imgBinned.getWidth(), imgBinned.getHeight());
+
+        int n1 = labels3Exp.length;
+        int n2 = imgBinned.getNPixels();
+
+        img2 = imgBinned.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, labels3Exp);
+        MiscDebug.writeImage(img2, "a" + ts
+            + "_normalized_cuts_2_");
+
+        img2 = imgBinned.createWithDimensions();
+        int[] relabeled = relabel(labelsBinned, labels3Exp);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, relabeled);
+        MiscDebug.writeImage(img2, "a" + ts
+            + "_normalized_cuts_3_");
+
+        normCuts = new NormalizedCuts();
+        int[] labels4 = normCuts.normalizedCut(imgBinned, relabeled);
+
+        img2 = imgBinned.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, labels4);
+        MiscDebug.writeImage(img2, "a" + ts
+            + "_normalized_cuts_4_");
+
+        // ----- replace single pixels w/ adjacent nearest in color -----
+        int[] dx2 = Misc.dx8;
+        int[] dy2 = Misc.dy8;
+        // single pixels should join closest,,,
+        for (int i = 0; i < imgBinned.getWidth(); ++i) {
+            for (int j = 0; j < imgBinned.getHeight(); ++j) {
+                int pixIdx = imgBinned.getInternalIndex(i, j);
+                int v = labels4[pixIdx];
+                boolean oneIsSame = false;
+                for (int z = 0; z < dx2.length; ++z) {
+                    int x2 = i + dx2[z];
+                    int y2 = j + dy2[z];
+                    if (x2 < 0 || y2 < 0 || (x2 > (imgBinned.getWidth() - 1))
+                        || (y2 > (imgBinned.getHeight() - 1))
+                        ) {
+                        continue;
+                    }
+                    int pixIdx2 = imgBinned.getInternalIndex(x2, y2);
+                    int v2 = labels4[pixIdx2];
+                    if (v2 == v) {
+                        oneIsSame = true;
+                        break; 
+                    }
+                }
+                if (!oneIsSame) {
+                    int r = imgBinned.getR(pixIdx);
+                    int g = imgBinned.getG(pixIdx);
+                    int b = imgBinned.getB(pixIdx);
+                    int minDiffRGB = Integer.MAX_VALUE;
+                    int minIdx = -1;
+                    for (int z = 0; z < dx2.length; ++z) {
+                        int x2 = i + dx2[z];
+                        int y2 = j + dy2[z];
+                        if (x2 < 0 || y2 < 0 || (x2 > (imgBinned.getWidth() - 1))
+                            || (y2 > (imgBinned.getHeight() - 1))) {
+                            continue;
+                        }
+                        int pixIdx2 = imgBinned.getInternalIndex(x2, y2);
+                        int diffR = r - imgBinned.getR(pixIdx2);
+                        int diffG = g - imgBinned.getG(pixIdx2);
+                        int diffB = b - imgBinned.getB(pixIdx2);
+                        int diff = (diffR * diffR + diffG * diffG +
+                            diffB * diffB);
+                        if (diff < minDiffRGB) {
+                            minDiffRGB = diff;
+                            minIdx = pixIdx2;
+                        } 
+                    } 
+                    labels4[pixIdx] = labels4[minIdx];
+                }
+            }
+        }
+
+        int[] labelsFull = imageProcessor.unbinArray(labels4,
+            imgBinned, binFactor, img.getWidth(), 
+                img.getHeight());
+
+        img2 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img2, labelsFull);
+        MiscDebug.writeImage(img2, "a" + ts
+            + "_normalized_cuts_5_");
+
+        return labelsFull;
+    }
+    
+    private int[] relabel(int[] labels1, int[] labels2) {
+
+        if (labels1.length != labels2.length) {
+            throw new IllegalArgumentException("labels1 "
+                + "must be same length as labels2");
+        }
+        int maxLabel1 = MiscMath.findMax(labels1);
+        long[] labels2L = new long[labels2.length];
+        for (int i = 0; i < labels2.length; ++i) {
+            labels2L[i] = labels2[i] + maxLabel1;
+        }
+        
+        // combine the segmentation of labels1 and labels2
+        // by multiplying them,
+        // then reducing the labels to sequential 0 through nLabels
+        TLongSet set = new TLongHashSet();
+        for (int i = 0; i < labels1.length;++i) {
+            long v = labels1[i] * labels2L[i];
+            set.add(v);
+        }
+        int count = 1;
+        TLongIntMap vMap = new TLongIntHashMap();
+        TLongIterator iter = set.iterator();
+        while (iter.hasNext()) {
+            long v = iter.next();
+            vMap.put(v, count);
+            count++;
+        }
+        
+        int[] output = new int[labels1.length];
+        for (int i = 0; i < labels1.length; ++i) {
+            long v = labels1[i] * labels2L[i];
+            output[i] = vMap.get(v);
+        }
+        
+        return output;
     }
 }

@@ -2268,7 +2268,7 @@ if (sum > 511) {
 
         return out;
     }
-
+    
     public Image binImage(Image img,  int binFactor) {
 
         if (img == null) {
@@ -2305,6 +2305,129 @@ if (sum > 511) {
         binImage(img, binFactor, out);
 
         return out;
+    }
+    
+    public int[] binArray(int[] a, Image img, int binFactor) {
+        
+        if (img == null) {
+            throw new IllegalArgumentException("img cannot be null");
+        }
+
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+
+        int w1 = w0/binFactor;
+        int h1 = h0/binFactor;
+
+        int[] output = new int[w1 * h1];
+
+        for (int i = 0; i < w1; i++) {
+
+            for (int j = 0; j < h1; j++) {
+
+                int aSum = 0;
+                int count = 0;
+
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+
+                        if ((ii < 0) || (ii > (w0 - 1))) {
+                            continue;
+                        }
+                        if ((jj < 0) || (jj > (h0 - 1))) {
+                            continue;
+                        }
+
+                        int pixIdx2 = img.getInternalIndex(ii, jj);
+                       
+                        aSum += a[pixIdx2];
+                        
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    aSum = Math.round((float)aSum/(float)count);
+                }
+                
+                int pixIdx = (j * w1) + i;
+                
+                output[pixIdx] = aSum;
+            }
+        }
+
+        return output;
+    }
+    
+    /**
+     * given an array with indexes of pixels in reference
+     * frame of img, expand the array to the size of
+     * an image with (resultWidth, resultHeight) which
+     * is roughly a factor of binFactor (number resolution loss
+     * means need to pass in the result width and height
+     * to calculate the output pixel indexes).
+     * @param input
+     * @param img
+     * @param binFactor
+     * @param resultWidth
+     * @param resultHeight
+     * @return 
+     */
+    public int[] unbinArray(int[] input, 
+        Image img, int binFactor, int resultWidth,
+        int resultHeight) {
+
+        if (input == null) {
+            throw new IllegalArgumentException("input cannot be null");
+        }
+
+        int w0 = img.getWidth();
+        int h0 = img.getHeight();
+
+        int w1 = resultWidth;
+        int h1 = resultHeight;
+        
+        int[] output = new int[w1 * h1];
+        
+        for (int i = 0; i < w0; i++) {
+            for (int j = 0; j < h0; j++) {
+
+                int pixIdx = img.getInternalIndex(i, j);
+                int v = input[pixIdx];
+
+                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        int pixIdx2 = (jj * w1) + ii;
+                        output[pixIdx2] = v;
+                    }
+                    if (j == (h0 - 1)) {
+                        // just in case excess unset past binFactor
+                        for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                            int pixIdx2 = (jj * w1) + ii;
+                            output[pixIdx2] = v;
+                        }
+                    }
+                }
+                if (i == (w0 - 1)) {
+                    // just in case excess unset past binFastor
+                    for (int ii = ((i + 1)*binFactor); ii < resultWidth; ii++) {
+                        for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                            int pixIdx2 = (jj * w1) + ii;
+                            output[pixIdx2] = v;
+                        }
+                        if (j == (h0 - 1)) {
+                            // just in case excess unset
+                            for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                                int pixIdx2 = (jj * w1) + ii;
+                                output[pixIdx2] = v;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return output;
     }
 
     private void binImage(Image inputImg,  int binFactor, Image outputImg) {
@@ -2392,24 +2515,18 @@ if (sum > 511) {
                     for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
                         out.setValue(ii, jj, v);
                     }
+                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                        out.setValue(ii, jj, v);
+                    }
                 }
-            }
-        }
-
-        if ((originalTheta.getWidth() & 1) == 1) {
-            // copy next to last column into last column
-            int i = originalTheta.getWidth() - 2;
-            for (int j = 0; j < h1; j++) {
-                int v = out.getValue(i, j);
-                out.setValue(i + 1, j, v);
-            }
-        }
-        if ((originalTheta.getHeight() & 1) == 1) {
-            // copy next to last row into last row
-            int j = originalTheta.getHeight() - 2;
-            for (int i = 0; i < w1; i++) {
-                int v = out.getValue(i, j);
-                out.setValue(i, j + 1, v);
+                for (int ii = ((i + 1)*binFactor); ii < w1; ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                }
             }
         }
 
@@ -2501,7 +2618,8 @@ if (sum > 511) {
         int w0 = input.getWidth();
         int h0 = input.getHeight();
 
-        GreyscaleImage out = input.createWithDimensions(2 * w0, 2 * h0);
+        GreyscaleImage out = input.createWithDimensions(
+            binFactor* w0, binFactor * h0);
 
         int w1 = out.getWidth();
         int h1 = out.getHeight();
@@ -2515,24 +2633,18 @@ if (sum > 511) {
                     for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
                         out.setValue(ii, jj, v);
                     }
+                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                        out.setValue(ii, jj, v);
+                    }
                 }
-            }
-        }
-
-        if ((input.getWidth() & 1) == 1) {
-            // copy next to last column into last column
-            int i = input.getWidth() - 2;
-            for (int j = 0; j < h1; j++) {
-                int v = out.getValue(i, j);
-                out.setValue(i + 1, j, v);
-            }
-        }
-        if ((input.getHeight() & 1) == 1) {
-            // copy next to last row into last row
-            int j = input.getHeight() - 2;
-            for (int i = 0; i < w1; i++) {
-                int v = out.getValue(i, j);
-                out.setValue(i, j + 1, v);
+                for (int ii = ((i + 1)*binFactor); ii < w1; ii++) {
+                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                        out.setValue(ii, jj, v);
+                    }
+                }
             }
         }
 
@@ -2560,7 +2672,6 @@ if (sum > 511) {
 
                 for (int ii = (x*binFactor); ii < ((x + 1)*binFactor); ii++) {
                     for (int jj = (y*binFactor); jj < ((y + 1)*binFactor); jj++) {
-
                         transformed.add(ii, jj);
                     }
                 }
