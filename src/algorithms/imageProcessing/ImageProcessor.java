@@ -2444,7 +2444,7 @@ if (sum > 511) {
      * @param resultHeight
      * @return 
      */
-    public List<PairIntArray> unbinArrays(List<PairIntArray> input, 
+    public List<Set<PairInt>> unbinSets(List<Set<PairInt>> input, 
         Image img, int binFactor, int resultWidth,
         int resultHeight) {
 
@@ -2458,26 +2458,26 @@ if (sum > 511) {
         int w1 = resultWidth;
         int h1 = resultHeight;
         
-        List<PairIntArray> output = new ArrayList<PairIntArray>();
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>>();
 
-        for (PairIntArray a : input) {
+        for (Set<PairInt> a : input) {
             
-            PairIntArray aOut = new PairIntArray(a.getN() * binFactor);
+            Set<PairInt> aOut = new HashSet<PairInt>(a.size() * binFactor);
             output.add(aOut);
             
-            for (int idx = 0; idx < a.getN(); ++idx) {
-                int i = a.getX(idx);
-                int j = a.getY(idx);
+            for (PairInt p : a) {
+                int i = p.getX();
+                int j = p.getY();
                 int pixIdx = img.getInternalIndex(i, j);
 
                 for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
                     for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
-                        aOut.add(ii, jj);
+                        aOut.add(new PairInt(ii, jj));
                     }
                     if (j == (h0 - 1)) {
                         // just in case excess unset past binFactor
                         for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
-                            aOut.add(ii, jj);
+                            aOut.add(new PairInt(ii, jj));
                         }
                     }
                 }
@@ -2485,12 +2485,12 @@ if (sum > 511) {
                     // just in case excess unset past binFastor
                     for (int ii = ((i + 1)*binFactor); ii < resultWidth; ii++) {
                         for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
-                            aOut.add(ii, jj);
+                            aOut.add(new PairInt(ii, jj));
                         }
                         if (j == (h0 - 1)) {
                             // just in case excess unset
                             for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
-                                aOut.add(ii, jj);
+                                aOut.add(new PairInt(ii, jj));
                             }
                         }
                     }

@@ -37,7 +37,9 @@ import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -11241,11 +11243,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * blocks and does not precisely follow object outlines.
      * 
      * @param img
-     * @param outputLabeledContiguous
+     * @param outputLabeledPerimeters
+     * @param outputLabeledColors 
      * @return 
      */
     public int[] roughObjectsByColorSegmentation(ImageExt img,
-        List<PairIntArray> outputLabeledContiguous,
+        List<Set<PairInt>> outputLabeledPerimeters,
         List<GroupAverageColors> outputLabeledColors) {
        
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -11414,28 +11417,91 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             outputLabeledColors.add(g);
         }
         
+        // -- convert the contiguous groups into sets 
+        //    and trim to keep only the perimeters --
+        List<Set<PairInt>> perimetersBinnedList = new
+            ArrayList<Set<PairInt>>();
+        for (PairIntArray a : contigBinnedList) {
+            Set<PairInt> set = Misc.convert(a);
+            set = extractBorder(set);
+            perimetersBinnedList.add(set);
+        }
+        
         // --- expand labels to full size image ---
         int[] labelsFull = imageProcessor.unbinArray(labels4,
             imgBinned, binFactor, img.getWidth(), 
                 img.getHeight());
 
-        //this needs to be changed to
-        //only operate on perimeters,
-        //else takes too long
-        
-        List<PairIntArray> contigList = 
-            imageProcessor.unbinArrays(contigBinnedList,
+        // -- expand perimeters into full size frame ---
+        List<Set<PairInt>> perimetersList = 
+            imageProcessor.unbinSets(perimetersBinnedList,
             imgBinned, binFactor, img.getWidth(), 
             img.getHeight());
         
-        outputLabeledContiguous.addAll(contigList);
+        // === then trim to keep only points in perimetersList
+        //    that are adjacent to
+        //    another group perimeter or to the
+        //    image boundary.
+        TObjectIntMap<PairInt> pointGroupMap =
+            new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < perimetersList.size(); ++i) {
+            Set<PairInt> perimeter = perimetersList.get(i);
+            for (PairInt p : perimeter) {
+                pointGroupMap.put(p, i);
+            }
+        }
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+         
+        for (int i = 0; i < perimetersList.size(); ++i) {
+            Set<PairInt> perimeter = perimetersList.get(i);
+            Set<PairInt> rmSet = new HashSet<PairInt>();
+            for (PairInt p : perimeter) {
+                int x = p.getX();
+                int y = p.getY();
+                int gId = pointGroupMap.get(p);
+                boolean rm = true;
+                // keep if adjacent to a pixel in another group
+                // or is on the image boundaries, else remove
+                if (x == 0 || y == 0 || 
+                    (x == (img.getWidth() - 1)) ||
+                    (y == (img.getHeight() - 1))) {
+                    rm = false;
+                } else {
+                    for (int j = 0; j < dxs.length; ++j) {
+                        int x2 = x + dxs[j];
+                        int y2 = y + dys[j];
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (pointGroupMap.containsKey(p2)) {
+                            int gId2 = pointGroupMap.get(p2);
+                            if (gId != gId2) {
+                                rm = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (rm) {
+                    rmSet.add(p);
+                }
+            }
+            perimeter.removeAll(rmSet);
+        }
+        
+        outputLabeledPerimeters.addAll(perimetersList);
         
         ImageExt img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img3, labelsFull);
         MiscDebug.writeImage(img3, "a" + ts
-            + "_normalized_cuts_5_");
+            + "_normalized_cuts_labeled_");
 
+        img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorPointSetsToImage(
+            outputLabeledPerimeters, 0, 0, 0, img3);
+        MiscDebug.writeImage(img3, "a" + ts
+            + "_normalized_cuts_perim_");
+        
         return labelsFull;
     }
     
@@ -11460,6 +11526,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             DFSContiguousIntValueFinder finder = new 
                  DFSContiguousIntValueFinder(labels, imgWidth, 
                  imgHeight);
+            finder.setMinimumNumberInCluster(1);
             finder.findClusters(label);
             
             for (int i = 0; i < finder.getNumberOfGroups(); ++i) {
@@ -11508,4 +11575,68 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         return output;
     }
+    
+    public Set<PairInt> extractBorder(Set<PairInt> contiguousPoints) {
+
+        // until PerimeterFinder is fixed,
+        // will use a simple search for points that have
+        // no neighbors, and then apply a line thinner
+        // to that.
+        //    may want to consider a use of the blob medial
+        //    axes to determine "inward" and hence fill in
+        //    embedded holes and gaps.
+
+        Set<PairInt> border = new HashSet<PairInt>();
+        
+        int xMin = Integer.MAX_VALUE;
+        int xMax = Integer.MIN_VALUE;
+        int yMin = Integer.MAX_VALUE;
+        int yMax = Integer.MIN_VALUE;
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (PairInt p : contiguousPoints) {
+            int x = p.getX();
+            int y = p.getY();
+            for (int i = 0; i < dxs.length; ++i) {
+                int x2 = x + dxs[i];
+                int y2 = y + dys[i];
+                PairInt p2 = new PairInt(x2, y2);
+                if (!contiguousPoints.contains(p2)) {
+                    border.add(p);
+                    break;
+                }
+            }
+            if (x < xMin) {
+                xMin = x;
+            }
+            if (y < yMin) {
+                yMin = y;
+            }
+            if (x > xMax) {
+                xMax = x;
+            }
+            if (y > yMax) {
+                yMax = y;
+            }
+        }
+        
+        xMax++;
+        yMax++;
+        yMin--;
+        xMin--;
+        if (xMin < 0) {
+            xMin = 0;
+        }
+        if (yMin < 0) {
+            yMin = 0;
+        }
+        
+      //  ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+      //  lt.applyLineThinner(border, xMin, xMax, yMin, yMax);
+      
+        return border;
+    }
+
 }

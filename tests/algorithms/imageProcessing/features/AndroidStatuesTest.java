@@ -288,8 +288,8 @@ public class AndroidStatuesTest extends TestCase {
         
         int maxDimension = 64;
         
-        List<List<PairIntArray>> segmentedPointLists =
-            new ArrayList<List<PairIntArray>>();
+        List<List<Set<PairInt>>> segmentedPointLists =
+            new ArrayList<List<Set<PairInt>>>();
         
         List<List<GroupAverageColors>> segmentedPointColorLists =
             new ArrayList<List<GroupAverageColors>>();
@@ -302,8 +302,8 @@ public class AndroidStatuesTest extends TestCase {
                 fileName.lastIndexOf("."));
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             
-            List<PairIntArray> segmentedPoints =
-                new ArrayList<PairIntArray>();
+            List<Set<PairInt>> segmentedPoints =
+                new ArrayList<Set<PairInt>>();
             
             List<GroupAverageColors> segmentedPointColors =
                 new ArrayList<GroupAverageColors>();
@@ -368,10 +368,8 @@ public class AndroidStatuesTest extends TestCase {
             for pure sillouhette conditions
             but would need to allow for occlision.
             */
-        
             
         }
-        
     }
     
     public void estMatching() throws Exception {

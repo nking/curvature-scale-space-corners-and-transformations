@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.Misc;
@@ -57,6 +58,8 @@ public class SegmentationResults {
         nPoints = new int[n];
         perimeters = new ArrayList<Set<PairInt>>();
         
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
         for (int i = 0; i < n; ++i) {
@@ -71,7 +74,7 @@ public class SegmentationResults {
             
             nPoints[i] = set.size();
         
-            Set<PairInt> border = extractBorder(set);
+            Set<PairInt> border = imageSegmentation.extractBorder(set);
             
             perimeters.add(border);
             
@@ -115,69 +118,6 @@ public class SegmentationResults {
         return fMeasure;
     }
     
-    private Set<PairInt> extractBorder(Set<PairInt> set) {
-
-        // until PerimeterFinder is fixed,
-        // will use a simple search for points that have
-        // no neighbors, and then apply a line thinner
-        // to that.
-        //    may want to consider a use of the blob medial
-        //    axes to determine "inward" and hence fill in
-        //    embedded holes and gaps.
-        
-        Set<PairInt> border = new HashSet<PairInt>();
-        
-        int xMin = Integer.MAX_VALUE;
-        int xMax = Integer.MIN_VALUE;
-        int yMin = Integer.MAX_VALUE;
-        int yMax = Integer.MIN_VALUE;
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        for (PairInt p : set) {
-            int x = p.getX();
-            int y = p.getY();
-            for (int i = 0; i < dxs.length; ++i) {
-                int x2 = x + dxs[i];
-                int y2 = y + dys[i];
-                PairInt p2 = new PairInt(x2, y2);
-                if (!set.contains(p2)) {
-                    border.add(p);
-                    break;
-                }
-            }
-            if (x < xMin) {
-                xMin = x;
-            }
-            if (y < yMin) {
-                yMin = y;
-            }
-            if (x > xMax) {
-                xMax = x;
-            }
-            if (y > yMax) {
-                yMax = y;
-            }
-        }
-        
-        xMax++;
-        yMax++;
-        yMin--;
-        xMin--;
-        if (xMin < 0) {
-            xMin = 0;
-        }
-        if (yMin < 0) {
-            yMin = 0;
-        }
-        
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(border, xMin, xMax, yMin, yMax);
-      
-        return border;
-    }
-
     public int sumNPerimeters() {
 
         int n = 0;
