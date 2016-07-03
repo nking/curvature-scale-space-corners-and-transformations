@@ -2394,15 +2394,23 @@ if (sum > 511) {
 
                 int pixIdx = img.getInternalIndex(i, j);
                 int v = input[pixIdx];
-
-                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                
+                int stop1 = ((i + 1)*binFactor);
+                if (stop1 > (w1 - 1)) {
+                    stop1 = w1;
+                }
+                for (int ii = (i*binFactor); ii < stop1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
                         int pixIdx2 = (jj * w1) + ii;
                         output[pixIdx2] = v;
                     }
                     if (j == (h0 - 1)) {
                         // just in case excess unset past binFactor
-                        for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                        for (int jj = stop2; jj < h1; jj++) {
                             int pixIdx2 = (jj * w1) + ii;
                             output[pixIdx2] = v;
                         }
@@ -2410,14 +2418,18 @@ if (sum > 511) {
                 }
                 if (i == (w0 - 1)) {
                     // just in case excess unset past binFastor
-                    for (int ii = ((i + 1)*binFactor); ii < resultWidth; ii++) {
-                        for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                    for (int ii = stop1; ii < w1; ii++) {
+                        int stop2 = ((j + 1)*binFactor);
+                        if (stop2 > (h1 - 1)) {
+                            stop2 = h1;
+                        }
+                        for (int jj = (j*binFactor); jj < stop2; jj++) {
                             int pixIdx2 = (jj * w1) + ii;
                             output[pixIdx2] = v;
                         }
                         if (j == (h0 - 1)) {
                             // just in case excess unset
-                            for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                            for (int jj = stop2; jj < h1; jj++) {
                                 int pixIdx2 = (jj * w1) + ii;
                                 output[pixIdx2] = v;
                             }
@@ -2469,27 +2481,38 @@ if (sum > 511) {
                 int i = p.getX();
                 int j = p.getY();
                 int pixIdx = img.getInternalIndex(i, j);
-
-                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                int stop1 = ((i + 1)*binFactor);
+                if (stop1 > (w1 - 1)) {
+                    stop1 = w1;
+                }
+                for (int ii = (i*binFactor); ii < stop1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
                         aOut.add(new PairInt(ii, jj));
                     }
                     if (j == (h0 - 1)) {
                         // just in case excess unset past binFactor
-                        for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                        for (int jj = stop2; jj < h1; jj++) {
                             aOut.add(new PairInt(ii, jj));
                         }
                     }
                 }
                 if (i == (w0 - 1)) {
                     // just in case excess unset past binFastor
-                    for (int ii = ((i + 1)*binFactor); ii < resultWidth; ii++) {
-                        for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                    for (int ii = stop1; ii < w1; ii++) {
+                        int stop2 = ((j + 1)*binFactor);
+                        if (stop2 > (h1 - 1)) {
+                            stop2 = h1;
+                        }
+                        for (int jj = (j*binFactor); jj < stop2; jj++) {
                             aOut.add(new PairInt(ii, jj));
                         }
                         if (j == (h0 - 1)) {
                             // just in case excess unset
-                            for (int jj = ((j + 1)*binFactor); jj < resultHeight; jj++) {
+                            for (int jj = stop2; jj < h1; jj++) {
                                 aOut.add(new PairInt(ii, jj));
                             }
                         }
@@ -2582,19 +2605,31 @@ if (sum > 511) {
 
                 int v = mask.getValue(i, j);
 
-                for (int ii = (i*binFactor); ii < ((i + 1)*binFactor); ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                int stop1 = ((i + 1)*binFactor);
+                if (stop1 > (w1 - 1)) {
+                    stop1 = w1;
+                }
+                for (int ii = (i*binFactor); ii < stop1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
                         out.setValue(ii, jj, v);
                     }
-                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                    for (int jj = stop2; jj < h1; jj++) {
                         out.setValue(ii, jj, v);
                     }
                 }
-                for (int ii = ((i + 1)*binFactor); ii < w1; ii++) {
-                    for (int jj = (j*binFactor); jj < ((j + 1)*binFactor); jj++) {
+                for (int ii = stop1; ii < w1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
                         out.setValue(ii, jj, v);
                     }
-                    for (int jj = ((j + 1)*binFactor); jj < h1; jj++) {
+                    for (int jj = stop2; jj < h1; jj++) {
                         out.setValue(ii, jj, v);
                     }
                 }

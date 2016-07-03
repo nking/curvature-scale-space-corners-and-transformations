@@ -2,48 +2,28 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.EdgeFilterProducts;
+import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.HistogramEqualization;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.ImageSegmentation.BoundingRegions;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
-import algorithms.imageProcessing.SegmentedCellMerger;
-import algorithms.imageProcessing.WaterShed;
-import algorithms.imageProcessing.segmentation.NormalizedCuts;
-import algorithms.imageProcessing.segmentation.SLICSuperPixels;
-import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.GroupAverageColors;
-import algorithms.misc.MedianSmooth;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
 import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.map.TLongIntMap;
-import gnu.trove.map.hash.TLongIntHashMap;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
-import java.awt.Color;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -313,41 +293,12 @@ public class AndroidStatuesTest extends TestCase {
             
             int[] labels = imageSegmentation
                 .roughObjectsByColorSegmentation(img,
-                    segmentedPoints, segmentedPointColors);
+                segmentedPoints, segmentedPointColors);
             
             segmentedPointLists.add(segmentedPoints);
        
             segmentedPointColorLists.add(segmentedPointColors);
-            
-            /*    
-            if (i == 0) {
-                if (!((Math.abs(241. - xyCen[0]) < 10) 
-                    &&
-                    (Math.abs(157. - xyCen[1]) < 10))) {
-                    continue;
-                }
-            } else if (i == 1) {
-                if (!((Math.abs(541.19 - xyCen[0]) < 10) 
-                    &&
-                    (Math.abs(169.46 - xyCen[1]) < 10))) {
-                    continue;
-                }
-            } else if (i == 2) {
-                if (!((Math.abs(191.69 - xyCen[0]) < 10) 
-                    &&
-                    (Math.abs(417.72 - xyCen[1]) < 10))) {
-                    continue;
-                }
-            } else {
-                if (!((Math.abs(951.04 - xyCen[0]) < 10) 
-                    &&
-                    (Math.abs(397.19 - xyCen[1]) < 10))) {
-                    continue;
-                }
-            }
-            */    
-
-            
+           
             /*
             wanting to look at color similarity of pixels
                 holding known objects that have different
@@ -367,8 +318,71 @@ public class AndroidStatuesTest extends TestCase {
             the method may need some form of contour matching
             for pure sillouhette conditions
             but would need to allow for occlision.
-            */
             
+            deltaE for gingerbread man in the 4 images
+            is at most 5, else 3.7 and 1.8.           
+            */
+        }
+        
+        int nD = segmentedPointColorLists.size();
+       
+        for (int i = 0; i < nD; ++i) {
+            
+            for (int j = 0; j < nD; ++j) {
+                if (i == j) {
+                    continue;
+                }
+            }            
+        }
+        
+        for (int i = 0; i < nD; ++i) {
+            
+            List<GroupAverageColors> list = 
+                segmentedPointColorLists.get(i);
+            
+            for (GroupAverageColors gClrs : list) {
+                        
+                for (int j = 0; j < nD; ++j) {
+                    if (i == j) {
+                        continue;
+                    }
+                    List<GroupAverageColors> list2 = 
+                        segmentedPointColorLists.get(j);
+                    
+                }
+            }
+        }
+    }
+    
+    private class DeltaESim implements Comparable<DeltaESim> {
+
+        private int x1;
+        private int y1;
+        private int x2;
+        private int y2;
+        private double deltaE;
+        
+        public DeltaESim(GroupAverageColors avg1,
+            GroupAverageColors avg2) {
+            this.x1 = avg1.getXCen();
+            this.y1 = avg1.getYCen();
+            this.x2 = avg2.getXCen();
+            this.y2 = avg2.getYCen();
+            CIEChromaticity cieC = new CIEChromaticity();
+            this.deltaE = 
+                Math.abs(cieC.calcDeltaECIE2000(
+                avg1.getCIEL(), avg1.getCIEA(), avg1.getCIEB(), 
+                avg2.getCIEL(), avg2.getCIEA(), avg2.getCIEB()));
+        }
+        
+        @Override
+        public int compareTo(DeltaESim other) {
+            if (deltaE < other.deltaE) {
+                return -1;
+            } else if (deltaE > other.deltaE) {
+                return 1;
+            }
+            return 0;
         }
     }
     

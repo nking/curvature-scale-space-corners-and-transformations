@@ -81,7 +81,8 @@ public class MedianTransform {
      * @param outputTransformed
      * @param outputCoeff 
      */
-    public void multiscalePyramidalMedianTransform2(GreyscaleImage input,
+    public void multiscalePyramidalMedianTransform2(
+        GreyscaleImage input,
         List<GreyscaleImage> outputTransformed, List<GreyscaleImage> outputCoeff) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
@@ -129,12 +130,12 @@ public class MedianTransform {
     /**
      * pyramidal median transform for decimation of input image.
      * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
-     * 
+     * This method does not return the coefficients.
      * @param input
      * @param outputTransformed
      */
-    public <T extends Image> void multiscalePyramidalMedianTransform2(T input,
-        List<T> outputTransformed) {
+    public <T extends Image> void multiscalePyramidalMedianTransform2(
+        T input, List<T> outputTransformed) {
 
         int imgDimen = Math.min(input.getWidth(), input.getHeight());
 
@@ -156,6 +157,72 @@ public class MedianTransform {
             
             if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
                 break;
+            }
+            
+            // calc for red, green and blue then combine
+            GreyscaleImage cJRed = cJ.copyRedToGreyscale();
+            GreyscaleImage cJGreen = cJ.copyGreenToGreyscale();
+            GreyscaleImage cJBlue = cJ.copyBlueToGreyscale();
+            
+            GreyscaleImage cJPlus1AstRed = med.calculate(cJRed, winL, winL);   
+            GreyscaleImage cJPlus1AstGreen = med.calculate(cJGreen, winL, winL);  
+            GreyscaleImage cJPlus1AstBlue = med.calculate(cJBlue, winL, winL); 
+            
+            // decimation:
+            GreyscaleImage cJPlus1Red = imageProcessor.binImage(cJPlus1AstRed, 2);
+            GreyscaleImage cJPlus1Green = imageProcessor.binImage(cJPlus1AstGreen, 2);
+            GreyscaleImage cJPlus1Blue = imageProcessor.binImage(cJPlus1AstBlue, 2);
+
+            T cJPlus1 = (T) cJ.createWithDimensions(cJPlus1Red.getWidth(), 
+                cJPlus1Red.getHeight());
+            for (int ii = 0; ii < cJPlus1.getNPixels(); ++ii) {
+                cJPlus1.setRGB(ii, cJPlus1Red.getValue(ii), 
+                    cJPlus1Green.getValue(ii), cJPlus1Blue.getValue(ii));
+            }
+                        
+            outputTransformed.add(cJPlus1);                        
+        }
+    }
+    
+    /**
+     * pyramidal median transform for decimation of input image.
+     * The algorithm follows pseudocode in http://www.multiresolution.com/svbook.pdf
+     * This method does not return the coefficients.
+     * @param input
+     * @param outputTransformed
+     * @param dimensionLimit a size for width and height at which
+     * to stop the decimation when the image is smaller than the
+     * size.  The method does not continue to make decimated
+     * images beyond this size limit.
+     */
+    public <T extends Image> void multiscalePyramidalMedianTransform2(
+        T input, List<T> outputTransformed, int dimensionLimit) {
+
+        int imgDimen = Math.min(input.getWidth(), input.getHeight());
+
+        Image img0 = input.copyImage();
+
+        int nr = (int)(Math.log(imgDimen)/Math.log(2));
+        int s = 1;
+        int winL = 2*s + 1;
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        MedianSmooth med = new MedianSmooth();
+        
+        outputTransformed.add((T) img0.copyImage());
+
+        for (int j = 0; j < (nr - 1); ++j) {
+                       
+            T cJ = outputTransformed.get(j);
+            
+            if ((cJ.getWidth() < winL) || (cJ.getHeight() < winL)) {
+                return;
+            }
+            
+            if ((cJ.getWidth() < dimensionLimit) && 
+                (cJ.getHeight() < dimensionLimit)) {
+                return;
             }
             
             // calc for red, green and blue then combine

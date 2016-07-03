@@ -15,13 +15,13 @@ public class GroupAverageColors {
     private int xCen;
     private int yCen;
     
-    protected int rAvg;
-    protected int gAvg;
-    protected int bAvg;
+    private int rAvg;
+    private int gAvg;
+    private int bAvg;
     
-    protected float avgCIEL;
-    protected float avgCIEA;
-    protected float avgCIEB;
+    private float avgCIEL;
+    private float avgCIEA;
+    private float avgCIEB;
     
     public GroupAverageColors(Image img,
         PairIntArray a) {
@@ -90,5 +90,47 @@ public class GroupAverageColors {
      */
     public void setYCen(int yCen) {
         this.yCen = yCen;
+    }
+
+    /**
+     * @return the rAvg
+     */
+    public int getR() {
+        return rAvg;
+    }
+
+    /**
+     * @return the gAvg
+     */
+    public int getG() {
+        return gAvg;
+    }
+
+    /**
+     * @return the bAvg
+     */
+    public int getB() {
+        return bAvg;
+    }
+
+    /**
+     * @return the avgCIEL
+     */
+    public float getCIEL() {
+        return avgCIEL;
+    }
+
+    /**
+     * @return the avgCIEA
+     */
+    public float getCIEA() {
+        return avgCIEA;
+    }
+
+    /**
+     * @return the avgCIEB
+     */
+    public float getCIEB() {
+        return avgCIEB;
     }
 }

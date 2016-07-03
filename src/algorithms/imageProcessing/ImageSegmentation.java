@@ -9337,6 +9337,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return minDiffIndex;
     }
 
+    private boolean noUnlabeled(int[] labels) {
+        for (int label : labels) {
+            assert(label != -1);
+        }
+        return true;
+    }
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
@@ -11253,159 +11260,62 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
        
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        int maxDimension = 64;
-        
-        int binFactor = (int) Math.ceil(
-            Math.max((float) img.getWidth() / (float) maxDimension,
-                (float) img.getHeight() / (float) maxDimension));
-
-        // binned to size near 64
-        ImageExt imgBinned = imageProcessor.binImage(img, binFactor);
-
-        // binned to size near 32
-        ImageExt imgBinned2 = imageProcessor.binImage(imgBinned, 2);
-
+        // 512 w/ kCells=600 binned works
+        // 128 w/ kCells=600 pyr dec works and has fewer segments
+        int maxDimension = 128;
         int clrNorm = 1;
         int sz = 1;
-
-        // ------
-        int kCells = (imgBinned.getWidth() / sz)
-            + (imgBinned.getHeight() / sz);
-
-        SLICSuperPixels slic = new SLICSuperPixels(imgBinned,
-            kCells, clrNorm);
-        slic.calculate();
-        int[] labels = slic.getLabels();
-
         long ts = MiscDebug.getCurrentTimeFormatted();
+       
+         // ----- pyramidal decimation to limit maxDimension -----
+        MedianTransform mt = new MedianTransform();
+        List<ImageExt> pyrList = new ArrayList<ImageExt>();
+        mt.<ImageExt>multiscalePyramidalMedianTransform2(img, 
+            pyrList, maxDimension);
         
-        /*Image img2 = imgBinned.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labels);
-        MiscDebug.writeImage(img2, "_super_pixels_" + ts);
-        */
+        ImageExt imageBinned = pyrList.get(pyrList.size() - 1);       
+            
+        int kCells = 600;
+            //(imageBinned.getWidth() / sz)
+            //+ (imageBinned.getHeight() / sz);
+                       
+        log.info("kCells=" + kCells);
+            
+        SLICSuperPixels slic = new SLICSuperPixels(
+            imageBinned, kCells, clrNorm);
+            slic.calculate();
+        int[] labels0 = slic.getLabels(); 
         
         NormalizedCuts normCuts = new NormalizedCuts();
-        int[] labelsBinned = normCuts.normalizedCut(imgBinned, labels);
-
-        /*
-        img2 = imgBinned.createWithDimensions();
+        int[] labels = normCuts.normalizedCut(
+            imageBinned, labels0);
+            
+        // correct for unlabeled points
+        labelTheUnlabeled(labels);
+                        
+        ImageExt img2 = imageBinned.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labelsBinned);
-        MiscDebug.writeImage(img2, "a" + ts + "_normalized_cuts_");
-        */
-        
-        // ------
-        kCells = (imgBinned2.getWidth() / sz)
-            + (imgBinned2.getHeight() / sz);
-
-        slic = new SLICSuperPixels(imgBinned2, kCells, clrNorm);
-        slic.calculate();
-        labels = slic.getLabels();
-
-        normCuts = new NormalizedCuts();
-        int[] labels3 = normCuts.normalizedCut(imgBinned2, labels);
-
-        // expand scale of labels3
-        int[] labels3Exp = imageProcessor.unbinArray(
-            labels3, imgBinned2, 2,
-            imgBinned.getWidth(), imgBinned.getHeight());
-
-        int n1 = labels3Exp.length;
-        int n2 = imgBinned.getNPixels();
-
-        /*
-        img2 = imgBinned.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labels3Exp);
-        MiscDebug.writeImage(img2, "a" + ts
-            + "_normalized_cuts_2_");
-        */
-        
-        int[] relabeled = relabel(labelsBinned, labels3Exp);
-        
-        /*
-        img2 = imgBinned.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, relabeled);
-        MiscDebug.writeImage(img2, "a" + ts
-            + "_normalized_cuts_3_");
-        */
-        
-        normCuts = new NormalizedCuts();
-        int[] labels4 = normCuts.normalizedCut(imgBinned, relabeled);
-
-        /*
-        img2 = imgBinned.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labels4);
-        MiscDebug.writeImage(img2, "a" + ts
-            + "_normalized_cuts_4_");
-        */
-        
-        // ----- replace single pixels w/ adjacent nearest in color -----
-        int[] dx2 = Misc.dx8;
-        int[] dy2 = Misc.dy8;
-        // single pixels should join closest,,,
-        for (int i = 0; i < imgBinned.getWidth(); ++i) {
-            for (int j = 0; j < imgBinned.getHeight(); ++j) {
-                int pixIdx = imgBinned.getInternalIndex(i, j);
-                int v = labels4[pixIdx];
-                boolean oneIsSame = false;
-                for (int z = 0; z < dx2.length; ++z) {
-                    int x2 = i + dx2[z];
-                    int y2 = j + dy2[z];
-                    if (x2 < 0 || y2 < 0 || (x2 > (imgBinned.getWidth() - 1))
-                        || (y2 > (imgBinned.getHeight() - 1))
-                        ) {
-                        continue;
-                    }
-                    int pixIdx2 = imgBinned.getInternalIndex(x2, y2);
-                    int v2 = labels4[pixIdx2];
-                    if (v2 == v) {
-                        oneIsSame = true;
-                        break; 
-                    }
-                }
-                if (!oneIsSame) {
-                    int r = imgBinned.getR(pixIdx);
-                    int g = imgBinned.getG(pixIdx);
-                    int b = imgBinned.getB(pixIdx);
-                    int minDiffRGB = Integer.MAX_VALUE;
-                    int minIdx = -1;
-                    for (int z = 0; z < dx2.length; ++z) {
-                        int x2 = i + dx2[z];
-                        int y2 = j + dy2[z];
-                        if (x2 < 0 || y2 < 0 || (x2 > (imgBinned.getWidth() - 1))
-                            || (y2 > (imgBinned.getHeight() - 1))) {
-                            continue;
-                        }
-                        int pixIdx2 = imgBinned.getInternalIndex(x2, y2);
-                        int diffR = r - imgBinned.getR(pixIdx2);
-                        int diffG = g - imgBinned.getG(pixIdx2);
-                        int diffB = b - imgBinned.getB(pixIdx2);
-                        int diff = (diffR * diffR + diffG * diffG +
-                            diffB * diffB);
-                        if (diff < minDiffRGB) {
-                            minDiffRGB = diff;
-                            minIdx = pixIdx2;
-                        } 
-                    } 
-                    labels4[pixIdx] = labels4[minIdx];
-                }
-            }
-        }
+            img2, labels);
+        MiscDebug.writeImage(img2, "a" + ts + "_binned_");
+            
+        // replace single pixels w/ adjacent nearest in colpr
+        replaceSinglePixelLabels(labels, imageBinned);
         
         // before expand to full image size, do the more
         // expensive DFS search for contiguous same labels.
         List<PairIntArray> contigBinnedList = 
-            findContiguousSameLabels(labels4,
-            imgBinned.getWidth(), imgBinned.getHeight());
+            findContiguousSameLabels(labels,
+            imageBinned.getWidth(), imageBinned.getHeight());
+        
+        //transform the centroids back into the full image
+        //reference frame.
+        int binFactor = img.getWidth()/imageBinned.getWidth();
         
         // --- also, general color information ---
         for (PairIntArray a : contigBinnedList) {
+            
             GroupAverageColors g = new GroupAverageColors(
-                imgBinned, a);
+                imageBinned, a);
             
             // put the centroids into the full frame
             //    reference
@@ -11427,18 +11337,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             perimetersBinnedList.add(set);
         }
         
+        //TODO: can consider whether need this since the
+        //   full size perimeters are already returned.
         // --- expand labels to full size image ---
-        int[] labelsFull = imageProcessor.unbinArray(labels4,
-            imgBinned, binFactor, img.getWidth(), 
-                img.getHeight());
-
+        int[] labelsFull = imageProcessor.unbinArray(
+            labels, imageBinned, binFactor, 
+            img.getWidth(), img.getHeight());
+        
         // -- expand perimeters into full size frame ---
         List<Set<PairInt>> perimetersList = 
             imageProcessor.unbinSets(perimetersBinnedList,
-            imgBinned, binFactor, img.getWidth(), 
+            imageBinned, binFactor, img.getWidth(), 
             img.getHeight());
         
-        // === then trim to keep only points in perimetersList
+        // === then thin to keep only points in perimetersList
         //    that are adjacent to
         //    another group perimeter or to the
         //    image boundary.
@@ -11490,12 +11402,13 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         outputLabeledPerimeters.addAll(perimetersList);
         
+        
         ImageExt img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img3, labelsFull);
         MiscDebug.writeImage(img3, "a" + ts
             + "_normalized_cuts_labeled_");
-
+        
         img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorPointSetsToImage(
             outputLabeledPerimeters, 0, 0, 0, img3);
@@ -11503,6 +11416,35 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             + "_normalized_cuts_perim_");
         
         return labelsFull;
+    }
+    
+    /**
+     * this is a fudge to assign unlabeled pixels with a
+     * value higher than the largest labeled.  it may
+     * need to be modified or the reason for unlabeled to
+     * be corrected upstream.
+     * @param labels 
+     */
+    private void labelTheUnlabeled(int[] labels) {
+        
+        int maxLabel = Integer.MIN_VALUE;
+        TIntSet unlabeled = new TIntHashSet();
+        for (int i = 0; i < labels.length; ++i) {
+            if (labels[i] == -1) {
+                unlabeled.add(i);
+            }
+            if (labels[i] > maxLabel) {
+                maxLabel = labels[i];
+            }
+        }
+        if (unlabeled.size() > 0) {
+            maxLabel++;
+            TIntIterator iter = unlabeled.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                labels[idx] = maxLabel; 
+            }
+        }
     }
     
     public List<PairIntArray> findContiguousSameLabels(int[] labels,
@@ -11544,33 +11486,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             throw new IllegalArgumentException("labels1 "
                 + "must be same length as labels2");
         }
-        int maxLabel1 = MiscMath.findMax(labels1);
-        long[] labels2L = new long[labels2.length];
-        for (int i = 0; i < labels2.length; ++i) {
-            labels2L[i] = labels2[i] + maxLabel1;
-        }
-        
-        // combine the segmentation of labels1 and labels2
-        // by multiplying them,
-        // then reducing the labels to sequential 0 through nLabels
-        TLongSet set = new TLongHashSet();
-        for (int i = 0; i < labels1.length;++i) {
-            long v = labels1[i] * labels2L[i];
-            set.add(v);
-        }
-        int count = 1;
-        TLongIntMap vMap = new TLongIntHashMap();
-        TLongIterator iter = set.iterator();
-        while (iter.hasNext()) {
-            long v = iter.next();
-            vMap.put(v, count);
-            count++;
-        }
-        
+
         int[] output = new int[labels1.length];
-        for (int i = 0; i < labels1.length; ++i) {
-            long v = labels1[i] * labels2L[i];
-            output[i] = vMap.get(v);
+        
+        TObjectIntMap<PairInt> labelMap =
+            new TObjectIntHashMap<PairInt>();
+        
+        int count = 1;
+        for (int i = 0; i < labels2.length; ++i) {
+            PairInt pL = new PairInt(labels1[i], labels2[i]);
+            if (!labelMap.containsKey(pL)) {
+                labelMap.put(pL, count);
+                count++;
+            }
+            output[i] = labelMap.get(pL);
         }
         
         return output;
@@ -11639,4 +11568,60 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return border;
     }
 
+    protected void replaceSinglePixelLabels(int[] labels,
+        ImageExt img) {
+        
+        // ----- replace single pixels w/ adjacent nearest in color -----
+        int[] dx2 = Misc.dx8;
+        int[] dy2 = Misc.dy8;
+        // single pixels should join closest,,,
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                int pixIdx = img.getInternalIndex(i, j);
+                int v = labels[pixIdx];
+                boolean oneIsSame = false;
+                for (int z = 0; z < dx2.length; ++z) {
+                    int x2 = i + dx2[z];
+                    int y2 = j + dy2[z];
+                    if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1))
+                        || (y2 > (img.getHeight() - 1))
+                        ) {
+                        continue;
+                    }
+                    int pixIdx2 = img.getInternalIndex(x2, y2);
+                    int v2 = labels[pixIdx2];
+                    if (v2 == v) {
+                        oneIsSame = true;
+                        break; 
+                    }
+                }
+                if (!oneIsSame) {
+                    int r = img.getR(pixIdx);
+                    int g = img.getG(pixIdx);
+                    int b = img.getB(pixIdx);
+                    int minDiffRGB = Integer.MAX_VALUE;
+                    int minIdx = -1;
+                    for (int z = 0; z < dx2.length; ++z) {
+                        int x2 = i + dx2[z];
+                        int y2 = j + dy2[z];
+                        if (x2 < 0 || y2 < 0 || (x2 > (img.getWidth() - 1))
+                            || (y2 > (img.getHeight() - 1))) {
+                            continue;
+                        }
+                        int pixIdx2 = img.getInternalIndex(x2, y2);
+                        int diffR = r - img.getR(pixIdx2);
+                        int diffG = g - img.getG(pixIdx2);
+                        int diffB = b - img.getB(pixIdx2);
+                        int diff = (diffR * diffR + diffG * diffG +
+                            diffB * diffB);
+                        if (diff < minDiffRGB) {
+                            minDiffRGB = diff;
+                            minIdx = pixIdx2;
+                        } 
+                    } 
+                    labels[pixIdx] = labels[minIdx];
+                }
+            }
+        }
+    }
 }

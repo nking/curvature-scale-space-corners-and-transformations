@@ -19,7 +19,8 @@ public class MedianSmooth {
      *
      * NOTE: should only be used by a single thread.
      * 
-     * NOTE: the border points outside of the window retain their initial values.
+     * NOTE: the border points outside of the window retain their 
+     * initial values.
      *
      * @param input
      * @param xWindow
@@ -334,16 +335,15 @@ public class MedianSmooth {
 
                 a[insIdx - 1] = value;
             }
-try {
             n++;
-} catch(Throwable t){}
             availSlot = -1;            
         }
 
         /**
          * remove the item from the full list of items.
          * runtime is O(log_2(N)).
-         * NOTE: this could be made O(1) runtime complexity at the expense
+         * NOTE: this could be made O(1) runtime complexity 
+         * at the expense
          * of 3 * space complexity.
          * @param value
          */

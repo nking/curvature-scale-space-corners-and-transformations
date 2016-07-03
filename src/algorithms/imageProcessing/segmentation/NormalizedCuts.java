@@ -146,6 +146,10 @@ public class NormalizedCuts {
         double thresh = 0.06;
         
         FlexCompRowMatrix w = graph.getEdgeMatrix();
+        if (w.numRows() < 5) {
+            return;
+        }
+        
         FlexCompRowMatrix d = createD(w, graph);
         
         log.fine("w.nnz=" + MatrixUtil.countNodes(w));
@@ -198,7 +202,17 @@ public class NormalizedCuts {
 //TODO: when have a return tpe,
 // catch errors here and return a default
             ArpackSym arpackSym = new ArpackSym(tmp);
-            Map<Double, DenseVectorSub> rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);
+            Map<Double, DenseVectorSub> rMap = null;
+            try {
+                rMap = arpackSym.solve(nEig, ArpackSym.Ritz.SM);
+            } catch (Throwable t) {
+                log.severe("ERROR: " +  "array size=" +
+                    " rows=" + tmp.numRows() +
+                    " cols=" + tmp.numColumns()
+                    + " => " + t.getMessage()
+                );
+                return;
+            }
 
             double secondSmallestEigenValue = find2ndSmallestEigenValue(rMap);
             DenseVectorSub eigenVector = rMap.get(Double.valueOf(secondSmallestEigenValue));
