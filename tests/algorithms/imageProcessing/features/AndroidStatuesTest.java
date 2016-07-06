@@ -375,18 +375,33 @@ public class AndroidStatuesTest extends TestCase {
         // model for the spatial location of the keypoints
         // with respect to one another are what 
         // determines best fits.
-        // ... looks like this could be done as a single
-        //   feature in some cases since the SSD scores
-        //   are by pixel comparisons within each feature.
-        // ... might consider how to compare the internsection
-        //    of each feature where the entire segment is made
-        //    a feature and assuming same eucldiean scale
-        //    (scales from 1/4th to 4 are tried by factors of 2
-        //    using the decimation images for 128, 256, and 512).
-        //    occlusion combined with scale 
-        //    makes a whole feature pattern possibly less accurate,
-        //    haven't followed this thru yet
-        
+        // ... NOTE that if occlusion were not a possibility,
+        //     it would be simpler code to only decimate to
+        //     near 128 for all images, then for feature
+        //     comparison when looking for the model segment
+        //     in the data images,
+        //     would use the model segment size as the template 
+        //     and then rescale each
+        //     data image segment to the model search segment
+        //     size to make same size features for comparison
+        //     and find the best match among the data segments
+        //     in an image.
+        //     unforturnately, would not necessarily find occluded
+        //     objects very well with this approach...
+        //     comparing a full gingerbread model to a half might
+        //     find the full gingerbread man resembles the eclair
+        //     more than the half gingerbread man (but in contrast,
+        //     the more complex multiple keypoints pattern and 
+        //     set euclidean scales of fctor of 2 would presumably
+        //     get the right answer.)
+        //
+        //   need to consider when object segment area is not much
+        //   larger than background area when making these keypoints...
+        //   that should be revised ... a diagonal rectangle
+        //   with background area larger than real object area
+        //   might fail with the way the keypoints are right now
+        //   generated.
+        //   that should be fixed next...
         /*
         NOTE: in the middle of considering changing this
         to create a single feature for each segment...
