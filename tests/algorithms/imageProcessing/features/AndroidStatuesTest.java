@@ -2,12 +2,12 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -16,13 +16,24 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntPair;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -265,15 +276,10 @@ public class AndroidStatuesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
-        
-        int maxDimension = 64;
-        
-        List<List<Set<PairInt>>> segmentedPointLists =
-            new ArrayList<List<Set<PairInt>>>();
-        
-        List<List<GroupAverageColors>> segmentedPointColorLists =
-            new ArrayList<List<GroupAverageColors>>();
 
+        List<ImageExt> images = new ArrayList<ImageExt>();
+        List<DecimatedData> results = new ArrayList<DecimatedData>();
+        
         for (int i = 0; i < fileNames.length; ++i) {
             
             String fileName = fileNames[i];
@@ -281,23 +287,13 @@ public class AndroidStatuesTest extends TestCase {
             String fileNameRoot = fileName.substring(0, 
                 fileName.lastIndexOf("."));
             ImageExt img = ImageIOHelper.readImageExt(filePath);
+            images.add(img);
             
-            List<Set<PairInt>> segmentedPoints =
-                new ArrayList<Set<PairInt>>();
+            DecimatedData dd = imageSegmentation
+                .roughObjectsByColorSegmentation(
+                img, 36);
             
-            List<GroupAverageColors> segmentedPointColors =
-                new ArrayList<GroupAverageColors>();
-  
- //TODO: need to keep as much of these calcs
- // at smaller size images when possible
-            
-            int[] labels = imageSegmentation
-                .roughObjectsByColorSegmentation(img,
-                segmentedPoints, segmentedPointColors);
-            
-            segmentedPointLists.add(segmentedPoints);
-       
-            segmentedPointColorLists.add(segmentedPointColors);
+            results.add(dd);
            
             /*
             wanting to look at color similarity of pixels
@@ -324,34 +320,78 @@ public class AndroidStatuesTest extends TestCase {
             */
         }
         
-        int nD = segmentedPointColorLists.size();
-       
-        for (int i = 0; i < nD; ++i) {
-            
-            for (int j = 0; j < nD; ++j) {
-                if (i == j) {
-                    continue;
-                }
-            }            
+        int nD = results.size();
+        
+        for (int i = 0; i < nD; ++i) {            
         }
         
+        /*
+        List<Set<PairInt>> pixelLists = 
+            imageProcessor.extract2ndDerivPoints(
+            gsImg, 
+            results.get(i).binnedLabels,
+            //200, true);
+            50, true
+        );
+        */
+            
+        /*
+        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+                 
         for (int i = 0; i < nD; ++i) {
             
-            List<GroupAverageColors> list = 
-                segmentedPointColorLists.get(i);
-            
-            for (GroupAverageColors gClrs : list) {
-                        
-                for (int j = 0; j < nD; ++j) {
-                    if (i == j) {
-                        continue;
-                    }
-                    List<GroupAverageColors> list2 = 
-                        segmentedPointColorLists.get(j);
-                    
+            GreyscaleImage gsImg =
+                results.get(i).binnedImage.copyToGreyscale();
+            int w = gsImg.getWidth();
+            int h = gsImg.getHeight();
+
+            int binFactor = results.get(i).binFactor;
+
+            List<Set<PairInt>> pixelLists = 
+                imageProcessor.extract2ndDerivPoints(
+                gsImg, 
+                results.get(i).binnedLabels,
+                //200, true);
+                50, true
+            );
+            Set<PairInt> pixels = new HashSet<PairInt>();
+            for (Set<PairInt> set : pixelLists) {
+                pixels.addAll(set);
+            }
+
+            boolean useNormalized = true;
+            IntensityFeatures features = new IntensityFeatures(
+                5, useNormalized, rotatedOffsets);
+            if (!features.gradientWasCreated()) {
+                features.calculateGradientWithGreyscale(
+                    gsImg);
+            }
+            Set<PairInt> remove = new HashSet<PairInt>();
+            for (PairInt p : pixels) {
+                int x = p.getX();
+                int y = p.getY();
+                if (features.removeDueToLocalization(gsImg, x, y,
+                    features.calculateOrientation(x, y))) {
+                    remove.add(p);
                 }
             }
+            pixels.removeAll(remove);
+            
+            
+            int nExtraForDot = 0;
+            List<Set<PairInt>> perimeters = 
+                results.get(i).binnedPerimeters;
+            
+            ImageExt img2 = gsImg.copyToColorGreyscaleExt();
+            //ImageIOHelper.addAlternatingColorCurvesToImage0(
+            //    perimeters, img2, nExtraForDot);
+            
+            ImageIOHelper.addCurveToImage(pixels, img2, 
+                nExtraForDot, 255, 0, 0);
+            MiscDebug.writeImage(img2, "a_" + i + "_2ndderivs_");
+            
         }
+        */
     }
     
     private class DeltaESim implements Comparable<DeltaESim> {

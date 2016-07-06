@@ -8,7 +8,15 @@ import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.PairInt;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
+import algorithms.util.Errors;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -20,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.ca.uol.aig.fftpack.Complex1D;
 import thirdparty.ca.uol.aig.fftpack.ComplexDoubleFFT;
@@ -1573,6 +1582,46 @@ if (sum > 511) {
         }
 
         input.resetTo(output);
+    }
+    
+    public int[] performSecondDerivGaussian(GreyscaleImage input, 
+        SIGMA sigma) {
+
+        float[] kernel = Gaussian1DSecondDeriv.getBinomialKernel(sigma);
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.getWidth();
+        int h = input.getHeight();
+        
+        int[] output = new int[w * h];
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, true);
+
+                output[input.getInternalIndex(i, j)] = 
+                    (int)Math.round(conv);
+            }
+        }
+        
+        int[] output2 = Arrays.copyOf(output, 
+            output.length);
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    output2, w, h, i, j, kernel, false);
+
+                output[input.getInternalIndex(i, j)] = 
+                    (int)Math.round(conv);
+            }
+        }
+
+        return output;
     }
 
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
@@ -4756,16 +4805,20 @@ if (sum > 511) {
 
         applySecondDerivGaussian(gsImg, SIGMA.ONE, 0, 255);
 
-        PairIntArray valueCounts = Histogram.createADescendingSortbyFrequencyArray(gsImg);
+        PairIntArray valueCounts = 
+            Histogram.createADescendingSortByKeyArray(gsImg);
         int nTot = 0;
-        int v1 = 0;
-        for (int i = (valueCounts.getN() - 1); i > -1; --i) {
+        int v1 = -1;
+        for (int i = 0; i < valueCounts.getN(); ++i) {
             int c = valueCounts.getY(i);
             int nTmp = nTot + c;
             if (nTmp < maxNPoints) {
                 nTot += c;
                 v1 = valueCounts.getX(i);
             } else {
+                if (v1 == -1) {
+                    v1 = valueCounts.getX(i);
+                }
                 break;
             }
         }
@@ -4799,6 +4852,116 @@ if (sum > 511) {
         }
 
         return pixels;
+    }
+    
+    /**
+     * NOT READY FOR USE YET
+     * extract the high value points in the second derivative gaussian of
+     * img to a number of points less than or equal to maxNPoints and
+     * if the variable reduceForNoise is true, then look for patterns
+     * of noise and reduce the maximum value extracted from the 2nd deriv
+     * points until no noise patterns are seen.
+     * @param img
+     * @param labels labels for segmented regions for which
+     * the maximum number of points are applied to limit the
+     * total number returned.
+     * @param maxNPoints
+     * @param reduceForNoise
+     * @return
+     */
+    public List<Set<PairInt>> extract2ndDerivPoints(
+        GreyscaleImage img, int[] labels, int maxNPoints,
+        boolean reduceForNoise) {
+
+        int[] secondDerivs = 
+            performSecondDerivGaussian(img, SIGMA.ONE);
+        for (int idx = 0; idx < secondDerivs.length; ++idx) {
+            if (secondDerivs[idx] < 0) {
+                secondDerivs[idx] *= -1;
+            }
+        }
+        
+        TIntObjectMap<TIntSet> labelMap 
+            = new TIntObjectHashMap<TIntSet>();
+        for (int pixIdx = 0; pixIdx < labels.length; ++pixIdx) {
+            int label = labels[pixIdx];
+            TIntSet set = labelMap.get(label);
+            if (set == null) {
+                set = new TIntHashSet();
+                labelMap.put(label, set);
+            }
+            set.add(pixIdx);
+        }
+        
+        List<Set<PairInt>> output = new ArrayList<Set<PairInt>> ();
+        
+        TIntObjectIterator<TIntSet> iter = labelMap.iterator();
+        
+        for (int ii = labelMap.size(); ii-- > 0;) {
+
+            iter.advance();
+            
+            int label = iter.key();
+            
+            TIntSet indexes = iter.value();
+            PairIntArray valueCounts = 
+                Histogram.createADescendingSortByKeyArray(
+                indexes, secondDerivs);
+                    
+            int nTot = 0;
+            int v1 = -1;
+            for (int i = 0; i < valueCounts.getN(); ++i) {
+                int c = valueCounts.getY(i);
+                int nTmp = nTot + c;
+                if (nTmp < maxNPoints) {
+                    nTot += c;
+                    v1 = valueCounts.getX(i);
+                } else {
+                    if (v1 == -1) {
+                        v1 = valueCounts.getX(i);
+                    }
+                    break;
+                }
+            }
+
+            int w = img.getWidth();
+            int h = img.getHeight();
+
+            Set<PairInt> pixels = new HashSet<PairInt>();
+            TIntIterator iter2 = indexes.iterator();
+            while (iter2.hasNext()) {
+                
+                int idx = iter2.next();
+                
+                int v = secondDerivs[idx];
+                
+                int x = img.getCol(idx);
+                int y = img.getRow(idx);
+                PairInt p = new PairInt(x, y);
+                
+                if (v >= v1) {
+                    // avoid points on image boundaries
+                    if (x == 0 || y == 0 || (x > (w - 1)) || (y > (h - 1))) {
+                        continue;
+                    }
+                    pixels.add(p);
+                }
+            }
+
+            log.info("before nPoints=" + pixels.size());
+
+            reduceTo4NeighborCentroids(pixels);
+
+            log.info("after nPoints=" + pixels.size());
+            
+            output.add(pixels);
+        }
+
+        if (reduceForNoise) {
+            // look for patterns of noise and reduce v1 until not present
+        }
+
+        return output;
     }
 
     private void reduceTo4NeighborCentroids(Set<PairInt> pixels) {
@@ -5057,6 +5220,161 @@ if (sum > 511) {
         }
         
         return sum;
+    }
+    
+    public TIntObjectMap<TIntSet> unbin(
+        TIntObjectMap<TIntSet> binnedMap,
+        int binFactor, int binnedWidth, int binnedHeight,
+        int resultWidth, int resultHeight) {
+        
+        if (binnedMap == null) {
+            throw new IllegalArgumentException(
+            "binnedMap cannot be null");
+        }
+
+        TIntObjectMap<TIntSet> output 
+            = new TIntObjectHashMap<TIntSet>(
+            binnedMap.size() * binFactor);
+
+        int w0 = binnedWidth;
+        int h0 = binnedHeight;
+        
+        int w1 = resultWidth;
+        int h1 = resultHeight;
+        
+        TIntObjectIterator<TIntSet> iter =
+            binnedMap.iterator();
+        
+        for (int lIdx = 0; lIdx < binnedMap.size(); ++lIdx) {
+            
+            iter.advance();
+            
+            TIntSet p0 = iter.value();
+            TIntSet pOut = new TIntHashSet(p0.size() * binFactor);
+            output.put(iter.key(), pOut);
+            
+            TIntIterator iter2 = p0.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                int j = pixIdx/w0;
+                int i = pixIdx - (j * w0);
+                int stop1 = ((i + 1)*binFactor);
+                if (stop1 > (w1 - 1)) {
+                    stop1 = w1;
+                }
+                for (int ii = (i*binFactor); ii < stop1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
+                        int pixIdx2 = (jj * w1) + ii;
+                        pOut.add(pixIdx2);
+                    }
+                    if (j == (h0 - 1)) {
+                        // just in case excess unset past binFactor
+                        for (int jj = stop2; jj < h1; jj++) {
+                            int pixIdx2 = (jj * w1) + ii;
+                            pOut.add(pixIdx2);
+                        }
+                    }
+                }
+                if (i == (w0 - 1)) {
+                    // just in case excess unset past binFastor
+                    for (int ii = stop1; ii < w1; ii++) {
+                        int stop2 = ((j + 1)*binFactor);
+                        if (stop2 > (h1 - 1)) {
+                            stop2 = h1;
+                        }
+                        for (int jj = (j*binFactor); jj < stop2; jj++) {
+                            int pixIdx2 = (jj * w1) + ii;
+                            pOut.add(pixIdx2);
+                        }
+                        if (j == (h0 - 1)) {
+                            // just in case excess unset
+                            for (int jj = stop2; jj < h1; jj++) {
+                                int pixIdx2 = (jj * w1) + ii;
+                                pOut.add(pixIdx2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return output;
+    }
+    
+    public List<PairIntArray> unbinLists(
+        List<PairIntArray> contigBinnedList, 
+        int binFactor, 
+        int binnedWidth, int binnedHeight,
+        int resultWidth, int resultHeight) {
+        
+        if (contigBinnedList == null) {
+            throw new IllegalArgumentException(
+            "contigBinnedList cannot be null");
+        }
+
+        List<PairIntArray> output 
+            = new ArrayList<PairIntArray>(contigBinnedList.size());
+
+        int w0 = binnedWidth;
+        int h0 = binnedHeight;
+        
+        int w1 = resultWidth;
+        int h1 = resultHeight;
+        
+        for (int lIdx = 0; lIdx < contigBinnedList.size(); ++lIdx) {
+            
+            PairIntArray p0 = contigBinnedList.get(lIdx);
+            PairIntArray pOut = new PairIntArray(p0.getN() * binFactor);
+            output.add(pOut);
+            
+            for (int idx = 0; idx < p0.getN(); ++idx) {
+                int i = p0.getX(idx);
+                int j = p0.getY(idx);
+                int stop1 = ((i + 1)*binFactor);
+                if (stop1 > (w1 - 1)) {
+                    stop1 = w1;
+                }
+                for (int ii = (i*binFactor); ii < stop1; ii++) {
+                    int stop2 = ((j + 1)*binFactor);
+                    if (stop2 > (h1 - 1)) {
+                        stop2 = h1;
+                    }
+                    for (int jj = (j*binFactor); jj < stop2; jj++) {
+                        pOut.add(ii, jj);
+                    }
+                    if (j == (h0 - 1)) {
+                        // just in case excess unset past binFactor
+                        for (int jj = stop2; jj < h1; jj++) {
+                            pOut.add(ii, jj);
+                        }
+                    }
+                }
+                if (i == (w0 - 1)) {
+                    // just in case excess unset past binFastor
+                    for (int ii = stop1; ii < w1; ii++) {
+                        int stop2 = ((j + 1)*binFactor);
+                        if (stop2 > (h1 - 1)) {
+                            stop2 = h1;
+                        }
+                        for (int jj = (j*binFactor); jj < stop2; jj++) {
+                            pOut.add(ii, jj);
+                        }
+                        if (j == (h0 - 1)) {
+                            // just in case excess unset
+                            for (int jj = stop2; jj < h1; jj++) {
+                                pOut.add(ii, jj);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return output;
     }
     
     public static class Colors {

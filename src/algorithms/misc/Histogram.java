@@ -6,6 +6,14 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TDoubleIntIterator;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TDoubleIntMap;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TDoubleIntHashMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.set.TIntSet;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1065,7 +1073,8 @@ public class Histogram {
      * @param img
      * @return 
      */
-    public static PairIntArray createADescendingSortbyFrequencyArray(GreyscaleImage img) {
+    public static PairIntArray createADescendingSortbyFrequencyArray(
+        GreyscaleImage img) {
         
         Map<Integer, Integer> freqMap = createAFrequencyMap(img);
         
@@ -1094,9 +1103,11 @@ public class Histogram {
             idx++;
         }
         
-        if ((cMax > c.length) || (cMax > 10000000)) {
+        double nlg2n = v.length * Math.log(v.length)/Math.log(2);
+        
+        if (nlg2n < cMax || (cMax > 100000)) {
             MultiArrayMergeSort.sortByDecr(c, v);
-        } else {
+        } else if (v.length > 1) {
             CountingSort.sortByDecr(c, v, cMax);
         }
         
@@ -1112,36 +1123,36 @@ public class Histogram {
     public static PairIntArray createADescendingSortbyFrequencyArray(
         Set<PairInt> points, GreyscaleImage img) {
         
-        Map<Integer, Integer> freqMap = createAFrequencyMap(points, img);
-        
+        TIntIntMap freqMap = new TIntIntHashMap();
+        for (PairInt p : points) {
+            int v = img.getValue(p);
+            if (freqMap.containsKey(v)) {
+                freqMap.put(v, freqMap.get(v) + 1);
+            } else {
+                freqMap.put(v, 1);
+            }
+        }
+       
         int[] v = new int[freqMap.size()];
         int[] c = new int[freqMap.size()];
-        
-        int idx = 0;
-        
+                
         int cMax = Integer.MIN_VALUE;
         
-        Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
-        while (iter.hasNext()) {
-            
-            Entry<Integer, Integer> entry = iter.next();
-            
-            Integer value = entry.getKey();
-            Integer count = entry.getValue();
-            
-            v[idx] = value.intValue();
-            c[idx] = count.intValue();
-            
-            if (c[idx] > cMax) {
-                cMax = c[idx];
-            }
-            
-            idx++;
+        TIntIntIterator iter = freqMap.iterator();
+        for (int i = 0; i < freqMap.size(); ++i) {
+            iter.advance();          
+            v[i] = iter.key();
+            c[i] = iter.value();
+            if (c[i] > cMax) {
+                cMax = c[i];
+            }            
         }
         
-        if ((cMax > c.length) || (cMax > 10000000)) {
+        double nlg2n = v.length * Math.log(v.length)/Math.log(2);
+        
+        if (nlg2n < cMax || (cMax > 100000)) {
             MultiArrayMergeSort.sortByDecr(c, v);
-        } else {
+        } else if (v.length > 1) {
             CountingSort.sortByDecr(c, v, cMax);
         }
         
@@ -1154,38 +1165,41 @@ public class Histogram {
         return p;
     }
     
-    public static PairIntArray createADescendingSortByKeyArray(GreyscaleImage img) {
+    public static PairIntArray createADescendingSortByKeyArray(
+        GreyscaleImage img) {
         
-        Map<Integer, Integer> freqMap = createAFrequencyMap(img);
-        
+        TIntIntMap freqMap = new TIntIntHashMap();
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            int x = img.getCol(i);
+            int y = img.getRow(i);
+            int v = img.getValue(x, y);
+            if (freqMap.containsKey(v)) {
+                freqMap.put(v, freqMap.get(v) + 1);
+            } else {
+                freqMap.put(v, 1);
+            }
+        }
+       
         int[] v = new int[freqMap.size()];
         int[] c = new int[freqMap.size()];
-        
-        int idx = 0;
-        
+                
         int vMax = Integer.MIN_VALUE;
         
-        Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
-        while (iter.hasNext()) {
-            
-            Entry<Integer, Integer> entry = iter.next();
-            
-            Integer value = entry.getKey();
-            Integer count = entry.getValue();
-            
-            v[idx] = value.intValue();
-            c[idx] = count.intValue();
-            
-            if (v[idx] > vMax) {
-                vMax = v[idx];
-            }
-            
-            idx++;
+        TIntIntIterator iter = freqMap.iterator();
+        for (int i = 0; i < freqMap.size(); ++i) {
+            iter.advance();          
+            v[i] = iter.key();
+            c[i] = iter.value();
+            if (v[i] > vMax) {
+                vMax = v[i];
+            }            
         }
         
-        if ((vMax > v.length) || (vMax > 10000000)) {
+        double nlg2n = v.length * Math.log(v.length)/Math.log(2);
+        
+        if (nlg2n < vMax || (vMax > 100000)) {
             MultiArrayMergeSort.sortByDecr(v, c);
-        } else {
+        } else if (v.length > 1) {
             CountingSort.sortByDecr(v, c, vMax);
         }
         
@@ -1201,36 +1215,89 @@ public class Histogram {
     public static PairIntArray createADescendingSortByKeyArray(
         Set<PairInt> points, GreyscaleImage img) {
         
-        Map<Integer, Integer> freqMap = createAFrequencyMap(points, img);
-        
+        TIntIntMap freqMap = new TIntIntHashMap();
+        for (PairInt p : points) {
+            int v = img.getValue(p);
+            if (freqMap.containsKey(v)) {
+                freqMap.put(v, freqMap.get(v) + 1);
+            } else {
+                freqMap.put(v, 1);
+            }
+        }
+       
         int[] v = new int[freqMap.size()];
         int[] c = new int[freqMap.size()];
-        
-        int idx = 0;
-        
+                
         int vMax = Integer.MIN_VALUE;
         
-        Iterator<Entry<Integer, Integer> > iter = freqMap.entrySet().iterator();
-        while (iter.hasNext()) {
-            
-            Entry<Integer, Integer> entry = iter.next();
-            
-            Integer value = entry.getKey();
-            Integer count = entry.getValue();
-            
-            v[idx] = value.intValue();
-            c[idx] = count.intValue();
-            
-            if (v[idx] > vMax) {
-                vMax = v[idx];
-            }
-            
-            idx++;
+        TIntIntIterator iter = freqMap.iterator();
+        for (int i = 0; i < freqMap.size(); ++i) {
+            iter.advance();          
+            v[i] = iter.key();
+            c[i] = iter.value();
+            if (v[i] > vMax) {
+                vMax = v[i];
+            }            
         }
         
-        if ((vMax > v.length) || (vMax > 10000000)) {
+        double nlg2n = v.length * Math.log(v.length)/Math.log(2);
+        
+        if (nlg2n < vMax || (vMax > 100000)) {
             MultiArrayMergeSort.sortByDecr(v, c);
-        } else {
+        } else if (v.length > 1) {
+            CountingSort.sortByDecr(v, c, vMax);
+        }
+        
+        PairIntArray p = new PairIntArray();
+        
+        for (int i = 0; i < c.length; i++) {
+            p.add(v[i], c[i]);
+        }
+        
+        return p;
+    }
+    
+    /**
+     * 
+     * @param indexes
+     * @param imageValues these should be non negative numbers
+     * @return 
+     */
+    public static PairIntArray createADescendingSortByKeyArray(
+        TIntSet indexes, int[] imageValues) {
+        
+        TIntIterator iter = indexes.iterator();
+        TIntIntMap freqMap = new TIntIntHashMap();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            int v = imageValues[idx];
+            if (freqMap.containsKey(v)) {
+                freqMap.put(v, freqMap.get(v) + 1);
+            } else {
+                freqMap.put(v, 1);
+            }
+        }
+       
+        int[] v = new int[freqMap.size()];
+        int[] c = new int[freqMap.size()];
+                
+        int vMax = Integer.MIN_VALUE;
+        
+        TIntIntIterator iter2 = freqMap.iterator();
+        for (int i = 0; i < freqMap.size(); ++i) {
+            iter2.advance();          
+            v[i] = iter2.key();
+            c[i] = iter2.value();
+            if (v[i] > vMax) {
+                vMax = v[i];
+            } 
+        }
+        
+        double nlg2n = v.length * Math.log(v.length)/Math.log(2);
+        
+        if (nlg2n < vMax || (vMax > 100000)) {
+            MultiArrayMergeSort.sortByDecr(v, c);
+        } else if (v.length > 1) {
             CountingSort.sortByDecr(v, c, vMax);
         }
         

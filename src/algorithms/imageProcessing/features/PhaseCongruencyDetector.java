@@ -139,7 +139,7 @@ import java.util.Set;
   
      runtime complexity of majority of algorithm is a constant factor, that 
      depends upon parameters chosen, times O(N*lg_2(N)),
-     but each operation uses a transendental function.
+     but each operation uses a transcendental function.
 
      the advantage to using phase congruency is that it's possible to produce
      consistent clean edges with less noise and representing a wide range of 
@@ -152,7 +152,7 @@ public class PhaseCongruencyDetector {
     
     private boolean determineCorners = false;
     
-    private boolean doPlot = false;
+    private boolean doPlot = true;
     
     public void setToCreateCorners() {
         this.determineCorners = true;
@@ -208,7 +208,7 @@ public class PhaseCongruencyDetector {
         float g = 10;
         float deviationGain = 1.5f;
         int noiseMethod = -1;
-        double tLow = 0.0001;;//0.1;
+        double tLow = 0.0001;//0.1;
         double tHigh = 0.1;//0.3;
         boolean increaseKIfNeeded = true;
         
@@ -818,6 +818,7 @@ public class PhaseCongruencyDetector {
         // ----corners are then in the coordinate reference frame of images -------
         CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());
         cornerMaker.doNotStoreCornerRegions();
+        
         List<CornerArray> cornerList =
             cornerMaker.findCornersInScaleSpaceMaps(theEdges);
         
@@ -949,7 +950,7 @@ public class PhaseCongruencyDetector {
         }
         
         //DEBUG
-        if (doPlot) {
+        /*if (doPlot) {
             Image paImage = new Image(nCols, nRows);
             int nExtraForDot = 0;
             for (PairInt p : brightLinePoints) {
@@ -972,7 +973,7 @@ public class PhaseCongruencyDetector {
             }
             MiscDebug.writeImage(paImage, "_phase_angle_components_" +
                 MiscDebug.getCurrentTimeFormatted());
-        }
+        }*/
         
         stepPoints.addAll(brightLinePoints);
         stepPoints.addAll(darkLinePoints);

@@ -12,6 +12,10 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import algorithms.util.ScatterPointPlotterPNG;
 import com.climbwithyourfeet.clustering.util.MiscMath;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.set.TIntSet;
 import java.awt.Color;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -1240,6 +1244,26 @@ int z1 = 1;
             }
             
             img.setRGB(img.getCol(i), img.getRow(i), clr);
+        }
+    }
+    
+    public static void addAlternatingColorLabelsToRegion(
+        Image img, TIntObjectMap<TIntSet> labelsMap) {
+                    
+        TIntObjectIterator<TIntSet> iter = labelsMap.iterator();
+        for (int i = 0; i < labelsMap.size(); ++i) {
+
+            iter.advance();
+            
+            int clr = getNextColorRGB(i);
+            
+            TIntSet indexes = iter.value();
+            TIntIterator iter2 = indexes.iterator();
+            while (iter2.hasNext()) {
+                int pixIdx = iter2.next();
+                img.setRGB(img.getCol(pixIdx), 
+                    img.getRow(pixIdx), clr);
+            }
         }
     }
     

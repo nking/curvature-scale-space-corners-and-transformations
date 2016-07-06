@@ -1020,7 +1020,8 @@ public class BlobPerimeterCornerHelper {
                         
         ImageProcessor imageProcessor = new ImageProcessor();
         
-        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(gsImg,
+        Set<PairInt> pixels = imageProcessor.extract2ndDerivPoints(
+            gsImg,
             //200, true);
             5000, true);
         
@@ -1037,7 +1038,7 @@ public class BlobPerimeterCornerHelper {
         }
         
         corners = new ArrayList<CornerRegion>();
-                   
+        
         for (PairInt p : pixels) {
             if (pixSet.contains(p)) {
                 CornerRegion cr = new CornerRegion(0, 1, 0);

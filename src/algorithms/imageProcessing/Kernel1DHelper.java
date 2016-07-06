@@ -261,6 +261,75 @@ public class Kernel1DHelper {
     /**
      * convolve point[xyIdx] with the kernel g along a column if calcX is true,
      * else along a row if calcX is false.
+     * @param imageValues values from image stored in
+     * an array that uses same indexing as in Image.java.
+     * @param imageWidth
+     * @param imageHeight
+     * @param col
+     * @param row
+     * @param g
+     * @param calcX convolve along column if true, else row
+     * @return 
+     */
+    public double convolvePointWithKernel(
+        final int[] imageValues, int imageWidth,
+        int imageHeight,
+        int col, int row, float[] g, final boolean calcX) {
+
+        int h = g.length >> 1;
+
+        double sum = 0;
+        
+        int len = calcX ? imageWidth : imageHeight;
+                
+        for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+            float gg = g[gIdx];
+
+            if (gg == 0) {
+                continue;
+            }
+            
+            int idx = gIdx - h;
+
+            int cIdx = calcX ? (col + idx) : (row + idx);
+
+            if (cIdx < 0) {
+                // replicate
+                cIdx = -1*cIdx - 1;
+                if (cIdx > (len - 1)) {
+                    cIdx = len - 1;
+                }
+            } else if (cIdx >= (len)) {
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+                int diff = cIdx - len;
+                cIdx = len - diff - 1;
+                if (cIdx < 0) {
+                    cIdx = 0;
+                }
+            }
+            
+            double point;
+            
+            if (calcX) {
+                int pixIdx = (row * imageWidth) + cIdx;
+                // keep row constant
+                point = imageValues[pixIdx];
+            } else {
+                int pixIdx = (cIdx * imageWidth) + col;
+                // keep col constant
+                point = imageValues[pixIdx];
+            }
+
+            sum += (point * gg);
+        }
+
+        return sum;
+    }
+    
+    /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
      * @param img
      * @param col
      * @param row
