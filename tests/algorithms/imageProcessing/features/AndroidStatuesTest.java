@@ -15,6 +15,7 @@ import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntPair;
+import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -322,7 +323,97 @@ public class AndroidStatuesTest extends TestCase {
         
         int nD = results.size();
         
-        for (int i = 0; i < nD; ++i) {            
+        PairInt[] gb128 = new PairInt[4];
+        gb128[0] = new PairInt(28, 20);
+        gb128[1] = new PairInt(67, 20);
+        gb128[2] = new PairInt(11, 26);
+        gb128[3] = new PairInt(58, 28);
+        
+        int gblabel0 = -1;
+        {
+            TIntObjectMap<PairInt> segmentMap = 
+                results.get(0).dLabelCentroids.get(0);
+            TIntObjectIterator<PairInt> iter =
+                segmentMap.iterator();
+            for (int i = 0; i < segmentMap.size(); ++i) {
+                iter.advance();
+                PairInt xyCen = iter.value();
+                if ((Math.abs(xyCen.getX() - gb128[0].getX()) < 5)
+                    &&
+                    (Math.abs(xyCen.getY() - gb128[0].getY()) < 5)) {
+                    gblabel0 = iter.key();
+                    break;
+                }
+            }
+        }
+        
+        assertTrue(gblabel0 != -1);
+        
+        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
+        IntensityClrFeatures features1
+            = new IntensityClrFeatures(
+                results.get(0).dImages[0].copyToGreyscale(), 
+            5, rotatedOffsets);
+        
+        IntensityClrFeatures features2
+            = new IntensityClrFeatures(
+                results.get(2).dImages[0].copyToGreyscale(), 
+            5, rotatedOffsets);
+        
+        /*
+        create keypoints in a rectangular radius from the
+        center of the segment, with 6 pixel spacing
+            C - - - | - - - c - - -
+        */
+        
+        // ----- make the keypoints as grid spaced
+        // points across the decimated segment region. -----
+        // (note the keypoints are not used exactly
+        // the same as corners or 2nd derivatives would
+        // be because these may be regions without 
+        // gradients. the colors and a projection
+        // model for the spatial location of the keypoints
+        // with respect to one another are what 
+        // determines best fits.
+        // ... looks like this could be done as a single
+        //   feature in some cases since the SSD scores
+        //   are by pixel comparisons within each feature.
+        // ... might consider how to compare the internsection
+        //    of each feature where the entire segment is made
+        //    a feature and assuming same eucldiean scale
+        //    (scales from 1/4th to 4 are tried by factors of 2
+        //    using the decimation images for 128, 256, and 512).
+        //    occlusion combined with scale 
+        //    makes a whole feature pattern possibly less accurate,
+        //    haven't followed this thru yet
+        
+        /*
+        NOTE: in the middle of considering changing this
+        to create a single feature for each segment...
+        
+        need to estimate the number of comparisons with
+        a dither model and rotation delta to get best matches
+        for the several smaller features compared to the
+        single larger feature
+        */
+        
+        // results(1) gets the 2nd image in fileNames
+        // then the list index is for a segmented cell,
+        // and the next list index is for keypoints within
+        // the segmented cell
+        List<List<PairInt>> image1SegmentKeypoints =
+            imageSegmentation.calculateKeyPoints(
+                results.get(1), 0, 
+                results.get(1).dImages[0].getWidth(),
+                results.get(1).dImages[0].getHeight());
+        
+        List<List<PairInt>> image0SegmentKeypoints =
+            imageSegmentation.calculateKeyPoints(
+                results.get(0), 0, 
+                results.get(0).dImages[0].getWidth(),
+                results.get(0).dImages[0].getHeight());
+                
+        for (int i = 1; i < 2; ++i) {    
         }
         
         /*

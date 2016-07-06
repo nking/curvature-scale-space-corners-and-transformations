@@ -10,14 +10,12 @@ import algorithms.imageProcessing.ImageProcessor;
 import static algorithms.imageProcessing.features.GsIntensityDescriptor.sentinel;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import org.ejml.simple.SimpleMatrix;
 
 /**

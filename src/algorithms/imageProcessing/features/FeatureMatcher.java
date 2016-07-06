@@ -547,6 +547,126 @@ public class FeatureMatcher {
         return best;
     }
     
+    public FeatureComparisonStat ditherAndRotateForBestLocation3(
+        IntensityClrFeatures features1,
+        IntensityClrFeatures features2,
+        final int x1, final int y1, final int x2, final int y2,      
+        int dither, 
+        GreyscaleImage redImg1, GreyscaleImage greenImg1,
+        GreyscaleImage blueImg1,
+        GreyscaleImage redImg2, GreyscaleImage greenImg2,
+        GreyscaleImage blueImg2
+    ) {
+        
+        FeatureComparisonStat best = null;
+        
+        int rot2;
+        try {
+            rot2 = features2.calculateOrientation(x2, y2);
+        } catch (CornerRegionDegneracyException e) {
+            return null;
+        }
+        
+        // make L, A, B descriptors
+        IntensityDescriptor desc2_l = features2.extractIntensityLOfCIELAB(redImg2,
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_l == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_a = features2.extractIntensityAOfCIELAB(redImg2,
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_a == null) {
+            return null;
+        }
+        IntensityDescriptor desc2_b = features2.extractIntensityBOfCIELAB(redImg2,
+            greenImg2, blueImg2, x2, y2, rot2);
+        if (desc2_b == null) {
+            return null;
+        }
+        
+        int[] rotations = new int[3];
+        
+        for (int x1d = (x1 - dither); x1d <= (x1 + dither); ++x1d) {
+            if (!features1.isWithinXBounds(redImg1, x1d)) {
+                continue;
+            }
+            for (int y1d = (y1 - dither); y1d <= (y1 + dither); ++y1d) {
+                if (!features1.isWithinYBounds(redImg1, y1d)) {
+                    continue;
+                }
+                
+                int rot1;
+                try {
+                    rot1 = features1.calculateOrientation(x1d, y1d);
+                } catch (CornerRegionDegneracyException e) {
+                    continue;
+                }
+                
+                // fetch rotation for this point (x1d, y1d) and try this
+                // rotation and -20, -10, +10 and +20
+                rotations[0] = rot1;
+                rotations[1] = rot1 - 10;
+                rotations[2] = rot1 + 10;
+                //rotations[3] = rot1 - 20;
+                //rotations[4] = rot1 + 20;
+        
+                for (int rotD1 : rotations) {
+                    
+                    if (rotD1 > 359) {
+                        rotD1 = rotD1 - 360;
+                    } else if (rotD1 < 0) {
+                        rotD1 += 360;
+                    }
+                    
+                    IntensityDescriptor desc1_l = features1.extractIntensityLOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1d, rot1);
+                    if (desc1_l == null) {
+                        return null;
+                    }
+                    IntensityDescriptor desc1_a = features1.extractIntensityAOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1d, rot1);
+                    if (desc1_a == null) {
+                        return null;
+                    }
+                    IntensityDescriptor desc1_b = features1.extractIntensityBOfCIELAB(redImg1,
+                        greenImg1, blueImg1, x1d, y1d, rot1);
+                    if (desc1_b == null) {
+                        return null;
+                    }
+                
+                   FeatureComparisonStat stat_deltaE = 
+                       IntensityClrFeatures.calculateStats(
+                       desc1_l, desc1_a, desc1_b, x1, y1, 
+                       desc2_l, desc2_a, desc2_b, x2, y2);
+
+                    if (Float.isNaN(stat_deltaE.getSumIntensitySqDiff())
+                        || Float.isNaN(stat_deltaE.getImg2PointIntensityErr())) {
+                        return null;
+                    }
+                                        
+                    if (stat_deltaE.getSumIntensitySqDiff() 
+                        < stat_deltaE.getImg2PointIntensityErr()) {
+                       
+                        if (best == null) {
+                            best = stat_deltaE;
+                            best.setImg1PointRotInDegrees(rotD1);
+                            best.setImg2PointRotInDegrees(rot2);
+                        } else {
+                            if (best.getSumIntensitySqDiff() 
+                                > stat_deltaE.getSumIntensitySqDiff()) {
+                                best = stat_deltaE;
+                                best.setImg1PointRotInDegrees(rotD1);
+                                best.setImg2PointRotInDegrees(rot2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return best;
+    }
+    
     protected FeatureComparisonStat ditherAndRotateForBestLocation3(
         IntensityFeatures features1, IntensityFeatures features2, 
         final int x1, final int y1, final int x2, final int y2,      

@@ -36,6 +36,7 @@ import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import com.climbwithyourfeet.clustering.DTClusterFinder;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TLongIntMap;
@@ -11254,23 +11255,106 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //    decimated images and labels also.
         // that allows for a range of scale up to 4 in
         // feature comparisons
-        TIntObjectMap<TIntSet> fullLabels;
+        public TIntObjectMap<TIntSet> fullLabels;
         
         // note that a small image may have nulls for 
         // dimensions larger than it's image.        
         // the 128, 256, and 512 decimated images
         public ImageExt[] dImages = new ImageExt[3];
         public int[] dBinFactors = new int[3];
-        List<TIntObjectMap<TIntSet>> dLabeledIndexes
+        
+        // first list indexes are for 128, 256, or 512
+        // then map indexes are the labels of the segments
+        //  and the values of the maps are the characteristics
+        //  of those segments
+        public List<TIntObjectMap<TIntSet>> dLabeledIndexes
             = new ArrayList<TIntObjectMap<TIntSet>>();
-        List<TIntObjectMap<PairInt>> dLabelCentroids
+        public List<TIntObjectMap<PairInt>> dLabelCentroids
             = new ArrayList<TIntObjectMap<PairInt>>();
         
         // a=xmin, b=xmax, c=ymin, d=ymax
-        List<TIntObjectMap<QuadInt>> dLabelXYMinMax
+        public List<TIntObjectMap<QuadInt>> dLabelXYMinMax
             = new ArrayList<TIntObjectMap<QuadInt>>();
         
-        List<TIntIntMap> dLabelRadius = new ArrayList<TIntIntMap>();
+        public List<TIntIntMap> dLabelRadius = new ArrayList<TIntIntMap>();
+    }
+    
+    /**
+     * using default spacing of 6 pixels for a feature.
+     * @param dd
+     * @param decimatedImageIndex
+     * @param imgWidth
+     * @param imgHeight
+     * @return 
+     */
+    public List<List<PairInt>> calculateKeyPoints(
+        DecimatedData dd, int decimatedImageIndex,
+        int imgWidth, int imgHeight) {
+        
+        List<List<PairInt>> output = new ArrayList<List<PairInt>>();
+        
+        // then list index is for decimation sizes 128, 256, or 512
+        TIntObjectMap<PairInt> image1SegmentCentroids
+            = dd.dLabelCentroids.get(decimatedImageIndex);
+        TIntIntMap image1SegmentRadii
+            = dd.dLabelRadius.get(decimatedImageIndex);
+        TIntObjectMap<QuadInt> image1SegmentMinMax
+            = dd.dLabelXYMinMax.get(decimatedImageIndex);
+        
+        TIntObjectIterator<PairInt> iter = 
+            image1SegmentCentroids.iterator();
+        
+        /*
+        create keypoints in a rectangular radius from the
+        center of the segment, with 6 pixel spacing
+            C - - - | - - - c - - -
+        */
+        int[] x = new int[2];
+        int[] y = new int[2];
+        
+        int delta = 6;
+        for (int sIdx = 0; 
+            sIdx < image1SegmentCentroids.size(); ++sIdx) {
+            
+            iter.advance();
+            
+            List<PairInt> keyPoints = new ArrayList<PairInt>();
+            output.add(keyPoints);
+            
+            int label = iter.key();
+            PairInt xyCen = iter.value();
+            QuadInt xyMinMax = image1SegmentMinMax.get(label);
+            int radius = image1SegmentRadii.get(label);
+                        
+            int deltaX = 0;
+            while (deltaX <= radius) {
+                // add left and right cells assuming symmetry
+                x[0] = xyCen.getX() - deltaX;
+                x[1] = xyCen.getX() + deltaX;
+                
+                int deltaY = 0;
+                while (deltaY <= radius) {
+                    y[0] = xyCen.getY() - deltaY;
+                    y[1] = xyCen.getY() + deltaY;
+                    
+                    for (int xs = 0; xs < 2; ++xs) {
+                        if (x[xs] < 0 || x[xs] > (imgWidth - 1)) {
+                            continue;
+                        }
+                        for (int ys = 0; ys < 2; ++ys) {
+                            if (y[ys] < 0 || y[ys] > (imgHeight - 1)) {
+                                continue;
+                            }
+                            keyPoints.add(new PairInt(x[xs], y[ys]));
+                        }
+                    }                    
+                    deltaY += 6;
+                }
+                deltaX += 6;
+            }
+        }
+        
+        return output;
     }
     
     /**

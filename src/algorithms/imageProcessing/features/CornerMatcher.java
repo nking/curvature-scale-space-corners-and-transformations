@@ -68,7 +68,7 @@ public class CornerMatcher<T extends CornerRegion> {
     @SuppressWarnings({"unchecked"})
     public boolean matchCorners(
         final IntensityFeatures features1, final IntensityFeatures features2,
-        final List<T> corners1,final List<T> corners2, GreyscaleImage img1, 
+        final List<T> corners1, final List<T> corners2, GreyscaleImage img1, 
         GreyscaleImage img2, int binFactor1, int binFactor2) {
 
         if (state != null) {
