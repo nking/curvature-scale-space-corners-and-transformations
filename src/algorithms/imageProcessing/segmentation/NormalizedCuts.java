@@ -5,6 +5,9 @@ import algorithms.graphs.RAGCSubGraph;
 import algorithms.graphs.RegionAdjacencyGraphColor;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.util.MatrixUtil;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -117,7 +120,11 @@ public class NormalizedCuts {
         
         performNormalizedCuts(nodesGraph);
         
-        return rag.relabelUsingNodes();
+        int[] labeled = rag.relabelUsingNodes();
+        
+        labelTheUnlabeled(labeled);
+        
+        return labeled;
     }
     
      /**
@@ -487,4 +494,32 @@ public class NormalizedCuts {
         return d;
     }
     
+    /**
+     * this is a fudge to assign unlabeled pixels with a
+     * value higher than the largest labeled.  it may
+     * need to be modified or the reason for unlabeled to
+     * be corrected upstream.
+     * @param labels 
+     */
+    private void labelTheUnlabeled(int[] labels) {
+        
+        int maxLabel = Integer.MIN_VALUE;
+        TIntSet unlabeled = new TIntHashSet();
+        for (int i = 0; i < labels.length; ++i) {
+            if (labels[i] == -1) {
+                unlabeled.add(i);
+            }
+            if (labels[i] > maxLabel) {
+                maxLabel = labels[i];
+            }
+        }
+        if (unlabeled.size() > 0) {
+            maxLabel++;
+            TIntIterator iter = unlabeled.iterator();
+            while (iter.hasNext()) {
+                int idx = iter.next();
+                labels[idx] = maxLabel; 
+            }
+        }
+    }
 }

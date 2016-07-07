@@ -132,7 +132,7 @@ public class SLICSuperPixels {
         if (sampling < 1) {
             sampling = 1;
         }
-           
+        
         this.s = (int)Math.round(sampling);
         
         nXs = Math.round((float)img.getWidth()/(float)s);
@@ -503,71 +503,68 @@ public class SLICSuperPixels {
         int nIter = 0;
         
         Set<PairInt> visited = new HashSet<PairInt>();
-        
-        while (true) {
-        
-            while (!queue0.isEmpty()) {
-
-                PairInt p = queue0.poll();
                 
-                if (visited.contains(p)) {
+        while (!queue0.isEmpty() || !queue1.isEmpty()) {
+
+            PairInt p;
+            if (!queue1.isEmpty()) {
+                p = queue1.poll();
+            } else {
+                p = queue0.poll();
+            }
+
+            if (visited.contains(p)) {
+                continue;
+            }
+            visited.add(p);
+
+            int x1 = p.getX();
+            int y1 = p.getY();
+
+            TIntSet adjLabels;
+            if (nIter == 0) {
+                adjLabels = unassignedMap.get(p);
+                assert (adjLabels != null);
+            } else {
+                adjLabels = new TIntHashSet();
+                addNeighobLabelsForPoint(adjLabels, x1, y1, dxs, dys);
+            }
+
+            double minD = Double.MAX_VALUE;
+            int minLabel2 = -1;
+
+            TIntIterator iter = adjLabels.iterator();
+            while (iter.hasNext()) {
+                int label2 = iter.next();
+                double dist = calcDist(seedDescriptors[label2],
+                    img.getCIELAB(x1, y1), x1, y1);
+
+                if (dist < minD) {
+                    minD = dist;
+                    minLabel2 = label2;
+                }
+            }
+
+            int pixIdx1 = img.getInternalIndex(p.getX(), p.getY());
+            labels[pixIdx1] = minLabel2;
+            distances[pixIdx1] = minD;
+
+            unassignedMap.remove(p);
+
+            for (int m = 0; m < dxs.length; ++m) {
+                int x2 = p.getX() + dxs[m];
+                int y2 = p.getY() + dys[m];
+                if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
                     continue;
                 }
-                visited.add(p);
-                
-                int x1 = p.getX();
-                int y1 = p.getY();
-
-                TIntSet adjLabels;
-                if (nIter == 0) {
-                    adjLabels = unassignedMap.get(p);
-                    assert(adjLabels != null);
-                } else {
-                    adjLabels = new TIntHashSet();
-                    addNeighobLabelsForPoint(adjLabels, x1, y1, dxs, dys);
+                int pixIdx2 = img.getInternalIndex(x2, y2);
+                if (labels[pixIdx2] == -1) {
+                    PairInt p2 = new PairInt(x2, y2);
+                    queue1.add(p2);
+                    assert (!visited.contains(p2));
                 }
-
-                double minD = Double.MAX_VALUE;
-                int minLabel2 = -1;
-
-                TIntIterator iter = adjLabels.iterator();
-                while (iter.hasNext()) {
-                    int label2 = iter.next();
-                    double dist = calcDist(seedDescriptors[label2], 
-                        img.getCIELAB(x1, y1), x1, y1);
-
-                    if (dist < minD) {
-                        minD = dist;
-                        minLabel2 = label2;
-                    }
-                }
-
-                int pixIdx1 = img.getInternalIndex(p.getX(), p.getY());
-                labels[pixIdx1] = minLabel2;
-                distances[pixIdx1] = minD;
-
-                unassignedMap.remove(p);
-
-                for (int m = 0; m < dxs.length; ++m) {
-                    int x2 = p.getX() + dxs[m];
-                    int y2 = p.getY() + dys[m];
-                    if (x2 < 0 || y2 < 0 || (x2 > (w - 1)) || (y2 > (h - 1))) {
-                        continue;
-                    }
-                    int pixIdx2 = img.getInternalIndex(x2, y2);
-                    if (labels[pixIdx2] == -1) {
-                        PairInt p2 = new PairInt(x2, y2);
-                        queue1.add(p2);
-                        assert(!visited.contains(p2));
-                    }
-                }
-                nIter++;
             }
-            if (queue1.isEmpty()) {
-                break;
-            }
-            queue0.addAll(queue1);
-            queue1.clear();
+            nIter++;
         }
        
         assert(unassignedMap.isEmpty());       

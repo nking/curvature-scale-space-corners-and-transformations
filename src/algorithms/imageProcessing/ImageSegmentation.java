@@ -11392,69 +11392,62 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             int nIter = 0;
             Set<Integer> visited = new HashSet<Integer>();
-            while (true) {
                 while (!q0.isEmpty() || !q1.isEmpty()) {
-                    Integer uIndex;
-                    if (!q1.isEmpty()) {
+                Integer uIndex;
+                if (!q1.isEmpty()) {
                         // draw from q1 first if any because it searches 
-                        // current keypoint
-                        uIndex = q1.poll();
-                    } else {
-                        uIndex = q0.poll();
-                    }
-                    if (visited.contains(uIndex)) {
+                    // current keypoint
+                    uIndex = q1.poll();
+                } else {
+                    uIndex = q0.poll();
+                }
+                if (visited.contains(uIndex)) {
+                    continue;
+                }
+                visited.add(uIndex);
+                int uIdx = uIndex.intValue();
+                int uY = uIdx / imgWidth;
+                int uX = uIdx - (uY * imgWidth);
+                int kpIdx;
+                // lookup center point of keyPoint or assign a new
+                int xc, yc;
+                if (indexKPMap.containsKey(uIdx)) {
+                    kpIdx = indexKPMap.get(uIdx);
+                    PairInt kp = keyPoints.get(kpIdx);
+                    xc = kp.getX();
+                    yc = kp.getY();
+                } else {
+                    PairInt kp = new PairInt(uX, uY);
+                    kpIdx = keyPoints.size();
+                    indexKPMap.put(uIdx, kpIdx);
+                    keyPoints.add(kp);
+                    xc = uX;
+                    yc = uY;
+                }
+                for (int k = 0; k < dxs.length; ++k) {
+                    int x2 = uX + dxs[k];
+                    if (x2 < 0 || x2 > (imgWidth - 1)) {
                         continue;
                     }
-                    visited.add(uIndex);
-                    int uIdx = uIndex.intValue();
-                    int uY = uIdx/imgWidth;
-                    int uX = uIdx - (uY * imgWidth);
-                    int kpIdx;
-                    // lookup center point of keyPoint or assign a new
-                    int xc, yc;
-                    if (indexKPMap.containsKey(uIdx)) {
-                        kpIdx = indexKPMap.get(uIdx);
-                        PairInt kp = keyPoints.get(kpIdx);
-                        xc = kp.getX();
-                        yc = kp.getY();
-                    } else {
-                        PairInt kp = new PairInt(uX, uY);
-                        kpIdx = keyPoints.size();
-                        indexKPMap.put(uIdx, kpIdx);
-                        keyPoints.add(kp);
-                        xc = uX;
-                        yc = uY;
+                    int diffX = Math.abs(x2 - xc);
+                    if (diffX > dSpace) {
+                        continue;
                     }
-                    for (int k = 0; k < dxs.length; ++k) {
-                        int x2 = uX + dxs[k];
-                        if (x2 < 0 || x2 > (imgWidth - 1)) {
-                            continue;
-                        }
-                        int diffX = Math.abs(x2 - xc);
-                        if (diffX > dSpace) {
-                            continue;
-                        }
-                        int y2 = uY + dys[k];
-                        if (y2 < 0 || y2 > (imgHeight - 1)) {
-                            continue;
-                        }
-                        int diffY = Math.abs(y2 - yc);
-                        if (diffY > dSpace) {
-                            continue;
-                        }
-                        int vIdx = (y2 * imgWidth) + x2;
-                        if (!indexKPMap.containsKey(vIdx)) {
-                            indexKPMap.put(vIdx, kpIdx);
-                            q1.add(Integer.valueOf(vIdx));
-                        }
+                    int y2 = uY + dys[k];
+                    if (y2 < 0 || y2 > (imgHeight - 1)) {
+                        continue;
                     }
-                    nIter++;
+                    int diffY = Math.abs(y2 - yc);
+                    if (diffY > dSpace) {
+                        continue;
+                    }
+                    int vIdx = (y2 * imgWidth) + x2;
+                    if (!indexKPMap.containsKey(vIdx)) {
+                        indexKPMap.put(vIdx, kpIdx);
+                        q1.add(Integer.valueOf(vIdx));
+                    }
                 }
-                if (q1.isEmpty()) {
-                    break;
-                }
-                q0.addAll(q1);
-                q1.clear();
+                nIter++;
             }
         }
         
