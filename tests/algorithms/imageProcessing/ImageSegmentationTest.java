@@ -8,6 +8,11 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -794,6 +799,83 @@ public class ImageSegmentationTest extends TestCase {
 
         plotter.writeFile(fileNameRoot + "_blob_cr_fft");
 
+    }
+    
+    public void testCalculateKeyPoints() throws Exception {
+        
+        /*
+        100 x 100 pixels
+        diagonal segment of width 20 pixels
+        */
+        TIntSet indexes = new TIntHashSet();
+        ImageExt img = new ImageExt(100, 100);
+        float[] x = new float[100 * 20];
+        float[] y = new float[100 * 20];
+        int count = 0;
+        for (int row = 0; row < 100; ++row) {
+            if (row > 99) {
+                continue;
+            }
+            for (int col = row; col < (row + 20); ++col) {
+                if (col > (99)) {
+                    continue;
+                }
+                int pixIdx = img.getInternalIndex(col, row);
+                img.setRGB(pixIdx, 200, 200, 200);
+                indexes.add(pixIdx);
+                x[count] = col;
+                y[count] = row;
+                count++;
+            }
+        }
+        ImageSegmentation.DecimatedData 
+            dd = new ImageSegmentation.DecimatedData();
+        dd.dImages[0] = img;
+        TIntObjectMap<TIntSet> indexMap = new TIntObjectHashMap<TIntSet>();
+        indexMap.put(1, indexes);
+        dd.dLabeledIndexes.add(indexMap);
+        dd.dBinFactors[0] = 1;
+        // centroid not needed for test
+        
+        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        
+        List<List<PairInt>> listKeypoints =
+            imageSegmentation.calculateKeyPoints(dd, 0, 100, 100);
+        
+        List<PairInt> keyPoints = listKeypoints.get(0);
+
+        /*float[] xPoints = new float[keyPoints.size()];
+        float[] yPoints = new float[keyPoints.size()];
+        for (int i = 0; i < keyPoints.size(); ++i) {
+            PairInt kp = keyPoints.get(i);
+            xPoints[i] = kp.getX();
+            yPoints[i] = kp.getY();
+        }
+        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+        plotter.addPlot(0, 101, 0, 101,
+            xPoints, yPoints, null, null, x, y,
+            "keypoints");
+        plotter.writeFile("keypoints");
+        */
+        
+        //assert that every point n indexes is withon
+        // dist of 6 to a keypoint
+        TIntIterator iter = indexes.iterator();
+        while (iter.hasNext()) {
+            int pixIdx = iter.next();
+            int xp = img.getCol(pixIdx);
+            int yp = img.getRow(pixIdx);
+            boolean found = false;
+            for (PairInt kp : keyPoints) {
+                int diffX = kp.getX() - xp;
+                int diffY = kp.getY() - yp;
+                if (diffX < 7 && diffY < 7) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+        }
     }
 
     private void populateCleanedCR2(GreyscaleImage crImg) {
