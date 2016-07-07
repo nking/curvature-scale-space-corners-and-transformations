@@ -11393,8 +11393,15 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             int nIter = 0;
             Set<Integer> visited = new HashSet<Integer>();
             while (true) {
-                while (!q0.isEmpty()) {
-                    Integer uIndex = q0.poll();
+                while (!q0.isEmpty() || !q1.isEmpty()) {
+                    Integer uIndex;
+                    if (!q1.isEmpty()) {
+                        // draw from q1 first if any because it searches 
+                        // current keypoint
+                        uIndex = q1.poll();
+                    } else {
+                        uIndex = q0.poll();
+                    }
                     if (visited.contains(uIndex)) {
                         continue;
                     }
