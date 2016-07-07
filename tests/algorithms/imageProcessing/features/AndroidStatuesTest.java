@@ -392,7 +392,7 @@ public class AndroidStatuesTest extends TestCase {
         //     find the full gingerbread man resembles the eclair
         //     more than the half gingerbread man (but in contrast,
         //     the more complex multiple keypoints pattern and 
-        //     set euclidean scales of fctor of 2 would presumably
+        //     set euclidean scales of factor of 2 would presumably
         //     get the right answer.)
         //
         //   need to consider when object segment area is not much
@@ -402,15 +402,7 @@ public class AndroidStatuesTest extends TestCase {
         //   might fail with the way the keypoints are right now
         //   generated.
         //   that should be fixed next...
-        /*
-        NOTE: in the middle of considering changing this
-        to create a single feature for each segment...
         
-        need to estimate the number of comparisons with
-        a dither model and rotation delta to get best matches
-        for the several smaller features compared to the
-        single larger feature
-        */
         
         // results(1) gets the 2nd image in fileNames
         // then the list index is for a segmented cell,

@@ -9350,6 +9350,66 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return true;
     }
 
+    /**
+     * order the indexes by decreasing number of neighbors
+     * within pixIndexes.  
+     * runtime complexity is max(O(N*log_2(N)), O(N*9)).
+     * @param pixIndexes
+     * @param imgWidth
+     * @param imgHeight
+     * @return 
+     */
+    private ArrayDeque<Integer> populateByNumberOfNeighbors(
+        TIntSet pixIndexes, int imgWidth, int imgHeight) {
+        
+        int n = pixIndexes.size();
+        
+        ArrayDeque<Integer> output = new ArrayDeque<Integer>(n);
+        if (n == 0) {
+            return output;
+        }
+        
+        int[] idxs = new int[n];
+        int[] nn = new int[n];
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        int count = 0;
+        TIntIterator iter = pixIndexes.iterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            int y = idx/imgWidth;
+            int x = idx - (y * imgWidth);
+            int nc = 0;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || x2 > (imgWidth - 1)) {
+                    continue;
+                }
+                if (y2 < 0 || y2 > (imgHeight - 1)) {
+                    continue;
+                }
+                int pixIdx2 = (y2 * imgWidth) + x2;
+                if (pixIndexes.contains(pixIdx2)) {
+                    nc++;
+                }
+            }
+            idxs[count] = idx;
+            nn[count] = nc;
+            count++;
+        }
+        
+        MultiArrayMergeSort.sortByDecr(nn, idxs);
+        
+        for (int i = 0; i < nn.length; ++i) {
+            output.add(Integer.valueOf(idxs[i]));
+        }
+        
+        return output;
+    }
+
     public static class BoundingRegions {
         private final List<PairIntArray> perimeterList;
         private final BlobMedialAxes bma;
@@ -11271,12 +11331,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             = new ArrayList<TIntObjectMap<TIntSet>>();
         public List<TIntObjectMap<PairInt>> dLabelCentroids
             = new ArrayList<TIntObjectMap<PairInt>>();
-        
-        // a=xmin, b=xmax, c=ymin, d=ymax
-        public List<TIntObjectMap<QuadInt>> dLabelXYMinMax
-            = new ArrayList<TIntObjectMap<QuadInt>>();
-        
-        public List<TIntIntMap> dLabelRadius = new ArrayList<TIntIntMap>();
     }
     
     /**
@@ -11293,28 +11347,27 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         List<List<PairInt>> output = new ArrayList<List<PairInt>>();
         
-        // then list index is for decimation sizes 128, 256, or 512
-        TIntObjectMap<PairInt> image1SegmentCentroids
-            = dd.dLabelCentroids.get(decimatedImageIndex);
-        TIntIntMap image1SegmentRadii
-            = dd.dLabelRadius.get(decimatedImageIndex);
-        TIntObjectMap<QuadInt> image1SegmentMinMax
-            = dd.dLabelXYMinMax.get(decimatedImageIndex);
-        
-        TIntObjectIterator<PairInt> iter = 
-            image1SegmentCentroids.iterator();
-        
         /*
-        create keypoints in a rectangular radius from the
-        center of the segment, with 6 pixel spacing
-            C - - - | - - - c - - -
-        */
-        int[] x = new int[2];
-        int[] y = new int[2];
+        Filling out keupoints across object shape to cover all
+        points (including exterior points is allowed).
         
-        int delta = 6;
-        for (int sIdx = 0; 
-            sIdx < image1SegmentCentroids.size(); ++sIdx) {
+        Using a BFS search pattern within dSpace limits of 
+        current center keyPoint.
+        */
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        // -dSpace to +dSpace is the feature range along a col or row
+        int dSpace = 6;
+        
+        TIntObjectMap<TIntSet> labeledIndexes = 
+            dd.dLabeledIndexes.get(decimatedImageIndex);
+         
+        TIntObjectIterator<TIntSet> iter = 
+            labeledIndexes.iterator();
+        
+        for (int sIdx = 0; sIdx < labeledIndexes.size(); ++sIdx) {
             
             iter.advance();
             
@@ -11322,35 +11375,79 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             output.add(keyPoints);
             
             int label = iter.key();
-            PairInt xyCen = iter.value();
-            QuadInt xyMinMax = image1SegmentMinMax.get(label);
-            int radius = image1SegmentRadii.get(label);
-                        
-            int deltaX = 0;
-            while (deltaX <= radius) {
-                // add left and right cells assuming symmetry
-                x[0] = xyCen.getX() - deltaX;
-                x[1] = xyCen.getX() + deltaX;
-                
-                int deltaY = 0;
-                while (deltaY <= radius) {
-                    y[0] = xyCen.getY() - deltaY;
-                    y[1] = xyCen.getY() + deltaY;
-                    
-                    for (int xs = 0; xs < 2; ++xs) {
-                        if (x[xs] < 0 || x[xs] > (imgWidth - 1)) {
+            
+            TIntSet indexes = iter.value();
+            
+            // assign keyPoints to cover all of indexes:
+            // BFS search within indexes, adding neighbors
+            //    within dSpace.
+            
+            // key = pixIdx, value = index of keyPoints list
+            TIntIntMap indexKPMap = new TIntIntHashMap();
+    
+            // if need speed, can replace q0 with any order of indexes
+            ArrayDeque<Integer> q0 = populateByNumberOfNeighbors(
+                indexes, imgWidth, imgHeight);
+            ArrayDeque<Integer> q1 = new ArrayDeque<Integer>();
+            
+            int nIter = 0;
+            Set<Integer> visited = new HashSet<Integer>();
+            while (true) {
+                while (!q0.isEmpty()) {
+                    Integer uIndex = q0.poll();
+                    if (visited.contains(uIndex)) {
+                        continue;
+                    }
+                    visited.add(uIndex);
+                    int uIdx = uIndex.intValue();
+                    int uY = uIdx/imgWidth;
+                    int uX = uIdx - (uY * imgWidth);
+                    int kpIdx;
+                    // lookup center point of keyPoint or assign a new
+                    int xc, yc;
+                    if (indexKPMap.containsKey(uIdx)) {
+                        kpIdx = indexKPMap.get(uIdx);
+                        PairInt kp = keyPoints.get(kpIdx);
+                        xc = kp.getX();
+                        yc = kp.getY();
+                    } else {
+                        PairInt kp = new PairInt(uX, uY);
+                        kpIdx = keyPoints.size();
+                        indexKPMap.put(uIdx, kpIdx);
+                        keyPoints.add(kp);
+                        xc = uX;
+                        yc = uY;
+                    }
+                    for (int k = 0; k < dxs.length; ++k) {
+                        int x2 = uX + dxs[k];
+                        if (x2 < 0 || x2 > (imgWidth - 1)) {
                             continue;
                         }
-                        for (int ys = 0; ys < 2; ++ys) {
-                            if (y[ys] < 0 || y[ys] > (imgHeight - 1)) {
-                                continue;
-                            }
-                            keyPoints.add(new PairInt(x[xs], y[ys]));
+                        int diffX = Math.abs(x2 - xc);
+                        if (diffX > dSpace) {
+                            continue;
                         }
-                    }                    
-                    deltaY += 6;
+                        int y2 = uY + dys[k];
+                        if (y2 < 0 || y2 > (imgHeight - 1)) {
+                            continue;
+                        }
+                        int diffY = Math.abs(y2 - yc);
+                        if (diffY > dSpace) {
+                            continue;
+                        }
+                        int vIdx = (y2 * imgWidth) + x2;
+                        if (!indexKPMap.containsKey(vIdx)) {
+                            indexKPMap.put(vIdx, kpIdx);
+                            q1.add(Integer.valueOf(vIdx));
+                        }
+                    }
+                    nIter++;
                 }
-                deltaX += 6;
+                if (q1.isEmpty()) {
+                    break;
+                }
+                q0.addAll(q1);
+                q1.clear();
             }
         }
         
@@ -11485,11 +11582,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             TIntObjectMap<PairInt> labelCentroidsMap
                 = new TIntObjectHashMap<PairInt>();
             dd.dLabelCentroids.add(labelCentroidsMap);
-            TIntObjectMap<QuadInt> labelXYMinMaxMap
-                = new TIntObjectHashMap<QuadInt>();
-            dd.dLabelXYMinMax.add(labelXYMinMaxMap);
-            TIntIntMap labelRadiusMap = new TIntIntHashMap();
-            dd.dLabelRadius.add(labelRadiusMap);
+            
             int count = 0;
             for (PairIntArray a : contigList) {
                 if (a.getN() < minNumberInSegment) {
@@ -11526,25 +11619,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 int xCen = (int)Math.round(xSum/(float)a.getN());
                 int yCen = (int)Math.round(ySum/(float)a.getN());
                 labelCentroidsMap.put(count, new PairInt(xCen, yCen));
-                QuadInt q = new QuadInt();
-                q.setA(xMin);
-                q.setB(xMax);
-                q.setC(yMin);
-                q.setD(yMax);
-                labelXYMinMaxMap.put(count, q);
-                int maxDist = Integer.MIN_VALUE;
-                for (int i = 0; i < a.getN(); ++i) {
-                    int x = a.getX(i);
-                    int y = a.getY(i);
-                    int diffX = x - xCen;
-                    int diffY = y - yCen;
-                    int dist = (int)Math.sqrt(diffX*diffX +
-                        diffY*diffY);
-                    if (dist > maxDist) {
-                        maxDist = dist;
-                    }
-                }
-                labelRadiusMap.put(count, maxDist);
+                
                 ++count;
             }
         }
