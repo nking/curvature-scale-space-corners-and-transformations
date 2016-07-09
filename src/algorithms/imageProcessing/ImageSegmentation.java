@@ -11308,7 +11308,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         return labels;
     }
     
-    public class DecimatedData {
+    public static class DecimatedData {
         // decimated comparison size is the closest to 128
         // for that have labels, decimated image, perimeter.
         // for decimated sizes 256 and 512, have
@@ -11341,11 +11341,12 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
      * @param imgHeight
      * @return 
      */
-    public List<List<PairInt>> calculateKeyPoints(
+    public TIntObjectMap<List<PairInt>> calculateKeyPoints(
         DecimatedData dd, int decimatedImageIndex,
         int imgWidth, int imgHeight) {
         
-        List<List<PairInt>> output = new ArrayList<List<PairInt>>();
+        TIntObjectMap<List<PairInt>> output =
+            new TIntObjectHashMap<List<PairInt>>();
         
         /*
         Filling out keupoints across object shape to cover all
@@ -11371,11 +11372,11 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             
             iter.advance();
             
-            List<PairInt> keyPoints = new ArrayList<PairInt>();
-            output.add(keyPoints);
-            
             int label = iter.key();
             
+            List<PairInt> keyPoints = new ArrayList<PairInt>();
+            output.put(label, keyPoints);
+                        
             TIntSet indexes = iter.value();
             
             // assign keyPoints to cover all of indexes:
@@ -11395,7 +11396,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 while (!q0.isEmpty() || !q1.isEmpty()) {
                 Integer uIndex;
                 if (!q1.isEmpty()) {
-                        // draw from q1 first if any because it searches 
+                    // draw from q1 first if any because it searches 
                     // current keypoint
                     uIndex = q1.poll();
                 } else {
@@ -11452,195 +11453,6 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         }
         
         return output;
-    }
-    
-    /**
-     * segmentation performed at decimated image levels
-     * to find the main image objects, useful for general
-     * regions of comparison followed by feature matching.
-     * Note that the resulting segmentation is in large
-     * blocks and does not precisely follow object outlines.
-     * 
-     * @param img
-     * @param minNumberInSegment minimum number in
-     *     segmented cell to be returned.
-     * @return 
-     */
-    public DecimatedData roughObjectsByColorSegmentation(
-        ImageExt img, int minNumberInSegment) {
-       
-        DecimatedData dd = new DecimatedData();
-        
-        ImageProcessor imageProcessor = new ImageProcessor();
-        
-        // 512 w/ kCells=600 binned works
-        // 128 w/ kCells=600 pyr dec works and has fewer segments
-        int maxDimension = 128;
-        int clrNorm = 1;
-        int sz = 1;
-        long ts = MiscDebug.getCurrentTimeFormatted();
-       
-        List<ImageExt> decimatedImages = new ArrayList<ImageExt>();
-        
-        // ----- pyramidal decimation to limit maxDimension -----
-        MedianTransform mt = new MedianTransform();
-        mt.<ImageExt>multiscalePyramidalMedianTransform2(img, 
-            decimatedImages, maxDimension);
-        
-        if (decimatedImages.isEmpty()) {
-            // too small for this method
-            log.severe("image must be at least 128 pixels"
-                + " wide and long");
-            return null;
-        }
-        
-        // approx 128 size:
-        dd.dImages[0] = decimatedImages.get(
-            decimatedImages.size() - 1);
-        dd.dBinFactors[0] = img.getWidth()/dd.dImages[0].getWidth();
-        if (decimatedImages.size() > 2) {
-            // approx 256 size:
-            dd.dImages[1] = decimatedImages.get(
-                decimatedImages.size() - 2);
-            dd.dBinFactors[1] = img.getWidth()/dd.dImages[1].getWidth();
-        }
-        if (decimatedImages.size() > 3) {
-            // approx 512 size:
-            dd.dImages[2] = decimatedImages.get(
-                decimatedImages.size() - 3);
-            dd.dBinFactors[2] = img.getWidth()/dd.dImages[2].getWidth();
-        }
-        
-        int kCells = 600;
-        //(imageBinned.getWidth() / sz)
-        //+ (imageBinned.getHeight() / sz);
-                    
-        log.info("kCells=" + kCells);
-        
-        SLICSuperPixels slic = new SLICSuperPixels(
-            dd.dImages[0], kCells, clrNorm);
-            slic.calculate();
-        int[] labels0 = slic.getLabels(); 
-        
-        NormalizedCuts normCuts = new NormalizedCuts();
-        int[] labels = normCuts.normalizedCut(
-            dd.dImages[0], labels0);
-            
-        // correct for unlabeled points
-        labelTheUnlabeled(labels);
-        
-        
-        ImageExt img2 = dd.dImages[0].createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img2, labels);
-        MiscDebug.writeImage(img2, "a" + ts + "_binned_");
-        
-        
-        // replace single pixels w/ adjacent nearest in colpr
-        replaceSinglePixelLabels(labels, dd.dImages[0]);
-        
-        // before expand to full image size, do the more
-        // expensive DFS search for contiguous same labels.
-        List<PairIntArray> contigBinnedList128 = 
-            findContiguousSameLabels(labels,
-            dd.dImages[0].getWidth(), dd.dImages[0].getHeight());
-        
-        List<PairIntArray> contigBinnedList256 =
-            (dd.dImages[1] == null) ? null :
-            imageProcessor.unbinLists(contigBinnedList128,
-            dd.dImages[1].getWidth()/dd.dImages[0].getWidth(),
-            dd.dImages[0].getWidth(), 
-            dd.dImages[0].getHeight(),
-            dd.dImages[1].getWidth(), 
-            dd.dImages[1].getHeight());
-        
-        List<PairIntArray> contigBinnedList512 =
-            (dd.dImages[2] == null) ? null :
-            imageProcessor.unbinLists(contigBinnedList256, 
-            dd.dImages[2].getWidth()/dd.dImages[1].getWidth(),
-            dd.dImages[1].getWidth(), 
-            dd.dImages[1].getHeight(),
-            dd.dImages[2].getWidth(), 
-            dd.dImages[2].getHeight());
-        
-        // segment points, centroids and metrics for sizes:
-        for (int lIdx = 0; lIdx < 3; lIdx++) {
-            List<PairIntArray> contigList = null;
-            if (lIdx == 0) {
-                contigList = contigBinnedList128;
-            } else if (lIdx == 1) {
-                contigList = contigBinnedList256;
-            } else {
-                contigList = contigBinnedList512;
-            }
-            if (contigList == null) {
-                break;
-            }
-            TIntObjectMap<TIntSet> labelIndexesMap
-                = new TIntObjectHashMap<TIntSet>();
-            dd.dLabeledIndexes.add(labelIndexesMap);
-            TIntObjectMap<PairInt> labelCentroidsMap
-                = new TIntObjectHashMap<PairInt>();
-            dd.dLabelCentroids.add(labelCentroidsMap);
-            
-            int count = 0;
-            for (PairIntArray a : contigList) {
-                if (a.getN() < minNumberInSegment) {
-                    continue;
-                }
-                TIntSet pointSet = new TIntHashSet();
-                labelIndexesMap.put(count, pointSet);
-                double xSum = 0;
-                double ySum = 0;
-                int xMin = Integer.MAX_VALUE;
-                int yMin = Integer.MAX_VALUE;
-                int xMax = Integer.MIN_VALUE;
-                int yMax = Integer.MIN_VALUE;
-                for (int i = 0; i < a.getN(); ++i) {
-                    int x = a.getX(i);
-                    int y = a.getY(i);
-                    int pixIdx = dd.dImages[lIdx].getInternalIndex(x, y);
-                    xSum += x;
-                    ySum += y;
-                    pointSet.add(pixIdx);
-                    if (x < xMin) {
-                        xMin = x;
-                    }
-                    if (y < yMin) {
-                        yMin = y;
-                    }
-                    if (x > xMax) {
-                        xMax = x;
-                    }
-                    if (y > yMax) {
-                        yMax = y;
-                    } 
-                }
-                int xCen = (int)Math.round(xSum/(float)a.getN());
-                int yCen = (int)Math.round(ySum/(float)a.getN());
-                labelCentroidsMap.put(count, new PairInt(xCen, yCen));
-                
-                ++count;
-            }
-        }
-        
-        // --- expand labels to full size image ---
-        TIntObjectMap<TIntSet> labelsFull 
-            = imageProcessor.unbin(
-            dd.dLabeledIndexes.get(0), 
-            dd.dBinFactors[0], 
-            dd.dImages[0].getWidth(), 
-            dd.dImages[0].getHeight(),
-            img.getWidth(), img.getHeight());
-        dd.fullLabels = labelsFull;
-        
-        ImageExt img3 = img.createWithDimensions();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(
-            img3, labelsFull);
-        MiscDebug.writeImage(img3, "a" + ts
-            + "_normalized_cuts_labeled_");
-        
-        return dd;
     }
     
     /**

@@ -12,6 +12,7 @@ import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.GroupAverageColors;
+import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntPair;
@@ -273,13 +274,16 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_03.jpg",
             "android_statues_04.jpg"
         };
+
+        // paused here.  ediiting to use super pixels
+        //   and a pattern of color aggregatiion w/ voronoi cells for comparison to model,
+        //   then a partial shape matching algorithm.
         
         ImageProcessor imageProcessor = new ImageProcessor();
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         List<ImageExt> images = new ArrayList<ImageExt>();
-        List<DecimatedData> results = new ArrayList<DecimatedData>();
         
         for (int i = 0; i < fileNames.length; ++i) {
             
@@ -289,13 +293,7 @@ public class AndroidStatuesTest extends TestCase {
                 fileName.lastIndexOf("."));
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             images.add(img);
-            
-            DecimatedData dd = imageSegmentation
-                .roughObjectsByColorSegmentation(
-                img, 36);
-            
-            results.add(dd);
-           
+                        
             /*
             wanting to look at color similarity of pixels
                 holding known objects that have different
@@ -321,175 +319,6 @@ public class AndroidStatuesTest extends TestCase {
             */
         }
         
-        int nD = results.size();
-        
-        PairInt[] gb128 = new PairInt[4];
-        gb128[0] = new PairInt(28, 20);
-        gb128[1] = new PairInt(67, 20);
-        gb128[2] = new PairInt(11, 26);
-        gb128[3] = new PairInt(58, 28);
-        
-        int gblabel0 = -1;
-        {
-            TIntObjectMap<PairInt> segmentMap = 
-                results.get(0).dLabelCentroids.get(0);
-            TIntObjectIterator<PairInt> iter =
-                segmentMap.iterator();
-            for (int i = 0; i < segmentMap.size(); ++i) {
-                iter.advance();
-                PairInt xyCen = iter.value();
-                if ((Math.abs(xyCen.getX() - gb128[0].getX()) < 5)
-                    &&
-                    (Math.abs(xyCen.getY() - gb128[0].getY()) < 5)) {
-                    gblabel0 = iter.key();
-                    break;
-                }
-            }
-        }
-        
-        assertTrue(gblabel0 != -1);
-        
-        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
-        IntensityClrFeatures features1
-            = new IntensityClrFeatures(
-                results.get(0).dImages[0].copyToGreyscale(), 
-            5, rotatedOffsets);
-        
-        IntensityClrFeatures features2
-            = new IntensityClrFeatures(
-                results.get(2).dImages[0].copyToGreyscale(), 
-            5, rotatedOffsets);
-        
-        /*
-        create keypoints in a rectangular radius from the
-        center of the segment, with 6 pixel spacing
-            C - - - | - - - c - - -
-        */
-        
-        // ----- make the keypoints as grid spaced
-        // points across the decimated segment region. -----
-        // (note the keypoints are not used exactly
-        // the same as corners or 2nd derivatives would
-        // be because these may be regions without 
-        // gradients. the colors and a projection
-        // model for the spatial location of the keypoints
-        // with respect to one another are what 
-        // determines best fits.
-        // ... NOTE that if occlusion were not a possibility,
-        //     it would be simpler code to only decimate to
-        //     near 128 for all images, then for feature
-        //     comparison when looking for the model segment
-        //     in the data images,
-        //     would use the model segment size as the template 
-        //     and then rescale each
-        //     data image segment to the model search segment
-        //     size to make same size features for comparison
-        //     and find the best match among the data segments
-        //     in an image.
-        //     unforturnately, would not necessarily find occluded
-        //     objects very well with this approach...
-        //     comparing a full gingerbread model to a half might
-        //     find the full gingerbread man resembles the eclair
-        //     more than the half gingerbread man (but in contrast,
-        //     the more complex multiple keypoints pattern and 
-        //     set euclidean scales of factor of 2 would presumably
-        //     get the right answer.)
-        //
-        //   need to consider when object segment area is not much
-        //   larger than background area when making these keypoints...
-        //   that should be revised ... a diagonal rectangle
-        //   with background area larger than real object area
-        //   might fail with the way the keypoints are right now
-        //   generated.
-        //   that should be fixed next...
-        
-        
-        // results(1) gets the 2nd image in fileNames
-        // then the list index is for a segmented cell,
-        // and the next list index is for keypoints within
-        // the segmented cell
-        List<List<PairInt>> image1SegmentKeypoints =
-            imageSegmentation.calculateKeyPoints(
-                results.get(1), 0, 
-                results.get(1).dImages[0].getWidth(),
-                results.get(1).dImages[0].getHeight());
-        
-        List<List<PairInt>> image0SegmentKeypoints =
-            imageSegmentation.calculateKeyPoints(
-                results.get(0), 0, 
-                results.get(0).dImages[0].getWidth(),
-                results.get(0).dImages[0].getHeight());
-                
-        for (int i = 1; i < 2; ++i) {    
-        }
-        
-        /*
-        List<Set<PairInt>> pixelLists = 
-            imageProcessor.extract2ndDerivPoints(
-            gsImg, 
-            results.get(i).binnedLabels,
-            //200, true);
-            50, true
-        );
-        */
-            
-        /*
-        RotatedOffsets rotatedOffsets = RotatedOffsets.getInstance();
-                 
-        for (int i = 0; i < nD; ++i) {
-            
-            GreyscaleImage gsImg =
-                results.get(i).binnedImage.copyToGreyscale();
-            int w = gsImg.getWidth();
-            int h = gsImg.getHeight();
-
-            int binFactor = results.get(i).binFactor;
-
-            List<Set<PairInt>> pixelLists = 
-                imageProcessor.extract2ndDerivPoints(
-                gsImg, 
-                results.get(i).binnedLabels,
-                //200, true);
-                50, true
-            );
-            Set<PairInt> pixels = new HashSet<PairInt>();
-            for (Set<PairInt> set : pixelLists) {
-                pixels.addAll(set);
-            }
-
-            boolean useNormalized = true;
-            IntensityFeatures features = new IntensityFeatures(
-                5, useNormalized, rotatedOffsets);
-            if (!features.gradientWasCreated()) {
-                features.calculateGradientWithGreyscale(
-                    gsImg);
-            }
-            Set<PairInt> remove = new HashSet<PairInt>();
-            for (PairInt p : pixels) {
-                int x = p.getX();
-                int y = p.getY();
-                if (features.removeDueToLocalization(gsImg, x, y,
-                    features.calculateOrientation(x, y))) {
-                    remove.add(p);
-                }
-            }
-            pixels.removeAll(remove);
-            
-            
-            int nExtraForDot = 0;
-            List<Set<PairInt>> perimeters = 
-                results.get(i).binnedPerimeters;
-            
-            ImageExt img2 = gsImg.copyToColorGreyscaleExt();
-            //ImageIOHelper.addAlternatingColorCurvesToImage0(
-            //    perimeters, img2, nExtraForDot);
-            
-            ImageIOHelper.addCurveToImage(pixels, img2, 
-                nExtraForDot, 255, 0, 0);
-            MiscDebug.writeImage(img2, "a_" + i + "_2ndderivs_");
-            
-        }
-        */
     }
     
     private class DeltaESim implements Comparable<DeltaESim> {
