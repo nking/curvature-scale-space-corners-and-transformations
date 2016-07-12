@@ -368,11 +368,11 @@ Assume point m lies on the medial axis and is
      * @param p
      * @param output 
      * @return code for result: 
-     * -3 means there are too few points;
-     * -2 means no median axis point larger than threshold was found;
+     * -3 means there are too few nearest boundary points;
+     * -2 means no medial axis angle larger than threshold was found;
      * -1 means part of the circle extends outside of bounds; 
-     * 1 means successfully found the median axis points
-     * and place them in output.
+     * 1 means successfully found the medial axis points
+     * and placed them in output.
      */
     protected int intersectsMedialAxis(Set<PairInt> nearestB, 
         PairInt p, List<MedialAxisPoint> output) {
@@ -463,6 +463,10 @@ Assume point m lies on the medial axis and is
                 nearestBounds[0].getY());
             
             double aSq = distanceSq(x1, y1, x2, y2);
+            
+            if (cSq < aSq || bSq < aSq) {
+                continue;
+            }
             
             //cosine A = (b^2 + c^2 - a^2)/2bc
             double cosA = (bSq + cSq - aSq)/(2 * Math.sqrt(bSq * cSq));
