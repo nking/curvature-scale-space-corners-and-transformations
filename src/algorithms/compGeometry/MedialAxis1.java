@@ -79,7 +79,8 @@ public class MedialAxis1 {
         
         minMaxXY = MiscMath.findMinMaxXY(boundary);
         
-        this.np = new NearestNeighbor2D(points, 0, 0);
+        this.np = new NearestNeighbor2D(points, 
+            minMaxXY[1], minMaxXY[3]);
         
     }
     
