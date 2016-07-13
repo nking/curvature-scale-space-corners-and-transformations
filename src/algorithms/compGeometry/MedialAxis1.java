@@ -41,11 +41,16 @@ public class MedialAxis1 {
      * separation angle used for sampling points in
      * a circle around a point.
      */
-    private static final double sepAng = Math.PI/3;
+    //private static final double sepAng = Math.PI/3;
     
-    private final int nSampl = 6;//  2*pi/sepAng
+    //private final int nSampl = 6;//  2*pi/sepAng
+    
+    private static final double sepAng = Math.PI/9;
+    
+    private final int nSampl = 18;//  2*pi/sepAng
     
     // 10 degrees threshold for separation angle criterion
+    // ~ 0.1745
     private final double threshold = Math.PI/18;
     
     private double twoPI = Math.PI;
@@ -56,7 +61,11 @@ public class MedialAxis1 {
      * (NOTE: in future may make a version that doesn't
      * need all interior points and uses an adaptive
      * sampling, but use case for now fits these arguments
-     * better.)
+     * better.   Note, while focusing on the algorithm
+     * details, have not completely thought through the
+     * current structure for boundaryPoints for
+     * embedded holes).
+     * )
      * 
      * @param shapePoints
      * @param boundaryPoints 
@@ -66,7 +75,7 @@ public class MedialAxis1 {
         
         this.points = new HashSet<PairInt>(shapePoints);
         
-        this.boundary = new HashSet<PairInt>(boundaryPoints.size());
+        this.boundary = new HashSet<PairInt>(boundaryPoints);
     
         points.removeAll(boundary);
         
@@ -79,9 +88,13 @@ public class MedialAxis1 {
         
         minMaxXY = MiscMath.findMinMaxXY(boundary);
         
-        this.np = new NearestNeighbor2D(points, 
+        this.np = new NearestNeighbor2D(boundary, 
             minMaxXY[1], minMaxXY[3]);
         
+    }
+    
+    protected Set<PairInt> getNearestBoundaryPoints(PairInt p) {
+        return np.findClosest(p.getX(), p.getY());
     }
     
     protected PVector findInitialPoint() {
@@ -433,7 +446,7 @@ Assume point m lies on the medial axis and is
             int x1 = surfaceX[i];
             int y1 = surfaceY[i];
             int idx2;
-            if (i < nSampl) {
+            if (i < (nSampl - 1)) {
                 idx2 = i + 1;
             } else {
                 idx2 = 0;
@@ -472,7 +485,10 @@ Assume point m lies on the medial axis and is
             double cosA = (bSq + cSq - aSq)/(2 * Math.sqrt(bSq * cSq));
             
             double angleA = Math.acos(cosA);
-            
+    
+    //TODO: looks like need to validate this for all 
+    // nearest boundary points here
+    
             if (angleA < threshold) {
                 continue;
             }
@@ -504,8 +520,8 @@ Assume point m lies on the medial axis and is
             int idx1 = surfIdxes1.get(i);
             int idx2 = surfIdxes2.get(i);
             
-            int avgX = (surfaceX[idx1] + surfaceX[idx2]);
-            int avgY = (surfaceY[idx1] + surfaceY[idx2]);
+            int avgX = Math.round(0.5f*(surfaceX[idx1] + surfaceX[idx2]));
+            int avgY = Math.round(0.5f*(surfaceY[idx1] + surfaceY[idx2]));
             PairInt medialP = new PairInt(avgX, avgY);
             
             MedialAxisPoint mp = new MedialAxisPoint(nearestBounds.length);
