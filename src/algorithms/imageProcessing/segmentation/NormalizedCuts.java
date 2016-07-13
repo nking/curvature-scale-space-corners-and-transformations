@@ -80,6 +80,8 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 public class NormalizedCuts {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
+
+    private double thresh = 0.06;
     
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
@@ -149,8 +151,6 @@ public class NormalizedCuts {
      * @param numCuts 
      */
     private void nCutRelabel(RAGCSubGraph graph, int numCuts) {
-
-        double thresh = 0.06;
         
         FlexCompRowMatrix w = graph.getEdgeMatrix();
         if (w.numRows() < 5) {

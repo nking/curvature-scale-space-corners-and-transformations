@@ -247,4 +247,134 @@ public class VoronoiFortunesSweepTest extends TestCase {
         String filePath = plotter.writeFile3();
         System.out.println("wrote file=" + filePath);
     }
+    
+    public void test4() throws FileNotFoundException, IOException {
+        
+        int n = 12;
+        float[] x = new float[n];
+        float[] y = new float[n];
+        x[0] = 92; y[0] = 283;
+        x[1] = 323; y[1] = 275;
+        x[2] = 337; y[2] = 177;
+        x[3] = 375; y[3] = 355;
+        x[4] = 415; y[4] = 199;
+        x[5] = 695; y[5] = 277;
+        x[6] = 430; y[6] = 300;
+        x[7] = 660; y[7] = 500;
+        x[8] = 448; y[8] = 620;
+        x[9] = 450; y[9] = 425;
+        x[10] = 321; y[10] = 585;
+        x[11] = 283; y[11] = 352;
+        
+        float xmin = 0.f;
+        float xmax = 800.f;
+        float ymin = 0.f;
+        float ymax = 800.f;
+
+        //TODO: revise this
+        int minDist = 1;
+
+        VoronoiFortunesSweep voronoi = 
+            new VoronoiFortunesSweep();
+        
+        voronoi.generateVoronoi(x, y, xmin, xmax, ymin, ymax, 
+            minDist);
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        assertNotNull(edges);
+        
+        PolygonAndPointPlotter plotter = 
+            new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+        
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+        
+        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
+        
+        n = edges.size();
+        xPolygon = new float[2*n];
+        yPolygon = new float[2*n];
+        int count = 0;
+        for (GraphEdge edge : edges) {
+            xPolygon[count] = edge.x1;
+            yPolygon[count] = edge.y1;
+            xPolygon[count + 1] = edge.x2;
+            yPolygon[count + 1] = edge.y2;        
+            count += 2;
+        }
+        plotter.addPlotWithLines(x, y, 
+            xPolygon, yPolygon, "edhes");
+        String filePath = plotter.writeFile(Integer.valueOf(4));
+        System.out.println("wrote file=" + filePath);
+    }
+    
+    public void test5() throws FileNotFoundException, IOException {
+        
+        int n = 2*20 + 2*10;
+        float[] x = new float[n];
+        float[] y = new float[n];
+        
+        int count = 0;
+        for (int i = 1; i < 20; ++i) {
+            x[count] = i;
+            y[count] = 1;
+            count++;
+        }
+        for (int i = 2; i < 9; ++i) {
+            x[count] = 19;
+            y[count] = i;
+            count++;
+        }
+        for (int i = 1; i < 20; ++i) {
+            x[count] = 20 - i;
+            y[count] = 9;
+            count++;
+        }
+        for (int i = 2; i < 9; ++i) {
+            x[count] = 1;
+            y[count] = 10 - i;
+            count++;
+        }
+
+        float xmin = 0.f;
+        float xmax = 20.f;
+        float ymin = 0.f;
+        float ymax = 10.f;
+
+        //TODO: revise this
+        int minDist = 1;
+
+        VoronoiFortunesSweep voronoi = 
+            new VoronoiFortunesSweep();
+        
+        voronoi.generateVoronoi(x, y, xmin, xmax, ymin, ymax, 
+            minDist);
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        assertNotNull(edges);
+        
+        PolygonAndPointPlotter plotter = 
+            new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+        
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+        
+        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
+        
+        n = edges.size();
+        xPolygon = new float[2*n];
+        yPolygon = new float[2*n];
+        count = 0;
+        for (GraphEdge edge : edges) {
+            xPolygon[count] = edge.x1;
+            yPolygon[count] = edge.y1;
+            xPolygon[count + 1] = edge.x2;
+            yPolygon[count + 1] = edge.y2;        
+            count += 2;
+        }
+        plotter.addPlotWithLines(x, y, 
+            xPolygon, yPolygon, "edhes");
+        String filePath = plotter.writeFile(Integer.valueOf(5));
+        System.out.println("wrote file=" + filePath);
+    }
 }

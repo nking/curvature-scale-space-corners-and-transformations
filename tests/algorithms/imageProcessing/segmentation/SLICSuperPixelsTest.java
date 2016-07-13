@@ -21,11 +21,13 @@ public class SLICSuperPixelsTest extends TestCase {
         String[] fileNames = new String[]{
             "android_statues_02.jpg", 
             "color_squares.png",
+            "tmpBench.png"
         };
         
         int[] kCells = new int[]{
             200,
-            9
+            9,
+            100
         };
         
         for (int i = 0; i < fileNames.length; ++i) {
@@ -40,15 +42,19 @@ public class SLICSuperPixelsTest extends TestCase {
 
             ImageExt img = ImageIOHelper.readImageExt(filePath);
 
-            SLICSuperPixels slic = new SLICSuperPixels(img, kCells[i]);
+            SLICSuperPixels slic 
+                = new SLICSuperPixels(img, kCells[i], 10);
 
             slic.calculate();
 
             int[] labels = slic.getLabels();
 
             ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
-
             MiscDebug.writeImage(img,  "_slic_" + fileNameRoot);
+            
+            img = ImageIOHelper.readImageExt(filePath);
+            LabelToColorHelper.applyLabels(img, labels);
+            MiscDebug.writeImage(img,  "_slic_img_" + fileNameRoot);
             
             //System.out.println("labels out=" + Arrays.toString(labels));
         }

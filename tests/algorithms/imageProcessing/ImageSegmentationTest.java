@@ -9,6 +9,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
@@ -839,12 +840,19 @@ public class ImageSegmentationTest extends TestCase {
         
         ImageSegmentation imageSegmentation = new ImageSegmentation();
         
-        List<List<PairInt>> listKeypoints =
+        TIntObjectMap<List<PairInt>>
+            listKeypoints =
             imageSegmentation.calculateKeyPoints(dd, 0, 100, 100);
         
-        List<PairInt> keyPoints = listKeypoints.get(0);
+        assertTrue(listKeypoints.size() == 1);
+        
+        TIntObjectIterator<List<PairInt>> iter0 =
+            listKeypoints.iterator();
+        iter0.advance();
+        
+        List<PairInt> keyPoints = iter0.value();
 
-        /*float[] xPoints = new float[keyPoints.size()];
+        float[] xPoints = new float[keyPoints.size()];
         float[] yPoints = new float[keyPoints.size()];
         for (int i = 0; i < keyPoints.size(); ++i) {
             PairInt kp = keyPoints.get(i);
@@ -856,7 +864,7 @@ public class ImageSegmentationTest extends TestCase {
             xPoints, yPoints, null, null, x, y,
             "keypoints");
         plotter.writeFile("keypoints");
-        */
+        
         
         //assert that every point n indexes is withon
         // dist of 6 to a keypoint

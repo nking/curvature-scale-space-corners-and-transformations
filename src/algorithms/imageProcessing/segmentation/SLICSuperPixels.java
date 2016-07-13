@@ -54,6 +54,9 @@ public class SLICSuperPixels {
     // sqrt(sum sq) = 28.78
     // paper recommends using value between 1 and 40
     protected final double maxCIELAB;
+
+    // max possible value is 19.22
+    protected final double maxDeltaE;
     
     /**
      * constructor for the super-pixel algorithm SLIC that uses the default
@@ -75,6 +78,7 @@ public class SLICSuperPixels {
         }
         
         maxCIELAB = clrNorm;
+        maxDeltaE = clrNorm;
         
         double sampling = Math.sqrt(( (float)img.getNPixels()/(float)nClusters));
         
@@ -122,6 +126,7 @@ public class SLICSuperPixels {
         }
         
         maxCIELAB = 10;
+        maxDeltaE = 10;
         
         //TOOD: after have an implementation as authors suggest,
         //  change to use deltaE instead of sqrt sum diffs of CIE lab
@@ -384,7 +389,8 @@ public class SLICSuperPixels {
                     }
                     int pixIdx2 = img.getInternalIndex(x2, y2);
 
-                    double dist = calcDist(desc1, img.getCIELAB(x2, y2), x2, y2);
+                    double dist = calcDist(desc1, 
+                        img.getCIELAB(x2, y2), x2, y2);
 
                     if (dist < distances[pixIdx2]) {
                         distances[pixIdx2] = dist;
@@ -455,6 +461,28 @@ public class SLICSuperPixels {
         }
         
         return l2Norm;
+    }
+
+    private double calcDist2(float[] desc1, float[] lab2, 
+        int x2, int y2) {
+
+        CIEChromaticity cieC = new CIEChromaticity();
+       
+        double deltaE = cieC.calcDeltaECIE2000(
+            desc1[0], desc1[1], desc1[2],
+            lab2[0], lab2[1], lab2[2]);
+            
+        double dClrSq = Math.abs(deltaE);
+        
+        float diffX = desc1[3] - x2;
+        float diffY = desc1[4] - y2;
+        double dXYSq = diffX * diffX + diffY * diffY;
+        
+        double dComb = dClrSq + (dXYSq * maxCIELAB * maxCIELAB)/((float)s * s);
+        
+        dComb = Math.sqrt(dComb);
+        
+        return dComb;
     }
 
     private double calcDist(float[] desc1, float[] lab2, int x2, int y2) {
