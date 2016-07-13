@@ -57,7 +57,7 @@ public class MedialAxis1Test extends TestCase {
         
         List<MedialAxis1.MedialAxisPoint> output = new
             ArrayList<MedialAxis1.MedialAxisPoint>();
-        //6,5  6,2
+        //3,6
         medAxis1.intersectsMedialAxis(nearestB, p, output);
         
         int z = 1;
@@ -68,13 +68,13 @@ public class MedialAxis1Test extends TestCase {
     "Efficient Computation of A Simplified Medial Axis"
         by Foskey, Lin, and Manocha
     
-               ___        11,12
-               | |        9,10
-      _________| |_______ 7,8
-      |                 | 5,6
-      |                 | 3,4   <---- y=4 for a long medial axis segment
-      |                 | 2,3
-      |_________________| 0,1
+               ___        19,20,21
+               | |        16,17,18
+      _________| |_______ 15
+      |                 | 11
+      |                 | 8   <---- y=7 for a long medial axis segment
+      |                 | 5
+      |_________________| 0-2
       0123456789012345678
                 1
     */
@@ -86,43 +86,43 @@ public class MedialAxis1Test extends TestCase {
         for (int i = 18; i > -1; --i) {
             border.add(new PairInt(i, 0));
         }
-        // 0,1 -> 0,8
-        for (int i = 1; i < 9; ++i) {
+        // 0,1 -> 0,15
+        for (int i = 1; i < 15; ++i) {
             border.add(new PairInt(0, i));
         }
-        // (1,8)->(8,8)
+        // (1,15)->(8,15)
         for (int i = 1; i < 9; ++i) {
-            border.add(new PairInt(i, 8));
+            border.add(new PairInt(i, 15));
         }
-        // (9,8)->(9,12)
-        for (int i = 8; i <= 12; ++i) {
+        // (9,15)->(9,21)
+        for (int i = 15; i <= 21; ++i) {
             border.add(new PairInt(9, i));
         }
-        // 10,12 -> 11,12
+        // 10,21 -> 11,21
         for (int i = 10; i <= 11; ++i) {
-            border.add(new PairInt(i, 12));
+            border.add(new PairInt(i, 21));
         }
-        // 11,11 -> 11,8
-        for (int i = 11; i >= 8; --i) {
+        // 11,21 -> 11,15
+        for (int i = 11; i >= 15; --i) {
             border.add(new PairInt(11, i));
         }
-        // 12,8 -> 18,8
+        // 12,15 -> 18,15
         for (int i = 12; i < 19; ++i) {
-            border.add(new PairInt(i, 8));
+            border.add(new PairInt(i, 15));
         }
-        // 18,7 18,1
-        for (int i = 7; i > 0; --i) {
+        // 18,14 18,1
+        for (int i = 14; i > 0; --i) {
             border.add(new PairInt(18, i));
         }
         // interior points.  this includes border, which is fine
         // because MedialAxis1 removes the border from them
         for (int i = 0; i < 19; ++i) {
-            for (int j = 0; j <= 8; ++j) {
+            for (int j = 0; j <= 15; ++j) {
                 areaPoints.add(new PairInt(i, j));
             }
         }
         for (int i = 9; i <= 11; ++i) {
-            for (int j = 9; j <= 12; ++j) {
+            for (int j = 9; j <= 21; ++j) {
                 areaPoints.add(new PairInt(i, j));
             }
         }

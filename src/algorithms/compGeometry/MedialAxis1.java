@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * An implementation of 
@@ -28,6 +29,8 @@ import java.util.Set;
  * @author nichole
  */
 public class MedialAxis1 {
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
     
     private final Set<PairInt> points;
     private final TIntObjectMap<PairInt> boundaryIndexMap;
@@ -454,6 +457,8 @@ Assume point m lies on the medial axis and is
             int x2 = surfaceX[idx2];
             int y2 = surfaceY[idx2];
             
+// TODO: fix error here.  
+
             /* law of cosines:  cosine A = (b^2 + c^2 - a^2)/2bc
               B   a   C
                 c   b
@@ -484,14 +489,39 @@ Assume point m lies on the medial axis and is
             //cosine A = (b^2 + c^2 - a^2)/2bc
             double cosA = (bSq + cSq - aSq)/(2 * Math.sqrt(bSq * cSq));
             
-            double angleA = Math.acos(cosA);
-    
-    //TODO: looks like need to validate this for all 
-    // nearest boundary points here
+            final double angleA = Math.acos(cosA);
     
             if (angleA < threshold) {
                 continue;
             }
+            
+            log.info(String.format("angle=%.4f (%d,%d) (%d,%d)", 
+                (float)angleA, x1, y1, x2, y2));
+            
+            // validate threshold for other boundary point
+            // angles with this pair too
+            boolean skip = false;
+            for (int k = 1; k < nearestBounds.length; ++k) {
+                double cSq2 = distanceSq(x1, y1, 
+                    nearestBounds[k].getX(), nearestBounds[k].getY());
+                double bSq2 = distanceSq(x2, y2, 
+                    nearestBounds[k].getX(), nearestBounds[k].getY());
+                if (cSq2 < aSq || bSq2 < aSq) {
+                    skip = true;
+                    break;
+                }
+                double cosA2 = (bSq2 + cSq2 - aSq)/
+                    (2. * Math.sqrt(bSq2 * cSq2));
+                double angleA2 = Math.acos(cosA2);
+                if (angleA2 < threshold) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
+                continue;
+            }
+            
             if (angleA > maxAngle) {
                 maxAngle = angleA;
                 surfIdxes1.clear();
