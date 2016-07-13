@@ -104,31 +104,8 @@ public class MedialAxis1 {
         return np.findClosest(p.getX(), p.getY());
     }
     
-    protected PVector findInitialPoint() {
-    
-        /*
-        identifies an initial point m and associated 
-        distance delta(m), such that the resulting 
-        sphere of radius delta(m) around m intersects 
-        the medial axis.
-        */
-        
-        PairInt p = points.iterator().next();
-        
-        Set<PairInt> closestB = 
-            np.findClosest(p.getX(), p.getY());
-        
-        assert(closestB.size() > 0);
-        
-        List<MedialAxisPoint> medialAxes 
-            = new ArrayList<MedialAxisPoint>();
-        intersectsMedialAxis(closestB, p, medialAxes);
-        
-        while (medialAxes.isEmpty()) {
-            // make a new sphere center from the point
-            // that is p - vector to b1.
-        }
-        
+    protected void findMedialAxis() {
+        // gather other notes here
         /*
         A new search is normal to the median axis line
         recently formed.
@@ -140,6 +117,126 @@ public class MedialAxis1 {
         axis.  the points should be away from the
         smallest angle between the old and new segments.
         */
+    }
+    
+    protected MedialAxisResults findInitialPoint() {
+    
+        /*
+        identifies an initial point m and associated 
+        distance delta(m), such that the resulting 
+        sphere of radius delta(m) around m intersects 
+        the medial axis.
+        */
+        
+        List<MedialAxisPoint> medialAxes 
+            = new ArrayList<MedialAxisPoint>();
+        
+        PairInt p = points.iterator().next();
+        
+        Set<PairInt> closestB = 
+            np.findClosest(p.getX(), p.getY());
+        
+        assert(closestB.size() > 0);
+        
+        int status = 0;
+        
+        // find a p that results in valid medialAxes,
+        // and update the closestB for it
+                        
+        status = intersectsMedialAxis(closestB, p, medialAxes);
+
+        if (status == -3) {
+
+            throw new IllegalStateException("Error in algorithm:"
+                + " could not find a nearest boundary for " +
+                p.toString());
+
+        } else if (status == -2 || status == -1) {
+
+            //status==-2: no medial axis angle larger than threshold was found
+            //status==-1: part of the circle extends outside of bounds;
+
+            // binary search along line from nearest boundary
+            // point to p to avoid cycling while incr and decr
+            // distances to boundary.
+
+            medialAxes.clear();
+
+            PairInt bPoint = closestB.iterator().next();
+
+            double r = distance(bPoint.getX(), bPoint.getY(), p);
+
+            /*from bPoint to p, scale offsets by new r:
+             diffX = (p.x - b.x)/r
+             diffY = (p.y - b.y)/r
+             p2.x = p.x + (diffX * r2)
+             p2.y = p.y + (diffY * r2)
+            */
+            double diffX = (p.getX() - bPoint.getX())/r;
+            double diffY = (p.getY() - bPoint.getY())/r;
+
+            double low, high;
+            if (status == -2) {
+                low = r;
+                // guestimate w/ half of xMax or yMax
+                high = 0.5 * Math.max(minMaxXY[1], minMaxXY[3]);
+            } else {
+                low = 0;
+                high = r;
+            }
+            double mid = 0.5 * (high + low);
+
+            // choose another circle center by choosing the point
+            // on the circle around p which is opposite the nearest
+            // boundary point.
+
+            while (low < high) {
+                mid = 0.5 * (high + low);
+                // create new p from mid distance from b along path to p
+                int x2 = p.getX() + (int)Math.round(diffX * mid);
+                int y2 = p.getY() + (int)Math.round(diffY * mid);
+                PairInt p2 = new PairInt(x2, y2);
+                if (!points.contains(p2) || boundary.contains(p2)) {
+                    // mid is too large, reduce range
+                    if (high == mid) {
+                        high -= 1; // consider if delta should be > 1
+                    } else {
+                        high = mid;
+                    }
+                } else {
+                    // check if point intersects medial axis
+                    // and if so, exit loop
+                    Set<PairInt> closestB2 = np.findClosest(p2.getX(), p2.getY());
+                    status = intersectsMedialAxis(closestB2, p2, medialAxes);
+                    if (status == 1) {
+                        p = p2;
+                        closestB = closestB2;
+                        break;
+                    }
+                    // else mid is too small
+                    if (low == mid) {
+                        low++; // consider if delta should be > 1
+                    } else {
+                        low = mid;
+                    }
+                }
+            }
+            // if srch unsuccessful, throw error
+            if (status != 1) {
+                throw new IllegalStateException("Error in algorithm:"
+                    + " could not find a valid medial axis"
+                    + " point from the random first point.");
+            }
+            // end of binary search to change circle center
+        }
+        
+        // create pVector to return
+        MedialAxisResults results = new MedialAxisResults();
+        results.medialAxes = medialAxes;
+        results.centerSphere = p;
+        results.closestBoundaryPoints = closestB;
+        
+        return results;
         
         /*
         From "Efficient Computation of A Simplified Medial Axis"
@@ -214,27 +311,7 @@ public class MedialAxis1 {
             should be much larger than the separation 
             of the adjacent boundary points...       
 
-             
-         note to self:
-            should be able to determine if a medial
-            axis point is within radius of center
-            when the nearest points size is 2 or larger
-            and when those 2 or more are on different segments
-            of the boundary.  
-            the sphere formed by the radius as the
-            distance to the nearest points must be within
-            the boundary and points to be a valid sphere.
-            the midpoint on the sphere between the two or more
-            should be within the boundary and points.
-            would need to account for noise by using a
-            stability criterion such as above.
-            but there may be geometries such as
-            a narrow reflex point (concave section) 
-            and the sphere
-            extending outside of the shape, but mid point
-            of nearest bounds being inside on other side of
-            reflex point
-        
+         
         For each border edge, the algorithm uses 
         angle criteria to select a point to make 
         a triangle with the edge. 
@@ -246,19 +323,7 @@ public class MedialAxis1 {
         Delaunay triangulations and it can handle 
         surfaces with borders and noisy point clouds.
         */
-        
-        
-        //if cannot find a medial axis point,
-        //  take the surface point of sphere around
-        //  p (nSampl points) that has largest
-        //  dist from b1 and make that the next
-        //  sphere center.
-        //  note that if have not generated the sampling
-        //  points, already know that the furthest 
-        //  point will be a vector in the opposite direction
-        //  of the single closest boundary point.
-        
-        
+                   
         /* Starting from a random point p inside D, 
         we generate the maximal sphere with the 
         center at p. If we cannot find a medial 
@@ -274,9 +339,7 @@ public class MedialAxis1 {
         radius, its center converges towards a point 
         p′ on the medial axis and the surrounding 
         sphere thus must intersect the medial axis.
-        */
-        
-        return null;
+        */        
     }
     
     /*
@@ -526,7 +589,7 @@ Assume point m lies on the medial axis and is
             roughly equivalent (no tolerance is mentioned or shown),
             then one would take the average of the
             2 points as a medial axis point unless they 
-            both point to a reflect point.
+            both point to a reflex point.
             */
             
             if (haveEquidistantNearestPoints(x1, y1, x2, y2, tol)) {
@@ -547,7 +610,7 @@ Assume point m lies on the medial axis and is
                 indexAngleMap.put(i, angleA);
                 indexAngleMap.put(idx2, angleA);
             
-                log.info("  <-- prev is a med ax pt");
+                log.info("  <-- prev is a med axis pt");
             }
         }
         
@@ -657,7 +720,7 @@ Assume point m lies on the medial axis and is
         
         return false;
     }
-    
+
     protected static class PointAndRadius {
         PairInt p;
         // distance, usually to nearest boundary point
@@ -738,15 +801,22 @@ Assume point m lies on the medial axis and is
     }
   
     private int[] calculateNeighborDirection(int x1, int y1, PairInt p2) {
-            /*
+        /*
             N_x = (boundaryP - medialP vectors)
                   /|(boundaryP - medialP)|
-            */
-            int diffX = p2.getX() - x1;
-            int diffY = p2.getY() - y1;
-            int[] result = new int[2];
-            result[0] = (diffX < 0) ? -1 : (diffX > 0) ? 1 : 0;
-            result[1] = (diffY < 0) ? -1 : (diffY > 0) ? 1 : 0;
-            return result;
-        }
+         */
+        int diffX = p2.getX() - x1;
+        int diffY = p2.getY() - y1;
+        int[] result = new int[2];
+        result[0] = (diffX < 0) ? -1 : (diffX > 0) ? 1 : 0;
+        result[1] = (diffY < 0) ? -1 : (diffY > 0) ? 1 : 0;
+        return result;
+    }
+    
+    protected static class MedialAxisResults {
+        List<MedialAxisPoint> medialAxes;
+        PairInt centerSphere;        
+        Set<PairInt> closestBoundaryPoints;
+    }
+    
 }
