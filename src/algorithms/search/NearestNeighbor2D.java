@@ -64,9 +64,9 @@ public class NearestNeighbor2D {
     
     private final XFastTrie<XFastTrieNode<Integer>, Integer> xbt;
             
-    private final int maxX;
+    private final int width;
     
-    private final int maxY;
+    private final int height;
     
     private final int maxIndex;
     
@@ -86,10 +86,10 @@ public class NearestNeighbor2D {
     public NearestNeighbor2D(Set<PairInt> points,
         int maxX, int maxY) {
         
-        this.maxX = maxX;
-        this.maxY = maxY;
+        this.width = maxX + 1;
+        this.height = maxY + 1;
                 
-        maxIndex = maxX * maxY;
+        maxIndex = width * height;
         
         Integerizer<Integer> it = new Integerizer<Integer>() {
             @Override
@@ -115,17 +115,17 @@ public class NearestNeighbor2D {
     }
     
     protected int getInternalIndex(int col, int row) {
-        return (row * maxX) + col;
+        return (row * width) + col;
     }
     
     protected int getRow(int internalIndex) {
-        int row = internalIndex/maxX;        
+        int row = internalIndex/width;        
         return row;
     }
     
     protected int getCol(int internalIndex) {
-        int row = internalIndex/maxX;
-        int col = internalIndex - (row * maxX);
+        int row = internalIndex/width;
+        int col = internalIndex - (row * width);
         return col;
     }
     
@@ -154,14 +154,14 @@ public class NearestNeighbor2D {
      */
     public Set<PairInt> findClosest(final int x, final int y) {
         
-        if (x > maxX) {
+        if (x > width) {
             throw new IllegalArgumentException("x cannot be larger than "
-                + " maxX given in constructor, " + maxX);
+                + " maxX given in constructor, " + width);
         }
         
-        if (y > maxY) {
+        if (y > height) {
             throw new IllegalArgumentException("y cannot be larger than "
-                + " maxY given in constructor, " + maxY);
+                + " maxY given in constructor, " + height);
         }
         
         int idx = getInternalIndex(x, y);
@@ -391,14 +391,14 @@ public class NearestNeighbor2D {
      */
     public Set<PairInt> findClosest(int x, int y, int dMax) {
         
-        if (x > maxX) {
+        if (x > width) {
             throw new IllegalArgumentException("x cannot be larger than "
-                + " maxX given in constructor, " + maxX);
+                + " maxX given in constructor, " + width);
         }
         
-        if (y > maxY) {
+        if (y > height) {
             throw new IllegalArgumentException("y cannot be larger than "
-                + " maxY given in constructor, " + maxY);
+                + " maxY given in constructor, " + height);
         }
         
         int idx = getInternalIndex(x, y);
@@ -654,8 +654,8 @@ public class NearestNeighbor2D {
 
         int high = y + goal;
         
-        if (high > maxY) {
-            high = maxY;
+        if (high > height) {
+            high = height;
         }
         
         return high;

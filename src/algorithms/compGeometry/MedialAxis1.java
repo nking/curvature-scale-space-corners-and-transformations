@@ -5,9 +5,12 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,9 +57,10 @@ public class MedialAxis1 {
     
     // 10 degrees threshold for separation angle criterion
     // ~ 0.1745
-    private final double threshold = Math.PI/18;
+    //private final double threshold = Math.PI/18;
     
     private double twoPI = Math.PI;
+    private double sinePiDivN = Math.sin(Math.PI/nSampl);
     
     /**
      * constructor containing all points in the area
@@ -384,7 +388,7 @@ Assume point m lies on the medial axis and is
      * @param p
      * @param output 
      * @return code for result: 
-     * -3 means there are too few nearest boundary points;
+     * -3 means there are no nearest boundary points;
      * -2 means no medial axis angle larger than threshold was found;
      * -1 means part of the circle extends outside of bounds; 
      * 1 means successfully found the medial axis points
@@ -393,13 +397,22 @@ Assume point m lies on the medial axis and is
     protected int intersectsMedialAxis(Set<PairInt> nearestB, 
         PairInt p, List<MedialAxisPoint> output) {
         
-        if (nearestB.size() < 2) {
+        if (nearestB.size() == 0) {
             return -3;
         }
         
         PairInt bPoint = nearestB.iterator().next();
         
         double r = distance(bPoint.getX(), bPoint.getY(), p);
+        
+        // might need to increase this to 2*
+        int tol = (int)Math.ceil(r * sinePiDivN);
+        double threshold = 0.5 * sinePiDivN;
+            
+        log.info("p=" + p.toString() + " nearest boundary="
+            + bPoint.toString() + " r=" + r 
+            + String.format(" tol=%d pix  sinePiDivN=%.4f", 
+                tol, sinePiDivN));
         
         // create uniformly sampled circles
         // and check that all points are within bounds
@@ -410,10 +423,11 @@ Assume point m lies on the medial axis and is
         int[] surfaceX = new int[nSampl];
         int[] surfaceY = new int[nSampl];
         for (int i = 0; i < surfaceX.length; ++i) {
-            surfaceX[i] = (int) Math.round(p.getX()
-                + (r * Math.cos(2. * twoPI * i / nSampl)));
-            surfaceY[i] = (int) Math.round(p.getY()
-                + (r * Math.sin(2. * twoPI * i / nSampl)));
+            double t = 2. * twoPI * (double)i/(double)nSampl;
+            surfaceX[i] = p.getX() + (int)Math.round(
+                r * Math.cos(t));
+            surfaceY[i] = p.getY() + (int)Math.round(
+                r * Math.sin(t));
             PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
             if (!(boundary.contains(sp) || points.contains(sp))) {
                 // a point is outside of bounds
@@ -444,6 +458,10 @@ Assume point m lies on the medial axis and is
         double maxAngle = Double.MIN_VALUE;
         TIntList surfIdxes1 = new TIntArrayList();
         TIntList surfIdxes2 = new TIntArrayList();
+        
+        // keeping a map of indexes and angles
+        // in case adjacent pair passed filters.  keep latgest angle
+        TIntDoubleMap indexAngleMap = new TIntDoubleHashMap();
          
         for (int i = 0; i < nSampl; ++i) {
             int x1 = surfaceX[i];
@@ -457,8 +475,6 @@ Assume point m lies on the medial axis and is
             int x2 = surfaceX[idx2];
             int y2 = surfaceY[idx2];
             
-// TODO: fix error here.  
-
             /* law of cosines:  cosine A = (b^2 + c^2 - a^2)/2bc
               B   a   C
                 c   b
@@ -483,6 +499,8 @@ Assume point m lies on the medial axis and is
             double aSq = distanceSq(x1, y1, x2, y2);
             
             if (cSq < aSq || bSq < aSq) {
+                log.info(String.format("REMOVED1 (%d,%d) (%d,%d)", 
+                    x1, y1, x2, y2));
                 continue;
             }
             
@@ -492,45 +510,44 @@ Assume point m lies on the medial axis and is
             final double angleA = Math.acos(cosA);
     
             if (angleA < threshold) {
+                log.info(String.format("REMOVED2 angleA=%.4f (%d,%d) (%d,%d)", 
+                    (float)angleA, x1, y1, x2, y2));
                 continue;
             }
             
             log.info(String.format("angle=%.4f (%d,%d) (%d,%d)", 
                 (float)angleA, x1, y1, x2, y2));
             
-            // validate threshold for other boundary point
-            // angles with this pair too
-            boolean skip = false;
-            for (int k = 1; k < nearestBounds.length; ++k) {
-                double cSq2 = distanceSq(x1, y1, 
-                    nearestBounds[k].getX(), nearestBounds[k].getY());
-                double bSq2 = distanceSq(x2, y2, 
-                    nearestBounds[k].getX(), nearestBounds[k].getY());
-                if (cSq2 < aSq || bSq2 < aSq) {
-                    skip = true;
-                    break;
-                }
-                double cosA2 = (bSq2 + cSq2 - aSq)/
-                    (2. * Math.sqrt(bSq2 * cSq2));
-                double angleA2 = Math.acos(cosA2);
-                if (angleA2 < threshold) {
-                    skip = true;
-                    break;
-                }
-            }
-            if (skip) {
-                continue;
-            }
+            /*
+            figure 2 of the paper suggests that with a fast nearest 
+            neighbors for the boundary points,
+            find the nearest for 
+            (x1, y1) and (x2, u2) and if they are 
+            roughly equivalent (no tolerance is mentioned or shown),
+            then one would take the average of the
+            2 points as a medial axis point unless they 
+            both point to a reflect point.
+            */
             
-            if (angleA > maxAngle) {
-                maxAngle = angleA;
-                surfIdxes1.clear();
-                surfIdxes2.clear();
+            if (haveEquidistantNearestPoints(x1, y1, x2, y2, tol)) {
+                if (indexAngleMap.containsKey(i)) {
+                    double prevAngle = indexAngleMap.get(i);
+                    if (prevAngle > angleA) {
+                        continue;
+                    }
+                }
+                if (indexAngleMap.containsKey(idx2)) {
+                    double prevAngle = indexAngleMap.get(idx2);
+                    if (prevAngle > angleA) {
+                        continue;
+                    }
+                }
                 surfIdxes1.add(i);
                 surfIdxes2.add(idx2);
-            } else if (angleA == maxAngle) {
-                surfIdxes1.add(i);
-                surfIdxes2.add(idx2);
+                indexAngleMap.put(i, angleA);
+                indexAngleMap.put(idx2, angleA);
+            
+                log.info("  <-- prev is a med ax pt");
             }
         }
         
@@ -541,10 +558,6 @@ Assume point m lies on the medial axis and is
         if (maxAngle < threshold) {
             return -2;
         }
-        
-        // TODO: if more than one medial axis point,
-        // check that they don't both point to the same
-        // boundary point if it's a reflex point (concave)
         
         for (int i = 0; i < surfIdxes1.size(); ++i) {
             int idx1 = surfIdxes1.get(i);
@@ -608,6 +621,41 @@ Assume point m lies on the medial axis and is
         int diffX = x - x2;
         int diffY = y - y2;
         return (diffX * diffX + diffY * diffY);
+    }
+
+    private boolean haveEquidistantNearestPoints(
+        int x1, int y1, int x2, int y2, int tol) {
+        
+        Set<PairInt> np1 = np.findClosest(x1, y1);
+        Set<PairInt> np2 = np.findClosest(x2, y2);
+        
+        for (PairInt p1 : np1) {
+            double dist1 = distance(x1, y1, p1);
+            for (PairInt p2 : np2) {
+                double dist2 = distance(x2, y2, p2);
+                //TODO: check this exclusion:
+                if (p1.equals(p2)) {
+                    continue;
+                }
+                log.info("   dist diff=" + 
+                    Math.abs(dist1 - dist2));
+                if (Math.abs(dist1 - dist2) <= tol) {
+                    int[] dir1 = calculateNeighborDirection(x1, y1, p1);
+                    int[] dir2 = calculateNeighborDirection(x2, y2, p2);
+                    log.info("   tolsq=" + tol
+                        + " np1=" + p1.toString()
+                        + " np2=" + p2.toString()
+                        + "\n    dir1=" + Arrays.toString(dir1)
+                        + " dir2=" + Arrays.toString(dir2)
+                    );
+                    if (!Arrays.equals(dir1, dir2)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
     
     protected static class PointAndRadius {
@@ -689,4 +737,16 @@ Assume point m lies on the medial axis and is
         }
     }
   
+    private int[] calculateNeighborDirection(int x1, int y1, PairInt p2) {
+            /*
+            N_x = (boundaryP - medialP vectors)
+                  /|(boundaryP - medialP)|
+            */
+            int diffX = p2.getX() - x1;
+            int diffY = p2.getY() - y1;
+            int[] result = new int[2];
+            result[0] = (diffX < 0) ? -1 : (diffX > 0) ? 1 : 0;
+            result[1] = (diffY < 0) ? -1 : (diffY > 0) ? 1 : 0;
+            return result;
+        }
 }
