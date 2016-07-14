@@ -71,9 +71,29 @@ public class MedialAxis1Test extends TestCase {
         
         medAxis1.intersectsMedialAxis(nearestB, p, output);
         
-        // 23,9  within maxX and maxY of 23,10
-        //207, 230   for 228
-        int z = 1;
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(22, 8));
+        expected.add(new PairInt(14, 6));
+        expected.add(new PairInt(20, 3));
+        
+        for (MedialAxis1.MedialAxisPoint mp : output) {
+            MedialAxis1.PVector[] vs = mp.getVectors();
+            for (MedialAxis1.PVector v : vs) {
+                System.out.println("medial axis pt=" + v.getPoint());
+                int x = v.getPoint().getX();
+                int y = v.getPoint().getY();
+                PairInt rm = null;
+                for (PairInt p2 : expected) {
+                    if ((Math.abs(x - p2.getX()) < 2) &&
+                        (Math.abs(y - p2.getY()) < 2)) {
+                        rm = p2;
+                        break;
+                    }
+                }
+                assertTrue(expected.remove(rm));
+            }
+        }
+        assertTrue(expected.isEmpty());
     }
     
     /*
@@ -224,4 +244,109 @@ public class MedialAxis1Test extends TestCase {
             }
         }
     }
+    
+    public void test2() {
+        
+        List<PairInt> border = new ArrayList<PairInt>();
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        populateTestData2(border, points);
+ 
+        /*
+        adding hole to data0 in center of object
+           _____________
+           |           |
+           |___________| height=11
+           <-----24---->
+                                  -              @ 10
+                                              @    9
+                                  *        @       8
+                         .      ?       ?          7
+                      / -- \         @             6
+                                                   5
+                      \ __ /         @             4
+                         .              @          3
+                                           @       2
+                                              @    1
+                                                 @ 0
+          10 11 12 13 14 15 16 17 18 19 20 21 22 23
+        */
+        
+        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
+
+        PairInt p = new PairInt(18, 8);
+
+        // --- checking nearest neighbors ---
+        Set<PairInt> nearestB = medAxis1.getNearestBoundaryPoints(p);        
+                
+        List<MedialAxis1.MedialAxisPoint> output = new
+            ArrayList<MedialAxis1.MedialAxisPoint>();
+        
+        medAxis1.intersectsMedialAxis(nearestB, p, output);
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(17, 7));
+        expected.add(new PairInt(20, 7));
+        
+        for (MedialAxis1.MedialAxisPoint mp : output) {
+            MedialAxis1.PVector[] vs = mp.getVectors();
+            for (MedialAxis1.PVector v : vs) {
+                System.out.println("medial axis pt=" + v.getPoint());
+                int x = v.getPoint().getX();
+                int y = v.getPoint().getY();
+                PairInt rm = null;
+                for (PairInt p2 : expected) {
+                    if ((Math.abs(x - p2.getX()) < 2) &&
+                        (Math.abs(y - p2.getY()) < 2)) {
+                        rm = p2;
+                        break;
+                    }
+                }
+                assertTrue(expected.remove(rm));
+            }
+        }
+        assertTrue(expected.isEmpty());
+        
+    }
+    
+    /*
+    adding hole to data0 in center of object
+       _____________
+       |           |
+       |___________| height=11
+       <-----24---->
+                                               10
+                                               9
+                                               8
+                     .                         7
+                  / -- \                       6
+                 |      |                      5
+                  \ __ /                       4
+                     .                         3
+                                               2
+                                               1
+                                               0
+      10 11 12 13 14 15 16 17 18 19 20 21 22 23
+    */
+    private void populateTestData2(List<PairInt> border, 
+        Set<PairInt> areaPoints) {
+    
+        populateTestData0(border, areaPoints);
+        
+        areaPoints.remove(new PairInt(14, 5));
+        areaPoints.remove(new PairInt(15, 5));
+        areaPoints.remove(new PairInt(16, 5));
+        areaPoints.remove(new PairInt(15, 4));
+        areaPoints.remove(new PairInt(15, 6));
+    
+        border.add(new PairInt(13, 5));
+        border.add(new PairInt(14, 6));
+        border.add(new PairInt(15, 7));
+        border.add(new PairInt(16, 6));
+        border.add(new PairInt(17, 5));
+        border.add(new PairInt(16, 4));
+        border.add(new PairInt(15, 3));
+        border.add(new PairInt(14, 4));
+    }
+    
 }

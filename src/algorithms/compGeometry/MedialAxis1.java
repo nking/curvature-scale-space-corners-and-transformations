@@ -116,7 +116,37 @@ public class MedialAxis1 {
         medial axis center and 1 perp to the current medial
         axis.  the points should be away from the
         smallest angle between the old and new segments.
+        
+      
+        For each border edge, the algorithm uses 
+        angle criteria to select a point to make 
+        a triangle with the edge. 
+        The initial triangulation is refined using 
+        a method based on a novel projection operator 
+        [15] that is able to approximate points to 
+        the point cloud in a robust way. 
+        Our algorithm does not need 
+        Delaunay triangulations and it can handle 
+        surfaces with borders and noisy point clouds.
+       
+                   
+        Starting from a random point p inside D, 
+        we generate the maximal sphere with the 
+        center at p. If we cannot find a medial 
+        axis point of the surface of the sphere 
+        (how medial axis points are identified 
+        is described in Section 3.3), we take 
+        the point p′ with the biggest radius as 
+        the center of the next sphere. 
+        This process is repeated until the 
+        sphere of radius δ(p′) around p′ intersects 
+        the medial axis. Since this procedure 
+        converges towards a sphere of locally maximum 
+        radius, its center converges towards a point 
+        p′ on the medial axis and the surrounding 
+        sphere thus must intersect the medial axis.
         */
+        
     }
     
     protected MedialAxisResults findInitialPoint() {
@@ -199,7 +229,7 @@ public class MedialAxis1 {
                 if (!points.contains(p2) || boundary.contains(p2)) {
                     // mid is too large, reduce range
                     if (high == mid) {
-                        high -= 1; // consider if delta should be > 1
+                        high -= 1;
                     } else {
                         high = mid;
                     }
@@ -215,13 +245,12 @@ public class MedialAxis1 {
                     }
                     // else mid is too small
                     if (low == mid) {
-                        low++; // consider if delta should be > 1
+                        low++;
                     } else {
                         low = mid;
                     }
                 }
             }
-            // if srch unsuccessful, throw error
             if (status != 1) {
                 throw new IllegalStateException("Error in algorithm:"
                     + " could not find a valid medial axis"
@@ -311,82 +340,8 @@ public class MedialAxis1 {
             should be much larger than the separation 
             of the adjacent boundary points...       
 
-         
-        For each border edge, the algorithm uses 
-        angle criteria to select a point to make 
-        a triangle with the edge. 
-        The initial triangulation is refined using 
-        a method based on a novel projection operator 
-        [15] that is able to approximate points to 
-        the point cloud in a robust way. 
-        Our algorithm does not need 
-        Delaunay triangulations and it can handle 
-        surfaces with borders and noisy point clouds.
-        */
-                   
-        /* Starting from a random point p inside D, 
-        we generate the maximal sphere with the 
-        center at p. If we cannot find a medial 
-        axis point of the surface of the sphere 
-        (how medial axis points are identified 
-        is described in Section 3.3), we take 
-        the point p′ with the biggest radius as 
-        the center of the next sphere. 
-        This process is repeated until the 
-        sphere of radius δ(p′) around p′ intersects 
-        the medial axis. Since this procedure 
-        converges towards a sphere of locally maximum 
-        radius, its center converges towards a point 
-        p′ on the medial axis and the surrounding 
-        sphere thus must intersect the medial axis.
-        */        
-    }
-    
-    /*
-    for uniformly sampled points,
-       the angle delta theta between 2 neighboring
-       points (e.g. q1p1, q1p2) is 2*pi/N.
-       and the distance between them is 2 * r * sin(pi/N).
-       
-       The absolute error is then eps_a = r * sin(pi/N).
-    
-       reversing that, one gets the number of points on
-       a sphere: N = pi/(arcsin(eps_a/r))
-    
-    */
-     
-    /*
-    input:  
-       perimeter points
-       interior points
-    
-    -- first primitive operation:
-        identifies an initial point m and associated 
-        distance delta(m), such that the resulting 
-        sphere of radius delta(m) around m intersects 
-        the medial axis. 
-    -- second primitive operation: 
-        given a solid D, a set of points P in the 
-        interior of D and their direction vectors, 
-        for each point p ∈ P, this method identifies 
-        that point on the medial axis of D which 
-        is closest to p.
-    
-    
-    These primitives will be described after we 
-    have detailed the algorithm of computing the aMA.
-Assume point m lies on the medial axis and is 
-    distance δ(m) away from the closest obstacle. 
-    This point is determined using aforementioned 
-    primitive. A priority queue Q is initialized
-    to contain the sphere de- scribed by point m 
-    and radius δ(m). The set S of spheres describing 
-    the free space inside the solid D is initialized 
-    to be the empty set.
-    
-    make a nearest neighbor instance nb1 out of perimeter points
-    
-    
+        -----------
+        
     identifying medial axis points:
         U = uniformly distributed sample points on surface of sphere
         
@@ -442,6 +397,51 @@ Assume point m lies on the medial axis and is
        For this case using relative error, 
        the size of the largest "missed area" gate which 
        depends on the amount of local free space.
+      */
+   
+    }
+    
+    /*
+    for uniformly sampled points,
+       the angle delta theta between 2 neighboring
+       points (e.g. q1p1, q1p2) is 2*pi/N.
+       and the distance between them is 2 * r * sin(pi/N).
+       
+       The absolute error is then eps_a = r * sin(pi/N).
+    
+       reversing that, one gets the number of points on
+       a sphere: N = pi/(arcsin(eps_a/r))
+    */
+    
+    /*
+    input:  
+       perimeter points
+       interior points
+    
+    -- first primitive operation:
+        identifies an initial point m and associated 
+        distance delta(m), such that the resulting 
+        sphere of radius delta(m) around m intersects 
+        the medial axis. 
+    
+    -- second primitive operation: 
+        given a solid D, a set of points P in the 
+        interior of D and their direction vectors, 
+        for each point p ∈ P, this method identifies 
+        that point on the medial axis of D which 
+        is closest to p.
+    
+    These primitives will be described after we 
+    have detailed the algorithm of computing the aMA.
+Assume point m lies on the medial axis and is 
+    distance δ(m) away from the closest obstacle. 
+    This point is determined using aforementioned 
+    primitive. A priority queue Q is initialized
+    to contain the sphere de- scribed by point m 
+    and radius δ(m). The set S of spheres describing 
+    the free space inside the solid D is initialized 
+    to be the empty set.
+    
     
     */
     
@@ -483,19 +483,25 @@ Assume point m lies on the medial axis and is
         //   possibly extending beyond the shape boundary
         //   without being detected, so this shortcut
         //   is a work in progress)
+        int ns = 0;
         int[] surfaceX = new int[nSampl];
         int[] surfaceY = new int[nSampl];
         for (int i = 0; i < surfaceX.length; ++i) {
             double t = 2. * twoPI * (double)i/(double)nSampl;
-            surfaceX[i] = p.getX() + (int)Math.round(
-                r * Math.cos(t));
-            surfaceY[i] = p.getY() + (int)Math.round(
-                r * Math.sin(t));
+            int x1 = p.getX() + (int)Math.round(r * Math.cos(t));
+            int y1 = p.getY() + (int)Math.round(r * Math.sin(t));
+            if ((i > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
+                surfaceY[ns - 1])) {
+                continue;
+            }
+            surfaceX[ns] = x1;
+            surfaceY[ns] = y1;
             PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
             if (!(boundary.contains(sp) || points.contains(sp))) {
                 // a point is outside of bounds
                 return -1;
             }
+            ns++;
         }
         
         int count = 0;
@@ -518,7 +524,6 @@ Assume point m lies on the medial axis and is
         // for example, the circle enscribed in an open
         // triangle has one near the vertex side of circle
         // and on opposite side
-        double maxAngle = Double.MIN_VALUE;
         TIntList surfIdxes1 = new TIntArrayList();
         TIntList surfIdxes2 = new TIntArrayList();
         
@@ -526,11 +531,11 @@ Assume point m lies on the medial axis and is
         // in case adjacent pair passed filters.  keep latgest angle
         TIntDoubleMap indexAngleMap = new TIntDoubleHashMap();
          
-        for (int i = 0; i < nSampl; ++i) {
+        for (int i = 0; i < ns; ++i) {
             int x1 = surfaceX[i];
             int y1 = surfaceY[i];
             int idx2;
-            if (i < (nSampl - 1)) {
+            if (i < (ns - 1)) {
                 idx2 = i + 1;
             } else {
                 idx2 = 0;
@@ -578,8 +583,8 @@ Assume point m lies on the medial axis and is
                 continue;
             }
             
-            log.info(String.format("angle=%.4f (%d,%d) (%d,%d)", 
-                (float)angleA, x1, y1, x2, y2));
+            log.info(String.format("angle=%.4f (%d,%d) (%d,%d) i=[%d,%d]", 
+                (float)angleA, x1, y1, x2, y2, i, idx2));
             
             /*
             figure 2 of the paper suggests that with a fast nearest 
@@ -605,6 +610,28 @@ Assume point m lies on the medial axis and is
                         continue;
                     }
                 }
+                if ((indexAngleMap.containsKey(i) && 
+                    (indexAngleMap.get(i) == angleA)) ||
+                    (indexAngleMap.containsKey(idx2) && 
+                    (indexAngleMap.get(idx2) == angleA))    
+                    ) {
+                    // should choose the outer numbers of both
+                    int nPrev = surfIdxes1.size() - 1;
+                    if (surfIdxes2.get(nPrev) == i) {
+                        // replace 2nd number w/ current idx2
+                        int prevIdx2 = surfIdxes2.get(nPrev);
+                        indexAngleMap.remove(prevIdx2);
+                        indexAngleMap.put(idx2, angleA);
+                        surfIdxes2.set(nPrev, idx2);
+                        continue;
+                    } else if (surfIdxes2.get(0) == i) {
+                        int prevIdx2 = surfIdxes2.get(0);
+                        indexAngleMap.remove(prevIdx2);
+                        indexAngleMap.put(idx2, angleA);
+                        surfIdxes2.set(0, idx2);
+                        continue;
+                    }
+                }
                 surfIdxes1.add(i);
                 surfIdxes2.add(idx2);
                 indexAngleMap.put(i, angleA);
@@ -612,15 +639,7 @@ Assume point m lies on the medial axis and is
             
                 log.info("  <-- prev is a med axis pt");
             }
-        }
-        
-        if (maxAngle == Double.MIN_VALUE) {
-            return -2;
-        }
-        
-        if (maxAngle < threshold) {
-            return -2;
-        }
+        }       
         
         for (int i = 0; i < surfIdxes1.size(); ++i) {
             int idx1 = surfIdxes1.get(i);
@@ -701,14 +720,16 @@ Assume point m lies on the medial axis and is
                     continue;
                 }
                 log.info("   dist diff=" + 
-                    Math.abs(dist1 - dist2));
-                if (Math.abs(dist1 - dist2) <= tol) {
+                    Math.abs(dist1 - dist2) + " dist1=" + dist1 
+                    + " dist2=" + dist2);
+                if ((dist1 == dist2) || ((dist1 > tol && dist2 > tol) &&
+                    (Math.abs(dist1 - dist2) <= tol))) {
                     int[] dir1 = calculateNeighborDirection(x1, y1, p1);
                     int[] dir2 = calculateNeighborDirection(x2, y2, p2);
                     log.info("   tolsq=" + tol
                         + " np1=" + p1.toString()
                         + " np2=" + p2.toString()
-                        + "\n    dir1=" + Arrays.toString(dir1)
+                        + "\n         dir1=" + Arrays.toString(dir1)
                         + " dir2=" + Arrays.toString(dir2)
                     );
                     if (!Arrays.equals(dir1, dir2)) {
@@ -774,6 +795,16 @@ Assume point m lies on the medial axis and is
             this.pd = pointAndRadius;
             this.neighborDirection = 
                 calculateNeighborDirection();
+        }
+        
+        public PairInt getBoundaryPoint() {
+            return boundaryP;
+        }
+        public PairInt getPoint() {
+            return pd.p;
+        }
+        public double getPointToBoundaryDistance() {
+            return pd.delta;
         }
         
         private int calculateNeighborDirection() {
