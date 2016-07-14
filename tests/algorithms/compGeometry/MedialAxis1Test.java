@@ -1,5 +1,6 @@
 package algorithms.compGeometry;
 
+import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,7 +70,9 @@ public class MedialAxis1Test extends TestCase {
         List<MedialAxis1.MedialAxisPoint> output = new
             ArrayList<MedialAxis1.MedialAxisPoint>();
         
-        medAxis1.intersectsMedialAxis(nearestB, p, output);
+        int status = medAxis1.intersectsMedialAxis(nearestB, p, output);
+        
+        assertEquals(1, status);
         
         Set<PairInt> expected = new HashSet<PairInt>();
         expected.add(new PairInt(22, 8));
@@ -80,6 +83,45 @@ public class MedialAxis1Test extends TestCase {
             MedialAxis1.PVector[] vs = mp.getVectors();
             for (MedialAxis1.PVector v : vs) {
                 System.out.println("medial axis pt=" + v.getPoint());
+                int x = v.getPoint().getX();
+                int y = v.getPoint().getY();
+                PairInt rm = null;
+                for (PairInt p2 : expected) {
+                    if ((Math.abs(x - p2.getX()) < 2) &&
+                        (Math.abs(y - p2.getY()) < 2)) {
+                        rm = p2;
+                        break;
+                    }
+                }
+                assertTrue(expected.remove(rm));
+            }
+        }
+        assertTrue(expected.isEmpty());
+   
+        // --------- test status==-2 -----
+        p = new PairInt(14, 2);
+
+        nearestB = medAxis1.getNearestBoundaryPoints(p);        
+        
+        status = medAxis1.intersectsMedialAxis(nearestB, p, output);
+        
+        assertEquals(-2, status);
+      
+        MedialAxisResults results2 = medAxis1.findInitialPoint(p);
+        assertNotNull(results2);
+        
+        expected = new HashSet<PairInt>();
+        expected.add(new PairInt(18, 5));
+        expected.add(new PairInt(10, 5));
+        
+        assertEquals(14, results2.centerSphere.getX());
+        assertEquals(4, results2.centerSphere.getY());
+        output = results2.medialAxes;
+        
+        for (MedialAxis1.MedialAxisPoint mp : output) {
+            MedialAxis1.PVector[] vs = mp.getVectors();
+            for (MedialAxis1.PVector v : vs) {
+                System.out.println("*medial axis pt=" + v.getPoint());
                 int x = v.getPoint().getX();
                 int y = v.getPoint().getY();
                 PairInt rm = null;

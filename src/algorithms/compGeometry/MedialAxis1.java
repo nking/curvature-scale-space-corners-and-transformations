@@ -163,6 +163,21 @@ public class MedialAxis1 {
         
         PairInt p = points.iterator().next();
         
+        return findInitialPoint(p);
+    }
+    
+    protected MedialAxisResults findInitialPoint(PairInt p) {
+    
+        /*
+        identifies an initial point m and associated 
+        distance delta(m), such that the resulting 
+        sphere of radius delta(m) around m intersects 
+        the medial axis.
+        */
+        
+        List<MedialAxisPoint> medialAxes 
+            = new ArrayList<MedialAxisPoint>();
+                
         Set<PairInt> closestB = 
             np.findClosest(p.getX(), p.getY());
         
@@ -181,82 +196,22 @@ public class MedialAxis1 {
                 + " could not find a nearest boundary for " +
                 p.toString());
 
-        } else if (status == -2 || status == -1) {
+        } else if (status == -2) {
 
             //status==-2: no medial axis angle larger than threshold was found
-            //status==-1: part of the circle extends outside of bounds;
-
-            // binary search along line from nearest boundary
-            // point to p to avoid cycling while incr and decr
-            // distances to boundary.
 
             medialAxes.clear();
 
             PairInt bPoint = closestB.iterator().next();
 
-            double r = distance(bPoint.getX(), bPoint.getY(), p);
+            double diffX = p.getX() - bPoint.getX();
+            double diffY = p.getY() - bPoint.getY();
 
-            /*from bPoint to p, scale offsets by new r:
-             diffX = (p.x - b.x)/r
-             diffY = (p.y - b.y)/r
-             p2.x = p.x + (diffX * r2)
-             p2.y = p.y + (diffY * r2)
-            */
-            double diffX = (p.getX() - bPoint.getX())/r;
-            double diffY = (p.getY() - bPoint.getY())/r;
-
-            double low, high;
-            if (status == -2) {
-                low = r;
-                // guestimate w/ half of xMax or yMax
-                high = 0.5 * Math.max(minMaxXY[1], minMaxXY[3]);
-            } else {
-                low = 0;
-                high = r;
-            }
-            double mid = 0.5 * (high + low);
-
-            // choose another circle center by choosing the point
-            // on the circle around p which is opposite the nearest
-            // boundary point.
-
-            while (low < high) {
-                mid = 0.5 * (high + low);
-                // create new p from mid distance from b along path to p
-                int x2 = p.getX() + (int)Math.round(diffX * mid);
-                int y2 = p.getY() + (int)Math.round(diffY * mid);
-                PairInt p2 = new PairInt(x2, y2);
-                if (!points.contains(p2) || boundary.contains(p2)) {
-                    // mid is too large, reduce range
-                    if (high == mid) {
-                        high -= 1;
-                    } else {
-                        high = mid;
-                    }
-                } else {
-                    // check if point intersects medial axis
-                    // and if so, exit loop
-                    Set<PairInt> closestB2 = np.findClosest(p2.getX(), p2.getY());
-                    status = intersectsMedialAxis(closestB2, p2, medialAxes);
-                    if (status == 1) {
-                        p = p2;
-                        closestB = closestB2;
-                        break;
-                    }
-                    // else mid is too small
-                    if (low == mid) {
-                        low++;
-                    } else {
-                        low = mid;
-                    }
-                }
-            }
-            if (status != 1) {
-                throw new IllegalStateException("Error in algorithm:"
-                    + " could not find a valid medial axis"
-                    + " point from the random first point.");
-            }
-            // end of binary search to change circle center
+            int x2 = p.getX() + (int)Math.round(diffX);
+            int y2 = p.getY() + (int)Math.round(diffY);
+            p = new PairInt(x2, y2);
+            closestB = np.findClosest(p.getX(), p.getY());
+            status = intersectsMedialAxis(closestB, p, medialAxes);                    
         }
         
         // create pVector to return
@@ -453,7 +408,6 @@ Assume point m lies on the medial axis and is
      * @return code for result: 
      * -3 means there are no nearest boundary points;
      * -2 means no medial axis angle larger than threshold was found;
-     * -1 means part of the circle extends outside of bounds; 
      * 1 means successfully found the medial axis points
      * and placed them in output.
      */
@@ -463,6 +417,8 @@ Assume point m lies on the medial axis and is
         if (nearestB.size() == 0) {
             return -3;
         }
+        
+        output.clear();
         
         PairInt bPoint = nearestB.iterator().next();
         
@@ -497,10 +453,6 @@ Assume point m lies on the medial axis and is
             surfaceX[ns] = x1;
             surfaceY[ns] = y1;
             PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
-            if (!(boundary.contains(sp) || points.contains(sp))) {
-                // a point is outside of bounds
-                return -1;
-            }
             ns++;
         }
         
@@ -640,6 +592,10 @@ Assume point m lies on the medial axis and is
                 log.info("  <-- prev is a med axis pt");
             }
         }       
+        
+        if (surfIdxes1.isEmpty()) {
+            return -2;
+        }
         
         for (int i = 0; i < surfIdxes1.size(); ++i) {
             int idx1 = surfIdxes1.get(i);
