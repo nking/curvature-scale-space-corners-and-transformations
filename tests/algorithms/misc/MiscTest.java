@@ -5,6 +5,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -72,5 +73,30 @@ public class MiscTest extends TestCase {
             Integer index = list.get(i);
             assertEquals(3 - i, index.intValue());
         }
+    }
+    
+    public void testCreateOrderedNeighborOffsets() {
+                
+        /*
+        1:  -1,-1  -1,0  -1,1  0,-1  0,1  1,-1  1,0  1,1
+        2:  -2,-2,  -2,-1,  -2,0,  -2,1,  -2,2,
+            -1,-2,  -1,2,
+            0,-2,   0,2,
+            1,-2,   1,2,
+            2,-2,  2,-1,  2,0,  2,1,  2,2
+        */
+        int[] result = Misc.createOrderedNeighborOffsets(2);
+        
+        int[] expected = new int[]{
+            -1,-1,  -1,0,  -1,1,  0,-1,  0,1,  1,-1,  1,0,  1,1,
+            -2,-2,  -2,-1,  -2,0,  -2,1,  -2,2,
+            -1,-2,  -1,2,
+            0,-2,   0,2,
+            1,-2,   1,2,
+            2,-2,  2,-1,  2,0,  2,1,  2,2
+        };
+        
+        assertEquals(expected.length, result.length);
+        assertTrue(Arrays.equals(expected, result));
     }
 }

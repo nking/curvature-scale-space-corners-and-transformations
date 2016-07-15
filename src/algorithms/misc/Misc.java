@@ -269,6 +269,47 @@ public class Misc {
         return xyout;
     }
 
+    /**
+     * create x and y offsets for the neighbor points within d pixel radius.
+     * The result is a two-dimensional array of length 
+     * 2*((2*d+1)^2 -1) with the numbers being x and y offsets
+     * alternating.
+     * Note that [(0, 0)] is not present and that the
+     * offsets are ordered such that inner "rings" are completed,
+     * then next inner ring at increased radius, etc.
+     * @return
+     */
+    public static int[] createOrderedNeighborOffsets(int radiusFromCenter) {
+
+        //TODO: consider changing to use one dimensional array
+
+        int n = 2*radiusFromCenter + 1;
+        n *= n;
+        n--;
+        n *= 2;
+        int[] xyout = new int[n];
+
+        int count = 0;
+        for (int d = 1; d <= radiusFromCenter; ++d) {
+            for (int x = -d; x <= d; ++x) {
+                for (int y = -d; y <= d; ++y) {
+                    // when both points have an absolute value smaller
+                    // than d, it's an inner radius which has already
+                    // been included so skip it
+                    if (Math.abs(x) < d && Math.abs(y) < d) {
+                        continue;
+                    }
+                    xyout[count] = x;
+                    count++;
+                    xyout[count] = y;
+                    count++;
+                }
+            }
+        }
+
+        return xyout;
+    }
+
     public static Map<Integer, Double> getCosineThetaMapForPI() {
 
         Map<Integer, Double> map = new HashMap<Integer, Double>();

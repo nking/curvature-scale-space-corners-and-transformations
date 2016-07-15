@@ -65,6 +65,10 @@ public class MedialAxis1 {
     
     //private final int nSampl = 6;//  2*pi/sepAng
     
+    //private static final double sepAng = Math.PI/6;
+    
+    //private final int nSampl = 12;//  2*pi/sepAng
+    
     private static final double sepAng = Math.PI/9;
     
     private final int nSampl = 18;//  2*pi/sepAng
@@ -324,21 +328,31 @@ public class MedialAxis1 {
             */
         }
         
+        log.info("med axies nIter=" + nIter);
+        
+        // iterate over medial axis points to refine centers.
+        // dither should be defined by the tolerance tol
+        refineCentersOfMedAxisList();
+                
         /*
         Critical points can be used to 
         approximate the hierarchical generalized Voronoi graph[8].
         */
         
         // TODO: process "criticalPoints"
+        log.info("criticalPoints.size=" + criticalPoints.size());
+        for (Set<PairInt> set : criticalPoints) {
+            StringBuilder sb = new StringBuilder("cps: ");
+            for (PairInt p : set) {
+                sb.append(p).append(", ");
+            }
+            log.info(sb.toString());
+        }
         
         // TODO: create output medial axis points by
         // filling in, in between points in
         //   medAxisList
         
-        // as a refine stage, need to visit each medial
-        // axis point and test for equal distance to
-        // nearest bounds w/ no tolerance.
-       
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -395,7 +409,7 @@ public class MedialAxis1 {
 
             double diffX = p.getX() - bPoint.getX();
             double diffY = p.getY() - bPoint.getY();
-
+ 
             int x2 = p.getX() + (int)Math.round(diffX);
             int y2 = p.getY() + (int)Math.round(diffY);
             p = new PairInt(x2, y2);
@@ -716,7 +730,7 @@ Assume point m lies on the medial axis and is
         // might need to increase this to 2*
         int tol = (int)Math.ceil(r * sinePiDivN);
         double threshold = 0.5 * sinePiDivN;
-            
+     
         log.info("p=" + p.toString() + " nearest boundary="
             + bPoint.toString() + " r=" + r 
             + String.format(" tol=%d pix  sinePiDivN=%.4f", 
@@ -935,11 +949,12 @@ Assume point m lies on the medial axis and is
         for (PairInt p1 : np1) {
             double dist1 = distance(x1, y1, p1);
             for (PairInt p2 : np2) {
-                double dist2 = distance(x2, y2, p2);
+                
                 //TODO: check this exclusion:
                 if (p1.equals(p2)) {
                     continue;
                 }
+                double dist2 = distance(x2, y2, p2);
                 log.info("   dist diff=" + 
                     Math.abs(dist1 - dist2) + " dist1=" + dist1 
                     + " dist2=" + dist2);
@@ -961,6 +976,38 @@ Assume point m lies on the medial axis and is
         }
         
         return false;
+    }
+    
+    private boolean haveEquidistantNearestPoints(
+        int x1, int y1, int tol) {
+        
+        Set<PairInt> np1 = np.findClosest(x1, y1);
+        
+        if (np1.size() < 2) {
+            return false;
+        }
+
+        double prevDist = 0;
+        int[] prevDirec = null;
+        
+        int count = 0;
+        
+        for (PairInt p1 : np1) {
+            double dist = distance(x1, y1, p1);
+            int[] dir1 = calculateNeighborDirection(x1, y1, p1);
+            if (count > 0) {
+                boolean t1 = Math.abs(prevDist - dist) > tol;
+                boolean t2 = Arrays.equals(prevDirec, dir1);
+                if (t1 || t2) {
+                    return false;
+                }
+            }
+            prevDist = dist;
+            prevDirec = dir1;
+            count++;            
+        }
+        
+        return true;
     }
 
     private MedialAxisPoint centerIsAlsoMedialAxisPoint(
@@ -1013,6 +1060,96 @@ Assume point m lies on the medial axis and is
         }
             
         return mp;
+    }
+
+    private void refineCentersOfMedAxisList() {
+
+        Set<PairInt> present = new HashSet<PairInt>();
+        TIntList rm = new TIntArrayList();
+        int[] offsets = null;
+        int prevTol = Integer.MIN_VALUE;
+        
+        for (int i = 0; i < medAxisList.size(); ++i) {
+            MedialAxisPoint mp = medAxisList.get(i);
+            PVector pv = mp.getVectors()[0];
+            PairInt medAxisCenter = pv.getPoint();
+            
+            int tol;
+            // find original search radius used for this point
+            PairInt center;
+            if (mp.parent != null) {
+                center = mp.parent.getVectors()[0].getPoint();
+            } else {
+                center = medAxisCenter;
+            }
+            PairInt closestBounds = np.findClosest(center.getX(), 
+                center.getY()).iterator().next();
+            double dist = distance(center.getX(), center.getY(),
+                closestBounds);
+            tol = (int) Math.ceil(dist * sinePiDivN);
+            if (tol < 1) {
+                tol = 1;
+            }
+            log.info("pv.p=" + pv.pd.p + " tol=" + tol);
+            
+            // if nearest bounds distances are not exactly equal,
+            //   dither by tol to see if find a better match.
+            if (haveEquidistantNearestPoints(medAxisCenter.getX(), 
+                medAxisCenter.getY(), 0)) {
+                // already have an accurate medial axis point
+                present.add(medAxisCenter);
+                continue;
+            }
+            
+            if (tol > 2) {
+                // temporarily capturing case as an exception
+                throw new IllegalStateException("Algorithm needs "
+                    + " logic for dither with large radius");
+            }
+            
+            if (tol != prevTol) {
+                offsets = Misc.createOrderedNeighborOffsets(tol);
+                prevTol = tol;
+            }
+            
+            PairInt better = null;
+            for (int k = 0; k < offsets.length; k += 2) {
+                int x2 = medAxisCenter.getX() + offsets[k];
+                if (x2 < minMaxXY[0] || (x2 > minMaxXY[1])) {
+                    continue;
+                }
+                int y2 = medAxisCenter.getY() + offsets[k + 1];
+                if (y2 < minMaxXY[2] || (y2 > minMaxXY[3])) {
+                    continue;
+                }
+                if (haveEquidistantNearestPoints(x2, y2, 0)) {
+                    better = new PairInt(x2, y2);
+                    break;
+                }
+            }
+            if (better != null) {
+                if (present.contains(better)) {
+                    rm.add(i);
+                } else {
+                    // replace mp
+                    Set<PairInt> nearestB = np.findClosest(
+                        better.getX(), better.getY());
+                    int count = 0;
+                    PairInt[] nearestBounds = new PairInt[nearestB.size()];
+                    for (PairInt np : nearestB) {
+                        nearestBounds[count] = np;
+                        count++;
+                    }
+                    MedialAxisPoint mp2 = createMedialAxisPoint(
+                        better, nearestBounds);
+                    medAxisList.set(i, mp2);
+                    present.add(better);
+                }
+            }
+        }
+        //for (int i = (rm.size() - 1); i > -1; --i) {
+        //    medAxisList.remove(i);
+        //}
     }
 
     protected static class PointAndRadius {
