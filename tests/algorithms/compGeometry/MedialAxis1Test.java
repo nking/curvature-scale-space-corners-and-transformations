@@ -4,6 +4,7 @@ import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -144,8 +145,21 @@ public class MedialAxis1Test extends TestCase {
         
         assertTrue(removed.size() > 1);
         
-        // just running it, until method is testable
+        // -- just running public method, until method is testable
+        medAxis1 = new MedialAxis1(points, border);
+        
         medAxis1.findMedialAxis();
+        
+        LinkedList<MedialAxis1.MedialAxisPoint>
+            list = medAxis1.getMedAxisList();
+        
+        Set<PairInt> mAPs = new HashSet<PairInt>();
+        for (MedialAxis1.MedialAxisPoint mp : list) {
+            PairInt pp = mp.getVectors()[0].getPoint();
+            System.out.println("**med axis pt = " + pp);
+            assertFalse(mAPs.contains(pp));
+            mAPs.add(pp);
+        }
     }
     
     /*

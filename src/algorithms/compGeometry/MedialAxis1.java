@@ -12,7 +12,6 @@ import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -153,6 +152,8 @@ public class MedialAxis1 {
         for (MedialAxisPoint mp : firstPoints.medialAxes) {
             addToHeap(q, mp);
         }
+        
+        Set<PairInt> addedM = new HashSet<PairInt>();
                 
         // remove the searched circle from this.points
         // and add the extracted to either "processed"
@@ -173,6 +174,7 @@ public class MedialAxis1 {
                 firstPoints.medialAxes.get(1));
             if (mp0 != null) {
                 medAxisList.add(mp0);
+                addedM.add(mp0.getVectors()[0].getPoint());
                 for (MedialAxisPoint mp : firstPoints.medialAxes) {
                     mp.parent = mp0;
                 }
@@ -183,7 +185,14 @@ public class MedialAxis1 {
         
         // TODO: might change this structure to use the parent
         // node and children linked list
-        medAxisList.addAll(firstPoints.medialAxes);
+        for (MedialAxisPoint m : firstPoints.medialAxes) {
+            PairInt pp = m.getVectors()[0].getPoint();
+            if (addedM.contains(pp)) {
+                continue;
+            }
+            addedM.add(pp);
+            medAxisList.add(m);
+        }
         
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
@@ -204,7 +213,7 @@ public class MedialAxis1 {
             the distance to the nearest boundary point
             from mp
             */
-                        
+            
             PairInt p = mp.pointToBoundary[0].pd.p;
             
             if (visited.contains(p)) {
@@ -239,10 +248,14 @@ public class MedialAxis1 {
                 
                 // add to data structures, as above
                 for (MedialAxisPoint mp2 : results2.medialAxes) {
+                    PairInt pp = mp2.getVectors()[0].getPoint();
+                    if (addedM.contains(pp)) {
+                        continue;
+                    }
                     mp2.parent = mp;
                     addToHeap(q, mp2);
                 }
-               
+                            
                 removed = this.subtractFromPoints(
                     results2.centerAndDistance.p,
                     results2.centerAndDistance.delta);
@@ -259,16 +272,27 @@ public class MedialAxis1 {
                         results2.medialAxes.get(0),
                         results2.medialAxes.get(1));
                     if (mp0 != null) {
-                        medAxisList.add(mp0);
-                        for (MedialAxisPoint mp3 : results2.medialAxes) {
-                            mp3.parent = mp0;
+                        PairInt pp = mp0.getVectors()[0].getPoint();
+                        if (!addedM.contains(pp)) {
+                            medAxisList.add(mp0);
+                            addedM.add(pp);
+                            for (MedialAxisPoint mp3 : results2.medialAxes) {
+                                mp3.parent = mp0;
+                            }
                         }
                     } else {
                         criticalPoints.add(removed);
                     }
                 }
         
-                medAxisList.addAll(results2.medialAxes);
+                for (MedialAxisPoint m : results2.medialAxes) {
+                    PairInt pp = m.getVectors()[0].getPoint();
+                    if (addedM.contains(pp)) {
+                        continue;
+                    }
+                    addedM.add(pp);
+                    medAxisList.add(m);
+                }
             }
             
             /*
@@ -287,8 +311,17 @@ public class MedialAxis1 {
         approximate the hierarchical generalized Voronoi graph[8].
         */
         
+        // TODO: process "criticalPoints"
+        
+        // TODO: create output medial axis points by
+        // filling in, in between points in
+        //   medAxisList
     }
-    
+
+    protected LinkedList<MedialAxisPoint> getMedAxisList() {
+        return medAxisList;
+    }
+
     private MedialAxisResults findInitialPoint() {
     
         /*
@@ -980,6 +1013,11 @@ Assume point m lies on the medial axis and is
             pointToBoundary[index] = pv;
         }
         
+        /**
+         * get vectors of boundaryPoint and point which
+         * is medial axis
+         * @return 
+         */
         public PVector[] getVectors() {
             return pointToBoundary;
         }
