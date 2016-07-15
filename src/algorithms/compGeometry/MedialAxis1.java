@@ -1072,6 +1072,7 @@ Assume point m lies on the medial axis and is
             present.add(medAxisCenter);
         }
         
+        TIntList rm = new TIntArrayList();
         int[] offsets = null;
         int prevTol = Integer.MIN_VALUE;
         
@@ -1097,7 +1098,7 @@ Assume point m lies on the medial axis and is
                 tol = 1;
             }
             log.info("pv.p=" + medAxisCenter);
-                        
+           
             // if nearest bounds distances are not exactly equal,
             //   dither by tol to see if find a better match.
             if (haveEquidistantNearestPoints(medAxisCenter.getX(), 
@@ -1138,8 +1139,11 @@ Assume point m lies on the medial axis and is
                     break;
                 }
             }
-            if (better != null) {
+            if (better == null) {
+                rm.add(i);
+            } else{
                 // replace mp
+                present.remove(medAxisCenter);
                 Set<PairInt> nearestB = np.findClosest(
                     better.getX(), better.getY());
                 int count = 0;
@@ -1153,6 +1157,11 @@ Assume point m lies on the medial axis and is
                 medAxisList.set(i, mp2);
                 present.add(better);
             }
+        }
+        rm.sort();
+        for (int i = (rm.size() - 1); i > -1; --i) {
+            int idx = rm.get(i);
+            medAxisList.remove(idx);
         }
     }
 
