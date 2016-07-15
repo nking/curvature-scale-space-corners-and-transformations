@@ -114,8 +114,9 @@ public class MedialAxis1Test extends TestCase {
         expected.add(new PairInt(18, 5));
         expected.add(new PairInt(10, 5));
         
-        assertEquals(14, results2.centerSphere.getX());
-        assertEquals(4, results2.centerSphere.getY());
+        assertEquals(14, results2.centerAndDistance.p.getX());
+        assertEquals(4, results2.centerAndDistance.p.getY());
+        assertTrue(Math.abs(results2.centerAndDistance.delta - 4) < 0.1);
         output = results2.medialAxes;
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
@@ -136,6 +137,12 @@ public class MedialAxis1Test extends TestCase {
             }
         }
         assertTrue(expected.isEmpty());
+        
+        // ---- test removing one of the results from the points ----
+        Set<PairInt> removed = medAxis1.subtractFromPoints(
+            results2.centerAndDistance.p, results2.centerAndDistance.delta);
+        
+        assertTrue(removed.size() > 1);
     }
     
     /*
