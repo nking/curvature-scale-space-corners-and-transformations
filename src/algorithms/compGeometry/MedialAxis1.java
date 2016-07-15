@@ -1065,7 +1065,13 @@ Assume point m lies on the medial axis and is
     private void refineCentersOfMedAxisList() {
 
         Set<PairInt> present = new HashSet<PairInt>();
-        TIntList rm = new TIntArrayList();
+        for (int i = 0; i < medAxisList.size(); ++i) {
+            MedialAxisPoint mp = medAxisList.get(i);
+            PVector pv = mp.getVectors()[0];
+            PairInt medAxisCenter = pv.getPoint();
+            present.add(medAxisCenter);
+        }
+        
         int[] offsets = null;
         int prevTol = Integer.MIN_VALUE;
         
@@ -1090,8 +1096,8 @@ Assume point m lies on the medial axis and is
             if (tol < 1) {
                 tol = 1;
             }
-            log.info("pv.p=" + pv.pd.p + " tol=" + tol);
-            
+            log.info("pv.p=" + medAxisCenter);
+                        
             // if nearest bounds distances are not exactly equal,
             //   dither by tol to see if find a better match.
             if (haveEquidistantNearestPoints(medAxisCenter.getX(), 
@@ -1122,34 +1128,32 @@ Assume point m lies on the medial axis and is
                 if (y2 < minMaxXY[2] || (y2 > minMaxXY[3])) {
                     continue;
                 }
+                PairInt p2 = new PairInt(x2, y2);
+                if (present.contains(p2)) {
+                    continue;
+                }
+ 
                 if (haveEquidistantNearestPoints(x2, y2, 0)) {
                     better = new PairInt(x2, y2);
                     break;
                 }
             }
             if (better != null) {
-                if (present.contains(better)) {
-                    rm.add(i);
-                } else {
-                    // replace mp
-                    Set<PairInt> nearestB = np.findClosest(
-                        better.getX(), better.getY());
-                    int count = 0;
-                    PairInt[] nearestBounds = new PairInt[nearestB.size()];
-                    for (PairInt np : nearestB) {
-                        nearestBounds[count] = np;
-                        count++;
-                    }
-                    MedialAxisPoint mp2 = createMedialAxisPoint(
-                        better, nearestBounds);
-                    medAxisList.set(i, mp2);
-                    present.add(better);
+                // replace mp
+                Set<PairInt> nearestB = np.findClosest(
+                    better.getX(), better.getY());
+                int count = 0;
+                PairInt[] nearestBounds = new PairInt[nearestB.size()];
+                for (PairInt np : nearestB) {
+                    nearestBounds[count] = np;
+                    count++;
                 }
+                MedialAxisPoint mp2 = createMedialAxisPoint(
+                    better, nearestBounds);
+                medAxisList.set(i, mp2);
+                present.add(better);
             }
         }
-        //for (int i = (rm.size() - 1); i > -1; --i) {
-        //    medAxisList.remove(i);
-        //}
     }
 
     protected static class PointAndRadius {
