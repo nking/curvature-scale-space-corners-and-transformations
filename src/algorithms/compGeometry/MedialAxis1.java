@@ -124,7 +124,10 @@ public class MedialAxis1 {
     protected void findMedialAxis() {
         
         MedialAxisResults firstPoints = findInitialPoint();
-        
+     
+   //TODO: use a max heap or max priority queue
+   //  with key = sphere size
+   
         ArrayDeque<MedialAxisPoint> q = new ArrayDeque<MedialAxisPoint>();
         q.addAll(firstPoints.medialAxes);
                 
@@ -169,7 +172,8 @@ public class MedialAxis1 {
         A priority queue Q is initialized to contain the 
         sphere described by point m and radius δ(m). 
         
-        The set S of spheres describing the free space 
+        The set S (== processed || criticalPoints)
+        of spheres describing the free space 
         inside the solid D is initialized to be the empty set.
 
         The largest sphere s is extracted from Q and 
@@ -183,7 +187,7 @@ public class MedialAxis1 {
         -- These points p_i are added into the aMA and, 
            along with their distances δ(pi), 
            -- into the priority queue Q. 
-           -- The sphere s is added to S. 
+           -- The sphere s is added to S.
         
         To bound the exploration of free space we introduce 
         an additional requirement for insertion into Q: 
@@ -224,47 +228,6 @@ public class MedialAxis1 {
         they designate an edge or a vertex between multiple 
         facets of the aMA. Critical points can be used to 
         approximate the hierarchical generalized Voronoi graph[8].
-     *==> note to self, looks like I should examine the results
-        of the first point algorithm and if there are
-        two medial axis points, test for whether the
-        center point is also equidistant from nearest bounds.
-        if yes, add it to the medial axis points,
-        if not, the enclosing sphere is known to contain
-        "critical points".  
-        "critical point" spheres should be stored 
-        (center, radius) and processed afterwards presumably.
-     
-        
-        
-        1. Find point m inside D such that δ(m) > Ke 
-            and the medial axis intersects the sphere 
-            of radius δ(m) around m (see Section 3.2).
-        2. Sphere set S := ∅
-        3. Medial axis point set M := ∅
-        4. Priority queue Q := {(m, δ(m))} 
-        5. While Q is not empty
-           (a) Extract sphere s = (p, δ(p)) from Q
-           (b) Generate n uniformly distributed samples 
-               U = {u1,···,un} on the surface of s. 
-               Discard all ui ∈ U for which ∃sj ∈ S 
-               such that ui ∈sj.
-           (c) Using U and the direction vectors associated 
-               with the ui ∈ U, determine approximated medial 
-               axis points A = {a1, · · · , ak} (see Section 3.3).
-           (d) Q := Q∪{(ai, δ(ai)) |ai ∈ A and δ(ai) > Ke}
-           (e) M := M ∪ A
-           (f) S:=S∪{(p,δ(p))}
-        6. Connect points in M to generate the aMA (see Section 5)
-
-        Figure 1: The pseudo code of the algorithm. 
-        S is the set of spheres describing the 
-        interior of the solid D. M is the set of points 
-        describing the approximated medial axis. 
-        Q is the priority queue of spheres, ordered by radius.
-        A new search is normal to the median axis line
-        recently formed.
-        
-        
         
         If the new medial axis segment is significantly
         different from normal to the previous,
