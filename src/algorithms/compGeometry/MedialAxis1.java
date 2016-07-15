@@ -1,5 +1,7 @@
 package algorithms.compGeometry;
 
+import algorithms.imageProcessing.Heap;
+import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
@@ -121,15 +123,31 @@ public class MedialAxis1 {
         return np.findClosest(p.getX(), p.getY());
     }
     
+    protected void addToHeap(Heap heap, MedialAxisPoint mp) {
+        // constructing key out of the inverse of the distance.
+        // where max is max of maxx and maxy.
+        // key is a long so will use a factor equal to
+        //
+        long max = Math.max(minMaxXY[1], minMaxXY[3]);
+        
+        double invR = mp.pointToBoundary[0].pd.delta;
+        
+        long key = (long)Math.ceil(max * invR);
+        
+        HeapNode node = new HeapNode(key);
+        node.setData(mp);
+        
+        heap.insert(node);
+    }
+    
     protected void findMedialAxis() {
         
         MedialAxisResults firstPoints = findInitialPoint();
      
-   //TODO: use a max heap or max priority queue
-   //  with key = sphere size
-   
-        ArrayDeque<MedialAxisPoint> q = new ArrayDeque<MedialAxisPoint>();
-        q.addAll(firstPoints.medialAxes);
+        Heap q = new Heap();
+        for (MedialAxisPoint mp : firstPoints.medialAxes) {
+            addToHeap(q, mp);
+        }
                 
         // remove the searched circle from this.points
         // and add the extracted to either "processed" or "critical points"
