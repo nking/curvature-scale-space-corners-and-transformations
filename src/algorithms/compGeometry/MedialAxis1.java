@@ -126,11 +126,11 @@ public class MedialAxis1 {
     protected void addToHeap(Heap heap, MedialAxisPoint mp) {
         // constructing key out of the inverse of the distance.
         // where max is max of maxx and maxy.
-        // key is a long so will use a factor equal to
-        //
+        // key is a long so will use a factor equal to max
+        
         long max = Math.max(minMaxXY[1], minMaxXY[3]);
         
-        double invR = mp.pointToBoundary[0].pd.delta;
+        double invR = 1./mp.pointToBoundary[0].pd.delta;
         
         long key = (long)Math.ceil(max * invR);
         
@@ -180,6 +180,11 @@ public class MedialAxis1 {
         // TODO: might change this structure to use the parent
         // node and children linked list
         medAxisList.addAll(firstPoints.medialAxes);
+        
+        while (!q.isEmpty()) {
+            HeapNode node = q.extractMin();
+            MedialAxisPoint mp = (MedialAxisPoint) node.getData();
+        }
         
         // gather other notes here
         /*
