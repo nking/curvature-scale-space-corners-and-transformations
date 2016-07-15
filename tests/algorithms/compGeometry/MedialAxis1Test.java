@@ -1,7 +1,6 @@
 package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
-import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
@@ -19,6 +18,112 @@ import junit.framework.TestCase;
 public class MedialAxis1Test extends TestCase {
     
     public MedialAxis1Test() {
+    }
+    
+    public void testGapCreator() {
+    
+        List<PairInt> border = new ArrayList<PairInt>();
+        border.add(new PairInt(0,0));
+        border.add(new PairInt(9,9));
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i < 10; ++i) {
+            for (int j = 0; j < 10; ++j) {
+                points.add(new PairInt(i, j));
+            }
+        }
+                
+        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
+    
+        // ---- test horizontal gap ----
+        PairInt p1 = new PairInt(2, 4);
+        PairInt p2 = new PairInt(5, 4);
+        List<PairInt> results = medAxis1.createGapPoints(p1, p2);
+        
+        List<PairInt> expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(3, 4));
+        expected.add(new PairInt(4, 4));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
+        // ---- test horizontal gap rev ----
+        p2 = new PairInt(2, 4);
+        p1 = new PairInt(5, 4);
+        results = medAxis1.createGapPoints(p1, p2);
+        
+        expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(4, 4));
+        expected.add(new PairInt(3, 4));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
+        // ---- test vertical gap ----
+        p1 = new PairInt(4, 2);
+        p2 = new PairInt(4, 5);
+        results = medAxis1.createGapPoints(p1, p2);
+        
+        expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(4, 3));
+        expected.add(new PairInt(4, 4));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
+        // ---- test vertical gap rev ----
+        p2 = new PairInt(4, 2);
+        p1 = new PairInt(4, 5);
+        results = medAxis1.createGapPoints(p1, p2);
+        
+        expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(4, 4));
+        expected.add(new PairInt(4, 3));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
+        // ---- test slope == 1 Q1 ----
+        p1 = new PairInt(2, 2);
+        p2 = new PairInt(5, 5);
+        results = medAxis1.createGapPoints(p1, p2);
+        
+        expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(3, 3));
+        expected.add(new PairInt(4, 4));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
+        // ---- test slope == -1 Q3 ----
+        p2 = new PairInt(2, 2);
+        p1 = new PairInt(5, 5);
+        results = medAxis1.createGapPoints(p1, p2);
+        
+        expected = new ArrayList<PairInt>();
+        expected.add(new PairInt(4, 4));
+        expected.add(new PairInt(3, 3));
+        assertEquals(expected.size(), results.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            PairInt e = expected.get(i);
+            PairInt r = results.get(i);
+            assertTrue(e.equals(r));
+        }
+        
     }
     
     public void est0() throws IOException {

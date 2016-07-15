@@ -189,9 +189,6 @@ public class MedialAxis1 {
             if (mp0 != null) {
                 medAxisList.add(mp0);
                 addedM.add(mp0.getVectors()[0].getPoint());
-                for (MedialAxisPoint mp : firstPoints.medialAxes) {
-                    mp.parent = mp0;
-                }
             } else {
                 criticalPoints.add(removed);
             }
@@ -266,14 +263,13 @@ public class MedialAxis1 {
                 }
 
                 MedialAxisResults results2 = findMedialAxesNearPoint(p2);
-                
+                                
                 // add to data structures, as above
                 for (MedialAxisPoint mp2 : results2.medialAxes) {
                     PairInt pp = mp2.getVectors()[0].getPoint();
                     if (addedM.contains(pp)) {
                         continue;
                     }
-                    mp2.parent = mp;
                     addToHeap(q, mp2);
                 }
                 
@@ -291,9 +287,6 @@ public class MedialAxis1 {
                         if (!addedM.contains(pp)) {
                             medAxisList.add(mp0);
                             addedM.add(pp);
-                            for (MedialAxisPoint mp3 : results2.medialAxes) {
-                                mp3.parent = mp0;
-                            }
                         }
                     } else {
                         criticalPoints.add(removed);
@@ -349,8 +342,10 @@ public class MedialAxis1 {
             log.info(sb.toString());
         }
         
-        // TODO: create output medial axis points by
-        // filling in gaps medAxisList
+        // TODO: use Prim's to set parent nodes
+        
+        /*
+        // TODO: fill in gaps in medAxisList
         TIntList insIdxs = new TIntArrayList();
         List<MedialAxisPoint> ins = new ArrayList<MedialAxisPoint>();
         MedialAxisPoint prevMp = medAxisList.get(0);
@@ -360,26 +355,33 @@ public class MedialAxis1 {
             PairInt prevMedAxisCenter = prevMp.getVectors()[0].getPoint();
             double dist = distance(prevMedAxisCenter.getX(),
                 prevMedAxisCenter.getY(), medAxisCenter);
+            
             if (dist >= 2) {
                 // derive next points in gap
-                /*
-                Set<PairInt> nearestB = np.findClosest(
-                    gap.getX(), gap.getY());
-                int count = 0;
-                PairInt[] nearestBounds = new PairInt[nearestB.size()];
-                for (PairInt np : nearestB) {
-                    nearestBounds[count] = np;
-                    count++;
+                List<PairInt> gaps = createGapPoints(prevMedAxisCenter,
+                    medAxisCenter);
+                for (PairInt gap : gaps) {
+                    Set<PairInt> nearestB = np.findClosest(gap.getX(), gap.getY());
+                    int count = 0;
+                    PairInt[] nearestBounds = new PairInt[nearestB.size()];
+                    for (PairInt np : nearestB) {
+                        nearestBounds[count] = np;
+                        count++;
+                    }
+                    MedialAxisPoint mp2 = createMedialAxisPoint(gap, nearestBounds);
+                    insIdxs.add(i);
+                    ins.add(mp2);
                 }
-                MedialAxisPoint mp2 = createMedialAxisPoint(
-                    gap, nearestBounds);
-                mp2.parent = prevMp;
-                insIdxs.add(i);
-                ins.add(mp2);
-                */
             }
             prevMp = mp;
         }
+        if (!ins.isEmpty()) {            
+            for (int i = (insIdxs.size() - 1); i > -1; --i) {
+                int idx = insIdxs.get(i);
+                medAxisList.add(idx + 1, ins.get(i));
+            }
+        }
+        */
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -1181,7 +1183,6 @@ Assume point m lies on the medial axis and is
                 }
                 MedialAxisPoint mp2 = createMedialAxisPoint(
                     better, nearestBounds);
-                mp2.parent = mp.parent;
                 medAxisList.set(i, mp2);
                 present.add(better);
             }
@@ -1191,6 +1192,84 @@ Assume point m lies on the medial axis and is
             int idx = rm.get(i);
             medAxisList.remove(idx);
         }
+    }
+
+    protected List<PairInt> createGapPoints(
+        PairInt pt1, PairInt pt2) {
+        
+        List<PairInt> out = new ArrayList<PairInt>();
+        
+        int x1 = pt1.getX();
+        int y1 = pt1.getY();
+        int x2 = pt2.getX();
+        int y2 = pt2.getY();
+        
+        if (x1 == x2) {
+            if (y1 < y2) {
+                for (int y = (y1 + 1); y < y2; ++y) {
+                    PairInt p = new PairInt(x1, y);
+                    if (points.contains(p)) {
+                        out.add(p);
+                    }
+                }
+                return out;
+            } else {
+                // y1 > y2
+                for (int y = (y1 - 1); y > y2; --y) {
+                    PairInt p = new PairInt(x1, y);
+                    if (points.contains(p)) {
+                        out.add(p);
+                    }
+                }
+                return out;
+            }
+        } 
+        if (y1 == y2) {
+            if (x1 < x2) {
+                for (int x = (x1 + 1); x < x2; ++x) {
+                    PairInt p = new PairInt(x, y1);
+                    if (points.contains(p)) {
+                        out.add(p);
+                    }
+                }
+                return out;
+            } else {
+                // x1 > x2
+                for (int x = (x1 - 1); x > x2; --x) {
+                    PairInt p = new PairInt(x, y1);
+                    if (points.contains(p)) {
+                        out.add(p);
+                    }
+                }
+                return out;
+            }
+        }
+        // else line is not horiz nor vert
+        double slope = (y2 - y1)/(x2 - x1);
+       
+        if (x1 < x2) {
+            int x = x1 + 1;
+            while (x < x2) {
+                int y = y1 + (int)Math.round(slope * (x - x1));
+                PairInt p = new PairInt(x, y);
+                if (points.contains(p)) {
+                    out.add(p);
+                }
+                x++;
+            }
+        } else {
+            int x = x1 - 1;
+            while (x > x2) {
+                int y = y1 + (int)Math.round(slope * (x - x1));
+                PairInt p = new PairInt(x, y);
+                if (points.contains(p)) {
+                    out.add(p);
+                }
+                x--;
+            }
+        }
+        
+        return out;
     }
 
     protected static class PointAndRadius {
