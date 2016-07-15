@@ -107,7 +107,7 @@ public class MedialAxis1Test extends TestCase {
         
         assertEquals(-2, status);
       
-        MedialAxisResults results2 = medAxis1.findInitialPoint(p);
+        MedialAxisResults results2 = medAxis1.findMedialAxesNearPoint(p);
         assertNotNull(results2);
         
         expected = new HashSet<PairInt>();

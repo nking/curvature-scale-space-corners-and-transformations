@@ -144,22 +144,23 @@ public class MedialAxis1 {
         
         MedialAxisResults firstPoints = findInitialPoint();
      
+        // max heap ordered by largest radius
         Heap q = new Heap();
         for (MedialAxisPoint mp : firstPoints.medialAxes) {
             addToHeap(q, mp);
         }
                 
         // remove the searched circle from this.points
-        // and add the extracted to either "processed" or "critical points"
+        // and add the extracted to either "processed"
         Set<PairInt> removed = this.subtractFromPoints(
             firstPoints.centerAndDistance.p,
             firstPoints.centerAndDistance.delta);
         
-        if (firstPoints.medialAxes.size() == 1) {
-            processed.addAll(removed);
-        } else if (firstPoints.medialAxes.size() > 2) {
+        processed.addAll(removed);
+        
+        if (firstPoints.medialAxes.size() > 2) {
             criticalPoints.add(removed);
-        } else {
+        } else if (firstPoints.medialAxes.size() != 1) {
             // if there are 2 medial axes points and if center is not inline
             // with the 2 med axis points, this is a "critical point" region too
             MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(
@@ -167,7 +168,6 @@ public class MedialAxis1 {
                 firstPoints.medialAxes.get(0),
                 firstPoints.medialAxes.get(1));
             if (mp0 != null) {
-                processed.addAll(removed);
                 medAxisList.add(mp0);
                 for (MedialAxisPoint mp : firstPoints.medialAxes) {
                     mp.parent = mp0;
@@ -181,112 +181,49 @@ public class MedialAxis1 {
         // node and children linked list
         medAxisList.addAll(firstPoints.medialAxes);
         
+        int[] xSurf = new int[nSampl];
+        int[] ySurf = new int[nSampl];
+        
         while (!q.isEmpty()) {
+            
             HeapNode node = q.extractMin();
+            
             MedialAxisPoint mp = (MedialAxisPoint) node.getData();
+            
+            PairInt p = mp.pointToBoundary[0].pd.p;
+            double r = mp.pointToBoundary[0].pd.delta;
+            int nSPoints = populateSurfacePoints(p, r,
+                xSurf, ySurf);
+            
+            if (nSPoints == 0) {
+                removed = this.subtractFromPoints(p, r);
+                processed.addAll(removed);
+                continue;
+            }
+            
+            for (int i = 0; i < nSPoints; ++i) {
+                
+                //MedialAxisResults findMedialAxesNearPoint(PairInt p);
+            
+                // add to data structures as above
+            }
+            
+            /* derive next points from mp as all of it's
+            valid surface points.
+            
+            TODO: may need to revisit this while testing:
+            If the new medial axis segment is significantly
+            different from normal to the previous,
+            then start 2 searches, 1 perpendicular to the previous
+            medial axis center and 1 perp to the current medial
+            axis.  the points should be away from the
+            smallest angle between the old and new segments.            
+            */            
         }
         
-        // gather other notes here
         /*
-        Assume point m lies on the medial axis and is 
-        distance δ(m) away from the closest obstacle. 
-        This point is determined using aforementioned primitive. 
-        
-        A priority queue Q is initialized to contain the 
-        sphere described by point m and radius δ(m). 
-        
-        The set S (== processed || criticalPoints)
-        of spheres describing the free space 
-        inside the solid D is initialized to be the empty set.
-
-        The largest sphere s is extracted from Q and 
-        a set U of uniformly distributed samples is 
-        generated on its surface. 
-        Points in U that are contained in one of the 
-        spheres in S are discarded. 
-        The second aforementioned primitive is used 
-        to determine those points in U that lie closest 
-        to the medial axis. 
-        -- These points p_i are added into the aMA and, 
-           along with their distances δ(pi), 
-           -- into the priority queue Q. 
-           -- The sphere s is added to S.
-        
-        To bound the exploration of free space we introduce 
-        an additional requirement for insertion into Q: 
-           only those spheres with radii larger than the 
-           expansion threshold Ke can be added. 
-           We can control computation time and the number 
-           of aMA points by changing Ke.
-        
-        These steps are repeated until Q is empty 
-        (see also Figure 1).
-
-        Figure 2 illustrates our method in a 
-        two-dimensional case. 
-        Assume o1 is the first element in Q. 
-        A maximal circle centered at o1 is generated and 
-        n samples p1, p2, ..., pn are generated on its 
-        circumference (not all samples are shown in the figure). 
-        The point pairs (p1, p2), (p3, p4) and (p5, p6) 
-        have different direction vectors and the midpoints 
-        of these pairs, q1, q2 and q3, are considered to 
-        be on the medial axis; they are added to the 
-        aMA and to the queue. Since q3 has the largest 
-        radius it is expanded next and the procedure repeats.
-        
-        
-        If a sphere only intersects one facet of the aMA, 
-        there will be two sets of sample points, each set 
-        with a different direction vector, based on 
-        classification by the angle criteria. 
-        In this case we simply insert the center of the 
-        sphere into the aMA. The samples on the surface 
-        are superfluous. 
-     **===> If a sphere intersects multiple 
-        facets of the medial axis, however, we identify 
-        adjacent samples with three or more distinct 
-        direction vectors and add their midpoint to the aMA. 
-        These points are called critical points; 
-        they designate an edge or a vertex between multiple 
-        facets of the aMA. Critical points can be used to 
+        Critical points can be used to 
         approximate the hierarchical generalized Voronoi graph[8].
-        
-        If the new medial axis segment is significantly
-        different from normal to the previous,
-        then start 2 searches, 1 perpendicular to the previous
-        medial axis center and 1 perp to the current medial
-        axis.  the points should be away from the
-        smallest angle between the old and new segments.
-        
-      
-        For each border edge, the algorithm uses 
-        angle criteria to select a point to make 
-        a triangle with the edge. 
-        The initial triangulation is refined using 
-        a method based on a novel projection operator 
-        [15] that is able to approximate points to 
-        the point cloud in a robust way. 
-        Our algorithm does not need 
-        Delaunay triangulations and it can handle 
-        surfaces with borders and noisy point clouds.
-       
-                   
-        Starting from a random point p inside D, 
-        we generate the maximal sphere with the 
-        center at p. If we cannot find a medial 
-        axis point of the surface of the sphere 
-        (how medial axis points are identified 
-        is described in Section 3.3), we take 
-        the point p′ with the biggest radius as 
-        the center of the next sphere. 
-        This process is repeated until the 
-        sphere of radius δ(p′) around p′ intersects 
-        the medial axis. Since this procedure 
-        converges towards a sphere of locally maximum 
-        radius, its center converges towards a point 
-        p′ on the medial axis and the surrounding 
-        sphere thus must intersect the medial axis.
         */
         
     }
@@ -305,18 +242,11 @@ public class MedialAxis1 {
         
         PairInt p = points.iterator().next();
         
-        return findInitialPoint(p);
+        return findMedialAxesNearPoint(p);
     }
     
-    protected MedialAxisResults findInitialPoint(PairInt p) {
+    protected MedialAxisResults findMedialAxesNearPoint(PairInt p) {
     
-        /*
-        identifies an initial point m and associated 
-        distance delta(m), such that the resulting 
-        sphere of radius delta(m) around m intersects 
-        the medial axis.
-        */
-        
         List<MedialAxisPoint> medialAxes 
             = new ArrayList<MedialAxisPoint>();
                 
@@ -589,6 +519,49 @@ Assume point m lies on the medial axis and is
     */
     
     /**
+     * populate surfaceX and surfaceY with nSampl number of
+     * points that are a distance r from center p.
+     * Note that redundant points are removed and any points
+     * that are in the instance set "processed".
+     * The number of usable items in surfaceX and surfaceY
+     * are the return argument.
+     * @param p
+     * @param r
+     * @param surfaceX an empty array of size nSampl
+     * @param surfaceY an empty array of size nSampl
+     * @return 
+     */
+    protected int populateSurfacePoints(PairInt p, double r,
+        int[] surfaceX, int[] surfaceY) {
+        
+        int ns = 0;
+        for (int i = 0; i < surfaceX.length; ++i) {
+            double t = 2. * twoPI * (double)i/(double)nSampl;
+            int x1 = p.getX() + (int)Math.round(r * Math.cos(t));
+            int y1 = p.getY() + (int)Math.round(r * Math.sin(t));
+            if ((i > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
+                surfaceY[ns - 1])) {
+                continue;
+            } else if ((i == (nSampl - 1)) && (x1 == surfaceX[0]) && (y1 ==
+                surfaceY[0])) {
+                continue;
+            }
+            // also, do not include space already searched in "processed"
+            PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
+            if (processed.contains(sp)) {
+                continue;
+            }
+            
+            surfaceX[ns] = x1;
+            surfaceY[ns] = y1;
+            
+            ns++;
+        }
+        
+        return ns;
+    }
+    
+    /**
      * finds the medial axis points if p intersects medial axis.
      * @param nearestB
      * @param p
@@ -627,22 +600,10 @@ Assume point m lies on the medial axis and is
         //   possibly extending beyond the shape boundary
         //   without being detected, so this shortcut
         //   is a work in progress)
-        int ns = 0;
+        
         int[] surfaceX = new int[nSampl];
         int[] surfaceY = new int[nSampl];
-        for (int i = 0; i < surfaceX.length; ++i) {
-            double t = 2. * twoPI * (double)i/(double)nSampl;
-            int x1 = p.getX() + (int)Math.round(r * Math.cos(t));
-            int y1 = p.getY() + (int)Math.round(r * Math.sin(t));
-            if ((i > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
-                surfaceY[ns - 1])) {
-                continue;
-            }
-            surfaceX[ns] = x1;
-            surfaceY[ns] = y1;
-            PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
-            ns++;
-        }
+        int ns = populateSurfacePoints(p, r, surfaceX, surfaceY);
         
         int count = 0;
         PairInt[] nearestBounds = new PairInt[nearestB.size()];
@@ -921,6 +882,7 @@ Assume point m lies on the medial axis and is
             // vector from medial axis point to boundary point
             PVector pv = new PVector(boundaryP, medialAndDist);
 
+            //boundary point and medial axis
             mp.add(pv, j);
         }
             
@@ -943,6 +905,12 @@ Assume point m lies on the medial axis and is
             pointToBoundary = new PVector[nVectors];
         }
         
+        /**
+         * add the boundary point and medial axis internal
+         * array at index index
+         * @param pv
+         * @param index 
+         */
         public void add(PVector pv, int index) {
             pointToBoundary[index] = pv;
         }
