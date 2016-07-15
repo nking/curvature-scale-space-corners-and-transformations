@@ -143,6 +143,9 @@ public class MedialAxis1Test extends TestCase {
             results2.centerAndDistance.p, results2.centerAndDistance.delta);
         
         assertTrue(removed.size() > 1);
+        
+        // just running it, until method is testable
+        medAxis1.findMedialAxis();
     }
     
     /*

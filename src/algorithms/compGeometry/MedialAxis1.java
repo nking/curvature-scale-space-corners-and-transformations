@@ -77,6 +77,8 @@ public class MedialAxis1 {
     private double twoPI = Math.PI;
     private double sinePiDivN = Math.sin(Math.PI/nSampl);
     
+    private final int nInterior;
+    
     /**
      * constructor containing all points in the area
      * and the bounding points.
@@ -109,6 +111,8 @@ public class MedialAxis1 {
         }
         
         minMaxXY = MiscMath.findMinMaxXY(boundary);
+        
+        nInterior = points.size();
         
         this.np = new NearestNeighbor2D(boundary, 
             minMaxXY[1], minMaxXY[3]);
@@ -160,7 +164,7 @@ public class MedialAxis1 {
         
         if (firstPoints.medialAxes.size() > 2) {
             criticalPoints.add(removed);
-        } else if (firstPoints.medialAxes.size() != 1) {
+        } else if (firstPoints.medialAxes.size() == 2) {
             // if there are 2 medial axes points and if center is not inline
             // with the 2 med axis points, this is a "critical point" region too
             MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(
@@ -184,33 +188,90 @@ public class MedialAxis1 {
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
         
-        while (!q.isEmpty()) {
-            
+        Set<PairInt> visited = new HashSet<PairInt>();
+        
+        int nIter = 0;
+        
+        while (!q.isEmpty() && (processed.size() < nInterior)) {
+
             HeapNode node = q.extractMin();
             
             MedialAxisPoint mp = (MedialAxisPoint) node.getData();
             
+            /*
+            for each medial axis point, search for other
+            medial axis points within a radius defined as
+            the distance to the nearest boundary point
+            from mp
+            */
+                        
             PairInt p = mp.pointToBoundary[0].pd.p;
+            
+            if (visited.contains(p)) {
+                continue;
+            }
+            visited.add(p);
+            
             double r = mp.pointToBoundary[0].pd.delta;
             int nSPoints = populateSurfacePoints(p, r,
                 xSurf, ySurf);
             
             if (nSPoints == 0) {
-                removed = this.subtractFromPoints(p, r);
+                removed = subtractFromPoints(p, r);
                 processed.addAll(removed);
                 continue;
             }
             
+            log.info("nIter=" + nIter + " q.size=" 
+                + q.getNumberOfNodes() + 
+                " s.size=" + processed.size()
+                + " nInterior=" + nInterior);
+
             for (int i = 0; i < nSPoints; ++i) {
                 
-                //MedialAxisResults findMedialAxesNearPoint(PairInt p);
-            
-                // add to data structures as above
+                PairInt p2 = new PairInt(xSurf[i], ySurf[i]);
+                
+                if (visited.contains(p2)) {
+                    continue;
+                }
+                
+                MedialAxisResults results2 = findMedialAxesNearPoint(p2);
+                
+                // add to data structures, as above
+                for (MedialAxisPoint mp2 : results2.medialAxes) {
+                    mp2.parent = mp;
+                    addToHeap(q, mp2);
+                }
+               
+                removed = this.subtractFromPoints(
+                    results2.centerAndDistance.p,
+                    results2.centerAndDistance.delta);
+        
+                processed.addAll(removed);
+        
+                if (results2.medialAxes.size() > 2) {
+                    criticalPoints.add(removed);
+                } else if (results2.medialAxes.size() == 2) {
+                    // if there are 2 medial axes points and if center is not inline
+                    // with the 2 med axis points, this is a "critical point" region too
+                    MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(
+                        results2.centerAndDistance.p,
+                        results2.medialAxes.get(0),
+                        results2.medialAxes.get(1));
+                    if (mp0 != null) {
+                        medAxisList.add(mp0);
+                        for (MedialAxisPoint mp3 : results2.medialAxes) {
+                            mp3.parent = mp0;
+                        }
+                    } else {
+                        criticalPoints.add(removed);
+                    }
+                }
+        
+                medAxisList.addAll(results2.medialAxes);
             }
             
-            /* derive next points from mp as all of it's
-            valid surface points.
-            
+            /*
             TODO: may need to revisit this while testing:
             If the new medial axis segment is significantly
             different from normal to the previous,
@@ -218,7 +279,7 @@ public class MedialAxis1 {
             medial axis center and 1 perp to the current medial
             axis.  the points should be away from the
             smallest angle between the old and new segments.            
-            */            
+            */      
         }
         
         /*
@@ -454,7 +515,7 @@ public class MedialAxis1 {
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = p.getX() + dxs[k];
                 int y2 = p.getY() + dys[k];
-                if (x2 < 0 || y2 < 0 || (x2 > (minMaxXY[1] - 1))
+                if (x2 < minMaxXY[0] || y2 < minMaxXY[2] || (x2 > (minMaxXY[1] - 1))
                     || (y2 > (minMaxXY[3] - 1))) {
                     continue;
                 }
@@ -539,11 +600,15 @@ Assume point m lies on the medial axis and is
             double t = 2. * twoPI * (double)i/(double)nSampl;
             int x1 = p.getX() + (int)Math.round(r * Math.cos(t));
             int y1 = p.getY() + (int)Math.round(r * Math.sin(t));
-            if ((i > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
+            if (x1 < minMaxXY[0] || (x1 > (minMaxXY[1] - 1)) ||
+                y1 < minMaxXY[2] || (y1 > (minMaxXY[3] - 1))) {
+                continue;
+            }
+            if ((ns > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
                 surfaceY[ns - 1])) {
                 continue;
-            } else if ((i == (nSampl - 1)) && (x1 == surfaceX[0]) && (y1 ==
-                surfaceY[0])) {
+            } else if ((i == (nSampl - 1)) && (ns > 0) && 
+                (x1 == surfaceX[0]) && (y1 == surfaceY[0])) {
                 continue;
             }
             // also, do not include space already searched in "processed"
