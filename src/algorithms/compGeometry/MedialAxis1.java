@@ -350,9 +350,36 @@ public class MedialAxis1 {
         }
         
         // TODO: create output medial axis points by
-        // filling in, in between points in
-        //   medAxisList
-        
+        // filling in gaps medAxisList
+        TIntList insIdxs = new TIntArrayList();
+        List<MedialAxisPoint> ins = new ArrayList<MedialAxisPoint>();
+        MedialAxisPoint prevMp = medAxisList.get(0);
+        for (int i = 1; i < medAxisList.size(); ++i) {
+            MedialAxisPoint mp = medAxisList.get(i);
+            PairInt medAxisCenter = mp.getVectors()[0].getPoint();
+            PairInt prevMedAxisCenter = prevMp.getVectors()[0].getPoint();
+            double dist = distance(prevMedAxisCenter.getX(),
+                prevMedAxisCenter.getY(), medAxisCenter);
+            if (dist >= 2) {
+                // derive next points in gap
+                /*
+                Set<PairInt> nearestB = np.findClosest(
+                    gap.getX(), gap.getY());
+                int count = 0;
+                PairInt[] nearestBounds = new PairInt[nearestB.size()];
+                for (PairInt np : nearestB) {
+                    nearestBounds[count] = np;
+                    count++;
+                }
+                MedialAxisPoint mp2 = createMedialAxisPoint(
+                    gap, nearestBounds);
+                mp2.parent = prevMp;
+                insIdxs.add(i);
+                ins.add(mp2);
+                */
+            }
+            prevMp = mp;
+        }
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -1143,7 +1170,7 @@ Assume point m lies on the medial axis and is
                 rm.add(i);
             } else{
                 // replace mp
-                present.remove(medAxisCenter);
+                //present.remove(medAxisCenter);
                 Set<PairInt> nearestB = np.findClosest(
                     better.getX(), better.getY());
                 int count = 0;
