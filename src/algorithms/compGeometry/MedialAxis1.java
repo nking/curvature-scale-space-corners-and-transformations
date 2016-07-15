@@ -1154,6 +1154,7 @@ Assume point m lies on the medial axis and is
                 }
                 MedialAxisPoint mp2 = createMedialAxisPoint(
                     better, nearestBounds);
+                mp2.parent = mp.parent;
                 medAxisList.set(i, mp2);
                 present.add(better);
             }
