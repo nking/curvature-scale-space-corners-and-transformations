@@ -1,7 +1,10 @@
 package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
+import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -18,7 +21,7 @@ public class MedialAxis1Test extends TestCase {
     public MedialAxis1Test() {
     }
     
-    public void test0() {
+    public void est0() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -160,6 +163,83 @@ public class MedialAxis1Test extends TestCase {
             assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
+        float[] x = new float[mAPs.size()];
+        float[] y = new float[mAPs.size()];
+        int count = 0;
+        for (PairInt p2 : mAPs) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        PolygonAndPointPlotter plotter 
+            = new PolygonAndPointPlotter(0, 23, 0, 10);
+        float[] xp = null;
+        float[] yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile();
+    }
+    
+    public void test01() throws IOException {
+        
+        List<PairInt> border = new ArrayList<PairInt>();
+        Set<PairInt> points = new HashSet<PairInt>();
+        
+        populateTestData0(border, points);
+ 
+        /*
+        Figure 2 of Yang, Brock, and Moll
+           _____________
+           |           |
+           |___________| height=11
+           <-----24---->
+                                  -              @ 10
+                                           ?  @    9
+                                           @       8
+                                        @     ?    7
+                       ?          *  @             6
+            @@@@@@@@@@@?@@@@@@@@@@@@               5
+                                     @             4
+                                        ?  ?       3
+                                     ?     @       2
+                                              @    1
+                                                 @ 0
+          10 11 12 13 14 15 16 17 18 19 20 21 22 23
+        */
+        
+        /*
+        expected.add(new PairInt(22, 8));
+        expected.add(new PairInt(14, 6));
+        expected.add(new PairInt(20, 3));
+        */
+        
+        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
+        
+        medAxis1.findMedialAxis();
+        
+        LinkedList<MedialAxis1.MedialAxisPoint>
+            list = medAxis1.getMedAxisList();
+        
+        Set<PairInt> mAPs = new HashSet<PairInt>();
+        for (MedialAxis1.MedialAxisPoint mp : list) {
+            PairInt pp = mp.getVectors()[0].getPoint();
+            System.out.println("**med axis pt = " + pp);
+            assertFalse(mAPs.contains(pp));
+            mAPs.add(pp);
+        }
+        float[] x = new float[mAPs.size()];
+        float[] y = new float[mAPs.size()];
+        int count = 0;
+        for (PairInt p2 : mAPs) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        PolygonAndPointPlotter plotter 
+            = new PolygonAndPointPlotter(0, 23, 0, 10);
+        float[] xp = null;
+        float[] yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile();
     }
     
     /*
@@ -311,7 +391,7 @@ public class MedialAxis1Test extends TestCase {
         }
     }
     
-    public void test2() {
+    public void est2() {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();

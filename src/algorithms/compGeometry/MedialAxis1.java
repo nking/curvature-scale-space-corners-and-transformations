@@ -133,7 +133,15 @@ public class MedialAxis1 {
         
         long max = Math.max(minMaxXY[1], minMaxXY[3]);
         
-        double invR = 1./mp.pointToBoundary[0].pd.delta;
+        PointAndRadius pAndR = mp.pointToBoundary[0].pd;
+        if (pAndR.delta == Double.MIN_VALUE) {
+            Set<PairInt> nearest = np.findClosest(pAndR.p.getX(), 
+                pAndR.p.getY());
+            pAndR.delta = distance(pAndR.p.getX(), 
+                pAndR.p.getY(), nearest.iterator().next());
+        }
+        
+        double invR = 1./pAndR.delta;
         
         long key = (long)Math.ceil(max * invR);
         
@@ -155,12 +163,14 @@ public class MedialAxis1 {
         
         Set<PairInt> addedM = new HashSet<PairInt>();
                 
-        // remove the searched circle from this.points
-        // and add the extracted to either "processed"
+        // remove the searched circle from this.points.
+        // and add the extracted to "processed".
+        // NOTE: have used search radius - 1 to not remove
+        // any found medial axis points.
         Set<PairInt> removed = this.subtractFromPoints(
             firstPoints.centerAndDistance.p,
-            firstPoints.centerAndDistance.delta);
-        
+            firstPoints.centerAndDistance.delta - 1);
+ 
         processed.addAll(removed);
         
         if (firstPoints.medialAxes.size() > 2) {
@@ -193,7 +203,7 @@ public class MedialAxis1 {
             addedM.add(pp);
             medAxisList.add(m);
         }
-        
+
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
         
@@ -203,6 +213,8 @@ public class MedialAxis1 {
         
         while (!q.isEmpty() && (processed.size() < nInterior)) {
 
+            nIter++;
+            
             HeapNode node = q.extractMin();
             
             MedialAxisPoint mp = (MedialAxisPoint) node.getData();
@@ -222,11 +234,12 @@ public class MedialAxis1 {
             visited.add(p);
             
             double r = mp.pointToBoundary[0].pd.delta;
+            assert(r != Double.MIN_VALUE);
             int nSPoints = populateSurfacePoints(p, r,
                 xSurf, ySurf);
             
             if (nSPoints == 0) {
-                removed = subtractFromPoints(p, r);
+                removed = subtractFromPoints(p, r - 1);
                 processed.addAll(removed);
                 continue;
             }
@@ -236,14 +249,18 @@ public class MedialAxis1 {
                 " s.size=" + processed.size()
                 + " nInterior=" + nInterior);
 
+            //postponing removal of searched points
+            //until after all points in block are searched.
+            Set<PairInt> extracted = new HashSet<PairInt>();
+        
             for (int i = 0; i < nSPoints; ++i) {
                 
                 PairInt p2 = new PairInt(xSurf[i], ySurf[i]);
-                
+                                
                 if (visited.contains(p2)) {
                     continue;
                 }
-                
+
                 MedialAxisResults results2 = findMedialAxesNearPoint(p2);
                 
                 // add to data structures, as above
@@ -255,13 +272,7 @@ public class MedialAxis1 {
                     mp2.parent = mp;
                     addToHeap(q, mp2);
                 }
-                            
-                removed = this.subtractFromPoints(
-                    results2.centerAndDistance.p,
-                    results2.centerAndDistance.delta);
-        
-                processed.addAll(removed);
-        
+                
                 if (results2.medialAxes.size() > 2) {
                     criticalPoints.add(removed);
                 } else if (results2.medialAxes.size() == 2) {
@@ -293,7 +304,14 @@ public class MedialAxis1 {
                     addedM.add(pp);
                     medAxisList.add(m);
                 }
+                          
+                extractFromPoints(results2.centerAndDistance.p,
+                    results2.centerAndDistance.delta - 1,
+                    extracted);             
             }
+            
+            points.removeAll(extracted);
+            processed.addAll(extracted);
             
             /*
             TODO: may need to revisit this while testing:
@@ -303,7 +321,7 @@ public class MedialAxis1 {
             medial axis center and 1 perp to the current medial
             axis.  the points should be away from the
             smallest angle between the old and new segments.            
-            */      
+            */
         }
         
         /*
@@ -316,6 +334,11 @@ public class MedialAxis1 {
         // TODO: create output medial axis points by
         // filling in, in between points in
         //   medAxisList
+        
+        // as a refine stage, need to visit each medial
+        // axis point and test for equal distance to
+        // nearest bounds w/ no tolerance.
+       
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -530,6 +553,16 @@ public class MedialAxis1 {
         
         Set<PairInt> output = new HashSet<PairInt>();
         
+        extractFromPoints(center, radius, output);
+        
+        points.removeAll(output);
+        
+        return output;
+    }
+    
+    protected void extractFromPoints(PairInt center,
+        double radius, Set<PairInt> output) {
+                
         Stack<PairInt> stack = new Stack<PairInt>();
         stack.add(center);
         output.add(center);
@@ -548,8 +581,8 @@ public class MedialAxis1 {
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = p.getX() + dxs[k];
                 int y2 = p.getY() + dys[k];
-                if (x2 < minMaxXY[0] || y2 < minMaxXY[2] || (x2 > (minMaxXY[1] - 1))
-                    || (y2 > (minMaxXY[3] - 1))) {
+                if (x2 < minMaxXY[0] || y2 < minMaxXY[2] || (x2 > minMaxXY[1])
+                    || (y2 > minMaxXY[3])) {
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
@@ -560,12 +593,9 @@ public class MedialAxis1 {
                 if (dist <= radius) {
                     output.add(p2);
                     stack.add(p2);
-                    points.remove(p2);
                 }
             }
-        }
-        
-        return output;
+        }        
     }
     
     /*
@@ -633,8 +663,8 @@ Assume point m lies on the medial axis and is
             double t = 2. * twoPI * (double)i/(double)nSampl;
             int x1 = p.getX() + (int)Math.round(r * Math.cos(t));
             int y1 = p.getY() + (int)Math.round(r * Math.sin(t));
-            if (x1 < minMaxXY[0] || (x1 > (minMaxXY[1] - 1)) ||
-                y1 < minMaxXY[2] || (y1 > (minMaxXY[3] - 1))) {
+            if (x1 < minMaxXY[0] || (x1 > minMaxXY[1]) ||
+                y1 < minMaxXY[2] || (y1 > minMaxXY[3])) {
                 continue;
             }
             if ((ns > 0) && (x1 == surfaceX[ns - 1]) && (y1 ==
@@ -645,7 +675,7 @@ Assume point m lies on the medial axis and is
                 continue;
             }
             // also, do not include space already searched in "processed"
-            PairInt sp = new PairInt(surfaceX[i], surfaceY[i]);
+            PairInt sp = new PairInt(x1, y1);
             if (processed.contains(sp)) {
                 continue;
             }
@@ -975,8 +1005,6 @@ Assume point m lies on the medial axis and is
 
             PairInt boundaryP = nearestBounds[j];
 
-            medialAndDist.delta = distance(medialP.getX(), medialP.getY(), boundaryP);
-
             // vector from medial axis point to boundary point
             PVector pv = new PVector(boundaryP, medialAndDist);
 
@@ -989,8 +1017,11 @@ Assume point m lies on the medial axis and is
 
     protected static class PointAndRadius {
         PairInt p;
-        // distance, usually to nearest boundary point
-        double delta;
+        /**
+         * distance, usually to nearest boundary point.
+         * it's Double.MIN_VALUE until set.
+         */
+        double delta = Double.MIN_VALUE;
     }
     
     protected static class MedialAxisPoint {
@@ -1005,7 +1036,11 @@ Assume point m lies on the medial axis and is
         
         /**
          * add the boundary point and medial axis internal
-         * array at index index
+         * array at index index.  Note that pv.delta should
+         * be the distance from medialAxisPoint to its 
+         * nearest boundary point and it's been changed
+         * so that it can be lazily populated to avoid
+         * extra NN calculation if not needed.
          * @param pv
          * @param index 
          */
@@ -1015,7 +1050,11 @@ Assume point m lies on the medial axis and is
         
         /**
          * get vectors of boundaryPoint and point which
-         * is medial axis
+         * is medial axis.  Note that pv.delta should
+         * be the distance from medialAxisPoint to its 
+         * nearest boundary point and it may be null
+         * so that it can be lazily populated to avoid
+         * the log_2(N) NN if not needed.
          * @return 
          */
         public PVector[] getVectors() {
@@ -1045,6 +1084,13 @@ Assume point m lies on the medial axis and is
         
         // vector direction is from pd.p to boundaryP
         
+        /**
+         * 
+         * @param b
+         * @param pointAndRadius usually the medial axis
+         * point and it's distance to it's nearest
+         * boundary point (which may not have been set).
+         */
         public PVector(PairInt b,
             PointAndRadius pointAndRadius) {
             this.boundaryP = b;
@@ -1056,9 +1102,21 @@ Assume point m lies on the medial axis and is
         public PairInt getBoundaryPoint() {
             return boundaryP;
         }
+        
+        /**
+         * get the pv.p given to constructor.  it's
+         * usually the medial axis point.
+         * @return 
+         */
         public PairInt getPoint() {
             return pd.p;
         }
+        /**
+         * get the distance from pd.p point (which is
+         * usually the medial axis point) to the nearest
+         * boundary point.
+         * @return 
+         */
         public double getPointToBoundaryDistance() {
             return pd.delta;
         }
