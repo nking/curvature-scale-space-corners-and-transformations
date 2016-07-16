@@ -359,7 +359,7 @@ public class MedialAxis1 {
         
         // search for nearest neighbors within dist tol
         int tol = Math.min(minMaxXY[1], minMaxXY[3]);
-        tol = (int)Math.ceil(tol * sinePiDivN);        
+        tol = (int)Math.ceil(1.5 * tol * sinePiDivN);        
         
         // fill in gaps in medAxisList
         TIntList insIdxs = new TIntArrayList();
@@ -373,7 +373,7 @@ public class MedialAxis1 {
 
             List<PairFloat> neighbors = kNN.findNearest(9, x1, y1, tol);
             
-            // if there is a gap larger than one between the neighbor
+            // if there is a gap larger than one between the neighbors
             // and medial axis point, fill in the gaps at intervals of 1
             for (PairFloat pnf : neighbors) {
             
@@ -391,8 +391,14 @@ public class MedialAxis1 {
                     List<PairInt> gaps = createGapPoints(
                         new PairInt(x2, y2), medAxisCenter);
                     
-                    // create medial axis points for those
+                    // create medial axis points for those if equidistant from bounds
                     for (PairInt gap : gaps) {
+                        
+                        if (!haveEquidistantNearestPoints(
+                            gap.getX(), gap.getY(), 0)) {
+                            continue;
+                        }
+                        
                         Set<PairInt> nearestB = np.findClosest(gap.getX(), gap.getY());
                         int count = 0;
                         PairInt[] nearestBounds = new PairInt[nearestB.size()];
@@ -410,7 +416,7 @@ public class MedialAxis1 {
         if (!ins.isEmpty()) {            
             for (int i = (insIdxs.size() - 1); i > -1; --i) {
                 int idx = insIdxs.get(i);
-        //        medAxisList.add(idx + 1, ins.get(i));
+                medAxisList.add(idx + 1, ins.get(i));
             }
         }
         
@@ -1239,7 +1245,7 @@ Assume point m lies on the medial axis and is
             if (y1 < y2) {
                 for (int y = (y1 + 1); y < y2; ++y) {
                     PairInt p = new PairInt(x1, y);
-                    if (points.contains(p)) {
+                    if (points.contains(p) || processed.contains(p)) {
                         out.add(p);
                     }
                 }
@@ -1248,7 +1254,7 @@ Assume point m lies on the medial axis and is
                 // y1 > y2
                 for (int y = (y1 - 1); y > y2; --y) {
                     PairInt p = new PairInt(x1, y);
-                    if (points.contains(p)) {
+                    if (points.contains(p) || processed.contains(p)) {
                         out.add(p);
                     }
                 }
@@ -1259,7 +1265,7 @@ Assume point m lies on the medial axis and is
             if (x1 < x2) {
                 for (int x = (x1 + 1); x < x2; ++x) {
                     PairInt p = new PairInt(x, y1);
-                    if (points.contains(p)) {
+                    if (points.contains(p) || processed.contains(p)) {
                         out.add(p);
                     }
                 }
@@ -1268,7 +1274,7 @@ Assume point m lies on the medial axis and is
                 // x1 > x2
                 for (int x = (x1 - 1); x > x2; --x) {
                     PairInt p = new PairInt(x, y1);
-                    if (points.contains(p)) {
+                    if (points.contains(p) || processed.contains(p)) {
                         out.add(p);
                     }
                 }
@@ -1283,7 +1289,7 @@ Assume point m lies on the medial axis and is
             while (x < x2) {
                 int y = y1 + (int)Math.round(slope * (x - x1));
                 PairInt p = new PairInt(x, y);
-                if (points.contains(p)) {
+                if (points.contains(p) || processed.contains(p)) {
                     out.add(p);
                 }
                 x++;
@@ -1293,7 +1299,7 @@ Assume point m lies on the medial axis and is
             while (x > x2) {
                 int y = y1 + (int)Math.round(slope * (x - x1));
                 PairInt p = new PairInt(x, y);
-                if (points.contains(p)) {
+                if (points.contains(p) || processed.contains(p)) {
                     out.add(p);
                 }
                 x--;
