@@ -126,7 +126,7 @@ public class MedialAxis1Test extends TestCase {
         
     }
     
-    public void est0() throws IOException {
+    public void test0() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -496,7 +496,7 @@ public class MedialAxis1Test extends TestCase {
         }
     }
     
-    public void est2() {
+    public void test2() {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();

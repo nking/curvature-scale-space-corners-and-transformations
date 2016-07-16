@@ -159,7 +159,22 @@ public class MedialAxis1 {
         heap.insert(node);
     }
     
+    protected boolean assertUniqueMedailAxesPoints() {
+        Set<PairInt> mAPs = new HashSet<PairInt>();
+        for (MedialAxis1.MedialAxisPoint mp : medAxisList) {
+            PairInt pp = mp.getVectors()[0].getPoint();
+            System.out.println("**med axis pt = " + pp);
+            if (mAPs.contains(pp)) {
+                return false;
+            }
+            mAPs.add(pp);
+        }
+        return true;
+    }
+    
     protected void findMedialAxis() {
+        
+        medAxisList.clear();
         
         MedialAxisResults firstPoints = findInitialPoint();
      
@@ -198,6 +213,8 @@ public class MedialAxis1 {
             }
         }
         
+        assert(assertUniqueMedailAxesPoints());
+        
         // TODO: might change this structure to use the parent
         // node and children linked list
         for (MedialAxisPoint m : firstPoints.medialAxes) {
@@ -209,6 +226,8 @@ public class MedialAxis1 {
             medAxisList.add(m);
         }
 
+        assert(assertUniqueMedailAxesPoints());
+        
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
         
@@ -308,11 +327,15 @@ public class MedialAxis1 {
                           
                 extractFromPoints(results2.centerAndDistance.p,
                     results2.centerAndDistance.delta - 1,
-                    extracted);             
+                    extracted);
+                
+                assert(assertUniqueMedailAxesPoints());
             }
             
             points.removeAll(extracted);
             processed.addAll(extracted);
+            
+            assert(assertUniqueMedailAxesPoints());
             
             /*
             TODO: may need to revisit this while testing:
@@ -327,10 +350,14 @@ public class MedialAxis1 {
         
         log.info("med axies nIter=" + nIter);
         
+        assert(assertUniqueMedailAxesPoints());
+        
         // iterate over medial axis points to refine centers.
         // dither should be defined by the tolerance tol
-        refineCentersOfMedAxisList();
-                
+        addedM = refineCentersOfMedAxisList();
+        
+        assert(assertUniqueMedailAxesPoints());
+
         /*
         Critical points can be used to 
         approximate the hierarchical generalized Voronoi graph[8].
@@ -394,10 +421,14 @@ public class MedialAxis1 {
                     // create medial axis points for those if equidistant from bounds
                     for (PairInt gap : gaps) {
                         
+                        if (addedM.contains(gap)) {
+                            continue;
+                        }
                         if (!haveEquidistantNearestPoints(
                             gap.getX(), gap.getY(), 0)) {
                             continue;
                         }
+                        addedM.add(gap);
                         
                         Set<PairInt> nearestB = np.findClosest(gap.getX(), gap.getY());
                         int count = 0;
@@ -420,6 +451,7 @@ public class MedialAxis1 {
             }
         }
         
+        assert(assertUniqueMedailAxesPoints());
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -1128,14 +1160,12 @@ Assume point m lies on the medial axis and is
         return mp;
     }
 
-    private void refineCentersOfMedAxisList() {
+    private Set<PairInt> refineCentersOfMedAxisList() {
 
         Set<PairInt> present = new HashSet<PairInt>();
         for (int i = 0; i < medAxisList.size(); ++i) {
             MedialAxisPoint mp = medAxisList.get(i);
-            PVector pv = mp.getVectors()[0];
-            PairInt medAxisCenter = pv.getPoint();
-            present.add(medAxisCenter);
+            present.add(mp.getVectors()[0].getPoint());
         }
         
         TIntList rm = new TIntArrayList();
@@ -1144,8 +1174,7 @@ Assume point m lies on the medial axis and is
         
         for (int i = 0; i < medAxisList.size(); ++i) {
             MedialAxisPoint mp = medAxisList.get(i);
-            PVector pv = mp.getVectors()[0];
-            PairInt medAxisCenter = pv.getPoint();
+            PairInt medAxisCenter = mp.getVectors()[0].getPoint();
             
             int tol;
             // find original search radius used for this point
@@ -1170,7 +1199,6 @@ Assume point m lies on the medial axis and is
             if (haveEquidistantNearestPoints(medAxisCenter.getX(), 
                 medAxisCenter.getY(), 0)) {
                 // already have an accurate medial axis point
-                present.add(medAxisCenter);
                 continue;
             }
             
@@ -1209,7 +1237,6 @@ Assume point m lies on the medial axis and is
                 rm.add(i);
             } else{
                 // replace mp
-                //present.remove(medAxisCenter);
                 Set<PairInt> nearestB = np.findClosest(
                     better.getX(), better.getY());
                 int count = 0;
@@ -1221,6 +1248,7 @@ Assume point m lies on the medial axis and is
                 MedialAxisPoint mp2 = createMedialAxisPoint(
                     better, nearestBounds);
                 medAxisList.set(i, mp2);
+                present.remove(medAxisCenter);
                 present.add(better);
             }
         }
@@ -1229,6 +1257,14 @@ Assume point m lies on the medial axis and is
             int idx = rm.get(i);
             medAxisList.remove(idx);
         }
+
+        present = new HashSet<PairInt>();
+        for (int i = 0; i < medAxisList.size(); ++i) {
+            MedialAxisPoint mp = medAxisList.get(i);
+            present.add(mp.getVectors()[0].getPoint());
+        }
+                
+        return present;
     }
 
     protected List<PairInt> createGapPoints(
