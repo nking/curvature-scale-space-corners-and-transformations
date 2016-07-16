@@ -138,15 +138,16 @@ public class VoronoiFortunesSweep {
 
         sites = new Site[nSites];
 
-        xmin = xValues[0];
-        ymin = yValues[0];
-        xmax = xValues[0];
-        ymax = yValues[0];
+        xmin = Float.MAX_VALUE;
+        ymin = Float.MAX_VALUE;
+        xmax = Float.MIN_VALUE;
+        ymax = Float.MIN_VALUE;
         
         int i;
         for(i = 0; i < nSites; i++) {
             sites[i] = new Site();
             sites[i].coord = new PairFloat(xValues[i], yValues[i]);
+            // this gets reset after sort:
             sites[i].sitenbr = i;
             sites[i].refcnt = 0;
 
@@ -167,6 +168,11 @@ public class VoronoiFortunesSweep {
         
         // N log_2 N
         qsort(sites);
+        
+        // renumber site numbers
+        for (int ii = 0; ii < sites.length; ++ii) {
+            sites[ii].sitenbr = ii;
+        }
         
         float temp = 0;
         if (minX > maxX) {
@@ -261,16 +267,23 @@ public class VoronoiFortunesSweep {
                 
                 // create a new HalfEdge, setting its ELpm field to 1
                 bisector = HECreate(e, RE);
-                
+                 
                 // insert the new HE to the right of the original bisector
                 // earlier in the IF stmt
                 ELInsert(lbnd, bisector);
-
+                
                 // if this new bisector intersects with the new HalfEdge
                 if ((p = intersect(bisector, rbnd)) != null) {
                     // push the HE into the ordered linked list of vertices
                     PQInsert(bisector, p, dist(p, newsite));
                 }
+                
+                /*System.out.println(
+                "  " + bot.sitenbr + " bot=" 
+                + sites[bot.sitenbr].coord
+                + "  " + newsite.sitenbr + " top=" 
+                + sites[newsite.sitenbr].coord);
+                */
                 
                 newsite = nextOne();
                 
@@ -428,7 +441,7 @@ public class VoronoiFortunesSweep {
     }
     
     public class GraphEdge {
-        float x1, y1, x2, y2;
+        public float x1, y1, x2, y2;
 	    public int site1;
         public int site2;
     }
@@ -473,7 +486,7 @@ public class VoronoiFortunesSweep {
         // get the difference in x dist between the sites
         dx = s2.coord.getX() - s1.coord.getX();
         dy = s2.coord.getY() - s1.coord.getY();
-        
+    
         // make sure that the difference in positive
         adx = dx > 0 ? dx : -dx;
         ady = dy > 0 ? dy : -dy;
@@ -748,7 +761,7 @@ public class VoronoiFortunesSweep {
 
     private void pushGraphEdge(Site leftSite, Site rightSite, 
         float x1, float y1, float x2, float y2) {
-        
+      
         GraphEdge newEdge = new GraphEdge();
         allEdges.add(newEdge);
         newEdge.x1 = x1;
@@ -865,11 +878,16 @@ public class VoronoiFortunesSweep {
             }
         }
         
-        if (Math.sqrt(((x2 - x1) * (x2 - x1)) 
-            + ((y2 - y1) * (y2 - y1))) < minDistanceBetweenSites) {
+        float diffX = x2 - x1;
+        float diffY = y2 - y1;
+        if (diffX == 0.f && diffY == 0.f) {
             return;
         }
-       
+        if (Math.sqrt((diffX * diffX) + (diffY * diffY)) 
+            < minDistanceBetweenSites) {
+            return;
+        }
+        
         pushGraphEdge(e.reg[0], e.reg[1], x1, y1, x2, y2);
     }
 
@@ -974,7 +992,7 @@ public class VoronoiFortunesSweep {
         }
 
         // if the two edges bisect the same parent, return null
-        if (e1.reg[1] == e2.reg[1]) {
+        if (e1.reg[1].equals(e2.reg[1])) {
             return null;
         }
 
