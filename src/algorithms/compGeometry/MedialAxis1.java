@@ -4,7 +4,9 @@ import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.search.KNearestNeighbors;
 import algorithms.search.NearestNeighbor2D;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -12,6 +14,7 @@ import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -342,46 +346,74 @@ public class MedialAxis1 {
             log.info(sb.toString());
         }
         
-        // TODO: use Prim's to set parent nodes
-        
-        /*
-        // TODO: fill in gaps in medAxisList
-        TIntList insIdxs = new TIntArrayList();
-        List<MedialAxisPoint> ins = new ArrayList<MedialAxisPoint>();
-        MedialAxisPoint prevMp = medAxisList.get(0);
+        int nm = medAxisList.size();
+        int[] xm = new int[nm];
+        int[] ym = new int[nm];
         for (int i = 1; i < medAxisList.size(); ++i) {
             MedialAxisPoint mp = medAxisList.get(i);
             PairInt medAxisCenter = mp.getVectors()[0].getPoint();
-            PairInt prevMedAxisCenter = prevMp.getVectors()[0].getPoint();
-            double dist = distance(prevMedAxisCenter.getX(),
-                prevMedAxisCenter.getY(), medAxisCenter);
+            xm[i] = medAxisCenter.getX();
+            ym[i] = medAxisCenter.getY();
+        }
+        KNearestNeighbors kNN = new KNearestNeighbors(xm, ym);
+        
+        // search for nearest neighbors within dist tol
+        int tol = Math.min(minMaxXY[1], minMaxXY[3]);
+        tol = (int)Math.ceil(tol * sinePiDivN);        
+        
+        // fill in gaps in medAxisList
+        TIntList insIdxs = new TIntArrayList();
+        List<MedialAxisPoint> ins = new ArrayList<MedialAxisPoint>();
+        for (int i = 1; i < medAxisList.size(); ++i) {
+            MedialAxisPoint mp = medAxisList.get(i);
+            PairInt medAxisCenter = mp.getVectors()[0].getPoint();
+
+            int x1 = medAxisCenter.getX();
+            int y1 = medAxisCenter.getY();          
+
+            List<PairFloat> neighbors = kNN.findNearest(9, x1, y1, tol);
             
-            if (dist >= 2) {
-                // derive next points in gap
-                List<PairInt> gaps = createGapPoints(prevMedAxisCenter,
-                    medAxisCenter);
-                for (PairInt gap : gaps) {
-                    Set<PairInt> nearestB = np.findClosest(gap.getX(), gap.getY());
-                    int count = 0;
-                    PairInt[] nearestBounds = new PairInt[nearestB.size()];
-                    for (PairInt np : nearestB) {
-                        nearestBounds[count] = np;
-                        count++;
+            // if there is a gap larger than one between the neighbor
+            // and medial axis point, fill in the gaps at intervals of 1
+            for (PairFloat pnf : neighbors) {
+            
+                int x2 = (int)pnf.getX();
+                int y2 = (int)pnf.getY();
+                
+                if (x1 == x2 && y1 == y2) {
+                    continue;
+                }
+                
+                double dist = distance(x2, y2, medAxisCenter);
+            
+                if (dist >= 2) {
+                    // derive next points in gap
+                    List<PairInt> gaps = createGapPoints(
+                        new PairInt(x2, y2), medAxisCenter);
+                    
+                    // create medial axis points for those
+                    for (PairInt gap : gaps) {
+                        Set<PairInt> nearestB = np.findClosest(gap.getX(), gap.getY());
+                        int count = 0;
+                        PairInt[] nearestBounds = new PairInt[nearestB.size()];
+                        for (PairInt np : nearestB) {
+                            nearestBounds[count] = np;
+                            count++;
+                        }
+                        MedialAxisPoint mp2 = createMedialAxisPoint(gap, nearestBounds);
+                        insIdxs.add(i);
+                        ins.add(mp2);
                     }
-                    MedialAxisPoint mp2 = createMedialAxisPoint(gap, nearestBounds);
-                    insIdxs.add(i);
-                    ins.add(mp2);
                 }
             }
-            prevMp = mp;
         }
         if (!ins.isEmpty()) {            
             for (int i = (insIdxs.size() - 1); i > -1; --i) {
                 int idx = insIdxs.get(i);
-                medAxisList.add(idx + 1, ins.get(i));
+        //        medAxisList.add(idx + 1, ins.get(i));
             }
         }
-        */
+        
     }
 
     protected LinkedList<MedialAxisPoint> getMedAxisList() {
@@ -514,8 +546,7 @@ public class MedialAxis1 {
             it's determined by lower envelope (or minima) of all D_X_i.
          -- adaptive grid
             - an octree, for example.
-         -- I'll use my static nearest neighbors (uses an xfast trie
-            and voronoi diagram).
+         -- I'll use my static nearest neighbors
          whichever scheme is used, once a pair is found
          that satisfies the separation criteria,
          add it to the medial axis

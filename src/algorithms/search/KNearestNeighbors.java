@@ -5,14 +5,19 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.FixedSizeSortedVector;
 import algorithms.util.PairFloat;
+import algorithms.util.PolygonAndPointPlotter;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A class to find the k nearest neighbors of a given
@@ -42,6 +47,11 @@ public class KNearestNeighbors {
     //    finding the nearest (x[i], y[i]) for a query point
     private KDTreeFloat kdTree = null;
     
+    private float xmin = Float.MAX_VALUE;
+    private float xmax = Float.MIN_VALUE;
+    private float ymin = Float.MAX_VALUE;
+    private float ymax = Float.MIN_VALUE;
+        
     public KNearestNeighbors(int[] x, int[] y) {
         init(x, y);
     }
@@ -83,10 +93,10 @@ public class KNearestNeighbors {
         
         int n = x.length;
         
-        float xmin = Float.MAX_VALUE;
-        float xmax = Float.MIN_VALUE;
-        float ymin = Float.MAX_VALUE;
-        float ymax = Float.MIN_VALUE;
+        xmin = Float.MAX_VALUE;
+        xmax = Float.MIN_VALUE;
+        ymin = Float.MAX_VALUE;
+        ymax = Float.MIN_VALUE;
         for (int i = 0; i < n; ++i) {
             float xp = x[i];
             float yp = y[i];
@@ -124,7 +134,7 @@ public class KNearestNeighbors {
             
             PairFloat p1 = sites[s1].getCoord();
             PairFloat p2 = sites[s2].getCoord();
-            
+                       
             Set<Integer> indexes = siteIndexesMap.get(p1);
             if (indexes == null) {
                 indexes = new HashSet<Integer>();
@@ -184,10 +194,10 @@ public class KNearestNeighbors {
     public List<PairFloat> findNearest(int k, float x, float y) {
         return findNearest(k, x, y, Float.MAX_VALUE);
     }
-    
+        
     public List<PairFloat> findNearest(int k, float x, float y,
         float maxDistance) {
-             
+       
         // O(log_2(N) at best, but some extreme queries are O(N).
         // nearest site(s). (if same distances, returns more than one).
         Set<PairFloat> nearest = kdTree.findNearestNeighbor(x, y);
@@ -220,7 +230,7 @@ public class KNearestNeighbors {
         while (!queue.isEmpty()) {
             
             PairFloat site = queue.pop();
-            
+                 
             if (visited.contains(site)) {
                 continue;
             }
@@ -269,6 +279,44 @@ public class KNearestNeighbors {
         }
         
         return output;
+    }
+    
+    public void debug(int fileNumber) throws IOException {
+        
+        Site[] sites = voronoi.getSites();
+        int n = sites.length;
+        float[] x = new float[n];
+        float[] y = new float[n];
+        for (int i = 0; i < n; ++i) {
+            x[i] = sites[i].getCoord().getX();
+            y[i] = sites[i].getCoord().getY();
+        }
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        
+        PolygonAndPointPlotter plotter = 
+            new PolygonAndPointPlotter(xmin, xmax, ymin, ymax);
+        
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+        
+        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
+        
+        int n2 = edges.size();
+        xPolygon = new float[2*n2];
+        yPolygon = new float[2*n2];
+        int count = 0;
+        for (GraphEdge edge : edges) {
+            xPolygon[count] = edge.x1;
+            yPolygon[count] = edge.y1;
+            xPolygon[count + 1] = edge.x2;
+            yPolygon[count + 1] = edge.y2;
+            count += 2;
+        }
+        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
+            "edges");
+        String filePath = plotter.writeFile("debug_voron_" + fileNumber);
+        System.out.println("wrote file=" + filePath);
     }
     
 }
