@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -96,11 +97,8 @@ public class MedialAxis1 {
      * (NOTE: in future may make a version that doesn't
      * need all interior points and uses an adaptive
      * sampling, but use case for now fits these arguments
-     * better.   Note, while focusing on the algorithm
-     * details, have not completely thought through the
-     * current structure for boundaryPoints for
-     * embedded holes).
-     * )
+     * better.  may offer a result getter than makes a tree
+     * out of the medial axis points too).
      * 
      * @param shapePoints
      * @param boundaryPoints 
@@ -160,7 +158,6 @@ public class MedialAxis1 {
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : medAxisList) {
             PairInt pp = mp.getCenter();
-            System.out.println("**med axis pt = " + pp);
             if (mAPs.contains(pp)) {
                 return false;
             }
@@ -277,7 +274,7 @@ public class MedialAxis1 {
                 continue;
             }
             
-            log.info("nIter=" + nIter + " q.size=" 
+            log.fine("nIter=" + nIter + " q.size=" 
                 + q.getNumberOfNodes() + 
                 " s.size=" + processed.size()
                 + " nInterior=" + nInterior);
@@ -354,7 +351,7 @@ public class MedialAxis1 {
             
         }
         
-        log.info("med axies nIter=" + nIter);
+        log.fine("med axies nIter=" + nIter);
         
         assert(assertUniqueMedialAxesPoints());
 
@@ -369,12 +366,14 @@ public class MedialAxis1 {
         approximate the hierarchical generalized Voronoi graph[8].
         */
         
-        log.info("remaining points.size=" + points.size());
-        StringBuilder sb = new StringBuilder(" ");
-        for (PairInt p: points) {
-            sb.append(p).append(", ");
+        if (log.getLevel() != null && log.getLevel().equals(Level.FINE)) {
+            log.fine("remaining points.size=" + points.size());
+            StringBuilder sb = new StringBuilder(" ");
+            for (PairInt p : points) {
+                sb.append(p).append(", ");
+            }
+            log.fine(sb.toString());
         }
-        log.info(sb.toString());
         
         // ----- code to fill in gaps ---       
         int nm = medAxisList.size();
@@ -627,7 +626,7 @@ public class MedialAxis1 {
                         cIdx = 0;
                         overrideDXY = true;
                     } else {
-                        log.warning("++Possible Error in algorithm:"
+                        log.fine("++Possible Error in algorithm:"
                         + " could not find a valid medial axis"
                         + " point from the random first point.");
                         //NOTE: in one case, p2 was a valid med axis
@@ -952,7 +951,7 @@ Assume point m lies on the medial axis and is
         int tol = (int)Math.ceil(r * sinePiDivN);
         double threshold = 0.5 * sinePiDivN;
      
-        log.info("p=" + p.toString() + " a nearest boundary="
+        log.fine("p=" + p.toString() + " a nearest boundary="
             + bPoint.toString() + " r=" + r 
             + String.format(" tol=%d pix  sinePiDivN=%.4f", 
                 tol, sinePiDivN));       
@@ -1022,7 +1021,7 @@ Assume point m lies on the medial axis and is
             double aSq = distanceSq(x1, y1, x2, y2);
             
             if (cSq < aSq || bSq < aSq) {
-                log.info(String.format("REMOVED1 (%d,%d) (%d,%d)", 
+                log.fine(String.format("REMOVED1 (%d,%d) (%d,%d)", 
                     x1, y1, x2, y2));
                 continue;
             }
@@ -1033,12 +1032,12 @@ Assume point m lies on the medial axis and is
             final double angleA = Math.acos(cosA);
     
             if (angleA < threshold) {
-                log.info(String.format("REMOVED2 angleA=%.4f (%d,%d) (%d,%d)", 
+                log.fine(String.format("REMOVED2 angleA=%.4f (%d,%d) (%d,%d)", 
                     (float)angleA, x1, y1, x2, y2));
                 continue;
             }
             
-            log.info(String.format("angle=%.4f (%d,%d) (%d,%d) i=[%d,%d]", 
+            log.fine(String.format("angle=%.4f (%d,%d) (%d,%d) i=[%d,%d]", 
                 (float)angleA, x1, y1, x2, y2, i, idx2));
             
             /*
@@ -1104,7 +1103,7 @@ Assume point m lies on the medial axis and is
                 indexAngleMap.put(i, angleA);
                 indexAngleMap.put(idx2, angleA);
             
-                log.info("  <-- prev is a med axis pt");
+                log.fine("  <-- prev is a med axis pt");
             }
         }       
         
@@ -1189,14 +1188,14 @@ Assume point m lies on the medial axis and is
                     continue;
                 }
                 double dist2 = distance(x2, y2, p2);
-                log.info("   dist diff=" + 
+                log.fine("   dist diff=" + 
                     Math.abs(dist1 - dist2) + " dist1=" + dist1 
                     + " dist2=" + dist2);
                 if ((dist1 == dist2) || ((dist1 > tol && dist2 > tol) &&
                     (Math.abs(dist1 - dist2) <= tol))) {
                     int[] dir1 = calculateNeighborDirection(x1, y1, p1);
                     int[] dir2 = calculateNeighborDirection(x2, y2, p2);
-                    log.info("   tolsq=" + tol
+                    log.fine("   tolsq=" + tol
                         + " np1=" + p1.toString()
                         + " np2=" + p2.toString()
                         + "\n         dir1=" + Arrays.toString(dir1)
@@ -1369,7 +1368,7 @@ Assume point m lies on the medial axis and is
             if (tol < 1) {
                 tol = 1;
             }
-            log.info("medAxisPt.center=" + medAxisCenter);
+            log.fine("medAxisPt.center=" + medAxisCenter);
             
             // if medAxisPt nearest bounds are already equal and diff dir,
             // skip refinement.
@@ -1401,7 +1400,7 @@ Assume point m lies on the medial axis and is
                 prevTol = tol;
             }
             
-            log.info("  dither to improve " + medAxisCenter + ""
+            log.fine("  dither to improve " + medAxisCenter + ""
                 + " dither=" + tol);
             
             List<PairInt> better = new ArrayList<PairInt>();
@@ -1434,7 +1433,7 @@ Assume point m lies on the medial axis and is
                 }
             }
             if (better.isEmpty()) {
-                log.info("  WARNING: did not find better for " + medAxisCenter);
+                log.fine("  WARNING: did not find better for " + medAxisCenter);
                 rm.add(i);
             } else{
                 // replace mp w/ first and add remaining

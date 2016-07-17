@@ -1,9 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
-import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.util.PairInt;
-import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,7 +19,7 @@ public class MedialAxis1Test extends TestCase {
     public MedialAxis1Test() {
     }
     
-    public void estGapCreator() {
+    public void testGapCreator() {
     
         List<PairInt> border = new ArrayList<PairInt>();
         border.add(new PairInt(0,0));
@@ -127,7 +125,7 @@ public class MedialAxis1Test extends TestCase {
         
     }
     
-    public void est0() throws IOException {
+    public void test0() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -196,7 +194,7 @@ public class MedialAxis1Test extends TestCase {
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
             PairInt center = mp.getCenter();
-            System.out.println("medial axis pt=" + center);
+            //System.out.println("medial axis pt=" + center);
             int x = center.getX();
             int y = center.getY();
             PairInt rm = null;
@@ -239,7 +237,7 @@ public class MedialAxis1Test extends TestCase {
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
             PairInt center = mp.getCenter();
-            System.out.println("*medial axis pt=" + center);
+            //System.out.println("*medial axis pt=" + center);
             int x = center.getX();
             int y = center.getY();
             PairInt rm = null;
@@ -270,7 +268,7 @@ public class MedialAxis1Test extends TestCase {
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : list) {
             PairInt pp = mp.getCenter();
-            System.out.println("**med axis pt = " + pp);
+            //System.out.println("**med axis pt = " + pp);
             assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
@@ -287,6 +285,7 @@ public class MedialAxis1Test extends TestCase {
             expected.add(new PairInt(i, 5));
         }
         
+        /*
         float[] x = new float[mAPs.size()];
         float[] y = new float[mAPs.size()];
         int count = 0;
@@ -301,6 +300,7 @@ public class MedialAxis1Test extends TestCase {
         float[] yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile();
+        */
         
         for (PairInt p2 : mAPs) {
             assertTrue(expected.remove(p2));
@@ -308,7 +308,7 @@ public class MedialAxis1Test extends TestCase {
         assertTrue(expected.isEmpty());
     }
     
-    public void est01() throws IOException {
+    public void test01() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -351,10 +351,12 @@ public class MedialAxis1Test extends TestCase {
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : list) {
             PairInt pp = mp.getCenter();
-            System.out.println("**med axis pt = " + pp);
-         //   assertFalse(mAPs.contains(pp));
+            //System.out.println("**med axis pt = " + pp);
+            assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
+        
+        /*
         float[] x = new float[mAPs.size()];
         float[] y = new float[mAPs.size()];
         int count = 0;
@@ -369,6 +371,7 @@ public class MedialAxis1Test extends TestCase {
         float[] yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile();
+        */
     }
     
     /*
@@ -408,7 +411,7 @@ public class MedialAxis1Test extends TestCase {
         }
     }
     
-    public void est1() {
+    public void test1() {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -569,7 +572,7 @@ public class MedialAxis1Test extends TestCase {
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
             PairInt center = mp.getCenter();
-            System.out.println("medial axis pt=" + center);
+            //System.out.println("medial axis pt=" + center);
             int x = center.getX();
             int y = center.getY();
             PairInt rm = null;
@@ -590,6 +593,7 @@ public class MedialAxis1Test extends TestCase {
         
         Set<PairInt> mSet = medAxis1.getMedialAxisPoints();
         
+        /*
         float[] x = new float[mSet.size()];
         float[] y = new float[mSet.size()];
         int count = 0;
@@ -625,6 +629,7 @@ public class MedialAxis1Test extends TestCase {
         yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile(11);
+        */
     }
     
     /*
