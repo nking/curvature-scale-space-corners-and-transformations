@@ -1,6 +1,7 @@
 package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
@@ -126,7 +127,7 @@ public class MedialAxis1Test extends TestCase {
         
     }
     
-    public void test0() throws IOException {
+    public void est0() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -167,7 +168,8 @@ public class MedialAxis1Test extends TestCase {
         }
         assertTrue(expectedNearest.isEmpty());
         
-        Set<PairInt> nearestB2 = medAxis1.getNearestBoundaryPoints(new PairInt(22, 7));        
+        Set<PairInt> nearestB2 = 
+            medAxis1.getNearestBoundaryPoints(new PairInt(22, 7));        
         expectedNearest = new HashSet<PairInt>();
         expectedNearest.add(new PairInt(23, 7));
         for (PairInt npb : nearestB2) {
@@ -179,31 +181,31 @@ public class MedialAxis1Test extends TestCase {
         List<MedialAxis1.MedialAxisPoint> output = new
             ArrayList<MedialAxis1.MedialAxisPoint>();
         
+        nearestB2 = medAxis1.getNearestBoundaryPoints(p);
         int status = medAxis1.intersectsMedialAxis(nearestB, p, output);
         
         assertEquals(1, status);
         
+        //18,6 w/ r=4
         Set<PairInt> expected = new HashSet<PairInt>();
         expected.add(new PairInt(22, 8));
         expected.add(new PairInt(14, 6));
         expected.add(new PairInt(20, 3));
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
-            MedialAxis1.PVector[] vs = mp.getVectors();
-            for (MedialAxis1.PVector v : vs) {
-                System.out.println("medial axis pt=" + v.getPoint());
-                int x = v.getPoint().getX();
-                int y = v.getPoint().getY();
-                PairInt rm = null;
-                for (PairInt p2 : expected) {
-                    if ((Math.abs(x - p2.getX()) < 2) &&
-                        (Math.abs(y - p2.getY()) < 2)) {
-                        rm = p2;
-                        break;
-                    }
+            PairInt center = mp.getCenter();
+            System.out.println("medial axis pt=" + center);
+            int x = center.getX();
+            int y = center.getY();
+            PairInt rm = null;
+            for (PairInt p2 : expected) {
+                if ((Math.abs(x - p2.getX()) < 2) &&
+                    (Math.abs(y - p2.getY()) < 2)) {
+                    rm = p2;
+                    break;
                 }
-                assertTrue(expected.remove(rm));
             }
+            assertTrue(expected.remove(rm));
         }
         assertTrue(expected.isEmpty());
    
@@ -223,37 +225,34 @@ public class MedialAxis1Test extends TestCase {
         expected.add(new PairInt(18, 5));
         expected.add(new PairInt(10, 5));
         
-        assertEquals(14, results2.centerAndDistance.p.getX());
-        assertEquals(4, results2.centerAndDistance.p.getY());
-        assertTrue(Math.abs(results2.centerAndDistance.delta - 4) < 0.1);
+        assertEquals(14, results2.center.getX());
+        assertEquals(4, results2.center.getY());
+        assertTrue(Math.abs(results2.centerSrchR - 4) < 0.1);
         output = results2.medialAxes;
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
-            MedialAxis1.PVector[] vs = mp.getVectors();
-            for (MedialAxis1.PVector v : vs) {
-                System.out.println("*medial axis pt=" + v.getPoint());
-                int x = v.getPoint().getX();
-                int y = v.getPoint().getY();
-                PairInt rm = null;
-                for (PairInt p2 : expected) {
-                    if ((Math.abs(x - p2.getX()) < 2) &&
-                        (Math.abs(y - p2.getY()) < 2)) {
-                        rm = p2;
-                        break;
-                    }
+            PairInt center = mp.getCenter();
+            System.out.println("*medial axis pt=" + center);
+            int x = center.getX();
+            int y = center.getY();
+            PairInt rm = null;
+            for (PairInt p2 : expected) {
+                if ((Math.abs(x - p2.getX()) < 2) &&
+                    (Math.abs(y - p2.getY()) < 2)) {
+                    rm = p2;
+                    break;
                 }
-                assertTrue(expected.remove(rm));
             }
+            assertTrue(expected.remove(rm));
         }
         assertTrue(expected.isEmpty());
         
         // ---- test removing one of the results from the points ----
         Set<PairInt> removed = medAxis1.subtractFromPoints(
-            results2.centerAndDistance.p, results2.centerAndDistance.delta);
+            results2.center, results2.centerSrchR);
         
         assertTrue(removed.size() > 1);
         
-        // -- just running public method, until method is testable
         medAxis1 = new MedialAxis1(points, border);
         
         medAxis1.findMedialAxis();
@@ -263,11 +262,24 @@ public class MedialAxis1Test extends TestCase {
         
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : list) {
-            PairInt pp = mp.getVectors()[0].getPoint();
+            PairInt pp = mp.getCenter();
             System.out.println("**med axis pt = " + pp);
             assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
+        
+        // add expected points
+        expected.clear();
+        for (int i = 1; i < 6; ++i) {
+            expected.add(new PairInt(i, i));
+            expected.add(new PairInt(i, 10 - i));
+            expected.add(new PairInt(17 + i, 4 + i));
+            expected.add(new PairInt(23 - i, i));
+        }
+        for (int i = 6; i < 18; ++i) {
+            expected.add(new PairInt(i, 5));
+        }
+        
         float[] x = new float[mAPs.size()];
         float[] y = new float[mAPs.size()];
         int count = 0;
@@ -282,9 +294,14 @@ public class MedialAxis1Test extends TestCase {
         float[] yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile();
+        
+        for (PairInt p2 : mAPs) {
+            assertTrue(expected.remove(p2));
+        }
+        assertTrue(expected.isEmpty());
     }
     
-    public void test01() throws IOException {
+    public void est01() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -326,7 +343,7 @@ public class MedialAxis1Test extends TestCase {
         
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : list) {
-            PairInt pp = mp.getVectors()[0].getPoint();
+            PairInt pp = mp.getCenter();
             System.out.println("**med axis pt = " + pp);
          //   assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
@@ -496,8 +513,8 @@ public class MedialAxis1Test extends TestCase {
         }
     }
     
-    public void test2() {
-        
+    public void test2() throws IOException {
+                
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
         
@@ -540,24 +557,63 @@ public class MedialAxis1Test extends TestCase {
         expected.add(new PairInt(20, 7));
         
         for (MedialAxis1.MedialAxisPoint mp : output) {
-            MedialAxis1.PVector[] vs = mp.getVectors();
-            for (MedialAxis1.PVector v : vs) {
-                System.out.println("medial axis pt=" + v.getPoint());
-                int x = v.getPoint().getX();
-                int y = v.getPoint().getY();
-                PairInt rm = null;
-                for (PairInt p2 : expected) {
-                    if ((Math.abs(x - p2.getX()) < 2) &&
-                        (Math.abs(y - p2.getY()) < 2)) {
-                        rm = p2;
-                        break;
-                    }
+            PairInt center = mp.getCenter();
+            System.out.println("medial axis pt=" + center);
+            int x = center.getX();
+            int y = center.getY();
+            PairInt rm = null;
+            for (PairInt p2 : expected) {
+                if ((Math.abs(x - p2.getX()) < 2) &&
+                    (Math.abs(y - p2.getY()) < 2)) {
+                    rm = p2;
+                    break;
                 }
-                assertTrue(expected.remove(rm));
             }
+            assertTrue(expected.remove(rm));
         }
         assertTrue(expected.isEmpty());
         
+        medAxis1 = new MedialAxis1(points, border);
+        
+        medAxis1.findMedialAxis();
+        
+        Set<PairInt> mSet = medAxis1.getMedialAxisPoints();
+        
+        float[] x = new float[mSet.size()];
+        float[] y = new float[mSet.size()];
+        int count = 0;
+        for (PairInt p2 : mSet) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        
+        PolygonAndPointPlotter plotter 
+            = new PolygonAndPointPlotter(0, 23, 0, 10);
+        float[] xp = null;
+        float[] yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile(10);
+        
+        // --- compare to erosion filter and line thinner ----
+        border.clear();
+        points.clear();
+        populateTestData2(border, points);
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(points, 0, 23, 0, 10);
+        x = new float[points.size()];
+        y = new float[points.size()];
+        count = 0;
+        for (PairInt p2 : points) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        plotter = new PolygonAndPointPlotter(0, 23, 0, 10);
+        xp = null;
+        yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile(11);
     }
     
     /*
