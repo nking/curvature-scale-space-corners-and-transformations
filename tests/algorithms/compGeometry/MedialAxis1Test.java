@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -26,7 +25,7 @@ public class MedialAxis1Test extends TestCase {
         
         MedialAxis1 medAxis1 = null;
         Set<PairInt> mAPs = null;
-        LinkedList<MedialAxis1.MedialAxisPoint> list = null;
+        List<MedialAxis1.MedialAxisPoint> list = null;
         Set<PairInt> expected = null;
         
         Set<PairInt> border = new HashSet<PairInt>();
@@ -49,7 +48,7 @@ public class MedialAxis1Test extends TestCase {
             mAPs.add(pp);
         }
         
-        /*
+       
         float[] x = new float[mAPs.size()];
         float[] y = new float[mAPs.size()];
         int count = 0;
@@ -64,8 +63,7 @@ public class MedialAxis1Test extends TestCase {
         float[] yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile();
-        */
-            
+         
         /*
         Figure 2 of Yang, Brock, and Moll
            _____________
@@ -337,7 +335,7 @@ public class MedialAxis1Test extends TestCase {
         float[] yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile(20);
-        
+      
         // --- compare to erosion filter and line thinner ----
         border.clear();
         points.clear();
@@ -429,7 +427,7 @@ public class MedialAxis1Test extends TestCase {
                 
         MedialAxis1 medAxis1 = null;
         Set<PairInt> mAPs = null;
-        LinkedList<MedialAxis1.MedialAxisPoint> list = null;
+        List<MedialAxis1.MedialAxisPoint> list = null;
         Set<PairInt> expected = null;
         
         Set<PairInt> border = new HashSet<PairInt>();
@@ -444,7 +442,7 @@ public class MedialAxis1Test extends TestCase {
         
         Set<PairInt> mSet = medAxis1.getMedialAxisPoints();
         
-        /*
+        
         float[] x = new float[mSet.size()];
         float[] y = new float[mSet.size()];
         int count = 0;
@@ -480,7 +478,7 @@ public class MedialAxis1Test extends TestCase {
         yp = null;
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile(11);
-        */    
+            
         
         /*
         adding hole to data0 in center of object
@@ -505,43 +503,7 @@ public class MedialAxis1Test extends TestCase {
         if (!(medAxis1.getSepAng() == Math.PI/9 && medAxis1.getNSampl()
             == 18)) {
             return;
-        }
-        
-        medAxis1 = new MedialAxis1(points, border);
-
-        PairInt p = new PairInt(18, 8);
-
-        // --- checking nearest neighbors ---
-        Set<PairInt> nearestB = medAxis1.getNearestBoundaryPoints(p);        
-                
-        List<MedialAxis1.MedialAxisPoint> output = new
-            ArrayList<MedialAxis1.MedialAxisPoint>();
-        
-        medAxis1.intersectsMedialAxis(
-            medAxis1.findNearestBoundsAsArray(p.getX(), p.getY()),
-            p, output);
-        
-        expected = new HashSet<PairInt>();
-        expected.add(new PairInt(17, 7));
-        expected.add(new PairInt(20, 7));
-        
-        for (MedialAxis1.MedialAxisPoint mp : output) {
-            PairInt center = mp.getCenter();
-            //System.out.println("medial axis pt=" + center);
-            int x1 = center.getX();
-            int y1 = center.getY();
-            PairInt rm = null;
-            for (PairInt p2 : expected) {
-                if ((Math.abs(x1 - p2.getX()) < 2) &&
-                    (Math.abs(y1 - p2.getY()) < 2)) {
-                    rm = p2;
-                    break;
-                }
-            }
-            assertTrue(expected.remove(rm));
-        }
-        assertTrue(expected.isEmpty());
-       
+        }            
     }
     
     /*

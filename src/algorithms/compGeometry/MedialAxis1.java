@@ -273,10 +273,6 @@ public class MedialAxis1 {
                 " s.size=" + processed.size()
                 + " nInterior=" + nInterior);
 
-            //postponing removal of searched points
-            //until after all points in block are searched.
-            Set<PairInt> extracted = new HashSet<PairInt>();
-        
             for (int i = 0; i < nSPoints; ++i) {
                 
                 PairInt p2 = new PairInt(xSurf[i], ySurf[i]);
@@ -290,7 +286,7 @@ public class MedialAxis1 {
                     PairInt bPoint = np.findClosest(p2.getX(), p2.getY())
                         .iterator().next();
                     double d = distance(bPoint.getX(), bPoint.getY(), p);
-                    extractFromPoints(p2, d - 1, extracted);                    
+                    processed.addAll(subtractFromPoints(p2, d - 1));                    
                     continue;
                 }
                 
@@ -335,16 +331,12 @@ public class MedialAxis1 {
                     medAxisList.add(m);
                 }
                          
-                extractFromPoints(results.center,
-                    results.centerSrchR - 1, extracted);
+                processed.addAll(subtractFromPoints(results.center,
+                    results.centerSrchR - 1));
                
                 assert(assertUniqueMedialAxesPoints());
             }
-            
-            //move searched areas from points to processed
-            points.removeAll(extracted);
-            processed.addAll(extracted);
-            
+             
             assert(assertUniqueMedialAxesPoints());
             
         }
