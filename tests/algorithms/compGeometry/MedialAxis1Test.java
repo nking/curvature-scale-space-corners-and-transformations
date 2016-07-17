@@ -1,7 +1,9 @@
 package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,112 +19,6 @@ import junit.framework.TestCase;
 public class MedialAxis1Test extends TestCase {
     
     public MedialAxis1Test() {
-    }
-    
-    public void testGapCreator() {
-    
-        List<PairInt> border = new ArrayList<PairInt>();
-        border.add(new PairInt(0,0));
-        border.add(new PairInt(9,9));
-        Set<PairInt> points = new HashSet<PairInt>();
-        for (int i = 0; i < 10; ++i) {
-            for (int j = 0; j < 10; ++j) {
-                points.add(new PairInt(i, j));
-            }
-        }
-                
-        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
-    
-        // ---- test horizontal gap ----
-        PairInt p1 = new PairInt(2, 4);
-        PairInt p2 = new PairInt(5, 4);
-        List<PairInt> results = medAxis1.createGapPoints(p1, p2);
-        
-        List<PairInt> expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(3, 4));
-        expected.add(new PairInt(4, 4));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
-        // ---- test horizontal gap rev ----
-        p2 = new PairInt(2, 4);
-        p1 = new PairInt(5, 4);
-        results = medAxis1.createGapPoints(p1, p2);
-        
-        expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(4, 4));
-        expected.add(new PairInt(3, 4));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
-        // ---- test vertical gap ----
-        p1 = new PairInt(4, 2);
-        p2 = new PairInt(4, 5);
-        results = medAxis1.createGapPoints(p1, p2);
-        
-        expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(4, 3));
-        expected.add(new PairInt(4, 4));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
-        // ---- test vertical gap rev ----
-        p2 = new PairInt(4, 2);
-        p1 = new PairInt(4, 5);
-        results = medAxis1.createGapPoints(p1, p2);
-        
-        expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(4, 4));
-        expected.add(new PairInt(4, 3));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
-        // ---- test slope == 1 Q1 ----
-        p1 = new PairInt(2, 2);
-        p2 = new PairInt(5, 5);
-        results = medAxis1.createGapPoints(p1, p2);
-        
-        expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(3, 3));
-        expected.add(new PairInt(4, 4));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
-        // ---- test slope == -1 Q3 ----
-        p2 = new PairInt(2, 2);
-        p1 = new PairInt(5, 5);
-        results = medAxis1.createGapPoints(p1, p2);
-        
-        expected = new ArrayList<PairInt>();
-        expected.add(new PairInt(4, 4));
-        expected.add(new PairInt(3, 3));
-        assertEquals(expected.size(), results.size());
-        for (int i = 0; i < expected.size(); ++i) {
-            PairInt e = expected.get(i);
-            PairInt r = results.get(i);
-            assertTrue(e.equals(r));
-        }
-        
     }
     
     public void test0() throws IOException {
@@ -268,7 +164,7 @@ public class MedialAxis1Test extends TestCase {
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : list) {
             PairInt pp = mp.getCenter();
-            //System.out.println("**med axis pt = " + pp);
+            System.out.println("**med axis pt = " + pp);
             assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
@@ -303,6 +199,7 @@ public class MedialAxis1Test extends TestCase {
         */
         
         for (PairInt p2 : mAPs) {
+            System.out.println(" -> med axis pt = " + p2);
             assertTrue(expected.remove(p2));
         }
         assertTrue(expected.isEmpty());
@@ -411,7 +308,7 @@ public class MedialAxis1Test extends TestCase {
         }
     }
     
-    public void test1() {
+    public void test1() throws IOException {
         
         List<PairInt> border = new ArrayList<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
@@ -456,8 +353,50 @@ public class MedialAxis1Test extends TestCase {
         medAxis1.intersectsMedialAxis(
             medAxis1.findNearestBoundsAsArray(p.getX(), p.getY()), 
             p, output);
+
+        // -- visualize the results ----        
+        medAxis1 = new MedialAxis1(points, border);
         
-        int z = 1;
+        medAxis1.findMedialAxis();
+        
+        Set<PairInt> mSet = medAxis1.getMedialAxisPoints();
+        
+        float[] x = new float[mSet.size()];
+        float[] y = new float[mSet.size()];
+        int count = 0;
+        for (PairInt p2 : mSet) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        
+        PolygonAndPointPlotter plotter 
+            = new PolygonAndPointPlotter(0, 18, 0, 21);
+        float[] xp = null;
+        float[] yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile(20);
+        
+        // --- compare to erosion filter and line thinner ----
+        border.clear();
+        points.clear();
+        populateTestData(border, points);
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(points, 0, 18, 0, 21);
+        x = new float[points.size()];
+        y = new float[points.size()];
+        count = 0;
+        for (PairInt p2 : points) {
+            x[count] = p2.getX();
+            y[count] = p2.getY();
+            count++;
+        }
+        plotter = new PolygonAndPointPlotter(0, 18, 0, 21);
+        xp = null;
+        yp = null;
+        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.writeFile(21);
+        
     }
     
     /*
