@@ -105,10 +105,8 @@ public class MedialAxis1 {
      * @param boundaryPoints 
      */
     public MedialAxis1(final Set<PairInt> shapePoints,
-        final List<PairInt> boundaryPoints) {
+        final Set<PairInt> boundaryPoints) {
 
-        //TODO: consider changing these arguments.
-        //   The ordering of the points is not important.
         //TODO: also, consider a tree output if wanted,
         // because internal variables have parent node
         // information

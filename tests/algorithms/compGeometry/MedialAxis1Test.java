@@ -6,6 +6,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +29,7 @@ public class MedialAxis1Test extends TestCase {
         LinkedList<MedialAxis1.MedialAxisPoint> list = null;
         Set<PairInt> expected = null;
         
-        List<PairInt> border = new ArrayList<PairInt>();
+        Set<PairInt> border = new HashSet<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
         
         populateTestData0(border, points);
@@ -239,7 +240,7 @@ public class MedialAxis1Test extends TestCase {
            |___________| height=11
            <-----24---->
     */
-    private void populateTestData0(List<PairInt> border, 
+    private void populateTestData0(Collection<PairInt> border, 
         Set<PairInt> areaPoints) {
     
         // clockwise
@@ -270,7 +271,7 @@ public class MedialAxis1Test extends TestCase {
     
     public void test1() throws IOException {
                 
-        List<PairInt> border = new ArrayList<PairInt>();
+        Set<PairInt> border = new HashSet<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
         
         populateTestData(border, points);
@@ -374,7 +375,7 @@ public class MedialAxis1Test extends TestCase {
       0123456789012345678
                 1
     */
-    private void populateTestData(List<PairInt> border, 
+    private void populateTestData(Collection<PairInt> border, 
         Set<PairInt> areaPoints) {
     
         // clockwise
@@ -431,7 +432,7 @@ public class MedialAxis1Test extends TestCase {
         LinkedList<MedialAxis1.MedialAxisPoint> list = null;
         Set<PairInt> expected = null;
         
-        List<PairInt> border = new ArrayList<PairInt>();
+        Set<PairInt> border = new HashSet<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
         
         populateTestData2(border, points);
@@ -562,7 +563,7 @@ public class MedialAxis1Test extends TestCase {
                                                0
       10 11 12 13 14 15 16 17 18 19 20 21 22 23
     */
-    private void populateTestData2(List<PairInt> border, 
+    private void populateTestData2(Collection<PairInt> border, 
         Set<PairInt> areaPoints) {
     
         populateTestData0(border, areaPoints);
