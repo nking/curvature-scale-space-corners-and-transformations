@@ -65,15 +65,15 @@ public class MedialAxis1 {
      * separation angle used for sampling points in
      * a circle around a point.
      */
-    //private static final double sepAng = Math.PI/3;
-    //private final int nSampl = 6;//  2*pi/sepAng
+    private static final double sepAng = Math.PI/3;
+    private final int nSampl = 6;//  2*pi/sepAng
     
     
     //private static final double sepAng = Math.PI/6;
     //private final int nSampl = 12;//  2*pi/sepAng
     
-    private static final double sepAng = Math.PI/9;
-    private final int nSampl = 18;//  2*pi/sepAng
+    //private static final double sepAng = Math.PI/9;
+    //private final int nSampl = 18;//  2*pi/sepAng
     
     //private static final double sepAng = Math.PI/18;
     //private final int nSampl = 36;//  2*pi/sepAng
@@ -256,6 +256,12 @@ public class MedialAxis1 {
                 continue;
             }
             visited.add(p);
+  
+            // for each p, sample points at a radius r
+            // and search for medial axis points around
+            // those.  (note that searching p directly for
+            // medial axis points is a less detailed complete
+            // result than creating p2's and searching those.)
             
             double r = mp.getBoundaryPoints()[0].getDistance();
             assert(r != Double.MIN_VALUE);
