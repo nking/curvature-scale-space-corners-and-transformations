@@ -60,8 +60,7 @@ public class MedialAxis1 {
     */
     private final Set<PairInt> processed;
     
-    // NOTE: might change this
-    private final LinkedList<MedialAxisPoint> medAxisList;
+    private final List<MedialAxisPoint> medAxisList;
     
     //xMin, xMax, yMin, yMax
     private final int[] minMaxXY;
@@ -98,8 +97,7 @@ public class MedialAxis1 {
      * (NOTE: in future may make a version that doesn't
      * need all interior points and uses an adaptive
      * sampling, but use case for now fits these arguments
-     * better.  may offer a result getter than makes a tree
-     * out of the medial axis points too).
+     * better.).
      * 
      * @param shapePoints
      * @param boundaryPoints 
@@ -107,10 +105,6 @@ public class MedialAxis1 {
     public MedialAxis1(final Set<PairInt> shapePoints,
         final Set<PairInt> boundaryPoints) {
 
-        //TODO: also, consider a tree output if wanted,
-        // because internal variables have parent node
-        // information
-        
         this.points = new HashSet<PairInt>(shapePoints);
         
         this.boundary = new HashSet<PairInt>(boundaryPoints);
@@ -126,7 +120,7 @@ public class MedialAxis1 {
         
         processed = new HashSet<PairInt>(points.size());
              
-        medAxisList = new LinkedList<MedialAxisPoint>();
+        medAxisList = new ArrayList<MedialAxisPoint>();
     }
     
     protected Set<PairInt> getNearestBoundaryPoints(PairInt p) {
@@ -395,7 +389,7 @@ public class MedialAxis1 {
         assert(assertUniqueMedialAxesPoints());
     }
 
-    protected LinkedList<MedialAxisPoint> getMedAxisList() {
+    protected List<MedialAxisPoint> getMedAxisList() {
         return medAxisList;
     }
     
