@@ -71,19 +71,16 @@ public class MedialAxis1 {
      * a circle around a point.
      */
     //private static final double sepAng = Math.PI/3;
-    
     //private final int nSampl = 6;//  2*pi/sepAng
     
-    //private static final double sepAng = Math.PI/6;
     
+    //private static final double sepAng = Math.PI/6;
     //private final int nSampl = 12;//  2*pi/sepAng
     
     private static final double sepAng = Math.PI/9;
-    
     private final int nSampl = 18;//  2*pi/sepAng
     
     //private static final double sepAng = Math.PI/18;
-    
     //private final int nSampl = 36;//  2*pi/sepAng
     
     // 10 degrees threshold for separation angle criterion
@@ -136,6 +133,13 @@ public class MedialAxis1 {
     
     protected Set<PairInt> getNearestBoundaryPoints(PairInt p) {
         return np.findClosest(p.getX(), p.getY());
+    }
+    
+    protected double getSepAng() {
+        return sepAng;
+    }
+    protected int getNSampl() {
+        return nSampl;
     }
     
     protected void addToHeap(Heap heap, MedialAxisPoint mp) {
@@ -1326,11 +1330,14 @@ Assume point m lies on the medial axis and is
                 continue;
             }
                     
-            if (tol > 2) {
+            if (tol > 3) {
+                String msg = "Algorithm needs logic for "
+                    + "dither with large radius=" + tol;
                 // temporarily capturing case as an exception.
                 // need to consider fast options for large srch radius here.
-                throw new IllegalStateException("Algorithm needs "
-                    + " logic for dither with large radius");
+                //throw new IllegalStateException(msg);
+                log.warning(msg);
+                continue;
             }
             
             if (tol != prevTol) {
