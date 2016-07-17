@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.optimization.segmentation;
 
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
@@ -58,7 +59,7 @@ public class SegmentationResults {
         nPoints = new int[n];
         perimeters = new ArrayList<Set<PairInt>>();
         
-        ImageSegmentation imageSegmentation = new ImageSegmentation();
+        PerimeterFinder2 finder = new PerimeterFinder2();
         
         MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
         
@@ -74,7 +75,7 @@ public class SegmentationResults {
             
             nPoints[i] = set.size();
         
-            Set<PairInt> border = imageSegmentation.extractBorder(set);
+            Set<PairInt> border = finder.extractBorder(set);
             
             perimeters.add(border);
             

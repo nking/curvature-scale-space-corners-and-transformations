@@ -6,6 +6,9 @@ import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import junit.framework.TestCase;
 
@@ -15,146 +18,200 @@ import junit.framework.TestCase;
  */
 public class PerimeterFinder2Test extends TestCase {
     
-    public void testOrderThePerimeter() throws Exception {
+    public void testExtractBorder() {
         
-        PerimeterFinder finder = new PerimeterFinder();
+        /*
+         4 5 6 7 8 9 
+           @ @ @ @ %  5
+         % @ @ @ @    4
+           % % %      3
+        */
         
-        String binDir = ResourceFinder.findDirectory("testresources");
-        String filePath = binDir + "/test_persist_info_391558857.dat";
+        Set<PairInt> data = new HashSet<PairInt>();
+        for (int i = 5; i < 10; ++i) {
+            data.add(new PairInt(i, 5));
+        }
+        for (int i = 4; i < 9; ++i) {
+            data.add(new PairInt(i, 4));
+        }
+        for (int i = 5; i < 8; ++i) {
+            data.add(new PairInt(i, 3));
+        }
         
-        Object[] objects = PerimeterFinder.readPeristedForTest(filePath);
-
-        float searchRadius = ((Float)objects[0]).floatValue();
-        int bmaIndex = ((Integer)objects[1]).intValue();
-        Set<PairInt> perimeter = (Set<PairInt>)objects[2];
-        BlobMedialAxes bma = (BlobMedialAxes)objects[3];
+        Set<PairInt> expected = new HashSet<PairInt>(data);
+        expected.remove(new PairInt(6, 4));
         
-        int n = perimeter.size();
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        Set<PairInt> boundary = finder.extractBorder(data);
         
-        PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
-            bma, bmaIndex);
+        for (PairInt p : boundary) {
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
         
-        assertEquals(n, ordered.getN());
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        boolean isAdjacent = curveHelper.isAdjacent(ordered, 0, 
-            ordered.getN() - 1, searchRadius);
-        
-        assertTrue(isAdjacent);
     }
     
-    public void testOrderThePerimeter2() throws Exception {
+    public void test1() {
         
-        PerimeterFinder finder = new PerimeterFinder();
+        Set<PairInt> data = getSet1();
         
-        String binDir = ResourceFinder.findDirectory("testresources");
-        String filePath = binDir + "/test_persist_info_392531118.dat";
+        Set<PairInt> expected = new HashSet<PairInt>();
+        List<List<PairInt>> orderedBounds = getSet1Boundaries();
+        for (List<PairInt> list : orderedBounds) {
+            expected.addAll(list);
+        }
         
-        Object[] objects = PerimeterFinder.readPeristedForTest(filePath);
-
-        float searchRadius = ((Float)objects[0]).floatValue();
-        int bmaIndex = ((Integer)objects[1]).intValue();
-        Set<PairInt> perimeter = (Set<PairInt>)objects[2];
-        BlobMedialAxes bma = (BlobMedialAxes)objects[3];
-      
-        int n = perimeter.size();
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        Set<PairInt> boundary = finder.extractBorder(data);
         
-        PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
-            bma, bmaIndex);
+        for (PairInt p : boundary) {
+            System.out.println("boundary p=" + p);
+            assertTrue(expected.remove(p));
+        }
+        assertTrue(expected.isEmpty());
         
-        assertEquals(n, ordered.getN());
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        boolean isAdjacent = curveHelper.isAdjacent(ordered, 0, 
-            ordered.getN() - 1, searchRadius);
-        
-        assertTrue(isAdjacent);
     }
     
-    public void testOrderThePerimeter3() throws Exception {
+    /**
+     * returns lists of sequential CCW ordered contiguous
+     * boundary points.
+     * 
+     * @return 
+     */
+    private List<List<PairInt>> getSet1Boundaries() {
+        /*
+        points with gaps, similar to st. louis arch image gaps:
+            0 1 2 3 4 5 6 7 8 9
+         0  @ @ @ @ @ @ @ @ @ @
+         1  @ @ @ @ @ @ @ @ @ @
+         2  @ @ @ @       @ @ @
+         3  @ @ @     @   @ @ @
+         4  @ @     @ @     @ @
+         5  @     @ @ @     @ @
+         6  @   @ @ @ @ @   @ @
+         7      @ @ @ @ @   @ @
+         8      @ @ @ @ @   @ @
+         9      @ @ @ @ @   @ @
         
-        PerimeterFinder finder = new PerimeterFinder();
+        Can see from point (0,6) and the disconnected contiguous
+        points that the boundaries would have to be considered
+        sequential contiguous points whose endpoints
+        may have a gap due to resolution of single pixel width
+        extremity.
         
-        String binDir = ResourceFinder.findDirectory("testresources");
-        String filePath = binDir + "/test_persist_info_410598920.dat";
+        */
+        List<PairInt> list0 = new ArrayList<PairInt>();
         
-        Object[] objects = PerimeterFinder.readPeristedForTest(filePath);
-
-        float searchRadius = ((Float)objects[0]).floatValue();
-        int bmaIndex = ((Integer)objects[1]).intValue();
-        Set<PairInt> perimeter = (Set<PairInt>)objects[2];
-        BlobMedialAxes bma = (BlobMedialAxes)objects[3];
-      
+        // ---- HERE is complex part of ordering the border ----
+        list0.add(new PairInt(0, 6));
+    
+        for (int i = 5; i >= 1; --i) {
+            list0.add(new PairInt(0, i));
+        }
+        for (int i = 0; i <= 9; ++i) {
+            list0.add(new PairInt(i, 0));
+        }
+        for (int i = 1; i <= 9; ++i) {
+            list0.add(new PairInt(9, i));
+        }
+        for (int i = 9; i >= 3; --i) {
+            list0.add(new PairInt(8, i));
+        }
+        for (int i = 3; i >= 1; --i) {
+            list0.add(new PairInt(7, i));
+        }
+        for (int i = 6; i >= 3; --i) {
+            list0.add(new PairInt(i, 1));
+        }
+        list0.add(new PairInt(3, 2));
+        list0.add(new PairInt(2, 2));
+        list0.add(new PairInt(2, 3));
+        list0.add(new PairInt(1, 3));
+        list0.add(new PairInt(1, 4));
         
-        int n = perimeter.size();
+        // ---- second contiguous region ----
         
-        PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
-            bma, bmaIndex);
+        List<PairInt> list1 = new ArrayList<PairInt>();
+        for (int i = 6; i >= 2; --i) {
+            list1.add(new PairInt(i, 9));
+        }
+        for (int i = 8; i >= 6; --i) {
+            list1.add(new PairInt(2, i));
+        }
+        int y = 6;
+        for (int i = 3; i <= 4; ++i) {
+            list1.add(new PairInt(i, y));
+            list1.add(new PairInt(i, y - 1));
+            y--;
+        }
+        for (int i = 3; i <= 6; ++i) {
+            list1.add(new PairInt(5, i));
+        }
+        for (int i = 6; i <= 8; ++i) {
+            list1.add(new PairInt(6, i));
+        }
         
-        assertEquals(51, ordered.getX(0));
-        assertEquals(57, ordered.getY(0));
-        assertEquals(52, ordered.getX(1));
-        assertEquals(56, ordered.getY(1));
-        assertEquals(52, ordered.getX(2));
-        assertEquals(55, ordered.getY(2));
-        assertEquals(53, ordered.getX(3));
-        assertEquals(57, ordered.getY(3));
-        assertEquals(54, ordered.getX(4));
-        assertEquals(57, ordered.getY(4));
+        List<List<PairInt>> output = new ArrayList<List<PairInt>>();
+        output.add(list0);
+        output.add(list1);
         
-        assertEquals(52, ordered.getX(n - 1));
-        assertEquals(58, ordered.getY(n - 1));
-        
-        assertEquals(n, ordered.getN());
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        boolean isAdjacent = curveHelper.isAdjacent(ordered, 0, 
-            ordered.getN() - 1, searchRadius);
-        
-        assertTrue(isAdjacent);
+        return output;
+    }
+ 
+    /*
+    points with gaps, similar to st. louis arch image gaps:
+        0 1 2 3 4 5 6 7 8 9
+     0  @ @ @ @ @ @ @ @ @ @
+     1  @ @ @ @ @ @ @ @ @ @
+     2  @ @ @ @       @ @ @
+     3  @ @ @     @   @ @ @
+     4  @ @     @ @     @ @
+     5  @     @ @ @     @ @
+     6  @   @ @ @ @ @   @ @
+     7      @ @ @ @ @   @ @
+     8      @ @ @ @ @   @ @
+     9      @ @ @ @ @   @ @
+    */
+    private Set<PairInt> getSet1() {
+        Set<PairInt> points = getSet(10, 10);
+        points.remove(new PairInt(4, 2));
+        points.remove(new PairInt(5, 2));
+        points.remove(new PairInt(6, 2));
+        points.remove(new PairInt(3, 3));
+        points.remove(new PairInt(4, 3));
+        points.remove(new PairInt(6, 3));
+        points.remove(new PairInt(2, 4));
+        points.remove(new PairInt(3, 4));
+        points.remove(new PairInt(6, 4));
+        points.remove(new PairInt(7, 4));
+        points.remove(new PairInt(1, 5));
+        points.remove(new PairInt(2, 5));
+        points.remove(new PairInt(6, 5));
+        points.remove(new PairInt(7, 5));
+        points.remove(new PairInt(1, 6));
+        points.remove(new PairInt(7, 6));
+        points.remove(new PairInt(0, 7));
+        points.remove(new PairInt(1, 7));
+        points.remove(new PairInt(7, 7));
+        points.remove(new PairInt(0, 8));
+        points.remove(new PairInt(1, 8));
+        points.remove(new PairInt(7, 8));
+        points.remove(new PairInt(0, 9));
+        points.remove(new PairInt(1, 9));
+        points.remove(new PairInt(7, 9));
+        return points;
     }
     
-    public void testOrderThePerimeter4() throws Exception {
+    private Set<PairInt> getSet(int nCols, int nRows) {
         
-        PerimeterFinder finder = new PerimeterFinder();
+        Set<PairInt> points = new HashSet<PairInt>();
         
-        String binDir = ResourceFinder.findDirectory("testresources");
-        String filePath = binDir + "/test_persist_info_412377360.dat";
+        for (int row = 0; row < nRows; row++) {
+            for (int col = 0; col < nCols; col++) {
+                points.add(new PairInt(col, row));
+            }
+        }
         
-        Object[] objects = PerimeterFinder.readPeristedForTest(filePath);
-
-        float searchRadius = ((Float)objects[0]).floatValue();
-        int bmaIndex = ((Integer)objects[1]).intValue();
-        Set<PairInt> perimeter = (Set<PairInt>)objects[2];
-        BlobMedialAxes bma = (BlobMedialAxes)objects[3];
-          
-        int n = perimeter.size();
-        
-        PairIntArray ordered = finder.orderThePerimeter(perimeter, searchRadius,
-            bma, bmaIndex);
-        
-        assertEquals(49, ordered.getX(0));
-        assertEquals(28, ordered.getY(0));
-        assertEquals(50, ordered.getX(1));
-        assertEquals(28, ordered.getY(1));
-        assertEquals(51, ordered.getX(2));
-        assertEquals(28, ordered.getY(2));
-        assertEquals(52, ordered.getX(3));
-        assertEquals(27, ordered.getY(3));
-        
-        assertEquals(50, ordered.getX(n - 1));
-        assertEquals(29, ordered.getY(n - 1));
-        
-        assertEquals(n, ordered.getN());
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
-        
-        boolean isAdjacent = curveHelper.isAdjacent(ordered, 0, 
-            ordered.getN() - 1, searchRadius);
-        
-        assertTrue(isAdjacent);
+        return points;
     }
 }
