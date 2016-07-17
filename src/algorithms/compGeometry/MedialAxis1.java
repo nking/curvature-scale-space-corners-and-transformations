@@ -128,7 +128,7 @@ public class MedialAxis1 {
             minMaxXY[1], minMaxXY[3]);
         
         processed = new HashSet<PairInt>(points.size());
-    
+             
         medAxisList = new LinkedList<MedialAxisPoint>();
     }
     
@@ -376,6 +376,7 @@ public class MedialAxis1 {
         }
         log.info(sb.toString());
         
+        // ----- code to fill in gaps ---       
         int nm = medAxisList.size();
         int[] xm = new int[nm];
         int[] ym = new int[nm];
@@ -793,10 +794,12 @@ public class MedialAxis1 {
     
     protected void extractFromPoints(PairInt center,
         double radius, Set<PairInt> output) {
-                
+         
         Stack<PairInt> stack = new Stack<PairInt>();
         stack.add(center);
-        output.add(center);
+        if (points.contains(center)) {
+            output.add(center);
+        }
         
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
@@ -1400,9 +1403,7 @@ Assume point m lies on the medial axis and is
             
             log.info("  dither to improve " + medAxisCenter + ""
                 + " dither=" + tol);
-if (medAxisCenter.getX() == 22 && medAxisCenter.getY() == 2) {
-    int z = 1;
-}            
+            
             List<PairInt> better = new ArrayList<PairInt>();
             TIntObjectMap<PairInt[]> betterNBs = new TIntObjectHashMap<PairInt[]>();
             for (int k = 0; k < offsets.length; k += 2) {
@@ -1415,10 +1416,7 @@ if (medAxisCenter.getX() == 22 && medAxisCenter.getY() == 2) {
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
-if (medAxisCenter.getX() == 22 && medAxisCenter.getY() == 2) {
-    log.info("--> " + p2);
-    int z = 1;
-}                
+                
                 if (present.contains(p2)) {
                     continue;
                 }
