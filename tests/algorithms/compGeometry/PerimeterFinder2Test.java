@@ -61,7 +61,7 @@ public class PerimeterFinder2Test extends TestCase {
         Set<PairInt> boundary = finder.extractBorder(data);
         
         for (PairInt p : boundary) {
-            System.out.println("boundary p=" + p);
+            //System.out.println("boundary p=" + p);
             assertTrue(expected.remove(p));
         }
         assertTrue(expected.isEmpty());
@@ -271,7 +271,19 @@ public class PerimeterFinder2Test extends TestCase {
         for (int i = 3; i >= 1; --i) {
             expected.add(i, 0);
         }
+       /*
+        4
+        3  *     *
+        2     *  
+        1  *     *
+        0  1  2  3  4
         
+        20  21  22  23  24     4
+        15  16* 17  18* 19     3
+        10  11  12* 13  14     2
+        5   6*  7   8*  9      1
+        0   1   2   3   4      0 
+        */
         PerimeterFinder2 finder = new PerimeterFinder2();
         
         PairIntArray results = finder.extractOrderedBorder(
@@ -280,6 +292,8 @@ public class PerimeterFinder2Test extends TestCase {
         assertEquals(expected.getN(), results.getN());
         
         for (int i = 0; i < expected.getN(); ++i) {
+            //System.out.println("i=" + i + " " +
+            //    expected.getX(i) + " " + expected.getY(i));
             assertEquals(expected.getX(i), results.getX(i));
             assertEquals(expected.getY(i), results.getY(i));
         }

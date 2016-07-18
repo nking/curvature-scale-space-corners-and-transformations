@@ -179,9 +179,7 @@ public class PerimeterFinder2 {
                         
                         int minAngleIdx = calculateMinAngles( 
                             x3, y3, ns2, neighborsX, neighborsY, nn);
-if (x3 == 6 && y3 == 2) {
-    int z = 1;
-}                        
+                        
                         junctionNodes.add(Integer.valueOf(output.getN()));
                         
                         output.add(neighborsX[minAngleIdx], 
@@ -313,7 +311,6 @@ if (x3 == 6 && y3 == 2) {
         concave:
            centroid of the subset of boundary points 
            are outside the shape bounds.
-           
         */
         
         int xc = (int)Math.round(xCen);
@@ -327,11 +324,13 @@ if (x3 == 6 && y3 == 2) {
           
         boolean isOutside = (d0Cen > d0);
                 
+        /*
         System.out.println(
             String.format(
             "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
             medAxisCen.toString(), x, y, (float) d0,
             xCen, yCen, (float) d0Cen));
+        */
         
         if (!isOutside) {
             for (int i = 0; i < nXY; ++i) {
@@ -342,12 +341,14 @@ if (x3 == 6 && y3 == 2) {
 
                 double d2Cen = distSq(xCen, yCen, medAxisCen.getX(), medAxisCen.getY());
 
+                /*
                 System.out.println(
                 String.format(
                 "  med Axis pt=%s (%d,%d) d2=%.4f --> d2cen=%.4f",
                 medAxisCen.toString(), x2, y2, (float) d2,
                 (float) d2Cen));
-
+                */
+                
                 if (d2Cen > d2) {
                     isOutside = true;
                 }
@@ -396,11 +397,13 @@ if (x3 == 6 && y3 == 2) {
             double angle = AngleUtil.polarAngleCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
             
+            /*
             System.out.println(
                 String.format("concave: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0, 
                     x2,y2, (float) angle));
-         
+            */
+            
             // for convex section:
             if ((angle > angle0) && (angle > maxAngle)) {
                 maxAngle = angle;
@@ -446,11 +449,13 @@ if (x3 == 6 && y3 == 2) {
             double angle = AngleUtil.polarAngleCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
      
+            /*
             System.out.println(
             String.format(
             "convex: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0, 
                     x2,y2, (float) angle));
+            */
             
             // for convex section:
             if ((angle > angle0) && (angle < minAngle)) {

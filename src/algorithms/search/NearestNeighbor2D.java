@@ -219,8 +219,17 @@ public class NearestNeighbor2D {
         
         int yLow = estimateLowBound(y, goal);
        
-        int yCurrent = (predecessor == null) ? Integer.MIN_VALUE :
-            (getRow(predecessor.intValue()) - 1);
+        int yCurrent;
+        if (predecessor == null) {
+            yCurrent = Integer.MIN_VALUE;
+        } else {
+            int pRow = getRow(predecessor.intValue());
+            if (pRow < y) {
+                yCurrent = pRow;
+            } else {
+                yCurrent = pRow - 1;
+            }
+        }
         
         // predecessor searches until reach yLow, adjusting goal by
         //   min distances
@@ -468,8 +477,17 @@ public class NearestNeighbor2D {
         
         int yLow = estimateLowBound(y, goal);
        
-        int yCurrent = (predecessor == null) ? Integer.MIN_VALUE :
-            (getRow(predecessor.intValue()) - 1);
+        int yCurrent;
+        if (predecessor == null) {
+            yCurrent = Integer.MIN_VALUE;
+        } else {
+            int pRow = getRow(predecessor.intValue());
+            if (pRow < y) {
+                yCurrent = pRow;
+            } else {
+                yCurrent = pRow - 1;
+            }
+        }
         
         // predecessor searches until reach yLow, adjusting goal by
         //   min distances
@@ -546,8 +564,16 @@ public class NearestNeighbor2D {
         }
         
         // successor searches to higher bounds
-        yCurrent = (successor == null) ? Integer.MAX_VALUE :
-            (getRow(successor.intValue()) + 1);
+        if (successor == null) {
+            yCurrent = Integer.MAX_VALUE;
+        } else {
+            int sr = getRow(successor.intValue());
+            if (sr > y) {
+                yCurrent = sr;
+            } else {
+                yCurrent = sr + 1;
+            }
+        }
         int yHigh = estimateHighBound(y, goal);
         
         while (yCurrent <= yHigh) {
