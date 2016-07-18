@@ -1,11 +1,7 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.features.BlobMedialAxes;
-import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -213,5 +209,152 @@ public class PerimeterFinder2Test extends TestCase {
         }
         
         return points;
+    }
+    
+    public void testFindMinXY() {
+        
+        Set<PairInt> set = new HashSet<PairInt>();
+        set.add(new PairInt(10, 10));
+        set.add(new PairInt(10, 3));
+        set.add(new PairInt(12, 8));
+        set.add(new PairInt(18, 0));
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairInt xy = finder.findMinXY(set);
+        
+        assertEquals(10, xy.getX());
+        assertEquals(3, xy.getY());
+        
+    }
+    
+    public void testOrdered0() {
+        /*
+        4
+        3  *     *
+        2     *  
+        1  *     *
+        0  1  2  3  4
+        */
+        
+        Set<PairInt> medialAxis = new HashSet<PairInt>();
+        medialAxis.add(new PairInt(1, 1));
+        medialAxis.add(new PairInt(2, 2));
+        medialAxis.add(new PairInt(1, 3));
+        medialAxis.add(new PairInt(3, 1));
+        medialAxis.add(new PairInt(3, 3));
+        
+        Set<PairInt> boundary = new HashSet<PairInt>();
+        for (int i = 3; i >= 0; --i) {
+            boundary.add(new PairInt(4, i));
+        }
+        for (int i = 3; i >= 1; --i) {
+            boundary.add(new PairInt(i, 0));
+        }
+        for (int i = 0; i <= 4; ++i) {
+            boundary.add(new PairInt(0, i));
+        }
+        for (int i = 1; i <= 4; ++i) {
+            boundary.add(new PairInt(i, 4));
+        }
+                
+        
+        PairIntArray expected = new PairIntArray(boundary.size());
+        for (int i = 0; i <= 4; ++i) {
+            expected.add(0, i);
+        }
+        for (int i = 1; i <= 4; ++i) {
+            expected.add(i, 4);
+        }
+        for (int i = 3; i >= 0; --i) {
+            expected.add(4, i);
+        }
+        for (int i = 3; i >= 1; --i) {
+            expected.add(i, 0);
+        }
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
+        PairIntArray results = finder.extractOrderedBorder(
+            boundary, medialAxis);
+        
+        assertEquals(expected.getN(), results.getN());
+        
+        for (int i = 0; i < expected.getN(); ++i) {
+            assertEquals(expected.getX(i), results.getX(i));
+            assertEquals(expected.getY(i), results.getY(i));
+        }
+    }
+    
+    public void testOrdered2() {
+        /*
+        test w/ a concave section
+        
+        6  *  *  *
+        5  *  .  *
+        4  *  .  *
+        3  *  .  *  *  *  *
+        2  *  .  .  .  .  *
+        1  *  *  *  *  *  *
+        0  1  2  3  4  5  6
+        
+
+         5    35 36 3738 39 40 41
+         4    28 29 3031 32 33 34
+         3    21 22 2324 25 26 27
+         2    14 15 1617 18 19 20 
+         1    7  8  9 10 11 12 13
+         0    0  1  2  3  4  5  6
+        */
+        
+        Set<PairInt> medialAxis = new HashSet<PairInt>();
+        for (int i = 5; i >= 2; --i) {
+            medialAxis.add(new PairInt(2, i));
+        }
+        for (int i = 3; i <= 5; ++i) {
+            medialAxis.add(new PairInt(i, 2));
+        }
+        
+        Set<PairInt> boundary = new HashSet<PairInt>();
+        for (int i = 1; i <= 3; ++i) {
+            for (int j = 1; j <= 6; ++j) {
+                boundary.add(new PairInt(i, j));
+            }
+        }
+        for (int i = 4; i <= 6; ++i) {
+            for (int j = 1; j <= 3; ++j) {
+                boundary.add(new PairInt(i, j));
+            }
+        }
+        boundary.removeAll(medialAxis);
+        
+        PairIntArray expected = new PairIntArray(boundary.size());
+        for (int i = 1; i <= 6; ++i) {
+            expected.add(1, i);
+        }
+        expected.add(2, 6);
+        for (int i = 6; i >= 3; --i) {
+            expected.add(3, i);
+        }
+        for (int i = 4; i <= 6; ++i) {
+            expected.add(i, 3);
+        }
+        expected.add(6, 2);
+        for (int i = 6; i >= 2; --i) {
+            expected.add(i, 1);
+        }
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        
+        PairIntArray results = finder.extractOrderedBorder(
+            boundary, medialAxis);
+        
+        assertEquals(expected.getN(), results.getN());
+        
+        for (int i = 0; i < expected.getN(); ++i) {
+            //System.out.println("i=" + i + " " +
+            //expected.getX(i) + " " + expected.getY(i));
+            assertEquals(expected.getX(i), results.getX(i));
+            assertEquals(expected.getY(i), results.getY(i));
+        }
     }
 }

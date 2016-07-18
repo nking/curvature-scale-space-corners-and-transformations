@@ -2038,6 +2038,8 @@ public class PerimeterFinder {
             count++;
         }
 
+        // if keep this method, consider swapping this out
+        // for NearestNeighbors2D
         NearestPoints np = new NearestPoints(xPoints, yPoints);
                 
         PairInt prev = np.getSmallestXY();

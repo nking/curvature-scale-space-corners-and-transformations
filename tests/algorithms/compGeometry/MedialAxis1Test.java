@@ -545,5 +545,68 @@ public class MedialAxis1Test extends TestCase {
         border.add(new PairInt(15, 3));
         border.add(new PairInt(14, 4));
     }
+  
+    public void test3() throws IOException {
+        
+        MedialAxis1 medAxis1 = null;
+        Set<PairInt> mAPs = null;
+        List<MedialAxis1.MedialAxisPoint> list = null;
+                
+        Set<PairInt> boundary = new HashSet<PairInt>();
+        for (int i = 3; i >= 0; --i) {
+            boundary.add(new PairInt(4, i));
+        }
+        for (int i = 3; i >= 1; --i) {
+            boundary.add(new PairInt(i, 0));
+        }
+        for (int i = 0; i <= 4; ++i) {
+            boundary.add(new PairInt(0, i));
+        }
+        for (int i = 1; i <= 4; ++i) {
+            boundary.add(new PairInt(i, 4));
+        }
+ 
+        Set<PairInt> points = new HashSet<PairInt>();
+        for (int i = 0; i <= 4; ++i) {
+            for (int j = 0; j <= 4; ++j) {
+                points.add(new PairInt(i, j));
+            }
+        }
+        
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(1, 1));
+        expected.add(new PairInt(2, 2));
+        expected.add(new PairInt(1, 3));
+        expected.add(new PairInt(3, 1));
+        expected.add(new PairInt(3, 3));
+        
+        /*
+        4
+        3  *     *
+        2     *  
+        1  *     *
+        0  1  2  3  4
+        */
+        
+        medAxis1 = new MedialAxis1(points, boundary);
+        
+        medAxis1.findMedialAxis();
+        
+        list = medAxis1.getMedAxisList();
+        
+        mAPs = new HashSet<PairInt>();
+        for (MedialAxis1.MedialAxisPoint mp : list) {
+            PairInt pp = mp.getCenter();
+            //System.out.println("=| med axis pt = " + pp);
+            assertFalse(mAPs.contains(pp));
+            mAPs.add(pp);
+        }
+        
+        for (PairInt p2 : mAPs) {
+            //System.out.println(" ->med axis pt = " + p2);
+            assertTrue(expected.remove(p2));
+        }
+        assertTrue(expected.isEmpty());        
+    }
     
 }

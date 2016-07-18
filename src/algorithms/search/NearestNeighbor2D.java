@@ -229,7 +229,7 @@ public class NearestNeighbor2D {
         while (yCurrent >= yLow) {
             int cIdx = getInternalIndex(x, yCurrent);
             Integer cIndex = Integer.valueOf(cIdx);
-            
+
             //O(1)
             q = xbt.find(cIndex);
             if (q != null) {
@@ -255,6 +255,7 @@ public class NearestNeighbor2D {
                         sCache.put(cIdx, s2.intValue());
                     }
                 }
+                
                 dp2 = dist(x, y, p2);
                 ds2 = dist(x, y, s2);
             }
@@ -292,8 +293,16 @@ public class NearestNeighbor2D {
         }
         
         // successor searches to higher bounds
-        yCurrent = (successor == null) ? Integer.MAX_VALUE :
-            (getRow(successor.intValue()) + 1);
+        if (successor == null) {
+            yCurrent = Integer.MAX_VALUE;
+        } else {
+            int sr = getRow(successor.intValue());
+            if (sr > y) {
+                yCurrent = sr;
+            } else {
+                yCurrent = sr + 1;
+            }
+        }
         int yHigh = estimateHighBound(y, goal);
         
         while (yCurrent <= yHigh) {
@@ -543,8 +552,7 @@ public class NearestNeighbor2D {
         
         while (yCurrent <= yHigh) {
             int cIdx = getInternalIndex(x, yCurrent);
-            Integer cIndex = Integer.valueOf(cIdx);
-            
+            Integer cIndex = Integer.valueOf(cIdx);            
             q = xbt.find(cIndex);
             if (q != null) {
                 p2 = q;
