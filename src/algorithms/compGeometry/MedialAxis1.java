@@ -156,6 +156,15 @@ public class MedialAxis1 {
         heap.insert(node);
     }
     
+    protected boolean assertPointTotals() {
+        int nP1 = points.size();
+        int nP2 = processed.size();
+        if ((nP1 + nP2) == nInterior) {
+            return true;
+        }
+        return false;
+    }
+    
     protected boolean assertUniqueMedialAxesPoints() {
         Set<PairInt> mAPs = new HashSet<PairInt>();
         for (MedialAxis1.MedialAxisPoint mp : medAxisList) {
@@ -178,54 +187,15 @@ public class MedialAxis1 {
         
         medAxisList.clear();
         
-        MedialAxisResults results = findInitialPoint();
-
         // max heap ordered by largest radius
         Heap q = new Heap();
         
         Set<PairInt> addedM = new HashSet<PairInt>();
-                
-        // remove the searched circle from this.points.
-        // and add the extracted to "processed".
-        // NOTE: have used search radius - 1 to not remove
-        // any found medial axis points.
-        Set<PairInt> removed = subtractFromPoints(results.center, 
-            results.centerSrchR - 1);
-         
-        processed.addAll(removed);
+        Set<PairInt> removed = null;
         
-        
-        if (results.medialAxes.size() == 2) {
-            // if there are 2 medial axes points and if center is not inline
-            // with the 2 med axis points, this is a "critical point" region too
-            if (points.contains(results.center) || 
-                processed.contains(results.center)) {
-                int tol2 = (int)Math.ceil(results.medialAxes.get(0).getSearchRadiusUsed()
-                        * sinePiDivN);
-                if (tol2 < 1) {
-                    tol2 = 1;
-                }
-                MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(results.center,
-                    results.medialAxes.get(0),
-                    results.medialAxes.get(1),
-                    tol2);
-                if (mp0 != null) {
-                    medAxisList.add(mp0);
-                    addedM.add(mp0.getCenter());
-                }
-            }
-        }
-        
-        assert(assertUniqueMedialAxesPoints());
-        
-        for (MedialAxisPoint m : results.medialAxes) {
-            PairInt pp = m.getCenter();
-            addToHeap(q, m);
-            addedM.add(pp);
-            medAxisList.add(m);
-        }
-
-        assert(assertUniqueMedialAxesPoints());        
+        // also adds point(s) to the heap
+        MedialAxisResults results = 
+            findAndProcessFirstPoint(q, addedM);
                 
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
@@ -271,6 +241,12 @@ public class MedialAxis1 {
             if (nSPoints == 0) {
                 removed = subtractFromPoints(p, r - 1);
                 processed.addAll(removed);
+                assert (assertPointTotals());
+                if (q.isEmpty() && (points.size() > 0)) {
+                    // choose another point from points and continue
+                    // also adds point(s) to the heap
+                    results = findAndProcessARemainingPoint(q, addedM);
+                }
                 continue;
             }
             
@@ -293,6 +269,7 @@ public class MedialAxis1 {
                         .iterator().next();
                     double d = distance(bPoint.getX(), bPoint.getY(), p);
                     processed.addAll(subtractFromPoints(p2, d - 1));                    
+                    assert(assertPointTotals());
                     continue;
                 }
                 
@@ -305,28 +282,7 @@ public class MedialAxis1 {
                     addToHeap(q, mp2);
                 }
                 
-                if (results.medialAxes.size() == 2) {
-                    // if there are 2 medial axes points and if center is not inline
-                    // with the 2 med axis points, this is a "critical point" region too
-                    if (points.contains(results.center) || 
-                        processed.contains(results.center)) {
-                        int tol2 = (int) Math.ceil(r * sinePiDivN);
-                        if (tol2 < 1) {
-                            tol2 = 1;
-                        }
-                        MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(
-                            results.center,
-                            results.medialAxes.get(0),
-                            results.medialAxes.get(1), tol2);
-                        if (mp0 != null) {
-                            PairInt pp = mp0.getCenter();             
-                            if (!addedM.contains(pp)) {
-                                medAxisList.add(mp0);
-                                addedM.add(pp);
-                            }
-                        }
-                    }
-                }
+                searchCenterPoint(results, addedM);
         
                 for (MedialAxisPoint m : results.medialAxes) {
                     PairInt pp = m.getCenter();
@@ -339,12 +295,21 @@ public class MedialAxis1 {
                          
                 processed.addAll(subtractFromPoints(results.center,
                     results.centerSrchR - 1));
-               
+                
+                assert(assertPointTotals());
                 assert(assertUniqueMedialAxesPoints());
             }
              
             assert(assertUniqueMedialAxesPoints());
+        
+            log.fine("q.n=" + q.getNumberOfNodes() +
+                " points.size=" + points.size());
             
+            if (q.isEmpty() && (points.size() > 0)) {
+                // choose another point from points and continue
+                // also adds point(s) to the heap
+                results = findAndProcessARemainingPoint(q, addedM);
+            }
         }
         
         log.fine("med axies nIter=" + nIter);
@@ -357,20 +322,13 @@ public class MedialAxis1 {
         // dither should be defined by the tolerance tol
         Set<PairInt> srch = refineCentersOfMedAxisList();
         
+        assert(assertPointTotals());
         assert(assertUniqueMedialAxesPoints());
 
-        /*if (log.getLevel() != null && log.getLevel().equals(Level.FINE)) {
-            log.fine("remaining points.size=" + points.size());
-            StringBuilder sb = new StringBuilder(" ");
-            for (PairInt p : points) {
-                sb.append(p).append(", ");
-            }
-            log.fine(sb.toString());
-        }*/
-        
         // ----- code to fill in gaps using a DFS search --- 
         fillInGaps(srch);
         
+        assert(assertPointTotals());
         assert(assertUniqueMedialAxesPoints());
     }
 
@@ -432,7 +390,7 @@ public class MedialAxis1 {
             p.getX(), p.getY());
         
         assert(closestB.length > 0);
-        
+       
         int status = 0;
         
         // find a p that results in valid medial axis points,
@@ -1562,6 +1520,122 @@ Assume point m lies on the medial axis and is
                 stack.add(p2);
             }
         }
+    }
+
+    private void searchCenterPoint(MedialAxisResults results, 
+        Set<PairInt> addedM) {
+        
+        if (results.medialAxes.size() == 2) {
+            // if there are 2 medial axes points and if center is not inline
+            // with the 2 med axis points, this is a "critical point" region too
+            if (points.contains(results.center) || 
+                processed.contains(results.center)) {
+                int tol2 = (int)Math.ceil(results.medialAxes.get(0).getSearchRadiusUsed()
+                        * sinePiDivN);
+                if (tol2 < 1) {
+                    tol2 = 1;
+                }
+                MedialAxisPoint mp0 = centerIsAlsoMedialAxisPoint(results.center,
+                    results.medialAxes.get(0),
+                    results.medialAxes.get(1),
+                    tol2);
+                if (mp0 != null) {
+                    medAxisList.add(mp0);
+                    addedM.add(mp0.getCenter());
+                }
+            }
+        }        
+    }
+
+    private MedialAxisResults findAndProcessFirstPoint(
+        Heap q, Set<PairInt> addedM) {
+        
+        MedialAxisResults results = findInitialPoint();
+        
+        if (results == null) {
+            //TODO: refactor so that can remove the searched
+            // points even when null is returned.
+            return null;
+        }
+        
+        // remove the searched circle from this.points.
+        // and add the extracted to "processed".
+        // NOTE: have used search radius - 1 to not remove
+        // any found medial axis points.
+        Set<PairInt> removed = subtractFromPoints(results.center, 
+            results.centerSrchR - 1);
+         
+        processed.addAll(removed);
+        
+        searchCenterPoint(results, addedM);
+        
+        assert(assertUniqueMedialAxesPoints());
+        
+        for (MedialAxisPoint m : results.medialAxes) {
+            PairInt pp = m.getCenter();
+            addToHeap(q, m);
+            addedM.add(pp);
+            medAxisList.add(m);
+        }
+
+        assert(assertUniqueMedialAxesPoints());  
+
+        return results;
+    }
+    
+    private MedialAxisResults findAndProcessARemainingPoint(
+        Heap q, Set<PairInt> addedM) {
+        
+        PairInt p = points.iterator().next();
+        
+        // first check the point p itself
+        PairInt[] nearB = findNearestBoundsAsArray(
+            p.getX(), p.getY());
+        nearB = findEquidistantNearestPoints(
+            p.getX(), p.getY(), 0, nearB);
+        if (nearB != null && (nearB.length > 1)) {
+            double d = distance(p.getX(), p.getY(), nearB[0]);
+            MedialAxisPoint mp2 = createMedialAxisPoint(
+                p, nearB, d);
+            medAxisList.add(mp2);
+            addToHeap(q, mp2);
+            addedM.add(p);
+            processed.addAll(subtractFromPoints(p, d - 1));         
+        }
+        
+        // search within a sampled radius for medial axis points
+        MedialAxisResults results = findMedialAxesNearPoint(p);
+                
+        if (results == null) {
+            //TODO: refactor so that can remove the searched
+            // points even when null is returned.
+            return null;
+        }
+        
+        // remove the searched circle from this.points.
+        // and add the extracted to "processed".
+        // NOTE: have used search radius - 1 to not remove
+        // any found medial axis points.
+        Set<PairInt> removed = subtractFromPoints(results.center, 
+            results.centerSrchR - 1);
+         
+        processed.addAll(removed);
+        
+        if (!results.center.equals(p)) {
+            searchCenterPoint(results, addedM);
+        }
+        assert(assertUniqueMedialAxesPoints());
+        
+        for (MedialAxisPoint m : results.medialAxes) {
+            PairInt pp = m.getCenter();
+            addToHeap(q, m);
+            addedM.add(pp);
+            medAxisList.add(m);
+        }
+
+        assert(assertUniqueMedialAxesPoints());  
+
+        return results;
     }
 
     protected static class MedialAxisPoint {
