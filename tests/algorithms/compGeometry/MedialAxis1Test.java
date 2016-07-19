@@ -2,7 +2,9 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.MedialAxis1.MedialAxisResults;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
+import algorithms.misc.Misc;
 import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -268,7 +270,7 @@ public class MedialAxis1Test extends TestCase {
     }
     
     public void test1() throws IOException {
-                
+        
         Set<PairInt> border = new HashSet<PairInt>();
         Set<PairInt> points = new HashSet<PairInt>();
         
@@ -289,32 +291,39 @@ public class MedialAxis1Test extends TestCase {
           |_________________| 0,1
           0123456789012345678
                     1
+   
+   looking at NN2D indexes
+                                       *  *  *
+   0   1   2   3   4   5   6   7   8   9  10 11 12 13 14 15 16 17 18
+
+21 399                                <> <>  <>
+20 380                                <> 390  <>
+19 361                                <> *371 <>  p=370,s=389
+18 342                                <> 352  <>
+17                                    <>       <>
+16                                    <>       <>
+15                                <>  <>       <>  <>
+14      
+13        
+12 228
+11 209 210 211 212 213 214 215 216 217 218219220221222223224225226227
+10 190                                                            208
+9  171                                                            189   
+8      
+7        
+6 114
+5 95
+4 76    
+3 57   
+2 38  39  40  41  
+1 19  20  21  22  23  24  25  26  27  28 29 30 31 32 33 34 35 36 37      
+0  0   1   2   3   4   5   6   7   8   9  10 11 12 13 14 15 16 17 18
         */
-        
-        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
-
-        PairInt p = new PairInt(3, 3);
-
-        Set<PairInt> nearestB = medAxis1.getNearestBoundaryPoints(p);        
-        
-        // assert nearestB are 3,0 and 0,3
-        Set<PairInt> expectedNearest = new HashSet<PairInt>();
-        expectedNearest.add(new PairInt(3, 0));
-        expectedNearest.add(new PairInt(0, 3));
-        for (PairInt npb : nearestB) {
-            assertTrue(expectedNearest.remove(npb));
-        }
-        assertTrue(expectedNearest.isEmpty());
         
         List<MedialAxis1.MedialAxisPoint> output = new
             ArrayList<MedialAxis1.MedialAxisPoint>();
-        //3,6
-        medAxis1.intersectsMedialAxis(
-            medAxis1.findNearestBoundsAsArray(p.getX(), p.getY()), 
-            p, output);
-
-        // -- visualize the results ----        
-        medAxis1 = new MedialAxis1(points, border);
+        
+        MedialAxis1 medAxis1 = new MedialAxis1(points, border);
         
         medAxis1.findMedialAxis();
         
@@ -336,12 +345,10 @@ public class MedialAxis1Test extends TestCase {
         plotter.addPlot(x, y, xp, yp, "med axis");
         plotter.writeFile(20);
       
-        // --- compare to erosion filter and line thinner ----
+        // --- plot all points ----
         border.clear();
         points.clear();
         populateTestData(border, points);
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(points, 0, 18, 0, 21);
         x = new float[points.size()];
         y = new float[points.size()];
         count = 0;
@@ -353,7 +360,7 @@ public class MedialAxis1Test extends TestCase {
         plotter = new PolygonAndPointPlotter(0, 18, 0, 21);
         xp = null;
         yp = null;
-        plotter.addPlot(x, y, xp, yp, "med axis");
+        plotter.addPlot(x, y, xp, yp, "points");
         plotter.writeFile(21);
         
     }
@@ -398,7 +405,7 @@ public class MedialAxis1Test extends TestCase {
             border.add(new PairInt(i, 21));
         }
         // 11,21 -> 11,15
-        for (int i = 11; i >= 15; --i) {
+        for (int i = 21; i >= 15; --i) {
             border.add(new PairInt(11, i));
         }
         // 12,15 -> 18,15
@@ -609,4 +616,141 @@ public class MedialAxis1Test extends TestCase {
         assertTrue(expected.isEmpty());        
     }
     
+    public void test4() {
+        
+        MedialAxis1 medAxis1 = null;
+        Set<PairInt> mAPs = null;
+        List<MedialAxis1.MedialAxisPoint> list = null;
+                
+        Set<PairInt> boundary = getSet1Boundaries();
+        Set<PairInt> points = getSet1();
+        
+        medAxis1 = new MedialAxis1(points, boundary);
+        
+        medAxis1.findMedialAxis();
+        
+        list = medAxis1.getMedAxisList();
+        
+        mAPs = new HashSet<PairInt>();
+        for (MedialAxis1.MedialAxisPoint mp : list) {
+            PairInt pp = mp.getCenter();
+            //System.out.println("=| med axis pt = " + pp);
+            assertFalse(mAPs.contains(pp));
+            mAPs.add(pp);
+        }
+        //1,7  1,8  2,8  8,7  8,8
+        Set<PairInt> expected = new HashSet<PairInt>();
+        expected.add(new PairInt(1, 7));
+        expected.add(new PairInt(1, 8));
+        expected.add(new PairInt(2, 8));
+        expected.add(new PairInt(8, 7));
+        expected.add(new PairInt(8, 8));
+        
+        for (PairInt p2 : mAPs) {
+            System.out.println(" ->med axis pt = " + p2);
+            assertTrue(expected.remove(p2));
+        }
+        assertTrue(expected.isEmpty()); 
+    }
+    
+    private Set<PairInt> getSet1Boundaries() {
+        /*
+        //medial axis points: 1,7  1,8  2,8
+        
+            0 1 2 3 4 5 6 7 8 9
+        
+         9  @ @ @ @ @ @ @ @ @ @
+         8  @ * * @ @ @ @ @ @ @ <-- where are med axis pts
+         7  @ * @ @       @ @ @  <---
+         6  @ @ @         @ @ @
+         5  @ @             @ @
+         4  @               @ @
+         3  @               @ @
+         2                  @ @
+         1                    @
+         0                    @
+        
+            0 1 2 3 4 5 6 7 8 9
+        */
+        PairIntArray list0 = new PairIntArray();
+            
+        for (int i = 3; i <= 9; ++i) {
+            list0.add(0, i);
+        }
+        for (int i = 1; i <= 9; ++i) {
+            list0.add(i, 9);
+        }
+        for (int i = 8; i >= 0; --i) {
+            list0.add(9, i);
+        }
+        for (int i = 2; i <= 6; ++i) {
+            list0.add(8, i);
+        }
+        for (int i = 6; i <= 8; ++i) {
+            list0.add(7, i);
+        }
+        for (int i = 6; i >= 3; --i) {
+            list0.add(i, 8);
+        }
+        list0.add(3, 7);
+        list0.add(2, 7);
+        list0.add(2, 6);
+        list0.add(1, 6);
+        list0.add(1, 5);
+                
+        return Misc.convert(list0);
+    }
+    
+    /*
+            0 1 2 3 4 5 6 7 8 9
+        
+         9  @ @ @ @ @ @ @ @ @ @
+         8  @ @ @ @ @ @ @ @ @ @
+         7  @ @ @ @       @ @ @
+         6  @ @ @     @   @ @ @
+         5  @ @     @ @     @ @
+         4  @     @ @ @     @ @
+         3  @   @ @ @ @ @   @ @
+         2      @ @ @ @ @   @ @
+         1      @ @ @ @ @     @
+         0      @ @ @ @ @     @
+        
+            0 1 2 3 4 5 6 7 8 9
+        */
+    private Set<PairInt> getSet1() {
+        Set<PairInt> set1 = new HashSet<PairInt>(); 
+        
+        for (int i = 3; i <= 9; ++i) {
+            set1.add(new PairInt(0, i));
+        }
+        for (int i = 5; i <= 9; ++i) {
+            set1.add(new PairInt(1, i));
+        }
+        for (int i = 6; i <= 9; ++i) {
+            set1.add(new PairInt(2, i));
+        }
+        for (int i = 7; i <= 9; ++i) {
+            set1.add(new PairInt(3, i));
+        }
+        for (int j = 8; j <= 9; ++j) {
+            for (int i = 4; i <= 9; ++i) {
+                set1.add(new PairInt(i, j));
+            }
+        }
+        for (int j = 6; j <= 7; ++j) {
+            for (int i = 7; i <= 9; ++i) {
+                set1.add(new PairInt(i, j));
+            }
+        }
+        for (int j = 2; j <= 5; ++j) {
+            for (int i = 8; i <= 9; ++i) {
+                set1.add(new PairInt(i, j));
+            }
+        }
+        set1.add(new PairInt(9, 1));
+        set1.add(new PairInt(9, 0));
+        
+        return set1;
+    }
+   
 }

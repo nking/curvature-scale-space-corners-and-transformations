@@ -115,7 +115,7 @@ public class MedialAxis1 {
             minMaxXY[1], minMaxXY[3]);
         
         processed = new HashSet<PairInt>(points.size());
-             
+        
         medAxisList = new ArrayList<MedialAxisPoint>();
     }
     
@@ -196,7 +196,7 @@ public class MedialAxis1 {
         // also adds point(s) to the heap
         MedialAxisResults results = 
             findAndProcessFirstPoint(q, addedM);
-                
+        
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
         
@@ -237,16 +237,18 @@ public class MedialAxis1 {
             assert(r != Double.MIN_VALUE);
             int nSPoints = populateSurfacePoints(p, r,
                 xSurf, ySurf);
-            
+                        
             if (nSPoints == 0) {
                 removed = subtractFromPoints(p, r - 1);
                 processed.addAll(removed);
                 assert (assertPointTotals());
+
                 if (q.isEmpty() && (points.size() > 0)) {
                     // choose another point from points and continue
                     // also adds point(s) to the heap
                     results = findAndProcessARemainingPoint(q, addedM);
                 }
+
                 continue;
             }
             
@@ -270,6 +272,7 @@ public class MedialAxis1 {
                     double d = distance(bPoint.getX(), bPoint.getY(), p);
                     processed.addAll(subtractFromPoints(p2, d - 1));                    
                     assert(assertPointTotals());
+                    
                     continue;
                 }
                 
@@ -490,8 +493,8 @@ public class MedialAxis1 {
                     
                     log.fine("++   p2=" + p2 + " mid=" + mid + " low=" + low + " high=" + high);
              
-                    if ((points.contains(p2) || processed.contains(p2))
-                        && !boundary.contains(p2)) {
+                    //TODO: consider removing if processed here
+                    if ((points.contains(p2) || processed.contains(p2))) {
                         
                         // check if point intersects medial axis
                         // and if so, exit loop
@@ -1336,7 +1339,7 @@ Assume point m lies on the medial axis and is
         for (int i = 0; i < medAxisList.size(); ++i) {
             MedialAxisPoint mp = medAxisList.get(i);
             present.add(mp.getCenter());
-        }
+        }        
         
         List<MedialAxisPoint> addTo = new ArrayList<MedialAxisPoint>();
         TIntList rm = new TIntArrayList();
@@ -1463,7 +1466,7 @@ Assume point m lies on the medial axis and is
         
         Stack<PairInt> stack = new Stack<PairInt>();
         stack.addAll(srch);
-        
+
         // search for nearest neighbors within dist tol
         /*
         NOTE: 
@@ -1492,6 +1495,7 @@ Assume point m lies on the medial axis and is
             visited.add(p);
             int x = p.getX();
             int y = p.getY();
+
             for (int k = 0; k < dxs.length; ++k) {
                 int x2 = x + dxs[k];
                 int y2 = y + dys[k];
@@ -1500,6 +1504,7 @@ Assume point m lies on the medial axis and is
                     continue;
                 }
                 PairInt p2 = new PairInt(x2, y2);
+                
                 if (!(points.contains(p2) || processed.contains(p2))
                     || srched.contains(p2)) {
                     continue;
@@ -1743,6 +1748,7 @@ Assume point m lies on the medial axis and is
      * @return 
      */
     protected PairInt[] findNearestBoundsAsArray(int x, int y) {
+    
         Set<PairInt> nearestB = np.findClosest(x, y);
         int count = 0;
         PairInt[] nearestBounds = new PairInt[nearestB.size()];
