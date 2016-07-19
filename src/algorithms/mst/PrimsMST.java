@@ -4,6 +4,8 @@ import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
@@ -16,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Minimum spanning tree is the minimal network that spans all nodes in a tree
@@ -85,9 +88,10 @@ public class PrimsMST {
         	HeapNode u = heap.extractMin(); 
            
             Integer uIndex = (Integer)u.getData();
-            inQ[uIndex.intValue()] = false;
+            int uIdx = uIndex.intValue();
+            inQ[uIdx] = false;
             
-            Set<PairInt> adjSet = adjCostMap.get(uIndex.intValue());
+            Set<PairInt> adjSet = adjCostMap.get(uIdx);
             if (adjSet == null) {
                 continue;
             }
@@ -96,9 +100,10 @@ public class PrimsMST {
                 int vIdx = indexCost.getX();
                 int cost = indexCost.getY();
                 long distV = nodes.get(vIdx).getKey();
+               
                 if (inQ[vIdx] && (cost < distV)) {
                     prev[vIdx] = uIndex.intValue();
-                    heap.decreaseKey(nodes.get(vIdx), cost);      
+                    heap.decreaseKey(nodes.get(vIdx), cost); 
                 }
             }
         }
@@ -113,106 +118,88 @@ public class PrimsMST {
         return Arrays.copyOf(prev, prev.length);
     }
     
-    private TIntObjectMap<TIntSet> createReverseMap(
-        int[] pi) {
+    public int[] getPreOrderWalkOfTree() {
+        
+        //pre-order is
+        //root, left subtree, right subtree
+        //given the top node as the starter
+        //level 0            [0]
+        //level 1     [1]           [4]
+        //level 2   [2] [3]       [5] [6]
+        // process node sees 0,1,2,3,4,5,6
+        
+        TIntObjectMap<TIntList> nodeMap = 
+            createReverseMap();
+                
+        int count = 0;
+        int[] walk = new int[prev.length];
+        
+        Integer node = Integer.valueOf(0);
+        
+        TIntSet inW = new TIntHashSet();
+        
+        Stack<Integer> stack = new Stack<Integer>();
+        while (!stack.isEmpty() || (node != null)) {
+            if (node != null) {
+                //process node
+                if (!inW.contains(node.intValue())) {
+                    walk[count] = node.intValue();
+                    count++;
+                    inW.add(node.intValue());
+                }
+                stack.push(node);
+                int origIdx = node.intValue();
+                TIntList children = nodeMap.get(node.intValue());
+                if (children == null) {
+                    node = null;
+                } else {
+                    node = children.get(0);
+                    //NOTE: an expensive delete. could change structure
+                    boolean rm = children.remove(node.intValue());
+                    assert(rm);
+                }
+                if ((children != null) && children.isEmpty()) {
+                    nodeMap.remove(origIdx);
+                }
+            } else {
+                node = stack.pop();
+                int origIdx = node.intValue();
+                TIntList children = nodeMap.get(node.intValue());
+                if (children == null) {
+                    node = null;
+                } else {
+                    node = children.get(0);
+                    boolean rm = children.remove(node.intValue());
+                    assert(rm);
+                }
+                if ((children != null) && children.isEmpty()) {
+                    nodeMap.remove(origIdx);
+                }
+            }
+        }
+        
+        return walk;
+    }
     
-        TIntObjectMap<TIntSet> revPrevMap 
-            = new TIntObjectHashMap<TIntSet>();
-        for (int i = 0; i < pi.length; ++i) {
-            int idx = pi[i];
-            if (idx == -1) {
+    private TIntObjectMap<TIntList> createReverseMap() {
+    
+        TIntObjectMap<TIntList> revPrevMap 
+            = new TIntObjectHashMap<TIntList>();
+        
+        for (int i = 0; i < prev.length; ++i) {
+            int parentIdx = prev[i];
+            if (parentIdx == -1) {
                 continue;
             }
-            TIntSet indexes = revPrevMap.get(idx);
+            TIntList indexes = revPrevMap.get(parentIdx);
             if (indexes == null) {
-                indexes = new TIntHashSet();
-                revPrevMap.put(idx, indexes);
+                indexes = new TIntArrayList();
+                revPrevMap.put(parentIdx, indexes);
             }
             indexes.add(i);
         }
+                
         return revPrevMap;
     }
     
-    public HeapNode extractResultsAsTree() {
-        
-        // can either construct a tree from children and parent
-        // pairs in prev
-        // or can return a list of edges,
-        
-        // make a reverse map of prev
-        TIntObjectMap<TIntSet> revPrevMap 
-            = createReverseMap(prev);
-        
-        // here, the keys are the indexes
-        HeapNode mst = new HeapNode();
-        mst.setKey(0);
-        
-        Set<HeapNode> set = new HashSet<HeapNode>();
-        HeapNode[] tmp = new HeapNode[prev.length];
-        ArrayDeque<HeapNode> queue = new ArrayDeque<HeapNode>();                
-        
-        for (int i = 0; i < prev.length; i++) {
-            HeapNode node;
-            if (i != 0) {
-                node = new HeapNode();
-                node.setKey(i);
-            } else {
-                node = mst;
-            }
-            set.add(node);
-            tmp[i] = node;
-        }
-
-        // we start w/ parent node = root  with the first read of pendingQueue
-        HeapNode currentParentNode = null;
-        queue.add(mst);
-        
-        while (!set.isEmpty()) {
-            while (!queue.isEmpty()) {
-                currentParentNode = queue.poll();
-                boolean removed = set.remove(currentParentNode);
-                
-                int currentParentIdx = (int)currentParentNode.getKey();
-
-                //revPrevMap has key = prev[i], values=set{i}
-                TIntSet childrenIndexes = 
-                    revPrevMap.get(currentParentIdx);
-                if (childrenIndexes == null) {
-                    continue;
-                }
-                TIntIterator iter = childrenIndexes.iterator();
-                while (iter.hasNext()) {
-                    int childIdx = iter.next();                
-                    HeapNode currentChildNode = tmp[childIdx];
-                    currentParentNode.addChild(currentChildNode);
-                    queue.add(currentChildNode);
-                    removed = set.remove(currentChildNode);
-                }
-            }
-            // because the mst has leaves, there may be nodes left in the map still:
-            if (!set.isEmpty()) {
-                
-                currentParentNode = set.iterator().next();
-                int currentParentIdx = (int)currentParentNode.getKey();
-                boolean removed = set.remove(currentParentNode);
-                
-                TIntSet childrenIndexes = 
-                    revPrevMap.get(currentParentIdx);
-                if (childrenIndexes == null) {
-                    continue;
-                }
-                TIntIterator iter2 = childrenIndexes.iterator();
-                while (iter2.hasNext()) {
-                    int childIdx = iter2.next();
-                    HeapNode currentChildNode = tmp[childIdx];
-                    currentParentNode.addChild(currentChildNode);
-                    queue.add(currentChildNode);
-                    removed = set.remove(currentChildNode);
-                }
-            }
-        }
-
-        return mst;
-    }
-
 }

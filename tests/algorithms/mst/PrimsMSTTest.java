@@ -113,7 +113,8 @@ public class PrimsMSTTest extends TestCase {
             new int[]{-1, 0, 5, 2, 3, 6, 7, 0, 2}, 
             predecessorArray));
         
-        HeapNode mst = prims.extractResultsAsTree();
+        int[] treeWalk = prims.getPreOrderWalkOfTree();
+        
         /*         / [b]           /[c]-- 7  -- [d]\
          *       4               2     \              9
          *  [a]              [i]          4            [e]
@@ -130,119 +131,7 @@ public class PrimsMSTTest extends TestCase {
         2 8, 2 3
         3 4 
         */
-        assertEquals(0, mst.getKey());
-        assertEquals(2, mst.getNumberOfChildren());
         
-        // map of expected parent and child keys
-        TIntObjectMap<TIntSet> expected 
-            = new TIntObjectHashMap<TIntSet>();
-        expected.put(0, new TIntHashSet());
-        expected.get(0).add(1);
-        expected.get(0).add(7);
-        
-        expected.put(7, new TIntHashSet());
-        expected.get(7).add(6);
-        
-        expected.put(6, new TIntHashSet());
-        expected.get(6).add(5);
-        
-        expected.put(5, new TIntHashSet());
-        expected.get(5).add(2);
-        
-        expected.put(2, new TIntHashSet());
-        expected.get(2).add(8);
-        expected.get(2).add(3);
-        
-        expected.put(3, new TIntHashSet());
-        expected.get(3).add(4);
-         
-        // traverse the tree using pre-order traversal
-        //  root then left to right children
-        //level 0            [0]
-        //level 1     [1]           [4]
-        //level 2   [2] [3]       [5] [6]
-        //process node sees 0,1,2,3,4,5,6
-        /*
-        node=0, s=() p=()
-           get children and add to s
-        node=1, s=(1,4) p=(0)
-           get children and add to s
-        node=2, s=(2,3,1,4) p=(0,1)
-           set node = null 
-           visits else block
-        node=null, s=(2,3,1,4) p=(0,1,2)
-           pop from s node=2, but see it in p, so keep popping, node=3
-        node=3, s=(1,4) p=(0,1,2)
-           set node = null, visits else block
-        node=null, s=(1,4) p=(0,1,2,3)
-           pop from s, node=1, in p, so node=4
-        node=4, s=(), p=(0,1,2,3)
-           get children and add to s
-        node=5, s=(5,6), p=(0,1,2,3,4)
-           set node=null, visit else block
-        node=null, s=(5,6), p=(0,1,2,3,4,5)
-           pop from s, node=5, but see it in p, so, pop node=6
-        node=6, s=(), p=(0,1,2,3,4,5)
-                p=(0,1,2,3,4,5,6)
-        */       
-        
-        HeapNode node = mst;
-        HeapNode parentNode = null;
-        Stack<HeapNode> stack = new Stack<HeapNode>();
-        TIntSet visited = new TIntHashSet();
-        while (!stack.isEmpty() || (node != null)) {
-            if (node != null) {
-
-                // process node: add to visited and 
-                // remove all node->children values in expectedMap
-                int index = (int)node.getKey();
-                
-                visited.add(index);
-                
-                // this is node = node.getLeft()
-                DoubleLinkedCircularList children =
-                    node.getChildren();
-                if (children != null && (children.getNumberOfNodes() > 0)) {
-                    // put all the children into stack
-                    // and remove from expected map
-                    HeapNode nodeC = children.getSentinel().getRight();
-                    node = nodeC;
-                    int indexC = (int)nodeC.getKey();
-                    
-                    assertTrue(expected.containsKey(index));
-                    assertTrue(expected.get(index).remove(indexC));
-                    if (expected.get(index).isEmpty()) {
-                        expected.remove(index);
-                    }
-                    
-                    for (int i = 0; i < (children.getNumberOfNodes() - 1); ++i) {
-                        nodeC = nodeC.getRight();
-                        stack.add(nodeC);
-                        
-                        indexC = (int)nodeC.getKey();
-                       
-                        assertTrue(expected.containsKey(index));
-                        assertTrue(expected.get(index).remove(indexC));
-                        if (expected.get(index).isEmpty()) {
-                            expected.remove(index);
-                        }
-                    }
-                } else {
-                    node = null;
-                }
-            } else {
-                node = stack.pop();
-                int index = (int)node.getKey();
-                while (visited.contains(index)) {
-                    node = stack.pop();
-                    index = (int)node.getKey();
-                }
-            }
-        }
-        
-        assertEquals(9, visited.size());
-        
-        assertEquals(0, expected.size());
     }
 
     public void test1() throws Exception {
