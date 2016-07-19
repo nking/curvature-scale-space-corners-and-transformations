@@ -72,7 +72,8 @@ public class PerimeterFinder2 {
         
         return extractOrderedBorder(boundary, medAxisPts);
     }
-    
+private PairIntArray debug = null;
+
     /**
      * NOT READY FOR USE...needs alot more testing.
      * 
@@ -196,7 +197,7 @@ public class PerimeterFinder2 {
                     nn = new NearestNeighbor2D(medialAxisPoints, 
                         minMaxY[1], minMaxY[3]);
                 }
-                
+ this.debug = output;               
                 int minAngleIdx = calculateMinAngles(
                     x, y, ns, neighborsX, neighborsY, nn);
 
@@ -291,6 +292,26 @@ public class PerimeterFinder2 {
         int nXY, int[] neighborsX, int[] neighborsY, 
         NearestNeighbor2D nn) {
      
+        /*
+        to determine the next best point among more than
+        one choice, need to determine if the points are
+        a corner for example where the diagonal and
+        horizontal or vertical are both present,
+        OR whether this is 2 borders adjacent to one 
+        another due to the region being very narrow
+        for example.  This later case require alot more
+        logic than initially present here.
+        
+        -- might need to make a longest path algorithm
+        over all border points.  the points left out
+        because they are part of the concave or
+        convex corners can be added back using the
+        logic below afterwards.
+        Need to refactor all of the dependentt code
+        and this method for that change in logic.
+      
+        */
+        
         // determine whether this is a convex or concave
         // section of the boundary curve.
         
@@ -324,13 +345,13 @@ public class PerimeterFinder2 {
           
         boolean isOutside = (d0Cen > d0);
                 
-        /*
+        
         System.out.println(
             String.format(
             "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
             medAxisCen.toString(), x, y, (float) d0,
             xCen, yCen, (float) d0Cen));
-        */
+        
         
         if (!isOutside) {
             for (int i = 0; i < nXY; ++i) {
@@ -341,13 +362,13 @@ public class PerimeterFinder2 {
 
                 double d2Cen = distSq(xCen, yCen, medAxisCen.getX(), medAxisCen.getY());
 
-                /*
+                
                 System.out.println(
                 String.format(
                 "  med Axis pt=%s (%d,%d) d2=%.4f --> d2cen=%.4f",
                 medAxisCen.toString(), x2, y2, (float) d2,
                 (float) d2Cen));
-                */
+                
                 
                 if (d2Cen > d2) {
                     isOutside = true;
@@ -397,12 +418,12 @@ public class PerimeterFinder2 {
             double angle = AngleUtil.polarAngleCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
             
-            /*
+            
             System.out.println(
                 String.format("concave: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0, 
                     x2,y2, (float) angle));
-            */
+            
             
             // for convex section:
             if ((angle > angle0) && (angle > maxAngle)) {
@@ -410,7 +431,7 @@ public class PerimeterFinder2 {
                 minIdx = i;
             }
         }
-        
+      
         assert(minIdx != -1);
         
         return minIdx;
