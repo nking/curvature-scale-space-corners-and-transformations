@@ -1,16 +1,11 @@
 package algorithms.mst;
 
-import algorithms.imageProcessing.DoubleLinkedCircularList;
-import algorithms.imageProcessing.HeapNode;
 import algorithms.util.PairInt;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Stack;
 import junit.framework.TestCase;
 
 /**

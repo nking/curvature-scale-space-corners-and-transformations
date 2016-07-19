@@ -1,9 +1,19 @@
 package algorithms.compGeometry;
 
+import algorithms.imageProcessing.DoubleLinkedCircularList;
+import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
+import algorithms.mst.PrimsMST;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +58,7 @@ public class PerimeterFinder2Test extends TestCase {
         
     }
     
-    public void test1() {
+    public void est1() {
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         
@@ -92,8 +102,8 @@ public class PerimeterFinder2Test extends TestCase {
             0 1 2 3 4 5 6 7 8 9
         
          9  @ @ @ @ @ @ @ @ @ @
-         8  @ * * @ @ @ @ @ @ @ <-- where are med axis pts
-         7  @ * @ @       @ @ @  <---
+         8  @ * * @ @ @ @ @ * @ <-- where are med axis pts
+         7  @ * @ @       @ * @  <---
          6  @ @ @         @ @ @
          5  @ @             * @
          4  @               @ @
@@ -132,7 +142,7 @@ public class PerimeterFinder2Test extends TestCase {
                 
         return list0;
     }
- 
+   
     /*
             0 1 2 3 4 5 6 7 8 9
         
@@ -344,5 +354,62 @@ public class PerimeterFinder2Test extends TestCase {
             assertEquals(expected.getX(i), results.getX(i));
             assertEquals(expected.getY(i), results.getY(i));
         }
+    }
+
+    private TIntObjectMap<Set<PairInt>> createCostAdjacencyMap(
+        List<PairInt> points) {
+        
+        TIntObjectMap<Set<PairInt>> map = 
+            new TIntObjectHashMap<Set<PairInt>>();
+        
+        TObjectIntMap<PairInt> pointIndexMap
+             = new TObjectIntHashMap<PairInt>();
+        for (int i = 0; i < points.size(); ++i) {
+            PairInt p = points.get(i);
+            pointIndexMap.put(p, i);
+        }
+                
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        for (PairInt p : points) {
+            
+            int x = p.getX();
+            int y = p.getY();
+            
+            int idx1 = pointIndexMap.get(p);
+            PairInt p1 = new PairInt(idx1, 1);
+            
+            Set<PairInt> set1 = map.get(idx1);
+            if (set1 == null) {
+                set1 = new HashSet<PairInt>();
+                map.put(idx1, set1);
+            }
+            
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                PairInt p2 = new PairInt(x2, y2);
+                if (!pointIndexMap.containsKey(p2)) {
+                    continue;
+                }
+                int idx2 = pointIndexMap.get(p2);
+                
+                Set<PairInt> set2 = map.get(idx2);
+                if (set2 == null) {
+                    set2 = new HashSet<PairInt>();
+                    map.put(idx2, set2);
+                }
+                
+                PairInt p3 = new PairInt(idx2, 1);
+                
+                set1.add(p3);
+                set2.add(p1);
+            }
+        }
+        
+        assertEquals(points.size(), map.size());
+        
+        return map;
     }
 }

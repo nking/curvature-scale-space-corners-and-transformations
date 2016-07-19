@@ -299,7 +299,7 @@ private PairIntArray debug = null;
         horizontal or vertical are both present,
         OR whether this is 2 borders adjacent to one 
         another due to the region being very narrow
-        for example.  This later case require alot more
+        for example.  This later case requires alot more
         logic than initially present here.
         
         -- might need to make a longest path algorithm
@@ -307,7 +307,7 @@ private PairIntArray debug = null;
         because they are part of the concave or
         convex corners can be added back using the
         logic below afterwards.
-        Need to refactor all of the dependentt code
+        Need to refactor all of the dependent code
         and this method for that change in logic.
       
         */

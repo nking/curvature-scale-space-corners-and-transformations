@@ -79,6 +79,19 @@ public class TSPPrimsMST {
         //TODO: here is where need to optimize the tour,
         // making the edges non-crossing.
         
+        /*
+        crossed edges:
+        
+        The alternative connecting pairs from two crossing 
+        segments have shorter separation than the 
+        crossed.
+        
+        need a way to find them that is faster
+        than O(N^2) (for dense graphs) though...
+        can probably use a 2d tree such as range
+        tree for closer to O(N*log_2(N))
+        */
+        
         tour[tour.length - 1] = tour[0];
     
         return tour;
