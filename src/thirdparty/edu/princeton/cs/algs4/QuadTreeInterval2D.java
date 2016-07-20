@@ -81,6 +81,9 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
         }
+
+        //TODO: need more bounds checks here to not
+        // search all elements
         
         if (h.SW != null) 
             query2D(h.SW, srch, output);
