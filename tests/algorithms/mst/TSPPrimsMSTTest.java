@@ -77,8 +77,7 @@ public class TSPPrimsMSTTest extends TestCase {
         removing vertexes already encountered:
         a, b, c,  h, d, e, f, g,
 
-        a pre-order for prims mst here is
-        Prims here is giving:
+        a pre-order for prims mst here is:
                    0
                1        3
             2         4

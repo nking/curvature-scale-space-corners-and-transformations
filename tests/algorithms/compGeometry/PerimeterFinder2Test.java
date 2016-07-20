@@ -90,22 +90,28 @@ public class PerimeterFinder2Test extends TestCase {
     }
     
     /**
-     * returns lists of sequential CCW ordered contiguous
-     * boundary points.
+     * returns lists of sequential CW ordered contiguous
+     * boundary points with concave and convex turns
+     * and single pixel width spurs that lead to
+     * pixels that only have one neighbor and
+     * 2 pixel width regions (in which the.
      * 
      * @return 
      */
     private PairIntArray getSet1Boundaries() {
+        
         /*
         //medial axis points: 1,7  1,8  2,8
         
             0 1 2 3 4 5 6 7 8 9
-        
+        12                @
+        11              @ @
+        10            @ @
          9  @ @ @ @ @ @ @ @ @ @
          8  @ * * @ @ @ @ @ * @ <-- where are med axis pts
          7  @ * @ @       @ * @  <---
          6  @ @ @         @ @ @
-         5  @ @             * @
+         5  @ @             @ @
          4  @               @ @
          3  @               @ @
          2                  @ @
@@ -119,7 +125,15 @@ public class PerimeterFinder2Test extends TestCase {
         for (int i = 3; i <= 9; ++i) {
             list0.add(0, i);
         }
-        for (int i = 1; i <= 9; ++i) {
+        for (int i = 1; i <= 4; ++i) {
+            list0.add(i, 9);
+        }
+        list0.add(5, 10);
+        list0.add(6, 11);
+        list0.add(7, 12);
+        list0.add(7, 11);
+        list0.add(6, 10);
+        for (int i = 6; i <= 9; ++i) {
             list0.add(i, 9);
         }
         for (int i = 8; i >= 0; --i) {
