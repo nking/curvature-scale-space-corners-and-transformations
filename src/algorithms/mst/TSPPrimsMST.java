@@ -231,6 +231,10 @@ public class TSPPrimsMST {
                   qt and add to edgemap
                 */
                
+                if (true) {
+                    throw new UnsupportedOperationException(
+                    "not yet implemented");
+                }
                 
                 // add the leading cIdxs back unto stack
                 

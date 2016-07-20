@@ -90,15 +90,15 @@ public class TSPPrimsMSTTest extends TestCase {
         a, b, c,  h, f, g, e, d
         */
                 
-        List<PairInt> points = new ArrayList<PairInt>();
-        points.add(new PairInt(2, 5));
-        points.add(new PairInt(2, 3));
-        points.add(new PairInt(1, 2));
-        points.add(new PairInt(4, 5));
-        points.add(new PairInt(5, 4));
-        points.add(new PairInt(4, 3));
-        points.add(new PairInt(6, 3));
-        points.add(new PairInt(3, 1));
+        PairInt[] points = new PairInt[8];
+        points[0] = new PairInt(2, 5);
+        points[1] = new PairInt(2, 3);
+        points[2] = new PairInt(1, 2);
+        points[3] = new PairInt(4, 5);
+        points[4] = new PairInt(5, 4);
+        points[5] = new PairInt(4, 3);
+        points[6] = new PairInt(6, 3);
+        points[7] = new PairInt(3, 1);
         
         int[] expected = new int[9];
         expected[0] = 0;
@@ -117,21 +117,21 @@ public class TSPPrimsMSTTest extends TestCase {
         TIntObjectMap<Set<PairInt>>
             adjCostMap = new TIntObjectHashMap<Set<PairInt>>();
         
-        for (int i = 0; i < points.size(); ++i) {
-            int x1 = points.get(i).getX();
-            int y1 = points.get(i).getY();            
+        for (int i = 0; i < points.length; ++i) {
+            int x1 = points[i].getX();
+            int y1 = points[i].getY();            
             Set<PairInt> set1 = adjCostMap.get(i);
             if (set1 == null) {
                 set1 = new HashSet<PairInt>();
                 adjCostMap.put(i, set1);
             }
             
-            for (int j = 0; j < points.size(); ++j) {
+            for (int j = 0; j < points.length; ++j) {
                 if (i == j) {
                     continue;
                 }
-                int x2 = points.get(j).getX();
-                int y2 = points.get(j).getY();
+                int x2 = points[j].getX();
+                int y2 = points[j].getY();
                 
                 int diffX = x1 - x2;
                 int diffY = y1 - y2;
@@ -142,7 +142,7 @@ public class TSPPrimsMSTTest extends TestCase {
         }
         
         PrimsMST prims = new PrimsMST();
-        prims.calculateMinimumSpanningTree(points.size(), 
+        prims.calculateMinimumSpanningTree(points.length, 
             adjCostMap);
         int[] walk = prims.getPreOrderWalkOfTree();
         System.out.println("prims walk=" +
@@ -151,7 +151,8 @@ public class TSPPrimsMSTTest extends TestCase {
             new int[]{0, 1, 2, 3, 4, 5, 7, 6}, walk));
         
         TSPPrimsMST tsp = new TSPPrimsMST();
-        int[] tour = tsp.approxTSPTour(points.size(), adjCostMap);
+        int[] tour = tsp.approxTSPTour(points.length,
+            points, adjCostMap);
         
         assertEquals(expected.length, tour.length);
         for (int i = 0; i < tour.length; ++i) {
