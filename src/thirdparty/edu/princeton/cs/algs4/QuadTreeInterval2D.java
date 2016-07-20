@@ -11,7 +11,6 @@ import java.util.List;
  * is GPLV3, http://algs4.cs.princeton.edu/faq/
  */
 public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
-                 //Interval2D type T
     
     private Node<T> root;
 
@@ -36,22 +35,24 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
     }
 
     private Node<T> insert(Node<T> h, Interval2D<T> box, Value value) {
+        
         if (h == null) {
             return new Node<T>(box, value);
         }
-        //// if (eq(x, h.x) && eq(y, h.y)) h.value = value;  // duplicate
-        else if ( less(box.intervalX, h.xy.intervalX) 
-            &&  less(box.intervalY, h.xy.intervalY)) 
+        
+        int cX = h.xy.intervalX.compareTo(box.intervalX);
+        int cY = h.xy.intervalY.compareTo(box.intervalY);
+        
+        if ((cX < 0) && (cY < 0)) { 
             h.SW = insert(h.SW, box, value);
-        else if ( less(box.intervalX, h.xy.intervalX) 
-            && !less(box.intervalY, h.xy.intervalY)) 
+        } else if ((cX < 0) && (cY >= 0)) {
             h.NW = insert(h.NW, box, value);
-        else if (!less(box.intervalX, h.xy.intervalX) 
-            &&  less(box.intervalY, h.xy.intervalY)) 
+        } else if ((cX >= 0) && (cY < 0)) {
             h.SE = insert(h.SE, box, value);
-        else if (!less(box.intervalX, h.xy.intervalX) 
-            && !less(box.intervalY, h.xy.intervalY)) 
+        } else if ((cX >= 0) && (cY >= 0)) { 
             h.NE = insert(h.NE, box, value);
+        }
+        
         return h;
     }
 
@@ -69,45 +70,26 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         return output;
     }
 
-    private void query2D(Node<T> h, Interval2D<T> rect,
+    private void query2D(Node<T> h, Interval2D<T> srch,
         List<Interval2D<T>> output) {
+        
         if (h == null) return;
-        T xmin = rect.intervalX.min();
-        T ymin = rect.intervalY.min();
-        T xmax = rect.intervalX.max();
-        T ymax = rect.intervalY.max();
         
-        T xminH = h.xy.intervalX.min();
-        T yminH = h.xy.intervalY.min();
-        T xmaxH = h.xy.intervalX.max();
-        T ymaxH = h.xy.intervalY.max();
-        
-        if (rect.compareTo(h.xy) == 0) {
+        int cX = srch.intervalX.compareTo(h.xy.intervalX);
+        int cY = srch.intervalY.compareTo(h.xy.intervalY);
+
+        if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
-            System.out.println("    (" + h.xy + ") " + h.value);
         }
-        if ( less(xmin, xminH) && less(ymin, yminH)) 
-            query2D(h.SW, rect, output);
-        if ( less(xmin, xminH) && !less(ymax, yminH)) 
-            query2D(h.NW, rect, output);
-        if (!less(xmax, xmaxH) &&  less(ymin, ymaxH)) 
-            query2D(h.SE, rect, output);
-        if (!less(xmax, xmaxH) && !less(ymax, ymaxH)) 
-            query2D(h.NE, rect, output);
+        
+        if (h.SW != null) 
+            query2D(h.SW, srch, output);
+        if (h.NW != null) 
+            query2D(h.NW, srch, output);
+        if (h.SE != null) 
+            query2D(h.SE, srch, output);
+        if (h.NE != null) 
+            query2D(h.NE, srch, output);    
     }
-
-   /***************************************************************************
-    *  helper comparison functions
-    ***************************************************************************/
-
-    private boolean less(Interval<T> k1, Interval<T> k2) { 
-        return k1.compareTo(k2) <  0; }
-    private boolean eq  (Interval<T> k1, Interval<T> k2) { 
-        return k1.compareTo(k2) == 0; }
-    
-    private boolean less(T k1, T k2) { 
-        return k1.compareTo(k2) <  0; }
-    private boolean eq  (T k1, T k2) { 
-        return k1.compareTo(k2) == 0; }
 
 }
