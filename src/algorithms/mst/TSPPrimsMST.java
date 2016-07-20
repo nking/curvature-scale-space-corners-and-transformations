@@ -207,6 +207,44 @@ public class TSPPrimsMST {
                     x1, y1, x2, y2, x3, y3, x4, y4)) {
                     continue;
                 }
+                
+                int cIdx1New, cIdx2New, cIdx3New, cIdx4New;
+                
+                int tot1234 = distance(
+                    x1, y1, x2, y2) +
+                    distance(x3, y3, x4, y4);
+                
+                int tot1324 = Integer.MAX_VALUE;
+                int tot1423 = Integer.MAX_VALUE;
+                if (!LinesAndAngles.linesIntersect(
+                    x1, y1, x3, y3, x2, y2, x4, y4)) {
+                    tot1324 = distance(
+                        x1, y1, x3, y3) +
+                        distance(x2, y2, x4, y4);
+                }
+                if (!LinesAndAngles.linesIntersect(
+                    x1, y1, x4, y4, x2, y2, x3, y3)) {
+                    tot1423 = 
+                        distance(x1, y1, x4, y4) +
+                        distance(x2, y2, x3, y3);
+                }
+                
+                if ((tot1324 < tot1423) && 
+                    (tot1324 < tot1234)) {
+                    cIdx1New = cIdx1;
+                    cIdx2New = cIdx3;
+                    cIdx3New = cIdx2;
+                    cIdx4New = cIdx4;
+                } else if ((tot1423 < tot1324) &&
+                    (tot1423 < tot1234)){
+                    cIdx1New = cIdx1;
+                    cIdx2New = cIdx4;
+                    cIdx3New = cIdx2;
+                    cIdx4New = cIdx3;
+                } else {
+                    continue;                    
+                }
+
                 found = true;
                 
                 // TODO:
@@ -230,6 +268,7 @@ public class TSPPrimsMST {
                 - create box AC and BD and add to 
                   qt and add to edgemap
                 */
+                
                
                 if (true) {
                     throw new UnsupportedOperationException(
@@ -287,5 +326,10 @@ public class TSPPrimsMST {
     
         return tour;
     }
-    
+
+    protected int distance(int x1, int y1, int x2, int y2) {
+        int diffX = x1 - x2;
+        int diffY = y1 - y2;
+        return diffX * diffX + diffY * diffY;
+    }    
 }
