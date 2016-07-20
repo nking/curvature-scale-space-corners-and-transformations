@@ -210,6 +210,41 @@ public class TSPPrimsMST {
                 
                 int cIdx1New, cIdx2New, cIdx3New, cIdx4New;
                 
+                /* TODO: 
+                
+                Need to use the total path sum because
+                the vertexes following each edge are
+                affected by the swap too.
+                
+                The total path calculation can be done
+                once before this block,
+                then need a method to subtract and add
+                the few changing edges from it for
+                a peek at possible total,
+                then a method to change update the segments
+                of the paths.
+                
+                --> need a separate class to hold the
+                tour and (coordinates or cost) 
+                and current path sum
+                along with the changing edge methods.
+                --> also need to add the delete operation to qt                
+                
+                NOTE: to determine next best intersection to
+                uncross, might make a pass through all
+                first and only apply the one with the 
+                smallest total path, then repeat that until
+                there are no more crossing lines.
+                Using the quadtree to reduce the number of 
+                comparisons between edges should help
+                increasingly as edges are uncrossed.
+                */
+                                
+                if (true) {
+                    throw new UnsupportedOperationException(
+                    "not yet implemented");
+                }
+                
                 int tot1234 = distance(
                     x1, y1, x2, y2) +
                     distance(x3, y3, x4, y4);
@@ -252,28 +287,35 @@ public class TSPPrimsMST {
                 // and update associated data
                 // --> need to implement qt.delete too
         
+                // --- update tour variables ----
+                tour[tIdx1] = cIdx1New;
+                tour[tIdx2] = cIdx2New;
+                tour[tIdx3] = cIdx3New;
+                tour[tIdx4] = cIdx4New;
                 
+                tourValueToIndexMap.put(cIdx1New, tIdx1);
+                tourValueToIndexMap.put(cIdx2New, tIdx2);
+                tourValueToIndexMap.put(cIdx3New, tIdx3);
+                tourValueToIndexMap.put(cIdx4New, tIdx4);
+
+                // get indexes that follow cIdx2 and cIdx4
+                // in the tour so can update their                
                 /*    
-                a to b and c to d is current edge pair
-                
-                find the shorter total and uncrossed
-                among ac and bd, or ad and bc.
-                
-                - swap positions in tour        
-                  use tour value map to find tour index
-                  then swap tour values and update map
                 - remove boxAB and boxCD from qr
                   remove boxAB from edgemap by cIdx1
                   remove boxCD from edgemap by cIdx3
+                  ALSO have to handle the vertexes 
+                    immed after 2nd vertexes in these two
+                    pairs:
+                      - rm boxes for cIdx2 +
+                        rm boxes for cIdx4
+                      - get tour and x indexes for
+                        vertexes after cIdx2 and cIdx4
+                      - make new boxes for new cIdx2 to 
+                         the vertex for 2 and same for 4
                 - create box AC and BD and add to 
                   qt and add to edgemap
                 */
-                
-               
-                if (true) {
-                    throw new UnsupportedOperationException(
-                    "not yet implemented");
-                }
                 
                 // add the leading cIdxs back unto stack
                 
