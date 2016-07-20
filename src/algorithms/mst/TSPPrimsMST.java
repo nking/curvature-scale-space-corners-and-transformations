@@ -137,52 +137,7 @@ public class TSPPrimsMST {
         }
         
         //TODO: implement a "delete" in qt
-        
-        /*
-        stack of coordinate indexes
-        while !stack.empty
-           box = stack.pop
-           get x,y coordinate endpoints for this segment
-           list<interval2d> boxes = qt.query()
-           for (interval2d box2 : boxes) 
-               if box.equals(box2) continue
-               get coordinate endpoints for this segment
-               if segments intersect
-                   do quick sum of edges for potential
-                   swap to assert the total is smaller
-                   swap the vertexes
-                     - remove both boxes from qt
-                     --> how to update indexes w/o skipping or
-                         repeating a search
-                         see one of my dfs prune
-                         or merge patterns... solved
-                         this w/ a simple pattern before
-                     - add new bounding boxes to qt
-        
-        map of tour values (which are coordinate indexes)
-        edges: cIdx1 to cIdx2
-        map w/ key = cIdx1, value=edge box
-        put cIdx into stack
-            if visited vontinue
-            if no crossing, mark as visited
-            else if has crossing, uncross and
-              add back to stack
-
-        the "uncross":
-            a to b and c to d
-            get changed to a to c and b to d
-               for the pair which reduces length totals
-            - swap positions in tour        
-              use tour value map to find tour index
-              then swap tour values and update map
-            - remove boxAB and boxCD from qr
-              remove boxAB from edgemap by cIdx1
-              remove boxCD from edgemap by cIdx3
-            - create box AC and BD and add to 
-              qt and add to edgemap
-        
-        */
-        
+                
         Stack<Integer> stack = new Stack<Integer>();
         for (int i = 0; i < coordinates.length; ++i) {
             stack.add(Integer.valueOf(i));
@@ -258,6 +213,26 @@ public class TSPPrimsMST {
                 // swap tour positions
                 // and update associated data
                 // --> need to implement qt.delete too
+        
+                
+                /*    
+                a to b and c to d is current edge pair
+                
+                find the shorter total and uncrossed
+                among ac and bd, or ad and bc.
+                
+                - swap positions in tour        
+                  use tour value map to find tour index
+                  then swap tour values and update map
+                - remove boxAB and boxCD from qr
+                  remove boxAB from edgemap by cIdx1
+                  remove boxCD from edgemap by cIdx3
+                - create box AC and BD and add to 
+                  qt and add to edgemap
+                */
+               
+                
+                // add the leading cIdxs back unto stack
                 
                 break;
             }
