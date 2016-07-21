@@ -1,24 +1,12 @@
 package algorithms.mst;
 
-import algorithms.imageProcessing.HeapNode;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
-import gnu.trove.iterator.TIntIntIterator;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import junit.framework.TestCase;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *

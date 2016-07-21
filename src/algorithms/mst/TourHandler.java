@@ -1,10 +1,19 @@
 package algorithms.mst;
 
 import algorithms.SubsetChooser;
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.util.PairInt;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.Arrays;
+import java.util.List;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Interval2D;
+import thirdparty.edu.princeton.cs.algs4.QuadTreeInterval2D;
 
 /**
  class to handle path sum and edits of
@@ -43,7 +52,18 @@ public class TourHandler {
     map value = index of tour array.
     */
     private final TIntIntMap tourValueToIndexMap; 
+ 
+    private final PairInt[] coordinates;
     
+    private final QuadTreeInterval2D<Integer, PairInt> qt;
+        
+    // bounding boxes of tour[i] to tour[i+1]
+    // stored by keys that are the first value,
+    // tour[i] which is the vertex index
+    private final TIntObjectMap<Interval2D<Integer>> indexEdgeBounds;
+        
+    private final TObjectIntMap<Interval2D<Integer>> edgeIndexBounds;
+        
     private int pathSum = 0;
 
     /**
@@ -60,7 +80,8 @@ public class TourHandler {
      * @param theAdjacencyCostMap 
      */
     public TourHandler(int[] theTour, 
-        TIntObjectMap<TIntIntMap> theAdjacencyCostMap) {
+        TIntObjectMap<TIntIntMap> theAdjacencyCostMap,
+        PairInt[] theCoordinates) {
         
         tour = theTour;
         
@@ -69,6 +90,18 @@ public class TourHandler {
         tourValueToIndexMap = new TIntIntHashMap();
     
         pathSum = 0;
+        
+        coordinates = theCoordinates;
+        
+        qt = new QuadTreeInterval2D<Integer, PairInt>();
+
+        indexEdgeBounds
+            = new TIntObjectHashMap<Interval2D<Integer>>();
+
+        edgeIndexBounds
+            = new TObjectIntHashMap<Interval2D<Integer>>();
+
+        init();
     }
     
     private void init() {
@@ -84,7 +117,104 @@ public class TourHandler {
             int cIdx2 = tour[i + 1];
             int cost = adjCostMap.get(cIdx1).get(cIdx2);
             pathSum += cost;
+            
+            insertEdgeBox(cIdx1, cIdx2);
+        }   
+    }
+    
+    /**
+     * given first index n the reference frame of 
+     * vertex indexes,
+     * find the edges in thr tour that it intersects
+     * with and return the be improvement if any.
+     * The result will be a -1 if the edge did not 
+     * intersect.
+     * 
+     * @param idxEdgeAVertex1 edge A vertex 1 index,
+     * the second edge index is implicitly the one
+     * that follows this in the tour array.
+     * @param outputVertexIdxs array of size 4
+     * holding the combination of vertexes that result
+     * in best path sum.
+     * @param outputIdxEdgeBVertex1 an array of size 1
+     * to hold the vertex b of best edge to swap to
+     * uncross intersecting edges.
+     * @return best path sum for a combination of swapping
+     * edge vertexes between the 2 edges given else -1
+     * if a better combination than current was not found.
+     */
+    public int findNonIntersectingBestSwap(
+        int idxEdgeAVertex1, 
+        int[] outputIdxEdgeBVertex1, 
+        int[] outputVertexIdxs) {
+        
+        int tIdxA1 = getTourIndex(idxEdgeAVertex1);
+        int tIdxA2 = getNextTourIndex(tIdxA1);
+        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+ 
+        int idxEdgeAVertex2 = getVertexIndex(tIdxA2);
+
+        Interval2D<Integer> box12 = 
+            indexEdgeBounds.get(idxEdgeAVertex1);
+
+        // find intersection boxes and look for 
+        // edges that intersect with these
+
+        List<Interval2D<Integer>> list = qt.query2D(box12);
+
+        if (list.size() < 2) {
+            return -1;
         }
+        
+        int[] tmp = new int[4];
+        int minSum = Integer.MAX_VALUE;
+        
+        int x1 = coordinates[idxEdgeAVertex1].getX();
+        int y1 = coordinates[idxEdgeAVertex1].getY();
+
+        int x2 = coordinates[idxEdgeAVertex2].getX();
+        int y2 = coordinates[idxEdgeAVertex2].getY();
+
+        for (int listIdx = 0; listIdx < list.size();
+            ++listIdx) {
+
+            Interval2D<Integer> box34 = list.get(listIdx);
+
+            if (box34.equals(box12)) {
+                continue;
+            }
+
+            int idxEdgeBVertex1 = edgeIndexBounds.get(box34);
+            int tIdxB1 = getTourIndex(idxEdgeBVertex1);
+            int tIdxB2 = getNextTourIndex(tIdxB1);
+            int idxEdgeBVertex2 = getVertexIndex(tIdxB2);
+            
+            int x3 = coordinates[idxEdgeBVertex1].getX();
+            int y3 = coordinates[idxEdgeBVertex1].getY();
+
+            int x4 = coordinates[idxEdgeBVertex2].getX();
+            int y4 = coordinates[idxEdgeBVertex2].getY();
+
+            // determine if p12 p34 intersect
+            if (!LinesAndAngles.linesIntersect(
+                x1, y1, x2, y2, x3, y3, x4, y4)) {
+                continue;
+            }
+            
+            int sum = findNonIntersectingBestSwap(
+                idxEdgeAVertex1, idxEdgeAVertex2,
+                idxEdgeBVertex1, idxEdgeBVertex2, tmp);
+         
+            if (sum < minSum) {
+                sum = minSum;
+                System.arraycopy(tmp, 0, outputVertexIdxs, 
+                    0, tmp.length);
+                outputIdxEdgeBVertex1[0] = idxEdgeBVertex1;
+            }
+        }
+        
+        return (minSum == Integer.MAX_VALUE) ? -1 : minSum;
     }
     
     /**
@@ -99,9 +229,15 @@ public class TourHandler {
      * @param idxEdgeAVertex1 edge A vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
+     * @param idxEdgeAVertex2 edge A vertex 3 index,
+     * the second edge index that follows 
+     * idxEdgeAVertex1 in the tour array.
      * @param idxEdgeBVertex1 edge B vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
+     * @param idxEdgeBVertex2 edge B vertex 3 index,
+     * the second edge index that follows 
+     * idxEdgeBVertex1 in the tour array.
      * @param outputVertexIdxs array of size 4
      * holding the combination of vertexes that result
      * in best path sum.
@@ -109,37 +245,39 @@ public class TourHandler {
      * edge vertexes between the 2 edges given else -1
      * if a better combination than current was not found.
      */
-    public int findNonIntersectingBestSwap(
-        int idxEdgeAVertex1, int idxEdgeBVertex1,
+    protected int findNonIntersectingBestSwap(
+        int idxEdgeAVertex1, int idxEdgeAVertex2,
+        int idxEdgeBVertex1, int idxEdgeBVertex2,
         int[] outputVertexIdxs) {
-        
+
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
-        int tIdxA2 = getNextTourIndex(tIdxA1);
+        int tIdxA2 = getTourIndex(idxEdgeAVertex2);
+        assert(tIdxA2 == getNextTourIndex(tIdxA1));
         int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
         int tIdxNextA2 = getNextTourIndex(tIdxA2);
-            
+
         int tIdxB1 = getTourIndex(idxEdgeBVertex1);
-        int tIdxB2 = getTourIndex(tIdxB1);
+        int tIdxB2 = getTourIndex(idxEdgeBVertex2);
+        assert(tIdxB2 == getNextTourIndex(tIdxB1));
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
-        
+
         int minSum = Integer.MAX_VALUE;
-        
+
         cache0[0] = tIdxA1;
         cache0[1] = tIdxA2;
         cache0[2] = tIdxB1;
         cache0[3] = tIdxB2;
-        
+
         //6 permutations to try
         SubsetChooser sc = new SubsetChooser(4, 2);
         for (int i = 0; i < 6; ++i) {
-            
+
             sc.getNextSubset(cache1);
-            
+
             //TODO: place hard-wired skip of same permuation
             // here and remove Arrays.equals when have
             // the i index
-            
             for (int j = 0; j < cache1.length; ++j) {
                 cache1[j] = cache0[cache1[j]];
             }
@@ -153,26 +291,26 @@ public class TourHandler {
             boolean isValid = validateEdges(tIdxPrevA1,
                 tIdxNextA2, tIdxPrevB1, tIdxNextB2,
                 cache1);
-            
+
             if (!isValid) {
                 continue;
             }
-           
+
             int sum = peekSumPathChanges(tIdxPrevA1,
-                tIdxA1, tIdxA2, tIdxNextA2, 
+                tIdxA1, tIdxA2, tIdxNextA2,
                 tIdxPrevB1, tIdxB1, tIdxB2, tIdxNextB2,
                 cache1);
-            
+
             if (sum < minSum) {
                 sum = minSum;
-                System.arraycopy(cache1, 0, outputVertexIdxs, 
+                System.arraycopy(cache1, 0, outputVertexIdxs,
                     0, cache1.length);
             }
         }
-        
+
         return (minSum == Integer.MAX_VALUE) ? -1 : minSum;
     }
-    
+
     /**
      * given the vertex index from the original graph,
      * return the vertex index the follows it in the
@@ -182,7 +320,19 @@ public class TourHandler {
      */
     public int getNextVertexIndex(int vertexIdx) {
         int tIdx = getTourIndex(vertexIdx);
-        return getNextTourIndex(tIdx);
+        return tour[getNextTourIndex(tIdx)];
+    }
+    
+    /**
+     * given the vertex index from the original graph,
+     * return the vertex index the precedes it in the
+     * tour.
+     * @param vertexIdx
+     * @return 
+     */
+    public int getPrevVertexIndex(int vertexIdx) {
+        int tIdx = getTourIndex(vertexIdx);
+        return tour[getPrevTourIndex(tIdx)];
     }
     
     private int getNextTourIndex(int tIdx) {
@@ -275,6 +425,71 @@ public class TourHandler {
         return sum;
     }
     
+    private void removeEdgeBoxes(int tIdxPrev1, int tIdx1, 
+        int tIdx2, int tIdxNext2) {
+
+        if (true) {
+            throw new UnsupportedOperationException(
+                "not yet implemented");
+        }
+        int cIdxPrev1 = getVertexIndex(tIdxPrev1);
+        int cIdx1 = getVertexIndex(tIdx1);
+        int cIdx2 = getVertexIndex(tIdx2);
+             
+        Interval2D<Integer> box;
+        
+        box = indexEdgeBounds.remove(cIdxPrev1);
+        assert(box != null);
+        edgeIndexBounds.remove(box);
+ //       qt.remove(box);
+
+        box = indexEdgeBounds.remove(cIdx1);
+        assert(box != null);
+        edgeIndexBounds.remove(box);
+  //      qt.remove(box);
+        
+        box = indexEdgeBounds.remove(cIdx2);
+        assert(box != null);
+        edgeIndexBounds.remove(box);
+ //       qt.remove(box);        
+    }
+    
+    private void insertEdgeBox(int idxEdgeVertex1,
+        int idxEdgeVertex2) {
+
+        Interval2D<Integer> box;
+        int x1, y1, x2, y2;
+        Interval<Integer> xi1, yi1;
+        PairInt desc;
+        
+        x1 = coordinates[idxEdgeVertex1].getX();
+        y1 = coordinates[idxEdgeVertex1].getY();
+        x2 = coordinates[idxEdgeVertex2].getX();
+        y2 = coordinates[idxEdgeVertex2].getY();
+        xi1 = new Interval<Integer>(x1, x2);
+        yi1 = new Interval<Integer>(y1, y2);
+        box = new Interval2D<Integer>(xi1, yi1);
+        desc = new PairInt(idxEdgeVertex1, idxEdgeVertex2);
+        qt.insert(box, desc);
+        edgeIndexBounds.put(box, idxEdgeVertex1);
+        indexEdgeBounds.put(idxEdgeVertex1, box);
+        
+    }
+    
+    private void insertEdgeBoxes(int idxEdgeVertex1,
+        int idxEdgeVertex2,
+        int idxEdgePrevVertex1, int idxEdgeNextVertex2) {
+
+        int cIdx1 = idxEdgeVertex1;
+        int cIdx2 = idxEdgeVertex2;
+        int cIdxPrev1 = idxEdgePrevVertex1;
+        int cIdxNext2 = idxEdgeNextVertex2;
+
+        insertEdgeBox(cIdxPrev1, cIdx1);
+        insertEdgeBox(cIdx1, cIdx2);
+        insertEdgeBox(cIdx2, cIdxNext2);
+    }
+    
     /**
      * given tour values (which are the original graph
      * vertexes), change to vertexIdxs1 and return the
@@ -302,6 +517,19 @@ public class TourHandler {
         int tIdxB2 = getTourIndex(tIdxB1);
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
+        
+        // ---- update the edge bounding boxes -----
+        removeEdgeBoxes(tIdxPrevA1, tIdxA1, tIdxA2, 
+            tIdxNextA2);
+        removeEdgeBoxes(tIdxPrevB1, tIdxB1, tIdxB2, 
+            tIdxNextB2);
+        
+        insertEdgeBoxes(vertexIdxs[0], vertexIdxs[1],
+            tIdxPrevA1, tIdxNextA2);
+        insertEdgeBoxes(vertexIdxs[2], vertexIdxs[3],
+            tIdxPrevB1, tIdxNextB2);
+        
+        // ---- update the tour -----
         
         int sum = peekSumPathChanges(tIdxPrevA1,
             tIdxA1, tIdxA2, tIdxNextA2, 

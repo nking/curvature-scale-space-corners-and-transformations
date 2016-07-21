@@ -1,13 +1,10 @@
 package algorithms.mst;
 
-import algorithms.util.PairInt;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import junit.framework.TestCase;
 
 /**

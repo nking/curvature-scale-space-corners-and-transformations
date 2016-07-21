@@ -61,61 +61,11 @@ public class TSPPrimsMST {
         
         int[] tour = approxTSPTour(nVertexes, adjCostMap);
      
-        /*
-        crossed edges:
-        
-        The alternative connecting pairs from two crossing 
-        segments have shorter separation than the 
-        crossed.
-        
-        need a way to find them that is faster
-        than O(N^2) (for dense graphs) so have
-        added a quadtree for 2d intervals to the
-        project.
-        */
+        // uncross edges where feasible
         
         TourHandler tourHandler = new TourHandler(
-            tour, adjCostMap);
-        
-        QuadTreeInterval2D<Integer, PairInt> qt =
-            new QuadTreeInterval2D<Integer, PairInt>();
-        
-        // bounding boxes of tour[i] to tour[i+1]
-        // stored by keys that are the first value,
-        // tour[i] which is the vertex index
-        TIntObjectMap<Interval2D<Integer>> indexEdgeBounds =
-            new TIntObjectHashMap<Interval2D<Integer>>();
-        
-        TObjectIntMap<Interval2D<Integer>> edgeIndexBounds =
-            new TObjectIntHashMap<Interval2D<Integer>>();
-        
-        for (int i = 0; i < (tour.length - 1); ++i) {
-            int cIdx1 = tourHandler.getVertexIndex(i);
-            int x1 = coordinates[i].getX();
-            int y1 = coordinates[i].getY();
-            int x2, y2, cIdx2;
-            if (i == (tour.length - 2)) {
-                x2 = coordinates[0].getX();
-                y2 = coordinates[0].getY();
-                cIdx2 = tourHandler.getVertexIndex(0);
-            } else {
-                x2 = coordinates[i + 1].getX();
-                y2 = coordinates[i + 1].getY();
-                cIdx2 = tourHandler.getVertexIndex(i + 1);
-            }
-            Interval<Integer> xi1 = new Interval<Integer>(x1, x2);
-            Interval<Integer> yi1 = new Interval<Integer>(y1, y2);
-            Interval2D<Integer> box = new Interval2D<Integer>(xi1, yi1);
-
-            PairInt desc = new PairInt(cIdx1, cIdx2);
-            qt.insert(box, desc);
-            
-            edgeIndexBounds.put(box, cIdx1);
-            indexEdgeBounds.put(cIdx1, box);
-        }
-        
-        //TODO: implement a "delete" in qt
-        
+            tour, adjCostMap, coordinates);
+                
         int nIter = 0;
         int nMaxIter = 10;
         int nChanged = 0;
@@ -129,6 +79,7 @@ public class TSPPrimsMST {
             int[] bestVertexIdxs1 = new int[4];
             int minPathSum = Integer.MAX_VALUE;
             int[] outputVertexIdxs = new int[4];
+            int[] outputVertexB = new int[1];
             
             //TODO: consider on nIter=0, making a list
             // of vertex indexes which have intersecting
@@ -138,71 +89,17 @@ public class TSPPrimsMST {
             for (int cIdx1 = 0; cIdx1 < coordinates.length;
                 ++cIdx1) {
 
-                int tIdx1 = tourHandler.getTourIndex(cIdx1);
-                int tIdx2 = (tIdx1 < (coordinates.length - 1)) ?
-                    tIdx1 + 1 : 0;
+                int sum = 
+                    tourHandler.findNonIntersectingBestSwap(
+                    cIdx1, outputVertexB, outputVertexIdxs);
 
-                int cIdx2 = tourHandler.getVertexIndex(tIdx2);
-
-                Interval2D<Integer> box12 = indexEdgeBounds.get(cIdx1);
-
-                // find intersection boxes and look for 
-                // edges that intersect with these
-
-                List<Interval2D<Integer>> list = 
-                    qt.query2D(box12);
-
-                if (list.size() < 2) {
-                    continue;
-                }
-
-                int x1 = coordinates[cIdx1].getX();
-                int y1 = coordinates[cIdx1].getY();
-
-                int x2 = coordinates[cIdx2].getX();
-                int y2 = coordinates[cIdx2].getY();
-
-                for (int listIdx = 0; listIdx < list.size();
-                    ++listIdx) {
-
-                    Interval2D<Integer> box34 = list.get(listIdx);
-
-                    if (box34.equals(box12)) {
-                        continue;
-                    }
-
-                    int cIdx3 = edgeIndexBounds.get(box34);
-
-                    int tIdx3 = tourHandler.getTourIndex(cIdx3);
-
-                    int tIdx4 = (tIdx3 < (coordinates.length - 1)) ?
-                        tIdx3 + 1 : 0;
-
-                    int cIdx4 = tourHandler.getVertexIndex(tIdx4);
-
-                    int x3 = coordinates[cIdx3].getX();
-                    int y3 = coordinates[cIdx3].getY();
-
-                    int x4 = coordinates[cIdx4].getX();
-                    int y4 = coordinates[cIdx4].getY();
-
-                    // determine if p12 p34 intersect
-                    if (!LinesAndAngles.linesIntersect(
-                        x1, y1, x2, y2, x3, y3, x4, y4)) {
-                        continue;
-                    }
-
-                    int sum = tourHandler.findNonIntersectingBestSwap(
-                        cIdx1, cIdx3, outputVertexIdxs);
-                    
-                    if (sum < minPathSum) {
-                        minPathSum = sum;
-                        bestVertexIdxA = cIdx1;
-                        bestVertexIdxB = cIdx3;
-                        System.arraycopy(outputVertexIdxs, 
-                            0, bestVertexIdxs1, 0, 
-                            outputVertexIdxs.length);
-                    }
+                if (sum < minPathSum) {
+                    minPathSum = sum;
+                    bestVertexIdxA = cIdx1;
+                    bestVertexIdxB = outputVertexB[0];
+                    System.arraycopy(outputVertexIdxs, 
+                        0, bestVertexIdxs1, 0, 
+                        outputVertexIdxs.length);
                 }
             }
             
