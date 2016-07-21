@@ -719,8 +719,8 @@ public class HopcroftKarpRT2012 {
             }
         }
         
-        TIntObjectMap<Set<PairInt>> adjCostMap =
-            new TIntObjectHashMap<Set<PairInt>>();
+        TIntObjectMap<TIntIntMap> adjCostMap =
+            new TIntObjectHashMap<TIntIntMap>();
         
         for (PairInt edge : edges) {
             int idx1 = edge.getX();
@@ -728,21 +728,21 @@ public class HopcroftKarpRT2012 {
             int idx2 = edge.getY();
             idx2 = rightToNew.get(idx2);
             
-            Set<PairInt> set2 = adjCostMap.get(idx1);
-            if (set2 == null) {
-                set2 = new HashSet<PairInt>();
-                adjCostMap.put(idx1, set2);
+            TIntIntMap map1 = adjCostMap.get(idx1);
+            if (map1 == null) {
+                map1 = new TIntIntHashMap();
+                adjCostMap.put(idx1, map1);
             }
             // using a cost of 1 for all edges
-            set2.add(new PairInt(idx2, 1));
+            map1.put(idx2, 1);
             
-            set2 = adjCostMap.get(idx2);
-            if (set2 == null) {
-                set2 = new HashSet<PairInt>();
-                adjCostMap.put(idx2, set2);
+            TIntIntMap map2 = adjCostMap.get(idx2);
+            if (map2 == null) {
+                map2 = new TIntIntHashMap();
+                adjCostMap.put(idx2, map2);
             }
             // using a cost of 1 for all edges
-            set2.add(new PairInt(idx1, 1));
+            map2.put(idx1, 1);
         }
                 
         // use prim's mst to make a maximal set of edges

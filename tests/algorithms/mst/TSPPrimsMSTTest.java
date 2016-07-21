@@ -6,7 +6,9 @@ import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import java.util.ArrayList;
@@ -114,16 +116,16 @@ public class TSPPrimsMSTTest extends TestCase {
           0 1 2 3 4 5 6 7
         */
          
-        TIntObjectMap<Set<PairInt>>
-            adjCostMap = new TIntObjectHashMap<Set<PairInt>>();
+        TIntObjectMap<TIntIntMap>
+            adjCostMap = new TIntObjectHashMap<TIntIntMap>();
         
         for (int i = 0; i < points.length; ++i) {
             int x1 = points[i].getX();
-            int y1 = points[i].getY();            
-            Set<PairInt> set1 = adjCostMap.get(i);
-            if (set1 == null) {
-                set1 = new HashSet<PairInt>();
-                adjCostMap.put(i, set1);
+            int y1 = points[i].getY();
+            TIntIntMap map1 = adjCostMap.get(i);            
+            if (map1 == null) {
+                map1 = new TIntIntHashMap();
+                adjCostMap.put(i, map1);
             }
             
             for (int j = 0; j < points.length; ++j) {
@@ -137,7 +139,7 @@ public class TSPPrimsMSTTest extends TestCase {
                 int diffY = y1 - y2;
                 int dist = diffX * diffX + diffY * diffY;
 //System.out.println("i=" + i + " j=" + j + "  dist=" + dist);                
-                set1.add(new PairInt(j, dist));
+                map1.put(j, dist);
             }
         }
         

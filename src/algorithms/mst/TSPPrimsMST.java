@@ -65,13 +65,13 @@ public class TSPPrimsMST {
      *  
      * @param nVertexes
      * @param coordinates
-     * @param adjCostMap key=vertex index, 
-     *   value=set of pairint where each pairint has 
-     *   x = adjacent vertex and y = cost of edge.
+     * @param adjCostMap key = vertex index1, 
+     *   value = map with key = index2 and value = 
+     *   cost for edge index1 to index2. 
      */
     public int[] approxTSPTour(
         final int nVertexes, PairInt[] coordinates,
-        final TIntObjectMap<Set<PairInt>> adjCostMap) {
+        final TIntObjectMap<TIntIntMap> adjCostMap) {
         
         int[] tour = approxTSPTour(nVertexes, adjCostMap);
      
@@ -88,6 +88,9 @@ public class TSPPrimsMST {
         project.
         */
         
+        TourHandler tourHandler = new TourHandler(
+            tour, adjCostMap);
+        
         QuadTreeInterval2D<Integer, PairInt> qt =
             new QuadTreeInterval2D<Integer, PairInt>();
         
@@ -100,30 +103,19 @@ public class TSPPrimsMST {
         TObjectIntMap<Interval2D<Integer>> edgeIndexBounds =
             new TObjectIntHashMap<Interval2D<Integer>>();
         
-        // map with key = vertex indexes, that is the
-        // values of tour[i] which are also the indexes
-        // of the coordinates array.
-        // map value = index of tour array.
-        TIntIntMap tourValueToIndexMap = 
-            new TIntIntHashMap();
         for (int i = 0; i < (tour.length - 1); ++i) {
-            int cIdx = tour[i];
-            tourValueToIndexMap.put(cIdx, i);
-        }
-        
-        for (int i = 0; i < (tour.length - 1); ++i) {
-            int cIdx1 = tour[i];
+            int cIdx1 = tourHandler.getVertexIndex(i);
             int x1 = coordinates[i].getX();
             int y1 = coordinates[i].getY();
             int x2, y2, cIdx2;
             if (i == (tour.length - 2)) {
                 x2 = coordinates[0].getX();
                 y2 = coordinates[0].getY();
-                cIdx2 = tour[0];
+                cIdx2 = tourHandler.getVertexIndex(0);
             } else {
                 x2 = coordinates[i + 1].getX();
                 y2 = coordinates[i + 1].getY();
-                cIdx2 = tour[i + 1];
+                cIdx2 = tourHandler.getVertexIndex(i + 1);
             }
             Interval<Integer> xi1 = new Interval<Integer>(x1, x2);
             Interval<Integer> yi1 = new Interval<Integer>(y1, y2);
@@ -138,197 +130,127 @@ public class TSPPrimsMST {
         
         //TODO: implement a "delete" in qt
                 
+        /*
         Stack<Integer> stack = new Stack<Integer>();
         for (int i = 0; i < coordinates.length; ++i) {
             stack.add(Integer.valueOf(i));
         }
         
         TIntSet visited = new TIntHashSet();
+        */
         
-        while (!stack.isEmpty()) {
-            Integer cIndex1 = stack.pop();
-            int cIdx1 = cIndex1.intValue();
-            if (visited.contains(cIdx1)) {
-                continue;
-            }
-            int tIdx1 = tourValueToIndexMap.get(cIdx1);
+        //while (!stack.isEmpty()) {
+            //Integer cIndex1 = stack.pop();
+            //int cIdx1 = cIndex1.intValue();
+            //if (visited.contains(cIdx1)) {
+            //    continue;
+            //}
             
-            int tIdx2 = (tIdx1 < (coordinates.length - 1)) ?
-                tIdx1 + 1 : 0;
-            
-            int cIdx2 = tour[tIdx2];
-            
-            Interval2D<Integer> box12 = indexEdgeBounds.get(cIdx1);
-            
-            // find intersection boxes and look for 
-            // edges that intersect with these
-            
-            List<Interval2D<Integer>> list = 
-                qt.query2D(box12);
-            
-            if (list.size() < 2) {
-                continue;
-            }
-            
-            boolean found = false;
-            
-            int x1 = coordinates[cIdx1].getX();
-            int y1 = coordinates[cIdx1].getY();
-            
-            int x2 = coordinates[cIdx2].getX();
-            int y2 = coordinates[cIdx2].getY();
+        int nIter = 0;
+        int nMaxIter = 10;
+        int nChanged = 0;
         
-            for (int listIdx = 0; listIdx < list.size();
-                ++listIdx) {
-                
-                Interval2D<Integer> box34 = list.get(listIdx);
-                
-                if (box34.equals(box12)) {
+        do {
+            
+            nChanged = 0;
+            
+            int[] bestIdxs0 = new int[4];
+            int[] bestIdxs1 = new int[4];
+            int minPathSum = Integer.MAX_VALUE;
+            
+            //TODO: consider on nIter=0, making a list
+            // of vertex indexes which have intersecting
+            // lines, and then after first iteration,
+            // only iterate over those as cIdx1.
+            
+            for (int cIdx1 = 0; cIdx1 < coordinates.length;
+                ++cIdx1) {
+
+                int tIdx1 = tourHandler.getTourIndex(cIdx1);
+                int tIdx2 = (tIdx1 < (coordinates.length - 1)) ?
+                    tIdx1 + 1 : 0;
+
+                int cIdx2 = tourHandler.getVertexIndex(tIdx2);
+
+                Interval2D<Integer> box12 = indexEdgeBounds.get(cIdx1);
+
+                // find intersection boxes and look for 
+                // edges that intersect with these
+
+                List<Interval2D<Integer>> list = 
+                    qt.query2D(box12);
+
+                if (list.size() < 2) {
                     continue;
                 }
-                
-                int cIdx3 = edgeIndexBounds.get(box34);
-                
-                int tIdx3 = tourValueToIndexMap.get(cIdx3);
-            
-                int tIdx4 = (tIdx3 < (coordinates.length - 1)) ?
-                    tIdx3 + 1 : 0;
-            
-                int cIdx4 = tour[tIdx4];
-                
-                int x3 = coordinates[cIdx3].getX();
-                int y3 = coordinates[cIdx3].getY();
-            
-                int x4 = coordinates[cIdx4].getX();
-                int y4 = coordinates[cIdx4].getY();
-                
-                // determine if p12 p34 intersect
-                if (!LinesAndAngles.linesIntersect(
-                    x1, y1, x2, y2, x3, y3, x4, y4)) {
-                    continue;
-                }
-                
-                int cIdx1New, cIdx2New, cIdx3New, cIdx4New;
-                
-                /* TODO: 
-                
-                Need to use the total path sum because
-                the vertexes following each edge are
-                affected by the swap too.
-                
-                The total path calculation can be done
-                once before this block,
-                then need a method to subtract and add
-                the few changing edges from it for
-                a peek at possible total,
-                then a method to change update the segments
-                of the paths.
-                
-                --> need a separate class to hold the
-                tour and (coordinates or cost) 
-                and current path sum
-                along with the changing edge methods.
-                --> also need to add the delete operation to qt                
-                
-                NOTE: to determine next best intersection to
-                uncross, might make a pass through all
-                first and only apply the one with the 
-                smallest total path, then repeat that until
-                there are no more crossing lines.
-                Using the quadtree to reduce the number of 
-                comparisons between edges should help
-                increasingly as edges are uncrossed.
-                */
-                                
-                if (true) {
-                    throw new UnsupportedOperationException(
-                    "not yet implemented");
-                }
-                
-                int tot1234 = distance(
-                    x1, y1, x2, y2) +
-                    distance(x3, y3, x4, y4);
-                
-                int tot1324 = Integer.MAX_VALUE;
-                int tot1423 = Integer.MAX_VALUE;
-                if (!LinesAndAngles.linesIntersect(
-                    x1, y1, x3, y3, x2, y2, x4, y4)) {
-                    tot1324 = distance(
-                        x1, y1, x3, y3) +
-                        distance(x2, y2, x4, y4);
-                }
-                if (!LinesAndAngles.linesIntersect(
-                    x1, y1, x4, y4, x2, y2, x3, y3)) {
-                    tot1423 = 
-                        distance(x1, y1, x4, y4) +
-                        distance(x2, y2, x3, y3);
-                }
-                
-                if ((tot1324 < tot1423) && 
-                    (tot1324 < tot1234)) {
-                    cIdx1New = cIdx1;
-                    cIdx2New = cIdx3;
-                    cIdx3New = cIdx2;
-                    cIdx4New = cIdx4;
-                } else if ((tot1423 < tot1324) &&
-                    (tot1423 < tot1234)){
-                    cIdx1New = cIdx1;
-                    cIdx2New = cIdx4;
-                    cIdx3New = cIdx2;
-                    cIdx4New = cIdx3;
-                } else {
-                    continue;                    
-                }
 
-                found = true;
-                
-                // TODO:
-                // swap tour positions
-                // and update associated data
-                // --> need to implement qt.delete too
-        
-                // --- update tour variables ----
-                tour[tIdx1] = cIdx1New;
-                tour[tIdx2] = cIdx2New;
-                tour[tIdx3] = cIdx3New;
-                tour[tIdx4] = cIdx4New;
-                
-                tourValueToIndexMap.put(cIdx1New, tIdx1);
-                tourValueToIndexMap.put(cIdx2New, tIdx2);
-                tourValueToIndexMap.put(cIdx3New, tIdx3);
-                tourValueToIndexMap.put(cIdx4New, tIdx4);
+                int x1 = coordinates[cIdx1].getX();
+                int y1 = coordinates[cIdx1].getY();
 
-                // get indexes that follow cIdx2 and cIdx4
-                // in the tour so can update their                
-                /*    
-                - remove boxAB and boxCD from qr
-                  remove boxAB from edgemap by cIdx1
-                  remove boxCD from edgemap by cIdx3
-                  ALSO have to handle the vertexes 
-                    immed after 2nd vertexes in these two
-                    pairs:
-                      - rm boxes for cIdx2 +
-                        rm boxes for cIdx4
-                      - get tour and x indexes for
-                        vertexes after cIdx2 and cIdx4
-                      - make new boxes for new cIdx2 to 
-                         the vertex for 2 and same for 4
-                - create box AC and BD and add to 
-                  qt and add to edgemap
-                */
-                
-                // add the leading cIdxs back unto stack
-                
-                break;
+                int x2 = coordinates[cIdx2].getX();
+                int y2 = coordinates[cIdx2].getY();
+
+                for (int listIdx = 0; listIdx < list.size();
+                    ++listIdx) {
+
+                    Interval2D<Integer> box34 = list.get(listIdx);
+
+                    if (box34.equals(box12)) {
+                        continue;
+                    }
+
+                    int cIdx3 = edgeIndexBounds.get(box34);
+
+                    int tIdx3 = tourHandler.getTourIndex(cIdx3);
+
+                    int tIdx4 = (tIdx3 < (coordinates.length - 1)) ?
+                        tIdx3 + 1 : 0;
+
+                    int cIdx4 = tourHandler.getVertexIndex(tIdx4);
+
+                    int x3 = coordinates[cIdx3].getX();
+                    int y3 = coordinates[cIdx3].getY();
+
+                    int x4 = coordinates[cIdx4].getX();
+                    int y4 = coordinates[cIdx4].getY();
+
+                    // determine if p12 p34 intersect
+                    if (!LinesAndAngles.linesIntersect(
+                        x1, y1, x2, y2, x3, y3, x4, y4)) {
+                        continue;
+                    }
+
+                    int cIdx1New, cIdx2New, cIdx3New, cIdx4New;
+
+                    /* TODO: 
+
+                    Need to use the total path sum because
+                    the vertexes following each edge are
+                    affected by the swap too.
+
+                    - use TourHandler to find the best
+                    set of swaps among these 4 vertexes.
+                    
+                    - compare to current miPAthSum
+                      and save indexes if better
+                    */
+                }
             }
             
-            if (!found) {
-                visited.add(cIdx1);
+            if (minPathSum < Integer.MAX_VALUE) {
+                
+                int sum = tourHandler.changePaths(
+                    bestIdxs0, bestIdxs1);
+                
+                assert(sum == minPathSum);
+                
+                nChanged++;
             }
-        }
         
-        tour[tour.length - 1] = tour[0];
-
+            nIter++;
+            
+        } while ((nChanged != 0) && (nIter < nMaxIter));
+        
         return tour;
     }
 
@@ -341,12 +263,14 @@ public class TSPPrimsMST {
      * between 0 and nVertexes - 1.
      *
      * @param nVertexes
-     * @param adjCostMap key=vertex index, value=set of pairint where each
-     * pairint has x = adjacent vertex and y = cost of edge.
+     * @param adjCostMap key = vertex index1, 
+     *   value = map with key = index2 and value = 
+     *   cost for edge index1 to index2. 
      */
     public int[] approxTSPTour(
-        final int nVertexes, final TIntObjectMap<Set<PairInt>> adjCostMap) {
-
+        final int nVertexes,
+        final TIntObjectMap<TIntIntMap> adjCostMap) {
+        
         /* Approx TSP-Tour(G, c) {
          *     -- select a vertex r in V[G] as the 'root' vertex
          *     -- compute a minimum spanning tree T for G from root r using MST-PRIM(G, c, r)

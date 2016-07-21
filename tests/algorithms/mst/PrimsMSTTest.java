@@ -1,7 +1,9 @@
 package algorithms.mst;
 
 import algorithms.util.PairInt;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -42,45 +44,53 @@ public class PrimsMSTTest extends TestCase {
          */
 
         int nVertexes = 9;
-        TIntObjectMap<Set<PairInt>> adjCostMap 
-            = new TIntObjectHashMap<Set<PairInt>>();
+        TIntObjectMap<TIntIntMap> adjCostMap 
+            = new TIntObjectHashMap<TIntIntMap>();
         
-        adjCostMap.put(0, new HashSet<PairInt>());
-        adjCostMap.get(0).add(new PairInt(1, 4));
-        adjCostMap.get(0).add(new PairInt(7, 8));
+        TIntIntMap map = new TIntIntHashMap();
+        adjCostMap.put(0, map);
+        map.put(1, 4);
+        map.put(7, 8);
         
-        adjCostMap.put(1, new HashSet<PairInt>());
-        adjCostMap.get(1).add(new PairInt(0, 4));
-        adjCostMap.get(1).add(new PairInt(7, 11));
+        map = new TIntIntHashMap();
+        adjCostMap.put(1, map);
+        map.put(0, 4);
+        map.put(7, 11);
         
-        adjCostMap.put(2, new HashSet<PairInt>());
-        adjCostMap.get(2).add(new PairInt(3, 7));
-        adjCostMap.get(2).add(new PairInt(5, 4));
-        adjCostMap.get(2).add(new PairInt(8, 2));
+        map = new TIntIntHashMap();
+        adjCostMap.put(2, map);
+        map.put(3, 7);
+        map.put(5, 4);
+        map.put(8, 2);
         
-        adjCostMap.put(3, new HashSet<PairInt>());
-        adjCostMap.get(3).add(new PairInt(2, 7));
-        adjCostMap.get(3).add(new PairInt(4, 9));
-        adjCostMap.get(3).add(new PairInt(5, 14));
+        map = new TIntIntHashMap();
+        adjCostMap.put(3, map);
+        map.put(2, 7);
+        map.put(4, 9);
+        map.put(5, 14);
         
-        adjCostMap.put(4, new HashSet<PairInt>());
-        adjCostMap.get(4).add(new PairInt(5, 10));
-        adjCostMap.get(4).add(new PairInt(3, 9));
+        map = new TIntIntHashMap();
+        adjCostMap.put(4, map);
+        map.put(5, 10);
+        map.put(3, 9);
         
-        adjCostMap.put(5, new HashSet<PairInt>());
-        adjCostMap.get(5).add(new PairInt(4, 10));
-        adjCostMap.get(5).add(new PairInt(2, 4));
-        adjCostMap.get(5).add(new PairInt(6, 2));
+        map = new TIntIntHashMap();
+        adjCostMap.put(5, map);
+        map.put(4, 10);
+        map.put(2, 4);
+        map.put(6, 2);
         
-        adjCostMap.put(6, new HashSet<PairInt>());
-        adjCostMap.get(6).add(new PairInt(5, 2));
-        adjCostMap.get(6).add(new PairInt(7, 1));
+        map = new TIntIntHashMap();
+        adjCostMap.put(6, map);
+        map.put(5, 2);
+        map.put(7, 1);
         
-        adjCostMap.put(7, new HashSet<PairInt>());
-        adjCostMap.get(7).add(new PairInt(0, 8));        
-        adjCostMap.get(7).add(new PairInt(1, 11));
-        adjCostMap.get(7).add(new PairInt(8, 7));
-        adjCostMap.get(7).add(new PairInt(6, 1));
+        map = new TIntIntHashMap();
+        adjCostMap.put(7, map);
+        map.put(0, 8);        
+        map.put(1, 11);
+        map.put(8, 7);
+        map.put(6, 1);
       
         PrimsMST prims = new PrimsMST();
         prims.calculateMinimumSpanningTree(
@@ -156,28 +166,34 @@ public class PrimsMSTTest extends TestCase {
          */
 
         int nVertexes = 9;
-        TIntObjectMap<Set<PairInt>> adjCostMap 
-            = new TIntObjectHashMap<Set<PairInt>>();
+        TIntObjectMap<TIntIntMap> adjCostMap 
+            = new TIntObjectHashMap<TIntIntMap>();
         
-        adjCostMap.put(0, new HashSet<PairInt>());
-        adjCostMap.get(0).add(new PairInt(1, 4));
-        adjCostMap.get(0).add(new PairInt(7, 8));
+        TIntIntMap map = new TIntIntHashMap();
+        adjCostMap.put(0, map);
+        map.put(1, 4);
+        map.put(7, 8);
         
-        adjCostMap.put(2, new HashSet<PairInt>());
-        adjCostMap.get(2).add(new PairInt(3, 7));
-        adjCostMap.get(2).add(new PairInt(8, 2));
+        map = new TIntIntHashMap();
+        adjCostMap.put(2, map);
+        map.put(3, 7);
+        map.put(8, 2);
         
-        adjCostMap.put(3, new HashSet<PairInt>());
-        adjCostMap.get(3).add(new PairInt(4, 9));
+        map = new TIntIntHashMap();
+        adjCostMap.put(3, map);
+        map.put(4, 9);
         
-        adjCostMap.put(5, new HashSet<PairInt>());
-        adjCostMap.get(5).add(new PairInt(2, 4));
+        map = new TIntIntHashMap();
+        adjCostMap.put(5, map);
+        map.put(2, 4);
         
-        adjCostMap.put(6, new HashSet<PairInt>());
-        adjCostMap.get(6).add(new PairInt(5, 2));
+        map = new TIntIntHashMap();
+        adjCostMap.put(6, map);
+        map.put(5, 2);
         
-        adjCostMap.put(7, new HashSet<PairInt>());
-        adjCostMap.get(7).add(new PairInt(6, 1));
+        map = new TIntIntHashMap();
+        adjCostMap.put(7, map);
+        map.put(6, 1);
       
         PrimsMST prims = new PrimsMST();
         prims.calculateMinimumSpanningTree(

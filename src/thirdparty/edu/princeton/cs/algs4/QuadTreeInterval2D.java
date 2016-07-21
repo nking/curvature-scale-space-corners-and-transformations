@@ -72,6 +72,22 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
 
     private void query2D(Node<T> h, Interval2D<T> srch,
         List<Interval2D<T>> output) {
+      
+        /*
+        TODO:
+        consider improvements that lead to a balanced
+        tree and hence faster queries.
+        
+        a search returns this which I havent read:
+        "Improving the Performance of Region
+        Quadtrees" by Wolfensberger
+        http://www.ifi.uzh.ch/dam/jcr:ffffffff-96c1-007c-ffff-fffff2d50548/ReportWolfensbergerFA.pdf
+        
+        TODO:
+        consider adding other methods:
+        http://www.cs.cmu.edu/~rcm/papers/thesis/ch4.pdf
+        
+        */
         
         if (h == null) return;
         

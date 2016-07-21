@@ -2,9 +2,10 @@ package algorithms.mst;
 
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
-import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
@@ -12,7 +13,6 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -40,18 +40,18 @@ public class PrimsMST {
 
     private int[] prev = null;
     
-    private TIntObjectMap<Set<PairInt>> adjCostMap;
+    private TIntObjectMap<TIntIntMap> adjCostMap;
     
     /**
      * 
      * @param nVertexes
-     * @param adjCostMap key=vertex index, 
-     *   value=set of pairint where each pairint has 
-     *   x = adjacent vertex and y = cost of edge.
+     * @param adjCostMap key=vertex1 index, 
+     *   value=map with key = vertex2 index and
+     *    value = cost of edge between vertex1 and vertex2
      * @return 
      */
     public void calculateMinimumSpanningTree(
-        final int nVertexes, final TIntObjectMap<Set<PairInt>>
+        final int nVertexes, final TIntObjectMap<TIntIntMap>
             adjCostMap) {
 
         this.adjCostMap = adjCostMap;
@@ -86,14 +86,16 @@ public class PrimsMST {
             int uIdx = uIndex.intValue();
             inQ[uIdx] = false;
             
-            Set<PairInt> adjSet = adjCostMap.get(uIdx);
-            if (adjSet == null) {
+            TIntIntMap adjMap0 = adjCostMap.get(uIdx);
+            if (adjMap0 == null) {
                 continue;
             }
             
-            for (PairInt indexCost : adjSet) {
-                int vIdx = indexCost.getX();
-                int cost = indexCost.getY();
+            TIntIntIterator iter = adjMap0.iterator();
+            for (int i = 0; i < adjMap0.size(); ++i) {
+                iter.advance();                 
+                int vIdx = iter.key();
+                int cost = iter.value();
                 long distV = nodes.get(vIdx).getKey();
                
                 if (inQ[vIdx] && (cost < distV)) {
