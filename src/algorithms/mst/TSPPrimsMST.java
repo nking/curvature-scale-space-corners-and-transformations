@@ -1,28 +1,14 @@
 package algorithms.mst;
 
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.imageProcessing.Heap;
-import algorithms.imageProcessing.HeapNode;
-import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Interval2D;
 import thirdparty.edu.princeton.cs.algs4.QuadTreeInterval2D;
@@ -129,23 +115,7 @@ public class TSPPrimsMST {
         }
         
         //TODO: implement a "delete" in qt
-                
-        /*
-        Stack<Integer> stack = new Stack<Integer>();
-        for (int i = 0; i < coordinates.length; ++i) {
-            stack.add(Integer.valueOf(i));
-        }
         
-        TIntSet visited = new TIntHashSet();
-        */
-        
-        //while (!stack.isEmpty()) {
-            //Integer cIndex1 = stack.pop();
-            //int cIdx1 = cIndex1.intValue();
-            //if (visited.contains(cIdx1)) {
-            //    continue;
-            //}
-            
         int nIter = 0;
         int nMaxIter = 10;
         int nChanged = 0;
@@ -154,9 +124,11 @@ public class TSPPrimsMST {
             
             nChanged = 0;
             
-            int[] bestIdxs0 = new int[4];
-            int[] bestIdxs1 = new int[4];
+            int bestVertexIdxA = -1;
+            int bestVertexIdxB = -1;
+            int[] bestVertexIdxs1 = new int[4];
             int minPathSum = Integer.MAX_VALUE;
+            int[] outputVertexIdxs = new int[4];
             
             //TODO: consider on nIter=0, making a list
             // of vertex indexes which have intersecting
@@ -220,29 +192,31 @@ public class TSPPrimsMST {
                         continue;
                     }
 
-                    int cIdx1New, cIdx2New, cIdx3New, cIdx4New;
-
-                    /* TODO: 
-
-                    Need to use the total path sum because
-                    the vertexes following each edge are
-                    affected by the swap too.
-
-                    - use TourHandler to find the best
-                    set of swaps among these 4 vertexes.
+                    int sum = tourHandler.findNonIntersectingBestSwap(
+                        cIdx1, cIdx3, outputVertexIdxs);
                     
-                    - compare to current miPAthSum
-                      and save indexes if better
-                    */
+                    if (sum < minPathSum) {
+                        minPathSum = sum;
+                        bestVertexIdxA = cIdx1;
+                        bestVertexIdxB = cIdx3;
+                        System.arraycopy(outputVertexIdxs, 
+                            0, bestVertexIdxs1, 0, 
+                            outputVertexIdxs.length);
+                    }
                 }
             }
             
             if (minPathSum < Integer.MAX_VALUE) {
                 
                 int sum = tourHandler.changePaths(
-                    bestIdxs0, bestIdxs1);
+                    bestVertexIdxA, bestVertexIdxB, 
+                    bestVertexIdxs1);
                 
                 assert(sum == minPathSum);
+            
+                //TODO: 
+                // - handle changes to quadtree
+                // - handle changes to edge maps
                 
                 nChanged++;
             }

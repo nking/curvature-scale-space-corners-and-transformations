@@ -96,10 +96,10 @@ public class TourHandler {
      * swap indexes.  NOTE, the method and class
      * are meant for single threaded use only due to
      * time and memory savings internal variable use.
-     * @param idxEdge1Vertex1 edge 1 vertex1 index,
+     * @param idxEdgeAVertex1 edge A vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
-     * @param idxEdge2Vertex1 edge 2 vertex1 index,
+     * @param idxEdgeBVertex1 edge B vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
      * @param outputVertexIdxs array of size 4
@@ -110,15 +110,15 @@ public class TourHandler {
      * if a better combination than current was not found.
      */
     public int findNonIntersectingBestSwap(
-        int idxEdge1Vertex1, int idxEdge2Vertex1,
+        int idxEdgeAVertex1, int idxEdgeBVertex1,
         int[] outputVertexIdxs) {
         
-        int tIdxA1 = getTourIndex(idxEdge1Vertex1);
+        int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
         int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
         int tIdxNextA2 = getNextTourIndex(tIdxA2);
             
-        int tIdxB1 = getTourIndex(idxEdge2Vertex1);
+        int tIdxB1 = getTourIndex(idxEdgeBVertex1);
         int tIdxB2 = getTourIndex(tIdxB1);
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
@@ -293,8 +293,27 @@ public class TourHandler {
     public int changePaths(int idxEdgeAVertex1, 
         int idxEdgeBVertex1, int[] vertexIdxs) {
         
-        throw new UnsupportedOperationException(
-            "not yet implemented");
+        int tIdxA1 = getTourIndex(idxEdgeAVertex1);
+        int tIdxA2 = getNextTourIndex(tIdxA1);
+        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+            
+        int tIdxB1 = getTourIndex(idxEdgeBVertex1);
+        int tIdxB2 = getTourIndex(tIdxB1);
+        int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
+        int tIdxNextB2 = getNextTourIndex(tIdxB2);
+        
+        int sum = peekSumPathChanges(tIdxPrevA1,
+            tIdxA1, tIdxA2, tIdxNextA2, 
+            tIdxPrevB1, tIdxB1, tIdxB2, tIdxNextB2, 
+            vertexIdxs);
+        
+        tour[tIdxA1] = vertexIdxs[0];
+        tour[tIdxA2] = vertexIdxs[1];
+        tour[tIdxB1] = vertexIdxs[2];
+        tour[tIdxB2] = vertexIdxs[3];
+        
+        return sum;
     }
   
     public int getPathSum() {
