@@ -441,17 +441,17 @@ public class TourHandler {
         box = indexEdgeBounds.remove(cIdxPrev1);
         assert(box != null);
         edgeIndexBounds.remove(box);
- //       qt.remove(box);
+        qt.remove(box);
 
         box = indexEdgeBounds.remove(cIdx1);
         assert(box != null);
         edgeIndexBounds.remove(box);
-  //      qt.remove(box);
+        qt.remove(box);
         
         box = indexEdgeBounds.remove(cIdx2);
         assert(box != null);
         edgeIndexBounds.remove(box);
- //       qt.remove(box);        
+        qt.remove(box);        
     }
     
     private void insertEdgeBox(int idxEdgeVertex1,

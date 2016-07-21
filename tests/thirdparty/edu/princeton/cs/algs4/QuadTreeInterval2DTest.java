@@ -44,6 +44,11 @@ public class QuadTreeInterval2DTest extends TestCase {
         assertEquals(1, results.size());
         
         assertTrue(results.get(0).equals(box1));
+    
+        // ---- test remove
+        st2.remove(box1);
+        results = st2.query2D(box2);
+        assertEquals(0, results.size());
     }
     
     public void test1() {
@@ -96,5 +101,22 @@ public class QuadTreeInterval2DTest extends TestCase {
             assertTrue(expected.remove(ii));
         }
         assertTrue(expected.isEmpty());
+    
+        // ---- test remove ---
+        st2.remove(box2);
+        results = st2.query2D(box2);
+        assertEquals(0, results.size());
+        
+        results = st2.query2D(srch);
+        assertEquals(2, results.size());
+        expected = new HashSet<Interval2D<Integer>>();
+        expected.add(box1);
+        expected.add(box3);
+        for (Interval2D<Integer> ii : results) {
+            assertTrue(expected.remove(ii));
+        }
+        assertTrue(expected.isEmpty());
+        
     }
+    
 }
