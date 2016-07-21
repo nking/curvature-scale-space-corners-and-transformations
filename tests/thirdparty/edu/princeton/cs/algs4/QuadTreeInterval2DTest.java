@@ -1,5 +1,8 @@
 package thirdparty.edu.princeton.cs.algs4;
 
+import algorithms.misc.Misc;
+import algorithms.util.PairInt;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -119,4 +122,94 @@ public class QuadTreeInterval2DTest extends TestCase {
         
     }
     
+    public void testInsertRemoveHierarchicalGrid0() {
+        /*
+        inserting subdivisions of 9 neighbors  
+        from small to larger sizes.
+        */
+        
+        QuadTreeInterval2D<Integer, PairInt> qt
+            = new QuadTreeInterval2D<Integer, PairInt>();
+         
+        int xc = 9;
+        int yc = 9;
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        List<Interval2D<Integer>> list = 
+            new ArrayList<Interval2D<Integer>>();
+                 
+        Interval<Integer> aX = new Interval<Integer>(9, 9);
+        Interval<Integer> aY = new Interval<Integer>(9, 9);
+        Interval2D<Integer> a = new Interval2D<Integer>(aX, aY);
+        qt.insert(a, new PairInt(xc, yc));
+        list.add(a);
+        
+        for (int factor = 1; factor < 3; ++factor) {
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = xc + factor*dxs[k];
+                int y2 = xc + factor*dys[k];
+                if (xc < x2) {
+                    aX = new Interval<Integer>(xc, x2);
+                } else {
+                    aX = new Interval<Integer>(x2, xc);
+                }
+                if (yc < y2) {
+                    aY = new Interval<Integer>(yc, y2);
+                } else {
+                    aY = new Interval<Integer>(y2, yc);
+                }
+                a = new Interval2D<Integer>(aX, aY);
+                qt.insert(a, new PairInt(x2, y2));
+                list.add(a);
+            }
+        }
+      
+        List<Interval2D<Integer>> results = null;
+        for (int i = 0; i < list.size(); ++i) {
+            a = list.get(i);
+            results = qt.query2D(a);
+            boolean found = false;
+            for (Interval2D<Integer> r : results) {
+                if (r.equals(a)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found);
+        }
+        
+        // remove one at a time in order of insert and assert
+        // remaining queries
+        for (int i = 0; i < list.size(); ++i) {
+            a = list.get(i);
+            //System.out.println("i=" + i);
+            qt.remove(a);
+            results = qt.query2D(a);
+            boolean found = false;
+            for (Interval2D<Integer> r : results) {
+                if (r.equals(a)) {
+                    found = true;
+                    break;
+                }
+            }
+            assertFalse(found);
+            for (int j = (i + 1); j < list.size(); ++j) {
+                a = list.get(j);
+                results = qt.query2D(a);
+                found = false;
+                for (Interval2D<Integer> r : results) {
+                    if (r.equals(a)) {
+                        found = true;
+                        break;
+                    }
+                }
+                assertTrue(found);
+            }
+        }
+    }
+    
+    public void testRandomInsertRemove() {
+        
+    }
 }

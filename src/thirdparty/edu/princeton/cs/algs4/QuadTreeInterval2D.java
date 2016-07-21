@@ -67,8 +67,12 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
     private void remove(Node<T> h, Interval2D<T> box, 
         List<Node<T>> parents) {
         
-        if (h == null) {
-            if (parents.isEmpty()) {
+        boolean isRoot = (h != null) && (h.equals(root) &&
+            h.xy.equals(box));
+        
+        if ((h == null) || isRoot) {
+            
+            if (parents.isEmpty() && !isRoot) {
                 return;
             } else if (parents.size() > 1) {
                 Node<T> parentParent = parents.get(
@@ -81,10 +85,11 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
             }
             // for this case, parent is root node,
             // - if the box is the xy,
-            //   then have to remve all children and
+            //   then have to remove all children and
             //   reinsert them
             //   
-            Node<T> parent = parents.get(parents.size() - 1);
+            Node<T> parent = isRoot ? root : 
+                parents.get(parents.size() - 1);
             if (parent.xy.equals(box)) {
                 assert(parent.equals(root));
                 List<Interval2D<T>> boxes = new
