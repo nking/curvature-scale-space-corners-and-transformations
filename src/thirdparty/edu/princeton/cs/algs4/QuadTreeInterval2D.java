@@ -46,6 +46,9 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         int cX = h.xy.intervalX.compareTo(box.intervalX);
         int cY = h.xy.intervalY.compareTo(box.intervalY);
         
+System.out.println("ins cX=" + cX + " cY=" + cY
+   + " for (" + box.toString() + ")");
+
         if ((cX < 0) && (cY < 0)) { 
             h.SW = insert(h.SW, box, value);
         } else if ((cX < 0) && (cY >= 0)) {
@@ -76,32 +79,12 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
             
             if (parents.isEmpty() && !isRoot) {
                 return;
-            } else if (parents.size() > 1) {
-                Node<T> parentParent = parents.get(
-                    parents.size() - 2);
-                Node<T> parent = parents.get(parents.size() - 1);
-                if (parent.xy.equals(box)) {
-                    removeNodeReattachChildren(parentParent, box);
-                    return;
-                } else if (isH) {
-                    removeNodeReattachChildren(parent, box);
-                    return;
-                }
-            }
-            // for this case, parent is root node,
-            // - if the box is the xy,
-            //   then have to remove all children and
-            //   reinsert them
-            //   
-            Node<T> parent = isRoot ? root : 
-                parents.get(parents.size() - 1);
-            if (parent.xy.equals(box)) {
-                assert(parent.equals(root));
+            } else if (isRoot) {
                 List<Interval2D<T>> boxes = new
                     ArrayList<Interval2D<T>>();
                 List<Value> values = new ArrayList<Value>();
-                
-                extractAllChildren(parent, boxes, values);
+                extractAllChildren(root, boxes, values);
+                System.out.println("extracted.sz=" + boxes.size());
                 root = null;
                 for (int i = 0; i < boxes.size(); ++i) {
                     if (!boxes.get(i).equals(box)) {
@@ -109,6 +92,14 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
                     }
                 }
                 return;
+            } else {
+                assert(!parents.isEmpty());
+                Node<T> parent = parents.get(parents.size() - 1);
+                if (isH) {
+  //TODO: insert at higher level necessary?
+                    removeNodeReattachChildren(parent, box);
+                    return;
+                }
             }
         }
         
@@ -136,108 +127,57 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
     private void removeNodeReattachChildren(Node<T> parent, 
         Interval2D<T> rmBox) {
 
+        boolean[] direction = new boolean[4];
+        Node<T> node = null;
         if (parent.NW != null && parent.NW.xy.equals(rmBox)) {
-            Node<T> node = parent.NW;
-            parent.NW = getSingleNonNullChild(node);
-            if (parent.NW != null) {
-                return;
-            }
-            /*
-               NW       NE
-               nwe
-               swe
-            
-               SW       SE
-            */
-            if (node.SE != null) {
-                parent.NW = node.SE;
-            }
-            if (node.NW != null) {
-                insert(parent, node.NW);
-            }
-            if (node.SW != null) {
-                insert(parent, node.SW);
-            }
-            if (node.NE != null) {
-                insert(parent, node.NE);
-            }
+            node = parent.NW;
+            parent.NW = null;
+            direction[0] = true;
         } else if (parent.NE != null && parent.NE.xy.equals(rmBox)) {
-            Node<T> node = parent.NE;
-            parent.NE = getSingleNonNullChild(node);
-            if (parent.NE != null) {
-                return;
-            }
-            /*
-               NW       NE
-                         nwe
-                         swe
-            
-               SW       SE
-            */
-            if (node.SW != null) {
-                parent.NE = node.SW;
-            }
-            if (node.NW != null) {
-                insert(parent, node.NW);
-            }
-            if (node.NE != null) {
-                insert(parent, node.NE);
-            }
-            if (node.SE != null) {
-                insert(parent, node.SE);
-            }
+            node = parent.NE;
+            parent.NE = null;
+            direction[1] = true;
         } else if (parent.SW != null && parent.SW.xy.equals(rmBox)) {
-            Node<T> node = parent.SW;
-            parent.SW = getSingleNonNullChild(node);
-            if (parent.SW != null) {
-                return;
-            }
-            /*
-               NW       NE
-                         
-               SW       SE
-            nwe
-            swe
-            */
-            if (node.NE != null) {
-                parent.SW = node.NE;
-            }
-            if (node.NW != null) {
-                insert(parent, node.NW);
-            }
-            if (node.SE != null) {
-                insert(parent, node.SE);
-            }
-            if (node.SW != null) {
-                insert(parent, node.SW);
-            }
+            node = parent.SW;
+            parent.SW = null;
+            direction[2] = true;
         } else if (parent.SE != null && parent.SE.xy.equals(rmBox)) {
-            Node<T> node = parent.SE;
-            parent.SE = getSingleNonNullChild(node);
-            if (parent.SE != null) {
-                return;
+            node = parent.SE;
+            parent.SE = null;
+            direction[3] = true;
+        } else {
+            throw new IllegalStateException(
+            "Error in algorithm. parent is not correct");
+        }
+        
+        Node<T> nodeHasSingleChild = getSingleNonNullChild(node);
+        if (nodeHasSingleChild != null) {
+            if (direction[0]) {
+                parent.NW = nodeHasSingleChild;
+            } else if (direction[1]) {
+                parent.NE = nodeHasSingleChild;
+            } else if (direction[2]) {
+                parent.SW = nodeHasSingleChild;
+            } else if (direction[3]) {
+                parent.SE = nodeHasSingleChild;
+            } else {
+                throw new IllegalStateException(
+                "Error in algorithm. parent is not correct");
             }
-            /*
-               NW       NE
-                         
-               SW       SE
-                         nwe
-                         swe
-            */
-            if (node.NW != null) {
-                parent.SE = node.NW;
-            }
-            if (node.NE != null) {
-                insert(parent, node.NE);
-            }
-            if (node.SE != null) {
-                insert(parent, node.SE);
-            }
-            if (node.SW != null) {
-                insert(parent, node.SW);
-            }
-        } else if (parent.xy != null && parent.xy.equals(rmBox)) {
-            int z = 1;
+            return;
+        }
+       
+        if (node.SW != null) {
+            insert(parent, node.SW);
+        }
+        if (node.NW != null) {
+            insert(parent, node.NW);
+        }
+        if (node.SE != null) {
+            insert(parent, node.SE);
+        }
+        if (node.NE != null) {
+            insert(parent, node.NE);
         }
     }
     
@@ -250,6 +190,9 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         int cX = h.xy.intervalX.compareTo(insNode.xy.intervalX);
         int cY = h.xy.intervalY.compareTo(insNode.xy.intervalY);
         
+System.out.println("ins node cX=" + cX + " cY=" + cY
+   + " for (" + insNode.xy.toString() + ")");
+
         if ((cX < 0) && (cY < 0)) { 
             h.SW = insert(h.SW, insNode);
         } else if ((cX < 0) && (cY >= 0)) {
@@ -396,15 +339,18 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         int cX = h.xy.intervalX.compareTo(srch.intervalX);
         int cY = h.xy.intervalY.compareTo(srch.intervalY);
         
+System.out.println("qry cX=" + cX + " cY=" + cY
+   + " for (" + srch.toString() + ")");
+        
         if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
         }
         
-        if (h.SW != null && (cX <= 0) && (cY <= 0)) 
+        if (h.SW != null && (cX < 0) && (cY < 0)) 
             query2D(h.SW, srch, output);
-        if (h.NW != null && (cX <= 0) && (cY >= 0)) 
+        if (h.NW != null && (cX < 0) && (cY >= 0)) 
             query2D(h.NW, srch, output);
-        if (h.SE != null && (cX >= 0) && (cY <= 0)) 
+        if (h.SE != null && (cX >= 0) && (cY < 0)) 
             query2D(h.SE, srch, output);
         if (h.NE != null && (cX >= 0) && (cY >= 0)) 
             query2D(h.NE, srch, output);    

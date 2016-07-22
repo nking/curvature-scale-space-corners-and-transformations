@@ -486,7 +486,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         int ymin = 10;
         int ymax = 1000;
 
-        int n = 1000;
+        int n = 3;//1000;
 
         QuadTreeInterval2D<Integer, PairInt> qt
             = new QuadTreeInterval2D<Integer, PairInt>();    
@@ -555,6 +555,8 @@ public class QuadTreeInterval2DTest extends TestCase {
                 }
             }
             rmList.sort();
+            System.out.println("rm.sz=" + rmList.size() 
+                + " list.sz=" + list.size());
             for (int i = (rmList.size() - 1); i > -1; --i) {
                 int rmIdx = rmList.get(i);
                 a = list.get(rmIdx);
@@ -574,12 +576,27 @@ public class QuadTreeInterval2DTest extends TestCase {
                     }
                 }
                 assertFalse(found);
+                for (int j = 0; j < list.size(); ++j) {
+                    a = list.get(j);
+                    System.out.println("cycle=" + ii + " rm q i=" + i +
+                        " j=" + j + " list.sz=" + list.size());
+                    results = qt.query2D(a);
+               //cycle=2 rm q i=0 j=1 list.sz=6     
+                    found = false;
+                    for (Interval2D<Integer> result : results) {
+                        if (result.equals(a)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    assertTrue(found);
+                }
             }
         
             // query all
             for (int i = 0; i < list.size(); ++i) {
                 a = list.get(i);
-                System.out.println("cycle=" + ii + " q i=" + i);
+                //System.out.println("cycle=" + ii + " q i=" + i);
                 results = qt.query2D(a);
                 boolean found = false;
                 for (Interval2D<Integer> result : results) {
