@@ -2,15 +2,14 @@ package thirdparty.edu.princeton.cs.algs4;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
 /**
- * adapted from QuadTree implementation from Sedgewick and Wayne
- * from 
+ * adapted from and added to QuadTree implementation 
+ * from Sedgewick and Wayne from 
  * http://algs4.cs.princeton.edu/92search/QuadTree.java.html
  * copyright for authors Robert Sedgewick and Kevin Wayne
  * is GPLV3, http://algs4.cs.princeton.edu/faq/
@@ -71,9 +70,7 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
     
     private void remove(Node<T> h, Interval2D<T> box, 
         List<Node<T>> parents) {
-        
-        //TODO: need to simplify this pattern
-        
+                
         boolean isH = (h != null) && h.xy.equals(box);
         boolean isRoot = isH && h.equals(root);
         
@@ -175,38 +172,6 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         return h;
     }
     
-    /**
-     * if there is only one non-null child, return that,
-     * else return null.
-     * @param node
-     * @return 
-     */
-    private Node<T> getSingleNonNullChild(Node<T> node) {
-        Node<T> nodeC = null;
-        if (node.NW != null) {
-            nodeC = node.NW;
-        }
-        if (node.NE != null) {
-            if (nodeC != null) {
-                return null;
-            }
-            nodeC = node.NE;
-        }
-        if (node.SW != null) {
-            if (nodeC != null) {
-                return null;
-            }
-            nodeC = node.SW;
-        }
-        if (node.SE != null) {
-            if (nodeC != null) {
-                return null;
-            }
-            nodeC = node.SE;
-        }
-        return nodeC;
-    }
-    
   /***********************************************************************
     *  Range search.
     ***************************************************************************/
@@ -226,7 +191,7 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         /*
         TODO:
         consider improvements that lead to a balanced
-        tree and hence faster queries.
+        tree, hence faster queries.
         
         a search returns this which I havent read:
         "Improving the Performance of Region

@@ -17,7 +17,8 @@ public class Interval<T extends Comparable<T>> implements
     private final T max;    // max endpoint
 
     public Interval(T min, T max) {
-        if (less(max, min)) throw new RuntimeException("Illegal argument");
+        if (less(max, min)) throw new RuntimeException(
+            "Illegal argument: max=" + max + " min=" + min);
         this.min = min;
         this.max = max;
     }
