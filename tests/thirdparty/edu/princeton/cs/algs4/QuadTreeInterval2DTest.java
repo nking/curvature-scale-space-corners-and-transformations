@@ -543,7 +543,7 @@ public class QuadTreeInterval2DTest extends TestCase {
                 assertTrue(found);
             }
         
-            // randomly remove several and insert more
+            // randomly remove several
             TIntList rmList = new TIntArrayList();
             TIntSet rmSet = new TIntHashSet();
             int nRm = list.size()/3;
@@ -558,6 +558,9 @@ public class QuadTreeInterval2DTest extends TestCase {
             for (int i = (rmList.size() - 1); i > -1; --i) {
                 int rmIdx = rmList.get(i);
                 a = list.get(rmIdx);
+                assertNotNull(a);
+                System.ut.println("cycle=" + ii + " rm i=" + i);
+                qt.remove(a);
                 QuadInt chk = new QuadInt(
                     a.intervalX.min(), a.intervalX.max(),
                     a.intervalY.min(), a.intervalY.max());
