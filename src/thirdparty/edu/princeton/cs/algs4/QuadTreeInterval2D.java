@@ -383,9 +383,9 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         
         if (h == null) return;
         
-        int cX = srch.intervalX.compareTo(h.xy.intervalX);
-        int cY = srch.intervalY.compareTo(h.xy.intervalY);
-
+        int cX = h.xy.intervalX.compareTo(srch.intervalX);
+        int cY = h.xy.intervalY.compareTo(srch.intervalY);
+        
         if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
         }
