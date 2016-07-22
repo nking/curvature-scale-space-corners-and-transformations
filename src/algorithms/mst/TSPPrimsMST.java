@@ -108,7 +108,7 @@ public class TSPPrimsMST {
                 int sum = tourHandler.changePaths(
                     bestVertexIdxA, bestVertexIdxB, 
                     bestVertexIdxs1);
-                
+                System.out.println("sum=" + sum + " min=" + minPathSum);
                 assert(sum == minPathSum);
             
                 //TODO: 

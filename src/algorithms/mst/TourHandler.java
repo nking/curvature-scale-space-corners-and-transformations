@@ -153,9 +153,6 @@ public class TourHandler {
         int[] outputIdxEdgeBVertex1, 
         int[] outputVertexIdxs) {
         
-        if (true) {
-            throw new UnsupportedOperationException("not yet implemented");
-        }
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
         int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
@@ -215,7 +212,7 @@ public class TourHandler {
                 idxEdgeBVertex1, idxEdgeBVertex2, tmp);
          
             if (sum < minSum) {
-                sum = minSum;
+                minSum = sum;
                 System.arraycopy(tmp, 0, outputVertexIdxs, 
                     0, tmp.length);
                 outputIdxEdgeBVertex1[0] = idxEdgeBVertex1;
@@ -296,14 +293,14 @@ public class TourHandler {
                 tIdxA1, cache1[i][0], cache1[i][1], cache1[i][2]);
 
             if (sum < minSum) {
-                sum = minSum;
+                minSum = sum;
                 outputVertexIdxs[0] = tIdxA1;
                 System.arraycopy(cache1[i], 0, outputVertexIdxs,
                     1, cache1[i].length);
             }
         }
 
-        return (minSum == Integer.MAX_VALUE) ? -1 : minSum;
+        return minSum;
     }
 
     void permutation(int a[], int[][] out, int size, int[] count) {
@@ -554,9 +551,11 @@ public class TourHandler {
             tIdxNextB2);
         
         insertEdgeBoxes(vertexIdxs[0], vertexIdxs[1],
-            tIdxPrevA1, tIdxNextA2);
+            getVertexIndex(tIdxPrevA1), 
+            getVertexIndex(tIdxNextA2));
         insertEdgeBoxes(vertexIdxs[2], vertexIdxs[3],
-            tIdxPrevB1, tIdxNextB2);
+            getVertexIndex(tIdxPrevB1), 
+            getVertexIndex(tIdxNextB2));
         
         // ---- update the tour -----
         
@@ -629,20 +628,19 @@ public class TourHandler {
         for (int j = 0; j < 4; ++j) {
             int edge1, edge2;
             if (j == 0) {
-                edge1 = tIdxPrevA1;
+                edge1 = getVertexIndex(tIdxPrevA1);
                 edge2 = vertexIdx1;
             } else if (j == 1) {
                 edge1 = vertexIdx2;
-                edge2 = tIdxNextA2;
+                edge2 = getVertexIndex(tIdxNextA2);
             } else if (j == 2) {
-                edge1 = tIdxPrevB1;
+                edge1 = getVertexIndex(tIdxPrevB1);
                 edge2 = vertexIdx3;
             } else {
                 edge1 = vertexIdx4;
-                edge2 = tIdxNextB2;
+                edge2 = getVertexIndex(tIdxNextB2);
             }
-            edge1 = getVertexIndex(edge1);
-            edge2 = getVertexIndex(edge2);
+           
             if (!(adjCostMap.containsKey(edge1)
                 && adjCostMap.get(edge1)
                 .containsKey(edge2))) {
@@ -650,15 +648,15 @@ public class TourHandler {
             }
             if (j == 3) {
                 // try the combination if passed other checks
-                edge1 = getVertexIndex(vertexIdx1);
-                edge2 = getVertexIndex(vertexIdx2);
+                edge1 = vertexIdx1;
+                edge2 = vertexIdx2;
                 if (!(adjCostMap.containsKey(edge1)
                     && adjCostMap.get(edge1)
                     .containsKey(edge2))) {
                     return false;
                 }
-                edge1 = getVertexIndex(vertexIdx3);
-                edge2 = getVertexIndex(vertexIdx4);
+                edge1 = vertexIdx3;
+                edge2 = vertexIdx4;
                 if (!(adjCostMap.containsKey(edge1)
                     && adjCostMap.get(edge1)
                     .containsKey(edge2))) {

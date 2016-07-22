@@ -204,7 +204,7 @@ public class TSPPrimsMSTTest extends TestCase {
         
     }
     
-    public void est0() {
+    public void test0() {
         
         /* Test of traveling salesman approximate tour. 
          * 
