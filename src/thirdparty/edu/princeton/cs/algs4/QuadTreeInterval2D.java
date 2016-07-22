@@ -67,10 +67,12 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
     private void remove(Node<T> h, Interval2D<T> box, 
         List<Node<T>> parents) {
         
-        boolean isRoot = (h != null) && (h.equals(root) &&
-            h.xy.equals(box));
+        //TODO: need to simplify this pattern
         
-        if ((h == null) || isRoot) {
+        boolean isH = (h != null) && h.xy.equals(box);
+        boolean isRoot = isH && h.equals(root);
+        
+        if ((h == null) || isRoot || isH) {
             
             if (parents.isEmpty() && !isRoot) {
                 return;
@@ -80,6 +82,9 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
                 Node<T> parent = parents.get(parents.size() - 1);
                 if (parent.xy.equals(box)) {
                     removeNodeReattachChildren(parentParent, box);
+                    return;
+                } else if (isH) {
+                    removeNodeReattachChildren(parent, box);
                     return;
                 }
             }
@@ -109,9 +114,14 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         
         parents.add(h);
         
-        int cX = h.xy.intervalX.compareTo(box.intervalX);
-        int cY = h.xy.intervalY.compareTo(box.intervalY);
-        
+        int cX = -1;
+        int cY = -1;
+        try {
+            cX = h.xy.intervalX.compareTo(box.intervalX);
+            cY = h.xy.intervalY.compareTo(box.intervalY);
+        } catch (Throwable t) {
+            int z = 1;
+        }
         if ((cX < 0) && (cY < 0)) { 
             remove(h.SW, box, parents);
         } else if ((cX < 0) && (cY >= 0)) {

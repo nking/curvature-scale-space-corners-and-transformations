@@ -559,13 +559,12 @@ public class QuadTreeInterval2DTest extends TestCase {
                 int rmIdx = rmList.get(i);
                 a = list.get(rmIdx);
                 assertNotNull(a);
-                System.ut.println("cycle=" + ii + " rm i=" + i);
                 qt.remove(a);
                 QuadInt chk = new QuadInt(
                     a.intervalX.min(), a.intervalX.max(),
                     a.intervalY.min(), a.intervalY.max());
                 added.remove(chk);
-                list.remove(rmIdx);
+                assertNotNull(list.remove(rmIdx));
                 results = qt.query2D(a);
                 boolean found = false;
                 for (Interval2D<Integer> result : results) {
@@ -580,6 +579,7 @@ public class QuadTreeInterval2DTest extends TestCase {
             // query all
             for (int i = 0; i < list.size(); ++i) {
                 a = list.get(i);
+                System.out.println("cycle=" + ii + " q i=" + i);
                 results = qt.query2D(a);
                 boolean found = false;
                 for (Interval2D<Integer> result : results) {
