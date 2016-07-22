@@ -1,6 +1,8 @@
 package thirdparty.edu.princeton.cs.algs4;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,8 +48,8 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         int cX = h.xy.intervalX.compareTo(box.intervalX);
         int cY = h.xy.intervalY.compareTo(box.intervalY);
         
-System.out.println("ins cX=" + cX + " cY=" + cY
-   + " for (" + box.toString() + ")");
+        //System.out.println("ins cX=" + cX + " cY=" + cY
+        //+ " for (" + box.toString() + ")");
 
         if ((cX < 0) && (cY < 0)) { 
             h.SW = insert(h.SW, box, value);
@@ -83,8 +85,7 @@ System.out.println("ins cX=" + cX + " cY=" + cY
                 List<Interval2D<T>> boxes = new
                     ArrayList<Interval2D<T>>();
                 List<Value> values = new ArrayList<Value>();
-                extractAllChildren(root, boxes, values);
-                System.out.println("extracted.sz=" + boxes.size());
+                getAllNodes(boxes, values);
                 root = null;
                 for (int i = 0; i < boxes.size(); ++i) {
                     if (!boxes.get(i).equals(box)) {
@@ -96,7 +97,6 @@ System.out.println("ins cX=" + cX + " cY=" + cY
                 assert(!parents.isEmpty());
                 Node<T> parent = parents.get(parents.size() - 1);
                 if (isH) {
-  //TODO: insert at higher level necessary?
                     removeNodeReattachChildren(parent, box);
                     return;
                 }
@@ -105,14 +105,9 @@ System.out.println("ins cX=" + cX + " cY=" + cY
         
         parents.add(h);
         
-        int cX = -1;
-        int cY = -1;
-        try {
-            cX = h.xy.intervalX.compareTo(box.intervalX);
-            cY = h.xy.intervalY.compareTo(box.intervalY);
-        } catch (Throwable t) {
-            int z = 1;
-        }
+        int cX = h.xy.intervalX.compareTo(box.intervalX);
+        int cY = h.xy.intervalY.compareTo(box.intervalY);
+        
         if ((cX < 0) && (cY < 0)) { 
             remove(h.SW, box, parents);
         } else if ((cX < 0) && (cY >= 0)) {
@@ -127,57 +122,31 @@ System.out.println("ins cX=" + cX + " cY=" + cY
     private void removeNodeReattachChildren(Node<T> parent, 
         Interval2D<T> rmBox) {
 
-        boolean[] direction = new boolean[4];
         Node<T> node = null;
         if (parent.NW != null && parent.NW.xy.equals(rmBox)) {
             node = parent.NW;
             parent.NW = null;
-            direction[0] = true;
         } else if (parent.NE != null && parent.NE.xy.equals(rmBox)) {
             node = parent.NE;
             parent.NE = null;
-            direction[1] = true;
         } else if (parent.SW != null && parent.SW.xy.equals(rmBox)) {
             node = parent.SW;
             parent.SW = null;
-            direction[2] = true;
         } else if (parent.SE != null && parent.SE.xy.equals(rmBox)) {
             node = parent.SE;
             parent.SE = null;
-            direction[3] = true;
         } else {
             throw new IllegalStateException(
             "Error in algorithm. parent is not correct");
         }
         
-        Node<T> nodeHasSingleChild = getSingleNonNullChild(node);
-        if (nodeHasSingleChild != null) {
-            if (direction[0]) {
-                parent.NW = nodeHasSingleChild;
-            } else if (direction[1]) {
-                parent.NE = nodeHasSingleChild;
-            } else if (direction[2]) {
-                parent.SW = nodeHasSingleChild;
-            } else if (direction[3]) {
-                parent.SE = nodeHasSingleChild;
-            } else {
-                throw new IllegalStateException(
-                "Error in algorithm. parent is not correct");
+        List<Interval2D<T>> boxes = new ArrayList<Interval2D<T>>();
+        List<Value> values = new ArrayList<Value>();
+        getAllNodes(node, boxes, values);
+        for (int i = 0; i < boxes.size(); ++i) {
+            if (!boxes.get(i).equals(rmBox)) {
+                insert(boxes.get(i), values.get(i));
             }
-            return;
-        }
-       
-        if (node.SW != null) {
-            insert(parent, node.SW);
-        }
-        if (node.NW != null) {
-            insert(parent, node.NW);
-        }
-        if (node.SE != null) {
-            insert(parent, node.SE);
-        }
-        if (node.NE != null) {
-            insert(parent, node.NE);
         }
     }
     
@@ -190,8 +159,8 @@ System.out.println("ins cX=" + cX + " cY=" + cY
         int cX = h.xy.intervalX.compareTo(insNode.xy.intervalX);
         int cY = h.xy.intervalY.compareTo(insNode.xy.intervalY);
         
-System.out.println("ins node cX=" + cX + " cY=" + cY
-   + " for (" + insNode.xy.toString() + ")");
+        //System.out.println("ins node cX=" + cX + " cY=" + cY
+        //+ " for (" + insNode.xy.toString() + ")");
 
         if ((cX < 0) && (cY < 0)) { 
             h.SW = insert(h.SW, insNode);
@@ -238,70 +207,6 @@ System.out.println("ins node cX=" + cX + " cY=" + cY
         return nodeC;
     }
     
-    /**
-     * using pre-order traversal, find and extract all children 
-     * from parent node.
-     * @param node parent node
-     * @param boxes
-     * @param values 
-     */
-    private void extractAllChildren(Node<T> node, 
-        List<Interval2D<T>> boxes, List<Value> values) {
-        
-        Set<Interval2D<T>> added = new HashSet<Interval2D<T>>();
-        
-        Stack<Node<T>> stack = new Stack<Node<T>>();
-        while (!stack.isEmpty() || (node != null)) {
-            if (node != null) {
-                if (!added.contains(node.xy)) {
-                    boxes.add(node.xy);
-                    values.add(node.value);
-                }
-                stack.push(node);
-                if (node.NW != null) {
-                    Node<T> node2 = node.NW;
-                    node.NW = null;
-                    node = node2;
-                } else if (node.NE != null) {
-                    Node<T> node2 = node.NE;
-                    node.NE = null;
-                    node = node2;
-                } else if (node.SW != null) {
-                    Node<T> node2 = node.SW;
-                    node.SW = null;
-                    node = node2;
-                } else if (node.SE != null) {
-                    Node<T> node2 = node.SE;
-                    node.SE = null;
-                    node = node2;
-                } else {
-                    node = null;
-                }
-            } else {
-                node = stack.pop();
-                if (node.NW != null) {
-                    Node<T> node2 = node.NW;
-                    node.NW = null;
-                    node = node2;
-                } else if (node.NE != null) {
-                    Node<T> node2 = node.NE;
-                    node.NE = null;
-                    node = node2;
-                } else if (node.SW != null) {
-                    Node<T> node2 = node.SW;
-                    node.SW = null;
-                    node = node2;
-                } else if (node.SE != null) {
-                    Node<T> node2 = node.SE;
-                    node.SE = null;
-                    node = node2;
-                } else {
-                    node = null;
-                }
-            }
-        }
-    }
-
   /***********************************************************************
     *  Range search.
     ***************************************************************************/
@@ -339,8 +244,8 @@ System.out.println("ins node cX=" + cX + " cY=" + cY
         int cX = h.xy.intervalX.compareTo(srch.intervalX);
         int cY = h.xy.intervalY.compareTo(srch.intervalY);
         
-System.out.println("qry cX=" + cX + " cY=" + cY
-   + " for (" + srch.toString() + ")");
+        //System.out.println("qry cX=" + cX + " cY=" + cY
+        //+ " for (" + srch.toString() + ")");
         
         if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
@@ -350,10 +255,63 @@ System.out.println("qry cX=" + cX + " cY=" + cY
             query2D(h.SW, srch, output);
         if (h.NW != null && (cX < 0) && (cY >= 0)) 
             query2D(h.NW, srch, output);
-        if (h.SE != null && (cX >= 0) && (cY < 0)) 
+        if (h.SE != null && (cX >= 0) && (cY <= 0)) 
             query2D(h.SE, srch, output);
         if (h.NE != null && (cX >= 0) && (cY >= 0)) 
             query2D(h.NE, srch, output);    
     }
 
+    /**
+     * using pre-order traversal, return all nodes
+     * @param output
+     */
+    protected void getAllNodes(List<Interval2D<T>> output,
+        List<Value> output2) {
+        getAllNodes(root, output, output2);
+    }
+    /**
+     * using pre-order traversal, return all nodes
+     * @param output
+     */
+    protected void getAllNodes(Node<T> node, List<Interval2D<T>> output,
+        List<Value> output2) {
+        
+        Set<Interval2D<T>> added = new HashSet<Interval2D<T>>();
+
+        ArrayDeque<Node<T>> children = new ArrayDeque<Node<T>>();
+        Stack<Node<T>> stack = new Stack<Node<T>>();
+        while (!stack.isEmpty() || (node != null)) {
+            if (node != null) {
+                if (!added.contains(node.xy)) {
+                    output.add(node.xy);
+                    output2.add(node.value);
+                    if (node.NW != null) {
+                        children.add(node.NW);
+                    } 
+                    if (node.NE != null) {
+                        children.add(node.NE);
+                    } 
+                    if (node.SW != null) {
+                        children.add(node.SW);
+                    } 
+                    if (node.SE != null) {
+                        children.add(node.SE);
+                    }
+                }
+                stack.push(node);
+                if (children.isEmpty()) {
+                    node = null;
+                } else {
+                    node = children.poll();
+                }
+            } else {
+                node = stack.pop();
+                if (children.isEmpty()) {
+                    node = null;
+                } else {
+                    node = children.poll();
+                }
+            }
+        }
+    }
 }

@@ -23,7 +23,7 @@ public class QuadTreeInterval2DTest extends TestCase {
     public QuadTreeInterval2DTest() {
     }
     
-    public void est0() {
+    public void test0() {
         
         /*
           7
@@ -60,7 +60,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         assertEquals(0, results.size());
     }
     
-    public void est1() {
+    public void test1() {
         
         /*
           7               *
@@ -128,7 +128,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         
     }
     
-    public void estInsertRemoveHierarchicalGrid0() {
+    public void testInsertRemoveHierarchicalGrid0() {
         /*
         inserting subdivisions of 9 neighbors  
         from small to larger sizes.
@@ -215,7 +215,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         }
     }
     
-    public void estInsertRemoveHierarchicalGrid1() {
+    public void testInsertRemoveHierarchicalGrid1() {
         /*
         inserting subdivisions of 9 neighbors  
         from small to larger sizes.
@@ -301,7 +301,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         }
     }
     
-    public void estInsertRemoveHierarchicalGrid2() {
+    public void testInsertRemoveHierarchicalGrid2() {
         /*
         inserting subdivisions of 9 neighbors  
         from larger to smaller sizes.
@@ -388,7 +388,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         }
     }
     
-    public void estInsertRemoveHierarchicalGrid3() {
+    public void testInsertRemoveHierarchicalGrid3() {
         /*
         inserting subdivisions of 9 neighbors  
         from larger to smaller sizes.
@@ -477,7 +477,7 @@ public class QuadTreeInterval2DTest extends TestCase {
      
         SecureRandom r = SecureRandom.getInstance("SHA1PRNG");
         long seed = System.nanoTime();
-        seed = 722829906140326L;
+        //seed = 722829906140326L;
         System.out.println("SEED=" + seed);
         r.setSeed(seed);
 
@@ -486,7 +486,7 @@ public class QuadTreeInterval2DTest extends TestCase {
         int ymin = 10;
         int ymax = 1000;
 
-        int n = 3;//1000;
+        int n = 100;//1000;
 
         QuadTreeInterval2D<Integer, PairInt> qt
             = new QuadTreeInterval2D<Integer, PairInt>();    
@@ -555,18 +555,33 @@ public class QuadTreeInterval2DTest extends TestCase {
                 }
             }
             rmList.sort();
-            System.out.println("rm.sz=" + rmList.size() 
-                + " list.sz=" + list.size());
+            //System.out.println("rm.sz=" + rmList.size() 
+            //    + " list.sz=" + list.size());
+            List<Interval2D<Integer>> treeNodes =
+                new ArrayList<Interval2D<Integer>>();
+            List values = new ArrayList();
+            qt.getAllNodes(treeNodes, values);
+            assertEquals(list.size(), treeNodes.size());
+            //debug(treeNodes);
+            
             for (int i = (rmList.size() - 1); i > -1; --i) {
                 int rmIdx = rmList.get(i);
                 a = list.get(rmIdx);
                 assertNotNull(a);
+                
                 qt.remove(a);
+                assertNotNull(list.remove(rmIdx)); 
+                
+                //treeNodes.clear(); 
+                //values.clear();
+                //qt.getAllNodes(treeNodes, values);
+                //assertEquals(list.size(), treeNodes.size());
+                //debug(treeNodes);
+                
                 QuadInt chk = new QuadInt(
                     a.intervalX.min(), a.intervalX.max(),
                     a.intervalY.min(), a.intervalY.max());
                 added.remove(chk);
-                assertNotNull(list.remove(rmIdx));
                 results = qt.query2D(a);
                 boolean found = false;
                 for (Interval2D<Integer> result : results) {
@@ -578,10 +593,10 @@ public class QuadTreeInterval2DTest extends TestCase {
                 assertFalse(found);
                 for (int j = 0; j < list.size(); ++j) {
                     a = list.get(j);
-                    System.out.println("cycle=" + ii + " rm q i=" + i +
-                        " j=" + j + " list.sz=" + list.size());
+                    //System.out.println("cycle=" + ii + " i=" + i +
+                    //    " j=" + j + " list.sz=" + list.size()
+                    //+ " q=" + a.toString());
                     results = qt.query2D(a);
-               //cycle=2 rm q i=0 j=1 list.sz=6     
                     found = false;
                     for (Interval2D<Integer> result : results) {
                         if (result.equals(a)) {
@@ -608,6 +623,14 @@ public class QuadTreeInterval2DTest extends TestCase {
                 assertTrue(found);
             }
         }
+    }
+
+    private void debug(List<Interval2D<Integer>> treeNodes) {
+        StringBuilder sb = new StringBuilder();
+        for (Interval2D<Integer> g : treeNodes) {
+            sb.append(g.toString()).append("\n");
+        }
+        System.out.println(sb.toString());
     }
     
 }
