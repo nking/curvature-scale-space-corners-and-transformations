@@ -155,8 +155,8 @@ public class TourHandler {
         
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
-        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
-        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+        //int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+        //int tIdxNextA2 = getNextTourIndex(tIdxA2);
  
         int idxEdgeAVertex2 = getVertexIndex(tIdxA2);
 
@@ -207,7 +207,7 @@ public class TourHandler {
                 continue;
             }
             
-            int sum = findNonIntersectingBestSwap(
+            int sum = findMinValidBestSwap(
                 idxEdgeAVertex1, idxEdgeAVertex2,
                 idxEdgeBVertex1, idxEdgeBVertex2, tmp);
          
@@ -250,7 +250,7 @@ public class TourHandler {
      * edge vertexes between the 2 edges given else -1
      * if a better combination than current was not found.
      */
-    protected int findNonIntersectingBestSwap(
+    protected int findMinValidBestSwap(
         int idxEdgeAVertex1, int idxEdgeAVertex2,
         int idxEdgeBVertex1, int idxEdgeBVertex2,
         int[] outputVertexIdxs) {
@@ -540,7 +540,7 @@ public class TourHandler {
         int tIdxNextA2 = getNextTourIndex(tIdxA2);
             
         int tIdxB1 = getTourIndex(idxEdgeBVertex1);
-        int tIdxB2 = getTourIndex(tIdxB1);
+        int tIdxB2 = getNextTourIndex(tIdxB1);
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
         
