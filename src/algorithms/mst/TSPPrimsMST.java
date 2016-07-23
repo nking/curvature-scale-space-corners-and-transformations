@@ -77,7 +77,7 @@ public class TSPPrimsMST {
             int bestVertexIdxA = -1;
             int bestVertexIdxB = -1;
             int[] bestVertexIdxs1 = new int[4];
-            int minPathSum = Integer.MAX_VALUE;
+            int minPathSum = tourHandler.getPathSum();
             int[] outputVertexIdxs = new int[4];
             
             int[] outputVertexB = new int[1];
@@ -106,6 +106,7 @@ public class TSPPrimsMST {
             }
             
             if (minPathSum < Integer.MAX_VALUE) {
+            //if (minPathSum < tourHandler.getPathSum()) {
                 
                 int sum = tourHandler.changePaths(
                     bestVertexIdxA, bestVertexIdxB, 

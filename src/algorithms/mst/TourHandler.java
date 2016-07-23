@@ -177,7 +177,7 @@ public class TourHandler {
         
         //vertex indexes returned for min path sum
         int[] tmp = new int[4];
-        int minSum = Integer.MAX_VALUE;
+        int minSum = pathSum;
         
         int x1 = coordinates[idxEdgeAVertex1].getX();
         int y1 = coordinates[idxEdgeAVertex1].getY();
@@ -227,6 +227,7 @@ public class TourHandler {
                 idxEdgeBVertex1, idxEdgeBVertex2, tmp);
          
             if (sum < minSum) {
+                
                 minSum = sum;
                 
                 // tmp are graph vertex indexes
@@ -255,7 +256,7 @@ public class TourHandler {
             }
         }
         
-        return minSum;
+        return (minSum == pathSum) ? Integer.MAX_VALUE : minSum;
     }
     
     /**
@@ -306,7 +307,7 @@ public class TourHandler {
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
 
-        int minSum = Integer.MAX_VALUE;
+        int minSum = pathSum;
 
         // fixing first integer and permuting the other 3
         cache0[0] = tIdxA2;
@@ -364,7 +365,7 @@ assert(assertSameSets(
             }
         }
         
-        return minSum;
+        return (minSum == pathSum) ? Integer.MAX_VALUE : minSum;
     }
 
     void permutation(int a[], int[][] out, int size, int[] count) {
@@ -597,11 +598,6 @@ assert(assertSameSets(
     public int changePaths(int idxEdgeAVertex1, 
         int idxEdgeBVertex1, int[] vertexIdxs) {
     
-        //TODO: NOTE: this will be changed
-        // soon to not change index 0 of the tour
-        // NOTE: change to last index when 0 has
-        // changed is not handled here for that reason
-        
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
         int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
@@ -665,6 +661,14 @@ assert(assertSameSets(
         tour[tIdxA2] = vertexIdxs[1];
         tour[tIdxB1] = vertexIdxs[2];
         tour[tIdxB2] = vertexIdxs[3];
+ 
+        if (tIdxA2 == 0) {
+            tour[tour.length - 1] = vertexIdxs[1];
+        } else if (tIdxB1 == 0) {
+            tour[tour.length - 1] = vertexIdxs[2];
+        } else if (tIdxB2 == 0) {
+            tour[tour.length - 1] = vertexIdxs[3];
+        }
         
         // ---- update the values of tour map
         // since the changes are swaps, all changed items
@@ -673,9 +677,12 @@ assert(assertSameSets(
         tourValueToIndexMap.put(vertexIdxs[1], tIdxA2);
         tourValueToIndexMap.put(vertexIdxs[2], tIdxB1);
         tourValueToIndexMap.put(vertexIdxs[3], tIdxB2);
- 
+         
         assert(assertTourData());
-        
+       
+System.out.println("new pathSum==" + pathSum + 
+" tour=" + Arrays.toString(tour));
+
         return pathSum;
     }
   
