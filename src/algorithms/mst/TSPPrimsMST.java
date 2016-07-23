@@ -89,13 +89,13 @@ public class TSPPrimsMST {
             
             for (int cIdx1 = 0; cIdx1 < coordinates.length;
                 ++cIdx1) {
-
+                
                 int sum = 
                     tourHandler.findNonIntersectingBestSwap(
                     cIdx1, outputVertexB, 
                     outputVertexIdxs);
 
-                if (sum < minPathSum) {
+                if (sum < tourHandler.getPathSum()) {
                     minPathSum = sum;
                     bestVertexIdxA = cIdx1;
                     bestVertexIdxB = outputVertexB[0];
@@ -105,13 +105,13 @@ public class TSPPrimsMST {
                 }
             }
             
-            if (minPathSum < Integer.MAX_VALUE) {
-            //if (minPathSum < tourHandler.getPathSum()) {
+            if (minPathSum < tourHandler.getPathSum()) {
                 
                 int sum = tourHandler.changePaths(
                     bestVertexIdxA, bestVertexIdxB, 
                     bestVertexIdxs1);
-                System.out.println("sum=" + sum + " min=" + minPathSum);
+                System.out.println("nIter=" + nIter 
+                    + " sum=" + sum + " min=" + minPathSum);
                 assert(sum == minPathSum);
             
                 //TODO: 

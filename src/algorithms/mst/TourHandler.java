@@ -256,6 +256,25 @@ public class TourHandler {
             }
         }
         
+        if (minSum < pathSum) {
+            return minSum;
+        }
+        
+        // ---- adding logic to handle swapping edge test while
+        //      still have information that edge intersects others
+        
+        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+
+        // else, try to swap leading edge alone
+        int sum = peekSumPathChangesReverseEdge(tIdxPrevA1,
+            tIdxA1, tIdxA2, tIdxNextA2);
+        if (sum < minSum) {
+            // not returning sum to allow existing logic to 
+            // remain, it acts upon data from 2 edges
+            sum = changePathsToReverseEdge(tIdxA1);
+        }
+        
         return (minSum == pathSum) ? Integer.MAX_VALUE : minSum;
     }
     
@@ -508,6 +527,54 @@ assert(assertSameSets(
         return sum;
     }
     
+    /**
+     * given tour indexes A1, A2, B1, B2 and the
+     * vertexes to change those to, calculate what
+     * the path sum would be with those changes,
+     * but do not apply the changes.
+     * The tour indexes before and after edgeA and 
+     * edgeB are passed in to avoid recalculating.
+     * The invoking method has the responsibility of 
+     * passing valid arguments to this method.
+     @param tIdxPrevA1 is the tour index before that
+     * containing vertexIdxs0[0].
+     @param tIdxA1 tour index for first point of edgeA
+     @param tIdxA2 tour index for last point of edgeA
+     @param tIdxNextA2 is the tour index after that
+       containing vertexIdxs0[1]
+     
+     * @return the calculated path sum for the path
+     * changed from vertexes vertexIdxs0 to vertexIdxs1.
+     */
+    protected int peekSumPathChangesReverseEdge(int tIdxPrevA1,
+        int tIdxA1, int tIdxA2, int tIdxNextA2) {
+        
+        int sum = pathSum;
+        
+        int a1 = adjCostMap.get(getVertexIndex(tIdxPrevA1))
+            .get(getVertexIndex(tIdxA1));
+        int a2 = adjCostMap.get(getVertexIndex(tIdxA1))
+            .get(getVertexIndex(tIdxA2));
+        int a3 = adjCostMap.get(getVertexIndex(tIdxA2))
+            .get(getVertexIndex(tIdxNextA2));
+        
+        int minusA = a1 + a2 + a3;
+                
+        int plusA1 = adjCostMap.get(getVertexIndex(tIdxPrevA1))
+            .get(getVertexIndex(tIdxA2));
+        int plusA2 = adjCostMap.get(getVertexIndex(tIdxA2))
+            .get(getVertexIndex(tIdxA1));
+        int plusA3 = adjCostMap.get(getVertexIndex(tIdxA1))
+            .get(getVertexIndex(tIdxNextA2));
+        
+        int plusA = plusA1 + plusA2 + plusA3;
+                
+        sum -= minusA;
+        sum += plusA;
+        
+        return sum;
+    }
+    
     private void removeEdgeBoxes(int tIdxPrev1, int tIdx1, 
         int tIdx2, int tIdxNext2) {
 
@@ -677,6 +744,58 @@ assert(assertSameSets(
         tourValueToIndexMap.put(vertexIdxs[1], tIdxA2);
         tourValueToIndexMap.put(vertexIdxs[2], tIdxB1);
         tourValueToIndexMap.put(vertexIdxs[3], tIdxB2);
+         
+        assert(assertTourData());
+       
+System.out.println("new pathSum==" + pathSum + 
+" tour=" + Arrays.toString(tour));
+
+        return pathSum;
+    }
+  
+    /**
+     * given tour values (which are the original graph
+     * vertexes), change to vertexIdxs1 and return the
+     * updated pathSum.
+     @param tIdxA1 edge A vertex 1 tour index,
+     * the second edge index is implicitly the one
+     * that follows this in the tour array.
+     @return the updated path sum after the changes
+     * are applied.
+    */
+    public int changePathsToReverseEdge(int tIdxA1) {
+    
+        int tIdxA2 = getNextTourIndex(tIdxA1);
+        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+        
+        // ---- update the edge bounding boxes -----
+        removeEdgeBoxes(tIdxPrevA1, tIdxA1, tIdxA2, 
+            tIdxNextA2);
+        
+        insertEdgeBoxes(
+            getVertexIndex(tIdxA1),
+            getVertexIndex(tIdxA2),
+            getVertexIndex(tIdxPrevA1), 
+            getVertexIndex(tIdxNextA2));
+        
+        // ---- update the tour -----
+    
+        pathSum = peekSumPathChangesReverseEdge(
+            tIdxPrevA1, tIdxA1, tIdxA2, tIdxNextA2);
+ 
+        tour[tIdxA1] = getVertexIndex(tIdxA2);
+        tour[tIdxA2] = getVertexIndex(tIdxA1);
+ 
+        if (tIdxA2 == 0) {
+            tour[tour.length - 1] = tour[tIdxA2];
+        }
+        
+        // ---- update the values of tour map
+        // since the changes are swaps, all changed items
+        // are present here in the updates
+        tourValueToIndexMap.put(tour[tIdxA1], tIdxA1);
+        tourValueToIndexMap.put(tour[tIdxA2], tIdxA2);
          
         assert(assertTourData());
        
