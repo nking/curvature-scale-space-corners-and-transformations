@@ -3,12 +3,15 @@ package algorithms.mst;
 import algorithms.SubsetChooser;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 import java.util.List;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -115,6 +118,7 @@ public class TourHandler {
             int cIdx = tour[i];
             tourValueToIndexMap.put(cIdx, i);
         }
+        assert(tourValueToIndexMap.size() == tour.length - 1);
         
         pathSum = 0;
         for (int i = 0; i < (tour.length - 1); ++i) {
@@ -149,20 +153,19 @@ public class TourHandler {
      * if a better combination than current was not found.
      */
     public int findNonIntersectingBestSwap(
-        int idxEdgeAVertex1, 
+        final int idxEdgeAVertex1, 
         int[] outputIdxEdgeBVertex1, 
         int[] outputVertexIdxs) {
         
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
-        //int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
-        //int tIdxNextA2 = getNextTourIndex(tIdxA2);
  
-        int idxEdgeAVertex2 = getVertexIndex(tIdxA2);
+        final int idxEdgeAVertex2 = getVertexIndex(tIdxA2);
 
         Interval2D<Integer> box12 = 
             indexEdgeBounds.get(idxEdgeAVertex1);
-
+        assert(box12 != null);
+        
         // find intersection boxes and look for 
         // edges that intersect with these
 
@@ -172,6 +175,7 @@ public class TourHandler {
             return Integer.MAX_VALUE;
         }
         
+        //vertex indexes returned for min path sum
         int[] tmp = new int[4];
         int minSum = Integer.MAX_VALUE;
         
@@ -185,16 +189,21 @@ public class TourHandler {
             ++listIdx) {
 
             Interval2D<Integer> box34 = list.get(listIdx);
-
+            assert(box34 != null);
+            
             if (box34.equals(box12)) {
                 continue;
             }
 
-            int idxEdgeBVertex1 = edgeIndexBounds.get(box34);
+            final int idxEdgeBVertex1 = edgeIndexBounds.get(box34);
             int tIdxB1 = getTourIndex(idxEdgeBVertex1);
             int tIdxB2 = getNextTourIndex(tIdxB1);
-            int idxEdgeBVertex2 = getVertexIndex(tIdxB2);
-            
+            final int idxEdgeBVertex2 = getVertexIndex(tIdxB2);
+            assert(tour[tIdxB1] == idxEdgeBVertex1);
+            assert(tour[tIdxB2] == getNextVertexIndex(idxEdgeBVertex1));            
+            assert(tour[tIdxB2] == idxEdgeBVertex2);
+            assert(tIdxB1 == getTourIndex(idxEdgeBVertex1));
+                
             int x3 = coordinates[idxEdgeBVertex1].getX();
             int y3 = coordinates[idxEdgeBVertex1].getY();
 
@@ -206,16 +215,37 @@ public class TourHandler {
                 x1, y1, x2, y2, x3, y3, x4, y4)) {
                 continue;
             }
-            
+
             int sum = findMinValidBestSwap(
                 idxEdgeAVertex1, idxEdgeAVertex2,
                 idxEdgeBVertex1, idxEdgeBVertex2, tmp);
          
             if (sum < minSum) {
                 minSum = sum;
+                
+                // tmp are graph vertex indexes
+                
                 System.arraycopy(tmp, 0, outputVertexIdxs, 
                     0, tmp.length);
+ 
                 outputIdxEdgeBVertex1[0] = idxEdgeBVertex1;
+                
+ assert(assertSameSets(
+ getVertexIndex(tIdxA1), 
+ getVertexIndex(tIdxA2), 
+ getVertexIndex(tIdxB1), 
+ getVertexIndex(tIdxB2),
+ outputVertexIdxs[0], 
+ outputVertexIdxs[1], 
+ outputVertexIdxs[2],
+ outputVertexIdxs[3]));
+ assert(assertSameSets(
+ tIdxA1, tIdxA2, tIdxB1, tIdxB2,
+ getTourIndex(outputVertexIdxs[0]), 
+ getTourIndex(outputVertexIdxs[1]), 
+ getTourIndex(outputVertexIdxs[2]),
+ getTourIndex(outputVertexIdxs[3])));
+ 
             }
         }
         
@@ -252,9 +282,11 @@ public class TourHandler {
      */
     protected int findMinValidBestSwap(
         int idxEdgeAVertex1, int idxEdgeAVertex2,
-        int idxEdgeBVertex1, int idxEdgeBVertex2,
+        final int idxEdgeBVertex1, final int idxEdgeBVertex2,
         int[] outputVertexIdxs) {
 
+        assert(outputVertexIdxs.length == 4);
+        
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getTourIndex(idxEdgeAVertex2);
         assert(tIdxA2 == getNextTourIndex(tIdxA1));
@@ -263,6 +295,7 @@ public class TourHandler {
 
         int tIdxB1 = getTourIndex(idxEdgeBVertex1);
         int tIdxB2 = getTourIndex(idxEdgeBVertex2);
+
         assert(tIdxB2 == getNextTourIndex(tIdxB1));
         int tIdxPrevB1 = getPrevTourIndex(tIdxB1);
         int tIdxNextB2 = getNextTourIndex(tIdxB2);
@@ -286,20 +319,45 @@ public class TourHandler {
             if (!isValid) {
                 continue;
             }
-
+            
             int sum = peekSumPathChanges(tIdxPrevA1,
                 tIdxA1, tIdxA2, tIdxNextA2,
                 tIdxPrevB1, tIdxB1, tIdxB2, tIdxNextB2,
                 tIdxA1, cache1[i][0], cache1[i][1], cache1[i][2]);
 
             if (sum < minSum) {
+                
                 minSum = sum;
-                outputVertexIdxs[0] = tIdxA1;
-                System.arraycopy(cache1[i], 0, outputVertexIdxs,
-                    1, cache1[i].length);
+                
+                // outputVertexIdxs is graph vertex indexes
+                // instead of tour indexes.
+                // cache1[i] are tour indexes.
+                
+                outputVertexIdxs[0] = getVertexIndex(tIdxA1);
+                for (int j = 0; j < cache1[i].length; ++j) {
+                    outputVertexIdxs[j + 1] = 
+                        getVertexIndex(cache1[i][j]);
+                }
+
+assert(assertSameSets(
+ getVertexIndex(tIdxA1), 
+ getVertexIndex(tIdxA2), 
+ getVertexIndex(tIdxB1), 
+ getVertexIndex(tIdxB2),
+ outputVertexIdxs[0], 
+ outputVertexIdxs[1], 
+ outputVertexIdxs[2],
+ outputVertexIdxs[3]));
+ assert(assertSameSets(
+ tIdxA1, tIdxA2, tIdxB1, tIdxB2,
+ getTourIndex(outputVertexIdxs[0]), 
+ getTourIndex(outputVertexIdxs[1]), 
+ getTourIndex(outputVertexIdxs[2]),
+ getTourIndex(outputVertexIdxs[3])));
+ 
             }
         }
-
+        
         return minSum;
     }
 
@@ -385,18 +443,17 @@ public class TourHandler {
      @param tIdxB2 tour index for last point of edgeB
      @param tIdxNextB2 is the tour index after that
        containing vertexIdxs0[3]
-     @param vertexIdx1 candidate change edge A vertex1
-     @param vertexIdx2 candidate change edge A vertex2
-     @param vertexIdx3 candidate change edge B vertex1
-     @param vertexIdx4 candidate change edge B vertex2
+     @param tIdx1 candidate change edge A vertex1 tour index
+     @param tIdx2 candidate change edge A vertex2 tour index
+     @param tIdx3 candidate change edge B vertex1 tour index
+     @param tIdx4 candidate change edge B vertex2 tour index
      * @return the calculated path sum for the path
      * changed from vertexes vertexIdxs0 to vertexIdxs1.
      */
     protected int peekSumPathChanges(int tIdxPrevA1,
         int tIdxA1, int tIdxA2, int tIdxNextA2, 
         int tIdxPrevB1, int tIdxB1, int tIdxB2, int tIdxNextB2,
-        int vertexIdx1, int vertexIdx2, int vertexIdx3,
-        int vertexIdx4) {
+        int tIdx1, int tIdx2, int tIdx3, int tIdx4) {
         
         int sum = pathSum;
         
@@ -419,19 +476,19 @@ public class TourHandler {
         int minusB = b1 + b2 + b3;
         
         int plusA1 = adjCostMap.get(getVertexIndex(tIdxPrevA1))
-            .get(vertexIdx1);
-        int plusA2 = adjCostMap.get(vertexIdx1)
-            .get(vertexIdx2);
-        int plusA3 = adjCostMap.get(vertexIdx2)
+            .get(getVertexIndex(tIdx1));
+        int plusA2 = adjCostMap.get(getVertexIndex(tIdx1))
+            .get(getVertexIndex(tIdx2));
+        int plusA3 = adjCostMap.get(getVertexIndex(tIdx2))
             .get(getVertexIndex(tIdxNextA2));
         
         int plusA = plusA1 + plusA2 + plusA3;
         
         int plusB1 = adjCostMap.get(getVertexIndex(tIdxPrevB1))
-            .get(vertexIdx3);
-        int plusB2 = adjCostMap.get(vertexIdx3)
-            .get(vertexIdx4);
-        int plusB3 = adjCostMap.get(vertexIdx4)
+            .get(getVertexIndex(tIdx3));
+        int plusB2 = adjCostMap.get(getVertexIndex(tIdx3))
+            .get(getVertexIndex(tIdx4));
+        int plusB3 = adjCostMap.get(getVertexIndex(tIdx4))
             .get(getVertexIndex(tIdxNextB2));
         
         int plusB = plusB1 + plusB2 + plusB3;
@@ -533,6 +590,11 @@ public class TourHandler {
     */
     public int changePaths(int idxEdgeAVertex1, 
         int idxEdgeBVertex1, int[] vertexIdxs) {
+    
+        //TODO: NOTE: this will be changed
+        // soon to not change index 0 of the tour
+        // NOTE: change to last index when 0 has
+        // changed is not handled here for that reason
         
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
@@ -558,17 +620,55 @@ public class TourHandler {
             getVertexIndex(tIdxNextB2));
         
         // ---- update the tour -----
-        
+    
         pathSum = peekSumPathChanges(tIdxPrevA1,
             tIdxA1, tIdxA2, tIdxNextA2, 
             tIdxPrevB1, tIdxB1, tIdxB2, tIdxNextB2, 
-            vertexIdxs[0], vertexIdxs[1], vertexIdxs[2],
-            vertexIdxs[3]);
-        
+            getTourIndex(vertexIdxs[0]), 
+            getTourIndex(vertexIdxs[1]), 
+            getTourIndex(vertexIdxs[2]),
+            getTourIndex(vertexIdxs[3]));
+ 
+ assert(assertSameSets(
+ getVertexIndex(tIdxA1), 
+ getVertexIndex(tIdxA2), 
+ getVertexIndex(tIdxB1), 
+ getVertexIndex(tIdxB2),
+ vertexIdxs[0], 
+ vertexIdxs[1], 
+ vertexIdxs[2],
+ vertexIdxs[3]));
+ assert(assertSameSets(
+ tIdxA1, tIdxA2, tIdxB1, tIdxB2,
+ getTourIndex(vertexIdxs[0]), 
+ getTourIndex(vertexIdxs[1]), 
+ getTourIndex(vertexIdxs[2]),
+ getTourIndex(vertexIdxs[3])));
+ 
+ assert(assertTourData());
+ System.out.println(String.format("change tour[%d] = %d to %d", 
+ tIdxA1, tour[tIdxA1], vertexIdxs[0]));
+ System.out.println(String.format("change tour[%d] = %d to %d", 
+ tIdxA2, tour[tIdxA2], vertexIdxs[1]));
+ System.out.println(String.format("change tour[%d] = %d to %d", 
+ tIdxB1, tour[tIdxB1], vertexIdxs[2]));
+ System.out.println(String.format("change tour[%d] = %d to %d", 
+ tIdxB2, tour[tIdxB2], vertexIdxs[3]));
+ 
         tour[tIdxA1] = vertexIdxs[0];
         tour[tIdxA2] = vertexIdxs[1];
         tour[tIdxB1] = vertexIdxs[2];
         tour[tIdxB2] = vertexIdxs[3];
+        
+        // ---- update the values of tour map
+        // since the changes are swaps, all changed items
+        // are present here in the updates
+        tourValueToIndexMap.put(vertexIdxs[0], tIdxA1);
+        tourValueToIndexMap.put(vertexIdxs[1], tIdxA2);
+        tourValueToIndexMap.put(vertexIdxs[2], tIdxB1);
+        tourValueToIndexMap.put(vertexIdxs[3], tIdxB2);
+ 
+        assert(assertTourData());
         
         return pathSum;
     }
@@ -613,31 +713,30 @@ public class TourHandler {
      * @param tIdxNextA2
      * @param tIdxPrevB1
      * @param tIdxNextB2
-     @param vertexIdx1 candidate change edge A vertex1
-     @param vertexIdx2 candidate change edge A vertex2
-     @param vertexIdx3 candidate change edge B vertex1
-     @param vertexIdx4 candidate change edge B vertex2
+     @param tIdx1 candidate change edge A 1 tour vertex
+     @param tIdx2 candidate change edge A 2 tour vertex
+     @param tIdx3 candidate change edge B 1 tour vertex
+     @param tIdx4 candidate change edge B 2 tour vertex
      * @return 
      */
     private boolean validateEdges(int tIdxPrevA1, 
         int tIdxNextA2, int tIdxPrevB1, int tIdxNextB2,
-        int vertexIdx1, int vertexIdx2, int vertexIdx3,
-        int vertexIdx4) {
+        int tIdx1, int tIdx2, int tIdx3, int tIdx4) {
         
         // validate that edge exists
         for (int j = 0; j < 4; ++j) {
             int edge1, edge2;
             if (j == 0) {
                 edge1 = getVertexIndex(tIdxPrevA1);
-                edge2 = vertexIdx1;
+                edge2 = getVertexIndex(tIdx1);
             } else if (j == 1) {
-                edge1 = vertexIdx2;
+                edge1 = getVertexIndex(tIdx2);
                 edge2 = getVertexIndex(tIdxNextA2);
             } else if (j == 2) {
                 edge1 = getVertexIndex(tIdxPrevB1);
-                edge2 = vertexIdx3;
+                edge2 = getVertexIndex(tIdx3);
             } else {
-                edge1 = vertexIdx4;
+                edge1 = getVertexIndex(tIdx4);
                 edge2 = getVertexIndex(tIdxNextB2);
             }
            
@@ -648,20 +747,66 @@ public class TourHandler {
             }
             if (j == 3) {
                 // try the combination if passed other checks
-                edge1 = vertexIdx1;
-                edge2 = vertexIdx2;
+                edge1 = getVertexIndex(tIdx1);
+                edge2 = getVertexIndex(tIdx2);
                 if (!(adjCostMap.containsKey(edge1)
                     && adjCostMap.get(edge1)
                     .containsKey(edge2))) {
                     return false;
                 }
-                edge1 = vertexIdx3;
-                edge2 = vertexIdx4;
+                edge1 = getVertexIndex(tIdx3);
+                edge2 = getVertexIndex(tIdx4);
                 if (!(adjCostMap.containsKey(edge1)
                     && adjCostMap.get(edge1)
                     .containsKey(edge2))) {
                     return false;
                 }
+            }
+        }
+        return true;
+    }
+    
+    private boolean assertTourData() {
+        
+        assert(tourValueToIndexMap.size() == tour.length - 1);
+        
+        for (int i = 0; i < (tour.length - 1); ++i) {
+            int cIdx = tour[i];
+            if (!tourValueToIndexMap.containsKey(cIdx)) {
+                return false;
+            }
+            int tIdx = tourValueToIndexMap.get(cIdx);
+            if (tIdx != i) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean assertSameSets(int t1, int t2, int t3, int t4,
+        int s1, int s2, int s3, int s4) {
+        TIntSet set1 = new TIntHashSet();
+        TIntSet set2 = new TIntHashSet();
+        
+        set1.add(t1);
+        set1.add(t2);
+        set1.add(t3);
+        set1.add(t4);
+        
+        set2.add(s1);
+        set2.add(s2);
+        set2.add(s3);
+        set2.add(s4);
+        
+        if (set1.size() != set2.size()) {
+            return false;
+        }
+        TIntIterator iter = set1.iterator();
+        while (iter.hasNext()) {
+            int t = iter.next();
+            if (!set2.contains(t)) {
+                return false;
             }
         }
         return true;

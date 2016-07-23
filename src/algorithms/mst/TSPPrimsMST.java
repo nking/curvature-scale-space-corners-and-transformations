@@ -79,6 +79,7 @@ public class TSPPrimsMST {
             int[] bestVertexIdxs1 = new int[4];
             int minPathSum = Integer.MAX_VALUE;
             int[] outputVertexIdxs = new int[4];
+            
             int[] outputVertexB = new int[1];
             
             //TODO: consider on nIter=0, making a list
@@ -91,7 +92,8 @@ public class TSPPrimsMST {
 
                 int sum = 
                     tourHandler.findNonIntersectingBestSwap(
-                    cIdx1, outputVertexB, outputVertexIdxs);
+                    cIdx1, outputVertexB, 
+                    outputVertexIdxs);
 
                 if (sum < minPathSum) {
                     minPathSum = sum;

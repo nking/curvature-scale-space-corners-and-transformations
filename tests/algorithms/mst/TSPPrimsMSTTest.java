@@ -179,14 +179,8 @@ public class TSPPrimsMSTTest extends TestCase {
             5,
             6, 7,
             0,
-            2, 7, 6, 3);
-        /*
-        protected int peekSumPathChanges(int tIdxPrevA1,
-        int tIdxA1, int tIdxA2, int tIdxNextA2,
-        int tIdxPrevB1, int tIdxB1, int tIdxB2, int tIdxNextB2,
-        int vertexIdx1, int vertexIdx2, int vertexIdx3,
-        int vertexIdx4) {
-        */
+            2, 6, 7, 3);
+        
         assertEquals(42, tmp);
         
         /*
@@ -195,8 +189,10 @@ public class TSPPrimsMSTTest extends TestCase {
         */
         /*
         Ideal First swap:
-         0, 1, 2, 3, 4, 5, 7, 6
-               2, 7        6  3 
+        0, 1, 2, 3, 4, 5, 7, 6, 0
+              2, 7        6  3
+        
+        
         */
         int pathSum = tourHandler.changePaths(2, 7,
             new int[]{2, 7, 6, 3});
