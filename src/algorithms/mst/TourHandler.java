@@ -203,7 +203,13 @@ public class TourHandler {
             assert(tour[tIdxB2] == getNextVertexIndex(idxEdgeBVertex1));            
             assert(tour[tIdxB2] == idxEdgeBVertex2);
             assert(tIdxB1 == getTourIndex(idxEdgeBVertex1));
-                
+       
+            // vertex disjoint
+            if ((tIdxA1 == tIdxB1) || (tIdxA1 == tIdxB2) ||
+                (tIdxA2 == tIdxB1) || (tIdxA2 == tIdxB2)) {
+                continue;
+            } 
+            
             int x3 = coordinates[idxEdgeBVertex1].getX();
             int y3 = coordinates[idxEdgeBVertex1].getY();
 
