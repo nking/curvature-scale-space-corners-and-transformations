@@ -236,9 +236,10 @@ public class TourHandler {
     }
     
     public void modifyTourIntersectingEdges() {
-        
+ 
+        //TODO: revise nMaxIter
         int nIter = 0;
-        int nMaxIter = 10;
+        int nMaxIter = Math.round(0.8f*coordinates.length);
         int nChanged = 0;
         
         do {

@@ -57,7 +57,6 @@ public class TSPPrimsMST {
      * NOTE: user must ensure that the range of keys
      * in the adjCostMap is between 0 and nVertexes - 1.
      *  
-     * @param nVertexes
      * @param coordinates
      * @param adjCostMap key = vertex index1, 
      *   value = map with key = index2 and value = 
@@ -108,12 +107,6 @@ public class TSPPrimsMST {
             }
         }
         
-        /*
-        sort by x w/ int[] indexes
-        make a reverse map array
-        new adjCostMap2 from adjCostMap and revIndexes
-        */
-        
         int[] tour = approxTSPTour(coordinates2, 
             adjCostMap2);
         
@@ -154,8 +147,7 @@ public class TSPPrimsMST {
      * @param doSort
      * @return 
      */
-    private int[] approxTSPTour(
-        PairInt[] coordinates,
+    private int[] approxTSPTour(PairInt[] coordinates,
         final TIntObjectMap<TIntIntMap> adjCostMap) {
         
         final int nVertexes = coordinates.length;
