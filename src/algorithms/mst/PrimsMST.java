@@ -188,6 +188,13 @@ public class PrimsMST {
      */
     public int[] getPreOrderPostOrderWalk() {
 
+        //NOTE: not yet tested.
+        //  for best use, might need to order
+        //  (sort) points by x before prims so that
+        //  children are in order...
+        //  other ordering might be necessary...
+        //  
+        
         TIntObjectMap<TIntList> nodeMap = 
             createReverseMap();
 
