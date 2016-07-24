@@ -2,6 +2,8 @@ package algorithms.compGeometry.convexHull;
 
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.logging.Logger;
 import junit.framework.Test;
@@ -253,6 +255,58 @@ public class PolarAngleQuickSortTest extends TestCase {
         }
     }
 
+    public void testSort1_2() {
+
+    	// ======================================================================
+    	/*            2,6
+        *
+        *
+        *     0,2    2,2 3,2
+        *                      7,1
+        *            2,0
+        *    7
+        *    6   <>
+        *    5
+        *    4
+        *    3
+        *    <> <> <>
+        *    1             <>
+        *    0 1<> 3 4 5 6 7
+        */
+        
+        List<PairInt> points = new ArrayList<PairInt>();
+        points.add(new PairInt(2, 0));
+        points.add(new PairInt(7, 1));
+        points.add(new PairInt(0, 2));
+        points.add(new PairInt(2, 2));
+        points.add(new PairInt(3, 2));
+        points.add(new PairInt(2, 6));
+             
+        float[] expectedxx 
+            = new float[]{2.0f, 7.0f, 3.0f, 2.0f, 2, 0.0f};
+        float[] expectedyy 
+            = new float[]{0.0f, 1.0f, 2.0f, 6.0f, 2, 2.0f};
+        
+        double[] polarAngle = new double[points.size()];
+        for (int i = 1; i < points.size(); i++) {
+            polarAngle[i] = 
+                AngleUtil.polarAngleCCW((double)(
+                points.get(i).getX() - points.get(0).getX()), 
+                (double)(points.get(i).getY() - 
+                points.get(0).getY()));
+        }
+        
+    	PolarAngleQuickSort.sortByPolarAngle(
+            points, 1, points.size() - 1, polarAngle);
+        for (int i=0; i < points.size(); i++) {
+            assertTrue( Math.abs(expectedxx[i] 
+                - points.get(i).getX()) < 0.01);
+            assertTrue( Math.abs(expectedyy[i] 
+                - points.get(i).getY()) < 0.01);
+        }
+        
+    }
+
     public void testSort2() {
 
         // p0 has already been found to be the lowest y of the points and
@@ -428,7 +482,8 @@ public class PolarAngleQuickSortTest extends TestCase {
 
         threwException = false;
         try {
-            PolarAngleQuickSort.sort(points[0], null);
+            PairInt[] t = null;
+            PolarAngleQuickSort.sort(points[0], t);
         } catch (IllegalArgumentException e) {
             threwException = true;
         }

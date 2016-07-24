@@ -262,7 +262,7 @@ public class PrimsMST {
         //level 2   [2]   [3]       [7] [8]
         //level 3       [4][5]
         // process node sees 0,1,2,-1, 3,4,-1, 5, -1, 6,7,-1, 8, -1 
-        // (-1's added where no childre)
+        // (-1's added where no children)
       
         TIntSet added = new TIntHashSet();
         

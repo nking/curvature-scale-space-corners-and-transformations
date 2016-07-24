@@ -1,6 +1,7 @@
 package algorithms;
 
 import algorithms.imageProcessing.util.PairIntWithIndex0;
+import algorithms.util.PairInt;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -338,6 +339,30 @@ public class QuickSortTest extends TestCase {
         
         for (int i = 0; i < 4; ++i) {
             assertEquals(i + 1, a[2][i]);
+        }
+    }
+
+    public void sortByDecrYThenIncrX() {
+    
+        PairInt[] a = new PairInt[4];
+        a[0] = new PairInt(7, 7);
+        a[1] = new PairInt(0, 0);
+        a[2] = new PairInt(4, 4);
+        a[3] = new PairInt(2, 4);
+        int[] indexes = new int[]{0, 1, 2, 3};
+
+        QuickSort.sortByDecrYThenIncrX(a, indexes);
+        
+        PairInt[] aExp = new PairInt[4];
+        aExp[0] = new PairInt(7, 7);
+        aExp[3] = new PairInt(0, 0);
+        aExp[1] = new PairInt(4, 4);
+        aExp[2] = new PairInt(2, 4);
+        int[] indexesExp = new int[]{0, 3, 1, 2};
+
+        for (int i = 0; i < a.length; ++i) {
+            assertEquals(indexesExp[i], indexes[i]);
+            assertEquals(aExp[i], a[i]);
         }
     }
 

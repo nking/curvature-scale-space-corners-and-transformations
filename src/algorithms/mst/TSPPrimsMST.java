@@ -1,10 +1,16 @@
 package algorithms.mst;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
+import algorithms.Rotate;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.Arrays;
@@ -58,8 +64,101 @@ public class TSPPrimsMST {
      *   cost for edge index1 to index2. 
      */
     public int[] approxTSPTour(
-        final int nVertexes, PairInt[] coordinates,
+        PairInt[] coordinates,
+        final TIntObjectMap<TIntIntMap> adjCostMap, 
+        boolean doSort) {
+        
+        final int nVertexes = coordinates.length;
+        
+        if (!doSort) {
+            return approxTSPTour(coordinates, adjCostMap);
+        }
+        
+        PairInt[] coordinates2 = Arrays.copyOf(coordinates,
+            coordinates.length);
+        int[] indexes = new int[coordinates.length];
+        for (int i = 0; i < coordinates.length; ++i) {
+            indexes[i] = i;
+        }
+        QuickSort.sortByDecrYThenIncrX(coordinates, indexes);
+        
+        int[] revIndexes = new int[indexes.length];
+        for (int i = 0; i < indexes.length; ++i) {
+            int oIdx = indexes[i];
+            revIndexes[oIdx] = i;
+        }
+        
+        TIntObjectMap<TIntIntMap> adjCostMap2 = 
+            new TIntObjectHashMap<TIntIntMap>();
+        TIntObjectIterator<TIntIntMap> iter = adjCostMap.iterator();
+        for (int i = 0; i < adjCostMap.size(); ++i) {
+            iter.advance();
+            int idx1 = iter.key();
+            TIntIntMap map1 = iter.value();
+            TIntIntIterator iter2 = map1.iterator();
+            
+            int idx2 = revIndexes[idx1];
+            TIntIntMap map2 = new TIntIntHashMap();
+            adjCostMap2.put(idx2, map2);
+            for (int j = 0; j < map1.size(); ++j) {
+                iter2.advance();
+                int oIdx2 = iter2.key();
+                int cost = iter2.value();
+                map2.put(revIndexes[oIdx2], cost);
+            }
+        }
+        
+        /*
+        sort by x w/ int[] indexes
+        make a reverse map array
+        new adjCostMap2 from adjCostMap and revIndexes
+        */
+        
+        int[] tour = approxTSPTour(coordinates2, 
+            adjCostMap2);
+        
+        // transform the indexes back to original reference frame
+        for (int i = 0; i < tour.length; ++i) {
+            int vIdx = tour[i];
+            tour[i] = indexes[vIdx];
+        }
+        
+        // rotate 0 back to position 0
+        int zIdx = -1;
+        for (int i = 0; i < tour.length; ++i) {
+            if (tour[i] == 0) {
+                zIdx = i;
+                break;
+            }
+        }
+        assert(zIdx > -1);
+        
+        Rotate r = new Rotate();
+        r.rotate(tour, zIdx);
+        
+        int lastVOffset = tour.length - 1 - zIdx;
+        // shift items below vOffset up by one
+        for (int i = (lastVOffset + 1); i < tour.length; ++i) {
+            tour[i - 1] = tour[i];
+        }
+        tour[tour.length - 1] = tour[0];
+        
+        return tour;
+    }
+    
+    /**
+     * 
+     * @param nVertexes
+     * @param coordinates
+     * @param adjCostMap
+     * @param doSort
+     * @return 
+     */
+    private int[] approxTSPTour(
+        PairInt[] coordinates,
         final TIntObjectMap<TIntIntMap> adjCostMap) {
+        
+        final int nVertexes = coordinates.length;
         
         int[] tour = approxTSPTour(nVertexes, adjCostMap);
      

@@ -3,6 +3,7 @@ package algorithms.compGeometry.convexHull;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.PairInt;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * adapted from 
@@ -45,6 +46,44 @@ public class PolarAngleQuickSort {
         int nUsable = reduceToUniquePolarAngles(p0, points, polarAngle);
         
         return nUsable;
+    }
+   
+    /**
+     * sort list points by polar angle w.r.t. point p0.
+     * Note that this sort does not remove any points
+     * for having same angle.
+     * @param <T>
+     * @param p0
+     * @param points
+     * @return 
+     */
+    public static <T extends PairInt> int sort2(T p0, List<T> points) {
+
+        if (p0 == null) {
+        	throw new IllegalArgumentException("p0 cannot be null");
+        }
+        if (points == null) {
+        	throw new IllegalArgumentException("points cannot be null");
+        }
+        
+        if (points.size() == 1) {
+            return 1;
+        }
+
+        // for angles which are same, a delete operation is needed after all processing
+        //    and ability to ignore the point to be deleted.
+        double[] polarAngle = new double[points.size()];
+        
+        for (int i = 1; i < points.size(); i++) {
+            
+            polarAngle[i] = AngleUtil.polarAngleCCW(
+                (double)(points.get(i).getX() - p0.getX()), 
+                (double)(points.get(i).getY() - p0.getY()));
+        }
+        
+        sortByPolarAngle(points, 1, points.size() - 1, polarAngle);
+                
+        return points.size();
     }
     
     static int reduceToUniquePolarAngles(float xP0, float yP0, float[] x, 
@@ -125,6 +164,46 @@ public class PolarAngleQuickSort {
         return lastKeptIndex + 1;
     }
 
+    static <T extends PairInt> int reduceToUniquePolarAngles(
+        T p0, List<T> points, double[] polarAngle) {
+
+        int lastKeptIndex = 0;
+        
+        double eps = 0;
+
+        for (int i = 1; i < points.size(); i++) {
+
+            // store
+            points.set(lastKeptIndex + 1, points.get(i));
+
+            // look ahead
+            int nSkip = 0;
+            int nextI = i + 1;
+            double maxDistance = relativeLengthOfLine(p0, points.get(i));
+            int indexMaxDistance = i;
+
+            while ( (nextI < points.size()) 
+                && (Math.abs( polarAngle[i] - polarAngle[nextI] ) <= eps) ) {
+                double dist = relativeLengthOfLine(p0, points.get(nextI));
+                if (maxDistance < dist) {
+                    maxDistance = dist;
+                    indexMaxDistance = nextI;
+                }
+                nSkip++;
+                nextI++;
+            }
+            
+            if (nSkip > 0) {
+                points.set(lastKeptIndex + 1, points.get(indexMaxDistance));
+                i = nextI - 1;
+            }
+
+            lastKeptIndex++;
+        }
+        
+        return lastKeptIndex + 1;
+    }
+
     static <T extends PairInt> void sortByPolarAngle(T[] a, int idxLo, 
         int idxHi, double[] polarAngle) {
         
@@ -132,6 +211,23 @@ public class PolarAngleQuickSort {
             throw new IllegalArgumentException("a cannot be null");
         }
         if (a.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+            int idxMid = partitionByPolarAngle(a, idxLo, idxHi, polarAngle);
+            sortByPolarAngle(a, idxLo, idxMid - 1, polarAngle);
+            sortByPolarAngle(a, idxMid + 1, idxHi, polarAngle);
+        }
+    }
+    
+    static <T extends PairInt> void sortByPolarAngle(List<T> a, int idxLo, 
+        int idxHi, double[] polarAngle) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.size() < 2) {
             return;
         }
         
@@ -167,6 +263,38 @@ public class PolarAngleQuickSort {
         T swap = a[store];
         a[store] = a[idxHi];
         a[idxHi] = swap;
+        double swap2 = polarAngle[store];
+        polarAngle[store] = polarAngle[idxHi];
+        polarAngle[idxHi] = swap2;
+        
+        return store;
+    }
+    
+    private static <T extends PairInt> int partitionByPolarAngle(List<T> a, int idxLo, 
+        int idxHi, double[] polarAngle) {
+     
+        double x = polarAngle[idxHi];
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (polarAngle[i] < x) {
+                doSwap = true;
+            }
+            if (doSwap) {
+                store++;
+                T swap = a.get(store);
+                a.set(store, a.get(i));
+                a.set(i, swap);
+                double swap2 = polarAngle[store];
+                polarAngle[store] = polarAngle[i];
+                polarAngle[i] = swap2;
+            }
+        }
+        store++;
+        T swap = a.get(store);
+        a.set(store, a.get(idxHi));
+        a.set(idxHi, swap);
         double swap2 = polarAngle[store];
         polarAngle[store] = polarAngle[idxHi];
         polarAngle[idxHi] = swap2;
