@@ -184,6 +184,9 @@ public class PrimsMST {
 
     /**
      * NOT READY FOR USE - not tested yet
+       NOTE: consider sorting by decreasing y
+       then increasing x before Prim's for
+       best results.
      * @return 
      */
     public int[] getPreOrderPostOrderWalk() {
