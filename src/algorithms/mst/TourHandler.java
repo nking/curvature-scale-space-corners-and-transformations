@@ -4,6 +4,8 @@ import algorithms.SubsetChooser;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
@@ -134,28 +136,29 @@ public class TourHandler {
     /**
      * given first index n the reference frame of 
      * vertex indexes,
-     * find the edges in thr tour that it intersects
-     * with and return the be improvement if any.
-     * The result will be a -1 if the edge did not 
-     * intersect.
+     * find the edges in the tour that it intersects
+     * with and return the list of indexes in format
+     * edge A vertex 1 index, edge A vertex 2 index,
+     * edge B vertex 1 index, edge B vertex 2 index,
+     * edge C vertex 1 index, edge C vertex 2 index,
+     * etc
+     * where edge A is idxEdgeAVertex1 and the 
+     * item that follows it in the tour.
      * 
      * @param idxEdgeAVertex1 edge A vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
-     * @param outputVertexIdxs array of size 4
-     * holding the combination of vertexes that result
-     * in best path sum.
-     * @param outputIdxEdgeBVertex1 an array of size 1
-     * to hold the vertex b of best edge to swap to
-     * uncross intersecting edges.
-     * @return best path sum for a combination of swapping
-     * edge vertexes between the 2 edges given else Integer.MAX_VALUE;
-     * if a better combination than current was not found.
+     
+     * @return the list of indexes in format
+     * edge A vertex 1 index, edge A vertex 2 index,
+     * edge B vertex 1 index, edge B vertex 2 index,
+     * edge C vertex 1 index, edge C vertex 2 index,
+     * etc
+     * where edge A is idxEdgeAVertex1 and the 
+     * item that follows it in the tour.
      */
-    public int findNonIntersectingBestSwap(
-        final int idxEdgeAVertex1, 
-        int[] outputIdxEdgeBVertex1, 
-        int[] outputVertexIdxs) {
+    public TIntList findIntersectingEdges(
+        final int idxEdgeAVertex1) {
         
         int tIdxA1 = getTourIndex(idxEdgeAVertex1);
         int tIdxA2 = getNextTourIndex(tIdxA1);
@@ -172,12 +175,8 @@ public class TourHandler {
         List<Interval2D<Integer>> list = qt.query2D(box12);
 
         if (list.size() < 2) {
-            return Integer.MAX_VALUE;
+            return null;
         }
-        
-        //vertex indexes returned for min path sum
-        int[] tmp = new int[4];
-        int minSum = pathSum;
         
         int x1 = coordinates[idxEdgeAVertex1].getX();
         int y1 = coordinates[idxEdgeAVertex1].getY();
@@ -185,6 +184,8 @@ public class TourHandler {
         int x2 = coordinates[idxEdgeAVertex2].getX();
         int y2 = coordinates[idxEdgeAVertex2].getY();
 
+        TIntList output = new TIntArrayList();
+        
         for (int listIdx = 0; listIdx < list.size();
             ++listIdx) {
 
@@ -221,61 +222,150 @@ public class TourHandler {
                 x1, y1, x2, y2, x3, y3, x4, y4)) {
                 continue;
             }
-
-            int sum = findMinValidBestSwap(
-                idxEdgeAVertex1, idxEdgeAVertex2,
-                idxEdgeBVertex1, idxEdgeBVertex2, tmp);
-         
-            if (sum < minSum) {
-                
-                minSum = sum;
-                
-                // tmp are graph vertex indexes
-                
-                System.arraycopy(tmp, 0, outputVertexIdxs, 
-                    0, tmp.length);
- 
-                outputIdxEdgeBVertex1[0] = idxEdgeBVertex1;
-                
- assert(assertSameSets(
- getVertexIndex(tIdxA1), 
- getVertexIndex(tIdxA2), 
- getVertexIndex(tIdxB1), 
- getVertexIndex(tIdxB2),
- outputVertexIdxs[0], 
- outputVertexIdxs[1], 
- outputVertexIdxs[2],
- outputVertexIdxs[3]));
- assert(assertSameSets(
- tIdxA1, tIdxA2, tIdxB1, tIdxB2,
- getTourIndex(outputVertexIdxs[0]), 
- getTourIndex(outputVertexIdxs[1]), 
- getTourIndex(outputVertexIdxs[2]),
- getTourIndex(outputVertexIdxs[3])));
- 
+            
+            if (output.size() == 0) {
+                output.add(idxEdgeAVertex1);
+                output.add(idxEdgeAVertex2);
             }
-        }
-        
-        if (minSum < pathSum) {
-            return minSum;
-        }
-        
-        // ---- adding logic to handle swapping edge test while
-        //      still have information that edge intersects others
-        
-        int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
-        int tIdxNextA2 = getNextTourIndex(tIdxA2);
+            output.add(idxEdgeBVertex1);
+            output.add(idxEdgeBVertex2);
 
-        // else, try to swap leading edge alone
-        int sum = peekSumPathChangesReverseEdge(tIdxPrevA1,
-            tIdxA1, tIdxA2, tIdxNextA2);
-        if (sum < minSum) {
-            // not returning sum to allow existing logic to 
-            // remain, it acts upon data from 2 edges
-            sum = changePathsToReverseEdge(tIdxA1);
         }
         
-        return (minSum == pathSum) ? Integer.MAX_VALUE : minSum;
+        return output;
+    }
+    
+    public void modifyTourIntersectingEdges() {
+        
+        int nIter = 0;
+        int nMaxIter = 10;
+        int nChanged = 0;
+        
+        do {
+            
+            nChanged = 0;
+         
+            /*
+            storing best params for two different types of changes:
+            - swapping 2 edges between 4 vertexes
+            - reversing a single edge
+            
+            Only if no best among swapping 2 edge is found is
+            the reversal of the single edge applied.
+            (NOTE: may change that when testing begins to apply
+            the best of both.)
+            */
+            // 2 edge swap:
+            int bestVertexIdxA_1 = -1;
+            int bestVertexIdxB_1 = -1;
+            int[] bestVertexIdxs1_1 = new int[4];
+            int minPathSum_1 = pathSum;
+
+            // single edge reversal:
+            int bestVertexIdxA1_2 = -1;
+            int minPathSum_2 = pathSum;
+            
+            //vertex indexes returned for min path sum
+            int[] tmp = new int[4]; 
+            int[] tmpMin2 = new int[4];
+                
+            for (int cIdx1 = 0; cIdx1 < coordinates.length;
+                ++cIdx1) {
+            
+                TIntList interIndexes
+                    = findIntersectingEdges(cIdx1);
+
+                if (interIndexes == null || interIndexes.isEmpty()) {
+                    continue;
+                }
+        
+                final int idxEdgeAVertex1 = interIndexes.get(0);
+                final int idxEdgeAVertex2 = interIndexes.get(1);
+                
+                final int tIdxA1 = getTourIndex(idxEdgeAVertex1);
+                final int tIdxA2 = getTourIndex(idxEdgeAVertex2);
+ 
+                //vertex indexes returned for min path sum
+                int minSum = minPathSum_1;
+                int minSumEdgeBVertex1 = -1;
+                
+                for (int listIdx = 2; listIdx < interIndexes.size();
+                    listIdx+=2) {
+
+                    final int idxEdgeBVertex1 = interIndexes.get(listIdx);
+                    final int idxEdgeBVertex2 = interIndexes.get(listIdx + 1);
+                    int tIdxB1 = getTourIndex(idxEdgeBVertex1);
+                    int tIdxB2 = getTourIndex(idxEdgeBVertex2);
+
+                    assert (tour[tIdxB1] == idxEdgeBVertex1);
+                    assert (tour[tIdxB2] 
+                        == getNextVertexIndex(idxEdgeBVertex1));
+                    assert (tour[tIdxB2] == idxEdgeBVertex2);
+                    assert (tIdxB1 == getTourIndex(idxEdgeBVertex1));
+                    
+                    int sum = findMinValidBestSwap(
+                        idxEdgeAVertex1, idxEdgeAVertex2,
+                        idxEdgeBVertex1, idxEdgeBVertex2, tmp);
+
+                    if (sum < minSum) {
+                        minSum = sum;
+                        // tmp are graph vertex indexes
+                        System.arraycopy(tmp, 0, tmpMin2, 
+                            0, tmp.length);
+                        minSumEdgeBVertex1 = idxEdgeBVertex1;
+                    }
+                }
+                if (minSum < minPathSum_1) {
+                    // update best params for 2 edge swap
+                    
+                    minPathSum_1 = minSum;
+                    bestVertexIdxA_1 = cIdx1;
+                    bestVertexIdxB_1 = minSumEdgeBVertex1;
+                    System.arraycopy(tmpMin2, 
+                        0, bestVertexIdxs1_1, 0, tmpMin2.length);
+                
+                    continue;
+                }
+                
+                // else, there were intersecting edges, but no 
+                // combination of uncrossing for this edge 
+                // improved the path,
+                // so test whether reversing the edge does
+                
+                int tIdxPrevA1 = getPrevTourIndex(tIdxA1);
+                int tIdxNextA2 = getNextTourIndex(tIdxA2);
+
+                int sum = peekSumPathChangesReverseEdge(tIdxPrevA1,
+                    tIdxA1, tIdxA2, tIdxNextA2);
+                if (sum < minPathSum_2) {
+                    minPathSum_2 = sum;
+                    bestVertexIdxA1_2 = idxEdgeAVertex1;
+                }
+            }// end cIdx1 loop which is over graph vertex indexes
+            
+            if (minPathSum_1 < pathSum) {
+                // apply the 2 edge swap
+                int sum = changePaths(
+                    bestVertexIdxA_1, bestVertexIdxB_1, 
+                    bestVertexIdxs1_1);
+                System.out.println("nIter=" + nIter 
+                    + " sum=" + sum + " min=" + minPathSum_1);
+                assert(sum == minPathSum_1);
+                nChanged++;
+            } else if (minPathSum_2 < pathSum) {
+                // apply reversal of edge 1
+                int sum = changePathsToReverseEdge(
+                    getVertexIndex(bestVertexIdxA1_2));
+                System.out.println("nIter=" + nIter 
+                    + " sum=" + sum + " min=" + minPathSum_2);
+                assert(sum == minPathSum_1);
+                nChanged++;
+            }
+            
+            nIter++;
+            
+        } while ((nChanged != 0) && (nIter < nMaxIter));
+        
     }
     
     /**

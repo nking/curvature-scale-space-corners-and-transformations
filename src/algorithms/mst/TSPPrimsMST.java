@@ -42,6 +42,8 @@ import thirdparty.edu.princeton.cs.algs4.QuadTreeInterval2D;
 public class TSPPrimsMST {
        
     /**
+     * NOT READY FOR USe YET
+     * 
      * The approximate TSP tour calculated from given vertexes
      * and adjacency map is refined to remove crossing 
      * edges.  
@@ -61,74 +63,21 @@ public class TSPPrimsMST {
         
         int[] tour = approxTSPTour(nVertexes, adjCostMap);
      
+        System.out.println("approx tour=" + Arrays.toString(tour));
+        
         // uncross edges where feasible
         
         TourHandler tourHandler = new TourHandler(
             tour, adjCostMap, coordinates);
                 
-        int nIter = 0;
-        int nMaxIter = 10;
-        int nChanged = 0;
-        
-        do {
-            
-            nChanged = 0;
-            
-            int bestVertexIdxA = -1;
-            int bestVertexIdxB = -1;
-            int[] bestVertexIdxs1 = new int[4];
-            int minPathSum = tourHandler.getPathSum();
-            int[] outputVertexIdxs = new int[4];
-            
-            int[] outputVertexB = new int[1];
-            
-            //TODO: consider on nIter=0, making a list
-            // of vertex indexes which have intersecting
-            // lines, and then after first iteration,
-            // only iterate over those as cIdx1.
-            
-            for (int cIdx1 = 0; cIdx1 < coordinates.length;
-                ++cIdx1) {
-                
-                int sum = 
-                    tourHandler.findNonIntersectingBestSwap(
-                    cIdx1, outputVertexB, 
-                    outputVertexIdxs);
-
-                if (sum < tourHandler.getPathSum()) {
-                    minPathSum = sum;
-                    bestVertexIdxA = cIdx1;
-                    bestVertexIdxB = outputVertexB[0];
-                    System.arraycopy(outputVertexIdxs, 
-                        0, bestVertexIdxs1, 0, 
-                        outputVertexIdxs.length);
-                }
-            }
-            
-            if (minPathSum < tourHandler.getPathSum()) {
-                
-                int sum = tourHandler.changePaths(
-                    bestVertexIdxA, bestVertexIdxB, 
-                    bestVertexIdxs1);
-                System.out.println("nIter=" + nIter 
-                    + " sum=" + sum + " min=" + minPathSum);
-                assert(sum == minPathSum);
-            
-                //TODO: 
-                // - handle changes to quadtree
-                // - handle changes to edge maps
-                
-                nChanged++;
-            }
-        
-            nIter++;
-            
-        } while ((nChanged != 0) && (nIter < nMaxIter));
+        tourHandler.modifyTourIntersectingEdges();
         
         return tour;
     }
 
     /**
+     * 
+     * NOT READY FOr USe YET
      * The approximate TSP tour created from Prim's Minimum Spanning Tree is
      * returned. Note that the result may contain crossing edges, hence not
      * optimal.
@@ -156,11 +105,10 @@ public class TSPPrimsMST {
         
         prims.calculateMinimumSpanningTree(nVertexes, 
             adjCostMap);
-                
-        int[] preorderWalk = prims.getPreOrderWalkOfTree();
+
+        int[] walk = prims.getPreOrderPostOrderWalk();
         
-        int[] tour = Arrays.copyOf(preorderWalk,
-            preorderWalk.length + 1);
+        int[] tour = Arrays.copyOf(walk, walk.length + 1);
         
         tour[tour.length - 1] = tour[0];
     

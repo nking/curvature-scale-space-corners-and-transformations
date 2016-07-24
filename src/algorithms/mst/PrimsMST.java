@@ -3,6 +3,7 @@ package algorithms.mst;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import gnu.trove.iterator.TIntIntIterator;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
@@ -10,8 +11,10 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
@@ -121,10 +124,11 @@ public class PrimsMST {
         //root, left subtree, right subtree
         //given the top node as the starter
         //level 0            [0]
-        //level 1     [1]           [4]
-        //level 2   [2] [3]       [5] [6]
-        // process node sees 0,1,2,3,4,5,6
-        
+        //level 1      [1]            [6]
+        //level 2   [2]   [3]       [7] [8]
+        //level 3       [4][5]
+        // process node sees 0,1,2,3,4,5,6,7,8 
+
         TIntObjectMap<TIntList> nodeMap = 
             createReverseMap();
                 
@@ -173,6 +177,192 @@ public class PrimsMST {
                     nodeMap.remove(origIdx);
                 }
             }
+        }
+        
+        return walk;
+    }
+
+    /**
+     * NOT READY FOR USE - not tested yet
+     * @return 
+     */
+    public int[] getPreOrderPostOrderWalk() {
+
+        TIntObjectMap<TIntList> nodeMap = 
+            createReverseMap();
+
+        //level 0            [0]
+        //level 1      [1]            [6]
+        //level 2   [2]   [3]       [7] [8]
+        //level 3       [4][5]
+        // PRE  0, 1, 2,-1, 3, 4,-1, 5, -1, 6, 7,-1, 8, -1
+        // POST 2,-1, 4,-1, 5, 3, 1,-1,  7,-1, 8, 6, 0
+        
+        LinkedList<Integer> pre = getPreOrderWalkOfTreeWithMarkers(nodeMap);
+        
+        LinkedList<Integer> post = getPostOrderWalkOfTreeWithMarkers(nodeMap);
+        
+        TIntSet added = new TIntHashSet();
+        TIntList output = new TIntArrayList();
+        
+        while (!pre.isEmpty() && !post.isEmpty()) {
+            while (!pre.isEmpty()) {
+                Integer node = pre.pollFirst();
+                int idx = node.intValue();
+                if (idx == -1) {
+                    break;
+                }
+                if (!added.contains(idx)) {
+                    output.add(idx);
+                    added.add(idx);
+                }
+            }
+            
+            // read forward until a -1 after an "add"
+            boolean foundMarker = false;
+            boolean foundAdd = false;
+            while (!foundMarker && !post.isEmpty()) {
+                Integer node = post.pollFirst();
+                int idx = node.intValue();
+                if (idx == -1) {
+                    if (foundAdd) {
+                        foundMarker = true;
+                    }
+                } else if (!added.contains(idx)) {
+                    output.add(idx);
+                    added.add(idx);
+                    foundAdd = true;
+                }
+            }
+        }
+        
+        int[] walk = new int[output.size()];
+        for (int i = 0; i < output.size(); ++i) {
+            walk[i] = output.get(i);
+        }
+        
+        return walk;
+    }   
+    
+    protected LinkedList<Integer> getPreOrderWalkOfTreeWithMarkers(
+        TIntObjectMap<TIntList> nodeMap) {
+        
+        //pre-order is
+        //root, left subtree, right subtree
+        //given the top node as the starter
+        //level 0            [0]
+        //level 1      [1]            [6]
+        //level 2   [2]   [3]       [7] [8]
+        //level 3       [4][5]
+        // process node sees 0,1,2,-1, 3,4,-1, 5, -1, 6,7,-1, 8, -1 
+        // (-1's added where no childre)
+      
+        TIntSet added = new TIntHashSet();
+        
+        // key = node, map = children
+        TIntObjectMap<LinkedList<Integer>> cMap 
+            = new TIntObjectHashMap<LinkedList<Integer>>();
+        
+        LinkedList<Integer> walk = new LinkedList<Integer>();
+                
+        Integer node = Integer.valueOf(0);
+                
+        Stack<Integer> stack = new Stack<Integer>();
+        while (!stack.isEmpty() || (node != null)) {
+            if (node != null) {
+                int idx = node.intValue();
+                if (!added.contains(idx)) {
+                    walk.add(idx);
+                    added.add(idx);
+                    
+                    TIntList c = nodeMap.get(idx);
+                    if (c != null) {
+                        LinkedList<Integer> cL = new LinkedList<Integer>();
+                        cMap.put(idx, cL);
+                        TIntIterator iter = c.iterator();
+                        while (iter.hasNext()) {
+                            cL.add(Integer.valueOf(iter.next()));
+                        }
+                    } else {
+                        walk.add(-1);
+                    }
+                }
+                stack.push(node);
+                if (!cMap.containsKey(idx)) {
+                    node = null;
+                } else {
+                    LinkedList<Integer> cL = cMap.get(idx);
+                    node = cL.removeFirst();
+                    if (cL.isEmpty()) {
+                        cMap.remove(idx);
+                    }
+                }
+            } else {
+                // add a marker
+                walk.add(-1);
+                node = stack.pop();
+                int idx = node.intValue();
+                if (!cMap.containsKey(idx)) {
+                    node = null;
+                } else {
+                    LinkedList<Integer> cL = cMap.get(idx);
+                    node = cL.removeFirst();
+                    if (cL.isEmpty()) {
+                        cMap.remove(idx);
+                    }
+                }
+            }
+        }
+        
+        return walk;
+    }
+    
+    protected LinkedList<Integer> getPostOrderWalkOfTreeWithMarkers(
+        TIntObjectMap<TIntList> nodeMap) {
+        
+        //post-order traversal:  left subtree, right subtree, root
+        // given the top node as the starter
+        //level 0            [0]
+        //level 1      [1]            [6]
+        //level 2   [2]   [3]       [7] [8]
+        //level 3       [4][5]
+        // process node sees  -1, 2,-1,4,-1,5,3,1,-1,7,-1,8,6,0
+        //  (-1's added where there were no children)
+                
+        ArrayDeque<Integer> children = new ArrayDeque<Integer>();
+        
+        LinkedList<Integer> walk = new LinkedList<Integer>();
+               
+        Stack<Integer> stack = new Stack<Integer>();
+        Stack<Integer> stack2 = new Stack<Integer>();
+        
+        Integer node = Integer.valueOf(0);
+        
+        stack.push(node);
+            
+        while (!stack.isEmpty()) {
+            node = stack.pop();
+            stack2.push(node);
+            int idx = node.intValue();
+            TIntList c = nodeMap.get(idx);
+            if (c != null) {
+                TIntIterator iter = c.iterator();
+                while (iter.hasNext()) {
+                    stack.push(iter.next());
+                }
+            } else {
+                stack2.push(Integer.valueOf(-1));
+            }
+        }
+        
+        // remove first -1
+        if (!stack2.isEmpty()) {
+            stack2.pop();
+        }
+
+        while (!stack2.isEmpty()) {
+            node = stack2.pop();
+            walk.add(node.intValue());
         }
         
         return walk;
