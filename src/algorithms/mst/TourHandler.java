@@ -251,10 +251,10 @@ public class TourHandler {
             - swapping 2 edges between 4 vertexes
             - reversing a single edge
             
-            Only if no best among swapping 2 edge is found is
+            Only if no best among swapping 2 edges is found is
             the reversal of the single edge applied.
             (NOTE: may change that when testing begins to apply
-            the best of both.)
+            the best of either.)
             */
             // 2 edge swap:
             int bestVertexIdxA_1 = -1;
@@ -373,11 +373,12 @@ public class TourHandler {
      * given first indexes of edge1 and edge2 in tour but
      * in the reference frame of vertex indexes, 
      * find which swap among the 2 pairs
-     * produces the longest path and return the pathSum
+     * produces the shortest path and return the pathSum
      * and populate outputIndexes with the suggested 
      * swap indexes.  NOTE, the method and class
-     * are meant for single threaded use only due to
-     * time and memory savings internal variable use.
+     * are meant for single threaded use only - there
+     * are reserved cache variables used without 
+     * synchronization or mutexes.
      * @param idxEdgeAVertex1 edge A vertex 1 index,
      * the second edge index is implicitly the one
      * that follows this in the tour array.
@@ -487,7 +488,7 @@ assert(assertSameSets(
         for (int i = 0; i < size; i++) {
             permutation(a, out, size - 1, count);
             int swap = a[size - 1];
-            if (size % 2 == 1) {
+            if ((size & 1) == 1) {
                 a[size - 1] = a[0];
                 a[0] = swap;
             } else {
