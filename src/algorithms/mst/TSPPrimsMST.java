@@ -80,7 +80,7 @@ public class TSPPrimsMST {
             indexes[i] = i;
         }
         QuickSort.sortByDecrYThenIncrX(coordinates2, indexes);
-        
+      
         int[] revIndexes = new int[indexes.length];
         for (int i = 0; i < indexes.length; ++i) {
             int oIdx = indexes[i];

@@ -373,30 +373,22 @@ if (idxEdgeAVertex2 == 38) {
         } while ((nChanged != 0) && (nIter < nMaxIter));
         
         /*
-        TODO: there may be bugs in intersection finding.
+        NOTE: still needs changes
         
-        looking for them here in the many crossed edges
-        remaining in one test.
+        might try:
+           for the longest edges that are still intersecting
+        other lines,
+        find 2 nearest points 
+        and for the one which it is not connected to,
+        connect to it.  that point then needs to 
+        lose one of edge connections and reattach that
+        where the longest edge just broke off of,
+        deciding by shortest result and only applying
+        changes that shorten current pathSum.
+        
+        
+        
         */
-        {
-            /*
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < tour.length; ++i) {
-                int vIdx = tour[i];
-                sb.append(String.format(" [%d, %d] %s", 
-                    i, vIdx, coordinates[vIdx].toString()))
-                    .append("\n");
-            }
-            System.out.println(sb.toString());
-            */
-            
-            Interval2D<Integer> box12 =
-                indexEdgeBounds.get(28);
-            List<Interval2D<Integer>> list = qt.query2D(box12);
-           
-            System.out.println("28 has " + list.size() +
-                " intersecting boxes");
-        }
     }
     
     /**

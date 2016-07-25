@@ -207,7 +207,7 @@ public class PrimsMST {
         //level 3       [4][5]
         // PRE  0, 1, 2,-1, 3, 4,-1, 5, -1, 6, 7,-1, 8, -1
         // POST 2,-1, 4,-1, 5, 3, 1,-1,  7,-1, 8, 6, 0
-        
+                        
         LinkedList<Integer> pre = getPreOrderWalkOfTreeWithMarkers(nodeMap);
         
         LinkedList<Integer> post = getPostOrderWalkOfTreeWithMarkers(nodeMap);

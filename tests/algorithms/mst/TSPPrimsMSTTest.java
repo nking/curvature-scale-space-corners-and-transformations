@@ -338,7 +338,7 @@ public class TSPPrimsMSTTest extends TestCase {
         
         TSPPrimsMST tsp = new TSPPrimsMST();
         int[] tour = tsp.approxTSPTour(
-            points, adjCostMap, true);
+            points, adjCostMap, false);
         System.out.println("tsp tour=" +
             Arrays.toString(tour));
                 
@@ -363,7 +363,7 @@ public class TSPPrimsMSTTest extends TestCase {
         
         TSPPrimsMST tsp = new TSPPrimsMST();
         int[] tour = tsp.approxTSPTour(
-            points, adjCostMap, false);
+            points, adjCostMap, true);
         System.out.println("tsp tour=" +
             Arrays.toString(tour));
         
