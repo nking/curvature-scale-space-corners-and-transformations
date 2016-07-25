@@ -172,12 +172,16 @@ public class TourHandler {
         // find intersection boxes and look for 
         // edges that intersect with these
 
+if (idxEdgeAVertex2 == 38) {
+    int z = 1;
+ // missing edge=28:47
+}        
         List<Interval2D<Integer>> list = qt.query2D(box12);
 
         if (list.size() < 2) {
             return null;
         }
-        
+
         int x1 = coordinates[idxEdgeAVertex1].getX();
         int y1 = coordinates[idxEdgeAVertex1].getY();
 
@@ -272,14 +276,14 @@ public class TourHandler {
             
             for (int cIdx1 = 0; cIdx1 < coordinates.length;
                 ++cIdx1) {
-            
+                 
                 TIntList interIndexes
                     = findIntersectingEdges(cIdx1);
-
+                
                 if (interIndexes == null || interIndexes.isEmpty()) {
                     continue;
                 }
-        
+                        
                 final int idxEdgeAVertex1 = interIndexes.get(0);
                 final int idxEdgeAVertex2 = interIndexes.get(1);
                 
@@ -289,6 +293,7 @@ public class TourHandler {
                 //vertex indexes returned for min path sum
                 int minSum = minPathSum_1;
                 int minSumEdgeBVertex1 = -1;
+          
                 
                 for (int listIdx = 2; listIdx < interIndexes.size();
                     listIdx+=2) {
@@ -367,6 +372,31 @@ public class TourHandler {
             
         } while ((nChanged != 0) && (nIter < nMaxIter));
         
+        /*
+        TODO: there may be bugs in intersection finding.
+        
+        looking for them here in the many crossed edges
+        remaining in one test.
+        */
+        {
+            /*
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < tour.length; ++i) {
+                int vIdx = tour[i];
+                sb.append(String.format(" [%d, %d] %s", 
+                    i, vIdx, coordinates[vIdx].toString()))
+                    .append("\n");
+            }
+            System.out.println(sb.toString());
+            */
+            
+            Interval2D<Integer> box12 =
+                indexEdgeBounds.get(28);
+            List<Interval2D<Integer>> list = qt.query2D(box12);
+           
+            System.out.println("28 has " + list.size() +
+                " intersecting boxes");
+        }
     }
     
     /**
@@ -430,6 +460,12 @@ public class TourHandler {
         
         for (int i = 0; i < 6; ++i) {
 
+            if ((tIdxA2 == cache1[i][0]) &&
+            (tIdxB1 == cache1[i][1]) &&
+            (tIdxB2 == cache1[i][2])) {
+                continue;
+            }
+            
             boolean isValid = validateEdges(tIdxPrevA1,
                 tIdxNextA2, tIdxPrevB1, tIdxNextB2,
                 tIdxA1, cache1[i][0], cache1[i][1], cache1[i][2]);
@@ -441,8 +477,8 @@ public class TourHandler {
             int sum = peekSumPathChanges(tIdxPrevA1,
                 tIdxA1, tIdxA2, tIdxNextA2,
                 tIdxPrevB1, tIdxB1, tIdxB2, tIdxNextB2,
-                tIdxA1, cache1[i][0], cache1[i][1], cache1[i][2]);
-
+                tIdxA1, cache1[i][0], cache1[i][1], cache1[i][2]);          
+            
             if (sum < minSum) {
                 
                 minSum = sum;
@@ -840,8 +876,7 @@ assert(assertSameSets(
         assert(assertTourData());
 
 System.out.println("new pathSum =" + pathSum + 
-" tour=" + Arrays.toString(tour)
-+ printTourCoords());
+" tour=" + Arrays.toString(tour));
 
         return pathSum;
     }
@@ -1042,13 +1077,11 @@ System.out.println("new pathSum==" + pathSum +
 
         StringBuilder sb = new StringBuilder("[");
         
-        for (int i = 0; i < tour.length; ++i) {
-            
-            if ((i % 10) == 0) {
-                sb.append("\n");
-            }
+        for (int i = 0; i < tour.length; ++i) {            
             int idx = tour[i];
-            sb.append(coordinates[idx].toString()).append(",");
+            sb.append(String.format(
+            "[%d %d] ", i, idx));
+            sb.append(coordinates[idx].toString()).append("\n");
         }
         
         sb.append("]");

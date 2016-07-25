@@ -211,19 +211,33 @@ public class QuadTreeInterval2D<T extends Comparable<T>, Value>  {
         
         //System.out.println("qry cX=" + cX + " cY=" + cY
         //+ " for (" + srch.toString() + ")");
-        
+    
         if ((cX == 0) && (cY == 0)) {
             output.add(h.xy);
         }
         
-        if (h.SW != null && (cX < 0) && (cY < 0)) 
+        /*
+        unlike inserts, for queries, need to search 0's
+        for all directions due to overlap,
+        which unfortunately increases the recursion
+        */
+        
+        if (h.SW != null && (cX <= 0) && (cY <= 0)) {
+            //System.out.println("->SW parent=" + h.toString());
             query2D(h.SW, srch, output);
-        if (h.NW != null && (cX < 0) && (cY >= 0)) 
+        }
+        if (h.NW != null && (cX <= 0) && (cY >= 0)) { 
+            //System.out.println("->NW parent=" + h.toString());
             query2D(h.NW, srch, output);
-        if (h.SE != null && (cX >= 0) && (cY <= 0)) 
+        }
+        if (h.SE != null && (cX >= 0) && (cY <= 0)) { 
+            //System.out.println("->SE parent=" + h.toString());
             query2D(h.SE, srch, output);
-        if (h.NE != null && (cX >= 0) && (cY >= 0)) 
-            query2D(h.NE, srch, output);    
+        }
+        if (h.NE != null && (cX >= 0) && (cY >= 0)) { 
+            //System.out.println("->NE parent=" + h.toString());
+            query2D(h.NE, srch, output);
+        }
     }
 
     /**
