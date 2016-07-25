@@ -363,20 +363,27 @@ public class TSPPrimsMSTTest extends TestCase {
         
         TSPPrimsMST tsp = new TSPPrimsMST();
         int[] tour = tsp.approxTSPTour(
-            points, adjCostMap, true);
+            points, adjCostMap, false);
         System.out.println("tsp tour=" +
             Arrays.toString(tour));
         
         ScatterPointPlotterPNG plotter = new
             ScatterPointPlotterPNG();
         
-        float[] xPoints = new float[pointList.size()];
-        float[] yPoints = new float[pointList.size()];
-        for (int i = 0; i < tour.length - 1; ++i) {
+        float[] xPoints = new float[pointList.size() + 1];
+        float[] yPoints = new float[pointList.size() + 1];
+        float[] xPointsE = new float[pointList.size() + 1];
+        float[] yPointsE = new float[pointList.size() + 1];
+        for (int i = 0; i < tour.length; ++i) {
             int vIdx = tour[i];
             PairInt p = pointList.get(vIdx);
             xPoints[i] = p.getX();
             yPoints[i] = p.getY();
+            
+            vIdx = expectedBestTour.get(i);
+            p = pointList.get(vIdx);
+            xPointsE[i] = p.getX();
+            yPointsE[i] = p.getY();
         }
         
         plotter.plotLabeledPoints(0, 8000, 0, 5500, 
@@ -389,7 +396,9 @@ public class TSPPrimsMSTTest extends TestCase {
             new PolygonAndPointPlotter();
         plotter2.addPlot(xPoints, yPoints, 
             xPoints, yPoints, "tour Att48");
-        plotter2.writeFile(100);
+        plotter2.addPlot(xPoints, yPoints, 
+            xPointsE, yPointsE, "BEST tour Att48");
+        plotter2.writeFile(101);
         
         assertEquals(expectedBestTour.size(), tour.length);
         for (int i = 0; i < tour.length; ++i) {
