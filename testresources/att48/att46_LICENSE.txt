@@ -1,0 +1,9 @@
+data is from
+https://people.sc.fsu.edu/~jburkardt/datasets/tsp/tsp.html
+
+which is a dataset from TSPLIB
+= minimal tour has length 10628
+
+license appears to be GPL, but should find
+the reference to add here
+

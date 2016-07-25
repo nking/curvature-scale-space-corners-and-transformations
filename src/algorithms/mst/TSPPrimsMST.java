@@ -79,7 +79,7 @@ public class TSPPrimsMST {
         for (int i = 0; i < coordinates.length; ++i) {
             indexes[i] = i;
         }
-        QuickSort.sortByDecrYThenIncrX(coordinates, indexes);
+        QuickSort.sortByDecrYThenIncrX(coordinates2, indexes);
         
         int[] revIndexes = new int[indexes.length];
         for (int i = 0; i < indexes.length; ++i) {
@@ -136,6 +136,9 @@ public class TSPPrimsMST {
         }
         tour[tour.length - 1] = tour[0];
         
+        System.out.println("refined tour (in orig ref frame)=" 
+            + Arrays.toString(tour));
+        
         return tour;
     }
     
@@ -160,7 +163,7 @@ public class TSPPrimsMST {
         
         TourHandler tourHandler = new TourHandler(
             tour, adjCostMap, coordinates);
-                
+        
         tourHandler.modifyTourIntersectingEdges();
         
         return tour;

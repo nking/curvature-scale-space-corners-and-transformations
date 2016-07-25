@@ -1,6 +1,5 @@
 package algorithms.mst;
 
-import algorithms.compGeometry.convexHull.PolarAngleMergeSort;
 import algorithms.compGeometry.convexHull.PolarAngleQuickSort;
 import algorithms.util.PairInt;
 import algorithms.util.ScatterPointPlotterPNG;
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

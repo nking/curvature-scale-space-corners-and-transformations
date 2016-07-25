@@ -239,7 +239,7 @@ public class TourHandler {
  
         //TODO: revise nMaxIter
         int nIter = 0;
-        int nMaxIter = Math.round(0.8f*coordinates.length);
+        int nMaxIter = Math.round(0.8f * coordinates.length);
         int nChanged = 0;
         
         do {
@@ -269,7 +269,7 @@ public class TourHandler {
             //vertex indexes returned for min path sum
             int[] tmp = new int[4]; 
             int[] tmpMin2 = new int[4];
-                
+            
             for (int cIdx1 = 0; cIdx1 < coordinates.length;
                 ++cIdx1) {
             
@@ -790,10 +790,10 @@ assert(assertSameSets(
             getTourIndex(vertexIdxs[2]),
             getTourIndex(vertexIdxs[3]));
  
- assert(assertSameSets(
+assert(assertSameSets(
  getVertexIndex(tIdxA1), 
  getVertexIndex(tIdxA2), 
- getVertexIndex(tIdxB1), 
+ getVertexIndex(tIdxB1),
  getVertexIndex(tIdxB2),
  vertexIdxs[0], 
  vertexIdxs[1], 
@@ -836,11 +836,12 @@ assert(assertSameSets(
         tourValueToIndexMap.put(vertexIdxs[1], tIdxA2);
         tourValueToIndexMap.put(vertexIdxs[2], tIdxB1);
         tourValueToIndexMap.put(vertexIdxs[3], tIdxB2);
-         
+
         assert(assertTourData());
-       
-System.out.println("new pathSum==" + pathSum + 
-" tour=" + Arrays.toString(tour));
+
+System.out.println("new pathSum =" + pathSum + 
+" tour=" + Arrays.toString(tour)
++ printTourCoords());
 
         return pathSum;
     }
@@ -892,7 +893,8 @@ System.out.println("new pathSum==" + pathSum +
         assert(assertTourData());
        
 System.out.println("new pathSum==" + pathSum + 
-" tour=" + Arrays.toString(tour));
+" tour=" + Arrays.toString(tour)
++ printTourCoords());
 
         return pathSum;
     }
@@ -1034,5 +1036,23 @@ System.out.println("new pathSum==" + pathSum +
             }
         }
         return true;
+    }
+
+    private String printTourCoords() {
+
+        StringBuilder sb = new StringBuilder("[");
+        
+        for (int i = 0; i < tour.length; ++i) {
+            
+            if ((i % 10) == 0) {
+                sb.append("\n");
+            }
+            int idx = tour[i];
+            sb.append(coordinates[idx].toString()).append(",");
+        }
+        
+        sb.append("]");
+        
+        return sb.toString();
     }
 }
