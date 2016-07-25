@@ -1,7 +1,11 @@
 package algorithms.mst;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.SubsetChooser;
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.search.KNearestNeighbors;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
@@ -79,6 +83,8 @@ public class TourHandler {
     private final int[][] cache1 = new int[6][3];
     private final int[] cache2 = new int[2];
     
+    private KNearestNeighbors kNN = null;
+    
     /**
      * constructor for tour handler.  Note that theTour
      * is not copied, and is modified by changePaths(). 
@@ -108,6 +114,22 @@ public class TourHandler {
             = new TObjectIntHashMap<Interval2D<Integer>>();
 
         init();
+    }
+    
+    private void initKNNIfNeeded() {
+        if (kNN != null) {
+            return;
+        }
+        
+        int[] xp = new int[coordinates.length];
+        int[] yp = new int[coordinates.length];
+        for (int i = 0; i < coordinates.length; ++i) {
+            PairInt p = this.coordinates[i];
+            xp[i] = p.getX();
+            yp[i] = p.getY();
+        }
+        
+        kNN = new KNearestNeighbors(xp, yp);
     }
     
     private void init() {
@@ -246,10 +268,14 @@ if (idxEdgeAVertex2 == 38) {
         int nMaxIter = Math.round(0.8f * coordinates.length);
         int nChanged = 0;
         
+        TIntList iEdges = new TIntArrayList();
+        
         do {
             
             nChanged = 0;
          
+            iEdges.clear();
+            
             /*
             storing best params for two different types of changes:
             - swapping 2 edges between 4 vertexes
@@ -346,6 +372,9 @@ if (idxEdgeAVertex2 == 38) {
                 if (sum < minPathSum_2) {
                     minPathSum_2 = sum;
                     bestVertexIdxA1_2 = idxEdgeAVertex1;
+                } else {
+                    
+                    iEdges.add(idxEdgeAVertex1);
                 }
             }// end cIdx1 loop which is over graph vertex indexes
             
@@ -366,6 +395,23 @@ if (idxEdgeAVertex2 == 38) {
                     + " sum=" + sum + " min=" + minPathSum_2);
                 assert(sum == minPathSum_1);
                 nChanged++;
+            } else if (!iEdges.isEmpty()) {
+                
+                assert(nChanged == 0);
+                
+                /*
+                for the longest edges in iEdges,
+                find their 2 nearest neighbors and if
+                swapping the connection to the unconnected 
+                closest improves pathSum, perform the change.
+                */
+                
+                initKNNIfNeeded();
+                
+                // NOTE: this has many side effects including
+                // updating tour and data structures and the pathSum
+                nChanged += attemptNNConnections(iEdges);
+                
             }
             
             nIter++;
@@ -524,6 +570,104 @@ assert(assertSameSets(
                 a[i] = swap;
             }
         }
+    }
+    
+    private int attemptNNConnections(TIntList edgeAList) {
+        
+        int nChanged = 0;
+        
+        if (edgeAList.isEmpty()) {
+            return nChanged;
+        }
+        
+        assert(kNN != null);
+        
+        sortByEdgeLength(edgeAList);
+        
+        TObjectIntMap<PairInt> pointVertexMap = createPointVertexMap();
+        
+        for (int i = 0; i < edgeAList.size(); ++i) {
+            
+            int idxEdgeAVertex1 = edgeAList.get(i);
+            
+            PairInt p = coordinates[idxEdgeAVertex1];
+            
+            int idxEdgeAVertex2 = getNextVertexIndex(idxEdgeAVertex1);
+            
+            PairInt p2 = coordinates[idxEdgeAVertex2];
+            
+            int maxDistance = adjCostMap.get(idxEdgeAVertex1)
+               .get(idxEdgeAVertex2);
+            
+            List<PairFloat> nearest = kNN.findNearest(3, 
+                p.getX(), p.getY(), maxDistance);
+            
+            for (int j = 0; j < nearest.size(); ++j) {
+                int xB1 = (int)nearest.get(j).getX();
+                int yB1 = (int)nearest.get(j).getY();
+                if ((xB1 == p.getX() && yB1 == p.getY()) ||
+                    (xB1 == p2.getX() && yB1 == p2.getY())) {
+                    continue;
+                }
+                PairInt pB1 = new PairInt(xB1, yB1);
+                int idxEdgeBVertex1 = pointVertexMap.get(pB1);
+                
+                int addA1B1 = 0;
+                if (adjCostMap.containsKey(idxEdgeAVertex1) 
+                    && adjCostMap.get(idxEdgeAVertex1)
+                    .containsKey(idxEdgeBVertex1)) {
+                    addA1B1 += adjCostMap.get(idxEdgeAVertex1)
+                    .get(idxEdgeBVertex1);
+                } else if (adjCostMap.containsKey(idxEdgeBVertex1) 
+                    && adjCostMap.get(idxEdgeBVertex1)
+                    .containsKey(idxEdgeAVertex1)) {
+                    addA1B1 += adjCostMap.get(idxEdgeBVertex1)
+                    .get(idxEdgeAVertex1);
+                } else {
+                    continue;
+                }
+                
+                // check whether connecting p to this point
+                // and cutting one connection of each of
+                // theirs and connecting the closest of 
+                // their open vertexes results in smaller pathSum
+                
+                // prev and next of A1
+                int idxPrevEdgeAVertex1 = getPrevVertexIndex(
+                    idxEdgeAVertex1);
+                int idxNextEdgeAVertex1 = getNextVertexIndex(
+                    idxEdgeAVertex1);
+                
+                // prev next of B1
+                int idxPrevEdgeBVertex1 = getPrevVertexIndex(
+                    idxEdgeBVertex1);
+                int idxNextEdgeBVertex1 = getNextVertexIndex(
+                    idxEdgeBVertex1);
+                
+                int minSum2 = pathSum;
+                int opt = -1;
+                
+                // cut prevA1 to A1, cut B1 to prevB1,
+                // and connect prevA1 to prevB1
+                
+                // cut prevA1 to A1, cut B1 to nextB1,
+                // and connect prevA1 to nextB1
+                
+                // cut nextA1 to A1, cut B1 to prevB1,
+                // and connect nextA1 to prevB1
+                
+                // cut nextA1 to A1, cut B1 to nextB1,
+                // and connect nextA1 to nextB1
+                
+        //TODO: if the min path sum of cut and paste is smaller than
+                //pathSum, apply the change to tour and all of
+                //the data structures
+                // and incr nChanged
+                
+            }
+        }
+        
+        return nChanged;
     }
     
     /**
@@ -1079,5 +1223,35 @@ System.out.println("new pathSum==" + pathSum +
         sb.append("]");
         
         return sb.toString();
+    }
+
+    private void sortByEdgeLength(TIntList edgeAList) {
+
+        int[] len = new int[edgeAList.size()];
+        int[] vtxs = new int[len.length];
+        for (int i = 0; i < edgeAList.size(); ++i) {
+            int idx1 = edgeAList.get(i);
+            int idx2 = getNextVertexIndex(idx1);
+            int cost = adjCostMap.get(idx1).get(idx2);
+            len[i] = cost;
+            vtxs[i] = idx1;
+        }
+        
+        QuickSort.sortBy1stArg(len, vtxs);
+        
+        for (int i = 0; i < vtxs.length; ++i) {
+            edgeAList.set(i, vtxs[i]);
+        }
+    }
+
+    private TObjectIntMap<PairInt> createPointVertexMap() {
+
+        TObjectIntMap<PairInt> map = new TObjectIntHashMap<PairInt>();
+    
+        for (int i = 0; i < coordinates.length; ++i) {
+            map.put(coordinates[i], i);
+        }
+        
+        return map;
     }
 }
