@@ -193,11 +193,7 @@ public class TourHandler {
         
         // find intersection boxes and look for 
         // edges that intersect with these
-
-if (idxEdgeAVertex2 == 38) {
-    int z = 1;
- // missing edge=28:47
-}        
+        
         List<Interval2D<Integer>> list = qt.query2D(box12);
 
         if (list.size() < 2) {
@@ -267,15 +263,11 @@ if (idxEdgeAVertex2 == 38) {
         int nIter = 0;
         int nMaxIter = Math.round(0.8f * coordinates.length);
         int nChanged = 0;
-        
-        TIntList iEdges = new TIntArrayList();
-        
+         
         do {
             
             nChanged = 0;
          
-            iEdges.clear();
-            
             /*
             storing best params for two different types of changes:
             - swapping 2 edges between 4 vertexes
@@ -372,9 +364,6 @@ if (idxEdgeAVertex2 == 38) {
                 if (sum < minPathSum_2) {
                     minPathSum_2 = sum;
                     bestVertexIdxA1_2 = idxEdgeAVertex1;
-                } else {
-                    
-                    iEdges.add(idxEdgeAVertex1);
                 }
             }// end cIdx1 loop which is over graph vertex indexes
             
@@ -395,46 +384,12 @@ if (idxEdgeAVertex2 == 38) {
                     + " sum=" + sum + " min=" + minPathSum_2);
                 assert(sum == minPathSum_1);
                 nChanged++;
-            } else if (!iEdges.isEmpty()) {
-                
-                assert(nChanged == 0);
-                
-                /*
-                for the longest edges in iEdges,
-                find their 2 nearest neighbors and if
-                swapping the connection to the unconnected 
-                closest improves pathSum, perform the change.
-                */
-                
-                initKNNIfNeeded();
-                
-                // NOTE: this has many side effects including
-                // updating tour and data structures and the pathSum
-                nChanged += attemptNNConnections(iEdges);
-                
             }
             
             nIter++;
             
         } while ((nChanged != 0) && (nIter < nMaxIter));
         
-        /*
-        NOTE: still needs changes
-        
-        might try:
-           for the longest edges that are still intersecting
-        other lines,
-        find 2 nearest points 
-        and for the one which it is not connected to,
-        connect to it.  that point then needs to 
-        lose one of edge connections and reattach that
-        where the longest edge just broke off of,
-        deciding by shortest result and only applying
-        changes that shorten current pathSum.
-        
-        
-        
-        */
     }
     
     /**
@@ -570,104 +525,6 @@ assert(assertSameSets(
                 a[i] = swap;
             }
         }
-    }
-    
-    private int attemptNNConnections(TIntList edgeAList) {
-        
-        int nChanged = 0;
-        
-        if (edgeAList.isEmpty()) {
-            return nChanged;
-        }
-        
-        assert(kNN != null);
-        
-        sortByEdgeLength(edgeAList);
-        
-        TObjectIntMap<PairInt> pointVertexMap = createPointVertexMap();
-        
-        for (int i = 0; i < edgeAList.size(); ++i) {
-            
-            int idxEdgeAVertex1 = edgeAList.get(i);
-            
-            PairInt p = coordinates[idxEdgeAVertex1];
-            
-            int idxEdgeAVertex2 = getNextVertexIndex(idxEdgeAVertex1);
-            
-            PairInt p2 = coordinates[idxEdgeAVertex2];
-            
-            int maxDistance = adjCostMap.get(idxEdgeAVertex1)
-               .get(idxEdgeAVertex2);
-            
-            List<PairFloat> nearest = kNN.findNearest(3, 
-                p.getX(), p.getY(), maxDistance);
-            
-            for (int j = 0; j < nearest.size(); ++j) {
-                int xB1 = (int)nearest.get(j).getX();
-                int yB1 = (int)nearest.get(j).getY();
-                if ((xB1 == p.getX() && yB1 == p.getY()) ||
-                    (xB1 == p2.getX() && yB1 == p2.getY())) {
-                    continue;
-                }
-                PairInt pB1 = new PairInt(xB1, yB1);
-                int idxEdgeBVertex1 = pointVertexMap.get(pB1);
-                
-                int addA1B1 = 0;
-                if (adjCostMap.containsKey(idxEdgeAVertex1) 
-                    && adjCostMap.get(idxEdgeAVertex1)
-                    .containsKey(idxEdgeBVertex1)) {
-                    addA1B1 += adjCostMap.get(idxEdgeAVertex1)
-                    .get(idxEdgeBVertex1);
-                } else if (adjCostMap.containsKey(idxEdgeBVertex1) 
-                    && adjCostMap.get(idxEdgeBVertex1)
-                    .containsKey(idxEdgeAVertex1)) {
-                    addA1B1 += adjCostMap.get(idxEdgeBVertex1)
-                    .get(idxEdgeAVertex1);
-                } else {
-                    continue;
-                }
-                
-                // check whether connecting p to this point
-                // and cutting one connection of each of
-                // theirs and connecting the closest of 
-                // their open vertexes results in smaller pathSum
-                
-                // prev and next of A1
-                int idxPrevEdgeAVertex1 = getPrevVertexIndex(
-                    idxEdgeAVertex1);
-                int idxNextEdgeAVertex1 = getNextVertexIndex(
-                    idxEdgeAVertex1);
-                
-                // prev next of B1
-                int idxPrevEdgeBVertex1 = getPrevVertexIndex(
-                    idxEdgeBVertex1);
-                int idxNextEdgeBVertex1 = getNextVertexIndex(
-                    idxEdgeBVertex1);
-                
-                int minSum2 = pathSum;
-                int opt = -1;
-                
-                // cut prevA1 to A1, cut B1 to prevB1,
-                // and connect prevA1 to prevB1
-                
-                // cut prevA1 to A1, cut B1 to nextB1,
-                // and connect prevA1 to nextB1
-                
-                // cut nextA1 to A1, cut B1 to prevB1,
-                // and connect nextA1 to prevB1
-                
-                // cut nextA1 to A1, cut B1 to nextB1,
-                // and connect nextA1 to nextB1
-                
-        //TODO: if the min path sum of cut and paste is smaller than
-                //pathSum, apply the change to tour and all of
-                //the data structures
-                // and incr nChanged
-                
-            }
-        }
-        
-        return nChanged;
     }
     
     /**
@@ -861,6 +718,17 @@ assert(assertSameSets(
         }
         
         box = indexEdgeBounds.remove(cIdx2);
+        if (box != null) {
+            edgeIndexBounds.remove(box);
+            qt.remove(box);
+        }
+    }
+    
+    private void removeEdgeBox(int idxVertex) {
+    
+        Interval2D<Integer> box;
+        
+        box = indexEdgeBounds.remove(idxVertex);
         if (box != null) {
             edgeIndexBounds.remove(box);
             qt.remove(box);
@@ -1253,5 +1121,18 @@ System.out.println("new pathSum==" + pathSum +
         }
         
         return map;
+    }
+
+    private int getCost(int idxV1, int idxV2) {
+
+        if (adjCostMap.containsKey(idxV1) 
+           && adjCostMap.get(idxV1).containsKey(idxV2)) {
+           return adjCostMap.get(idxV1).get(idxV2);
+        } else if (adjCostMap.containsKey(idxV1) 
+           && adjCostMap.get(idxV1).containsKey(idxV2)) {
+           return adjCostMap.get(idxV1).get(idxV2);
+        }
+        
+        return 0;
     }
 }

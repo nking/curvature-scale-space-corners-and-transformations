@@ -1,23 +1,15 @@
 package algorithms.mst;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.Rotate;
-import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairInt;
 import gnu.trove.iterator.TIntIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import java.util.Arrays;
-import java.util.List;
-import thirdparty.edu.princeton.cs.algs4.Interval;
-import thirdparty.edu.princeton.cs.algs4.Interval2D;
-import thirdparty.edu.princeton.cs.algs4.QuadTreeInterval2D;
 
 /**
  * adapted from Cormen et al. Introduction to Algorithms
