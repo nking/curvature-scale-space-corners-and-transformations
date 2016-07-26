@@ -150,6 +150,14 @@ public class TSPPrimsMST {
         int[] tour = approxTSPTour(nVertexes, adjCostMap);
      
         System.out.println("approx tour=" + Arrays.toString(tour));
+    
+        //TODO: because sorting and MST are N log N which is
+        // fast for this algorithm, could experiment
+        // with different sorting methods quickly and return
+        // the best results.
+        // OR experiment with modifying the pre and post order
+        // MST merge of walks to also use a nearest neighbors to avoid large
+        // gaps.
         
         // uncross edges where feasible
         
