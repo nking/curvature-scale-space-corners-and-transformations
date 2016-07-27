@@ -20,7 +20,8 @@ public class PerimeterFinder2 {
    
     /**
      * finds the pixels with neighbors not in given point
-     * set, contiguousPoints.
+     * set, contiguousPoints.  Note, the contiguous points
+     * fill out the shape for which the border is found.
      * 
      * @param contiguousPoints
      * @return 
@@ -55,6 +56,11 @@ public class PerimeterFinder2 {
      * given a contiguous set of points, extract the border and 
      * order the points.  NOTE: it is up to the invoker to 
      * give the method a point set which is contiguous.
+     * The contiguous points
+     * fill out the shape for which the border is found and they're
+     * used to calculate medial axes and calculate the intersection
+     * of adjacent non-shape neighbors.
+     * 
      * @param contiguousPoints
      * @return 
      */
@@ -70,7 +76,8 @@ public class PerimeterFinder2 {
         medAxis1.findMedialAxis();
         Set<PairInt> medAxisPts = medAxis1.getMedialAxisPoints();
         
-        return extractOrderedBorder(boundary, medAxisPts);
+        return extractOrderedBorder(boundary, medAxisPts,
+            contiguousPoints);
     }
 private PairIntArray debug = null;
 
@@ -87,10 +94,12 @@ private PairIntArray debug = null;
      * 
      * @param borderPoints
      * @param medialAxisPoints
+     * @param contiguousShapePoints
      * @return 
      */
     public PairIntArray extractOrderedBorder(Set<PairInt> 
-        borderPoints, Set<PairInt> medialAxisPoints) {
+        borderPoints, Set<PairInt> medialAxisPoints,
+        Set<PairInt> contiguousShapePoints) {
         
         /*
         -- note points which only have 1 neighbor.  these
@@ -179,7 +188,8 @@ private PairIntArray debug = null;
                         }
                         
                         int minAngleIdx = calculateMinAngles( 
-                            x3, y3, ns2, neighborsX, neighborsY, nn);
+                            x3, y3, ns2, neighborsX, neighborsY, nn,
+                            contiguousShapePoints);
                         
                         junctionNodes.add(Integer.valueOf(output.getN()));
                         
@@ -197,9 +207,10 @@ private PairIntArray debug = null;
                     nn = new NearestNeighbor2D(medialAxisPoints, 
                         minMaxY[1], minMaxY[3]);
                 }
- this.debug = output;               
+ this.debug = output;              
                 int minAngleIdx = calculateMinAngles(
-                    x, y, ns, neighborsX, neighborsY, nn);
+                    x, y, ns, neighborsX, neighborsY, nn,
+                    contiguousShapePoints);
 
                 junctionNodes.add(Integer.valueOf(output.getN()));
                 
@@ -290,8 +301,9 @@ private PairIntArray debug = null;
      */
     private int calculateMinAngles(int x, int y,
         int nXY, int[] neighborsX, int[] neighborsY, 
-        NearestNeighbor2D nn) {
-     
+        NearestNeighbor2D nn,
+        Set<PairInt> contiguousShapePoints) {
+
         /*
         to determine the next best point among more than
         one choice, need to determine if the points are
@@ -300,17 +312,27 @@ private PairIntArray debug = null;
         OR whether this is 2 borders adjacent to one 
         another due to the region being very narrow
         for example.  This later case requires alot more
-        logic than initially present here.
+        logic than initially present here to avoid making
+        crossing perimeter paths.
         
-        -- might need to make a longest path algorithm
-        over all border points.  the points left out
-        because they are part of the concave or
-        convex corners can be added back using the
-        logic below afterwards.
-        Need to refactor all of the dependent code
-        and this method for that change in logic.
-      
+        May need to revisit this:
+           For the narrow width regions that are 2 adjacent
+        boundaries, the number of remaining neighbors on the
+        first pass through the region appears to be > 2,
+        and for that case, cannot use the medial axis, but
+        can use the number of non-shape neighbors in common.
         */
+        
+        if (nXY > 2) {
+            // modifies neighborsX and neighborsY
+            nXY = filterForLargestNonShapeIntersection(
+                x, y, nXY, neighborsX, neighborsY,
+                contiguousShapePoints);
+            assert(nXY != 0);
+            if (nXY == 1) {
+                return 0;
+            }
+        }
         
         // determine whether this is a convex or concave
         // section of the boundary curve.
@@ -336,31 +358,34 @@ private PairIntArray debug = null;
         
         int xc = (int)Math.round(xCen);
         int yc = (int)Math.round(yCen);
-             
-        PairInt medAxisCen = nn.findClosest(xc, yc).iterator().next();
+          
+        Set<PairInt> medAxisCenClosest = nn.findClosest(xc, yc);
+        assert(!medAxisCenClosest.isEmpty());
+        PairInt medAxisCen = medAxisCenClosest.iterator().next();
         
         PairInt medAxis0 = nn.findClosest(x, y).iterator().next();
         double d0 = distSq(x, y, medAxisCen.getX(), medAxisCen.getY());
         double d0Cen = distSq(xCen, yCen, medAxisCen.getX(), medAxisCen.getY());
           
         boolean isOutside = (d0Cen > d0);
-                
+        
         
         System.out.println(
             String.format(
             "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
             medAxisCen.toString(), x, y, (float) d0,
             xCen, yCen, (float) d0Cen));
-        
-        
+                
         if (!isOutside) {
             for (int i = 0; i < nXY; ++i) {
                 int x2 = neighborsX[i];
                 int y2 = neighborsY[i];
 
-                double d2 = distSq(x2, y2, medAxisCen.getX(), medAxisCen.getY());
+                double d2 = distSq(x2, y2, 
+                    medAxisCen.getX(), medAxisCen.getY());
 
-                double d2Cen = distSq(xCen, yCen, medAxisCen.getX(), medAxisCen.getY());
+                double d2Cen = distSq(xCen, yCen, 
+                    medAxisCen.getX(), medAxisCen.getY());
 
                 
                 System.out.println(
@@ -494,6 +519,94 @@ private PairIntArray debug = null;
         double diffX = x1 - x2;
         double diffY = y1 - y2;
         return (diffX * diffX + diffY * diffY);
+    }
+
+    private int filterForLargestNonShapeIntersection(
+        int x, int y, int nXY, int[] neighborsX, int[] neighborsY, 
+        Set<PairInt> contiguousShapePoints) {
+
+        int maxNS = Integer.MIN_VALUE;
+        int[] maxNSIdx = new int[8];
+        int n = 0;
+        for (int i = 0; i < nXY; ++i) {
+            int nIterNS = 
+                calcNumberOfNonShapeNeigbhorsInCommon
+                (x, y, neighborsX[i], neighborsY[i],
+                contiguousShapePoints);
+            if (nIterNS > maxNS) {
+                maxNS = nIterNS;
+                n = 0;
+                maxNSIdx[n] = i;
+                n++;
+            } else if (nIterNS == maxNS) {
+                maxNSIdx[n] = i;
+                n++;
+            }
+        }
+
+        if (n == nXY) {
+            // NOTE: does this happen?
+            return nXY;
+        }
+        
+        if (n == 0) {
+            return 0;
+        }
+
+        // place maxNSIdx at top of neighbors
+        assert(nXY < (neighborsX.length - 1));
+        
+        // shift neighborsX,Y down by 1
+        for (int i = (neighborsX.length - 1); i > 0; --i) {
+            neighborsX[i] = neighborsX[i - 1];
+            neighborsY[i] = neighborsY[i - 1];
+        }
+        for (int i = 0; i < n; ++i) {
+            int idx = maxNSIdx[i] + 1;
+            assert(idx > i);
+            neighborsX[i] = neighborsX[idx];
+            neighborsY[i] = neighborsY[idx];
+        }
+
+        return n;
+    }
+
+    private int calcNumberOfNonShapeNeigbhorsInCommon(
+        int x1, int y1, int x2, int y2, 
+        Set<PairInt> contiguousShapePoints) {
+
+        Set<PairInt> set1 = findNonShapeNeighbors(x1, y1, 
+            contiguousShapePoints);
+        
+        Set<PairInt> set2 = findNonShapeNeighbors(x2, y2, 
+            contiguousShapePoints);
+        
+        // set1 = (a + intersection)
+        // set2 = (b + intersection)
+        // nItersection = set1.size - (set1.removeall(set2)).size
+        
+        int n1 = set1.size();
+        set1.removeAll(set2);
+        int nInterNS = n1 - set1.size();
+        
+        return nInterNS;
+    }
+
+    private Set<PairInt> findNonShapeNeighbors(
+        int x, int y, Set<PairInt> contiguousShapePoints) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+
+        Set<PairInt> pointsNS = new HashSet<PairInt>();
+        for (int k = 0; k < dxs.length; ++k) {
+            int x2 = x + dxs[k];
+            int y2 = y + dys[k];
+            PairInt p2 = new PairInt(x2, y2);
+            pointsNS.add(p2);
+        }
+        
+        return pointsNS;
     }
     
 }

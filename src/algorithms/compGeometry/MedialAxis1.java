@@ -187,6 +187,12 @@ public class MedialAxis1 {
         
         medAxisList.clear();
         
+        if (points.size() < boundary.size()) {
+            // special handling for narrow search space
+            searchEachPoint();
+            return;
+        }
+        
         // max heap ordered by largest radius
         Heap q = new Heap();
         
@@ -241,7 +247,7 @@ public class MedialAxis1 {
             if (nSPoints == 0) {
                 removed = subtractFromPoints(p, r - 1);
                 processed.addAll(removed);
-                assert (assertPointTotals());
+                assert(assertPointTotals());
 
                 if (q.isEmpty() && (points.size() > 0)) {
                     // choose another point from points and continue
@@ -393,7 +399,7 @@ public class MedialAxis1 {
             p.getX(), p.getY());
         
         assert(closestB.length > 0);
-       
+        
         int status = 0;
         
         // find a p that results in valid medial axis points,
@@ -1641,6 +1647,28 @@ Assume point m lies on the medial axis and is
         assert(assertUniqueMedialAxesPoints());  
 
         return results;
+    }
+
+    private void searchEachPoint() {
+        
+        for (PairInt p : points) {
+            
+            PairInt[] nearestBounds = findNearestBoundsAsArray(
+                p.getX(), p.getY());
+            nearestBounds = findEquidistantNearestPoints(
+                p.getX(), p.getY(), 0, nearestBounds);        
+            if (nearestBounds == null || (nearestBounds.length < 2)) {
+                continue;
+            }
+            double avgSrchR = 1;
+
+            MedialAxisPoint mp0 = createMedialAxisPoint(p, nearestBounds,
+                avgSrchR);
+            
+            medAxisList.add(mp0);
+        }
+        processed.addAll(points);
+        points.clear();;
     }
 
     protected static class MedialAxisPoint {

@@ -58,7 +58,7 @@ public class PerimeterFinder2Test extends TestCase {
         
     }
     
-    public void est1() {
+    public void test1() {
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         
@@ -66,12 +66,31 @@ public class PerimeterFinder2Test extends TestCase {
         Set<PairInt> contiguousPoints = getSet1();
         
         Set<PairInt> expectedSet = Misc.convert(expected);
-        Set<PairInt> resultUnordered = finder.extractBorder(contiguousPoints);
+        Set<PairInt> resultUnordered = finder.extractBorder(
+            contiguousPoints);
         assertEquals(expectedSet.size(), resultUnordered.size());
         for (PairInt p : resultUnordered) {
             assertTrue(expectedSet.remove(p));
         }
         assertEquals(0, expectedSet.size());
+
+        // --- test medial azis points -- 
+        expectedSet = new HashSet<PairInt>();
+        expectedSet.add(new PairInt(1, 7));
+        expectedSet.add(new PairInt(1, 8));
+        expectedSet.add(new PairInt(2, 8));
+        expectedSet.add(new PairInt(8, 7));
+        expectedSet.add(new PairInt(8, 8));
+        MedialAxis1 medAxis1 = new MedialAxis1(contiguousPoints, 
+            resultUnordered);
+        medAxis1.findMedialAxis();
+        Set<PairInt> medAxisPts = medAxis1.getMedialAxisPoints();
+        assertEquals(expectedSet.size(), medAxisPts.size());
+        for (PairInt p : medAxisPts) {
+            assertTrue(expectedSet.remove(p));
+        }
+        assertEquals(0, expectedSet.size());
+        // ----
         
         contiguousPoints = getSet1();
         finder = new PerimeterFinder2();
@@ -158,53 +177,33 @@ public class PerimeterFinder2Test extends TestCase {
     }
    
     /*
-            0 1 2 3 4 5 6 7 8 9
-        
-         9  @ @ @ @ @ @ @ @ @ @
-         8  @ @ @ @ @ @ @ @ @ @
-         7  @ @ @ @       @ @ @
-         6  @ @ @     @   @ @ @
-         5  @ @     @ @     @ @
-         4  @     @ @ @     @ @
-         3  @   @ @ @ @ @   @ @
-         2      @ @ @ @ @   @ @
-         1      @ @ @ @ @     @
-         0      @ @ @ @ @     @
-        
-            0 1 2 3 4 5 6 7 8 9
-        */
+    //medial axis points: 1,7  1,8  2,8
+
+        0 1 2 3 4 5 6 7 8 9
+    12                @
+    11              @ @
+    10            @ @
+     9  @ @ @ @ @ @ @ @ @ @
+     8  @ * * @ @ @ @ @ * @ 
+     7  @ * @ @       @ * @ 
+     6  @ @ @         @ @ @
+     5  @ @             @ @
+     4  @               @ @
+     3  @               @ @
+     2                  @ @
+     1                    @
+     0                    @
+
+        0 1 2 3 4 5 6 7 8 9
+    */
     private Set<PairInt> getSet1() {
-        Set<PairInt> set1 = new HashSet<PairInt>(); 
-        
-        for (int i = 3; i <= 9; ++i) {
-            set1.add(new PairInt(0, i));
-        }
-        for (int i = 5; i <= 9; ++i) {
-            set1.add(new PairInt(1, i));
-        }
-        for (int i = 6; i <= 9; ++i) {
-            set1.add(new PairInt(2, i));
-        }
-        for (int i = 7; i <= 9; ++i) {
-            set1.add(new PairInt(3, i));
-        }
-        for (int j = 8; j <= 9; ++j) {
-            for (int i = 4; i <= 9; ++i) {
-                set1.add(new PairInt(i, j));
-            }
-        }
-        for (int j = 6; j <= 7; ++j) {
-            for (int i = 7; i <= 9; ++i) {
-                set1.add(new PairInt(i, j));
-            }
-        }
-        for (int j = 2; j <= 5; ++j) {
-            for (int i = 8; i <= 9; ++i) {
-                set1.add(new PairInt(i, j));
-            }
-        }
-        set1.add(new PairInt(9, 1));
-        set1.add(new PairInt(9, 0));
+         
+        Set<PairInt> set1 = Misc.convert(getSet1Boundaries());
+        set1.add(new PairInt(1, 7));
+        set1.add(new PairInt(1, 8));
+        set1.add(new PairInt(2, 8));
+        set1.add(new PairInt(8, 7));
+        set1.add(new PairInt(8, 8));
         
         return set1;
     }
@@ -282,10 +281,17 @@ public class PerimeterFinder2Test extends TestCase {
         5   6*  7   8*  9      1
         0   1   2   3   4      0 
         */
-        PerimeterFinder2 finder = new PerimeterFinder2();
+       Set<PairInt> shapePoints = new HashSet<PairInt>();
+       for (int i = 0; i < 5; ++i) {
+           for (int j = 0; j < 5; ++j) {
+               shapePoints.add(new PairInt(i, j));
+           }
+       }
+       
+       PerimeterFinder2 finder = new PerimeterFinder2();
         
         PairIntArray results = finder.extractOrderedBorder(
-            boundary, medialAxis);
+            boundary, medialAxis, shapePoints);
         
         assertEquals(expected.getN(), results.getN());
         
@@ -298,6 +304,18 @@ public class PerimeterFinder2Test extends TestCase {
     }
     
     public void estOrdered2() {
+        Set<PairInt> shapePoints = new HashSet<PairInt>();
+        for (int i = 1; i < 7; ++i) {
+            for (int j = 1; j < 4; ++j) {
+                shapePoints.add(new PairInt(i, j));
+            }
+        }
+        for (int i = 1; i < 4; ++i) {
+            for (int j = 4; j < 7; ++j) {
+                shapePoints.add(new PairInt(i, j));
+            }
+        }
+        
         /*
         test w/ a concave section
         
@@ -358,7 +376,7 @@ public class PerimeterFinder2Test extends TestCase {
         PerimeterFinder2 finder = new PerimeterFinder2();
         
         PairIntArray results = finder.extractOrderedBorder(
-            boundary, medialAxis);
+            boundary, medialAxis, shapePoints);
         
         assertEquals(expected.getN(), results.getN());
         
