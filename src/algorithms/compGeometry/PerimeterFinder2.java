@@ -1,13 +1,22 @@
 package algorithms.compGeometry;
 
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -141,6 +150,15 @@ private PairIntArray debug = null;
         // use this to backtrack to previous junction.
         LinkedList<Integer> junctionNodes = new LinkedList<Integer>();
         
+        // because the juntionNodes may be inserted correctly, 
+        // especially at the end of a complex perimeter
+        // with remaining points not yet added,
+        // keeping a separate list of junctionNodes
+        // that are added to output while backtracking in order
+        // to revise them later if needed.
+        LinkedHashSet<Integer> jassocInserted = 
+            new LinkedHashSet<Integer>();
+        
         while (!remaining.isEmpty()) {
             int prevIdx = output.getN() - 1;
             int x = output.getX(prevIdx);
@@ -186,7 +204,7 @@ private PairIntArray debug = null;
                             nn = new NearestNeighbor2D(medialAxisPoints,
                                 minMaxY[1], minMaxY[3]);
                         }
-                        
+     
                         int minAngleIdx = calculateMinAngles( 
                             x3, y3, ns2, neighborsX, neighborsY, nn,
                             contiguousShapePoints);
@@ -196,6 +214,7 @@ private PairIntArray debug = null;
                         output.add(neighborsX[minAngleIdx], 
                             neighborsY[minAngleIdx]);                        
                     }
+                    jassocInserted.add(output.getN() - 1);
                 }
             } else if (ns > 1) {
                 // find smallest angle subtended
@@ -207,11 +226,11 @@ private PairIntArray debug = null;
                     nn = new NearestNeighbor2D(medialAxisPoints, 
                         minMaxY[1], minMaxY[3]);
                 }
- this.debug = output;              
+ this.debug = output;          
                 int minAngleIdx = calculateMinAngles(
                     x, y, ns, neighborsX, neighborsY, nn,
                     contiguousShapePoints);
-
+                
                 junctionNodes.add(Integer.valueOf(output.getN()));
                 
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
@@ -221,6 +240,104 @@ private PairIntArray debug = null;
                 new PairInt(output.getX(output.getN() - 1),
                 output.getY(output.getN() - 1)));
             assert(rmvd);
+        }
+        
+        if (!jassocInserted.isEmpty()) {
+            /*System.out.println("re-check these:");
+            for (Integer index : jassocInserted) {
+                int idx = index.intValue();
+                System.out.println("x=" + output.getX(idx) +
+                    "," + output.getY(idx));
+            }*/
+            List<Integer> list = new ArrayList<Integer>(jassocInserted);
+            Collections.sort(list);
+            int[] xAdd = new int[list.size()];
+            int[] yAdd = new int[list.size()];
+            for (int i = (list.size() - 1); i > -1; --i) {
+                int rmIdx = list.get(i).intValue();
+                xAdd[i] = output.getX(rmIdx);
+                yAdd[i] = output.getY(rmIdx);
+                output.removeRange(rmIdx, rmIdx);
+            }
+            // find best place to insert them starting from end
+            for (int i = (list.size() - 1); i > -1; --i) {
+                int xp = xAdd[i];
+                int yp = yAdd[i];
+                double minDist = Double.MAX_VALUE;
+                int minDistIdx = -1;
+                for (int j = (output.getN() - 1); j > -1; --j) {
+                    int x2 = output.getX(j);
+                    int y2 = output.getY(j);
+                    double d = Math.sqrt(distSq(xp, yp, x2, y2));
+                    if (d < minDist) {
+                        minDist = d;
+                        minDistIdx = j;
+                    } else if (d >= minDist && (minDist < 2)) {
+                        break;
+                    }
+                }
+                // default insert is minDistIdx + 1 unless
+                // the existing distance is 1, then instead, use minDistIdx
+                if (minDistIdx == (output.getN() - 1)) {
+                    output.add(xp, yp);
+                } else {
+                    if (((minDistIdx - 1) > -1) 
+                        && ((minDistIdx + 1) < output.getN())) {
+                        
+                        double dPrev0 = Math.sqrt(distSq(
+                        output.getX(minDistIdx - 1), 
+                        output.getY(minDistIdx - 1),
+                        xp, yp));
+                                                
+                        double dNext0 = Math.sqrt(distSq(
+                        output.getX(minDistIdx + 1), 
+                        output.getY(minDistIdx + 1),
+                        output.getX(minDistIdx), 
+                        output.getY(minDistIdx)));
+                        
+                        double d0 = dPrev0 + minDist + dNext0;
+                        
+                        double dPrev1 = Math.sqrt(distSq(
+                        output.getX(minDistIdx - 1), 
+                        output.getY(minDistIdx - 1),
+                        output.getX(minDistIdx), 
+                        output.getY(minDistIdx)));
+                        
+                        double dNext1 = Math.sqrt(distSq(
+                        output.getX(minDistIdx + 1), 
+                        output.getY(minDistIdx + 1), xp, yp));
+                        
+                        double d1 = dPrev1 + minDist + dNext1;
+                       
+                        if ((d1 < d0) && (dPrev1 == minDist)) {
+                            minDistIdx++;
+                        }
+                    }
+                    output.insert(minDistIdx, xp, yp);
+                }
+            }
+            // if any adjacent have dist > 2, see if swapping would
+            // reduce that
+            for (int i = 0; i < (output.getN() - 1); ++i) {
+                int x = output.getX(i);
+                int y = output.getY(i);
+                int nextX = output.getX(i + 1);
+                int nextY = output.getY(i + 1);
+                double d1 = Math.sqrt(distSq(nextX, nextY, x, y));
+                if (d1 >= 2 && (i > 0)) {
+                    /*
+                    prev  
+                    x      next
+                    next   x
+                           nextnext
+                    */
+                    double dpn = Math.sqrt(distSq(nextX, nextY, 
+                        output.getX(i - 1), output.getY(i - 1)));
+                    if (dpn <= 2) {
+                        
+                    }
+                }
+            }
         }
         
         return output;
@@ -322,7 +439,7 @@ private PairIntArray debug = null;
         and for that case, cannot use the medial axis, but
         can use the number of non-shape neighbors in common.
         */
-        
+
         if (nXY > 2) {
             // modifies neighborsX and neighborsY
             nXY = filterForLargestNonShapeIntersection(
@@ -369,13 +486,14 @@ private PairIntArray debug = null;
           
         boolean isOutside = (d0Cen > d0);
         
-        
+        /*
         System.out.println(
             String.format(
             "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
             medAxisCen.toString(), x, y, (float) d0,
             xCen, yCen, (float) d0Cen));
-                
+        */
+        
         if (!isOutside) {
             for (int i = 0; i < nXY; ++i) {
                 int x2 = neighborsX[i];
@@ -387,13 +505,13 @@ private PairIntArray debug = null;
                 double d2Cen = distSq(xCen, yCen, 
                     medAxisCen.getX(), medAxisCen.getY());
 
-                
+                /*
                 System.out.println(
                 String.format(
                 "  med Axis pt=%s (%d,%d) d2=%.4f --> d2cen=%.4f",
                 medAxisCen.toString(), x2, y2, (float) d2,
                 (float) d2Cen));
-                
+                */
                 
                 if (d2Cen > d2) {
                     isOutside = true;
@@ -403,7 +521,8 @@ private PairIntArray debug = null;
         
         if (isOutside) {
             return calculateMinAnglesForConcave(x, y, 
-                nXY, neighborsX, neighborsY, medAxis0);
+                nXY, neighborsX, neighborsY, medAxis0,
+                contiguousShapePoints);
         } else {
             return calculateMinAnglesForConvex(x, y, 
                 nXY, neighborsX, neighborsY, medAxis0);
@@ -428,7 +547,7 @@ private PairIntArray debug = null;
      */
     private int calculateMinAnglesForConcave(int x, int y,
         int nXY, int[] neighborsX, int[] neighborsY, 
-        PairInt medAxis0) {
+        PairInt medAxis0, Set<PairInt> contiguousShapePoints) {
         
         double maxAngle = Double.MIN_VALUE;
         int minIdx = -1;
@@ -443,12 +562,12 @@ private PairIntArray debug = null;
             double angle = AngleUtil.polarAngleCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
             
-            
+            /*
             System.out.println(
                 String.format("concave: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0, 
                     x2,y2, (float) angle));
-            
+            */
             
             // for convex section:
             if ((angle > angle0) && (angle > maxAngle)) {
@@ -456,8 +575,60 @@ private PairIntArray debug = null;
                 minIdx = i;
             }
         }
-      
-        assert(minIdx != -1);
+        
+        if (minIdx != -1) {
+            return minIdx;
+        }
+        
+        // if region is so thin that medial axis
+        // points do not represent the local center
+        // of the shape, might end up here when the
+        // nearest medial axis point is CCW from 
+        // (x,y) and neighborsX,neigbhorsY, etc.
+        // - one possible way to better determine
+        //   "outward" for the curve for this case
+        //   is to use the centroid of the adjacent
+        //   non-shape points and convex angle rules
+        //   to determine best next idx
+        Set<PairInt> spaceNeighbors = findNonShapeNeighbors(
+            x, y, contiguousShapePoints);
+
+        MiscellaneousCurveHelper curveHelper = new
+            MiscellaneousCurveHelper();
+
+        double[] xyCen = curveHelper.calculateXYCentroids(
+            spaceNeighbors);
+
+        PairInt xyCenP = new PairInt(
+            (int)Math.round(xyCen[0]),
+            (int)Math.round(xyCen[1]));
+
+        // convex angles, w/ CCW rules for 
+        // shape being on other side of xyCenP
+        // so concave rules again.
+                
+        double minAngle = Double.MAX_VALUE;
+        minIdx = -1;
+        angle0 = AngleUtil.polarAngleCCW(
+            x - medAxis0.getX(), y - medAxis0.getY());
+        for (int i = 0; i < nXY; ++i) {
+            int x2 = neighborsX[i];
+            int y2 = neighborsY[i];
+            double angle = AngleUtil.polarAngleCCW(
+                x2 - medAxis0.getX(), y2 - medAxis0.getY());
+            /*
+            System.out.println(
+            String.format(
+            "convex: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
+                    x, y, (float) angle0,
+                    x2,y2, (float) angle));
+            */
+            // for convex section:
+            if ((angle > angle0) && (angle < minAngle)) {
+                minAngle = angle;
+                minIdx = i;
+            }
+        }
         
         return minIdx;
     }
@@ -603,7 +774,9 @@ private PairIntArray debug = null;
             int x2 = x + dxs[k];
             int y2 = y + dys[k];
             PairInt p2 = new PairInt(x2, y2);
-            pointsNS.add(p2);
+            if (!contiguousShapePoints.contains(p2)) {
+                pointsNS.add(p2);
+            }
         }
         
         return pointsNS;

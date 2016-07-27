@@ -25,7 +25,7 @@ import junit.framework.TestCase;
  */
 public class PerimeterFinder2Test extends TestCase {
     
-    public void estExtractBorder() {
+    public void testExtractBorder() {
         
         /*
          4 5 6 7 8 9 
@@ -97,6 +97,8 @@ public class PerimeterFinder2Test extends TestCase {
         PairIntArray results = finder.extractOrderedBorder(
             contiguousPoints);
         
+        System.out.println("results=" + results.toString());
+        
         assertEquals(expected.getN(), results.getN());
         
         for (int i = 0; i < expected.getN(); ++i) {
@@ -127,8 +129,8 @@ public class PerimeterFinder2Test extends TestCase {
         11              @ @
         10            @ @
          9  @ @ @ @ @ @ @ @ @ @
-         8  @ * * @ @ @ @ @ * @ <-- where are med axis pts
-         7  @ * @ @       @ * @  <---
+         8  @ * * @ @ @ @ @ * @
+         7  @ * @ @       @ * @
          6  @ @ @         @ @ @
          5  @ @             @ @
          4  @               @ @
@@ -147,6 +149,7 @@ public class PerimeterFinder2Test extends TestCase {
         for (int i = 1; i <= 4; ++i) {
             list0.add(i, 9);
         }
+        list0.add(5, 9);
         list0.add(5, 10);
         list0.add(6, 11);
         list0.add(7, 12);
@@ -208,7 +211,7 @@ public class PerimeterFinder2Test extends TestCase {
         return set1;
     }
    
-    public void estFindMinXY() {
+    public void testFindMinXY() {
         
         Set<PairInt> set = new HashSet<PairInt>();
         set.add(new PairInt(10, 10));
@@ -224,7 +227,7 @@ public class PerimeterFinder2Test extends TestCase {
         
     }
     
-    public void estOrdered0() {
+    public void testOrdered0() {
         /*
         4
         3  *     *
@@ -303,7 +306,7 @@ public class PerimeterFinder2Test extends TestCase {
         }
     }
     
-    public void estOrdered2() {
+    public void testOrdered2() {
         Set<PairInt> shapePoints = new HashSet<PairInt>();
         for (int i = 1; i < 7; ++i) {
             for (int j = 1; j < 4; ++j) {
