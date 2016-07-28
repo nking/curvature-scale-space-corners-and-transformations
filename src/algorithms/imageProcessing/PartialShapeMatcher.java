@@ -91,5 +91,66 @@ public class PartialShapeMatcher {
     
                    where M_D^n 
                        = A_1*(1:M,1:M) - A_2*(n:n+M-1,n:n+M-1)
+                   
+                   then, all matching triplets {s,m,r} which
+                   provide a difference value D_a(s,m,r) below
+                   a fixed threshold are calculated.
+
+                   the final set is made by mergin
+                   different matchs to make a set of connected
+                   point correspondences
+                   (see scissors in figure 4).
+
+              Similarity of Shape
+                  - adopting method of Bronstein etal. [17]. 
+                    They proposed to use the Pareto-framework for 
+                    quantitative interpretation of partial similarity. 
+                    They define two quantities: 
+                       partiality λ(X′, Y′), which describes 
+                       the length of the parts
+                       (the higher the value the smaller the part) 
+                    and dissimilarity ε(X′, Y′), 
+                       which measures the dissimilarity between the parts, 
+                       where X′ and Y′ are two contour parts of the shape. 
+
+                    A pair Φ(X∗, Y ∗) = (λ(X∗, Y ∗), ε(X∗, Y ∗)) of 
+                    partiality and dissimilarity values, 
+                    where dissim is lowest for given partiality,
+                    is the Pareto optimum.
+                         the Pareto optimums are curves called the 
+                         Pareto frontier.
+                         they calculate a global optimal Pareto frontier 
+                         by returning the minimum descriptor difference 
+                         for all partialities.
+                         Then the single partial similarity value,
+                         a.k.a.  Salukwadze distance is calculated 
+                         based on the Pareto frontier by
+                           d_S(X,Y) =  inf  | phi(X*, Y*)|_1
+                                      (X*,Y*)
+
+                    where |..|_1 is the L1 norm of the vector
+                           and L1 norm is the "manhattan dist",
+                           that is abs(diffX) + abs(diffY), and
+                           is not the euclidean distance
+
+                    so d_X(X,Y) measures dist from (0,0) to
+                        the closest point on the Paretto Frontier
+
+            runtime complexity is based on image integral analysis
+               and is O(m*n) where n and m are the number of sampled
+               points on the input shapes.
+
+               for their shae database tests, they found n=30 was
+               enough to find matches.
+
+               Integral images: 
+                  "Rapid object detection using a boosted 
+                   cascade of simple features" by
+                    Viola and Jones 2001
+               Pareto Frontier:
+                  "Partial similarity of objects, or how to 
+                  compare a centaur to a horse"
+                   by Bronstein et al. 2008
+    
     */
 }
