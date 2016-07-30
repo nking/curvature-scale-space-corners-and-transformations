@@ -1,5 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.LinesAndAngles;
+import algorithms.util.PairIntArray;
+
 /**
  *
  * @author nichole
@@ -30,7 +33,7 @@ public class PartialShapeMatcher {
        - a shape is defined as the CW ordered sequence of points P_1...P_N
          and the shape to match has points Q_1...Q_N
        - descriptor invariant to translation, rotation, and scale:
-           - a chaord is a line joining 2 region points
+           - a chord is a line joining 2 region points
            - uses the relative orientation between 2 chords
              angle a_i_j is from chord P_i_P_j to reference
              point P_i
@@ -70,34 +73,40 @@ public class PartialShapeMatcher {
             - find rxr sized blocks similar to one another
               by starting at main diagonal element
               A_1(s,s) and A_2(m,m)
-              which have a small angular differenc value
-    
-                              1
-               D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
-                             r^2
-                                 * summation_j_0_(r-1)
-                                   of [A_1*(s+i,s_j) - A_2*(m+i,m+j)]^2
+              which have a small angular difference value
+ 
+                             1
+              D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
+                            r^2
+                                * summation_j_0_(r-1)
+                                   of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
+              //s range 0 to N-1
+              //m range 0 to M-1
+              //r range 0 or 1 to min(N, M)
 
-             finding all of the possible matches and lengths
+              finding all of the possible matches and lengths
                 is infeasible with brute force for large number of points,
                 so authors created a Summary and Table approach
              Summary And Table:
-                 - to calculate all  D_a(s,m,r)
-                   usws concept of "integral image"
+                 - to calculate all D_a(s,m,r)
+                   uses concept of "integral image"
                        by Viola and Jones
+                   (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
                  - N integral images int_1...int_N of size MXM
                    are built for N descriptor
                    difference matrices M_D^n
+                   where the number of sampled points on the two
+                   shapes is N and M, respectively
     
                    where M_D^n 
-                       = A_1*(1:M,1:M) - A_2*(n:n+M-1,n:n+M-1)
+                       = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
                    
                    then, all matching triplets {s,m,r} which
                    provide a difference value D_a(s,m,r) below
                    a fixed threshold are calculated.
 
-                   the final set is made by mergin
-                   different matchs to make a set of connected
+                   the final set is made by merging
+                   different matches to make a set of connected
                    point correspondences
                    (see scissors in figure 4).
 
@@ -151,6 +160,117 @@ public class PartialShapeMatcher {
                   "Partial similarity of objects, or how to 
                   compare a centaur to a horse"
                    by Bronstein et al. 2008
-    
+
     */
+    
+    /**
+     * in sampling the boundaries of the shapes, one can
+     * choose to use the same number for each (which can result
+     * in very different spacings for different sized curves)
+     * or one can choose a set distance between sampling
+     * points.
+     * dp is the set distance between sampling points.
+       The authors use 3 as an example.
+     */
+    protected int dp = 5;
+    
+    public void overrideSamplingDistance(int d) {
+        this.dp = d;
+    }
+    
+    /**
+     * 
+     * @param p
+     * @param q 
+     */
+    
+    public void match(PairIntArray p, PairIntArray q) {
+                        
+        /*
+        | a_1_1...a_1_N |
+        | a_2_1...a_2_N |
+               ...
+        | a_N_1...a_N_N |
+           elements on the diagonal are zero
+        
+           to shift to different first point as reference,
+           can shift up k-1 rows and left k-1 columns.
+        */
+        
+        float[][] a1 = createDescriptorMatrix(p);
+        
+        float[][] a2 = createDescriptorMatrix(q);
+        
+        int n1 = a1.length;
+        
+        int n2 = a2.length;
+        
+    }
+    
+    protected float[][] createDescriptorMatrix(PairIntArray p) {
+        
+        int n = (int)Math.ceil((double)p.getN()/dp);
+        
+        float[][] a = new float[n][];
+        for (int i = 0; i < n; ++i) {
+            a[i] = new float[n];
+        }
+        
+        /*
+             P1      Pmid
+        
+                  P2
+        */
+        
+        System.out.println("n=" + n);
+        
+        for (int i1 = 0; i1 < n; ++i1) {
+            int start = i1 + 1 + dp;
+            if (i1 == 1) {
+                break;
+            }
+            for (int ii = start; ii < (start + n - 1 - dp); ++ii) {
+                int i2 = ii;
+                // wrap around i2
+                if (i2 > (n - 1)) {
+                    i2 -= n;
+                }
+                
+                int imid = i2 - dp;
+                // wrap around i2
+                if (imid > (n - 1)) {
+                    imid -= n;
+                }
+  
+                //System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
+   
+                double angleA = LinesAndAngles.calcClockwiseAngle(
+                    p.getX(i1), p.getY(i1),
+                    p.getX(i2), p.getY(i2),
+                    p.getX(imid), p.getY(imid)
+                );
+              
+                /*
+                String str = String.format(
+                    "(%d,%d) (%d,%d) (%d,%d) a=%.4f",
+                    p.getX(i1), p.getY(i1),
+                    p.getX(i2), p.getY(i2),
+                    p.getX(imid), p.getY(imid),
+                    (float) angleA * 180. / Math.PI);
+                System.out.println(str);
+                */
+                
+                a[i1][i2] = (float)angleA;
+            }
+        }
+        
+        return a;
+    }
+    
+    protected int distanceSqEucl(int x1, int y1, int x2, int y2) {
+        
+        int diffX = x1 - x2;
+        int diffY = y1 - y2;
+        return (diffX * diffX + diffY * diffY);
+    }
 }
