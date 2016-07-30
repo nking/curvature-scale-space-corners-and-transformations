@@ -425,4 +425,70 @@ public class LinesAndAngles {
         }
         return true;
     }
+    
+    /**
+     * calculate the angle of segment P1:P3 sweeping clockwise
+     * to segment P2:P3.
+     * 
+     * internally, the method uses the law of cosines and
+     * the direction method.
+     * 
+     *   P1     P2
+     * 
+     *      P3
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return 
+     */
+    public static double calcClockwiseAngle(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
+        /*
+        for angle, could consider:
+        dot = x1*x2 + y1*y2
+        det = x1*y2 + y1*x2
+        angle = math.atan2(det, dot); angle*180./math.pi + 90
+        and offset of 90 for angle then other for direction
+        */
+        
+        double d = direction(x3, y3, x2, y2, x1, y1);
+
+        // c
+        int d1d3 = distanceSqEucl(x1, y1, x3, y3);
+
+        // b
+        int d2d3 = distanceSqEucl(x2, y2, x3, y3);
+
+        // a
+        int d1d2 = distanceSqEucl(x1, y1, x2, y2);
+
+        //cosine A = (b^2 + c^2 - a^2)/2bc
+        double cosA = (d1d3 + d2d3 - d1d2)
+            / (2 * Math.sqrt(d1d3 * d2d3));
+
+        double angleA = Math.acos(cosA);
+        
+        //System.out.println("direction=" + d +
+        //    " d1d3=" + d1d3 + " d2d3=" + d2d3 + 
+        //    " d1d2=" + d1d2);
+        
+        if (d > 0) {
+            angleA = 2.*Math.PI - angleA;
+        }
+        
+        return angleA;
+    }
+ 
+    protected static int distanceSqEucl(int x1, int y1, 
+        int x2, int y2) {
+        
+        int diffX = x1 - x2;
+        int diffY = y1 - y2;
+        return (diffX * diffX + diffY * diffY);
+    }
+    
 }

@@ -223,4 +223,127 @@ public class LinesAndAnglesTest extends TestCase {
         isInLine = LinesAndAngles.pointIsInLine(4, 4, 0, 0, 4, 4);
         assertTrue(isInLine);
     }
+    
+    public void testXalcClockwiseAngle() {
+        
+        int x1, y1, x2, y2, x3, y3;
+        double angle, expected; 
+        double eps = 0.001;
+        
+        /*
+           1     2
+              3
+        */
+        x1 = 0;
+        y1 = 10;
+        x3 = 10;
+        y3 = 0;
+        x2 = 20;
+        y2 = 10;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = Math.PI/2;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+           1     
+              3   2
+        */
+        x1 = 0;
+        y1 = 10;
+        x3 = 10;
+        y3 = 0;
+        x2 = 20;
+        y2 = 0;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = 3*Math.PI/4;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+           1     
+              3 
+                 2
+        */
+        x1 = 0;
+        y1 = 20;
+        x3 = 10;
+        y3 = 10;
+        x2 = 20;
+        y2 = 0;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = Math.PI;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+           1     
+              3 
+              2
+        */
+        x1 = 0;
+        y1 = 20;
+        x3 = 10;
+        y3 = 10;
+        x2 = 10;
+        y2 = 0;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = 5.*Math.PI/4.;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+           1     
+              3 
+           2
+        */
+        x1 = 0;
+        y1 = 20;
+        x3 = 10;
+        y3 = 10;
+        x2 = 0;
+        y2 = 0;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = 6.*Math.PI/4.;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+              1     
+           2  3 
+        */
+        x1 = 10;
+        y1 = 10;
+        x3 = 10;
+        y3 = 0;
+        x2 = 0;
+        y2 = 0;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = 6.*Math.PI/4.;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+        /*
+              3  2
+              1
+        */
+        x1 = 0;
+        y1 = 0;
+        x3 = 0;
+        y3 = 10;
+        x2 = 10;
+        y2 = 10;
+        angle = LinesAndAngles.calcClockwiseAngle(x1, y1, 
+            x2, y2, x3, y3);
+        expected = 6.*Math.PI/4.;
+        //System.out.println("a=" + angle + " expected=" + expected);
+        assertTrue(Math.abs(angle - expected) < eps);
+        
+    }
 }
