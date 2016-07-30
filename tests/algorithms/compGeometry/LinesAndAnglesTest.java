@@ -224,7 +224,7 @@ public class LinesAndAnglesTest extends TestCase {
         assertTrue(isInLine);
     }
     
-    public void testXalcClockwiseAngle() {
+    public void testCalcClockwiseAngle() {
         
         int x1, y1, x2, y2, x3, y3;
         double angle, expected; 

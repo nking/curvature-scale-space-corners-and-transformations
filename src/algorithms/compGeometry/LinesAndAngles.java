@@ -427,15 +427,16 @@ public class LinesAndAngles {
     }
     
     /**
-     * calculate the angle of segment P1:P3 sweeping clockwise
-     * to segment P2:P3.
+     * Calculate the angle of segment P3:P1 sweeping clockwise
+     * to segment P3:P2.
      * 
-     * internally, the method uses the law of cosines and
+     * Internally, the method uses the law of cosines and
      * the direction method.
-     * 
+     * <pre>
      *   P1     P2
      * 
      *      P3
+     * </pre>
      * @param x1
      * @param y1
      * @param x2
@@ -447,14 +448,6 @@ public class LinesAndAngles {
     public static double calcClockwiseAngle(int x1, int y1, 
         int x2, int y2, int x3, int y3) {
 
-        /*
-        for angle, could consider:
-        dot = x1*x2 + y1*y2
-        det = x1*y2 + y1*x2
-        angle = math.atan2(det, dot); angle*180./math.pi + 90
-        and offset of 90 for angle then other for direction
-        */
-        
         double d = direction(x3, y3, x2, y2, x1, y1);
 
         // c
