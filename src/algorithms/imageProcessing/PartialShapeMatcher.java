@@ -87,7 +87,7 @@ public class PartialShapeMatcher {
               finding all of the possible matches and lengths
                 is infeasible with brute force for large number of points,
                 so authors created a Summary and Table approach
-             Summary And Table:
+            Summary And Table:
                  - to calculate all D_a(s,m,r)
                    uses concept of "integral image"
                        by Viola and Jones
@@ -205,6 +205,113 @@ public class PartialShapeMatcher {
         
         int n2 = a2.length;
         
+        /*
+        - find rxr sized blocks similar to one another
+          by starting at main diagonal element
+          A_1(s,s) and A_2(m,m)
+          which have a small angular difference value
+
+                         1
+          D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
+                        r^2
+                            * summation_j_0_(r-1)
+                               of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
+
+          //s range 0 to N-1
+          //m range 0 to M-1
+          //r range 0 or 1 to min(N, M)
+
+              - to calculate all D_a(s,m,r)
+                   uses concept of "integral image"
+                       by Viola and Jones
+                   (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
+                 - N integral images int_1...int_N of size MXM
+                   are built for N descriptor
+                   difference matrices M_D^n
+                   where the number of sampled points on the two
+                   shapes is N and M, respectively
+    
+                   where M_D^n 
+                       = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+                   
+                   then, all matching triplets {s,m,r} which
+                   provide a difference value D_a(s,m,r) below
+                   a fixed threshold are calculated.
+        ---------------------------
+                         1
+          D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
+                        r^2
+                            * summation_j_0_(r-1)
+                               of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
+          //s range 0 to N-1 - r
+          //m range 0 to M-1 - r
+          //r range 2 to min(N, M) ?
+
+          where M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+
+        s=0,m=0,r=2
+        (1/4) * ((A_1(0,0) - A_2(0,0)) 
+               + (A_1(0,1) - A_2(0,1))
+               + (A_1(0,2) - A_2(0,2)) +
+                 (A_1(1,0) - A_2(1,0)) 
+               + (A_1(1,1) - A_2(1,1))
+               + (A_1(1,2) - A_2(1,2)) +
+                 (A_1(2,0) - A_2(2,0)) 
+               + (A_1(2,1) - A_2(2,1))
+               + (A_1(2,2) - A_2(2,2)))
+        (1/4) * ((A_1(0,0) + A_1(0,1) + A_1(0,2))
+               + (A_1(1,0) + A_1(1,1) + A_1(1,2))
+               + (A_1(2,0) + A_1(2,1) + A_1(2,2))
+               - (A_2(0,0) + A_2(0,1) + A_2(0,2))
+               - (A_2(1,0) + A_2(1,1) + A_2(1,2))
+               - (A_2(2,0) + A_2(2,1) + A_2(2,2))
+        (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
+                 + A_1INT(2,1) + A_1INT(2,2))
+               - (- A_2INT(1,1) + A_2INT(1,2)
+                  + A_2INT(2,1) + A_2INT(2,2))
+        can use the summary area table method to make
+        array summed along x and y.
+        from wikipedia: "the value at any point (x, y) 
+        in the summed area table is just the sum of all 
+        the pixels above and to the left of (x, y), inclusive"
+  
+        I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
+        
+        (1/1) * SUM_i=0to2 * SUM_j=0to2 
+              * (A_1(0+i,0+j) - A_2(0+i,0+j)) 
+        
+        s=0,m=0,r=2
+            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
+                                  + A_1INT(2,1) + A_1INT(2,2))
+                               - (- A_2INT(1,1) + A_2INT(1,2)
+                                  + A_2INT(2,1) + A_2INT(2,2))
+        s=0,m=1,r=2
+            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
+                                  + A_1INT(2,1) + A_1INT(2,2))
+                               - (- A_2INT(2,1) + A_2INT(2,2)
+                                  + A_2INT(3,1) + A_2INT(3,2))
+        
+        s=0,m=1,r=2
+            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
+                                  + A_1INT(2,1) + A_1INT(2,2))
+                               - (- A_2INT(2,1) + A_2INT(2,2)
+                                  + A_2INT(3,1) + A_2INT(3,2))
+        
+        rewritten using the integral images:
+        D_a(s,m,r) = 
+            (1/r^2) * (- A_1INT(s+r-1,s+r-1) + A_1INT(s+r-1,s+r)
+                       + A_1INT(s+r,  s+r-1) + A_1INT(s+r,  s+r))
+                    - (- A_2INT(m+r-1,m+r-1) + A_2INT(m+r-1,m+r)
+                       + A_2INT(m+r,  m+r-1) + A_2INT(m+r,  m+r))
+        
+        note that the authors also refer to having N number of
+        integral images for A1, for example, and that is 
+        A1 with the shift to make a different reference point
+        and then making an integral image from each of those, N A's.
+        
+        M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+        
+        */
     }
     
     protected float[][] createDescriptorMatrix(PairIntArray p) {
@@ -226,23 +333,21 @@ public class PartialShapeMatcher {
         
         for (int i1 = 0; i1 < n; ++i1) {
             int start = i1 + 1 + dp;
-            if (i1 == 1) {
-                break;
-            }
             for (int ii = start; ii < (start + n - 1 - dp); ++ii) {
                 int i2 = ii;
-                // wrap around i2
-                if (i2 > (n - 1)) {
-                    i2 -= n;
-                }
                 
                 int imid = i2 - dp;
-                // wrap around i2
+                // wrap around
                 if (imid > (n - 1)) {
                     imid -= n;
                 }
   
-                //System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                // wrap around
+                if (i2 > (n - 1)) {
+                    i2 -= n;
+                }
+                
+                System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
    
                 double angleA = LinesAndAngles.calcClockwiseAngle(
                     p.getX(i1), p.getY(i1),
@@ -250,15 +355,15 @@ public class PartialShapeMatcher {
                     p.getX(imid), p.getY(imid)
                 );
               
-                /*
+                
                 String str = String.format(
-                    "(%d,%d) (%d,%d) (%d,%d) a=%.4f",
-                    p.getX(i1), p.getY(i1),
-                    p.getX(i2), p.getY(i2),
-                    p.getX(imid), p.getY(imid),
+                    "[%d](%d,%d) [%d](%d,%d) [%d](%d,%d) a=%.4f",
+                    i1, p.getX(i1), p.getY(i1),
+                    i2, p.getX(i2), p.getY(i2),
+                    imid, p.getX(imid), p.getY(imid),
                     (float) angleA * 180. / Math.PI);
                 System.out.println(str);
-                */
+                
                 
                 a[i1][i2] = (float)angleA;
             }
