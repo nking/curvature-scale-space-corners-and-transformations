@@ -217,39 +217,41 @@ public class PartialShapeMatcher {
                             * summation_j_0_(r-1)
                                of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
 
-          //s range 0 to N-1
-          //m range 0 to M-1
-          //r range 0 or 1 to min(N, M)
+          //s range 0 to M-1
+          //m range 0 to N-1, M<=N
+          //r range 1? to min(N, M)
 
-              - to calculate all D_a(s,m,r)
-                   uses concept of "integral image"
-                       by Viola and Jones
-                   (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
-                 - N integral images int_1...int_N of size MXM
-                   are built for N descriptor
-                   difference matrices M_D^n
-                   where the number of sampled points on the two
-                   shapes is N and M, respectively
-    
-                   where M_D^n 
-                       = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-                   
-                   then, all matching triplets {s,m,r} which
-                   provide a difference value D_a(s,m,r) below
-                   a fixed threshold are calculated.
+          - to calculate all D_a(s,m,r)
+               uses concept of "integral image"
+                   by Viola and Jones
+               (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
+             - N integral images int_1...int_N of size MXM
+               are built for N descriptor
+               difference matrices M_D^n
+               where the number of sampled points on the two
+               shapes is N and M, respectively
+
+               where M_D^n 
+                   = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+
+               then, all matching triplets {s,m,r} which
+               provide a difference value D_a(s,m,r) below
+               a fixed threshold are calculated.
         ---------------------------
                          1
           D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
                         r^2
                             * summation_j_0_(r-1)
                                of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
-          //s range 0 to N-1 - r
-          //m range 0 to M-1 - r
-          //r range 2 to min(N, M) ?
+          //s range 0 to M-1
+          //m range 0 to N-1, M<=N
+          //r range 1? to min(N, M)
 
-          where M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+        Looking at D_a in detail for sets of s,m,r to 
+        better understand the integral images of the
+        difference matrices:
 
-        s=0,m=0,r=2
+        s=0,m=0,r=2:
         (1/4) * ((A_1(0,0) - A_2(0,0)) 
                + (A_1(0,1) - A_2(0,1))
                + (A_1(0,2) - A_2(0,2)) +
@@ -277,21 +279,12 @@ public class PartialShapeMatcher {
   
         I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
         
-        (1/1) * SUM_i=0to2 * SUM_j=0to2 
-              * (A_1(0+i,0+j) - A_2(0+i,0+j)) 
-        
-        s=0,m=0,r=2
+        s=0,m=0,r=2:
             D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
                                   + A_1INT(2,1) + A_1INT(2,2))
                                - (- A_2INT(1,1) + A_2INT(1,2)
                                   + A_2INT(2,1) + A_2INT(2,2))
-        s=0,m=1,r=2
-            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
-                                  + A_1INT(2,1) + A_1INT(2,2))
-                               - (- A_2INT(2,1) + A_2INT(2,2)
-                                  + A_2INT(3,1) + A_2INT(3,2))
-        
-        s=0,m=1,r=2
+        s=0,m=1,r=2:
             D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
                                   + A_1INT(2,1) + A_1INT(2,2))
                                - (- A_2INT(2,1) + A_2INT(2,2)
@@ -304,12 +297,35 @@ public class PartialShapeMatcher {
                     - (- A_2INT(m+r-1,m+r-1) + A_2INT(m+r-1,m+r)
                        + A_2INT(m+r,  m+r-1) + A_2INT(m+r,  m+r))
         
-        note that the authors also refer to having N number of
-        integral images for A1, for example, and that is 
-        A1 with the shift to make a different reference point
-        and then making an integral image from each of those, N A's.
         
-        M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+        (1) make difference matrices.
+            there will be N A_2 matrices in which each
+            is shifted left and up by 1 (or some other value).
+        
+            M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+                shifting A_2 by 0 through n where n is (N-M+1?),
+                but shifting it by N instead would cover all 
+                orientation angles.
+        (2) make Summary Area Tables of the N M_D^m matrices.
+        (3) starting on the diagonals of the integral images
+            made from the N M_D^n matrices,
+            D_α(s, m, r) can be calculated for every block of any 
+            size starting at any point on the diagonal in 
+            constant time.
+      
+            for each of the N or n integral images of difference
+            matrices:
+            can calc D_a(s,r) = (1/r^2)
+                    *(- M_D(s+r-1,s+r-1) + M_D(s+r-1,s+r)
+                      + M_D(s+r,  s+r-1) + M_D(s+r,  s+r))
+            where m is embedded in the integral image
+            as an offset from s (there are N such offsets, then).
+        
+        NOTE: that seems to be what the paper is suggesting...
+        
+        reading the pareto front papers...
+        lower threshold...
+        building correspondence list from M_D^n...
         
         */
     }
