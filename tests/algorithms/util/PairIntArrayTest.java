@@ -485,5 +485,38 @@ public class PairIntArrayTest extends TestCase {
         }
         
     }
-    
+
+    public void testRotateLeft() {
+        int[] x = new int[]{(int)'a', (int)'b', (int)'c', (int)'d', (int)'e',
+            (int)'f', (int)'g', (int)'h'
+        };
+        PairIntArray xy = new PairIntArray(x.length);
+        for(int i = 0; i < x.length; ++i) {
+            int idx2 = i + 1;
+            if (idx2 > (x.length - 1)) {
+                idx2 -= x.length;
+            }
+            xy.add(x[i], x[idx2]);
+        }
+        xy.rotateLeft(3);
+        
+        int[] expected = new int[]{
+            (int)'d', (int)'e', (int)'f', (int)'g', (int)'h', (int)'a', 
+            (int)'b', (int)'c'
+        };
+        for(int i = 0; i < x.length; ++i) {
+            int rX = xy.getX(i);
+            int rY = xy.getY(i);
+            
+            int idx2 = i + 1;
+            if (idx2 > (x.length - 1)) {
+                idx2 -= x.length;
+            }
+            int expX = expected[i];
+            int expY = expected[idx2];
+            assertEquals(expX, rX);
+            assertEquals(expY, rY);
+        }
+    }
+   
 }

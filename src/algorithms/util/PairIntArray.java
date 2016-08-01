@@ -1,5 +1,6 @@
 package algorithms.util;
 
+import algorithms.Rotate;
 import java.util.Arrays;
 
 /**
@@ -198,6 +199,12 @@ public class PairIntArray {
             y[i] = y[idx2];
             y[idx2] = swap;
         }
+    }
+    
+    public void rotateLeft(int offset) {
+        Rotate r = new Rotate();
+        r.rotate2(x, n, offset);
+        r.rotate2(y, n, offset);
     }
     
     public void insert(int index, int xPoint, int yPoint) {
