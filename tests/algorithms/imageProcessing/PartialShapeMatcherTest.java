@@ -58,10 +58,8 @@ public class PartialShapeMatcherTest extends TestCase {
         System.out.println("p.n=" + p.getN() 
             + " q.n=" + q.getN());
         
-        q.rotateLeft(q.getN() - 3);
-        
-        //TODO: add occlusion to q
-        
+        //q.rotateLeft(q.getN() - 3);
+                
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         

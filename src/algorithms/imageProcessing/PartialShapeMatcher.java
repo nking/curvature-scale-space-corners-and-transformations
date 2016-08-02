@@ -191,9 +191,9 @@ public class PartialShapeMatcher {
     
     public void match(PairIntArray p, PairIntArray q) {
                 
-        if (q.getN() > p.getN()) {
+        if (p.getN() > q.getN()) {
             throw new IllegalArgumentException(
-            "q must be <= q in length.");
+            "q must be <= p in length.");
         }
         
         /*
