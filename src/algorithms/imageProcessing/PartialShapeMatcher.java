@@ -184,12 +184,57 @@ public class PartialShapeMatcher {
     }
     
     /**
+     * NOT READY FOR USE.
+     * 
+     * the spacings used are equidistant, so note that
+        any scale factor between p and q has to be 
+        applied to the data before using this method.
+     * this method will return a score when completed.
      * 
      * @param p
      * @param q 
      */
-    
     public void match(PairIntArray p, PairIntArray q) {
+                
+        if (p.getN() > q.getN()) {
+            throw new IllegalArgumentException(
+            "q must be <= p in length.");
+        }
+       
+        // --- make difference matrices ---
+        float[][][] md = createDifferenceMatrices(p, q);
+        
+        /*
+        the matrices in md can be analyzed for best
+        global solution and separately for best local
+        solution.
+        
+        This method will return results for a local
+        solution to create the point correspondence list.
+        
+        Note that the local best could be two different
+        kinds of models, so might write two
+        different methods for the results.
+        (1) the assumption of same object but with some
+            amount of occlusion, hence gaps in correspondence.
+        (2) the assumption of same object but with 
+           some parts being differently oriented, for
+           an example, the scissors opened versus closed.
+        */
+        
+        //printing out results for md[0] and md[-3] and +3
+        // to look at known test data while checking logic
+        //print("md[0]", md[0]);
+        //print("md[3]", md[3]);  // <----- can see this is all zeros as expected
+        //print("md[-3]", md[md.length - 1]);
+        printBlocks("md[0]", md[0]);
+        printBlocks("md[3]", md[3]);
+        printBlocks("md[-3]", md[md.length - 1]);
+        
+    }
+    
+    protected float[][][] createDifferenceMatrices(
+        PairIntArray p, PairIntArray q) {
                 
         if (p.getN() > q.getN()) {
             throw new IllegalArgumentException(
@@ -367,26 +412,8 @@ public class PartialShapeMatcher {
                 }
             }
         }
-        
-        // if there were no occlusion, could just
-        // find best summary table image and find the
-        //   correspondance within.  that's a global
-        //   solution.
-        //
-        // local solution:        
-        // inspect the md arrays along any point on the
-        //    diagonals to find the best
-        //    block sizes
-        
-        //printing out results for md[0] and md[-3] and +3
-        // to look at known test data while checking logic
-        //print("md[0]", md[0]);
-        //print("md[3]", md[3]);  // <----- can see this is all zeros as expected
-        //print("md[-3]", md[md.length - 1]);
-        printBlocks("md[0]", md[0]);
-        printBlocks("md[3]", md[3]);
-        printBlocks("md[-3]", md[md.length - 1]);
-        
+       
+        return md;
     }
     
     protected float[][] createDescriptorMatrix(PairIntArray p) {
@@ -531,6 +558,7 @@ public class PartialShapeMatcher {
         double prev = Double.MAX_VALUE;
         
         for (int i = r; i < a.length; i+=r) {
+            
             double d;
             
             if ((i - r) > -1) {
