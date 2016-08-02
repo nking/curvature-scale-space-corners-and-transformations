@@ -50,10 +50,13 @@ public class PartialShapeMatcherTest extends TestCase {
     public void testDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
-        plot(p);
+        //plot(p);
         
         PairIntArray q = getScissors2();
-        plot(q);
+        //plot(q);
+        
+        System.out.println("p.n=" + p.getN() 
+            + " q.n=" + q.getN());
         
         q.rotateLeft(q.getN() - 3);
         
@@ -62,7 +65,7 @@ public class PartialShapeMatcherTest extends TestCase {
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         
-        shapeMatcher.match(p, q);        
+        shapeMatcher.match(q, p);        
     }
     
     protected PairIntArray getScissors1() {
@@ -108,7 +111,7 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(52,130); p.add(51,138);
         p.add(50,147); p.add(55,155);
         p.add(60,160); p.add(66,156);
-        p.add(62,150); p.add(78,141);
+        p.add(72,150); p.add(78,141);
         p.add(82,133); p.add(85,125);
         p.add(85,116); p.add(90,110);
         p.add(92,100); p.add(100,95);

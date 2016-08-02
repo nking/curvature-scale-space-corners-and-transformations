@@ -190,7 +190,12 @@ public class PartialShapeMatcher {
      */
     
     public void match(PairIntArray p, PairIntArray q) {
-                        
+                
+        if (q.getN() > p.getN()) {
+            throw new IllegalArgumentException(
+            "q must be <= q in length.");
+        }
+        
         /*
         | a_1_1...a_1_N |
         | a_2_1...a_2_N |
@@ -384,10 +389,10 @@ public class PartialShapeMatcher {
         
         //printing out results for md[0] and md[-3] and +3
         // to look at known test data while checking logic
-        /*print("md[0]", md[0]);
+        print("md[0]", md[0]);
         print("md[3]", md[3]);  // <----- can see this is all zeros as expected
         print("md[-3]", md[md.length - 1]);
-        */
+        
         
         
     }
@@ -433,7 +438,7 @@ public class PartialShapeMatcher {
                     p.getX(imid), p.getY(imid)
                 );
               
-                
+                /*
                 String str = String.format(
                     "[%d](%d,%d) [%d](%d,%d) [%d](%d,%d) a=%.4f",
                     i1, p.getX(i1), p.getY(i1),
@@ -441,7 +446,7 @@ public class PartialShapeMatcher {
                     imid, p.getX(imid), p.getY(imid),
                     (float) angleA * 180. / Math.PI);
                 System.out.println(str);
-                
+                */
                 
                 a[i1][i2] = (float)angleA;
             }
