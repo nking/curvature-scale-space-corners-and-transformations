@@ -327,22 +327,12 @@ public class PartialShapeMatcher {
             size starting at any point on the diagonal in 
             constant time.
       
-            for each of the N or n integral images of difference
-            matrices:
-            can calc D_a(s,r) = (1/r^2)
-                    *(- M_D(s+r-1,s+r-1) + M_D(s+r-1,s+r)
-                      + M_D(s+r,  s+r-1) + M_D(s+r,  s+r))
-            where m is embedded in the integral image
-            as an offset from s (there are N such offsets, then).
-        
-        NOTE: that seems to be what the paper is suggesting...
-        
         reading the pareto frontier papers...
         lower threshold...
         building correspondence list from M_D^n...
         
         */
-        
+
         // --- make difference matrices ---
         float[][][] md = new float[n2][][];
         float[][] prevA2Shifted = null;
@@ -380,20 +370,22 @@ public class PartialShapeMatcher {
         
         // if there were no occlusion, could just
         // find best summary table image and find the
-        //   correspondance within
+        //   correspondance within.  that's a global
+        //   solution.
         //
-        // instead, authors suggest:        
+        // local solution:        
         // inspect the md arrays along any point on the
         //    diagonals to find the best
         //    block sizes
         
         //printing out results for md[0] and md[-3] and +3
         // to look at known test data while checking logic
-        print("md[0]", md[0]);
-        print("md[3]", md[3]);  // <----- can see this is all zeros as expected
-        print("md[-3]", md[md.length - 1]);
-        
-        
+        //print("md[0]", md[0]);
+        //print("md[3]", md[3]);  // <----- can see this is all zeros as expected
+        //print("md[-3]", md[md.length - 1]);
+        printBlocks("md[0]", md[0]);
+        printBlocks("md[3]", md[3]);
+        printBlocks("md[-3]", md[md.length - 1]);
         
     }
     
@@ -430,7 +422,7 @@ public class PartialShapeMatcher {
                     i2 -= n;
                 }
                 
-                System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                //System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
    
                 double angleA = LinesAndAngles.calcClockwiseAngle(
                     p.getX(i1), p.getY(i1),
@@ -519,6 +511,53 @@ public class PartialShapeMatcher {
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
         }
+    }
+
+    private void printBlocks(String label, float[][] a) {
+
+        System.out.println(label);
+        
+        /*
+        Find quadratic sub-areas within reference and query 
+        descriptor matrices starting at main diagonal which 
+        are most similar.
+        
+        */
+        // try a set block size
+        int r = 2;
+        
+        double c = (1./(r*r));
+        
+        double prev = Double.MAX_VALUE;
+        
+        for (int i = r; i < a.length; i+=r) {
+            double d;
+            
+            if ((i - r) > -1) {
+                d = c * (a[i][i] - a[i - r][i - r] +
+                    a[i - r][i] + a[i][i - r]);
+                System.out.println(
+                    String.format(
+                    " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
+                    i, i, -a[i - r][i - r],
+                    a[i - r][i], a[i][i - r],
+                    a[i][i], d));
+            } else {
+                d = c * a[i][i];
+            }
+            
+            /*
+            d = a[i][i];
+            if (prev < Double.MAX_VALUE) {
+                d -= prev;
+            }
+            prev = d;
+                    
+            System.out.println(
+                String.format(" [%d,%d]%.4f,", i, i, d));
+            */
+        }
         
     }
+    
 }
