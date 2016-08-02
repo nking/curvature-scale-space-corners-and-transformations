@@ -22,12 +22,17 @@ public class PartialShapeMatcherTest extends TestCase {
         
         plot(p);
         
+        PairIntArray q = p.copy();
+        q.rotateLeft(q.getN() - 3);
+        
+        //TODO: add occlusion to q
+        
+        
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         
-        float[][] a = shapeMatcher.createDescriptorMatrix(p);
-    
         /*
+        float[][] a = shapeMatcher.createDescriptorMatrix(p);    
         for (int i = 0; i < a.length; ++i) {
             StringBuilder sb = new StringBuilder();
             sb.append(String.format("row=%3d: ", i));
@@ -37,6 +42,9 @@ public class PartialShapeMatcherTest extends TestCase {
             }
             System.out.println(sb.toString());
         }*/
+        
+        shapeMatcher.match(p, q);
+        
     }
     
     protected PairIntArray getWineGlassShape() {

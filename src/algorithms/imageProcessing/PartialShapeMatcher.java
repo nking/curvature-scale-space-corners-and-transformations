@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairIntArray;
+import java.util.Arrays;
 
 /**
  *
@@ -117,9 +118,13 @@ public class PartialShapeMatcher {
                     They define two quantities: 
                        partiality λ(X′, Y′), which describes 
                        the length of the parts
-                       (the higher the value the smaller the part) 
+                       (the higher the value the smaller the part).
+                       it's the size of the parts compared to the
+                       entire object, so is 0 for partiality of the "whole".
+                         X'^c = X\X'
                     and dissimilarity ε(X′, Y′), 
                        which measures the dissimilarity between the parts, 
+                       
                        where X′ and Y′ are two contour parts of the shape. 
 
                     A pair Φ(X∗, Y ∗) = (λ(X∗, Y ∗), ε(X∗, Y ∗)) of 
@@ -149,7 +154,7 @@ public class PartialShapeMatcher {
                and is O(m*n) where n and m are the number of sampled
                points on the input shapes.
 
-               for their shae database tests, they found n=30 was
+               for their shape database tests, they found n=30 was
                enough to find matches.
 
                Integral images: 
@@ -278,6 +283,11 @@ public class PartialShapeMatcher {
         the pixels above and to the left of (x, y), inclusive"
   
         I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
+                        sum x      sum y
+        2 7  6  4      7 13 17   14 18 30 
+        1 3  0  3      3  0  6    7  5 13
+        0 4  1  2      4  5  7    4  5  7
+          0  1  2             
         
         s=0,m=0,r=2:
             D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
@@ -296,7 +306,6 @@ public class PartialShapeMatcher {
                        + A_1INT(s+r,  s+r-1) + A_1INT(s+r,  s+r))
                     - (- A_2INT(m+r-1,m+r-1) + A_2INT(m+r-1,m+r)
                        + A_2INT(m+r,  m+r-1) + A_2INT(m+r,  m+r))
-        
         
         (1) make difference matrices.
             there will be N A_2 matrices in which each
@@ -323,10 +332,61 @@ public class PartialShapeMatcher {
         
         NOTE: that seems to be what the paper is suggesting...
         
-        reading the pareto front papers...
+        reading the pareto frontier papers...
         lower threshold...
         building correspondence list from M_D^n...
         
+        */
+        
+        // --- make difference matrices ---
+        float[][][] md = new float[n2][][];
+        float[][] prevA2Shifted = null;
+        for (int i = 0; i < n2; ++i) {
+            float[][] shifted2;
+            if (prevA2Shifted == null) {
+                shifted2 = copy(a2);
+            } else {
+                // shifts by 1 to left and down by 1
+                rotate(prevA2Shifted);
+                shifted2 = prevA2Shifted;
+            }
+            //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+            md[i] = subtract(a1, shifted2);
+            prevA2Shifted = shifted2;
+        }
+        
+        // ---- make summary area tables from md -----
+        for (int i = 0; i < n2; ++i) {
+            float[][] mdI = md[i];
+            // I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
+            for (int x = 0; x < mdI.length; ++x) {
+                for (int y = 0; y < mdI[x].length; ++y) {
+                    if (x > 0 && y > 0) {
+                        mdI[x][y] += (mdI[x-1][y] + mdI[x][y-1]
+                            - mdI[x-1][y-1]);
+                    } else if (x > 0) {
+                        mdI[x][y] += mdI[x-1][y];
+                    } else if (y > 0) {
+                        mdI[x][y] += mdI[x][y-1];
+                    }
+                }
+            }
+        }
+        
+        // if there were no occlusion, could just
+        // find best summary table image and find the
+        //   correspondance within
+        //
+        // instead, authors suggest:        
+        // inspect the md arrays along any point on the
+        //    diagonals to find the best
+        //    block sizes
+        
+        //printing out results for md[0] and md[-3] and +3
+        // to look at known test data while checking logic
+        /*print("md[0]", md[0]);
+        print("md[3]", md[3]);  // <----- can see this is all zeros as expected
+        print("md[-3]", md[md.length - 1]);
         */
     }
     
@@ -388,10 +448,70 @@ public class PartialShapeMatcher {
         return a;
     }
     
-    protected int distanceSqEucl(int x1, int y1, int x2, int y2) {
-        
+    protected int distanceSqEucl(int x1, int y1, int x2, int y2) {    
         int diffX = x1 - x2;
         int diffY = y1 - y2;
         return (diffX * diffX + diffY * diffY);
+    }
+
+    private float[][] copy(float[][] a) {
+        float[][] a2 = new float[a.length][];
+        for (int i = 0; i < a2.length; ++i) {
+            a2[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+        return a2;
+    }
+
+    private void rotate(float[][] prevShifted) {
+
+         // shift x left by 1 first
+         for (int y = 0; y < prevShifted[0].length; ++y) {
+             float tmp0 = prevShifted[0][y];
+             for (int x = 0; x < (prevShifted.length- 1); ++x){
+                 prevShifted[x][y] = prevShifted[x + 1][y]; 
+             }
+             prevShifted[prevShifted.length - 1][y] = tmp0;
+         }
+         
+         // shift y down by 1
+         for (int x = 0; x < prevShifted.length; ++x) {
+             float tmp0 = prevShifted[x][0];
+             for (int y = 0; y < (prevShifted[x].length - 1); ++y){
+                 prevShifted[x][y] = prevShifted[x][y + 1]; 
+             }
+             prevShifted[x][prevShifted[x].length - 1] = tmp0;
+         }
+    }
+
+    private float[][] subtract(float[][] a1, float[][] a2) {
+        
+        assert(a1.length <= a2.length);
+        assert(a1[0].length <= a2[0].length);
+        
+        float[][] output = new float[a1.length][];
+        for (int i = 0; i < a1.length; ++i) {
+            output[i] = new float[a1[i].length];
+            for (int j = 0; j < a1[i].length; ++j) {
+                output[i][j] = a1[i][j] - a2[i][j];
+            }
+        }
+        
+        return output;
+    }
+
+    private void print(String label, float[][] a) {
+
+        StringBuilder sb = new StringBuilder(label);
+        sb.append("\n");
+        
+        for (int j = 0; j < a[0].length; ++j) {
+            sb.append(String.format("row: %3d", j));
+            for (int i = 0; i < a.length; ++i) {
+                sb.append(String.format(" %.4f,", a[i][j]));
+            }
+            System.out.println(sb.toString());
+            sb.delete(0, sb.length());
+        }
+        
     }
 }
