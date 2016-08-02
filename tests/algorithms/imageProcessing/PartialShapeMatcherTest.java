@@ -16,7 +16,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
  
-    public void testDescriptots() throws Exception {
+    public void estDescriptors() throws Exception {
         
         PairIntArray p = getWineGlassShape();
         
@@ -45,6 +45,96 @@ public class PartialShapeMatcherTest extends TestCase {
         
         shapeMatcher.match(p, q);
         
+    }
+    
+    public void testDescriptors2() throws Exception {
+        
+        PairIntArray p = getScissors1();
+        plot(p);
+        
+        PairIntArray q = getScissors2();
+        plot(q);
+        
+        q.rotateLeft(q.getN() - 3);
+        
+        //TODO: add occlusion to q
+        
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
+        shapeMatcher.overrideSamplingDistance(1);
+        
+        shapeMatcher.match(p, q);        
+    }
+    
+    protected PairIntArray getScissors1() {
+        
+        PairIntArray p = new PairIntArray();
+        p.add(95,58); p.add(102,52); p.add(108,42);
+        p.add(110,35); p.add(118,28); p.add(128,25);
+        p.add(135,25); p.add(142,27); p.add(152,32);
+        p.add(150,40); p.add(142,48); p.add(135,52);
+        p.add(128,58); p.add(119,59); p.add(110,60);
+        p.add(102,62); p.add(95,65); p.add(100,72);
+        p.add(108,80); p.add(115,87); p.add(122,95);
+        p.add(128,104); p.add(130,111); p.add(130,120);
+        p.add(125,120); p.add(115,122); p.add(108,122);
+        p.add(100,112); p.add(95,105); p.add(97,97);
+        p.add(97,89); p.add(95,80); p.add(89,72);
+        p.add(80,70); p.add(71,70); p.add(65,70);
+        p.add(57,70); p.add(49,70); p.add(40,70);
+        p.add(32,70); p.add(23,66); p.add(20,65);
+        p.add(29,63); p.add(37,63); p.add(45,63);
+        p.add(52,60); p.add(60,60); p.add(70,60);
+        p.add(61,55); p.add(52,51); p.add(45,45);
+        p.add(38,40); p.add(28,35); p.add(38,32);
+        p.add(46,35); p.add(55,40); p.add(62,42);
+        p.add(70,48); p.add(78,52); p.add(86,60);
+        
+        // accidently entered y for x, so
+        // reverse them here
+        for (int i = 0; i < p.getN(); ++i) {
+            int x = p.getX(i);
+            int y = p.getY(i);
+            p.set(i, y, x);
+        }
+        
+        return p;
+    }
+    
+    protected PairIntArray getScissors2() {
+        
+        PairIntArray p = new PairIntArray();
+        p.add(80,105); p.add(75,112);
+        p.add(65,117); p.add(58,121);
+        p.add(52,130); p.add(51,138);
+        p.add(50,147); p.add(55,155);
+        p.add(60,160); p.add(66,156);
+        p.add(62,150); p.add(78,141);
+        p.add(82,133); p.add(85,125);
+        p.add(85,116); p.add(90,110);
+        p.add(92,100); p.add(100,95);
+        p.add(108,91); p.add(116,88);
+        p.add(125,85); p.add(132,82);
+        p.add(141,78); p.add(149,70);
+        p.add(155,62); p.add(150,60);
+        p.add(142,52); p.add(135,52);
+        p.add(125,53); p.add(118,58);
+        p.add(112,65); p.add(110,75);
+        p.add(105,82); p.add(97,87);
+        p.add(97,78); p.add(97,70);
+        p.add(97,60); p.add(97,52);
+        p.add(97,45); p.add(95,36);
+        p.add(90,30); p.add(90,40);
+        p.add(90,48); p.add(90,55);
+        p.add(88,62); p.add(87,70);
+        p.add(70,93); p.add(62,92);
+        p.add(52,95); p.add(45,95);
+        p.add(37,97); p.add(28,98);
+        p.add(20,100); p.add(27,103);
+        p.add(37,107); p.add(47,107);
+        p.add(52,107); p.add(62,105);
+        p.add(68,104);
+       
+        return p;
     }
     
     protected PairIntArray getWineGlassShape() {

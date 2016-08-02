@@ -388,6 +388,8 @@ public class PartialShapeMatcher {
         print("md[3]", md[3]);  // <----- can see this is all zeros as expected
         print("md[-3]", md[md.length - 1]);
         */
+        
+        
     }
     
     protected float[][] createDescriptorMatrix(PairIntArray p) {
