@@ -239,9 +239,9 @@ public class PartialShapeMatcher {
             rMax = 1;
         }
         
-        int[][] mins = new int[rMax][];
-        for (int r = 1; r <= rMax; ++r) {
-            mins[r - 1] = findMinDifferenceMatrix(md, r);
+        int[][] mins = new int[rMax-1][];
+        for (int r = 2; r <= rMax; ++r) {
+            mins[r - 2] = findMinDifferenceMatrix(md, r);
         }
         
         StringBuilder sb = new StringBuilder();
@@ -594,7 +594,7 @@ public class PartialShapeMatcher {
     private int[] findMinDifferenceMatrix(float[][][] md,
         int r) {
         
-        double c = (1./(r*r));
+        double c = (1./(double)(r*r));
         
         int[] idxs = new int[md[0].length];
         double[] mins = new double[md[0].length];
@@ -604,6 +604,7 @@ public class PartialShapeMatcher {
         for (int i0 = 0; i0 < md.length; i0++) {
             System.out.println("md[" + i0 + "]:");
             float[][] a = md[i0];
+            float sum = 0;
             for (int i = 0; i < a.length; i+=r) {
                 double d;
                 if ((i - r) > -1) {
@@ -619,15 +620,14 @@ public class PartialShapeMatcher {
                 if (d < 0) {
                     d *= -1;
                 }
-                if (d > 50) {
-                    continue;
-                }
                 d *= c;
+                sum += d;
                 if (d < mins[i]) {
                     mins[i] = d;
                     idxs[i] = i0;
                 }
             }
+            System.out.println("SUM=" + sum);
         }
         
         return idxs;
@@ -646,7 +646,7 @@ public class PartialShapeMatcher {
         // try a set block size
         int r = 2;
         
-        double c = (1./(r*r));
+        double c = (1./(double)(r*r));
         
         double prev = Double.MAX_VALUE;
         
