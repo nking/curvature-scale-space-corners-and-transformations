@@ -69,27 +69,27 @@ public class PartialShapeMatcherTest extends TestCase {
     protected PairIntArray getScissors1() {
         
         PairIntArray p = new PairIntArray();
-        p.add(95,58); p.add(102,52); p.add(108,42);
+        p.add(95,55); p.add(102,52); p.add(108,42);
         p.add(110,35); p.add(118,28); p.add(128,25);
         p.add(135,25); p.add(142,27); p.add(152,32);
         p.add(150,40); p.add(142,48); p.add(135,52);
         p.add(128,58); p.add(119,59); p.add(110,60);
         p.add(102,62); p.add(95,65); p.add(100,72);
-        p.add(108,80); p.add(115,87); p.add(122,95);
-        p.add(128,104); p.add(130,111); p.add(130,120);
-        p.add(125,120); p.add(115,122); p.add(108,122);
+        p.add(108,80); p.add(115,87); p.add(122,95);      // 18,19,20
+        p.add(128,104); p.add(130,111); p.add(130,120);   // 21,22, 23
+        p.add(125,120); p.add(116,122); p.add(108,122);
         p.add(100,112); p.add(95,105); p.add(97,97);
-        p.add(97,89); p.add(95,80); p.add(89,72);
-        p.add(80,70); p.add(71,70); p.add(65,70);
-        p.add(57,70); p.add(49,70); p.add(40,70);
-        p.add(32,70); p.add(23,66); p.add(20,65);
-        p.add(29,63); p.add(37,63); p.add(45,63);
-        p.add(52,60); p.add(60,60); 
-        p.add(70,60);
-        p.add(61,55); p.add(52,51); p.add(45,45);
-        p.add(38,40); p.add(28,35); p.add(38,32);
-        p.add(46,35); p.add(55,40); p.add(62,42);
-        p.add(70,48); p.add(78,52); p.add(86,60);
+        p.add(97,89); p.add(95,81); p.add(89,72);
+        p.add(80,70); p.add(72,70); p.add(63,70);    //33, 34, 35
+        p.add(57,70); p.add(49,70); p.add(39,70);
+        p.add(32,70); p.add(23,67); p.add(20,64);    // 39, 40, 41
+        p.add(28,62); p.add(37,63); p.add(45,62);    // 42
+        p.add(53,61); p.add(60,60); p.add(70,60);    // 45
+        p.add(62,55); p.add(53,51); p.add(45,45);    // 48
+        p.add(38,40); p.add(29,37); p.add(30,33);    // 51
+        p.add(38,34); p.add(47,36); p.add(54,40);    // 54
+        p.add(62,44); p.add(70,49); p.add(78,52);
+        p.add(87,58);
         
         // accidently entered y for x, so
         // reverse them here
