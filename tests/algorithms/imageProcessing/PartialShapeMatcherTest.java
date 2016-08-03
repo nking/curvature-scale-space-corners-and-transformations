@@ -63,7 +63,7 @@ public class PartialShapeMatcherTest extends TestCase {
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         
-        shapeMatcher.match(q, p);        
+        shapeMatcher.match(p, q);        
     }
     
     protected PairIntArray getScissors1() {
@@ -84,7 +84,8 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(57,70); p.add(49,70); p.add(40,70);
         p.add(32,70); p.add(23,66); p.add(20,65);
         p.add(29,63); p.add(37,63); p.add(45,63);
-        p.add(52,60); p.add(60,60); p.add(70,60);
+        p.add(52,60); p.add(60,60); 
+        p.add(70,60);
         p.add(61,55); p.add(52,51); p.add(45,45);
         p.add(38,40); p.add(28,35); p.add(38,32);
         p.add(46,35); p.add(55,40); p.add(62,42);
@@ -127,14 +128,16 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(90,30); p.add(90,40);
         p.add(90,48); p.add(90,55);
         p.add(88,62); p.add(87,70);
-        p.add(70,93); p.add(62,92);
+        p.add(70,93); 
+        p.add(85,80); p.add(84, 88); p.add(78,90);        
+        p.add(62,92);
         p.add(52,95); p.add(45,95);
         p.add(37,97); p.add(28,98);
         p.add(20,100); p.add(27,103);
         p.add(37,107); p.add(47,107);
         p.add(52,107); p.add(62,105);
-        p.add(68,104);
-       
+        p.add(68,104); p.add(78,102);
+        
         return p;
     }
     

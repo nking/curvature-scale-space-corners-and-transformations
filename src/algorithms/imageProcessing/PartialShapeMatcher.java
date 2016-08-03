@@ -186,15 +186,15 @@ public class PartialShapeMatcher {
     /**
      * NOT READY FOR USE.
      * 
-     * the spacings used are equidistant, so note that
+      the spacings used are equidistant, so note that
         any scale factor between p and q has to be 
         applied to the data before using this method.
-     * this method will return a score when completed.
-     * 
+     this method will return a score when completed.
+      
      * @param p
      * @param q 
-     */
-    public void match(PairIntArray p, PairIntArray q) {
+    */
+    public double match(PairIntArray p, PairIntArray q) {
                 
         if (p.getN() > q.getN()) {
             throw new IllegalArgumentException(
@@ -222,15 +222,58 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
         */
         
+        return matchArticulated(md);
+                
         //printing out results for md[0] and md[-3] and +3
         // to look at known test data while checking logic
         //print("md[0]", md[0]);
         //print("md[3]", md[3]);  // <----- can see this is all zeros as expected
         //print("md[-3]", md[md.length - 1]);
+        
+    }
+    
+    protected double matchArticulated(float[][][] md) {
+       
+        int rMax = (int)Math.sqrt(md[0].length);
+        if (rMax < 1) {
+            rMax = 1;
+        }
+        
+        int[][] mins = new int[rMax][];
+        for (int r = 1; r <= rMax; ++r) {
+            mins[r - 1] = findMinDifferenceMatrix(md, r);
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < md[0].length; ++i) {
+            sb.append(String.format("[%4d]: ", i));
+            for (int r = 0; r < mins.length; ++r) {
+                String str;
+                if (mins[r][i] == -1) {
+                    str = " NA ";
+                } else {
+                    str = String.format("%3d", mins[r][i]);
+                }
+                sb.append(str).append(" ");
+            }
+            System.out.println(sb.toString());
+            sb.delete(0, sb.length());
+        }
+        
+        //printBlocks("md[0]", md[0]);
+        //printBlocks("md[3]", md[3]);
+        //printBlocks("md[-3]", md[md.length - 4]);
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    protected double matchRigidWithOcclusion(float[][][] md) {
+        
         printBlocks("md[0]", md[0]);
         printBlocks("md[3]", md[3]);
-        printBlocks("md[-3]", md[md.length - 1]);
+        printBlocks("md[-3]", md[md.length - 4]);
         
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     protected float[][][] createDifferenceMatrices(
@@ -379,9 +422,9 @@ public class PartialShapeMatcher {
         */
 
         // --- make difference matrices ---
-        float[][][] md = new float[n2][][];
+        float[][][] md = new float[n1][][];
         float[][] prevA2Shifted = null;
-        for (int i = 0; i < n2; ++i) {
+        for (int i = 0; i < md.length; ++i) {
             float[][] shifted2;
             if (prevA2Shifted == null) {
                 shifted2 = copy(a2);
@@ -396,7 +439,7 @@ public class PartialShapeMatcher {
         }
         
         // ---- make summary area tables from md -----
-        for (int i = 0; i < n2; ++i) {
+        for (int i = 0; i < md.length; ++i) {
             float[][] mdI = md[i];
             // I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
             for (int x = 0; x < mdI.length; ++x) {
@@ -413,6 +456,8 @@ public class PartialShapeMatcher {
             }
         }
        
+        System.out.println("md.length=" + md.length);
+        
         return md;
     }
     
@@ -539,6 +584,54 @@ public class PartialShapeMatcher {
             sb.delete(0, sb.length());
         }
     }
+    
+    /**
+     * 
+     * @param md 3 dimensional array of difference matrices
+     * @param r block size
+     * @return 
+     */
+    private int[] findMinDifferenceMatrix(float[][][] md,
+        int r) {
+        
+        double c = (1./(r*r));
+        
+        int[] idxs = new int[md[0].length];
+        double[] mins = new double[md[0].length];
+        Arrays.fill(idxs, -1);
+        Arrays.fill(mins, Double.MAX_VALUE);
+        
+        for (int i0 = 0; i0 < md.length; i0++) {
+            System.out.println("md[" + i0 + "]:");
+            float[][] a = md[i0];
+            for (int i = 0; i < a.length; i+=r) {
+                double d;
+                if ((i - r) > -1) {
+                    d = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
+                    System.out.println(
+                        String.format(
+                        " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
+                        i, i, a[i][i], a[i - r][i], a[i][i - r],
+                        a[r][r], d*c));
+                } else {
+                    d = a[i][i];
+                }
+                if (d < 0) {
+                    d *= -1;
+                }
+                if (d > 50) {
+                    continue;
+                }
+                d *= c;
+                if (d < mins[i]) {
+                    mins[i] = d;
+                    idxs[i] = i0;
+                }
+            }
+        }
+        
+        return idxs;
+    }
 
     private void printBlocks(String label, float[][] a) {
 
@@ -587,5 +680,5 @@ public class PartialShapeMatcher {
         }
         
     }
-    
+
 }
