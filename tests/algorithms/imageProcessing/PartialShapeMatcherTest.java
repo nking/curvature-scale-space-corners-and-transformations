@@ -20,7 +20,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
         PairIntArray p = getWineGlassShape();
         
-        plot(p);
+        plot(p, 101);
         
         PairIntArray q = p.copy();
         q.rotateLeft(q.getN() - 3);
@@ -50,10 +50,10 @@ public class PartialShapeMatcherTest extends TestCase {
     public void testDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
-        //plot(p);
+        //plot(p, 200);
         
         PairIntArray q = getScissors2();
-        //plot(q);
+        //plot(q, 201);
         
         System.out.println("p.n=" + p.getN() 
             + " q.n=" + q.getN());
@@ -166,7 +166,7 @@ public class PartialShapeMatcherTest extends TestCase {
         return p;
     }
 
-    private void plot(PairIntArray p) throws Exception {
+    private void plot(PairIntArray p, int fn) throws Exception {
 
         float[] x = new float[p.getN()];
         float[] y = new float[p.getN()];
@@ -184,6 +184,6 @@ public class PartialShapeMatcherTest extends TestCase {
         plot.addPlot(0, xMax, 0, yMax, 
             x, y, x, y, "");
         
-        plot.writeFile(200);
+        plot.writeFile(fn);
     }
 }

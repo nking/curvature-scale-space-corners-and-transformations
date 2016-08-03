@@ -233,6 +233,22 @@ public class PartialShapeMatcher {
     }
     
     protected double matchArticulated(float[][][] md) {
+
+        /*
+        - choose reasonable upper limit to r, such as sqrt(n)
+            - for that rMax,
+              - find the best blocks and find the
+                avg diff of those and eiher the min and max of reange
+                or st.dev.
+       - visit all blocks as currently do and find the best,
+         which may be more than one index of diff matrices,
+         within the avg and stdev.
+         (note, can build a std dev summed area table for this image alone)
+       - inspect the best results:
+         - form the data as nPart / nWhole for chains of similar indexes?
+         - (still reading paretto grontier analysis, but i think that's what it
+           is composed of)
+        */
        
         int rMax = (int)Math.sqrt(md[0].length);
         if (rMax < 1) {
@@ -250,9 +266,9 @@ public class PartialShapeMatcher {
             for (int r = 0; r < mins.length; ++r) {
                 String str;
                 if (mins[r][i] == -1) {
-                    str = " NA ";
+                    str = "  NA";
                 } else {
-                    str = String.format("%3d", mins[r][i]);
+                    str = String.format("%4d", mins[r][i]);
                 }
                 sb.append(str).append(" ");
             }
@@ -619,6 +635,9 @@ public class PartialShapeMatcher {
                 }
                 if (d < 0) {
                     d *= -1;
+                }
+                if (d > 30) {
+                   continue;
                 }
                 d *= c;
                 sum += d;
