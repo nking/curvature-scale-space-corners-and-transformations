@@ -202,12 +202,15 @@ public class PartialShapeMatcher {
      * @param q 
     */
     public double match(PairIntArray p, PairIntArray q) {
-                
-        if (p.getN() > q.getN()) {
-            throw new IllegalArgumentException(
-            "q must be <= p in length.");
-        }
        
+        int minN = Math.min(p.getN(), q.getN());
+       
+        //System.out.println("a1:");
+        float[][] a1 = createDescriptorMatrix(p, minN);
+        
+        //System.out.println("a2:");
+        float[][] a2 = createDescriptorMatrix(q, minN);       
+        
         // --- make difference matrices ---
         
         // the rotated matrix for index 0 rotations is q.  
@@ -220,7 +223,7 @@ public class PartialShapeMatcher {
         // transition from points 15 to 17.
         // In summary, need to combine results for these
         // for operations with p to q with results for q to p
-        float[][][] md = createDifferenceMatrices(p, q);
+        float[][][] md = createDifferenceMatrices(a1, a2, minN);
         
         /*
         the matrices in md can be analyzed for best
@@ -240,9 +243,9 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
         */
         
-        List<Sequence> sequences = extractSimilar(md);
+        List<Sequence> sequencesPQ = extractSimilar(md);
         
-        return matchArticulated(sequences, md[0].length);
+        return matchArticulated(sequencesPQ, minN);
         
         //printing out results for md[0] and md[-3] and +3
         // to look at known test data while checking logic
@@ -377,13 +380,8 @@ public class PartialShapeMatcher {
     
     // index0 is rotations of p.n, index1 is p.n, index2 is q.n
     protected float[][][] createDifferenceMatrices(
-        PairIntArray p, PairIntArray q) {
-                
-        if (p.getN() > q.getN()) {
-            throw new IllegalArgumentException(
-            "q must be <= p in length.");
-        }
-        
+        float[][] a1, float[][] a2, int minN) {
+     
         /*
         | a_1_1...a_1_N |
         | a_2_1...a_2_N |
@@ -392,18 +390,8 @@ public class PartialShapeMatcher {
            elements on the diagonal are zero
         
            to shift to different first point as reference,
-           can shift up k-1 rows and left k-1 columns.
+           can shift down k-1 rows and left k-1 columns.
         */
-        
-        //System.out.println("a1:");
-        float[][] a1 = createDescriptorMatrix(p);
-        
-        //System.out.println("a2:");
-        float[][] a2 = createDescriptorMatrix(q);
-                
-        int n1 = a1.length;
-        
-        int n2 = a2.length;
         
         /*
         - find rxr sized blocks similar to one another
@@ -461,7 +449,7 @@ public class PartialShapeMatcher {
         */
 
         // --- make difference matrices ---
-        float[][][] md = new float[n1][][];
+        float[][][] md = new float[minN][][];
         float[][] prevA2Shifted = null;
         for (int i = 0; i < md.length; ++i) {
             float[][] shifted2;
@@ -487,10 +475,9 @@ public class PartialShapeMatcher {
         return md;
     }
     
-    protected float[][] createDescriptorMatrix(PairIntArray p) {
-        
-        int n = (int)Math.ceil((double)p.getN()/dp);
-        
+    protected float[][] createDescriptorMatrix(PairIntArray p,
+        int n) {
+                
         float[][] a = new float[n][];
         for (int i = 0; i < n; ++i) {
             a[i] = new float[n];
