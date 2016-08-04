@@ -2,6 +2,10 @@ package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.Arrays;
 
 /**
@@ -92,7 +96,6 @@ public class PartialShapeMatcher {
                  - to calculate all D_a(s,m,r)
                    uses concept of "integral image"
                        by Viola and Jones
-                   (for their data, I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
                  - N integral images int_1...int_N of size MXM
                    are built for N descriptor
                    difference matrices M_D^n
@@ -202,6 +205,7 @@ public class PartialShapeMatcher {
         }
        
         // --- make difference matrices ---
+        
         float[][][] md = createDifferenceMatrices(p, q);
         
         /*
@@ -249,49 +253,58 @@ public class PartialShapeMatcher {
          - (still reading paretto grontier analysis, but i think that's what it
            is composed of)
         */
+        
+        int n1 = md[0].length;
        
-        int rMax = (int)Math.sqrt(md[0].length);
+        int rMax = (int)Math.sqrt(n1);
         if (rMax < 1) {
             rMax = 1;
         }
-        
-        int[][] mins = new int[rMax-1][];
+
+        double thresh = 30;
+                
+        MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
-            mins[r - 2] = findMinDifferenceMatrix(md, r);
+            findMinDifferenceMatrix(md, r, thresh, mins);
         }
         
+        double tolerance = 3.;
+        
+        DiffMatrixResults equivBest = new DiffMatrixResults(n1);
+        for (int r = 2; r <= rMax; ++r) {
+            findEquivalentBest(md, r, mins, tolerance,
+                equivBest);
+        }
+        
+        //TODO: create the points of the paretto frontier from
+        //    sequences in equivBest
+        
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < md[0].length; ++i) {
+        for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
-            for (int r = 0; r < mins.length; ++r) {
-                String str;
-                if (mins[r][i] == -1) {
-                    str = "  NA";
-                } else {
-                    str = String.format("%4d", mins[r][i]);
+            TIntList list = equivBest.indexes[i];
+            if (list == null) {
+                sb.append("  NA");
+            } else {
+                for (int j = 0; j < list.size(); ++j) {
+                    sb.append(Integer.toString(list.get(j)));
+                    sb.append(",");
                 }
-                sb.append(str).append(" ");
             }
+            sb.append(" | ");
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
         }
-        
-        //printBlocks("md[0]", md[0]);
-        //printBlocks("md[3]", md[3]);
-        //printBlocks("md[-3]", md[md.length - 4]);
         
         throw new UnsupportedOperationException("not yet implemented");
     }
     
     protected double matchRigidWithOcclusion(float[][][] md) {
-        
-        printBlocks("md[0]", md[0]);
-        printBlocks("md[3]", md[3]);
-        printBlocks("md[-3]", md[md.length - 4]);
-        
+         
         throw new UnsupportedOperationException("not yet implemented");
     }
     
+    // index0 is rotations of p.n, index1 is p.n, index2 is q.n
     protected float[][][] createDifferenceMatrices(
         PairIntArray p, PairIntArray q) {
                 
@@ -352,69 +365,6 @@ public class PartialShapeMatcher {
                provide a difference value D_a(s,m,r) below
                a fixed threshold are calculated.
         ---------------------------
-                         1
-          D_a(s,m,r) = ---- * summation_i_0_to_(r-1)
-                        r^2
-                            * summation_j_0_(r-1)
-                               of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
-          //s range 0 to M-1
-          //m range 0 to N-1, M<=N
-          //r range 1? to min(N, M)
-
-        Looking at D_a in detail for sets of s,m,r to 
-        better understand the integral images of the
-        difference matrices:
-
-        s=0,m=0,r=2:
-        (1/4) * ((A_1(0,0) - A_2(0,0)) 
-               + (A_1(0,1) - A_2(0,1))
-               + (A_1(0,2) - A_2(0,2)) +
-                 (A_1(1,0) - A_2(1,0)) 
-               + (A_1(1,1) - A_2(1,1))
-               + (A_1(1,2) - A_2(1,2)) +
-                 (A_1(2,0) - A_2(2,0)) 
-               + (A_1(2,1) - A_2(2,1))
-               + (A_1(2,2) - A_2(2,2)))
-        (1/4) * ((A_1(0,0) + A_1(0,1) + A_1(0,2))
-               + (A_1(1,0) + A_1(1,1) + A_1(1,2))
-               + (A_1(2,0) + A_1(2,1) + A_1(2,2))
-               - (A_2(0,0) + A_2(0,1) + A_2(0,2))
-               - (A_2(1,0) + A_2(1,1) + A_2(1,2))
-               - (A_2(2,0) + A_2(2,1) + A_2(2,2))
-        (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
-                 + A_1INT(2,1) + A_1INT(2,2))
-               - (- A_2INT(1,1) + A_2INT(1,2)
-                  + A_2INT(2,1) + A_2INT(2,2))
-        can use the summary area table method to make
-        array summed along x and y.
-        from wikipedia: "the value at any point (x, y) 
-        in the summed area table is just the sum of all 
-        the pixels above and to the left of (x, y), inclusive"
-  
-        I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
-                        sum x      sum y
-        2 7  6  4      7 13 17   14 18 30 
-        1 3  0  3      3  0  6    7  5 13
-        0 4  1  2      4  5  7    4  5  7
-          0  1  2             
-        
-        s=0,m=0,r=2:
-            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
-                                  + A_1INT(2,1) + A_1INT(2,2))
-                               - (- A_2INT(1,1) + A_2INT(1,2)
-                                  + A_2INT(2,1) + A_2INT(2,2))
-        s=0,m=1,r=2:
-            D_a(s,m,r) = (1/4) * (- A_1INT(1,1) + A_1INT(1,2)
-                                  + A_1INT(2,1) + A_1INT(2,2))
-                               - (- A_2INT(2,1) + A_2INT(2,2)
-                                  + A_2INT(3,1) + A_2INT(3,2))
-        
-        rewritten using the integral images:
-        D_a(s,m,r) = 
-            (1/r^2) * (- A_1INT(s+r-1,s+r-1) + A_1INT(s+r-1,s+r)
-                       + A_1INT(s+r,  s+r-1) + A_1INT(s+r,  s+r))
-                    - (- A_2INT(m+r-1,m+r-1) + A_2INT(m+r-1,m+r)
-                       + A_2INT(m+r,  m+r-1) + A_2INT(m+r,  m+r))
         
         (1) make difference matrices.
             there will be N A_2 matrices in which each
@@ -454,10 +404,9 @@ public class PartialShapeMatcher {
             prevA2Shifted = shifted2;
         }
         
-        // ---- make summary area tables from md -----
+        // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
             float[][] mdI = md[i];
-            // I(x,y)=i(x,y)+I(x-1,y)+I(x,y-1)-I(x-1,y-1))
             for (int x = 0; x < mdI.length; ++x) {
                 for (int y = 0; y < mdI[x].length; ++y) {
                     if (x > 0 && y > 0) {
@@ -471,7 +420,7 @@ public class PartialShapeMatcher {
                 }
             }
         }
-       
+        
         System.out.println("md.length=" + md.length);
         
         return md;
@@ -600,6 +549,39 @@ public class PartialShapeMatcher {
             sb.delete(0, sb.length());
         }
     }
+
+    private class DiffMatrixResults {
+        private TIntSet[] indexSets = null;
+        private TIntList[] indexes = null;
+        public DiffMatrixResults(int n) {
+            indexes = new TIntList[n];
+            indexSets = new TIntSet[n];
+        }
+        public void add(int index, int value) {
+            if (indexes[index] == null) {
+                indexes[index] = new TIntArrayList();
+                indexSets[index] = new TIntHashSet();
+            }
+            if (!indexSets[index].contains(value)) {
+                indexSets[index].add(value);
+                indexes[index].add(value);
+            }
+        }
+    }
+    
+    private class MinDiffs {
+        int[] idxs1;
+        int[] idxs2;
+        float[] mins;
+        public MinDiffs(int n) {
+            idxs1 = new int[n];
+            idxs2 = new int[n];
+            mins = new float[n];
+            Arrays.fill(idxs1, -1);
+            Arrays.fill(idxs2, -1);
+            Arrays.fill(mins, Float.MAX_VALUE);
+        }
+    }
     
     /**
      * 
@@ -607,97 +589,153 @@ public class PartialShapeMatcher {
      * @param r block size
      * @return 
      */
-    private int[] findMinDifferenceMatrix(float[][][] md,
-        int r) {
+    private void findMinDifferenceMatrix(
+        float[][][] md, int r, double threshold,
+        MinDiffs output) {
         
-        double c = (1./(double)(r*r));
+        double c = 1./(double)(r*r);
+       
+        int n1 = md[0].length;
+
+        /*
+        md[n2offset][n1][n2]
         
-        int[] idxs = new int[md[0].length];
-        double[] mins = new double[md[0].length];
-        Arrays.fill(idxs, -1);
-        Arrays.fill(mins, Double.MAX_VALUE);
+        md[0   ][0   ][0   ]
+          [n1-1][0-n1][n2-1]
+        */
         
-        for (int i0 = 0; i0 < md.length; i0++) {
-            System.out.println("md[" + i0 + "]:");
-            float[][] a = md[i0];
+        int[] idxs0 = output.idxs1;
+        int[] idxs2 = output.idxs2;
+        float[] mins = output.mins;
+     
+        for (int iOffset = 0; iOffset < md.length; iOffset++) {
+            System.out.println("md[" + iOffset + "]:");
+            float[][] a = md[iOffset];
             float sum = 0;
             for (int i = 0; i < a.length; i+=r) {
-                double d;
+                float s1;
                 if ((i - r) > -1) {
-                    d = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
+                    s1 = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
                     System.out.println(
                         String.format(
                         " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
                         i, i, a[i][i], a[i - r][i], a[i][i - r],
-                        a[r][r], d*c));
+                        a[r][r], s1*c));
                 } else {
-                    d = a[i][i];
+                    s1 = a[i][i];
+                    System.out.println(
+                        String.format(
+                        " [%d,%d] %.4f => %.4f", 
+                        i, i, a[i][i], s1*c));
                 }
-                if (d < 0) {
-                    d *= -1;
+                s1 *= c;
+                float absS1 = s1;
+                if (absS1 < 0) {
+                    absS1 *= -1;
                 }
-                if (d > 30) {
+                if (absS1 > threshold) {
                    continue;
                 }
-                d *= c;
-                sum += d;
-                if (d < mins[i]) {
-                    mins[i] = d;
-                    idxs[i] = i0;
+                
+                // note, idx from q is i + iOffset
+                
+                sum += absS1;
+                if (absS1 < Math.abs(mins[i])) {
+                    int idx2 = i + iOffset;
+                    if (idx2 > n1) {
+                        idx2 -= n1;
+                    }
+                    mins[i] = s1;
+                    idxs0[i] = iOffset;
+                    idxs2[i] = idx2;
+                    
+                    // fill in the rest of the diagonal in this block
+                    for (int k = (i-1); k > (i - r); k--) {
+                        if (k < 0) {
+                            break;
+                        }
+                        if (mins[i] < mins[k]) {
+                            idx2 = k + iOffset;
+                            if (idx2 > n1) {
+                                idx2 -= n1;
+                            }
+                            mins[k] = s1;
+                            idxs0[k] = iOffset;
+                            idxs2[k] = idx2;
+                        }
+                    }
                 }
             }
             System.out.println("SUM=" + sum);
         }
         
-        return idxs;
+        System.out.println("OFFSETS=" + Arrays.toString(idxs0));
+        System.out.println("idx2=" + Arrays.toString(idxs2));
+      
     }
 
-    private void printBlocks(String label, float[][] a) {
-
-        System.out.println(label);
-        
-        /*
-        Find quadratic sub-areas within reference and query 
-        descriptor matrices starting at main diagonal which 
-        are most similar.
-        
-        */
-        // try a set block size
-        int r = 2;
-        
-        double c = (1./(double)(r*r));
-        
-        double prev = Double.MAX_VALUE;
-        
-        for (int i = r; i < a.length; i+=r) {
-            
-            double d;
-            
-            if ((i - r) > -1) {
-                d = c * (a[i][i] - a[i - r][i - r] +
-                    a[i - r][i] + a[i][i - r]);
-                System.out.println(
-                    String.format(
-                    " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
-                    i, i, -a[i - r][i - r],
-                    a[i - r][i], a[i][i - r],
-                    a[i][i], d));
-            } else {
-                d = c * a[i][i];
+    private void findEquivalentBest(float[][][] md, int r, 
+        MinDiffs mins, double tolerance,
+        DiffMatrixResults output) {
+    
+        int n1 = mins.idxs1.length;
+         
+        double c = 1./(double)(r*r);
+               
+        // capture all "best" within minSigns[i] += 2*variances[i]
+        for (int iOffset = 0; iOffset < md.length; iOffset++) {
+            float[][] a = md[iOffset];
+            for (int i = 0; i < a.length; i+=r) {
+                if (mins.idxs1[i] == -1) {
+                    continue;
+                }
+                double s1;
+                if ((i - r) > -1) {
+                    s1 = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
+                } else {
+                    s1 = a[i][i];
+                }
+                s1 *= c;
+                
+                double avg = mins.mins[i];
+    
+                //s1 = Math.abs(s1);
+                //avg = Math.abs(avg);
+ 
+                if (Math.abs(s1 - avg) > tolerance) {
+                    continue;
+                }
+                
+                int idx2 = iOffset + i;
+                if (idx2 > n1) {
+                    idx2 -= n1;
+                }
+                
+                output.add(i, idx2);
+                
+                // fill in the rest of the diagonal in this block
+                /*for (int k = (i-1); k > (i - r); k--) {
+                    if (k < 0) {
+                        break;
+                    }
+                    if ((k - r) > -1) {
+                        s1 = a[k][k] - a[k - r][k] - a[k][k - r] 
+                            + a[r][r];
+                    } else {
+                        s1 = a[k][k];
+                    }
+                    s1 *= c;
+                    if (Math.abs(s1 - avg) > tolerance) {
+                        continue;
+                    }
+                    idx2 = iOffset + k;
+                    if (idx2 > n1) {
+                        idx2 -= n1;
+                    }
+                    output.add(k, idx2);
+                }*/
             }
-            
-            /*
-            d = a[i][i];
-            if (prev < Double.MAX_VALUE) {
-                d -= prev;
-            }
-            prev = d;
-                    
-            System.out.println(
-                String.format(" [%d,%d]%.4f,", i, i, d));
-            */
         }
-        
     }
-
+    
 }

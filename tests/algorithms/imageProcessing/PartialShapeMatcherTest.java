@@ -136,7 +136,7 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(20,100); p.add(29,104); 
         p.add(38,107); p.add(45,107);  // 58,59
         p.add(52,106); p.add(62,105); 
-        p.add(79,103); p.add(78,102);
+        p.add(79,103); p.add(77,102);
         
         return p;
     }
