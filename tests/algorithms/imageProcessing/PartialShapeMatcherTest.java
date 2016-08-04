@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import java.util.Arrays;
+import java.util.List;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -44,6 +46,29 @@ public class PartialShapeMatcherTest extends TestCase {
         }*/
         
         shapeMatcher.match(p, q);
+        
+    }
+    
+    public void testSummedAreaTables() {
+        
+        /*
+        2 9  2  7     9 11  18   16 22  36
+        1 5  1  2     5  6   8    7 11  18
+        0 2  3  5     2  5  10    2  5  10
+          0  1  2      
+        */
+        
+        float[][] a = new float[3][];
+        a[0] = new float[]{2, 3, 5};
+        a[1] = new float[]{5, 1, 2};
+        a[2] = new float[]{9, 2, 7};
+        
+        PartialShapeMatcher matcher = new PartialShapeMatcher();
+        matcher.applySummedAreaTableConversion(a);
+        
+        assertTrue(Arrays.equals(new float[]{2, 5, 10}, a[0]));
+        assertTrue(Arrays.equals(new float[]{7, 11, 18}, a[1]));
+        assertTrue(Arrays.equals(new float[]{16, 22, 36}, a[2]));
         
     }
     
@@ -186,4 +211,5 @@ public class PartialShapeMatcherTest extends TestCase {
         
         plot.writeFile(fn);
     }
+
 }

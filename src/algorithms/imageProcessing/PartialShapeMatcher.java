@@ -210,6 +210,17 @@ public class PartialShapeMatcher {
        
         // --- make difference matrices ---
         
+        // the rotated matrix for index 0 rotations is
+        // q.  
+        // TODO: the same needs to be done for p separately
+        // and combine results.
+        // the scissors test shows this for points 17-32.
+        // the articulated solution needs one of the matrices
+        // in md[0] to start at point 17 so that the summed
+        // differences don't include the large difference in
+        // transition from points 15 to 17.
+        // In summary, need to combine results for these
+        // for operations with p to q with results for q to p
         float[][][] md = createDifferenceMatrices(p, q);
         
         /*
@@ -469,19 +480,7 @@ public class PartialShapeMatcher {
         
         // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
-            float[][] mdI = md[i];
-            for (int x = 0; x < mdI.length; ++x) {
-                for (int y = 0; y < mdI[x].length; ++y) {
-                    if (x > 0 && y > 0) {
-                        mdI[x][y] += (mdI[x-1][y] + mdI[x][y-1]
-                            - mdI[x-1][y-1]);
-                    } else if (x > 0) {
-                        mdI[x][y] += mdI[x-1][y];
-                    } else if (y > 0) {
-                        mdI[x][y] += mdI[x][y-1];
-                    }
-                }
-            }
+            applySummedAreaTableConversion(md[i]);
         }
         
         System.out.println("md.length=" + md.length);
@@ -610,6 +609,22 @@ public class PartialShapeMatcher {
             }
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
+        }
+    }
+
+    protected void applySummedAreaTableConversion(float[][] mdI) {
+
+        for (int x = 0; x < mdI.length; ++x) {
+            for (int y = 0; y < mdI[x].length; ++y) {
+                if (x > 0 && y > 0) {
+                    mdI[x][y] += (mdI[x - 1][y] + mdI[x][y - 1]
+                        - mdI[x - 1][y - 1]);
+                } else if (x > 0) {
+                    mdI[x][y] += mdI[x - 1][y];
+                } else if (y > 0) {
+                    mdI[x][y] += mdI[x][y - 1];
+                }
+            }
         }
     }
 
