@@ -210,13 +210,12 @@ public class PartialShapeMatcher {
        
         // --- make difference matrices ---
         
-        // the rotated matrix for index 0 rotations is
-        // q.  
+        // the rotated matrix for index 0 rotations is q.  
         // TODO: the same needs to be done for p separately
         // and combine results.
         // the scissors test shows this for points 17-32.
         // the articulated solution needs one of the matrices
-        // in md[0] to start at point 17 so that the summed
+        // in md[index0] to start at point 17 so that the summed
         // differences don't include the large difference in
         // transition from points 15 to 17.
         // In summary, need to combine results for these
