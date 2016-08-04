@@ -6,7 +6,11 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  *
@@ -264,21 +268,21 @@ public class PartialShapeMatcher {
         double thresh = 30;
                 
         MinDiffs mins = new MinDiffs(n1);
-        for (int r = 2; r <= rMax; ++r) {
+        for (int r = 1; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
         }
         
         double tolerance = 3.;
         
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
-        for (int r = 2; r <= rMax; ++r) {
+        for (int r = 1; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, tolerance,
                 equivBest);
         }
         
         //TODO: create the points of the paretto frontier from
         //    sequences in equivBest
-        
+       
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -286,6 +290,7 @@ public class PartialShapeMatcher {
             if (list == null) {
                 sb.append("  NA");
             } else {
+                list.sort();
                 for (int j = 0; j < list.size(); ++j) {
                     sb.append(Integer.toString(list.get(j)));
                     sb.append(",");
@@ -295,7 +300,97 @@ public class PartialShapeMatcher {
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
         }
+                
+        /*
+        TODO: fix errors in here
+        List<Sequence> sequences = new ArrayList<Sequence>();
+        for (int i = 0; i < n1; ++i) {
+            TIntList list = equivBest.indexes[i];
+            if (list == null) {
+                continue;
+            }
+            list.sort();
+            TIntSet set = equivBest.indexSets[i];
+            while (list.size() > 0) {
+                int idx1 = list.removeAt(0);
+                set.remove(idx1);
+                Sequence s = new Sequence();
+                s.startIdx1 = idx1;
+                for (int j = (i + 1); j < n1; ++j) {
+                    TIntList list2 = equivBest.indexes[j];
+                    if (list2 == null) {
+                        break;
+                    }
+                    TIntSet set2 = equivBest.indexSets[j];
+                    int idx2;
+                    if (s.startIdx2 == -1) {
+                        idx2 = idx1 + 1;
+                    } else {
+                        idx2 = s.stopIdx2 + 1;
+                    }
+                    if (!set2.contains(idx2)) {
+                        break;
+                    }
+                    if (s.startIdx2 == -1) {
+                        s.startIdx2 = idx1;    
+                    }
+                    s.stopIdx2 = idx2;
+                    set2.remove(idx2);
+                    equivBest.indexes[j].remove(idx2);
+                }
+                if (s.stopIdx2 > s.startIdx2) {
+                    sequences.add(s);
+                }
+            }
+        }
         
+        Collections.sort(sequences, new SequenceComparator());
+        
+        
+        System.out.println(sequences.size() + " sequences");
+        for (int i = 0; i < sequences.size(); ++i) {
+            Sequence s = sequences.get(i);
+            int len = s.stopIdx2 - s.startIdx2 + 2;
+            float frac = (float)len/(float)n1;
+            System.out.println(String.format(
+            "seq %d:%d to %d  %.4f", s.startIdx1, s.startIdx2,
+                s.stopIdx2, frac));
+        }
+        
+        // --- merge common sequences ----
+        int nAppended = 1;        
+        while (nAppended > 0) {
+            nAppended = 0;
+            int nS = sequences.size();
+            for (int i = (nS - 1); i > 0; i--) {
+                Sequence current = sequences.get(i);
+                Sequence prev = sequences.get(i - 1);
+                int off1 = current.startIdx1 - prev.startIdx1;
+                int off2 = current.startIdx2 - prev.startIdx2;
+                if (off1 != off2) {
+                    continue;
+                }
+                if (prev.stopIdx2 < current.startIdx2) {
+                    continue;
+                }
+                if (prev.stopIdx2 < current.stopIdx2) {
+                    prev.stopIdx2 = current.stopIdx2;
+                }
+                sequences.remove(i);
+            }
+        }
+        
+        
+        System.out.println(sequences.size() + " sequences");
+        for (int i = 0; i < sequences.size(); ++i) {
+            Sequence s = sequences.get(i);
+            int len = s.stopIdx2 - s.startIdx2 + 2;
+            float frac = (float)len/(float)n1;
+            System.out.println(String.format(
+            "after seq %d:%d to %d  %.4f", s.startIdx1, s.startIdx2,
+                s.stopIdx2, frac));
+        }
+        */
         throw new UnsupportedOperationException("not yet implemented");
     }
     
@@ -324,10 +419,12 @@ public class PartialShapeMatcher {
            can shift up k-1 rows and left k-1 columns.
         */
         
+        //System.out.println("a1:");
         float[][] a1 = createDescriptorMatrix(p);
         
+        //System.out.println("a2:");
         float[][] a2 = createDescriptorMatrix(q);
-        
+                
         int n1 = a1.length;
         
         int n2 = a2.length;
@@ -467,7 +564,7 @@ public class PartialShapeMatcher {
                     p.getX(imid), p.getY(imid)
                 );
               
-                /*
+                /*            
                 String str = String.format(
                     "[%d](%d,%d) [%d](%d,%d) [%d](%d,%d) a=%.4f",
                     i1, p.getX(i1), p.getY(i1),
@@ -550,6 +647,31 @@ public class PartialShapeMatcher {
         }
     }
 
+    private class SequenceComparator implements 
+        Comparator<Sequence> {
+
+        @Override
+        public int compare(Sequence o1, Sequence o2) {
+        
+            if (o1.startIdx1 < o2.startIdx1) {
+                return -1;
+            } else if (o1.startIdx1 > o2.startIdx1) {
+                return 1;
+            }
+            if (o1.startIdx2 < o2.startIdx2) {
+                return -1;
+            } else if (o1.startIdx2 > o2.startIdx2) {
+                return 1;
+            }
+            if (o1.stopIdx2 < o2.stopIdx2) {
+                return -1;
+            } else if (o1.stopIdx2 > o2.stopIdx2) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+    
     private class DiffMatrixResults {
         private TIntSet[] indexSets = null;
         private TIntList[] indexes = null;
@@ -567,6 +689,12 @@ public class PartialShapeMatcher {
                 indexes[index].add(value);
             }
         }
+    }
+    
+    private class Sequence {
+        int startIdx1;
+        int startIdx2 = -1;
+        int stopIdx2 = -1;
     }
     
     private class MinDiffs {
@@ -699,9 +827,6 @@ public class PartialShapeMatcher {
                 
                 double avg = mins.mins[i];
     
-                //s1 = Math.abs(s1);
-                //avg = Math.abs(avg);
- 
                 if (Math.abs(s1 - avg) > tolerance) {
                     continue;
                 }
