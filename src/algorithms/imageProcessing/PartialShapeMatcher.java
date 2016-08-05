@@ -229,15 +229,6 @@ public class PartialShapeMatcher {
         // --- make difference matrices ---
         
         // the rotated matrix for index 0 rotations is q.  
-        // TODO: the same needs to be done for p separately
-        // and combine results.
-        // the scissors test shows this for points 17-32.
-        // the articulated solution needs one of the matrices
-        // in md[index0] to start at point 17 so that the summed
-        // differences don't include the large difference in
-        // transition from points 15 to 17.
-        // In summary, need to combine results for these
-        // for operations with p to q with results for q to p
         float[][][] md = createDifferenceMatrices(a1, a2, minN);
         
         /*
@@ -259,21 +250,7 @@ public class PartialShapeMatcher {
         */
         
         List<Sequence> sequencesPQ = extractSimilar(md);
-        /*
-        // -- create the QP sequences --
-        md = createDifferenceMatrices(a2, a1, minN);
-        
-        List<Sequence> sequencesQP = extractSimilar(md);
-        
-        md = null;
-        
-        // TODO: transpose QP sequences and combine
-        // with PQ
-        transposeToPQ(sequencesQP);
-        
-        System.out.println(sequencesPQ.size() + " " 
-            + sequencesQP.size());
-        */
+       
         return matchArticulated(sequencesPQ, minN);
         
         //printing out results for md[0] and md[-3] and +3
@@ -308,25 +285,20 @@ public class PartialShapeMatcher {
         if (rMax < 1) {
             rMax = 1;
         }
-        
-        /*
-        TODO: 
-        fixed an error in extracting the block sums
-        so everything downhill of this must change now.
-        */
-
-        double thresh = 30;
+     
+        double thresh = 23.*Math.PI/180.;
                 
         MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
         }
         
-        double tolerance = 0.5;
+        // 10 degrees is 0.175
+        double tolerance = 0.25;
         
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = 2; r <= rMax; ++r) {
-            findEquivalentBest(md, r, mins, tolerance,
+            findEquivalentBest(md, r, mins, thresh, tolerance,
                 equivBest);
         }
         
@@ -759,20 +731,6 @@ public class PartialShapeMatcher {
         }
     }
 
-    private void transposeToPQ(List<Sequence> sequencesQP) {
-    
-        /*
-        p.idx  q.idx  q.idx
-        
-        q.idx  p.idx  p.idx
-        17:17 32
-        */
-
-        for (int i = 0; i < sequencesQP.size(); ++i) {
-            Sequence s = sequencesQP.get(i);
-        }
-    }
-
     private class DiffMatrixResults {
         private TIntSet[] indexSets = null;
         private TIntList[] indexes = null;
@@ -837,6 +795,8 @@ public class PartialShapeMatcher {
         int[] idxs2 = output.idxs2;
         float[] mins = output.mins;
      
+        int count = 0;
+        
         for (int iOffset = 0; iOffset < md.length; iOffset++) {
             System.out.println("md[" + iOffset + "]:");
             float[][] a = md[iOffset];
@@ -867,7 +827,7 @@ public class PartialShapeMatcher {
                 }
                 
                 // note, idx from q is i + iOffset
-                
+                count++;        
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
                     int idx2 = i + iOffset;
@@ -879,7 +839,7 @@ public class PartialShapeMatcher {
                     idxs2[i] = idx2;
                     
                     // fill in the rest of the diagonal in this block
-                    for (int k = (i-1); k > (i - r); k--) {
+                    for (int k = (i-1); k > (i-r); k--) {
                         if (k < 0) {
                             break;
                         }
@@ -895,6 +855,9 @@ public class PartialShapeMatcher {
                     }
                 }
             }
+            if (count == 0) {
+                sum = Integer.MAX_VALUE;
+            }
             System.out.println("SUM=" + sum);
         }
         
@@ -904,7 +867,7 @@ public class PartialShapeMatcher {
     }
 
     private void findEquivalentBest(float[][][] md, int r, 
-        MinDiffs mins, double tolerance,
+        MinDiffs mins, double threshold, double tolerance,
         DiffMatrixResults output) {
     
         int n1 = mins.idxs1.length;
@@ -918,13 +881,21 @@ public class PartialShapeMatcher {
                 if (mins.idxs1[i] == -1) {
                     continue;
                 }
-                double s1;
+                float s1;
                 if ((i - r) > -1) {
                     s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
                 } else {
                     s1 = a[i][i];
                 }
-                s1 *= c;
+                s1 *= c;               
+
+                float absS1 = s1;
+                if (absS1 < 0) {
+                    absS1 *= -1;
+                }
+                if (absS1 > threshold) {
+                   continue;
+                }
                 
                 double avg = mins.mins[i];
     
@@ -940,7 +911,7 @@ public class PartialShapeMatcher {
                 output.add(i, idx2);
                 
                 // fill in the rest of the diagonal in this block
-                /*for (int k = (i-1); k > (i - r); k--) {
+                for (int k = (i-1); k > (i-r); k--) {
                     if (k < 0) {
                         break;
                     }
@@ -951,6 +922,15 @@ public class PartialShapeMatcher {
                         s1 = a[k][k];
                     }
                     s1 *= c;
+               
+                    absS1 = s1;
+                    if (absS1 < 0) {
+                        absS1 *= -1;
+                    }
+                    if (absS1 > threshold) {
+                        continue;
+                    }
+                    
                     if (Math.abs(s1 - avg) > tolerance) {
                         continue;
                     }
@@ -959,7 +939,7 @@ public class PartialShapeMatcher {
                         idx2 -= n1;
                     }
                     output.add(k, idx2);
-                }*/
+                }
             }
         }
     }
