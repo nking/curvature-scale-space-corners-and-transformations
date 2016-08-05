@@ -192,6 +192,7 @@ public class PartialShapeMatcher {
         this.dp = d;
     }
     
+    // debugging variables that will be deleted when finished 
     private QuadInt[][] a1Coords = null;
     private QuadInt[][] a2Coords = null;
     private String[][][] mdCoords = null;
@@ -211,12 +212,6 @@ public class PartialShapeMatcher {
        
         int minN = Math.min(p.getN(), q.getN());
        
-        //System.out.println("a1:");
-        float[][] a1 = createDescriptorMatrix(p, minN);
-        
-        //System.out.println("a2:");
-        float[][] a2 = createDescriptorMatrix(q, minN);       
-        
         /*
         {
             // create debug matrices of just point 
@@ -229,7 +224,7 @@ public class PartialShapeMatcher {
         // --- make difference matrices ---
         
         // the rotated matrix for index 0 rotations is q.  
-        float[][][] md = createDifferenceMatrices(a1, a2, minN);
+        float[][][] md = createDifferenceMatrices(p, q, minN);
         
         /*
         the matrices in md can be analyzed for best
@@ -254,11 +249,11 @@ public class PartialShapeMatcher {
         /*
         need sum of differences in sequence and the fraction
         of the whole.
-        paretto efficiency is that all are at a copromise of best state,
+        paretto efficiency is that all are at a compromise of best state,
         such that increasing the state of one did not worsen the
         state of another.
         prefer:
-           -- smaller total difference for largest graction of whole
+           -- smaller total difference for largest fraction of whole
            -- 2ndly, largest total coverage
         
         Note that for the rigid model (exvepting scale transformation)
@@ -280,22 +275,6 @@ public class PartialShapeMatcher {
     }
     
     protected List<Sequence> extractSimilar(float[][][] md) {
-
-        /*
-        - choose reasonable upper limit to r, such as sqrt(n)
-            - for that rMax,
-              - find the best blocks and find the
-                avg diff of those and eiher the min and max of reange
-                or st.dev.
-       - visit all blocks as currently do and find the best,
-         which may be more than one index of diff matrices,
-         within the avg and stdev.
-         (note, can build a std dev summed area table for this image alone)
-       - inspect the best results:
-         - form the data as nPart / nWhole for chains of similar indexes?
-         - (still reading paretto grontier analysis, but i think that's what it
-           is composed of)
-        */
         
         int n1 = md[0].length;
        
@@ -305,7 +284,9 @@ public class PartialShapeMatcher {
         }
      
         double thresh = 23.*Math.PI/180.;
-                
+        
+        //TODO: compare to only using block size r = 2
+        
         MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -320,7 +301,7 @@ public class PartialShapeMatcher {
                 equivBest);
         }
         
-        
+        /*
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -338,7 +319,9 @@ public class PartialShapeMatcher {
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
         }
+        */
         
+        // ----- find sequential correspondences ----
         
         List<Sequence> sequences = new ArrayList<Sequence>();
         for (int idx1 = 0; idx1 < n1; ++idx1) {
@@ -377,24 +360,122 @@ public class PartialShapeMatcher {
                 }
             }
         }
-                
+        
         System.out.println(sequences.size() + " sequences");
+        
+        float[][] md0 = md[0];
+        
+        // -- calculate sum of differences and fraction of whole ----                
         for (int i = 0; i < sequences.size(); ++i) {
             Sequence s = sequences.get(i);
-            int len = s.stopIdx2 - s.startIdx2 + 2;
-            float frac = (float)len/(float)n1;
+            int len = s.stopIdx2 - s.startIdx2 + 1;
+            s.fractionOfWhole = (float)len/(float)n1;
+            
+            // calculate the sum of the differences
+            s.absAvgSumDiffs = 0;
+            for (int j = s.startIdx2; j <= s.stopIdx2; ++j) {
+                if (s.startIdx1 == 0) {
+                    if (j == 0) {
+                        float v = md0[s.startIdx1][j];
+                        if (v < 0) {
+                            v *= -1;
+                        }
+                        s.absAvgSumDiffs += v;
+                    } else {
+                        float v = md0[s.startIdx1][j] - md0[s.startIdx1][j - 1];
+                        if (v < 0) {
+                            v *= -1;
+                        }
+                        s.absAvgSumDiffs += v;
+                    }
+                } else if (j == 0) {
+                    float v = md0[s.startIdx1][j] - md0[s.startIdx1 - 1][j];
+                    if (v < 0) {
+                        v *= -1;
+                    }
+                    s.absAvgSumDiffs += v;
+                } else {
+                    float v = md0[s.startIdx1][j] - md0[s.startIdx1 - 1][j]
+                        - md0[s.startIdx1][j - 1] + md0[s.startIdx1 - 1][j - 1];
+                    if (v < 0) {
+                        v *= -1;
+                    }
+                    s.absAvgSumDiffs += v;
+                }
+            }
+            
+            s.absAvgSumDiffs /= (float)len;
+            
             System.out.println(String.format(
-            "seq %d:%d to %d  %.4f", s.startIdx1, s.startIdx2,
-                s.stopIdx2, frac));
+            "seq %d:%d to %d  frac=%.4f  avg diff=%.4f", 
+                s.startIdx1, s.startIdx2, s.stopIdx2, 
+                s.fractionOfWhole, s.absAvgSumDiffs));
         }
         
-        return sequences;     
+        return sequences;
     }
     
     protected double matchArticulated(List<Sequence> srquences,
         int n1) {
         
-        throw new UnsupportedOperationException("not yet implemented");
+        /*
+        goal is to make tracks of sequences, prefering
+        to maximize the total fraction covered and
+        possibly minimize the differences.
+        
+        adopting a left edge pattern, but for multiple
+        tracks holding same sequences.
+        
+        (1) ascending sort ordered by startIdx1 and fraction of whole 
+        (2) create a sorted tree set of 
+            key = startIdx1, value = index in list sequences
+        (2) create a track for the first sequence
+              - add sequence to "added" set.
+              - descend list looking for next sequence
+                that can be added after track's last sequence.
+                (next.startIdx1 >
+                   startIdx1 + (stopIdx2 - stopIdx1))
+              - add that sequence to "added" but do not remove it.
+              - continue down list to add after last sequence
+                in track (if stopIdx2 < n1 - 1).
+            then create a track for the next in
+             the list, repeating the process.
+           when the next in the list to create a track for
+             is in the added set, skip it
+        
+        example:
+        
+        seq 0:0 to 14  frac=0.2459  avg diff=0.1464
+        seq 0:10 to 12  frac=0.0492  avg diff=0.0952
+        seq 0:16 to 18  frac=0.0492  avg diff=0.4904
+        seq 1:0 to 13  frac=0.2295  avg diff=0.1506
+        seq 2:17 to 19  frac=0.0492  avg diff=0.9060
+        seq 17:17 to 38  frac=0.3607  avg diff=0.6057
+        seq 40:43 to 49  frac=0.1148  avg diff=0.7189
+        seq 48:51 to 59  frac=0.1475  avg diff=1.3251
+         
+        (1) sort by idx1 and fraction:
+        seq 0:0   to 14  frac=0.2459  avg diff=0.1464
+        seq 0:10  to 12  frac=0.0492  avg diff=0.0952
+        seq 0:16  to 18  frac=0.0492  avg diff=0.4904
+        seq 1:0   to 13  frac=0.2295  avg diff=0.1506        
+        seq 2:17  to 19  frac=0.0492  avg diff=0.9060
+        seq 17:17 to 38  frac=0.3607  avg diff=0.6057
+        seq 40:43 to 49  frac=0.1148  avg diff=0.7189
+        seq 48:51 to 59  frac=0.1475  avg diff=1.3251
+        
+        tracks:
+            0:0  to 14, 17:17 to 38, 40:43 to 49, 48:51 to 59
+            0:10 to 12, 17:17 to 38, 40:43 to 49, 48:51 to 59
+            0:16 to 18, 40:43 to 49, 48:51 to 59
+            1:0  to 13, 17:17 to 38, 40:43 to 49, 48:51 to 59
+            2:17 to 19, 40:43 to 49, 48:51 to 59
+            skip the rest, they are in "added"
+        
+        then tracks can be plotted using fraction and sum 
+           differences
+        */
+
     }
     
     protected double matchRigidWithOcclusion(List<Sequence> srquences,
@@ -405,7 +486,7 @@ public class PartialShapeMatcher {
     
     // index0 is rotations of p.n, index1 is p.n, index2 is q.n
     protected float[][][] createDifferenceMatrices(
-        float[][] a1, float[][] a2, int minN) {
+        PairIntArray p, PairIntArray q, int minN) {
      
         /*
         | a_1_1...a_1_N |
@@ -417,6 +498,12 @@ public class PartialShapeMatcher {
            to shift to different first point as reference,
            can shift down k-1 rows and left k-1 columns.
         */
+        
+        //System.out.println("a1:");
+        float[][] a1 = createDescriptorMatrix(p, minN);
+        
+        //System.out.println("a2:");
+        float[][] a2 = createDescriptorMatrix(q, minN);       
         
         /*
         - find rxr sized blocks similar to one another
@@ -772,6 +859,8 @@ public class PartialShapeMatcher {
         int startIdx1;
         int startIdx2 = -1;
         int stopIdx2 = -1;
+        float absAvgSumDiffs;
+        float fractionOfWhole;
     }
     
     private class MinDiffs {
@@ -849,7 +938,7 @@ public class PartialShapeMatcher {
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
                     int idx2 = i + iOffset;
-                    if (idx2 > n1) {
+                    if (idx2 >= n1) {
                         idx2 -= n1;
                     }
                     mins[i] = s1;
@@ -863,7 +952,7 @@ public class PartialShapeMatcher {
                         }
                         if (mins[i] < mins[k]) {
                             idx2 = k + iOffset;
-                            if (idx2 > n1) {
+                            if (idx2 >= n1) {
                                 idx2 -= n1;
                             }
                             mins[k] = s1;
@@ -922,7 +1011,7 @@ public class PartialShapeMatcher {
                 }
                 
                 int idx2 = iOffset + i;
-                if (idx2 > n1) {
+                if (idx2 >= n1) {
                     idx2 -= n1;
                 }
                 
@@ -953,7 +1042,7 @@ public class PartialShapeMatcher {
                         continue;
                     }
                     idx2 = iOffset + k;
-                    if (idx2 > n1) {
+                    if (idx2 >= n1) {
                         idx2 -= n1;
                     }
                     output.add(k, idx2);

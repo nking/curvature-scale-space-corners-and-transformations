@@ -75,7 +75,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public void testDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
-        plot(p, 200);
+        //plot(p, 200);
         
         PairIntArray q = getScissors2();
         //plot(q, 201);
@@ -89,6 +89,15 @@ public class PartialShapeMatcherTest extends TestCase {
         shapeMatcher.overrideSamplingDistance(1);
         
         shapeMatcher.match(p, q);        
+    
+        /*
+        unless improve the first image blade positions:
+        expecting roughly:
+         seq  0:0  to 14  frac=0.2459  avg diff=0.1464
+         seq 17:17 to 38  frac=0.3607  avg diff=0.6057
+         seq 40:43 to 49  frac=0.1148  avg diff=0.7189
+         seq 48:51 to 59  frac=0.1475  avg diff=1.3251
+        */
     }
     
     protected PairIntArray getScissors1() {
