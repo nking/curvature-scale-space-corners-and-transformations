@@ -12,7 +12,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  *
@@ -415,7 +420,7 @@ public class PartialShapeMatcher {
         return sequences;
     }
     
-    protected double matchArticulated(List<Sequence> srquences,
+    protected double matchArticulated(List<Sequence> sequences,
         int n1) {
         
         /*
@@ -424,12 +429,13 @@ public class PartialShapeMatcher {
         possibly minimize the differences.
         
         adopting a left edge pattern, but for multiple
-        tracks holding same sequences.
+        tracks that might hold sequences present in 
+        other tracks.
         
         (1) ascending sort ordered by startIdx1 and fraction of whole 
-        (2) create a sorted tree set of 
+        (2) create a sorted tree map of 
             key = startIdx1, value = index in list sequences
-        (2) create a track for the first sequence
+        (3) create a track for the first sequence
               - add sequence to "added" set.
               - descend list looking for next sequence
                 that can be added after track's last sequence.
@@ -476,6 +482,94 @@ public class PartialShapeMatcher {
            differences
         */
 
+        //(1) ascending sort ordered by startIdx1 and then
+        // descending fraction of whole 
+        Collections.sort(sequences, new SequenceComparator());
+        
+        //(2) create a sorted tree set of 
+        //    key = startIdx1, value = index in list sequences
+        TreeMap<Integer, Integer> startLookup =
+            new TreeMap<Integer, Integer>();
+        for (int i = 0; i < sequences.size(); ++i) {
+            Integer key = Integer.valueOf(
+                sequences.get(i).startIdx1);
+            if (!startLookup.containsKey(key)) {
+                startLookup.put(key, Integer.valueOf(i));
+            }
+        }
+        
+        // (3) create "tracks" of sequences
+        Set<Sequence> added = new HashSet<Sequence>();
+     
+        List<Track> tracks = new ArrayList<Track>();
+        
+        for (int i = 0; i < sequences.size(); ++i) {
+            
+            Sequence s = sequences.get(i);
+            if (added.contains(s)) {
+                continue;
+            }
+            added.add(s);
+            
+            Track currentTrack = new Track();
+            tracks.add(currentTrack);
+            currentTrack.sequences.add(s);
+        
+            /*
+            (next.startIdx1 >
+                   startIdx1 + (stopIdx2 - stopIdx1))
+            */
+            Sequence lastSequence = s;
+            while (true) {
+                
+                int nextStartIdx1 = lastSequence.startIdx1
+                    + (lastSequence.stopIdx2 -
+                    lastSequence.startIdx2) + 1;
+                
+                Entry<Integer,Integer> entry = 
+                    startLookup.ceilingEntry(nextStartIdx1);
+
+                if (entry == null) {
+                    break;
+                }
+                
+                int listIdx = entry.getValue().intValue();
+                boolean appended = false;
+                for (int j = listIdx; j < sequences.size(); ++j) {
+                    Sequence s2 = sequences.get(j);
+                    if (s2.startIdx2 <= lastSequence.stopIdx2) {
+                        continue;
+                    }
+                    currentTrack.sequences.add(s2);
+                    added.add(s2);
+                    appended = true;
+                    lastSequence = s2;
+                    break;
+                }
+                if (!appended) {
+                    break;
+                }
+            }
+        }
+     
+        // calculate the stats for each Track
+        for (Track track : tracks) {
+            int sumLen = 0;
+            float sumFrac = 0;
+            double sumDiffs = 0;
+            for (Sequence s : track.sequences) {
+                int len = s.stopIdx2 - s.startIdx2 + 1;
+                float diff = s.absAvgSumDiffs * len;
+                sumLen += len;
+                sumDiffs += diff;
+                sumFrac += s.fractionOfWhole;
+            }
+            track.absSumDiffs = sumDiffs;
+            track.avgSumDiffs = (float)(sumDiffs/(float)sumLen);
+            track.fractionOfWhole = sumFrac;
+        }
+        
+        throw new UnsupportedOperationException("not yet implemented");
     }
     
     protected double matchRigidWithOcclusion(List<Sequence> srquences,
@@ -875,6 +969,52 @@ public class PartialShapeMatcher {
             Arrays.fill(idxs2, -1);
             Arrays.fill(mins, Float.MAX_VALUE);
         }
+    }
+    
+    private class Track {
+        List<Sequence> sequences = new ArrayList<Sequence>();
+        float fractionOfWhole;
+        double absSumDiffs;
+        float avgSumDiffs;
+    }
+
+    /**
+     * comparator to sort by ascending startIdx, then
+     * descending fraction of whole
+     */    
+    private class SequenceComparator implements
+        Comparator<Sequence> {
+
+        @Override
+        public int compare(Sequence o1, Sequence o2) {
+        
+            if (o1.startIdx1 < o2.startIdx1) {
+                return -1;
+            } else if (o1.startIdx1 > o2.startIdx1) {
+                return 1;
+            }
+            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+                return -1;
+            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+                return 1;
+            }
+            
+            if (o1.startIdx2 < o2.startIdx2) {
+                return -1;
+            } else if (o1.startIdx2 > o2.startIdx2) {
+                return 1;
+            }
+            
+            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+                return -1;
+            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
+                return 1;
+            }
+            
+            // should not arrive here
+            return 0;
+        }
+        
     }
     
     /**
