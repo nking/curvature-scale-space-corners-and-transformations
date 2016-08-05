@@ -289,9 +289,7 @@ public class PartialShapeMatcher {
         }
      
         double thresh = 23.*Math.PI/180.;
-        
-        //TODO: compare to only using block size r = 2
-        
+                
         MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -423,65 +421,6 @@ public class PartialShapeMatcher {
     protected double matchArticulated(List<Sequence> sequences,
         int n1) {
         
-        /*
-        goal is to make tracks of sequences, prefering
-        to maximize the total fraction covered and
-        possibly minimize the differences.
-        
-        adopting a left edge pattern, but for multiple
-        tracks that might hold sequences present in 
-        other tracks.
-        
-        (1) ascending sort ordered by startIdx1 and fraction of whole 
-        (2) create a sorted tree map of 
-            key = startIdx1, value = index in list sequences
-        (3) create a track for the first sequence
-              - add sequence to "added" set.
-              - descend list looking for next sequence
-                that can be added after track's last sequence.
-                (next.startIdx1 >
-                   startIdx1 + (stopIdx2 - stopIdx1))
-              - add that sequence to "added" but do not remove it.
-              - continue down list to add after last sequence
-                in track (if stopIdx2 < n1 - 1).
-            then create a track for the next in
-             the list, repeating the process.
-           when the next in the list to create a track for
-             is in the added set, skip it
-        
-        example:
-        
-        seq 0:0 to 14  frac=0.2459  avg diff=0.1464
-        seq 0:10 to 12  frac=0.0492  avg diff=0.0952
-        seq 0:16 to 18  frac=0.0492  avg diff=0.4904
-        seq 1:0 to 13  frac=0.2295  avg diff=0.1506
-        seq 2:17 to 19  frac=0.0492  avg diff=0.9060
-        seq 17:17 to 38  frac=0.3607  avg diff=0.6057
-        seq 40:43 to 49  frac=0.1148  avg diff=0.7189
-        seq 48:51 to 59  frac=0.1475  avg diff=1.3251
-         
-        (1) sort by idx1 and fraction:
-        seq 0:0   to 14  frac=0.2459  avg diff=0.1464
-        seq 0:10  to 12  frac=0.0492  avg diff=0.0952
-        seq 0:16  to 18  frac=0.0492  avg diff=0.4904
-        seq 1:0   to 13  frac=0.2295  avg diff=0.1506        
-        seq 2:17  to 19  frac=0.0492  avg diff=0.9060
-        seq 17:17 to 38  frac=0.3607  avg diff=0.6057
-        seq 40:43 to 49  frac=0.1148  avg diff=0.7189
-        seq 48:51 to 59  frac=0.1475  avg diff=1.3251
-        
-        tracks:
-            0:0  to 14, 17:17 to 38, 40:43 to 49, 48:51 to 59
-            0:10 to 12, 17:17 to 38, 40:43 to 49, 48:51 to 59
-            0:16 to 18, 40:43 to 49, 48:51 to 59
-            1:0  to 13, 17:17 to 38, 40:43 to 49, 48:51 to 59
-            2:17 to 19, 40:43 to 49, 48:51 to 59
-            skip the rest, they are in "added"
-        
-        then tracks can be plotted using fraction and sum 
-           differences
-        */
-
         //(1) ascending sort ordered by startIdx1 and then
         // descending fraction of whole 
         Collections.sort(sequences, new SequenceComparator());
@@ -490,9 +429,8 @@ public class PartialShapeMatcher {
         List<Sequence> list2 = new ArrayList<Sequence>(sequences);
         Collections.sort(list2, new SequenceComparator2());
         
-        //(2) need a way to find items in list2  as
+        //(2) a lookup for items in list2
         //    belonging to >= startIdx.
-        //    
         TreeMap<Integer, TIntList> startLookup =
             new TreeMap<Integer, TIntList>();
         for (int i = 0; i < list2.size(); ++i) {
