@@ -5,6 +5,8 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.Arrays;
 import java.util.List;
+import algorithms.imageProcessing.PartialShapeMatcher.Sequences;
+import algorithms.imageProcessing.PartialShapeMatcher.Sequence;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -88,16 +90,23 @@ public class PartialShapeMatcherTest extends TestCase {
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         
-        shapeMatcher.match(p, q);        
+        // articulated:
+        Sequences sequences = shapeMatcher.match(p, q);        
     
         /*
         unless improve the first image blade positions:
         expecting roughly:
-         seq  0:0  to 14  frac=0.2459  avg diff=0.1464
-         seq 17:17 to 38  frac=0.3607  avg diff=0.6057
-         seq 40:43 to 49  frac=0.1148  avg diff=0.7189
-         seq 48:51 to 59  frac=0.1475  avg diff=1.3251
+         [junit] frac=0.7541, avgDiff=0.5967,  sumDiff=27.4475
+            [junit] (0:0 to 14, f=0.2459 d=0.1464)
+            [junit] (17:17 to 38, f=0.3607 d=0.6057)
+            [junit] (48:51 to 59, f=0.1475 d=1.3251)
         */
+
+        assertNotNull(sequences);
+        assertTrue(sequences.fractionOfWhole > 0.6);
+
+        // assert the correspondence range
+
     }
     
     protected PairIntArray getScissors1() {
