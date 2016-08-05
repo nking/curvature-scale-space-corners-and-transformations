@@ -75,7 +75,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public void testDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
-        //plot(p, 200);
+        plot(p, 200);
         
         PairIntArray q = getScissors2();
         //plot(q, 201);
@@ -103,8 +103,8 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(108,80); p.add(115,87); p.add(122,95);      // 18,19,20
         p.add(128,104); p.add(130,111); p.add(130,120);   // 21,22, 23
         p.add(125,120); p.add(116,122); p.add(108,122);
-        p.add(100,112); p.add(95,105); p.add(97,97);
-        p.add(97,89); p.add(95,81); p.add(89,72);
+        p.add(100,112); p.add(95,105); p.add(94,98);      // 27
+        p.add(96,88); p.add(95,81); p.add(89,72);
         p.add(80,70); p.add(72,70); p.add(63,70);    //33, 34, 35
         p.add(57,70); p.add(49,70); p.add(39,70);
         p.add(32,70); p.add(23,67); p.add(20,64);    // 39, 40, 41

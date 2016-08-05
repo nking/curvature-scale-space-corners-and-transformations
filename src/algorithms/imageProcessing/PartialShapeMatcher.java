@@ -251,6 +251,24 @@ public class PartialShapeMatcher {
         
         List<Sequence> sequencesPQ = extractSimilar(md);
        
+        /*
+        need sum of differences in sequence and the fraction
+        of the whole.
+        paretto efficiency is that all are at a copromise of best state,
+        such that increasing the state of one did not worsen the
+        state of another.
+        prefer:
+           -- smaller total difference for largest graction of whole
+           -- 2ndly, largest total coverage
+        
+        Note that for the rigid model (exvepting scale transformation)
+        one would want to maximize the 3nd point, coverage, first
+        with a consistent transformation.
+        
+        The articulated model chooses the 2nd point, second to get 
+        best fits of components first.
+        */
+        
         return matchArticulated(sequencesPQ, minN);
         
         //printing out results for md[0] and md[-3] and +3
