@@ -1,7 +1,9 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.QuadInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
@@ -190,6 +192,10 @@ public class PartialShapeMatcher {
         this.dp = d;
     }
     
+    private QuadInt[][] a1Coords = null;
+    private QuadInt[][] a2Coords = null;
+    private String[][][] mdCoords = null;
+    
     /**
      * NOT READY FOR USE.
      * 
@@ -210,6 +216,15 @@ public class PartialShapeMatcher {
         
         //System.out.println("a2:");
         float[][] a2 = createDescriptorMatrix(q, minN);       
+        
+        /*
+        {
+            // create debug matrices of just point 
+            // coordinates
+            a1Coords = debugDescPointMatrix(p, minN);
+            a2Coords = debugDescPointMatrix(q, minN);
+        }
+        */
         
         // --- make difference matrices ---
         
@@ -244,7 +259,21 @@ public class PartialShapeMatcher {
         */
         
         List<Sequence> sequencesPQ = extractSimilar(md);
+        /*
+        // -- create the QP sequences --
+        md = createDifferenceMatrices(a2, a1, minN);
         
+        List<Sequence> sequencesQP = extractSimilar(md);
+        
+        md = null;
+        
+        // TODO: transpose QP sequences and combine
+        // with PQ
+        transposeToPQ(sequencesQP);
+        
+        System.out.println(sequencesPQ.size() + " " 
+            + sequencesQP.size());
+        */
         return matchArticulated(sequencesPQ, minN);
         
         //printing out results for md[0] and md[-3] and +3
@@ -279,23 +308,29 @@ public class PartialShapeMatcher {
         if (rMax < 1) {
             rMax = 1;
         }
+        
+        /*
+        TODO: 
+        fixed an error in extracting the block sums
+        so everything downhill of this must change now.
+        */
 
         double thresh = 30;
                 
         MinDiffs mins = new MinDiffs(n1);
-        for (int r = 1; r <= rMax; ++r) {
+        for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
         }
         
-        double tolerance = 3.;
+        double tolerance = 0.5;
         
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
-        for (int r = 1; r <= rMax; ++r) {
+        for (int r = 2; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, tolerance,
                 equivBest);
         }
         
-        /*
+        
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -313,7 +348,7 @@ public class PartialShapeMatcher {
             System.out.println(sb.toString());
             sb.delete(0, sb.length());
         }
-        */
+        
         
         List<Sequence> sequences = new ArrayList<Sequence>();
         for (int idx1 = 0; idx1 < n1; ++idx1) {
@@ -465,10 +500,33 @@ public class PartialShapeMatcher {
             prevA2Shifted = shifted2;
         }
         
+        /*
+        {
+            // debugging coordinates
+            mdCoords = new String[minN][][];
+            QuadInt[][] prevA2Shifte = null;
+            for (int i = 0; i < md.length; ++i) {
+                QuadInt[][] shifte2;
+                if (prevA2Shifte == null) {
+                    shifte2 = copy(a2Coords);
+                } else {
+                    // shifts by 1 to left and down by 1
+                    rotate(prevA2Shifte);
+                    shifte2 = prevA2Shifte;
+                }
+                //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
+                mdCoords[i] = subtract(a1Coords, shifte2);
+                prevA2Shifte = shifte2;
+            }
+        }
+        */
+        
         // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
             applySummedAreaTableConversion(md[i]);
         }
+        
+        //printDiagonal(md[0], mdCoords[0]);
         
         System.out.println("md.length=" + md.length);
         
@@ -546,6 +604,93 @@ public class PartialShapeMatcher {
         return a2;
     }
 
+    /*
+    //TODO: delete after debugged
+    private QuadInt[][] copy(QuadInt[][] a) {
+        QuadInt[][] a2 = new QuadInt[a.length][];
+        for (int i = 0; i < a2.length; ++i) {
+            a2[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+        return a2;
+    }
+    private void rotate(QuadInt[][] prevShifted) {
+
+         // shift x left by 1 first
+         for (int y = 0; y < prevShifted[0].length; ++y) {
+             QuadInt tmp0 = prevShifted[0][y];
+             for (int x = 0; x < (prevShifted.length- 1); ++x){
+                 prevShifted[x][y] = prevShifted[x + 1][y]; 
+             }
+             prevShifted[prevShifted.length - 1][y] = tmp0;
+         }
+         
+         // shift y down by 1
+         for (int x = 0; x < prevShifted.length; ++x) {
+             QuadInt tmp0 = prevShifted[x][0];
+             for (int y = 0; y < (prevShifted[x].length - 1); ++y){
+                 prevShifted[x][y] = prevShifted[x][y + 1]; 
+             }
+             prevShifted[x][prevShifted[x].length - 1] = tmp0;
+         }
+    }
+    private String[][] subtract(QuadInt[][] a1, QuadInt[][] a2) {
+        String[][] output = new String[a1.length][];
+        for (int i = 0; i < a1.length; ++i) {
+            output[i] = new String[a1[i].length];
+            for (int j = 0; j < a1[i].length; ++j) {
+                output[i][j] = a1[i][j].toString() 
+                    + " minus " + a2[i][j].toString();
+            }
+        }
+        return output;
+    }
+    private void printDiagonal(float[][] a, String[][] aCoord) {
+        int r = 1;
+        for (int i = 0; i < md.length; ++i) {
+            if (i == 0) {
+                
+            } else {
+                float s1 = a[i][i] - a[i - r][i] 
+                    - a[i][i-r] + a[i-r][i-r];
+                System.out.println(
+                    String.format(
+                    " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
+                    i, i, a[i][i], a[i - r][i], a[i][i - r],
+                    a[i-r][i-r], s1*c));
+            }
+        }
+    }
+    private QuadInt[][] debugDescPointMatrix(PairIntArray p, int n) {
+        
+        QuadInt[][] a = new QuadInt[n][];
+        for (int i = 0; i < n; ++i) {
+            a[i] = new QuadInt[n];
+        }
+        
+        for (int i1 = 0; i1 < n; ++i1) {
+            int start = i1 + 1 + dp;
+            for (int ii = start; ii < (start + n - 1 - dp); ++ii) {
+                int i2 = ii;
+                
+                int imid = i2 - dp;
+                // wrap around
+                if (imid > (n - 1)) {
+                    imid -= n;
+                }
+  
+                // wrap around
+                if (i2 > (n - 1)) {
+                    i2 -= n;
+                }
+               
+                a[i1][i2] = new QuadInt(p.getX(i1), p.getY(i1),
+                    p.getX(i2), p.getY(i2));
+            }
+        }   
+        return a;
+    }
+    */
+    
     private void rotate(float[][] prevShifted) {
 
          // shift x left by 1 first
@@ -611,6 +756,20 @@ public class PartialShapeMatcher {
                     mdI[x][y] += mdI[x][y - 1];
                 }
             }
+        }
+    }
+
+    private void transposeToPQ(List<Sequence> sequencesQP) {
+    
+        /*
+        p.idx  q.idx  q.idx
+        
+        q.idx  p.idx  p.idx
+        17:17 32
+        */
+
+        for (int i = 0; i < sequencesQP.size(); ++i) {
+            Sequence s = sequencesQP.get(i);
         }
     }
 
@@ -685,12 +844,12 @@ public class PartialShapeMatcher {
             for (int i = 0; i < a.length; i+=r) {
                 float s1;
                 if ((i - r) > -1) {
-                    s1 = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
+                    s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
                     System.out.println(
                         String.format(
                         " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
-                        i, i, a[i][i], a[i - r][i], a[i][i - r],
-                        a[r][r], s1*c));
+                        i, i, a[i][i], a[i-r][i], a[i][i-r],
+                        a[i-r][i-r], s1*c));
                 } else {
                     s1 = a[i][i];
                     System.out.println(
@@ -741,7 +900,7 @@ public class PartialShapeMatcher {
         
         System.out.println("OFFSETS=" + Arrays.toString(idxs0));
         System.out.println("idx2=" + Arrays.toString(idxs2));
-      
+        System.out.println("mins=" + Arrays.toString(mins));  
     }
 
     private void findEquivalentBest(float[][][] md, int r, 
@@ -761,7 +920,7 @@ public class PartialShapeMatcher {
                 }
                 double s1;
                 if ((i - r) > -1) {
-                    s1 = a[i][i] - a[i - r][i] - a[i][i - r] + a[r][r];
+                    s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
                 } else {
                     s1 = a[i][i];
                 }
@@ -786,8 +945,8 @@ public class PartialShapeMatcher {
                         break;
                     }
                     if ((k - r) > -1) {
-                        s1 = a[k][k] - a[k - r][k] - a[k][k - r] 
-                            + a[r][r];
+                        s1 = a[k][k] - a[k-r][k] - a[k][k-r] 
+                            + a[k-r][k-r];
                     } else {
                         s1 = a[k][k];
                     }
