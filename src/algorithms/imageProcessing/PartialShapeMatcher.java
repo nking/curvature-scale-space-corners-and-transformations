@@ -87,7 +87,7 @@ public class PartialShapeMatcher {
      * NOT READY FOR USE.
        
       A shape is defined as the CW ordered sequence of points P_1...P_N
-      and the shape to match has points Q_1...Q_N
+      and the shape to match has points Q_1...Q_N.
       The spacings used within this method are equidistant
       and the default is 5, so override that if a different number
       is needed.
@@ -164,13 +164,6 @@ public class PartialShapeMatcher {
         */
         
         return matchArticulated(sequencesPQ, minN);
-        
-        //printing out results for md[0] and md[-3] and +3
-        // to look at known test data while checking logic
-        //print("md[0]", md[0]);
-        //print("md[3]", md[3]);  // <----- can see this is all zeros as expected
-        //print("md[-3]", md[md.length - 1]);
-        
     }
     
     protected List<Sequence> extractSimilar(float[][][] md) {
@@ -182,6 +175,7 @@ public class PartialShapeMatcher {
             rMax = 1;
         }
      
+        // 23 degrees is 0.4014
         double thresh = 23.*Math.PI/180.;
                 
         MinDiffs mins = new MinDiffs(n1);
@@ -322,6 +316,15 @@ public class PartialShapeMatcher {
         // (1.5) descending sort of fraction, then diff, then startIdx
         List<Sequence> list2 = new ArrayList<Sequence>(sequences);
         Collections.sort(list2, new SequenceComparator2());
+
+        /*
+        NOTE:
+           looks like list2 needs a filter for avg diff
+           or, use a normalized score to sort by:
+           composed of: frac + (diff/diffMax)
+           working through examples...
+        */
+
         
         //(2) a lookup for items in list2
         //    belonging to >= startIdx.
@@ -498,16 +501,11 @@ public class PartialShapeMatcher {
                 but shifting it by N instead would cover all 
                 orientation angles.
         (2) make Summary Area Tables of the N M_D^m matrices.
-        (3) starting on the diagonals of the integral images
+        (3) search: starting on the diagonals of the integral images
             made from the N M_D^n matrices,
             D_α(s, m, r) can be calculated for every block of any 
             size starting at any point on the diagonal in 
             constant time.
-      
-        reading the pareto frontier papers...
-        lower threshold...
-        building correspondence list from M_D^n...
-        
         */
 
         // --- make difference matrices ---

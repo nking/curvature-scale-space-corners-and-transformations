@@ -51,7 +51,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void testSummedAreaTables() {
+    public void estSummedAreaTables() {
         
         /*
         2 9  2  7     9 11  18   16 22  36
@@ -74,7 +74,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void testDescriptors2() throws Exception {
+    public void estDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
         //plot(p, 200);
@@ -106,6 +106,67 @@ public class PartialShapeMatcherTest extends TestCase {
         assertTrue(sequences.fractionOfWhole > 0.6);
 
         // assert the correspondence range
+
+    }
+
+    public void testDescriptors3() throws Exception {
+
+        // rotate points p so that start points are 
+        // different and assert that wrap around is
+        // handled correctly
+        
+        PairIntArray p = getScissors1();
+        p.rotateLeft(16);
+        //plot(p, 200);
+        
+        PairIntArray q = getScissors2();
+        //plot(q, 201);
+        
+        System.out.println("p.n=" + p.getN() 
+            + " q.n=" + q.getN());
+        
+        //q.rotateLeft(q.getN() - 3);
+                
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
+        shapeMatcher.overrideSamplingDistance(1);
+        
+        // articulated:
+        Sequences sequences = shapeMatcher.match(p, q);        
+    
+        /*
+        unless improve the first image blade positions:
+        expecting roughly for case without
+        rotation:
+            frac=0.7541, avgDiff=0.5967,  sumDiff=27.4475
+            (0:0 to 14, f=0.2459 d=0.1464)
+            (17:17 to 38, f=0.3607 d=0.6057)
+            (48:51 to 59, f=0.1475 d=1.3251)
+        rotation left by 16 becomes:
+            (45:0 to 14, f=0.2459 d=0.1464)
+            (1:17 to 38, f=0.3607 d=0.6057)
+            (32:51 to 59, f=0.1475 d=1.3251)
+
+        found:
+            frac=0.6721, avgDiff=1.4694,  sumDiff=60.2435
+            (0:16 to 38, f=0.3770 d=1.4907)    OK
+            (37:41 to 53, f=0.2131 d=1.5057)   ERROR
+            (54:56 to 60, f=0.0820 d=1.2768)   ERROR
+       wanted to find:
+            (45:0 to 13, f=0.2295 d=0.3385)
+
+       looks like need to start with a filter for avg diff
+       or, use a normalized score to sort by:
+           composed of: frac + (diff/diffMax)
+        */
+
+        assertNotNull(sequences);
+        assertTrue(sequences.fractionOfWhole > 0.6);
+
+        // assert the correspondence range
+        List<Sequence> list = sequences.sequences;
+        System.out.println("SEQ0=" + list.get(0).toString());
+        System.out.println("p=" + p.toString());
+        System.out.println("q=" + q.toString());
 
     }
     
