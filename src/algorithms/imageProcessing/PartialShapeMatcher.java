@@ -486,16 +486,33 @@ public class PartialShapeMatcher {
         // descending fraction of whole 
         Collections.sort(sequences, new SequenceComparator());
         
-        //(2) create a sorted tree set of 
-        //    key = startIdx1, value = index in list sequences
-        TreeMap<Integer, Integer> startLookup =
-            new TreeMap<Integer, Integer>();
-        for (int i = 0; i < sequences.size(); ++i) {
-            Integer key = Integer.valueOf(
-                sequences.get(i).startIdx1);
-            if (!startLookup.containsKey(key)) {
-                startLookup.put(key, Integer.valueOf(i));
+        // (1.5) descending sort of fraction, then diff, then startIdx
+        List<Sequence> list2 = new ArrayList<Sequence>(sequences);
+        Collections.sort(list2, new SequenceComparator2());
+        
+        //(2) need a way to find items in list2  as
+        //    belonging to >= startIdx.
+        //    
+        TreeMap<Integer, TIntList> startLookup =
+            new TreeMap<Integer, TIntList>();
+        for (int i = 0; i < list2.size(); ++i) {
+            Sequence s1 = list2.get(i);
+            Integer key = Integer.valueOf(s1.startIdx1);
+            for (int j = 0; j < list2.size(); ++j) {
+                Sequence s2 = list2.get(j);
+                if (s2.startIdx1 < key.intValue()) {
+                    continue;
+                }
+                if (!startLookup.containsKey(key)) {
+                    startLookup.put(key, new TIntArrayList());
+                }                
+                // TODO: revisit this...avoiding adding entire list
+                if (startLookup.get(key).size() > n1/4) {
+                    break;
+                }
+                startLookup.get(key).add(j);
             }
+            System.out.println("FSORT: " + s1.toString());
         }
         
         // (3) create "tracks" of sequences
@@ -526,17 +543,19 @@ public class PartialShapeMatcher {
                     + (lastSequence.stopIdx2 -
                     lastSequence.startIdx2) + 1;
                 
-                Entry<Integer,Integer> entry = 
-                    startLookup.ceilingEntry(nextStartIdx1);
+                Entry<Integer, TIntList> entry = 
+                    startLookup.ceilingEntry(
+                        Integer.valueOf(nextStartIdx1));
 
                 if (entry == null) {
                     break;
                 }
-                
-                int listIdx = entry.getValue().intValue();
+               
+                TIntList list2Indexes = entry.getValue();
                 boolean appended = false;
-                for (int j = listIdx; j < sequences.size(); ++j) {
-                    Sequence s2 = sequences.get(j);
+                for (int j = 0; j < list2Indexes.size(); ++j) {
+                    int list2Idx = list2Indexes.get(j);
+                    Sequence s2 = list2.get(list2Idx);
                     if (s2.startIdx2 <= lastSequence.stopIdx2) {
                         continue;
                     }
@@ -567,6 +586,11 @@ public class PartialShapeMatcher {
             track.absSumDiffs = sumDiffs;
             track.avgSumDiffs = (float)(sumDiffs/(float)sumLen);
             track.fractionOfWhole = sumFrac;
+        }
+        
+        Collections.sort(tracks, new TrackComparator());
+        for (Track track : tracks) {
+            System.out.println(track.toString());
         }
         
         throw new UnsupportedOperationException("not yet implemented");
@@ -955,6 +979,15 @@ public class PartialShapeMatcher {
         int stopIdx2 = -1;
         float absAvgSumDiffs;
         float fractionOfWhole;
+        @Override
+        public String toString() {
+             StringBuilder sb = new StringBuilder();
+             sb.append(String.format(
+             "(%d:%d to %d, f=%.4f d=%.4f)", 
+             startIdx1, startIdx2, stopIdx2,
+             fractionOfWhole, absAvgSumDiffs));
+             return sb.toString();
+        }    
     }
     
     private class MinDiffs {
@@ -976,8 +1009,75 @@ public class PartialShapeMatcher {
         float fractionOfWhole;
         double absSumDiffs;
         float avgSumDiffs;
+        
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("frac=%.4f",
+                fractionOfWhole));
+            sb.append(String.format(", avgDiff=%.4f,  sumDiff=%.4f",
+                avgSumDiffs, absSumDiffs));
+            for (Sequence s : sequences) {
+                sb.append("\n").append(s.toString());
+            }
+            return sb.toString();
+        }
     }
+    
+    private class TrackComparator implements 
+        Comparator<Track> {
 
+        @Override
+        public int compare(Track o1, Track o2) {
+            
+            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+                return -1;
+            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+                return 1;
+            }
+            
+            if (o1.absSumDiffs < o2.absSumDiffs) {
+                return -1;
+            } else if (o1.absSumDiffs > o2.absSumDiffs) {
+                return 1;
+            }
+            
+            return 0;
+        }
+    }
+    
+    /**
+     * comparator for descending sort of fraction,
+     * then diff, then startIdx
+     */    
+    private class SequenceComparator2 implements
+        Comparator<Sequence> {
+
+        @Override
+        public int compare(Sequence o1, Sequence o2) {
+        
+            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+                return -1;
+            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+                return 1;
+            }
+            
+            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+                return -1;
+            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
+                return 1;
+            }
+            
+            if (o1.startIdx1 < o2.startIdx1) {
+                return -1;
+            } else if (o1.startIdx1 > o2.startIdx1) {
+                return 1;
+            }
+            return 0;
+        }
+        
+    }
+    
     /**
      * comparator to sort by ascending startIdx, then
      * descending fraction of whole
