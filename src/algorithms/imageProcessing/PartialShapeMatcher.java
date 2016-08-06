@@ -962,8 +962,8 @@ public class PartialShapeMatcher {
             // for example, have one very large segment that
             // is the right answer and several smaller matches
             // that are false due to occlusion... presumably
-            // other false matches would have as many, but
-            // these needs alot more testing.
+            // other sequences have as many false matches, but
+            // this needs alot more testing.
             
             float s1 = o1.fractionOfWhole * ns1;
             float s2 = o2.fractionOfWhole * ns2;
