@@ -152,14 +152,11 @@ public class PartialShapeMatcherTest extends TestCase {
             (1:17 to 38, f=0.3607 d=0.6057)
             (32:51 to 59, f=0.1475 d=1.3251)
 
-       wanted to find:
-            (0:16 to 38, f=0.3770 d=1.4907)
-            (33:52 to 60, f=0.1475 d=1.0220)
-            (45:0 to 13, f=0.2295 d=0.3385)
-
-        editing the sort and aggregation now...
-        needs a search for points before startIdx2
-
+        found:
+            frac=0.6721, avgDiff=0.9792,  sumDiff=40.1460
+            (0:16 to 38,  f=0.3770 d=1.4907)
+            (37:57 to 60, f=0.0656 d=0.2804)
+            (45:0 to 13,  f=0.2295 d=0.3385)
         */
 
         assertNotNull(sequences);
@@ -167,9 +164,9 @@ public class PartialShapeMatcherTest extends TestCase {
 
         // assert the correspondence range
         List<Sequence> list = sequences.sequences;
-        System.out.println("SEQ0=" + list.get(0).toString());
-        System.out.println("p=" + p.toString());
-        System.out.println("q=" + q.toString());
+        //System.out.println("SEQ0=" + list.get(0).toString());
+        //System.out.println("p=" + p.toString());
+        //System.out.println("q=" + q.toString());
 
     }
     
