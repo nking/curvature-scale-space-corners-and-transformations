@@ -100,6 +100,12 @@ public class PartialShapeMatcherTest extends TestCase {
             [junit] (0:0 to 14, f=0.2459 d=0.1464)
             [junit] (17:17 to 38, f=0.3607 d=0.6057)
             [junit] (48:51 to 59, f=0.1475 d=1.3251)
+
+       for alt sorting which includes diff angles:
+         [junit] frac=0.7049, avgDiff=0.4138,  sumDiff=17.7920
+         [junit] (0:0 to 14, f=0.2459 d=0.1464)
+         [junit] (17:17 to 38, f=0.3607 d=0.6057)
+         [junit] (40:40 to 45, f=0.0984 d=0.3784)
         */
 
         assertNotNull(sequences);
@@ -146,17 +152,14 @@ public class PartialShapeMatcherTest extends TestCase {
             (1:17 to 38, f=0.3607 d=0.6057)
             (32:51 to 59, f=0.1475 d=1.3251)
 
-        found:
-            frac=0.6721, avgDiff=1.4694,  sumDiff=60.2435
-            (0:16 to 38, f=0.3770 d=1.4907)    OK
-            (37:41 to 53, f=0.2131 d=1.5057)   ERROR
-            (54:56 to 60, f=0.0820 d=1.2768)   ERROR
        wanted to find:
             (45:0 to 13, f=0.2295 d=0.3385)
+            (0:16 to 38, f=0.3770 d=1.4907)
+            (33:52 to 60, f=0.1475 d=1.0220)
 
-       looks like need to start with a filter for avg diff
-       or, use a normalized score to sort by:
-           composed of: frac + (diff/diffMax)
+        editing the sort and aggregation now...
+        needs a search for points before startIdx2
+
         */
 
         assertNotNull(sequences);

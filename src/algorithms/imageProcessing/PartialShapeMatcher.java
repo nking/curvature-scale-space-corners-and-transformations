@@ -315,17 +315,10 @@ public class PartialShapeMatcher {
         
         // (1.5) descending sort of fraction, then diff, then startIdx
         List<Sequence> list2 = new ArrayList<Sequence>(sequences);
-        Collections.sort(list2, new SequenceComparator2());
+        float maxAvgDiff = findMaxAvgDiff(list2);
+        Collections.sort(list2, new SequenceComparator3(maxAvgDiff));
+        //Collections.sort(list2, new SequenceComparator2());
 
-        /*
-        NOTE:
-           looks like list2 needs a filter for avg diff
-           or, use a normalized score to sort by:
-           composed of: frac + (diff/diffMax)
-           working through examples...
-        */
-
-        
         //(2) a lookup for items in list2
         //    belonging to >= startIdx.
         TreeMap<Integer, TIntList> startLookup =
@@ -377,7 +370,7 @@ public class PartialShapeMatcher {
                 int nextStartIdx1 = lastSequence.startIdx1
                     + (lastSequence.stopIdx2 -
                     lastSequence.startIdx2) + 1;
-                
+
                 Entry<Integer, TIntList> entry = 
                     startLookup.ceilingEntry(
                         Integer.valueOf(nextStartIdx1));
@@ -404,6 +397,11 @@ public class PartialShapeMatcher {
                     break;
                 }
             }
+
+            // TODO: if first sequence startIdx2 is > 0, need to
+            // search that region before startIdx2 also
+            //while (true) {
+            //}
         }
      
         // calculate the stats for each track (== Sequences)
@@ -894,6 +892,57 @@ public class PartialShapeMatcher {
     }
     
     /**
+     * comparator for a preferring high fraction and low differences,
+       then descending sort of fraction,
+     * then diff, then startIdx
+     */    
+    private class SequenceComparator3 implements
+        Comparator<Sequence> {
+
+        private final float maxDiff;
+
+        public SequenceComparator3(float maxDiff) {
+            this.maxDiff = maxDiff;
+        }
+
+        @Override
+        public int compare(Sequence o1, Sequence o2) {
+
+            float d1 = 1.f - (o1.absAvgSumDiffs/maxDiff);
+            float d2 = 1.f - (o2.absAvgSumDiffs/maxDiff);
+
+            float s1 = o1.fractionOfWhole + d1;
+
+            float s2 = o2.fractionOfWhole + d2;
+
+            if (s1 > s2) {
+                return -1;
+            } else if (s1 < s2) {
+                return 1;
+            }
+        
+            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+                return -1;
+            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+                return 1;
+            }
+            
+            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+                return -1;
+            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
+                return 1;
+            }
+            
+            if (o1.startIdx1 < o2.startIdx1) {
+                return -1;
+            } else if (o1.startIdx1 > o2.startIdx1) {
+                return 1;
+            }
+            return 0;
+        }
+        
+    }
+    /**
      * comparator for descending sort of fraction,
      * then diff, then startIdx
      */    
@@ -1137,5 +1186,17 @@ public class PartialShapeMatcher {
             }
         }
     }
+
+    private float findMaxAvgDiff(List<Sequence> sequences) {
     
+        float max = Float.MIN_VALUE;         
+        for (Sequence s : sequences) {
+            float d = s.absAvgSumDiffs;
+            if (d > max) {
+                max = d;
+            }
+        }
+        return max;
+    }
+
 }
