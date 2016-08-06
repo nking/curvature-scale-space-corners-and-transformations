@@ -320,7 +320,7 @@ public class PartialShapeMatcher {
         //Collections.sort(list2, new SequenceComparator2());
 
         //(2) a lookup for items in list2
-        //    belonging to >= startIdx.
+        //    belonging to >= startIdx1.
         TreeMap<Integer, TIntList> startLookup =
             new TreeMap<Integer, TIntList>();
         for (int i = 0; i < list2.size(); ++i) {
@@ -340,12 +340,35 @@ public class PartialShapeMatcher {
                 }
                 startLookup.get(key).add(j);
             }
-            System.out.println("FSORT: " + s1.toString());
+            System.out.println("FSORT: " + i + " " + s1.toString());
+        }
+
+        //(2.5) a lookup for items in list2
+        //    belonging to >= startIdx2.
+        TreeMap<Integer, TIntList> startLookup2 =
+            new TreeMap<Integer, TIntList>();
+        for (int i = 0; i < list2.size(); ++i) {
+            Sequence s1 = list2.get(i);
+            Integer key = Integer.valueOf(s1.startIdx2);
+            for (int j = 0; j < list2.size(); ++j) {
+                Sequence s2 = list2.get(j);
+                if (s2.startIdx2 < key.intValue()) {
+                    continue;
+                }
+                if (!startLookup2.containsKey(key)) {
+                    startLookup2.put(key, new TIntArrayList());
+                }                
+                // TODO: revisit this...avoiding adding entire list
+                if (startLookup2.get(key).size() > n1/4) {
+                    break;
+                }
+                startLookup2.get(key).add(j);
+            }
         }
         
         // (3) create "tracks" of sequences
         Set<Sequence> added = new HashSet<Sequence>();
-     
+        
         List<Sequences> tracks = new ArrayList<Sequences>();
         
         for (int i = 0; i < sequences.size(); ++i) {
@@ -398,10 +421,51 @@ public class PartialShapeMatcher {
                 }
             }
 
-            // TODO: if first sequence startIdx2 is > 0, need to
-            // search that region before startIdx2 also
-            //while (true) {
-            //}
+            // if first sequence startIdx2 is > 0, need to
+            // search the region before startIdx2 also
+            if (currentTrack.sequences.get(0).startIdx2 > 1) {
+                int nextStartIdx2 = 0;
+                while (true) {
+                    Entry<Integer, TIntList> entry = 
+                        startLookup2.ceilingEntry(
+                            Integer.valueOf(nextStartIdx2));
+
+                    if (entry == null) {
+                        break;
+                    }
+
+                    TIntList list2Indexes = entry.getValue();
+                    boolean appended = false;
+                    for (int j = 0; j < list2Indexes.size(); ++j) {
+                        int list2Idx = list2Indexes.get(j);
+                        Sequence s2 = list2.get(list2Idx);
+                        if (s2.stopIdx2 >= 
+                            currentTrack.sequences.get(0).startIdx2) {
+                            continue;
+                        }
+                        
+                        // check for range clash...
+                        if (intersectsExistingRange1(currentTrack.sequences,
+                            s2)) {
+                            continue;
+                        } 
+                        
+                        currentTrack.sequences.add(s2);
+                        added.add(s2);
+                        appended = true;
+                        lastSequence = s2;
+                        break;
+                    }
+                    if (!appended) {
+                        break;
+                    }
+
+                    nextStartIdx2 = lastSequence.stopIdx2 + 1;
+                    if (nextStartIdx2 > currentTrack.sequences.get(0).startIdx2) {
+                        break;
+                    }
+                }
+            }
         }
      
         // calculate the stats for each track (== Sequences)
@@ -1195,8 +1259,34 @@ public class PartialShapeMatcher {
             if (d > max) {
                 max = d;
             }
-        }
+       }
         return max;
     }
 
+    private boolean intersectsExistingRange1(
+        List<Sequence> existingList, Sequence s) {
+
+        int stopIdx1 = s.startIdx1 +
+            (s.stopIdx2 - s.startIdx2);
+        
+        for (Sequence s0 : existingList) {
+            
+            int s0stopIdx1 = s0.startIdx1 +
+                (s0.stopIdx2 - s0.startIdx2);
+            if (s.startIdx1 >= s0.startIdx1 &&
+                s.startIdx1 <= s0stopIdx1) {
+                return true;
+            }
+            if (stopIdx1 >= s0.startIdx1 &&
+                stopIdx1 <= s0stopIdx1) {
+                return true;
+            }
+            if (s.startIdx1 <= s0.startIdx1 &&
+                stopIdx1 >= s0stopIdx1) {
+                return true;
+            }
+        } 
+
+        return false; 
+    }
 }

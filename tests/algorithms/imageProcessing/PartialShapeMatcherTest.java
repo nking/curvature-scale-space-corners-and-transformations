@@ -153,9 +153,9 @@ public class PartialShapeMatcherTest extends TestCase {
             (32:51 to 59, f=0.1475 d=1.3251)
 
        wanted to find:
-            (45:0 to 13, f=0.2295 d=0.3385)
             (0:16 to 38, f=0.3770 d=1.4907)
             (33:52 to 60, f=0.1475 d=1.0220)
+            (45:0 to 13, f=0.2295 d=0.3385)
 
         editing the sort and aggregation now...
         needs a search for points before startIdx2
