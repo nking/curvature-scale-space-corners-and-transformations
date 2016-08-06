@@ -485,9 +485,12 @@ public class PartialShapeMatcher {
             track.fractionOfWhole = sumFrac;
         }
         
-        Collections.sort(tracks, new TrackComparator());
-        for (Sequences track : tracks) {
-            System.out.println(track.toString());
+        // sorting here needs to prefer higher fraction and
+        // longer segments too
+        Collections.sort(tracks, new TrackComparator(n1));
+        for (int i = 0; i < tracks.size(); ++i) {
+            Sequences track = tracks.get(i);
+            System.out.println(i + ": " + track.toString());
         }
 
         return tracks.get(0);
@@ -936,9 +939,34 @@ public class PartialShapeMatcher {
     private class TrackComparator implements 
         Comparator<Sequences> {
 
+        final int maxNPoints;
+        
+        public TrackComparator(int n1) {
+            this.maxNPoints = n1;
+        }
+        
         @Override
         public int compare(Sequences o1, Sequences o2) {
             
+            // adding a term to prefer the larger
+            // fraction, but in a smaller number of segments.
+            
+            // hard wiring a minimum size of 5 for segments
+            float ns = (float)(maxNPoints/5);
+           
+            float ns1 = 1.f - ((float)o1.sequences.size()/ns);
+            
+            float ns2 = 1.f - ((float)o2.sequences.size()/ns);
+            
+            float s1 = o1.fractionOfWhole * ns1;
+            float s2 = o2.fractionOfWhole * ns2;
+            
+            if (s1 > s2) {
+                return -1;
+            } else if (s1 < s2) {
+                return 1;
+            }
+                
             if (o1.fractionOfWhole > o2.fractionOfWhole) {
                 return -1;
             } else if (o1.fractionOfWhole < o2.fractionOfWhole) {

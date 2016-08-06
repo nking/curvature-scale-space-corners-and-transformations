@@ -20,7 +20,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
  
-    public void estDescriptors() throws Exception {
+    public void testDescriptors() throws Exception {
         
         PairIntArray p = getWineGlassShape();
         
@@ -51,7 +51,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void estSummedAreaTables() {
+    public void testSummedAreaTables() {
         
         /*
         2 9  2  7     9 11  18   16 22  36
@@ -74,7 +74,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void estDescriptors2() throws Exception {
+    public void testDescriptors2() throws Exception {
         
         PairIntArray p = getScissors1();
         //plot(p, 200);
