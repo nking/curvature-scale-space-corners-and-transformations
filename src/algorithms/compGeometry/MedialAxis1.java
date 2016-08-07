@@ -15,6 +15,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -65,8 +66,8 @@ public class MedialAxis1 {
      * separation angle used for sampling points in
      * a circle around a point.
      */
-    private static final double sepAng = Math.PI/3;
-    private final int nSampl = 6;//  2*pi/sepAng
+    private final double sepAng;// = Math.PI/3;
+    private final int nSampl;//  2*pi/sepAng
     
     
     //private static final double sepAng = Math.PI/6;
@@ -83,9 +84,24 @@ public class MedialAxis1 {
     //private final double threshold = Math.PI/18;
     
     private double twoPI = Math.PI;
-    private double sinePiDivN = Math.sin(Math.PI/nSampl);
+    private final double sinePiDivN;
     
     private final int nInterior;
+    
+    /*
+    TODO:
+       algorithm needs corrections for the resolution of
+       integer numbers for unfound medial axis points 
+       that are sometimes at a distance from the nearest
+       boundary points that is off by 1 pixel from the
+       distance to another nearest boundary point.
+       - need to create a new method in k nearest or in
+         nearest neighbors to handle returning not only the
+         nearest single distance, but any that are 1 pixel 
+         (sqrt(2), that is) from it.
+       some of the logic to keep a single pixel wide
+       medial axis will need to be edited and added to also.
+    */
     
     /**
      * constructor containing all points in the area
@@ -101,6 +117,53 @@ public class MedialAxis1 {
     public MedialAxis1(final Set<PairInt> shapePoints,
         final Set<PairInt> boundaryPoints) {
 
+        this.nSampl = 6;
+        
+        this.sepAng = Math.PI/(nSampl/2);    
+    
+        this.sinePiDivN = Math.sin(Math.PI/nSampl);
+        
+        this.points = new HashSet<PairInt>(shapePoints);
+        
+        this.boundary = new HashSet<PairInt>(boundaryPoints);
+    
+        points.removeAll(boundary);
+        
+        minMaxXY = MiscMath.findMinMaxXY(boundary);
+ 
+        nInterior = points.size();
+        
+        this.np = new NearestNeighbor2D(boundary, 
+            minMaxXY[1], minMaxXY[3]);
+        
+        processed = new HashSet<PairInt>(points.size());
+        
+        medAxisList = new ArrayList<MedialAxisPoint>();
+    }
+    
+    /**
+     * 
+     * @param shapePoints
+     * @param boundaryPoints
+     * @param nPSrchCircle number of points to use 
+     * on a search circle.  by default, this is 6
+     * and that is the minimum allowed also.
+     */
+    public MedialAxis1(final Set<PairInt> shapePoints,
+        final Set<PairInt> boundaryPoints, 
+        int nPSrchCircle) {
+        
+        if (nPSrchCircle < 6) {
+            throw new IllegalArgumentException(
+                "nPSrchCircle must be 6 or larger");
+        }
+        
+        this.nSampl = nPSrchCircle;
+        
+        this.sepAng = Math.PI/(nSampl/2);
+
+        this.sinePiDivN = Math.sin(Math.PI/nSampl);
+        
         this.points = new HashSet<PairInt>(shapePoints);
         
         this.boundary = new HashSet<PairInt>(boundaryPoints);
@@ -205,7 +268,7 @@ public class MedialAxis1 {
         
         int[] xSurf = new int[nSampl];
         int[] ySurf = new int[nSampl];
-        
+       
         Set<PairInt> visited = new HashSet<PairInt>();
         
         int nIter = 0;
@@ -255,10 +318,12 @@ public class MedialAxis1 {
                     results = findAndProcessARemainingPoint(q, addedM);
                 }
 
+                assert(assertUniqueMedialAxesPoints());
+                
                 continue;
             }
             
-            log.fine("nIter=" + nIter + " q.size=" 
+            log.info("nIter=" + nIter + " q.size=" 
                 + q.getNumberOfNodes() + 
                 " s.size=" + processed.size()
                 + " nInterior=" + nInterior);
@@ -271,7 +336,7 @@ public class MedialAxis1 {
                     continue;
                 }
                 
-                results = findMedialAxesNearPoint(p2);
+                results = findMedialAxesNearPoint(p2, addedM);
                 if (results == null) {
                     PairInt bPoint = np.findClosest(p2.getX(), p2.getY())
                         .iterator().next();
@@ -281,6 +346,8 @@ public class MedialAxis1 {
                     
                     continue;
                 }
+                
+                assert(assertUniqueMedialAxesPoints());
                 
                 // add to data structures, as above
                 for (MedialAxisPoint mp2 : results.medialAxes) {
@@ -311,17 +378,19 @@ public class MedialAxis1 {
              
             assert(assertUniqueMedialAxesPoints());
         
-            log.fine("q.n=" + q.getNumberOfNodes() +
+            log.info("q.n=" + q.getNumberOfNodes() +
                 " points.size=" + points.size());
             
             if (q.isEmpty() && (points.size() > 0)) {
                 // choose another point from points and continue
                 // also adds point(s) to the heap
                 results = findAndProcessARemainingPoint(q, addedM);
+            
+                assert(assertUniqueMedialAxesPoints());
             }
         }
         
-        log.fine("med axies nIter=" + nIter);
+        log.info("med axis nIter=" + nIter);
         
         assert(assertUniqueMedialAxesPoints());
 
@@ -339,7 +408,8 @@ public class MedialAxis1 {
         
         assert(assertPointTotals());
         assert(assertUniqueMedialAxesPoints());
-    }
+     
+   }
 
     protected List<MedialAxisPoint> getMedAxisList() {
         return medAxisList;
@@ -366,11 +436,11 @@ public class MedialAxis1 {
      * point.
      * @return 
      */
-    private MedialAxisResults findInitialPoint() {
+    private MedialAxisResults findInitialPoint(Set<PairInt> addedM) {
     
         PairInt p = points.iterator().next();
         
-        return findMedialAxesNearPoint(p);
+        return findMedialAxesNearPoint(p, addedM);
     }
     
     /**
@@ -388,9 +458,10 @@ public class MedialAxis1 {
      * 
      * @return 
      */
-    protected MedialAxisResults findMedialAxesNearPoint(PairInt p) {
+    protected MedialAxisResults findMedialAxesNearPoint(PairInt p,
+        Set<PairInt> addedM) {
     
-        log.fine("++srch for medial axis near p=" + p);
+        log.info("++srch for medial axis near p=" + p);
         
         List<MedialAxisPoint> medialAxes 
             = new ArrayList<MedialAxisPoint>();
@@ -430,7 +501,7 @@ public class MedialAxis1 {
             smallest angle between the old and new segments.            
             */
             
-            log.fine("++STATUS=-2 for p=" + p);
+            log.info("++STATUS=-2 for p=" + p);
            
             int cIdx = 0;
             
@@ -469,7 +540,7 @@ public class MedialAxis1 {
                 
                 cIdx++;
 
-                log.fine("++origP=" + origP + " nbp[i]=" + bPoint + " r=" + r
+                log.info("++origP=" + origP + " nbp[i]=" + bPoint + " r=" + r
                     + " dx=" + diffX + " dy=" + diffY);
 
                 int low, high;
@@ -484,7 +555,7 @@ public class MedialAxis1 {
                 }
                 int mid = (int)Math.round(0.5 * (high + low));
 
-                log.fine("++init:  mid=" + mid + " low=" + low + " high=" + high);
+                log.info("++init:  mid=" + mid + " low=" + low + " high=" + high);
 
                 // choose another circle center by choosing the point
                 // on the circle around p which is opposite the nearest
@@ -497,8 +568,13 @@ public class MedialAxis1 {
                     int y2 = p.getY() + (int)Math.round(diffY * mid);
                     PairInt p2 = new PairInt(x2, y2);
                     
-                    log.fine("++   p2=" + p2 + " mid=" + mid + " low=" + low + " high=" + high);
+                    log.info("++   p2=" + p2 + " mid=" + mid + " low=" + low + " high=" + high);
              
+                    if (addedM.contains(p2)) {
+                        status = -10;
+                        break;
+                    }
+                    
                     //TODO: consider removing if processed here
                     if ((points.contains(p2) || processed.contains(p2))) {
                         
@@ -525,7 +601,7 @@ public class MedialAxis1 {
                         cIdx = 0;
                         overrideDXY = true;
                     } else {
-                        log.fine("++Possible Error in algorithm:"
+                        log.info("++Possible Error in algorithm:"
                         + " could not find a valid medial axis"
                         + " point from the random first point.");
                         //NOTE: in one case, p2 was a valid med axis
@@ -869,7 +945,7 @@ Assume point m lies on the medial axis and is
         int tol = (int)Math.ceil(r * sinePiDivN);
         double threshold = 0.5 * sinePiDivN;
      
-        log.fine("p=" + p.toString() + " a nearest boundary="
+        log.info("p=" + p.toString() + " a nearest boundary="
             + bPoint.toString() + " r=" + r 
             + String.format(" tol=%d pix  sinePiDivN=%.4f", 
                 tol, sinePiDivN));       
@@ -882,7 +958,7 @@ Assume point m lies on the medial axis and is
         int ns = populateSurfacePoints(p, r, surfaceX, surfaceY);
         
         /*
-        nearestBounds are all equidistant, so can
+        since nearestBounds are all equidistant, can
         choose one of them as the corner of a triangle.
         
         for each pair of circle surface points, measuring
@@ -939,7 +1015,7 @@ Assume point m lies on the medial axis and is
             double aSq = distanceSq(x1, y1, x2, y2);
             
             if (cSq < aSq || bSq < aSq) {
-                log.fine(String.format("REMOVED1 (%d,%d) (%d,%d)", 
+                log.info(String.format("REMOVED1 (%d,%d) (%d,%d)", 
                     x1, y1, x2, y2));
                 continue;
             }
@@ -950,12 +1026,12 @@ Assume point m lies on the medial axis and is
             final double angleA = Math.acos(cosA);
     
             if (angleA < threshold) {
-                log.fine(String.format("REMOVED2 angleA=%.4f (%d,%d) (%d,%d)", 
+                log.info(String.format("REMOVED2 angleA=%.4f (%d,%d) (%d,%d)", 
                     (float)angleA, x1, y1, x2, y2));
                 continue;
             }
             
-            log.fine(String.format("angle=%.4f (%d,%d) (%d,%d) i=[%d,%d]", 
+            log.info(String.format("angle=%.4f (%d,%d) (%d,%d) i=[%d,%d]", 
                 (float)angleA, x1, y1, x2, y2, i, idx2));
             
             /*
@@ -1021,7 +1097,7 @@ Assume point m lies on the medial axis and is
                 indexAngleMap.put(i, angleA);
                 indexAngleMap.put(idx2, angleA);
             
-                log.fine("  <-- prev is a med axis pt");
+                log.info("  <-- prev is a med axis pt");
             }
         }       
         
@@ -1135,14 +1211,14 @@ Assume point m lies on the medial axis and is
                     continue;
                 }
                 double dist2 = distance(x2, y2, p2);
-                log.fine("   dist diff=" + 
+                log.info("   dist diff=" + 
                     Math.abs(dist1 - dist2) + " dist1=" + dist1 
                     + " dist2=" + dist2);
                 if ((dist1 == dist2) || ((dist1 > tol && dist2 > tol) &&
                     (Math.abs(dist1 - dist2) <= tol))) {
                     int[] dir1 = calculateNeighborDirection(x1, y1, p1);
                     int[] dir2 = calculateNeighborDirection(x2, y2, p2);
-                    log.fine("   tolsq=" + tol
+                    log.info("   tolsq=" + tol
                         + " np1=" + p1.toString()
                         + " np2=" + p2.toString()
                         + "\n         dir1=" + Arrays.toString(dir1)
@@ -1176,7 +1252,7 @@ Assume point m lies on the medial axis and is
      * @return 
      */
     private PairInt[] findEquidistantNearestPoints(
-        int x, int y, int tol, PairInt[] nearestBounds) {
+        int x, int y, double tol, PairInt[] nearestBounds) {
                 
         if (nearestBounds.length < 2) {
             return null;
@@ -1251,7 +1327,7 @@ Assume point m lies on the medial axis and is
         if (!(points.contains(p) || processed.contains(p))) {
             return null;
         }
-        
+                
         // test if p is on line between medAxis1 and medAxis2
         PairInt mp1 = medAxis1.getCenter();
         PairInt mp2 = medAxis2.getCenter();
@@ -1265,7 +1341,7 @@ Assume point m lies on the medial axis and is
                 p.getX(), p.getY());
             
             nearestBounds = findEquidistantNearestPoints(
-                p.getX(), p.getY(), 0, nearestBounds);
+                p.getX(), p.getY(), tol, nearestBounds);
             
             if (nearestBounds == null || (nearestBounds.length < 2)) {
                 return null;
@@ -1362,7 +1438,9 @@ Assume point m lies on the medial axis and is
             if (tol < 1) {
                 tol = 1;
             }
-            log.fine("medAxisPt.center=" + medAxisCenter);
+            log.info("medAxisPt.center=" + medAxisCenter);
+            
+            int tol2 = 1;//0;
             
             // if medAxisPt nearest bounds are already equal and diff dir,
             // skip refinement.
@@ -1373,7 +1451,7 @@ Assume point m lies on the medial axis and is
             PairInt[] nearB = findNearestBoundsAsArray(
                 medAxisCenter.getX(), medAxisCenter.getY());
             nearB = findEquidistantNearestPoints(
-                medAxisCenter.getX(), medAxisCenter.getY(), 0, nearB);
+                medAxisCenter.getX(), medAxisCenter.getY(), tol2, nearB);
             if (nearB != null && (nearB.length > 1)) {
                 //update the point
                 MedialAxisPoint mp2 = createMedialAxisPoint(
@@ -1398,9 +1476,9 @@ Assume point m lies on the medial axis and is
                 prevTol = tol;
             }
             
-            log.fine("  dither to improve " + medAxisCenter + ""
+            log.info("  dither to improve " + medAxisCenter + ""
                 + " dither=" + tol);
-            
+                        
             List<PairInt> better = new ArrayList<PairInt>();
             TIntObjectMap<PairInt[]> betterNBs = new TIntObjectHashMap<PairInt[]>();
             for (int k = 0; k < offsets.length; k += 2) {
@@ -1423,7 +1501,7 @@ Assume point m lies on the medial axis and is
  
                 nearB = findNearestBoundsAsArray(x2, y2);
                 nearB = findEquidistantNearestPoints(
-                    x2, y2, 0, nearB);
+                    x2, y2, tol2, nearB);
                 
                 if (nearB != null && (nearB.length > 1)) {
                     betterNBs.put(better.size(), nearB);
@@ -1432,7 +1510,7 @@ Assume point m lies on the medial axis and is
                 }
             }
             if (better.isEmpty()) {
-                log.fine("  WARNING: did not find better for " + medAxisCenter);
+                log.info("  WARNING: did not find better for " + medAxisCenter);
                 rm.add(i);
             } else{
                 // replace mp w/ first and add remaining
@@ -1493,6 +1571,8 @@ Assume point m lies on the medial axis and is
 
         Set<PairInt> srched = new HashSet<PairInt>(srch);
 
+        int tol2 = 1;//0;
+        
         while (!stack.isEmpty()) {
             PairInt p = stack.pop();
             if (visited.contains(p)) {
@@ -1520,7 +1600,7 @@ Assume point m lies on the medial axis and is
                 PairInt[] nearestBounds = findNearestBoundsAsArray(
                     x2, y2);
                 nearestBounds = findEquidistantNearestPoints(
-                    x2, y2, 0, nearestBounds);
+                    x2, y2, tol2, nearestBounds);
                 if (nearestBounds == null || (nearestBounds.length < 2)) {
                     continue;
                 }
@@ -1561,7 +1641,7 @@ Assume point m lies on the medial axis and is
     private MedialAxisResults findAndProcessFirstPoint(
         Heap q, Set<PairInt> addedM) {
         
-        MedialAxisResults results = findInitialPoint();
+        MedialAxisResults results = findInitialPoint(addedM);
         
         if (results == null) {
             //TODO: refactor so that can remove the searched
@@ -1597,13 +1677,23 @@ Assume point m lies on the medial axis and is
     private MedialAxisResults findAndProcessARemainingPoint(
         Heap q, Set<PairInt> addedM) {
         
-        PairInt p = points.iterator().next();
+        Iterator<PairInt> iter = points.iterator();
+        PairInt p = iter.next();
+        
+        while (addedM.contains(p)) {
+           if (!iter.hasNext()) {
+               return null;
+           }
+           p = iter.next();
+        }
+    
+        int tol = 1;//0;
         
         // first check the point p itself
         PairInt[] nearB = findNearestBoundsAsArray(
             p.getX(), p.getY());
         nearB = findEquidistantNearestPoints(
-            p.getX(), p.getY(), 0, nearB);
+            p.getX(), p.getY(), tol, nearB);
         if (nearB != null && (nearB.length > 1)) {
             double d = distance(p.getX(), p.getY(), nearB[0]);
             MedialAxisPoint mp2 = createMedialAxisPoint(
@@ -1615,7 +1705,7 @@ Assume point m lies on the medial axis and is
         }
         
         // search within a sampled radius for medial axis points
-        MedialAxisResults results = findMedialAxesNearPoint(p);
+        MedialAxisResults results = findMedialAxesNearPoint(p, addedM);
                 
         if (results == null) {
             //TODO: refactor so that can remove the searched
@@ -1651,12 +1741,14 @@ Assume point m lies on the medial axis and is
 
     private void searchEachPoint() {
         
+        int tol = 1;//0;
+        
         for (PairInt p : points) {
             
             PairInt[] nearestBounds = findNearestBoundsAsArray(
                 p.getX(), p.getY());
             nearestBounds = findEquidistantNearestPoints(
-                p.getX(), p.getY(), 0, nearestBounds);        
+                p.getX(), p.getY(), tol, nearestBounds);        
             if (nearestBounds == null || (nearestBounds.length < 2)) {
                 continue;
             }
