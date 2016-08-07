@@ -88,7 +88,6 @@ public class PerimeterFinder2 {
         return extractOrderedBorder(boundary, medAxisPts,
             contiguousPoints);
     }
-private PairIntArray debug = null;
 
     /**
      * NOT READY FOR USE...needs alot more testing.
@@ -226,7 +225,7 @@ private PairIntArray debug = null;
                     nn = new NearestNeighbor2D(medialAxisPoints, 
                         minMaxY[1], minMaxY[3]);
                 }
- this.debug = output;          
+          
                 int minAngleIdx = calculateMinAngles(
                     x, y, ns, neighborsX, neighborsY, nn,
                     contiguousShapePoints);

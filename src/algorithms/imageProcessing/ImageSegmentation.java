@@ -11349,7 +11349,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             new TIntObjectHashMap<List<PairInt>>();
         
         /*
-        Filling out keupoints across object shape to cover all
+        Filling out keypoints across object shape to cover all
         points (including exterior points is allowed).
         
         Using a BFS search pattern within dSpace limits of 

@@ -9,6 +9,8 @@ import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.segmentation.LabelToColorHelper;
+import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.GroupAverageColors;
@@ -56,7 +58,7 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-    public void est0() throws Exception {
+     public void est0() throws Exception {
 
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
@@ -244,29 +246,149 @@ public class AndroidStatuesTest extends TestCase {
             String fileName1Root = fileName1.substring(0, idx);
 
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
             ImageProcessor imageProcessor = new ImageProcessor();
             ImageSegmentation imageSegmentation = new ImageSegmentation();
 
-            int w1 = img1.getWidth();
-            int h1 = img1.getHeight();
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
 
             int maxDimension = 256;
             int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
                 (float) h1 / maxDimension));
 
-            ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
+            img = imageProcessor.binImage(img, binFactor1);
 
             List<Set<PairInt>> segmentedCellList
-                = imageSegmentation.createColorEdgeSegmentation(img1Binned, fileName1Root);
+                = imageSegmentation.createColorEdgeSegmentation(
+                    img, fileName1Root);
             
-            MiscDebug.writeAlternatingColor(img1Binned, 
+            MiscDebug.writeAlternatingColor(img, 
                 segmentedCellList, "_final_" + fileName1Root);
+                                   
+            /*
+            int nClusters = 200;
+            //int clrNorm = 5;
+            
+            SLICSuperPixels slic 
+                = new SLICSuperPixels(img, nClusters);
+
+            slic.calculate();
+
+            int[] labels = slic.getLabels();
+
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
+            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
+            
+            img = ImageIOHelper.readImageExt(filePath1);
+            img = imageProcessor.binImage(img, binFactor1);
+            LabelToColorHelper.applyLabels(img, labels);
+            MiscDebug.writeImage(img,  "_slic_img_" + fileName1Root);
+            */
+        }
+    }
+     
+    public void test1() throws Exception {
+
+        String fileName1 = "";
+
+        for (int i = 0; i < 4; ++i) {
+            
+            switch(i) {
+                case 0: {
+                    fileName1 = "android_statues_01_sz1.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02_sz1.jpg";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03_sz1.jpg";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "android_statues_04_sz1.jpg";
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+       
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+
+            /*
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+
+            int maxDimension = 256;
+            int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            img = imageProcessor.binImage(img, binFactor1);
+            */
+            
+            /*
+            (1) make template objects to search for in other
+                images. 
+                - a color version for each image binned scale
+                - a contour of the object at each image binned scale
+            (2) use super pixels on segmented images.
+            (3) for segment centroids, build k nearest neighbors.
+            (4) search image for segments that match the search object
+                in color.
+                these form the core of what will be aggregated search.
+            (5) create best pattern to search the candidate
+                segmented cells.
+                - determine different combinations of each with
+                  its neighbors that might create the needed
+                  area?  
+                  - exclude adding neighbors that don't match any
+                    color segment in the search object?
+                    (might not be a good idea considering resolution
+                     of super pixels)
+                - smooth the bounds?
+            ===> before that, extract the shapes 
+                 aggregated (and smoothed in needed),
+                 to make tests for the partial shape
+                 matcher to adapt it for use.
+                 (might need to add directed features of
+                 color or gradient too, hopefully not)
+            
+            */
+
+            MiscDebug.writeImage(img,  "_img_" + fileName1Root);
+           
+            int nClusters = 200;//100;
+            //int clrNorm = 5;
+            
+            SLICSuperPixels slic 
+                = new SLICSuperPixels(img, nClusters);
+
+            slic.calculate();
+
+            int[] labels = slic.getLabels();
+
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
+            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
+            
+            img = ImageIOHelper.readImageExt(filePath1);
+            //img = imageProcessor.binImage(img, binFactor1);
+            LabelToColorHelper.applyLabels(img, labels);
+            MiscDebug.writeImage(img,  "_slic_img_" + fileName1Root);
+            
         }
     }
     
-    public void testColorLayout() throws Exception {
+    public void estColorLayout() throws Exception {
 
         String[] fileNames = new String[]{
             "android_statues_01.jpg",
@@ -275,8 +397,9 @@ public class AndroidStatuesTest extends TestCase {
             "android_statues_04.jpg"
         };
 
-        // paused here.  ediiting to use super pixels
-        //   and a pattern of color aggregatiion w/ voronoi cells for comparison to model,
+        // paused here.  editing to use super pixels
+        //   and a pattern of color aggregation 
+        //   w/ voronoi cells for comparison to model,
         //   then a partial shape matching algorithm.
         
         ImageProcessor imageProcessor = new ImageProcessor();
@@ -312,7 +435,7 @@ public class AndroidStatuesTest extends TestCase {
             
             the method may need some form of contour matching
             for pure sillouhette conditions
-            but would need to allow for occlision.
+            but would need to allow for occlusion.
             
             deltaE for gingerbread man in the 4 images
             is at most 5, else 3.7 and 1.8.           
