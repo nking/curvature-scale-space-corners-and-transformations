@@ -1630,7 +1630,7 @@ Assume point m lies on the medial axis and is
                     results.medialAxes.get(0),
                     results.medialAxes.get(1),
                     tol2);
-                if (mp0 != null) {
+                if (mp0 != null && !addedM.contains(mp0.getCenter())) {
                     medAxisList.add(mp0);
                     addedM.add(mp0.getCenter());
                 }
@@ -1664,9 +1664,11 @@ Assume point m lies on the medial axis and is
         
         for (MedialAxisPoint m : results.medialAxes) {
             PairInt pp = m.getCenter();
-            addToHeap(q, m);
-            addedM.add(pp);
-            medAxisList.add(m);
+            if (!addedM.contains(pp)) {
+                addedM.add(pp);
+                medAxisList.add(m);
+                addToHeap(q, m);
+            }
         }
 
         assert(assertUniqueMedialAxesPoints());  
@@ -1698,9 +1700,11 @@ Assume point m lies on the medial axis and is
             double d = distance(p.getX(), p.getY(), nearB[0]);
             MedialAxisPoint mp2 = createMedialAxisPoint(
                 p, nearB, d);
-            medAxisList.add(mp2);
-            addToHeap(q, mp2);
-            addedM.add(p);
+            if (!addedM.contains(mp2.getCenter())) {
+                medAxisList.add(mp2);
+                addToHeap(q, mp2);
+                addedM.add(p);
+            }
             processed.addAll(subtractFromPoints(p, d - 1));         
         }
         
@@ -1729,9 +1733,11 @@ Assume point m lies on the medial axis and is
         
         for (MedialAxisPoint m : results.medialAxes) {
             PairInt pp = m.getCenter();
-            addToHeap(q, m);
-            addedM.add(pp);
-            medAxisList.add(m);
+            if (!addedM.contains(pp)) {
+                addedM.add(pp);
+                medAxisList.add(m);
+                addToHeap(q, m);
+            }
         }
 
         assert(assertUniqueMedialAxesPoints());  
