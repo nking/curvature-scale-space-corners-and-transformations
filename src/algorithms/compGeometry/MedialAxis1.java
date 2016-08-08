@@ -1,11 +1,14 @@
 package algorithms.compGeometry;
 
+import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
+import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.imageProcessing.Heap;
 import algorithms.imageProcessing.HeapNode;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
+import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntDoubleMap;
@@ -16,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -247,6 +251,8 @@ public class MedialAxis1 {
      * resolution arguments are not yet available for use.
      */
     public void findMedialAxis() {
+      
+        plotVoronoi();
         
         medAxisList.clear();
         
@@ -1884,4 +1890,115 @@ Assume point m lies on the medial axis and is
         }
         return nearestBounds;
     }
+        
+    private void plotVoronoi() {
+        
+        float xmin = Float.MAX_VALUE;
+        float xmax = Float.MIN_VALUE;
+        float ymin = Float.MAX_VALUE;
+        float ymax = Float.MIN_VALUE;
+        
+        for (PairInt p : boundary) {
+            float xp = p.getX();
+            float yp = p.getY();
+            if (xp < xmin) {
+                xmin = xp;
+            }
+            if (xp > xmax) {
+                xmax = xp;
+            }
+            if (yp < ymin) {
+                ymin = yp;
+            }
+            if (yp > ymax) {
+                ymax = yp;
+            }
+        }
+        
+        int n = boundary.size();
+        float[] x = new float[n];
+        float[] y = new float[n];
+        
+        int count = 0;
+        for (PairInt p : boundary) {
+            float xp = p.getX();
+            float yp = p.getY();
+            x[count] = xp;
+            y[count] = yp;
+            count++;
+        }
+        
+                
+        int minDist = 0;
+        
+        VoronoiFortunesSweep voronoi = 
+            new VoronoiFortunesSweep();
+        
+        voronoi.generateVoronoi(x, y, 
+            xmin - 1, xmax + 1, ymin - 1, ymax + 1, 
+            minDist);
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        
+        try {
+        PolygonAndPointPlotter plotter = 
+            new PolygonAndPointPlotter(xmin - 1, xmax + 1, 
+                ymin - 1, ymax + 1);
+        
+        float[] xPolygon = null;
+        float[] yPolygon = null;
+        
+        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
+        
+        n = edges.size();
+        xPolygon = new float[2*n];
+        yPolygon = new float[2*n];
+        count = 0;
+        for (GraphEdge edge : edges) {
+            float x1 = edge.x1;
+            float y1 = edge.y1;
+            float x2 = edge.x2;
+            float y2 = edge.y2;
+            
+            xPolygon[count] = x1;
+            yPolygon[count] = y1;
+            xPolygon[count + 1] = x2;
+            yPolygon[count + 1] = y2;
+            count += 2;
+        }
+        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
+            "edges");
+        
+        count = 0;
+        for (GraphEdge edge : edges) {
+            int x1 = Math.round(edge.x1);
+            int y1 = Math.round(edge.y1);
+            int x2 = Math.round(edge.x2);
+            int y2 = Math.round(edge.y2);
+
+            PairInt p1 = new PairInt(x1, y1);
+            PairInt p2 = new PairInt(x2, y2);
+
+            if ((points.contains(p1) || processed.contains(p1))
+                && (points.contains(p2) || processed.contains(p2))) {
+                xPolygon[count] = x1;
+                yPolygon[count] = y1;
+                xPolygon[count + 1] = x2;
+                yPolygon[count + 1] = y2;
+                count += 2;
+            }
+        }
+        xPolygon = Arrays.copyOf(xPolygon, count);
+        yPolygon = Arrays.copyOf(yPolygon, count);
+        
+        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
+            "edited for medial axes");
+        
+        String filePath = plotter.writeFile(1000);
+        System.out.println("wrote file=" + filePath);
+        } catch (Throwable t) {
+            
+        }
+    }
+
 }
