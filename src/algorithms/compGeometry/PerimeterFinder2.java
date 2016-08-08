@@ -7,9 +7,11 @@ import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,9 +81,21 @@ public class PerimeterFinder2 {
         //O(8*N)
         Set<PairInt> boundary = extractBorder(contiguousPoints);
         
+        // default n search points is 6.
+        int[] minMaxXY = MiscMath.findMinMaxXY(boundary);
+        int min = Math.min(minMaxXY[3] - minMaxXY[2], 
+            minMaxXY[1] - minMaxXY[0]);
+        int ns = min/2;
+        if (ns < 6) {
+            ns = 6;
+        } else if (ns > 50) {
+            ns = 50;
+        }
+        ns = 146;
+        
         //dependent upon complexity of shape:
         MedialAxis1 medAxis1 = new MedialAxis1(contiguousPoints, 
-            boundary);
+            boundary, ns);
         medAxis1.findMedialAxis();
         Set<PairInt> medAxisPts = medAxis1.getMedialAxisPoints();
         
@@ -231,6 +245,64 @@ public class PerimeterFinder2 {
                     contiguousShapePoints);
                 
                 junctionNodes.add(Integer.valueOf(output.getN()));
+             
+//if (minAngleIdx == -1) {
+    try {
+        
+    int[] xPolygon = null;
+    int[] yPolygon = null;
+    PolygonAndPointPlotter plotter = new
+        PolygonAndPointPlotter();
+    int[] xminmxyminmiac = MiscMath.findMinMaxXY(
+         contiguousShapePoints);
+    int[] xp, yp;
+    int n, count;
+    
+    n = contiguousShapePoints.size();
+    xp = new int[n];
+    yp = new int[n];
+    count = 0;
+    for (PairInt p : contiguousShapePoints) {
+        xp[count] = p.getX();
+        yp[count] = p.getY();
+        count++;
+    }
+    plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+        xminmxyminmiac[2], xminmxyminmiac[3],
+        xp, yp, xPolygon, yPolygon, "shape");
+    plotter.writeFile2();
+    
+    n = medialAxisPoints.size();
+    xp = new int[n];
+    yp = new int[n];
+    count = 0;
+    for (PairInt p : medialAxisPoints) {
+        xp[count] = p.getX();
+        yp[count] = p.getY();
+        count++;
+    }    
+    plotter.addPlot((float)xminmxyminmiac[0], 
+        (float)xminmxyminmiac[1],
+        (float)xminmxyminmiac[2], (float)xminmxyminmiac[3],
+        xp, yp, xPolygon, yPolygon, "med axis");
+    
+    n = output.getN();
+    xp = new int[n];
+    yp = new int[n];
+    for (int i = 0; i < output.getN(); ++i) {
+        xp[i] = output.getX(i);
+        yp[i] = output.getY(i);
+    }
+    plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+        xminmxyminmiac[2], xminmxyminmiac[3],
+        xp, yp, xPolygon, yPolygon, "ordered bunds");
+    plotter.writeFile2();
+    
+    System.out.println("output=" + output.toString());
+    } catch (Throwable t) {
+        
+    }
+//}   
                 
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
             }
@@ -485,13 +557,13 @@ public class PerimeterFinder2 {
           
         boolean isOutside = (d0Cen > d0);
         
-        /*
+        
         System.out.println(
             String.format(
             "**med axis pt=%s (%d,%d) d0=%.4f --> (%.3f,%.3f) d0cen=%.4f",
             medAxisCen.toString(), x, y, (float) d0,
             xCen, yCen, (float) d0Cen));
-        */
+        
         
         if (!isOutside) {
             for (int i = 0; i < nXY; ++i) {
@@ -504,20 +576,20 @@ public class PerimeterFinder2 {
                 double d2Cen = distSq(xCen, yCen, 
                     medAxisCen.getX(), medAxisCen.getY());
 
-                /*
+                
                 System.out.println(
                 String.format(
                 "  med Axis pt=%s (%d,%d) d2=%.4f --> d2cen=%.4f",
                 medAxisCen.toString(), x2, y2, (float) d2,
                 (float) d2Cen));
-                */
+                
                 
                 if (d2Cen > d2) {
                     isOutside = true;
                 }
             }
         }
-        
+    
         if (isOutside) {
             return calculateMinAnglesForConcave(x, y, 
                 nXY, neighborsX, neighborsY, medAxis0,
@@ -561,12 +633,12 @@ public class PerimeterFinder2 {
             double angle = AngleUtil.polarAngleCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
             
-            /*
+            
             System.out.println(
                 String.format("concave: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0, 
                     x2,y2, (float) angle));
-            */
+            
             
             // for convex section:
             if ((angle > angle0) && (angle > maxAngle)) {
@@ -615,19 +687,23 @@ public class PerimeterFinder2 {
             int y2 = neighborsY[i];
             double angle = AngleUtil.polarAngleCCW(
                 x2 - medAxis0.getX(), y2 - medAxis0.getY());
-            /*
+            
             System.out.println(
             String.format(
             "convex: (%d,%d) a=%.4f --> (%d,%d) a=%.4f",
                     x, y, (float) angle0,
                     x2,y2, (float) angle));
-            */
+            
             // for convex section:
             if ((angle > angle0) && (angle < minAngle)) {
                 minAngle = angle;
                 minIdx = i;
             }
         }
+        
+if (minIdx == -1) {
+int z = 1;         
+}
         
         return minIdx;
     }
@@ -780,5 +856,5 @@ public class PerimeterFinder2 {
         
         return pointsNS;
     }
-    
+
 }

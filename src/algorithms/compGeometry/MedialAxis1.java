@@ -26,6 +26,9 @@ import java.util.Stack;
 import java.util.logging.Logger;
 
 /**
+ NOTE: the MedialAxis should be preferred to this one.
+ This needs improvements.
+ * 
    A class to create a 2D medial axis given shape points
    and the boundary.
        from https://en.wikipedia.org/wiki/Medial_axis
@@ -108,6 +111,8 @@ public class MedialAxis1 {
     */
     
     /**
+     * NOTE: use MedialAxis instead.  This class
+     * needs improvements.
      * constructor containing all points in the area
      * and the bounding points.
      * (NOTE: in future may make a version that doesn't
@@ -146,7 +151,8 @@ public class MedialAxis1 {
     }
     
     /**
-     * 
+     * NOTE: use MedialAxis instead.  This class needs
+     * improvements.
      * @param shapePoints
      * @param boundaryPoints
      * @param nPSrchCircle number of points to use 
@@ -251,9 +257,7 @@ public class MedialAxis1 {
      * resolution arguments are not yet available for use.
      */
     public void findMedialAxis() {
-      
-        plotVoronoi();
-        
+              
         medAxisList.clear();
         
         if (points.size() < boundary.size()) {
@@ -1890,115 +1894,4 @@ Assume point m lies on the medial axis and is
         }
         return nearestBounds;
     }
-        
-    private void plotVoronoi() {
-        
-        float xmin = Float.MAX_VALUE;
-        float xmax = Float.MIN_VALUE;
-        float ymin = Float.MAX_VALUE;
-        float ymax = Float.MIN_VALUE;
-        
-        for (PairInt p : boundary) {
-            float xp = p.getX();
-            float yp = p.getY();
-            if (xp < xmin) {
-                xmin = xp;
-            }
-            if (xp > xmax) {
-                xmax = xp;
-            }
-            if (yp < ymin) {
-                ymin = yp;
-            }
-            if (yp > ymax) {
-                ymax = yp;
-            }
-        }
-        
-        int n = boundary.size();
-        float[] x = new float[n];
-        float[] y = new float[n];
-        
-        int count = 0;
-        for (PairInt p : boundary) {
-            float xp = p.getX();
-            float yp = p.getY();
-            x[count] = xp;
-            y[count] = yp;
-            count++;
-        }
-        
-                
-        int minDist = 0;
-        
-        VoronoiFortunesSweep voronoi = 
-            new VoronoiFortunesSweep();
-        
-        voronoi.generateVoronoi(x, y, 
-            xmin - 1, xmax + 1, ymin - 1, ymax + 1, 
-            minDist);
-        
-        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
-        
-        try {
-        PolygonAndPointPlotter plotter = 
-            new PolygonAndPointPlotter(xmin - 1, xmax + 1, 
-                ymin - 1, ymax + 1);
-        
-        float[] xPolygon = null;
-        float[] yPolygon = null;
-        
-        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
-        
-        n = edges.size();
-        xPolygon = new float[2*n];
-        yPolygon = new float[2*n];
-        count = 0;
-        for (GraphEdge edge : edges) {
-            float x1 = edge.x1;
-            float y1 = edge.y1;
-            float x2 = edge.x2;
-            float y2 = edge.y2;
-            
-            xPolygon[count] = x1;
-            yPolygon[count] = y1;
-            xPolygon[count + 1] = x2;
-            yPolygon[count + 1] = y2;
-            count += 2;
-        }
-        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
-            "edges");
-        
-        count = 0;
-        for (GraphEdge edge : edges) {
-            int x1 = Math.round(edge.x1);
-            int y1 = Math.round(edge.y1);
-            int x2 = Math.round(edge.x2);
-            int y2 = Math.round(edge.y2);
-
-            PairInt p1 = new PairInt(x1, y1);
-            PairInt p2 = new PairInt(x2, y2);
-
-            if ((points.contains(p1) || processed.contains(p1))
-                && (points.contains(p2) || processed.contains(p2))) {
-                xPolygon[count] = x1;
-                yPolygon[count] = y1;
-                xPolygon[count + 1] = x2;
-                yPolygon[count + 1] = y2;
-                count += 2;
-            }
-        }
-        xPolygon = Arrays.copyOf(xPolygon, count);
-        yPolygon = Arrays.copyOf(yPolygon, count);
-        
-        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
-            "edited for medial axes");
-        
-        String filePath = plotter.writeFile(1000);
-        System.out.println("wrote file=" + filePath);
-        } catch (Throwable t) {
-            
-        }
-    }
-
 }
