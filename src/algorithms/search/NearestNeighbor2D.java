@@ -535,7 +535,7 @@ public class NearestNeighbor2D {
         }
         
         int goal = (closestDist != Double.MAX_VALUE) ?
-            (int)Math.ceil(closestDist) : 0;
+            (int)Math.ceil(closestDist) : dMax;
         
         if (goal > dMax) {
             goal = dMax;
