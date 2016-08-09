@@ -378,7 +378,7 @@ public class PrimsMST {
         return walk;
     }
     
-    private TIntObjectMap<TIntList> createReverseMap() {
+    public TIntObjectMap<TIntList> createReverseMap() {
     
         TIntObjectMap<TIntList> revPrevMap 
             = new TIntObjectHashMap<TIntList>();

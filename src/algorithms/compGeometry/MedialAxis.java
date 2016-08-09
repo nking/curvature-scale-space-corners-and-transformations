@@ -2,16 +2,34 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
+import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.MiscMath;
+import algorithms.mst.PrimsMST;
 import algorithms.search.NearestNeighbor2D;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -83,7 +101,12 @@ public class MedialAxis {
      * 
      */
     public void fastFindMedialAxis() {
-                
+    
+        if (edges != null) {
+            throw new IllegalStateException(
+                "find... has already been inboked");
+        }
+        
         edges = findVoronoiInteriorEdges();
         
         //plotVoronoi();        
@@ -91,12 +114,15 @@ public class MedialAxis {
     
     public void findMedialAxis() {
         
+        if (edges != null) {
+            throw new IllegalStateException(
+                "find... has already been inboked");
+        }
+        
+        edges = findVoronoiInteriorEdges2();
+                
         plotVoronoi();
 
-        NearestNeighbor2D np = new NearestNeighbor2D(boundary, 
-            minMaxXY[1], minMaxXY[3]);
-        
-        throw new UnsupportedOperationException("not yet impl");
     }
     
     private List<GraphEdge> findVoronoiInteriorEdges() {
@@ -150,6 +176,216 @@ public class MedialAxis {
         return output;
     }
     
+    private List<GraphEdge> findVoronoiInteriorEdges2() {
+        
+        Set<PairInt> c = findBoundaryProblems();
+        
+        NearestNeighbor2D nn = new NearestNeighbor2D(
+            c, minMaxXY[1], minMaxXY[3]);
+        
+        float xmin = minMaxXY[0];
+        float xmax = minMaxXY[1];
+        float ymin = minMaxXY[2];
+        float ymax = minMaxXY[3];
+        
+        int n = boundary.size();
+        float[] x = new float[n];
+        float[] y = new float[n];
+        
+        int count = 0;
+        for (PairInt p : boundary) {
+            float xp = p.getX();
+            float yp = p.getY();
+            x[count] = xp;
+            y[count] = yp;
+            count++;
+        }
+                
+        int minDist = 0;
+        
+        VoronoiFortunesSweep voronoi = 
+            new VoronoiFortunesSweep();
+        
+        voronoi.generateVoronoi(x, y, 
+            xmin - 1, xmax + 1, ymin - 1, ymax + 1, 
+            minDist);
+        
+        LinkedList<GraphEdge> edges = voronoi.getAllEdges();
+        
+        List<GraphEdge> output = new ArrayList<GraphEdge>();
+       
+        Site[] sites = voronoi.getSites();
+        
+        /*
+        need to store edge points and make an adjacency
+        map for them.
+        while storing the edge points, need to find the
+        edge points which are very near the set rm.
+        
+        then will make an mst for the adjacency map.
+        
+        then will remove the rm points and the branch
+        they are on up until they reach a parent with
+        another child.
+        */
+        
+        TIntObjectMap<TIntIntMap>
+            adjCostMap = new TIntObjectHashMap<TIntIntMap>();
+       
+        /*
+        edge: v1, v2
+           each vertex in edge gets a vertex index
+              that may already exist
+        each edge is stored in map w/ key=pairint(v1,v2)
+           where v1<v2.
+        
+        rm are the verex indexes to remove
+        */
+        TIntSet rm = new TIntHashSet();
+        TObjectIntMap<PairInt> vertexIndexes 
+            = new TObjectIntHashMap<PairInt>();
+        Map<PairInt, GraphEdge> vertexEdgeMap = 
+            new HashMap<PairInt, GraphEdge>();
+        
+        count = 0;
+        for (GraphEdge edge : edges) {
+            int x1 = Math.round(edge.x1);
+            int y1 = Math.round(edge.y1);
+            int x2 = Math.round(edge.x2);
+            int y2 = Math.round(edge.y2);
+
+            PairInt p1 = new PairInt(x1, y1);
+            PairInt p2 = new PairInt(x2, y2);
+
+            if (p1.equals(p2)) {
+                continue;
+            }
+            
+            if (points.contains(p1) && points.contains(p2)) {
+
+                int idx1;
+                if (vertexIndexes.containsKey(p1)) {
+                    idx1 = vertexIndexes.get(p1);
+                } else {
+                    idx1 = vertexIndexes.size();
+                    vertexIndexes.put(p1, idx1);
+                }
+               
+                Set<PairInt> nearest1 = 
+                    nn.findClosest(x1, y1, 2);
+                if (!nearest1.isEmpty()) {
+                    rm.add(idx1);
+                }
+                
+                int idx2;
+                if (vertexIndexes.containsKey(p2)) {
+                    idx2 = vertexIndexes.get(p2);
+                } else {
+                    idx2 = vertexIndexes.size();
+                    vertexIndexes.put(p2, idx2);
+                }
+                Set<PairInt> nearest2 = 
+                    nn.findClosest(x2, y2, 2);
+                if (!nearest2.isEmpty()) {
+                    rm.add(idx2);
+                }
+                
+                PairInt eKey;
+                if (idx1 < idx2) {
+                    eKey = new PairInt(idx1, idx2);
+                } else {
+                    eKey = new PairInt(idx2, idx1);
+                }
+                
+                if (vertexEdgeMap.containsKey(eKey)) {
+                    continue;
+                }
+                vertexEdgeMap.put(eKey, edge);
+                
+                TIntIntMap map = adjCostMap.get(idx1);
+                if (map == null) {
+                    map = new TIntIntHashMap();
+                    adjCostMap.put(idx1, map);
+                }
+                map.put(idx2, 1);
+                
+                map = adjCostMap.get(idx2);
+                if (map == null) {
+                    map = new TIntIntHashMap();
+                    adjCostMap.put(idx2, map);
+                }
+                map.put(idx1, 1);
+            }
+        }
+        
+        System.out.println("nVertexes=" + vertexIndexes.size());
+        System.out.println("nEdges=" + vertexEdgeMap.size());
+        
+        PrimsMST mst = new PrimsMST();
+        mst.calculateMinimumSpanningTree(vertexIndexes.size(), 
+            adjCostMap);
+        
+        int[] prev = mst.getPrecessorArray();
+        TIntObjectMap<TIntList> revPrevMap =
+            mst.createReverseMap();
+                
+        TIntSet rm2 = new TIntHashSet();
+        
+        Set<GraphEdge> rmEdges = new HashSet<GraphEdge>();
+        TIntIterator iter = rm.iterator();
+        while (iter.hasNext()) {
+            
+            int idx = iter.next();
+                                    
+            // keep walking up tree until a parent has children.n>2
+            while (true) {
+                
+                if (rm2.contains(idx)) {
+                    break;
+                }
+                
+                int prevIdx = prev[idx];
+                
+                PairInt rmKey;
+                if (idx < prevIdx) {
+                    rmKey = new PairInt(idx, prevIdx);
+                } else {
+                    rmKey = new PairInt(prevIdx, idx);
+                }
+
+                rmEdges.add(vertexEdgeMap.get(rmKey));
+                
+                TIntList pC = revPrevMap.get(prevIdx);
+                if (pC == null) {
+                    break;
+                }
+                //boolean removed = pC.remove(idx);
+                //rm2.add(idx);
+                //assert(removed);
+                if (pC.size() > 1) {
+                    break;
+                }
+                idx = prevIdx;
+            }
+        }
+        
+        System.out.println("nEdges to remove=" + rmEdges.size());
+        
+        Iterator<Entry<PairInt, GraphEdge>> iter2 = 
+            vertexEdgeMap.entrySet().iterator();
+        while (iter2.hasNext()) {
+            Entry<PairInt, GraphEdge> entry = iter2.next();
+            GraphEdge edge = entry.getValue();
+            if (!rmEdges.contains(edge)) {
+                output.add(edge);
+            }
+        }
+        
+        System.out.println("nEdges=" + output.size());
+        
+        return output;
+    }
+    
     private void plotVoronoi() {
         
         float xmin = minMaxXY[0];
@@ -181,9 +417,7 @@ public class MedialAxis {
         
         float[] xPolygon = null;
         float[] yPolygon = null;
-        
-        plotter.addPlot(x, y, xPolygon, yPolygon, "points");
-        
+                
         n = edges.size();
         xPolygon = new float[2*n];
         yPolygon = new float[2*n];
@@ -293,4 +527,20 @@ public class MedialAxis {
         
         return output;
     }
+    
+    private Set<PairInt> findBoundaryProblems() {
+        
+        Set<PairInt> b = new HashSet<PairInt>(boundary);
+        
+        PostLineThinnerCorrections pltc = new 
+            PostLineThinnerCorrections();
+        
+        pltc.extremeCornerRemover(b, minMaxXY[1], minMaxXY[3]);
+        
+        Set<PairInt> rm = new HashSet<PairInt>(boundary);
+        rm.removeAll(b);
+        
+        return rm;
+    }
+
 }

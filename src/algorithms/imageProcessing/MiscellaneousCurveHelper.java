@@ -2241,11 +2241,6 @@ public class MiscellaneousCurveHelper {
                     Math.round(dx0 * f) : 0;
                 x = x1 + dx;
                 y = y1 + (Math.round(slope*(x - x1)));
-                
-                System.out.println(String.format(
-                ">(%d,%d)(%d,%d) x,y=%d,%d   %d %d %.4f %d", 
-                x1, y1, x2, y2, x, y,
-                dx0, dy0, f, dx));
             }
             
             output.add(new PairInt(x, y));
