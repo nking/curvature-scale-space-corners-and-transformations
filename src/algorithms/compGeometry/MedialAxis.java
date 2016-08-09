@@ -2,6 +2,7 @@ package algorithms.compGeometry;
 
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.misc.MiscMath;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
@@ -41,15 +42,13 @@ public class MedialAxis {
     
     private final Set<PairInt> points;
     private final Set<PairInt> boundary;
-    private final NearestNeighbor2D np;
     
-    /** as circles within points are searched, they are placed
-    in processed
-    */
-    private final Set<PairInt> processed;
-        
     //xMin, xMax, yMin, yMax
     private final int[] minMaxXY;
+    
+    private List<GraphEdge> edges = null;
+    
+    private Set<PairInt> edgePoints = null;
     
     /**
      * constructor containing all points in the area
@@ -64,46 +63,48 @@ public class MedialAxis {
         this.points = new HashSet<PairInt>(shapePoints);
         
         this.boundary = new HashSet<PairInt>(boundaryPoints);
-    
+            
         points.removeAll(boundary);
         
-        minMaxXY = MiscMath.findMinMaxXY(boundary);
-         
-        this.np = new NearestNeighbor2D(boundary, 
-            minMaxXY[1], minMaxXY[3]);
+        minMaxXY = MiscMath.findMinMaxXY(boundary);         
+    }
+    
+    /**
+     * find the medial axis, but with the warning that 
+     * it may contain extra spikes out to false medial
+     * axis points that are artifacts of bumps in the
+     * boundary of the shape.
+     * The artifacts are not harmful for the main reason
+     * the class was built, so this faster method is
+     * offered as an option.
+     * The runtime complexity is purely that of Voronoi
+     * Fortune Sweep, O(N * log_2(N)) where N is the
+     * number of boundary points.
+     * 
+     */
+    public void fastFindMedialAxis() {
+                
+        edges = findVoronoiInteriorEdges();
         
-        processed = new HashSet<PairInt>(points.size());
-        
+        //plotVoronoi();        
     }
     
     public void findMedialAxis() {
+        
         plotVoronoi();
+
+        NearestNeighbor2D np = new NearestNeighbor2D(boundary, 
+            minMaxXY[1], minMaxXY[3]);
+        
         throw new UnsupportedOperationException("not yet impl");
     }
     
-    private void plotVoronoi() {
+    private List<GraphEdge> findVoronoiInteriorEdges() {
         
-        float xmin = Float.MAX_VALUE;
-        float xmax = Float.MIN_VALUE;
-        float ymin = Float.MAX_VALUE;
-        float ymax = Float.MIN_VALUE;
-        
-        for (PairInt p : boundary) {
-            float xp = p.getX();
-            float yp = p.getY();
-            if (xp < xmin) {
-                xmin = xp;
-            }
-            if (xp > xmax) {
-                xmax = xp;
-            }
-            if (yp < ymin) {
-                ymin = yp;
-            }
-            if (yp > ymax) {
-                ymax = yp;
-            }
-        }
+        float xmin = minMaxXY[0];
+        float xmax = minMaxXY[1];
+        float ymin = minMaxXY[2];
+        float ymax = minMaxXY[3];
         
         int n = boundary.size();
         float[] x = new float[n];
@@ -117,7 +118,6 @@ public class MedialAxis {
             y[count] = yp;
             count++;
         }
-        
                 
         int minDist = 0;
         
@@ -130,6 +130,50 @@ public class MedialAxis {
         
         LinkedList<GraphEdge> edges = voronoi.getAllEdges();
         
+        List<GraphEdge> output = new ArrayList<GraphEdge>();
+       
+        count = 0;
+        for (GraphEdge edge : edges) {
+            int x1 = Math.round(edge.x1);
+            int y1 = Math.round(edge.y1);
+            int x2 = Math.round(edge.x2);
+            int y2 = Math.round(edge.y2);
+
+            PairInt p1 = new PairInt(x1, y1);
+            PairInt p2 = new PairInt(x2, y2);
+
+            if (points.contains(p1) && points.contains(p2)) {
+                output.add(edge);
+            }
+        }
+        
+        return output;
+    }
+    
+    private void plotVoronoi() {
+        
+        float xmin = minMaxXY[0];
+        float xmax = minMaxXY[1];
+        float ymin = minMaxXY[2];
+        float ymax = minMaxXY[3];
+        
+        int n = boundary.size();
+        float[] x = new float[n];
+        float[] y = new float[n];
+        
+        int count = 0;
+        for (PairInt p : boundary) {
+            float xp = p.getX();
+            float yp = p.getY();
+            x[count] = xp;
+            y[count] = yp;
+            count++;
+        }
+               
+        if (edges == null) {
+            fastFindMedialAxis();
+        }
+                
         try {
         PolygonAndPointPlotter plotter = 
             new PolygonAndPointPlotter(xmin - 1, xmax + 1, 
@@ -169,8 +213,7 @@ public class MedialAxis {
             PairInt p1 = new PairInt(x1, y1);
             PairInt p2 = new PairInt(x2, y2);
 
-            if ((points.contains(p1) || processed.contains(p1))
-                && (points.contains(p2) || processed.contains(p2))) {
+            if (points.contains(p1) && points.contains(p2)) {
                 xPolygon[count] = x1;
                 yPolygon[count] = y1;
                 xPolygon[count + 1] = x2;
@@ -184,6 +227,22 @@ public class MedialAxis {
         plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
             "edited for medial axes");
         
+        //-----
+        Set<PairInt> pts = getMedialAxisPoints();
+        n = pts.size();
+        x = new float[n];
+        y = new float[n];
+        count = 0;
+        for (PairInt p : pts) {
+            float xp = p.getX();
+            float yp = p.getY();
+            x[count] = xp;
+            y[count] = yp;
+            count++;
+        }
+        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, 
+            "med axis pts");
+        
         String filePath = plotter.writeFile(1000);
         System.out.println("wrote file=" + filePath);
         } catch (Throwable t) {
@@ -191,18 +250,47 @@ public class MedialAxis {
         }
     }
 
-    // TODO: consider offering the edges
-    // or points, whichever user prefers
-    protected List<MedialAxisPoint> getMedAxisList() {
-        return medAxisList;
+    /**
+     * return the results as the graph edges.
+     * The output is copied so modifications
+     * won't affect the instance variables.
+     * @return 
+     */
+    protected List<GraphEdge> getMedAxisAsEdges() {
+        return new ArrayList<GraphEdge>(edges);
     }
     
+    /**
+     * return the results as undirected point sets.
+     * Note that the method runtime complexity is
+     * O(N_edges) because it creates points between
+     * the edge endpoints.
+     * @return 
+     */
     public Set<PairInt> getMedialAxisPoints() {
-        Set<PairInt> mAPs = new HashSet<PairInt>();
-        for (MedialAxis1.MedialAxisPoint mp : medAxisList) {
-            mAPs.add(mp.getCenter());
+        
+        if (edgePoints != null) {
+            return edgePoints;
         }
-        return mAPs;
-    }
+        
+        MiscellaneousCurveHelper curveHelper =
+            new MiscellaneousCurveHelper();
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        for (GraphEdge edge : edges) {
+        
+            int x1 = Math.round(edge.x1);
+            int y1 = Math.round(edge.y1);
+            int x2 = Math.round(edge.x2);
+            int y2 = Math.round(edge.y2);
 
+            curveHelper.createLinePoints(x1, y1, x2, y2,
+                output);
+        }
+        
+        this.edgePoints = output;
+        
+        return output;
+    }
 }

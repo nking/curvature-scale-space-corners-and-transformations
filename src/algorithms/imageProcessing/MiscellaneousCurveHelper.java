@@ -2192,4 +2192,64 @@ public class MiscellaneousCurveHelper {
         return sum;
     }
 
+    /**
+     * calculate points in the line between (x1, y1)
+     * and (x2, y2), inclusive, and add them to output.
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param output 
+     */
+    public void createLinePoints(int x1, int y1, 
+        int x2, int y2, Set<PairInt> output) {
+
+        if (x2 < x1) {
+            int swap = x1;
+            x1 = x2;
+            x2 = swap;
+            swap = y1;
+            y1 = y2;
+            y2 = swap;
+        }
+        
+        int dx0 = x2 - x1;
+        int dy0 = y2 - y1;
+        int nLine = 1 + (int) Math.floor(
+            Math.sqrt(dx0 * dx0 + dy0 * dy0));
+        
+        float slope = (float)dy0/(float)dx0;
+        
+        output.add(new PairInt(x1, y1));
+        output.add(new PairInt(x2, y2));
+
+        for (int ii = 1; ii < nLine; ++ii) {
+            int x, y;
+            float f = (float) ii / (float) (nLine - 1);
+            if (dx0 == 0) {
+                int dy = (dy0 != 0 && f != 0) ?
+                    Math.round(dy0 * f) : 0;
+                x = x1;
+                y = y1 + dy;
+            } else if (dy0 == 0) {
+                int dx = (dx0 != 0 && f != 0) ?
+                    Math.round(dx0 * f) : 0;
+                x = x1 + dx;
+                y = y1;
+            } else {
+                int dx = (dx0 != 0 && f != 0) ?
+                    Math.round(dx0 * f) : 0;
+                x = x1 + dx;
+                y = y1 + (Math.round(slope*(x - x1)));
+                
+                System.out.println(String.format(
+                ">(%d,%d)(%d,%d) x,y=%d,%d   %d %d %.4f %d", 
+                x1, y1, x2, y2, x, y,
+                dx0, dy0, f, dx));
+            }
+            
+            output.add(new PairInt(x, y));
+        }
+    }
+
 }

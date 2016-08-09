@@ -81,23 +81,11 @@ public class PerimeterFinder2 {
         //O(8*N)
         Set<PairInt> boundary = extractBorder(contiguousPoints);
         
-        // default n search points is 6.
-        int[] minMaxXY = MiscMath.findMinMaxXY(boundary);
-        int min = Math.min(minMaxXY[3] - minMaxXY[2], 
-            minMaxXY[1] - minMaxXY[0]);
-        int ns = min/2;
-        if (ns < 6) {
-            ns = 6;
-        } else if (ns > 50) {
-            ns = 50;
-        }
-        ns = 146;
-        
-        //dependent upon complexity of shape:
-        MedialAxis1 medAxis1 = new MedialAxis1(contiguousPoints, 
-            boundary, ns);
-        medAxis1.findMedialAxis();
-        Set<PairInt> medAxisPts = medAxis1.getMedialAxisPoints();
+        // O(N*log_2(N))
+        MedialAxis medAxis = new MedialAxis(contiguousPoints, 
+            boundary);
+        medAxis.fastFindMedialAxis();
+        Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
         
         return extractOrderedBorder(boundary, medAxisPts,
             contiguousPoints);
