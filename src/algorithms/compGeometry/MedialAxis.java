@@ -62,12 +62,23 @@ public class MedialAxis {
     private final Set<PairInt> points;
     private Set<PairInt> boundary = null;
     
+    /**
+     * if a line thinner was applied, the points
+     * removed from the boundary are kept here.
+     * they are needed when excluding "exterior"
+     * points from the medial axis edges.
+     */
+    private final Set<PairInt> removedPoints = 
+        new HashSet<PairInt>();
+    
     //xMin, xMax, yMin, yMax
     private final int[] minMaxXY;
     
     private List<GraphEdge> edges = null;
     
     private Set<PairInt> edgePoints = null;
+    
+    private boolean applyLT = false;
     
     /**
      * constructor containing all points in the area
@@ -86,6 +97,10 @@ public class MedialAxis {
         points.removeAll(boundary);
         
         minMaxXY = MiscMath.findMinMaxXY(boundary);         
+    }
+    
+    public void setToApplyLineThinner() {
+        applyLT = true;
     }
     
     /**
@@ -108,6 +123,10 @@ public class MedialAxis {
                 "find... has already been inboked");
         }
         
+        if (applyLT) {
+            applyLineThinner();
+        }
+        
         edges = findVoronoiInteriorEdges();
         
         //plotVoronoi();        
@@ -120,9 +139,11 @@ public class MedialAxis {
                 "find... has already been inboked");
         }
         
+        applyLineThinner();
+        
         edges = findVoronoiInteriorEdges2();
                 
-        plotVoronoi();
+        //plotVoronoi();
 
     }
     
@@ -147,12 +168,14 @@ public class MedialAxis {
         }
                 
         int minDist = 0;
+        int offset = 2;
         
         VoronoiFortunesSweep voronoi = 
             new VoronoiFortunesSweep();
         
         voronoi.generateVoronoi(x, y, 
-            xmin - 1, xmax + 1, ymin - 1, ymax + 1, 
+            xmin - offset, xmax + offset, 
+            ymin - offset, ymax + offset, 
             minDist);
         
         LinkedList<GraphEdge> edges = voronoi.getAllEdges();
@@ -168,7 +191,17 @@ public class MedialAxis {
 
             PairInt p1 = new PairInt(x1, y1);
             PairInt p2 = new PairInt(x2, y2);
-
+            if (p1.equals(p2)) {
+                continue;
+            }
+        
+            if (removedPoints.contains(p1) ||
+                removedPoints.contains(p1) ||
+                boundary.contains(p1) ||
+                boundary.contains(p2)) {
+                continue;
+            }
+            
             if (points.contains(p1) && points.contains(p2)) {
                 output.add(edge);
             }
@@ -178,31 +211,12 @@ public class MedialAxis {
     }
     
     private List<GraphEdge> findVoronoiInteriorEdges2() {
-        
-        Set<PairInt> b = new HashSet<PairInt>(boundary);
-        
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyLineThinner(b, 
-            minMaxXY[0], minMaxXY[1], 
-            minMaxXY[2], minMaxXY[3]);
-        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc._correctForArtifacts(b, minMaxXY[1] + 1, 
-            minMaxXY[3] + 1);
-        boundary = b;
-       
+               
         //TODO: improve this:
         Set<PairInt> c = findBoundaryProblems();
         
         NearestNeighbor2D nn = new NearestNeighbor2D(
             c, minMaxXY[1], minMaxXY[3]);
-        
-        /*{
-            for (PairInt p : c) {
-                System.out.println("boundary problem? " 
-                + p.toString());
-            }
-        }*/
-        
         
         float xmin = minMaxXY[0];
         float xmax = minMaxXY[1];
@@ -281,6 +295,12 @@ public class MedialAxis {
             if (p1.equals(p2)) {
                 continue;
             }
+            if (removedPoints.contains(p1) ||
+                removedPoints.contains(p1) ||
+                boundary.contains(p1) ||
+                boundary.contains(p2)) {
+                continue;
+            }
             
             if (points.contains(p1) && points.contains(p2)) {
 
@@ -296,7 +316,7 @@ public class MedialAxis {
                     nn.findClosest(x1, y1, 3);
                 if (!nearest1.isEmpty()) {
                     rm.add(idx1);
-                    System.out.println("rm: " + p1);
+                    //System.out.println("rm: " + p1);
                 }
                 
                 int idx2;
@@ -310,7 +330,7 @@ public class MedialAxis {
                     nn.findClosest(x2, y2, 3);
                 if (!nearest2.isEmpty()) {
                     rm.add(idx2);
-                    System.out.println("rm: " + p2);
+                    //System.out.println("rm: " + p2);
                 }
                 
                 PairInt eKey;
@@ -341,8 +361,8 @@ public class MedialAxis {
             }
         }
         
-        System.out.println("nVertexes=" + vertexIndexes.size());
-        System.out.println("nEdges=" + vertexEdgeMap.size());
+       // System.out.println("nVertexes=" + vertexIndexes.size());
+       // System.out.println("nEdges=" + vertexEdgeMap.size());
         
         PrimsMST mst = new PrimsMST();
         mst.calculateMinimumSpanningTree(vertexIndexes.size(), 
@@ -392,7 +412,7 @@ public class MedialAxis {
             }
         }
         
-        System.out.println("nEdges to remove=" + rmEdges.size());
+        //System.out.println("nEdges to remove=" + rmEdges.size());
         
         Iterator<Entry<PairInt, GraphEdge>> iter2 = 
             vertexEdgeMap.entrySet().iterator();
@@ -558,6 +578,29 @@ public class MedialAxis {
         
         return pltc.findBoundaryPattern(boundary, minMaxXY[1], minMaxXY[3]);
         
+    }
+
+    private void applyLineThinner() {
+        
+        Set<PairInt> b = new HashSet<PairInt>(boundary);
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(b, 
+            minMaxXY[0], minMaxXY[1], 
+            minMaxXY[2], minMaxXY[3]);
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc._correctForArtifacts(b, minMaxXY[1] + 1, 
+            minMaxXY[3] + 1);
+        
+        // store the removed points
+        removedPoints.addAll(boundary);
+        removedPoints.removeAll(b);
+        
+        System.out.println("line thinning removed " +
+            removedPoints.size() + " from the boundary");
+        
+        boundary = b;
     }
 
 }

@@ -108,11 +108,17 @@ public class CannyEdgeFilterAdaptive {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
     
+    protected boolean useZhangSuen = true;
+    
     public CannyEdgeFilterAdaptive() {        
     }
     
     public void setToDebug() {
         debug = true;
+    }
+    
+    public void setToNotUseZhangSuen() {
+        useZhangSuen = false;
     }
     
     /**
@@ -239,8 +245,10 @@ public class CannyEdgeFilterAdaptive {
             
             filterProducts.getGradientXY().resetTo(mask);
             
-            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-            lt.applyFilter(filterProducts.getGradientXY());
+            if (useZhangSuen) {
+                ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+                lt.applyFilter(filterProducts.getGradientXY());
+            }
             
             //exploreHoughTransforms(filterProducts.getGradientXY());
             
@@ -1004,7 +1012,7 @@ public class CannyEdgeFilterAdaptive {
         float frac = (float)nP/(float)(n0 * n1);
         if (nP < 30000) {
             PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-            pltc.correctForHolePattern100(correctedPoints, n0, n1);            
+ //           pltc.correctForHolePattern100(correctedPoints, n0, n1);            
             pltc.correctForLineHatHoriz(correctedPoints, n0, n1);
             pltc.correctForLineHatVert(correctedPoints, n0, n1);
             pltc.correctForLineSpurHoriz(correctedPoints, n0, n1);
@@ -1033,8 +1041,10 @@ public class CannyEdgeFilterAdaptive {
                 }
             }
         }
-        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
-        lt.applyFilter(out);
+        if (useZhangSuen) {
+            ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+            lt.applyFilter(out);
+        }
         
         gradientXY.resetTo(out);
     }

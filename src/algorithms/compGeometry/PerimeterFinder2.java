@@ -8,12 +8,7 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -80,10 +75,11 @@ public class PerimeterFinder2 {
         
         //O(8*N)
         Set<PairInt> boundary = extractBorder(contiguousPoints);
-        
+                
         // O(N*log_2(N))
         MedialAxis medAxis = new MedialAxis(contiguousPoints, 
             boundary);
+        medAxis.setToApplyLineThinner();
         medAxis.fastFindMedialAxis();
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
         
@@ -234,7 +230,7 @@ public class PerimeterFinder2 {
                 
                 junctionNodes.add(Integer.valueOf(output.getN()));
              
-//if (minAngleIdx == -1) {
+if (minAngleIdx == -1) {
     try {
         
     int[] xPolygon = null;
@@ -290,7 +286,7 @@ public class PerimeterFinder2 {
     } catch (Throwable t) {
         
     }
-//}   
+}   
                 
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
             }
@@ -844,5 +840,4 @@ int z = 1;
         
         return pointsNS;
     }
-
 }

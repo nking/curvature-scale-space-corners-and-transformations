@@ -1888,8 +1888,8 @@ Assume point m lies on the medial axis and is
         Set<PairInt> nearestB = np.findClosest(x, y);
         int count = 0;
         PairInt[] nearestBounds = new PairInt[nearestB.size()];
-        for (PairInt np : nearestB) {
-            nearestBounds[count] = np;
+        for (PairInt p : nearestB) {
+            nearestBounds[count] = p;
             count++;
         }
         return nearestBounds;
