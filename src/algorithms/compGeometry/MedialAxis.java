@@ -5,6 +5,7 @@ import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
 import algorithms.mst.PrimsMST;
 import algorithms.search.NearestNeighbor2D;
@@ -59,7 +60,7 @@ public class MedialAxis {
     private Logger log = Logger.getLogger(this.getClass().getName());
     
     private final Set<PairInt> points;
-    private final Set<PairInt> boundary;
+    private Set<PairInt> boundary = null;
     
     //xMin, xMax, yMin, yMax
     private final int[] minMaxXY;
@@ -178,7 +179,20 @@ public class MedialAxis {
     
     private List<GraphEdge> findVoronoiInteriorEdges2() {
         
+        Set<PairInt> b = new HashSet<PairInt>(boundary);
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(b, 
+            minMaxXY[0], minMaxXY[1], 
+            minMaxXY[2], minMaxXY[3]);
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc._correctForArtifacts(b, minMaxXY[1] + 1, 
+            minMaxXY[3] + 1);
+        boundary = b;
+       
+        //TODO: change findBoundaryProblems...
         Set<PairInt> c = findBoundaryProblems();
+        c.clear();
         
         NearestNeighbor2D nn = new NearestNeighbor2D(
             c, minMaxXY[1], minMaxXY[3]);

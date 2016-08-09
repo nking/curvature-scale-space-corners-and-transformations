@@ -191,6 +191,92 @@ public class PostLineThinnerCorrections {
         
         //correctForRemaining(points, w, h);
     }
+    
+    public void _correctForArtifacts(Set<PairInt> points, int w, int h) {
+     
+        correctForZigZag000_00(points, w, h);
+        correctForZigZag000_01(points, w, h);
+        correctForZigZag000_02(points, w, h);
+        correctForZigZag000_03(points, w, h);
+        
+        correctForZigZag000_04(points, w, h);
+        correctForZigZag000_05(points, w, h);
+        correctForZigZag000_06(points, w, h);
+        correctForZigZag000_07(points, w, h);
+        correctForZigZag000_08(points, w, h);
+        correctForZigZag000_09(points, w, h);
+
+        correctForZigZag00(points, w, h);
+        correctForZigZag00_0(points, w, h);
+        correctForZigZag00_0_00(points, w, h);
+        correctForZigZag00_0_01(points, w, h);
+        correctForZigZag00_0_0(points, w, h);
+        correctForZigZag00_0_1(points, w, h);
+        correctForZigZag00_0_2(points, w, h);
+        correctForZigZag00_1(points, w, h);
+        correctForZigZag00_2(points, w, h);
+        correctForZigZag00_3(points, w, h);
+        correctForZigZag00_5(points, w, h);
+        correctForZigZag00_6(points, w, h);
+        correctForZigZag00_7(points, w, h);
+        correctForZigZag00_8(points, w, h);
+        correctForZigZag00_9(points, w, h);
+        correctForZigZag00_10(points, w, h);
+                
+        correctForZigZag00_4(points, w, h);
+        
+        correctForZigZag00_11(points, w, h);
+        correctForZigZag00_12(points, w, h);
+        correctForZigZag00_13(points, w, h);
+      
+        correctForTs(points, w, h);
+        correctForTs_0(points, w, h);
+        correctForTs_0_1(points, w, h);
+        correctForTs_0_2(points, w, h);
+        correctForTs_0_3(points, w, h);
+        correctForTs_1(points, w, h);
+        correctForTs_1_1(points, w, h);
+                
+        // TODO: revisit, not sure this is always an artifact:
+        correctForLine0(points, w, h);
+        
+        // better edge extraction at the expense of unsharpening true corners:
+        correctForLs_0(points, w, h);
+        correctForLs_1(points, w, h);        
+        correctForLs2_0(points, w, h);
+        correctForLs2_1(points, w, h);
+        
+        correctForZigZag00_14(points, w, h);
+        correctForZigZag00_15(points, w, h);
+        correctForZigZag00_16(points, w, h);
+                    
+        correctForZigZag00_0_1(points, w, h);
+       
+        correctForCorrectionCreatedSquares(points, w, h);
+      
+        correctForZigZag000_04(points, w, h);
+        correctForZigZag000_07(points, w, h);
+        
+        correctForLs_0(points, w, h);
+        correctForLs_1(points, w, h);
+        correctForLs_2(points, w, h); 
+        correctForLs_3(points, w, h);
+        correctForLs2_0(points, w, h);
+        correctForLs2_1(points, w, h);
+        
+        correctForTs_0(points, w, h);
+        correctForTs_0_1(points, w, h);
+        correctForTs_0_2(points, w, h);
+        correctForTs_0_3(points, w, h);
+        correctForTs_1(points, w, h);
+        correctForTs_1_1(points, w, h);
+        
+        correctForZigZag00_17(points, w, h);
+        
+        correctForExtCorner(points, w, h);
+        
+        //correctForRemaining(points, w, h);
+    }
         
     private void correctForZigZag00(Set<PairInt> points, int imageWidth, 
         int imageHeight) {
