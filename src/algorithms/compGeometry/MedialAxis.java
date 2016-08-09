@@ -190,12 +190,19 @@ public class MedialAxis {
             minMaxXY[3] + 1);
         boundary = b;
        
-        //TODO: change findBoundaryProblems...
+        //TODO: improve this:
         Set<PairInt> c = findBoundaryProblems();
-        c.clear();
         
         NearestNeighbor2D nn = new NearestNeighbor2D(
             c, minMaxXY[1], minMaxXY[3]);
+        
+        /*{
+            for (PairInt p : c) {
+                System.out.println("boundary problem? " 
+                + p.toString());
+            }
+        }*/
+        
         
         float xmin = minMaxXY[0];
         float xmax = minMaxXY[1];
@@ -270,7 +277,7 @@ public class MedialAxis {
 
             PairInt p1 = new PairInt(x1, y1);
             PairInt p2 = new PairInt(x2, y2);
-
+           
             if (p1.equals(p2)) {
                 continue;
             }
@@ -284,11 +291,12 @@ public class MedialAxis {
                     idx1 = vertexIndexes.size();
                     vertexIndexes.put(p1, idx1);
                 }
-               
+                        
                 Set<PairInt> nearest1 = 
-                    nn.findClosest(x1, y1, 2);
+                    nn.findClosest(x1, y1, 3);
                 if (!nearest1.isEmpty()) {
                     rm.add(idx1);
+                    System.out.println("rm: " + p1);
                 }
                 
                 int idx2;
@@ -299,9 +307,10 @@ public class MedialAxis {
                     vertexIndexes.put(p2, idx2);
                 }
                 Set<PairInt> nearest2 = 
-                    nn.findClosest(x2, y2, 2);
+                    nn.findClosest(x2, y2, 3);
                 if (!nearest2.isEmpty()) {
                     rm.add(idx2);
+                    System.out.println("rm: " + p2);
                 }
                 
                 PairInt eKey;
@@ -543,18 +552,12 @@ public class MedialAxis {
     }
     
     private Set<PairInt> findBoundaryProblems() {
-        
-        Set<PairInt> b = new HashSet<PairInt>(boundary);
-        
+                
         PostLineThinnerCorrections pltc = new 
             PostLineThinnerCorrections();
         
-        pltc.extremeCornerRemover(b, minMaxXY[1], minMaxXY[3]);
+        return pltc.findBoundaryPattern(boundary, minMaxXY[1], minMaxXY[3]);
         
-        Set<PairInt> rm = new HashSet<PairInt>(boundary);
-        rm.removeAll(b);
-        
-        return rm;
     }
 
 }

@@ -2199,6 +2199,117 @@ public class PostLineThinnerCorrections {
         return nCorrections;
     }
     
+    /**
+      find boundary pattern:
+     <pre>
+        0  0  0   
+        #  #  0  0 
+        0  0  #  # 
+           0  0  0  
+     </pre>
+     * and return the center 2 points for each such pattern
+     * @param points
+     * @param imageWidth
+     * @param imageHeight 
+     */
+    public Set<PairInt> findBoundaryPattern(Set<PairInt> points, int imageWidth, 
+        int imageHeight) {
+       
+        /*       
+           0  0  0        2
+           #  #  0  0     1
+           0  0  #  #     0
+              0  0  0    -1
+                         -2
+       -3 -2 -1  0  1  2     
+        */ 
+        LinkedHashSet<PairInt> ones = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> zeroes = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> store = new LinkedHashSet<PairInt>();
+        LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
+               
+        // y's are inverted here because sketch above is top left is (0,0)
+        ones.add(new PairInt(-2, -1));
+        ones.add(new PairInt(-1, -1));
+        ones.add(new PairInt(1, 0));
+        
+        zeroes.add(new PairInt(-2, 0)); zeroes.add(new PairInt(-2, -2));
+        zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); 
+        zeroes.add(new PairInt(-1, -2));
+        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(0, 1));
+        zeroes.add(new PairInt(1, 1)); zeroes.add(new PairInt(1, -1));
+
+        store.add(new PairInt(-1, -1)); store.add(new PairInt(0, 0));
+                
+        Set<PairInt> output = findPattern(points, 
+            imageWidth, imageHeight, zeroes, ones, 
+            store, changeToOnes);
+        
+        // ----- change the sign of x to handle other direction -----
+        reverseXs(zeroes, ones, store, changeToOnes);
+        output.addAll(findPattern(points, 
+            imageWidth, imageHeight, zeroes, ones, 
+            store, changeToOnes));
+        
+        // ----- change the sign of y to handle other direction -----
+        reverseYs(zeroes, ones, store, changeToOnes);
+        output.addAll(findPattern(points, 
+            imageWidth, imageHeight, zeroes, ones, 
+            store, changeToOnes));
+        
+        // ----- change the sign of x to handle another direction -----
+        reverseXs(zeroes, ones, store, changeToOnes);
+        output.addAll(findPattern(points, 
+            imageWidth, imageHeight, zeroes, ones, 
+            store, changeToOnes));            
+        
+        log.fine("method " + MiscDebug.getInvokingMethodName() + " nc=" + 
+            Integer.toString(output.size()));
+        
+        return output;
+    }
+    
+    // the points which would be changed to zeroes or changed to ones are returned.
+    private Set<PairInt> findPattern(
+        Set<PairInt> points, int imageWidth, int imageHeight,
+        final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
+        final LinkedHashSet<PairInt> changeToZeroes, 
+        final LinkedHashSet<PairInt> changeToOnes) {
+        
+        int w = imageWidth;
+        int h = imageHeight;
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+
+        Set<PairInt> tmpPointsRemoved = new HashSet<PairInt>();
+        Set<PairInt> tmpPointsAdded = new HashSet<PairInt>();
+        
+        for (PairInt p : points) {
+
+            boolean foundPattern = foundPattern(p, points, imageWidth,
+                imageHeight, zeroes, ones, tmpPointsRemoved, tmpPointsAdded);
+            
+            if (foundPattern) {
+                for (PairInt p2 : changeToZeroes) {
+                    PairInt p3 = new PairInt(p.getX() + p2.getX(),
+                        p.getY() + p2.getY());
+                    output.add(p3);
+                }
+                for (PairInt p2 : changeToOnes) {
+                    PairInt p3 = new PairInt(p.getX() + p2.getX(),
+                        p.getY() + p2.getY());
+                    output.add(p3);
+                }
+            }
+            
+            tmpPointsAdded.clear();              
+            tmpPointsRemoved.clear();
+        }
+        
+        return output;
+    }
+    
     private int replacePattern(
         Set<PairInt> points, int imageWidth, int imageHeight,
         final LinkedHashSet<PairInt> zeroes, final LinkedHashSet<PairInt> ones, 
