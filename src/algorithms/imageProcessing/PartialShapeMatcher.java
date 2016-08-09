@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 
 /**
  *
@@ -73,6 +74,8 @@ public class PartialShapeMatcher {
        The authors use 3 as an example.
      */
     protected int dp = 5;
+    
+    protected Logger log = Logger.getLogger(this.getClass().getName());
 
     public void overrideSamplingDistance(int d) {
         this.dp = d;
@@ -207,7 +210,7 @@ public class PartialShapeMatcher {
                 }
             }
             sb.append(" | ");
-            System.out.println(sb.toString());
+            log.fine(sb.toString());
             sb.delete(0, sb.length());
         }
         */
@@ -252,7 +255,7 @@ public class PartialShapeMatcher {
             }
         }
         
-        System.out.println(sequences.size() + " sequences");
+        log.fine(sequences.size() + " sequences");
         
         float[][] md0 = md[0];
         
@@ -297,7 +300,7 @@ public class PartialShapeMatcher {
             
             s.absAvgSumDiffs /= (float)len;
             
-            System.out.println(String.format(
+            log.fine(String.format(
             "seq %d:%d to %d  frac=%.4f  avg diff=%.4f", 
                 s.startIdx1, s.startIdx2, s.stopIdx2, 
                 s.fractionOfWhole, s.absAvgSumDiffs));
@@ -340,7 +343,7 @@ public class PartialShapeMatcher {
                 }
                 startLookup.get(key).add(j);
             }
-            System.out.println("FSORT: " + i + " " + s1.toString());
+            log.fine("FSORT: " + i + " " + s1.toString());
         }
 
         //(2.5) a lookup for items in list2
@@ -490,7 +493,7 @@ public class PartialShapeMatcher {
         Collections.sort(tracks, new TrackComparator(n1));
         for (int i = 0; i < tracks.size(); ++i) {
             Sequences track = tracks.get(i);
-            System.out.println(i + ": " + track.toString());
+            log.fine(i + ": " + track.toString());
         }
 
         return tracks.get(0);
@@ -517,10 +520,10 @@ public class PartialShapeMatcher {
            can shift down k-1 rows and left k-1 columns.
         */
         
-        //System.out.println("a1:");
+        //log.fine("a1:");
         float[][] a1 = createDescriptorMatrix(p, minN);
         
-        //System.out.println("a2:");
+        //log.fine("a2:");
         float[][] a2 = createDescriptorMatrix(q, minN);       
         
         /*
@@ -618,7 +621,7 @@ public class PartialShapeMatcher {
         
         //printDiagonal(md[0], mdCoords[0]);
         
-        System.out.println("md.length=" + md.length);
+        log.fine("md.length=" + md.length);
         
         return md;
     }
@@ -654,7 +657,7 @@ public class PartialShapeMatcher {
                   P2
         */
         
-        System.out.println("n=" + n);
+        log.fine("n=" + n);
         
         for (int i1 = 0; i1 < n; ++i1) {
             int start = i1 + 1 + dp;
@@ -672,7 +675,7 @@ public class PartialShapeMatcher {
                     i2 -= n;
                 }
                 
-                //System.out.println("i1=" + i1 + " imid=" + imid + " i2=" + i2);
+                //log.fine("i1=" + i1 + " imid=" + imid + " i2=" + i2);
    
                 double angleA = LinesAndAngles.calcClockwiseAngle(
                     p.getX(i1), p.getY(i1),
@@ -687,7 +690,7 @@ public class PartialShapeMatcher {
                     i2, p.getX(i2), p.getY(i2),
                     imid, p.getX(imid), p.getY(imid),
                     (float) angleA * 180. / Math.PI);
-                System.out.println(str);
+                log.fine(str);
                 */
                 
                 a[i1][i2] = (float)angleA;
@@ -759,7 +762,7 @@ public class PartialShapeMatcher {
             } else {
                 float s1 = a[i][i] - a[i - r][i] 
                     - a[i][i-r] + a[i-r][i-r];
-                System.out.println(
+                log.fine(
                     String.format(
                     " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
                     i, i, a[i][i], a[i - r][i], a[i][i - r],
@@ -845,7 +848,7 @@ public class PartialShapeMatcher {
             for (int i = 0; i < a.length; ++i) {
                 sb.append(String.format(" %.4f,", a[i][j]));
             }
-            System.out.println(sb.toString());
+            log.fine(sb.toString());
             sb.delete(0, sb.length());
         }
     }
@@ -1140,21 +1143,21 @@ public class PartialShapeMatcher {
         int count = 0;
         
         for (int iOffset = 0; iOffset < md.length; iOffset++) {
-            System.out.println("md[" + iOffset + "]:");
+            log.fine("md[" + iOffset + "]:");
             float[][] a = md[iOffset];
             float sum = 0;
             for (int i = 0; i < a.length; i+=r) {
                 float s1;
                 if ((i - r) > -1) {
                     s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
-                    System.out.println(
+                    log.fine(
                         String.format(
                         " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
                         i, i, a[i][i], a[i-r][i], a[i][i-r],
                         a[i-r][i-r], s1*c));
                 } else {
                     s1 = a[i][i];
-                    System.out.println(
+                    log.fine(
                         String.format(
                         " [%d,%d] %.4f => %.4f", 
                         i, i, a[i][i], s1*c));
@@ -1200,12 +1203,12 @@ public class PartialShapeMatcher {
             if (count == 0) {
                 sum = Integer.MAX_VALUE;
             }
-            System.out.println("SUM=" + sum);
+            log.fine("SUM=" + sum);
         }
         
-        System.out.println("OFFSETS=" + Arrays.toString(idxs0));
-        System.out.println("idx2=" + Arrays.toString(idxs2));
-        System.out.println("mins=" + Arrays.toString(mins));  
+        log.fine("OFFSETS=" + Arrays.toString(idxs0));
+        log.fine("idx2=" + Arrays.toString(idxs2));
+        log.fine("mins=" + Arrays.toString(mins));  
     }
 
     private void findEquivalentBest(float[][][] md, int r, 
