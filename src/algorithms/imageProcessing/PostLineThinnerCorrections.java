@@ -252,7 +252,7 @@ public class PostLineThinnerCorrections {
                     
         correctForZigZag00_0_1(points, w, h);
        
-        correctForCorrectionCreatedSquares(points, w, h);
+        //correctForCorrectionCreatedSquares(points, w, h);
       
         correctForZigZag000_04(points, w, h);
         correctForZigZag000_07(points, w, h);
@@ -275,7 +275,9 @@ public class PostLineThinnerCorrections {
         
         correctForExtCorner(points, w, h);
         
-        //correctForRemaining(points, w, h);
+        correctForLineSpurHoriz(points, w, h);
+        
+        correctForLineSpurVert(points, w, h);
     }
         
     private void correctForZigZag00(Set<PairInt> points, int imageWidth, 
@@ -5229,7 +5231,7 @@ public class PostLineThinnerCorrections {
                 
         /*
                     .  .  .         1                           2
-                 .  .  #  .  .      0                           1
+                    .  #  .         0                           1
                  #  #  #  #  #     -1                           0
                  .  .  .  .  .     -2                          -1
              -3 -2 -1  0  1  2  3        -3 -2 -1  0  1  2  3
@@ -5241,11 +5243,11 @@ public class PostLineThinnerCorrections {
         LinkedHashSet<PairInt> changeToOnes = new LinkedHashSet<PairInt>();
        
         // y's are inverted here because sketch above is top left is (0,0)
-        zeroes.add(new PairInt(-2, 2)); zeroes.add(new PairInt(-2, 0));
+        zeroes.add(new PairInt(-2, 2));
         zeroes.add(new PairInt(-1, 2)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
         zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, -1));
         zeroes.add(new PairInt(1, 2)); zeroes.add(new PairInt(1, 0)); zeroes.add(new PairInt(1, -1));
-        zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 0));
+        zeroes.add(new PairInt(2, 2));
         
         ones.add(new PairInt(-2, 1));  ones.add(new PairInt(-1, 1));
         ones.add(new PairInt(0, 1)); 
@@ -5290,11 +5292,11 @@ public class PostLineThinnerCorrections {
         int imageHeight) {
                 
         /*
-                    .  #  .         2
+                       #  .         2
                  .  .  #  .         1                          
                  .  #  #  .         0                          
                  .  .  #  .        -1                          
-                    .  #  .        -2                         
+                       #  .        -2                         
           -3 -2 -1  0  1  2  3       
         */
         
@@ -5305,8 +5307,8 @@ public class PostLineThinnerCorrections {
        
         // y's are inverted here because sketch above is top left is (0,0)
         zeroes.add(new PairInt(-1, 1)); zeroes.add(new PairInt(-1, 0)); zeroes.add(new PairInt(-1, -1));
-        zeroes.add(new PairInt(0, 2)); zeroes.add(new PairInt(0, 1)); 
-        zeroes.add(new PairInt(0, -1)); zeroes.add(new PairInt(0, -2));
+        zeroes.add(new PairInt(0, 1)); 
+        zeroes.add(new PairInt(0, -1));
         zeroes.add(new PairInt(2, 2)); zeroes.add(new PairInt(2, 1));
         zeroes.add(new PairInt(2, 0)); zeroes.add(new PairInt(2, -1));
         zeroes.add(new PairInt(2, -2));

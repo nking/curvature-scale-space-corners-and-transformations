@@ -129,7 +129,7 @@ public class MedialAxis {
         
         edges = findVoronoiInteriorEdges();
         
-        //plotVoronoi();        
+        plotVoronoi();        
     }
     
     public void findMedialAxis() {
@@ -586,13 +586,13 @@ public class MedialAxis {
         
         ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
         lt.applyLineThinner(b, 
-            minMaxXY[0], minMaxXY[1], 
-            minMaxXY[2], minMaxXY[3]);
+            minMaxXY[0] - 1, minMaxXY[1] + 1, 
+            minMaxXY[2] - 1, minMaxXY[3] + 1);
         
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
-        pltc._correctForArtifacts(b, minMaxXY[1] + 1, 
-            minMaxXY[3] + 1);
-        
+        pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
+            minMaxXY[3] + 3);
+            
         // store the removed points
         removedPoints.addAll(boundary);
         removedPoints.removeAll(b);
@@ -603,4 +603,7 @@ public class MedialAxis {
         boundary = b;
     }
 
+    public Set<PairInt> getBoundary() {
+        return boundary;
+    }
 }

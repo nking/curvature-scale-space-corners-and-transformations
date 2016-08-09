@@ -81,6 +81,10 @@ public class PerimeterFinder2 {
             boundary);
         medAxis.setToApplyLineThinner();
         medAxis.fastFindMedialAxis();
+        
+        boundary.clear();
+        boundary.addAll(medAxis.getBoundary());
+        
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
         
         return extractOrderedBorder(boundary, medAxisPts,
@@ -230,7 +234,7 @@ public class PerimeterFinder2 {
                 
                 junctionNodes.add(Integer.valueOf(output.getN()));
              
-if (minAngleIdx == -1) {
+//if (minAngleIdx == -1) {
     try {
         
     int[] xPolygon = null;
@@ -286,7 +290,7 @@ if (minAngleIdx == -1) {
     } catch (Throwable t) {
         
     }
-}   
+//}   
                 
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
             }
@@ -394,6 +398,8 @@ if (minAngleIdx == -1) {
                 }
             }
         }
+        
+        //TODO: re-insert missing points
         
         return output;
     }
