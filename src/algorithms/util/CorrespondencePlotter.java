@@ -2,7 +2,6 @@ package algorithms.util;
 
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.misc.MiscDebug;
 import java.io.IOException;
 
 /**
@@ -51,6 +50,24 @@ public class CorrespondencePlotter {
             yOffset2 + height2) + spacerWidth;
     
         comb = new Image(maxX, maxY);
+        
+        for (int i = 0; i < img1.getWidth(); ++i) {
+            for (int j = 0; j < img1.getHeight(); ++j) {
+                int x = i + xOffset1;
+                int y = j + yOffset1;
+                int rgb = img1.getRGB(i, j);
+                comb.setRGB(x, y, rgb);
+            }
+        }
+        
+        for (int i = 0; i < img2.getWidth(); ++i) {
+            for (int j = 0; j < img2.getHeight(); ++j) {
+                int x = i + xOffset2;
+                int y = j + yOffset2;
+                int rgb = img2.getRGB(i, j);
+                comb.setRGB(x, y, rgb);
+            }
+        }
     }
     
     public void drawLineInAlternatingColors(
@@ -71,7 +88,7 @@ public class CorrespondencePlotter {
             comb, nExtraForDot, clr[0], clr[1], clr[2]);
     }
     
-     public void drawLine(int x1, int y1, int x2, int y2,
+    public void drawLine(int x1, int y1, int x2, int y2,
         int r, int g, int b, int nExtraForDot) {
         
         x1 += xOffset1;
