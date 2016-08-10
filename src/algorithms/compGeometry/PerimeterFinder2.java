@@ -1,6 +1,8 @@
 package algorithms.compGeometry;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
@@ -55,7 +57,34 @@ public class PerimeterFinder2 {
         
         return border;
     }
-
+    
+    public void thinTheBoundary(Set<PairInt> boundary,
+        Set<PairInt> removedPoints) {
+        
+        Set<PairInt> b = new HashSet<PairInt>(boundary);
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(b); 
+        
+        ZhangSuenLineThinner lt = new ZhangSuenLineThinner();
+        lt.applyLineThinner(b, 
+            minMaxXY[0] - 1, minMaxXY[1] + 1, 
+            minMaxXY[2] - 1, minMaxXY[3] + 1);
+        
+        PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
+        pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
+            minMaxXY[3] + 3);
+            
+        // store the removed points
+        removedPoints.addAll(boundary);
+        removedPoints.removeAll(b);
+        
+        System.out.println("line thinning removed " +
+            removedPoints.size() + " from the boundary");
+        
+        boundary.clear();
+        boundary.addAll(b);
+    }
+    
     /**
      * NOT READY FOR USE...needs alot more testing.
      * 
@@ -75,20 +104,21 @@ public class PerimeterFinder2 {
         
         //O(8*N)
         Set<PairInt> boundary = extractBorder(contiguousPoints);
-                
-        // O(N*log_2(N))
-        MedialAxis medAxis = new MedialAxis(contiguousPoints, 
-            boundary);
-        medAxis.setToApplyLineThinner();
-        medAxis.fastFindMedialAxis();
+        Set<PairInt> rmPts = new HashSet<PairInt>();
         
-        boundary.clear();
-        boundary.addAll(medAxis.getBoundary());
+        //TODO: methods used for this could be improved
+        thinTheBoundary(boundary, rmPts);
+        
+        Set<PairInt> cPts = new HashSet<PairInt>(contiguousPoints);
+        cPts.removeAll(rmPts);
+        
+        // O(N*log_2(N))
+        MedialAxis medAxis = new MedialAxis(cPts, boundary);
+        medAxis.fastFindMedialAxis();
         
         Set<PairInt> medAxisPts = medAxis.getMedialAxisPoints();
         
-        return extractOrderedBorder(boundary, medAxisPts,
-            contiguousPoints);
+        return extractOrderedBorder(boundary, medAxisPts, cPts);
     }
 
     /**
