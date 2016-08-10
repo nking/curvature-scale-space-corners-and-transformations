@@ -894,6 +894,15 @@ public class PartialShapeMatcher {
         int stopIdx2 = -1;
         float absAvgSumDiffs;
         float fractionOfWhole;
+        public int getStartIdx1() {
+            return startIdx1;
+        }
+        public int getStartIdx2() {
+            return startIdx2;
+        }
+        public int getStopIdx2() {
+            return stopIdx2;
+        }
         @Override
         public String toString() {
              StringBuilder sb = new StringBuilder();
@@ -924,7 +933,9 @@ public class PartialShapeMatcher {
         float fractionOfWhole;
         double absSumDiffs;
         float avgSumDiffs;
-        
+        public List<Sequence> getList() {
+            return sequences;
+        }
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();

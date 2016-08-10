@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -870,8 +871,8 @@ public class ImageIOHelper {
     }
     
     /**
-     * draw lines from points at index i to index i+1 in the requested color
-     * onto the input.
+     * draw lines from points at index i to index i+1 
+     * in the requested color onto the input.
      * 
      * @param xVertexes
      * @param yVertexes
@@ -881,8 +882,10 @@ public class ImageIOHelper {
      * @param gClr
      * @param bClr 
      */
-    public static void drawLinesInImage(int[] xVertexes, int[] yVertexes, 
-        Image input, int nExtraForDot, int rClr, int gClr, int bClr) {
+    public static void drawLinesInImage(
+        int[] xVertexes, int[] yVertexes, 
+        Image input, int nExtraForDot, 
+        int rClr, int gClr, int bClr) {
         
         if (xVertexes == null || yVertexes == null || input == null) {
             return;
@@ -902,51 +905,60 @@ public class ImageIOHelper {
             int x2 = xVertexes[i + 1];
             int y2 = yVertexes[i + 1];
             
-            if (x2 < x1) {
-                int swap = x1;
-                x1 = x2;
-                x2 = swap;
-                swap = y1;
-                y1 = y2;
-                y2 = swap;
-            }
-            
-            int dx0 = x2 - x1;
-            int dy0 = y2 - y1;
-            int nLine = (int)Math.ceil(Math.sqrt(dx0*dx0 + dy0*dy0));
-            if (nLine == 1 && (dx0 > 0 || dy0 > 0)) {
-                nLine = 2;
-            }
-int z = 1;          
-            for (int ii = 0; ii < nLine; ++ii) {
-            
-                int x, y;
-                
-                if (dx0 == 0) {
-                    x = x1;
-                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));
-                } else if (dy0 == 0) {
-                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));
-                    y = y1;
-                } else {
-                    x = (x1 + Math.round(dx0*((float)ii/(float)(nLine - 1))));
-                    y = (y1 + Math.round(dy0*((float)ii/(float)(nLine - 1))));
-                }                
-int z1 = 1;            
-                for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); dx++) {
+            drawLineInImage(x1, y1, x2, y2, input, 
+                nExtraForDot, rClr, gClr, bClr);
+        }
+    }
+    
+    /**
+     * draw lines from points at index i to index i+1 in the requested color
+     * onto the input.
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param input
+     * @param nExtraForDot
+     * @param rClr
+     * @param gClr
+     * @param bClr 
+     */
+    public static void drawLineInImage(int x1, int y1, 
+        int x2, int y2,
+        Image input, int nExtraForDot, int rClr, int gClr, 
+        int bClr) {
+        
+        int w = input.getWidth();
+        int h = input.getHeight();
 
-                    int xx = x + dx;
-                    
-                    if ((xx < 0) || (xx > (w - 1))) {
+        MiscellaneousCurveHelper curveHelper =
+            new MiscellaneousCurveHelper();
+        
+        Set<PairInt> output = new HashSet<PairInt>();
+        
+        curveHelper.createLinePoints(x1, y1, x2, y2,
+            output);
+        
+        for (PairInt p : output) {
+
+            int x = p.getX();
+            int y = p.getY();
+            
+            for (int dx = (-1*nExtraForDot); dx < (nExtraForDot + 1); 
+                dx++) {
+
+                int xx = x + dx;
+
+                if ((xx < 0) || (xx > (w - 1))) {
+                    continue;
+                }
+                for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
+                    int yy = y + dy;
+                    if ((yy < 0) || (yy > (h - 1))) {
                         continue;
                     }
-                    for (int dy = (-1*nExtraForDot); dy < (nExtraForDot + 1); ++dy) {
-                        int yy = y + dy;
-                        if ((yy < 0) || (yy > (h - 1))) {
-                            continue;
-                        }
-                        input.setRGB(xx, yy, rClr, gClr, bClr);
-                    }
+                    input.setRGB(xx, yy, rClr, gClr, bClr);
                 }
             }
         }

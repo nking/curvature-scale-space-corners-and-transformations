@@ -984,9 +984,14 @@ public class MiscDebug {
     public static void writeImage(Image img, String fileNameSuffix) {
         
         try {
+            
             String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
-                + ".png", img);
+            
+            String filePath = dirPath + "/img" + fileNameSuffix 
+                + ".png";
+            
+            ImageIOHelper.writeOutputImage(filePath, img);
+                        
         } catch (Exception e) {
              e.printStackTrace();
             log.severe("ERROR: " + e.getMessage());
