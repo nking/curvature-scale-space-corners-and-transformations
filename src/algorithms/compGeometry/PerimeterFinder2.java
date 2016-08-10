@@ -2,6 +2,7 @@ package algorithms.compGeometry;
 
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
+import algorithms.imageProcessing.SpurRemover;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.misc.Misc;
@@ -73,7 +74,11 @@ public class PerimeterFinder2 {
         PostLineThinnerCorrections pltc = new PostLineThinnerCorrections();
         pltc._correctForArtifacts(b, minMaxXY[1] + 3, 
             minMaxXY[3] + 3);
-            
+        
+        SpurRemover spurRm = new SpurRemover();
+        spurRm.remove(b, minMaxXY[1] + 3, 
+            minMaxXY[3] + 3);
+        
         // store the removed points
         removedPoints.addAll(boundary);
         removedPoints.removeAll(b);
@@ -239,6 +244,68 @@ public class PerimeterFinder2 {
                         int minAngleIdx = calculateMinAngles( 
                             x3, y3, ns2, neighborsX, neighborsY, nn,
                             contiguousShapePoints);
+ 
+                        {//DEBUG
+                            if (minAngleIdx == -1) {
+                                try {
+
+                                    int[] xPolygon = null;
+                                    int[] yPolygon = null;
+                                    PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+                                    int[] xminmxyminmiac = MiscMath.findMinMaxXY(
+                                        contiguousShapePoints);
+                                    int[] xp, yp;
+                                    int n, count;
+
+                                    n = contiguousShapePoints.size();
+                                    xp = new int[n];
+                                    yp = new int[n];
+                                    count = 0;
+                                    for (PairInt p : contiguousShapePoints) {
+                                        xp[count] = p.getX();
+                                        yp[count] = p.getY();
+                                        count++;
+                                    }
+                                    plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                        xminmxyminmiac[2], xminmxyminmiac[3],
+                                        xp, yp, xPolygon, yPolygon, "shape");
+                                    plotter.writeFile2();
+
+                                    n = medialAxisPoints.size();
+                                    xp = new int[n];
+                                    yp = new int[n];
+                                    count = 0;
+                                    for (PairInt p : medialAxisPoints) {
+                                        xp[count] = p.getX();
+                                        yp[count] = p.getY();
+                                        count++;
+                                    }
+                                    plotter.addPlot((float) xminmxyminmiac[0],
+                                        (float) xminmxyminmiac[1],
+                                        (float) xminmxyminmiac[2], (float) xminmxyminmiac[3],
+                                        xp, yp, xPolygon, yPolygon, "med axis");
+
+                                    n = output.getN();
+                                    xp = new int[n];
+                                    yp = new int[n];
+                                    for (int i = 0; i < output.getN(); ++i) {
+                                        xp[i] = output.getX(i);
+                                        yp[i] = output.getY(i);
+                                    }
+                                    plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                        xminmxyminmiac[2], xminmxyminmiac[3],
+                                        xp, yp, xPolygon, yPolygon, "ordered bunds");
+                                    plotter.writeFile2();
+
+                                    System.out.println("boundary.size=" + borderPoints.size()
+                                        + " output.size=" + output.getN());
+
+                                    System.out.println("output=" + output.toString());
+                                } catch (Throwable t) {
+
+                                }
+                            }
+                        }
                         
                         junctionNodes.add(Integer.valueOf(output.getN()));
                         
@@ -262,6 +329,68 @@ public class PerimeterFinder2 {
                     x, y, ns, neighborsX, neighborsY, nn,
                     contiguousShapePoints);
                 
+                {//DEBUG
+                    if (minAngleIdx == -1) {
+                        try {
+
+                            int[] xPolygon = null;
+                            int[] yPolygon = null;
+                            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+                            int[] xminmxyminmiac = MiscMath.findMinMaxXY(
+                                contiguousShapePoints);
+                            int[] xp, yp;
+                            int n, count;
+
+                            n = contiguousShapePoints.size();
+                            xp = new int[n];
+                            yp = new int[n];
+                            count = 0;
+                            for (PairInt p : contiguousShapePoints) {
+                                xp[count] = p.getX();
+                                yp[count] = p.getY();
+                                count++;
+                            }
+                            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                xminmxyminmiac[2], xminmxyminmiac[3],
+                                xp, yp, xPolygon, yPolygon, "shape");
+                            plotter.writeFile2();
+
+                            n = medialAxisPoints.size();
+                            xp = new int[n];
+                            yp = new int[n];
+                            count = 0;
+                            for (PairInt p : medialAxisPoints) {
+                                xp[count] = p.getX();
+                                yp[count] = p.getY();
+                                count++;
+                            }
+                            plotter.addPlot((float) xminmxyminmiac[0],
+                                (float) xminmxyminmiac[1],
+                                (float) xminmxyminmiac[2], (float) xminmxyminmiac[3],
+                                xp, yp, xPolygon, yPolygon, "med axis");
+
+                            n = output.getN();
+                            xp = new int[n];
+                            yp = new int[n];
+                            for (int i = 0; i < output.getN(); ++i) {
+                                xp[i] = output.getX(i);
+                                yp[i] = output.getY(i);
+                            }
+                            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                                xminmxyminmiac[2], xminmxyminmiac[3],
+                                xp, yp, xPolygon, yPolygon, "ordered bunds");
+                            plotter.writeFile2();
+
+                            System.out.println("boundary.size=" + borderPoints.size()
+                                + " output.size=" + output.getN());
+
+                            System.out.println("output=" + output.toString());
+                        } catch (Throwable t) {
+
+                        }
+                    }
+                }
+
                 junctionNodes.add(Integer.valueOf(output.getN()));
      
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
@@ -367,7 +496,7 @@ public class PerimeterFinder2 {
             */
         }
     
-        /*
+        
         {//DEBUG
             try {
 
@@ -427,7 +556,7 @@ public class PerimeterFinder2 {
 
             }
         }
-        */
+        
         
         return output;
     }
@@ -776,7 +905,7 @@ int z = 1;
             }
         }
         
-        assert(minIdx != -1);
+    //    assert(minIdx != -1);
         
         return minIdx;
     }

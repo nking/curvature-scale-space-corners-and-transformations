@@ -21,13 +21,13 @@ import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
- *
- * @author nichole
- */
-public class PartialShapeMatcher {
+ NOTE: NOT READY FOR USE YET.
+ * TODO: needs a rule for filtering out
+ * combined correspondences which are
+ * not consistently clockwise oriented
+ * in both sides of the list.
  
-    /*
-    "Efficient Partial Shape Matching
+ "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
      - called IS-Match, integral shape match
      - a silhouette of ordered points are sampled
@@ -62,8 +62,11 @@ public class PartialShapeMatcher {
        The runtime complexity for the search of the 
        integral image of summed differences and analysis
        will be added here:
-    */
-    
+       * 
+ * @author nichole
+ */
+public class PartialShapeMatcher {
+ 
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
