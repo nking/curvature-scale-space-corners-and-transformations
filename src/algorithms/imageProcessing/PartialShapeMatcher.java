@@ -1,9 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import algorithms.util.QuadInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
@@ -17,16 +15,16 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.logging.Logger;
 
 /**
  NOTE: NOT READY FOR USE YET.
- * TODO: needs a rule for filtering out
- * combined correspondences which are
- * not consistently clockwise oriented
- * in both sides of the list.
- 
+ TODO: if using equidistant only, need to
+  make some changes to be able to compare
+  the remaining points in the larger dataset
+  which are larger than minN in index...
+
+* 
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
      - called IS-Match, integral shape match
@@ -84,11 +82,6 @@ public class PartialShapeMatcher {
         this.dp = d;
     }
     
-    // debugging variables that will be deleted when finished 
-    private QuadInt[][] a1Coords = null;
-    private QuadInt[][] a2Coords = null;
-    private String[][][] mdCoords = null;
-    
     /**
      * NOT READY FOR USE.
        
@@ -107,25 +100,10 @@ public class PartialShapeMatcher {
     */
     public Sequences match(PairIntArray p, PairIntArray q) {
 
-        //TODO: if using equidistant only, need to
-        //   make some changes to be able to compare
-        //   the remaining points in the larger dataset
-        //   which are larger than minN in index...
-
-        // TODO: provide methods to convert Sequences to
-        //       point correspondences of various format
-       
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
+        
         int minN = Math.min(p.getN(), q.getN());
        
-        /*
-        {
-            // create debug matrices of just point 
-            // coordinates
-            a1Coords = debugDescPointMatrix(p, minN);
-            a2Coords = debugDescPointMatrix(q, minN);
-        }
-        */
-        
         // --- make difference matrices ---
         
         // the rotated matrix for index 0 rotations is q.  
@@ -168,6 +146,8 @@ public class PartialShapeMatcher {
         The articulated model chooses the 2nd point, second to get 
         best fits of components first.
         */
+        
+        log.info("number of points sampled=" + minN);
         
         return matchArticulated(sequencesPQ, minN);
     }
@@ -416,6 +396,10 @@ public class PartialShapeMatcher {
                     if (s2.startIdx2 <= lastSequence.stopIdx2) {
                         continue;
                     }
+                    /*
+                    if (!verifyConsistenCW(currentTrack, s2)) {
+                        continue;
+                    }*/
                     currentTrack.sequences.add(s2);
                     added.add(s2);
                     appended = true;
@@ -474,6 +458,15 @@ public class PartialShapeMatcher {
             }
         }
      
+        //TODO: consider filtering for consistent
+        // clockwise correspondence above.
+        // it's easy to add to the first block,
+        // but difficult for the last because it
+        // would need to be sorted and then 
+        // referencing the first track would need
+        // to change.
+        filterForConsistentClockwise(tracks);
+     
         // calculate the stats for each track (== Sequences)
         for (Sequences track : tracks) {
             int sumLen = 0;
@@ -496,7 +489,7 @@ public class PartialShapeMatcher {
         Collections.sort(tracks, new TrackComparator(n1));
         for (int i = 0; i < tracks.size(); ++i) {
             Sequences track = tracks.get(i);
-            log.fine(i + ": " + track.toString());
+            log.info("track " + i + ": " + track.toString());
         }
 
         return tracks.get(0);
@@ -595,27 +588,6 @@ public class PartialShapeMatcher {
             md[i] = subtract(a1, shifted2);
             prevA2Shifted = shifted2;
         }
-        
-        /*
-        {
-            // debugging coordinates
-            mdCoords = new String[minN][][];
-            QuadInt[][] prevA2Shifte = null;
-            for (int i = 0; i < md.length; ++i) {
-                QuadInt[][] shifte2;
-                if (prevA2Shifte == null) {
-                    shifte2 = copy(a2Coords);
-                } else {
-                    // shifts by 1 to left and down by 1
-                    rotate(prevA2Shifte);
-                    shifte2 = prevA2Shifte;
-                }
-                //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
-                mdCoords[i] = subtract(a1Coords, shifte2);
-                prevA2Shifte = shifte2;
-            }
-        }
-        */
         
         // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
@@ -717,93 +689,6 @@ public class PartialShapeMatcher {
         return a2;
     }
 
-    /*
-    //TODO: delete after debugged
-    private QuadInt[][] copy(QuadInt[][] a) {
-        QuadInt[][] a2 = new QuadInt[a.length][];
-        for (int i = 0; i < a2.length; ++i) {
-            a2[i] = Arrays.copyOf(a[i], a[i].length);
-        }
-        return a2;
-    }
-    private void rotate(QuadInt[][] prevShifted) {
-
-         // shift x left by 1 first
-         for (int y = 0; y < prevShifted[0].length; ++y) {
-             QuadInt tmp0 = prevShifted[0][y];
-             for (int x = 0; x < (prevShifted.length- 1); ++x){
-                 prevShifted[x][y] = prevShifted[x + 1][y]; 
-             }
-             prevShifted[prevShifted.length - 1][y] = tmp0;
-         }
-         
-         // shift y down by 1
-         for (int x = 0; x < prevShifted.length; ++x) {
-             QuadInt tmp0 = prevShifted[x][0];
-             for (int y = 0; y < (prevShifted[x].length - 1); ++y){
-                 prevShifted[x][y] = prevShifted[x][y + 1]; 
-             }
-             prevShifted[x][prevShifted[x].length - 1] = tmp0;
-         }
-    }
-    private String[][] subtract(QuadInt[][] a1, QuadInt[][] a2) {
-        String[][] output = new String[a1.length][];
-        for (int i = 0; i < a1.length; ++i) {
-            output[i] = new String[a1[i].length];
-            for (int j = 0; j < a1[i].length; ++j) {
-                output[i][j] = a1[i][j].toString() 
-                    + " minus " + a2[i][j].toString();
-            }
-        }
-        return output;
-    }
-    private void printDiagonal(float[][] a, String[][] aCoord) {
-        int r = 1;
-        for (int i = 0; i < md.length; ++i) {
-            if (i == 0) {
-                
-            } else {
-                float s1 = a[i][i] - a[i - r][i] 
-                    - a[i][i-r] + a[i-r][i-r];
-                log.fine(
-                    String.format(
-                    " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
-                    i, i, a[i][i], a[i - r][i], a[i][i - r],
-                    a[i-r][i-r], s1*c));
-            }
-        }
-    }
-    private QuadInt[][] debugDescPointMatrix(PairIntArray p, int n) {
-        
-        QuadInt[][] a = new QuadInt[n][];
-        for (int i = 0; i < n; ++i) {
-            a[i] = new QuadInt[n];
-        }
-        
-        for (int i1 = 0; i1 < n; ++i1) {
-            int start = i1 + 1 + dp;
-            for (int ii = start; ii < (start + n - 1 - dp); ++ii) {
-                int i2 = ii;
-                
-                int imid = i2 - dp;
-                // wrap around
-                if (imid > (n - 1)) {
-                    imid -= n;
-                }
-  
-                // wrap around
-                if (i2 > (n - 1)) {
-                    i2 -= n;
-                }
-               
-                a[i1][i2] = new QuadInt(p.getX(i1), p.getY(i1),
-                    p.getX(i2), p.getY(i2));
-            }
-        }   
-        return a;
-    }
-    */
-    
     private void rotate(float[][] prevShifted) {
 
          // shift x left by 1 first
@@ -870,6 +755,85 @@ public class PartialShapeMatcher {
                 }
             }
         }
+    }
+
+    private void filterForConsistentClockwise(
+        List<Sequences> tracks) {
+
+        TIntList rmList = new TIntArrayList();
+
+        for (int i = 0; i < tracks.size(); ++i) {
+
+            Sequences sequences = tracks.get(i);
+
+            if (sequences.sequences.isEmpty()) {
+                rmList.add(i);
+                continue;
+            }
+
+            Collections.sort(sequences.sequences,
+                new SequenceComparator4());
+
+            /*
+             all startIdx1 should be increasing,
+             and wrap around should be considered.
+             then, all startIdx2 should be increasing
+             and wrap around whould be considered.
+             */
+            Sequence s0 = sequences.sequences.get(0);
+
+            boolean notValid = false;
+            
+            int ns = sequences.sequences.size();
+
+            // check startIdx1 then startIdx2
+            for (int check = 0; check < 2; ++check) {
+                boolean wrapped = false;
+                int prev = (check == 0) ? s0.startIdx1
+                    : s0.startIdx2;
+                for (int j = 1; j <= ns; ++j) {                   
+                    Sequence s;
+                    if (j == ns) {
+                        if (check == 0) {
+                            break;
+                        }
+                        s = sequences.sequences.get(0);
+                    } else {
+                        s = sequences.sequences.get(j);
+                    }
+                    int idx = (check == 0) ? s.startIdx1
+                        : s.startIdx2;
+                    if (idx == prev) {
+                        rmList.add(i);
+                        notValid = true;
+                        break;
+                    } else if (idx < prev) {
+                        if (wrapped) {
+                            rmList.add(i);
+                            notValid = true;
+                            break;
+                        }
+                        wrapped = true;
+                        prev = idx;
+                    }
+                    prev = idx;
+                } // end loop over j sequences in a track
+
+                if (notValid) {
+                    break;
+                }
+                
+            } // end loop over check
+        }
+        
+        log.info("removing " + rmList.size() 
+            + " tracks from " + tracks.size());
+        
+        for (int i = (rmList.size() - 1); i > -1; --i) {
+            int rmIdx = rmList.get(i);
+            tracks.remove(rmIdx);
+        }
+       
     }
 
     private class DiffMatrixResults {
@@ -966,7 +930,8 @@ public class PartialShapeMatcher {
         public int compare(Sequences o1, Sequences o2) {
             
             // adding a term to prefer the larger
-            // fraction, but in a smaller number of segments.
+            // fraction, but in a smaller number of 
+            // larger segments.
             
             // hard wiring a minimum size of 5 for segments
             float ns = (float)(maxNPoints/5);
@@ -1058,6 +1023,7 @@ public class PartialShapeMatcher {
         }
         
     }
+    
     /**
      * comparator for descending sort of fraction,
      * then diff, then startIdx
@@ -1125,8 +1091,33 @@ public class PartialShapeMatcher {
             
             // should not arrive here
             return 0;
-        }
-        
+        }   
+    }
+    
+    /**
+     * comparator for descending sort startIdx1,
+     * then startIdx2
+     */    
+    private class SequenceComparator4 implements
+        Comparator<Sequence> {
+
+        @Override
+        public int compare(Sequence o1, Sequence o2) {
+            
+            if (o1.startIdx1 < o2.startIdx1) {
+                return -1;
+            } else if (o1.startIdx1 > o2.startIdx1) {
+                return 1;
+            }
+            
+            if (o1.startIdx2 < o2.startIdx2) {
+                return -1;
+            } else if (o1.startIdx2 > o2.startIdx2) {
+                return 1;
+            }
+            
+            return 0;
+        }   
     }
     
     /**
