@@ -140,7 +140,10 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
         */
         
-        List<Sequence> sequences = extractSimilar(md);
+        List<Sequence> sequences = new ArrayList<Sequence>();
+        List<Sequence> discarded = new ArrayList<Sequence>();
+                
+        extractSimilar(md, sequences, discarded);
        
         /*
         need sum of differences in sequence and the fraction
@@ -163,6 +166,8 @@ public class PartialShapeMatcher {
         Sequences sequences0 = matchArticulated(
             sequences, n1, n2);
         
+        //addFeasibleDiscarded(sequences0, discarded);
+        
         if (diffN <= 0) {
             return sequences0;
         }
@@ -172,7 +177,8 @@ public class PartialShapeMatcher {
         return sequences0;
     }
     
-    protected List<Sequence> extractSimilar(float[][][] md) {
+    protected void extractSimilar(float[][][] md,
+        List<Sequence> sequences, List<Sequence> discarded) {
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
@@ -191,7 +197,7 @@ public class PartialShapeMatcher {
         TODO: will apply a different pattern of reading
         the blocks and merging results next.
         */
-        
+    
         MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -206,7 +212,7 @@ public class PartialShapeMatcher {
                 n1, n2, equivBest);
         }
         
-        /*
+        
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -221,14 +227,13 @@ public class PartialShapeMatcher {
                 }
             }
             sb.append(" | ");
-            log.fine(sb.toString());
+            log.info(sb.toString());
             sb.delete(0, sb.length());
         }
-        */
+        
         
         // ----- find sequential correspondences ----
         
-        List<Sequence> sequences = new ArrayList<Sequence>();
         for (int idx1 = 0; idx1 < n1; ++idx1) {
             TIntList list = equivBest.indexes[idx1];
             if (list == null) {
@@ -285,19 +290,23 @@ public class PartialShapeMatcher {
                         
                 if (s.stopIdx2 - s.startIdx2 > 1) {
                     
-                    sequences.add(s);
+                    if (s.absAvgSumDiffs <= tolerance) {
+                        
+                        sequences.add(s);
                     
-                    log.fine(String.format(
-                        "seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
-                        s.startIdx1, s.startIdx2, s.stopIdx2,
-                        s.fractionOfWhole, s.absAvgSumDiffs));
+                        log.info(String.format(
+                            "seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                            s.startIdx1, s.startIdx2, s.stopIdx2,
+                            s.fractionOfWhole, s.absAvgSumDiffs));
+                    
+                    } else if (s.absAvgSumDiffs <= 3*tolerance) {
+                        discarded.add(s);
+                    }
                 }
             }
         }
         
-        log.fine(sequences.size() + " sequences");        
-       
-        return sequences;
+        log.info(sequences.size() + " sequences");               
     }
     
     protected Sequences matchArticulated(List<Sequence> sequences,
@@ -606,7 +615,7 @@ public class PartialShapeMatcher {
                          23 20 21 22
          20 21 22        13 10 11 12 
          10 11 12        03 00 01 02
-         00 01 02        33 30 31 32  p_i_j - q_(i+2)_(j+2)
+         00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
         */
         
         // --- make difference matrices ---
@@ -1220,11 +1229,16 @@ public class PartialShapeMatcher {
         float[][][] md, int r, double threshold,
         MinDiffs output) {
         
+        if (r < 1) {
+            throw new IllegalArgumentException("r cannot be < 1");
+        }
+        
         double c = 1./(double)(r*r);
     
         //md[0:n2-1][0:n1-1][0:n1-1]
         
         int n1 = md[0].length;
+        int n2 = md.length;
 
         int[] idxs0 = output.idxs0;
         float[] mins = output.mins;
@@ -1232,26 +1246,35 @@ public class PartialShapeMatcher {
         int count = 0;
         
         for (int jOffset = 0; jOffset < md.length; jOffset++) {
-            log.fine("md[" + jOffset + "]:");
+            log.info(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
             float sum = 0;
-            for (int i = 0; i < a.length; i+=r) {
+            //for (int i = 0; i < a.length; i+=r) {
+            for (int i = (r - 1); i < a.length; i++) {
                 float s1;
                 if ((i - r) > -1) {
                     s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
-                    log.fine(
+                    log.finest(
                         String.format(
                         " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
                         i, i, a[i][i], a[i-r][i], a[i][i-r], 
                         a[i-r][i-r], s1*c));
                 } else {
                     s1 = a[i][i];
-                    log.fine(
-                        String.format(
-                        " [%d,%d] %.4f => %.4f", 
+                    log.finest(
+                        String.format(" [%d,%d] %.4f => %.4f", 
                         i, i, a[i][i], s1*c));
                 }
                 s1 *= c;
+                
+                log.info(String.format(" [%2d,%2d<-%2d] => %.4f", 
+                    i, 
+                    ((i + jOffset) < n2) ? 
+                    i + jOffset : (i + jOffset) - n2, 
+                    ((i + jOffset - r + 1) < n2) ? 
+                    i + jOffset - r + 1 : (i + jOffset - r + 1) - n2, 
+                    s1*c));
+                
                 float absS1 = s1;
                 if (absS1 < 0) {
                     absS1 *= -1;
@@ -1276,7 +1299,7 @@ public class PartialShapeMatcher {
                         if (k < 0) {
                             break;
                         }
-                        if (mins[i] < mins[k]) {
+                        if (absS1 < Math.abs(mins[k])) {
                             idx2 = k + jOffset;
                             if (idx2 >= n1) {
                                 idx2 -= n1;
@@ -1290,7 +1313,8 @@ public class PartialShapeMatcher {
             if (count == 0) {
                 sum = Integer.MAX_VALUE;
             }
-            log.fine("SUM=" + sum);
+            log.info(String.format(
+                "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
         
         log.fine("OFFSETS=" + Arrays.toString(idxs0));
