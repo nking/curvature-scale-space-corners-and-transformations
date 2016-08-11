@@ -129,7 +129,7 @@ public class MedialAxis {
         
         edges = findVoronoiInteriorEdges();
         
-        //plotVoronoi();        
+        plotVoronoi();        
     }
     
     public void findMedialAxis() {

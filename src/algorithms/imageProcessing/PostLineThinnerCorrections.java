@@ -278,6 +278,8 @@ public class PostLineThinnerCorrections {
         correctForLineSpurHoriz(points, w, h);
         
         correctForLineSpurVert(points, w, h);
+    
+        correctForHolePattern100(points, w, h);
     }
         
     private void correctForZigZag00(Set<PairInt> points, int imageWidth, 

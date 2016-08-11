@@ -1,9 +1,15 @@
 package algorithms.imageProcessing;
 
+import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.util.PairIntArray;
+import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -19,12 +25,9 @@ import java.util.logging.Logger;
 
 /**
  NOTE: NOT READY FOR USE YET.
- TODO: if using equidistant only, need to
-  make some changes to be able to compare
-  the remaining points in the larger dataset
-  which are larger than minN in index...
+ TODO: need to change read pattern of 
+ difference sat, and optimization.
 
-* 
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
      - called IS-Match, integral shape match
@@ -77,7 +80,7 @@ public class PartialShapeMatcher {
     protected int dp = 5;
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
-
+    
     public void overrideSamplingDistance(int d) {
         this.dp = d;
     }
@@ -102,12 +105,22 @@ public class PartialShapeMatcher {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
         
-        int minN = Math.min(p.getN(), q.getN());
+        int diffN = p.getN() - q.getN();
        
         // --- make difference matrices ---
-        
-        // the rotated matrix for index 0 rotations is q.  
-        float[][][] md = createDifferenceMatrices(p, q, minN);
+          
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        float[][][] md;
+        int n1, n2;
+        if (diffN <= 0) {
+            n1 = p.getN();
+            n2 = q.getN();
+            md = createDifferenceMatrices(p, q);
+        } else {
+            n1 = q.getN();
+            n2 = p.getN();
+            md = createDifferenceMatrices(q, p);
+        }
         
         /*
         the matrices in md can be analyzed for best
@@ -127,7 +140,7 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
         */
         
-        List<Sequence> sequencesPQ = extractSimilar(md);
+        List<Sequence> sequences = extractSimilar(md);
        
         /*
         need sum of differences in sequence and the fraction
@@ -146,14 +159,24 @@ public class PartialShapeMatcher {
         The articulated model chooses the 2nd point, second to get 
         best fits of components first.
         */
+                
+        Sequences sequences0 = matchArticulated(
+            sequences, n1, n2);
         
-        log.info("number of points sampled=" + minN);
+        if (diffN <= 0) {
+            return sequences0;
+        }
         
-        return matchArticulated(sequencesPQ, minN);
+        transpose(sequences0, n1, n2);
+        
+        return sequences0;
     }
     
     protected List<Sequence> extractSimilar(float[][][] md) {
         
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
+        int n2 = md.length;
         int n1 = md[0].length;
        
         int rMax = (int)Math.sqrt(n1);
@@ -162,20 +185,25 @@ public class PartialShapeMatcher {
         }
      
         // 23 degrees is 0.4014
-        double thresh = 23.*Math.PI/180.;
-                
+        double thresh = 23. * Math.PI/180.;
+        
+        /*
+        TODO: will apply a different pattern of reading
+        the blocks and merging results next.
+        */
+        
         MinDiffs mins = new MinDiffs(n1);
         for (int r = 2; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
         }
-        
+       
         // 10 degrees is 0.175
         double tolerance = 0.25;
-        
+  
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = 2; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, thresh, tolerance,
-                equivBest);
+                n1, n2, equivBest);
         }
         
         /*
@@ -206,9 +234,17 @@ public class PartialShapeMatcher {
             if (list == null) {
                 continue;
             }
-            list.sort();
+            TDoubleList diffList = equivBest.diffs[idx1];
+            QuickSort.sortBy1stArg(list, diffList);
+            
+            double sumAbsDiff = 0;
+            
             for (int j = 0; j < list.size(); ++j) {
+                
                 int idx2 = list.get(j);
+                double diff = diffList.get(j);
+                sumAbsDiff += Math.abs(diff);
+                
                 Sequence s = new Sequence();
                 s.startIdx1 = idx1;
                 s.startIdx2 = idx2;
@@ -223,8 +259,18 @@ public class PartialShapeMatcher {
                     TIntSet set2 = equivBest.indexSets[nextLIdx];
                     int idx3 = s.stopIdx2 + 1;
                     if (set2.contains(idx3)) {                            
+                        
                         s.stopIdx2 = idx3;
-                        list2.remove(idx3);
+                        
+                        // NOTE: an expensive operation which will be
+                        // replaced with new block pattern reading:
+                        int rmIdx = list2.indexOf(idx3);
+                        
+                        diff = equivBest.diffs[nextLIdx].get(rmIdx);
+                        sumAbsDiff += Math.abs(diff);
+                        
+                        list2.removeAt(rmIdx);
+                        equivBest.diffs[nextLIdx].removeAt(rmIdx);
                         set2.remove(idx3);
                     } else {
                         break;
@@ -232,68 +278,30 @@ public class PartialShapeMatcher {
                     
                     nextLIdx++;
                 }
-                if (s.stopIdx2 - s.startIdx2 > 1) {                
+            
+                int n = s.stopIdx2 - s.startIdx2 + 1;
+                s.fractionOfWhole = (float)n/(float)n1;
+                s.absAvgSumDiffs = (float)(sumAbsDiff/(float)n);
+                        
+                if (s.stopIdx2 - s.startIdx2 > 1) {
+                    
                     sequences.add(s);
+                    
+                    log.fine(String.format(
+                        "seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                        s.startIdx1, s.startIdx2, s.stopIdx2,
+                        s.fractionOfWhole, s.absAvgSumDiffs));
                 }
             }
         }
         
-        log.fine(sequences.size() + " sequences");
-        
-        float[][] md0 = md[0];
-        
-        // -- calculate sum of differences and fraction of whole ----                
-        for (int i = 0; i < sequences.size(); ++i) {
-            Sequence s = sequences.get(i);
-            int len = s.stopIdx2 - s.startIdx2 + 1;
-            s.fractionOfWhole = (float)len/(float)n1;
-            
-            // calculate the sum of the differences
-            s.absAvgSumDiffs = 0;
-            for (int j = s.startIdx2; j <= s.stopIdx2; ++j) {
-                if (s.startIdx1 == 0) {
-                    if (j == 0) {
-                        float v = md0[s.startIdx1][j];
-                        if (v < 0) {
-                            v *= -1;
-                        }
-                        s.absAvgSumDiffs += v;
-                    } else {
-                        float v = md0[s.startIdx1][j] - md0[s.startIdx1][j - 1];
-                        if (v < 0) {
-                            v *= -1;
-                        }
-                        s.absAvgSumDiffs += v;
-                    }
-                } else if (j == 0) {
-                    float v = md0[s.startIdx1][j] - md0[s.startIdx1 - 1][j];
-                    if (v < 0) {
-                        v *= -1;
-                    }
-                    s.absAvgSumDiffs += v;
-                } else {
-                    float v = md0[s.startIdx1][j] - md0[s.startIdx1 - 1][j]
-                        - md0[s.startIdx1][j - 1] + md0[s.startIdx1 - 1][j - 1];
-                    if (v < 0) {
-                        v *= -1;
-                    }
-                    s.absAvgSumDiffs += v;
-                }
-            }
-            
-            s.absAvgSumDiffs /= (float)len;
-            
-            log.fine(String.format(
-            "seq %d:%d to %d  frac=%.4f  avg diff=%.4f", 
-                s.startIdx1, s.startIdx2, s.stopIdx2, 
-                s.fractionOfWhole, s.absAvgSumDiffs));
-        }
-        
+        log.fine(sequences.size() + " sequences");        
+       
         return sequences;
     }
     
     protected Sequences matchArticulated(List<Sequence> sequences,
-        int n1) {
+        int n1, int n2) {
         
         //(1) ascending sort ordered by startIdx1 and then
         // descending fraction of whole 
@@ -302,6 +310,7 @@ public class PartialShapeMatcher {
         // (1.5) descending sort of fraction, then diff, then startIdx
         List<Sequence> list2 = new ArrayList<Sequence>(sequences);
         float maxAvgDiff = findMaxAvgDiff(list2);
+        System.out.println("list2.sz=" + list2.size());
         Collections.sort(list2, new SequenceComparator3(maxAvgDiff));
         //Collections.sort(list2, new SequenceComparator2());
 
@@ -345,7 +354,7 @@ public class PartialShapeMatcher {
                     startLookup2.put(key, new TIntArrayList());
                 }                
                 // TODO: revisit this...avoiding adding entire list
-                if (startLookup2.get(key).size() > n1/4) {
+                if (startLookup2.get(key).size() > n2/4) {
                     break;
                 }
                 startLookup2.get(key).add(j);
@@ -380,6 +389,10 @@ public class PartialShapeMatcher {
                     + (lastSequence.stopIdx2 -
                     lastSequence.startIdx2) + 1;
 
+                // if nextStartIdx1 is larger than n1, it will
+                // be missing from startLookup and we've
+                // ended the progression through idx1
+                
                 Entry<Integer, TIntList> entry = 
                     startLookup.ceilingEntry(
                         Integer.valueOf(nextStartIdx1));
@@ -458,13 +471,6 @@ public class PartialShapeMatcher {
             }
         }
      
-        //TODO: consider filtering for consistent
-        // clockwise correspondence above.
-        // it's easy to add to the first block,
-        // but difficult for the last because it
-        // would need to be sorted and then 
-        // referencing the first track would need
-        // to change.
         filterForConsistentClockwise(tracks);
      
         // calculate the stats for each track (== Sequences)
@@ -501,10 +507,18 @@ public class PartialShapeMatcher {
         throw new UnsupportedOperationException("not yet implemented");
     }
     
-    // index0 is rotations of p.n, index1 is p.n, index2 is q.n
+    /**
+     * index0 is rotations of q,  index1 is p.n, index2 is q.n
+      returns a[0:q.n-1][0:p.n-1][0:p.n-1]
+    */
     protected float[][][] createDifferenceMatrices(
-        PairIntArray p, PairIntArray q, int minN) {
-     
+        PairIntArray p, PairIntArray q) {
+    
+        if (p.getN() > q.getN()) {
+            throw new IllegalArgumentException(
+            "q.n must be >= p.n");
+        }
+        
         /*
         | a_1_1...a_1_N |
         | a_2_1...a_2_N |
@@ -515,12 +529,12 @@ public class PartialShapeMatcher {
            to shift to different first point as reference,
            can shift down k-1 rows and left k-1 columns.
         */
-        
+       
         //log.fine("a1:");
-        float[][] a1 = createDescriptorMatrix(p, minN);
+        float[][] a1 = createDescriptorMatrix(p, p.getN());
         
         //log.fine("a2:");
-        float[][] a2 = createDescriptorMatrix(q, minN);       
+        float[][] a2 = createDescriptorMatrix(q, q.getN());       
         
         /*
         - find rxr sized blocks similar to one another
@@ -535,8 +549,8 @@ public class PartialShapeMatcher {
                                of [A_1(s+i,s+j) - A_2(m+i,m+j)]^2
 
           //s range 0 to M-1
-          //m range 0 to N-1, M<=N
-          //r range 1? to min(N, M)
+          //m range 0 to M-1, M<=N
+          //r range 2 to sqrt(min(n, n))
 
           - to calculate all D_a(s,m,r)
                uses concept of "integral image"
@@ -571,29 +585,56 @@ public class PartialShapeMatcher {
             size starting at any point on the diagonal in 
             constant time.
         */
+        
+        /*
+            MXM              NXN 
+                         30 31 32 33
+         20 21 22        20 21 22 23
+         10 11 12        10 11 12 13
+         00 01 02        00 01 02 03   p_i_j - q_i_j
+        
+                         01 02 03 00
+         20 21 22        31 32 33 30 
+         10 11 12        21 22 23 20
+         00 01 02        11 12 13 10  p_i_j - q_(i+1)_(j+1)
+        
+                         12 13 10 11
+         20 21 22        02 03 00 01
+         10 11 12        32 33 30 31
+         00 01 02        22 23 20 21  p_i_j - q_(i+2)_(j+2)
 
+                         23 20 21 22
+         20 21 22        13 10 11 12 
+         10 11 12        03 00 01 02
+         00 01 02        33 30 31 32  p_i_j - q_(i+2)_(j+2)
+        */
+        
         // --- make difference matrices ---
-        float[][][] md = new float[minN][][];
+        int n1 = p.getN();
+        int n2 = q.getN();
+        float[][][] md = new float[n2][][];
         float[][] prevA2Shifted = null;
-        for (int i = 0; i < md.length; ++i) {
+        for (int i = 0; i < n2; ++i) {
             float[][] shifted2;
             if (prevA2Shifted == null) {
                 shifted2 = copy(a2);
             } else {
-                // shifts by 1 to left and down by 1
+                // shifts by 1 to left and up by 1
                 rotate(prevA2Shifted);
                 shifted2 = prevA2Shifted;
             }
             //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
             md[i] = subtract(a1, shifted2);
+            assert(md[i].length == n1);
+            assert(md[i][0].length == n1);
             prevA2Shifted = shifted2;
         }
-        
+ 
         // ---- make summary area table for md-----
         for (int i = 0; i < md.length; ++i) {
             applySummedAreaTableConversion(md[i]);
         }
-        
+      
         //printDiagonal(md[0], mdCoords[0]);
         
         log.fine("md.length=" + md.length);
@@ -711,14 +752,36 @@ public class PartialShapeMatcher {
     }
 
     private float[][] subtract(float[][] a1, float[][] a2) {
+    
+        /*
+         MXM     NXN           
+                 20 21 22    
+         10 11   10 11 12  
+         00 01   00 01 02 
         
-        assert(a1.length <= a2.length);
-        assert(a1[0].length <= a2[0].length);
+                 01 02 00 
+         10 11   21 22 20
+         00 01   11 12 10
         
-        float[][] output = new float[a1.length][];
-        for (int i = 0; i < a1.length; ++i) {
-            output[i] = new float[a1[i].length];
-            for (int j = 0; j < a1[i].length; ++j) {
+                 12 10 11  
+         10 11   02 00 01   
+         00 01   22 20 21
+        
+        subtracting only the MXM portion
+        */
+        
+        assert(a1.length == a1[0].length);
+        assert(a2.length == a2[0].length);
+                
+        int n1 = a1.length;
+        int n2 = a2.length;
+        
+        assert(n1 <= n2);
+       
+        float[][] output = new float[n1][];
+        for (int i = 0; i < n1; ++i) {
+            output[i] = new float[n1];
+            for (int j = 0; j < n1; ++j) {
                 output[i][j] = a1[i][j] - a2[i][j];
             }
         }
@@ -745,6 +808,7 @@ public class PartialShapeMatcher {
 
         for (int x = 0; x < mdI.length; ++x) {
             for (int y = 0; y < mdI[x].length; ++y) {
+                
                 if (x > 0 && y > 0) {
                     mdI[x][y] += (mdI[x - 1][y] + mdI[x][y - 1]
                         - mdI[x - 1][y - 1]);
@@ -836,21 +900,43 @@ public class PartialShapeMatcher {
        
     }
 
+    private void transpose(Sequences sequences, 
+        int n1, int n2) {
+
+        sequences.fractionOfWhole *= 
+            ((float)n1/(float)n2);
+        
+        List<Sequence> sqs = sequences.getList();
+        
+        for (Sequence s : sqs) {
+            int n = s.stopIdx2 - s.startIdx2;
+            int startIdx2 = s.startIdx1;
+            s.startIdx1 = s.startIdx2;
+            s.startIdx2 = startIdx2;
+            s.stopIdx2 = s.startIdx2 + n;
+        }
+    }
+
     private class DiffMatrixResults {
         private TIntSet[] indexSets = null;
+        // indexes' indexes are i and values are j
         private TIntList[] indexes = null;
+        private TDoubleList[] diffs = null;
         public DiffMatrixResults(int n) {
             indexes = new TIntList[n];
+            diffs = new TDoubleList[n];
             indexSets = new TIntSet[n];
         }
-        public void add(int index, int value) {
-            if (indexes[index] == null) {
-                indexes[index] = new TIntArrayList();
-                indexSets[index] = new TIntHashSet();
+        public void add(int i, int j, double diff) {
+            if (indexes[i] == null) {
+                indexes[i] = new TIntArrayList();
+                diffs[i] = new TDoubleArrayList();
+                indexSets[i] = new TIntHashSet();
             }
-            if (!indexSets[index].contains(value)) {
-                indexSets[index].add(value);
-                indexes[index].add(value);
+            if (!indexSets[i].contains(j)) {
+                indexSets[i].add(j);
+                indexes[i].add(j);
+                diffs[i].add(diff);
             }
         }
     }
@@ -872,25 +958,28 @@ public class PartialShapeMatcher {
         }
         @Override
         public String toString() {
-             StringBuilder sb = new StringBuilder();
-             sb.append(String.format(
-             "(%d:%d to %d, f=%.4f d=%.4f)", 
-             startIdx1, startIdx2, stopIdx2,
-             fractionOfWhole, absAvgSumDiffs));
-             return sb.toString();
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format(
+            "(%d:%d to %d, f=%.4f d=%.4f)", 
+            startIdx1, startIdx2, stopIdx2,
+            fractionOfWhole, absAvgSumDiffs));
+            return sb.toString();
         }    
     }
     
     private class MinDiffs {
-        int[] idxs1;
-        int[] idxs2;
+        // first dimension index: md[*][][]
+        int[] idxs0;
+        // i is the index of this array and represents the index
+        //       of point in p array
+        // j is i + idxs[0] and represents the index 
+        //       of point in q array
+        
         float[] mins;
         public MinDiffs(int n) {
-            idxs1 = new int[n];
-            idxs2 = new int[n];
+            idxs0 = new int[n];
             mins = new float[n];
-            Arrays.fill(idxs1, -1);
-            Arrays.fill(idxs2, -1);
+            Arrays.fill(idxs0, -1);
             Arrays.fill(mins, Float.MAX_VALUE);
         }
     }
@@ -955,7 +1044,7 @@ public class PartialShapeMatcher {
             } else if (s1 < s2) {
                 return 1;
             }
-                
+            
             if (o1.fractionOfWhole > o2.fractionOfWhole) {
                 return -1;
             } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
@@ -1019,6 +1108,7 @@ public class PartialShapeMatcher {
             } else if (o1.startIdx1 > o2.startIdx1) {
                 return 1;
             }
+            
             return 0;
         }
         
@@ -1131,25 +1221,19 @@ public class PartialShapeMatcher {
         MinDiffs output) {
         
         double c = 1./(double)(r*r);
-       
+    
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
         int n1 = md[0].length;
 
-        /*
-        md[n2offset][n1][n2]
-        
-        md[0   ][0   ][0   ]
-          [n1-1][0-n1][n2-1]
-        */
-        
-        int[] idxs0 = output.idxs1;
-        int[] idxs2 = output.idxs2;
+        int[] idxs0 = output.idxs0;
         float[] mins = output.mins;
      
         int count = 0;
         
-        for (int iOffset = 0; iOffset < md.length; iOffset++) {
-            log.fine("md[" + iOffset + "]:");
-            float[][] a = md[iOffset];
+        for (int jOffset = 0; jOffset < md.length; jOffset++) {
+            log.fine("md[" + jOffset + "]:");
+            float[][] a = md[jOffset];
             float sum = 0;
             for (int i = 0; i < a.length; i+=r) {
                 float s1;
@@ -1158,7 +1242,7 @@ public class PartialShapeMatcher {
                     log.fine(
                         String.format(
                         " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f", 
-                        i, i, a[i][i], a[i-r][i], a[i][i-r],
+                        i, i, a[i][i], a[i-r][i], a[i][i-r], 
                         a[i-r][i-r], s1*c));
                 } else {
                     s1 = a[i][i];
@@ -1180,13 +1264,12 @@ public class PartialShapeMatcher {
                 count++;        
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
-                    int idx2 = i + iOffset;
+                    int idx2 = i + jOffset;
                     if (idx2 >= n1) {
                         idx2 -= n1;
                     }
                     mins[i] = s1;
-                    idxs0[i] = iOffset;
-                    idxs2[i] = idx2;
+                    idxs0[i] = jOffset;
                     
                     // fill in the rest of the diagonal in this block
                     for (int k = (i-1); k > (i-r); k--) {
@@ -1194,13 +1277,12 @@ public class PartialShapeMatcher {
                             break;
                         }
                         if (mins[i] < mins[k]) {
-                            idx2 = k + iOffset;
+                            idx2 = k + jOffset;
                             if (idx2 >= n1) {
                                 idx2 -= n1;
                             }
                             mins[k] = s1;
-                            idxs0[k] = iOffset;
-                            idxs2[k] = idx2;
+                            idxs0[k] = jOffset;
                         }
                     }
                 }
@@ -1212,25 +1294,45 @@ public class PartialShapeMatcher {
         }
         
         log.fine("OFFSETS=" + Arrays.toString(idxs0));
-        log.fine("idx2=" + Arrays.toString(idxs2));
         log.fine("mins=" + Arrays.toString(mins));  
     }
 
+    /**
+     * 
+     * @param md
+     * @param r
+     * @param mins
+     * @param threshold
+     * @param tolerance
+     * @param n1
+     * @param n2
+     * @param output contains pairs of i and jOffset, where 
+     * j is i + jOffset
+     */
     private void findEquivalentBest(float[][][] md, int r, 
         MinDiffs mins, double threshold, double tolerance,
-        DiffMatrixResults output) {
-    
-        int n1 = mins.idxs1.length;
+        int n1, int n2, DiffMatrixResults output) {
+        
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
+        assert(md.length == n2);
          
         double c = 1./(double)(r*r);
                
-        // capture all "best" within minSigns[i] += 2*variances[i]
-        for (int iOffset = 0; iOffset < md.length; iOffset++) {
-            float[][] a = md[iOffset];
-            for (int i = 0; i < a.length; i+=r) {
-                if (mins.idxs1[i] == -1) {
+        // capture all "best" within mins[i] += tolerance
+        
+        for (int jOffset = 0; jOffset < n2; jOffset++) {
+            float[][] a = md[jOffset];
+            for (int i = 0; i < n1; i+=r) {
+                if (mins.idxs0[i] == -1) {
+                    // there is no best for this p index
                     continue;
                 }
+                
+                // mins.mins[i] is the best for index i (== P_i)
+                // mins.idxs0[i] is jOffset of best
+                // j is index i + jOffset
+                
                 float s1;
                 if ((i - r) > -1) {
                     s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
@@ -1247,18 +1349,18 @@ public class PartialShapeMatcher {
                    continue;
                 }
                 
-                double avg = mins.mins[i];
+                double best = mins.mins[i];
     
-                if (Math.abs(s1 - avg) > tolerance) {
+                if (Math.abs(s1 - best) > tolerance) {
                     continue;
                 }
                 
-                int idx2 = iOffset + i;
-                if (idx2 >= n1) {
-                    idx2 -= n1;
+                int idx2 = jOffset + i;
+                if (idx2 >= n2) {
+                    idx2 -= n2;
                 }
                 
-                output.add(i, idx2);
+                output.add(i, idx2, s1);
                 
                 // fill in the rest of the diagonal in this block
                 for (int k = (i-1); k > (i-r); k--) {
@@ -1266,8 +1368,8 @@ public class PartialShapeMatcher {
                         break;
                     }
                     if ((k - r) > -1) {
-                        s1 = a[k][k] - a[k-r][k] - a[k][k-r] 
-                            + a[k-r][k-r];
+                        s1 = a[k][k] - a[k-r][k] - a[k][k-r] + 
+                            a[k-r][k-r];
                     } else {
                         s1 = a[k][k];
                     }
@@ -1281,14 +1383,14 @@ public class PartialShapeMatcher {
                         continue;
                     }
                     
-                    if (Math.abs(s1 - avg) > tolerance) {
+                    if (Math.abs(s1 - best) > tolerance) {
                         continue;
                     }
-                    idx2 = iOffset + k;
+                    idx2 = jOffset + k;
                     if (idx2 >= n1) {
                         idx2 -= n1;
                     }
-                    output.add(k, idx2);
+                    output.add(k, idx2, s1);
                 }
             }
         }
@@ -1328,8 +1430,8 @@ public class PartialShapeMatcher {
                 stopIdx1 >= s0stopIdx1) {
                 return true;
             }
-        } 
+        }
 
-        return false; 
+        return false;
     }
 }
