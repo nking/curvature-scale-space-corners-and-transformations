@@ -91,7 +91,8 @@ public class PartialShapeMatcher {
     /**
      * NOT READY FOR USE.
        
-      A shape is defined as the CW ordered sequence of points P_1...P_N
+      A shape is defined as the clockwise ordered sequence 
+      of points P_1...P_N
       and the shape to match has points Q_1...Q_N.
       The spacings used within this method are equidistant
       and the default is 5, so override that if a different number
@@ -153,7 +154,7 @@ public class PartialShapeMatcher {
            -- smaller total difference for largest fraction of whole
            -- 2ndly, largest total coverage
         
-        Note that for the rigid model (exvepting scale transformation)
+        Note that for the rigid model (excepting scale transformation)
         one would want to maximize the 3nd point, coverage, first
         with a consistent transformation.
         
@@ -170,7 +171,7 @@ public class PartialShapeMatcher {
         best consistent aggregation of chains as the
         final correspondence list.
         
-        the rigid model allowing occlusiong 
+        the rigid model allowing occlusion 
         (not yet implemented) will
         likely be a better solution and is similar to
         matching patterns elsewhere in this project.
@@ -193,12 +194,21 @@ public class PartialShapeMatcher {
         
         List<Sequence> sequences = new ArrayList<Sequence>();
         List<Sequence> discarded = new ArrayList<Sequence>();
-                
+        
+        /*
+        choosing a block size of 3 to read from md and taking
+        the best fraction from that as the seed sequential
+        matches to build upon.
+        This will likely be increased to include more than
+        one with more testing.
+        */        
+        
         extractSimilar(md, sequences, discarded, 3, 3);
         
         // sort by descending fraction of whole
         Collections.sort(sequences, new SequenceComparator2());
         
+        // pick the best as the starter sequence
         Sequence s0 = sequences.get(0);
                 
         int rMax = (int)Math.sqrt(n1);
@@ -209,8 +219,11 @@ public class PartialShapeMatcher {
         sequences = new ArrayList<Sequence>();
         discarded = new ArrayList<Sequence>();
                 
+        // rebuild the sequential sequences by searching from
+        // block size 2 to size sqrt(n1)
         extractSimilar(md, sequences, discarded, 2, rMax);
         
+        // starting with s0, aggregate from sequences
         Sequences sequences0 = matchArticulated(
             sequences, discarded, s0, n1, n2);
         
@@ -237,14 +250,6 @@ public class PartialShapeMatcher {
         // 23 degrees is 0.4014
         double thresh = 23. * Math.PI/180.;
         
-        /*
-        TODO: will apply a different pattern of reading
-        the blocks and merging results next.
-        */
-        
-        //NOTE: presumably, at least 3 consecutive
-        // points are needed for a good match,
-        // so will start r block size at 3
         MinDiffs mins = new MinDiffs(n1);
         for (int r = rMin; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -258,7 +263,8 @@ public class PartialShapeMatcher {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
-                
+        
+        /*        
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -276,7 +282,8 @@ public class PartialShapeMatcher {
             log.info(sb.toString());
             sb.delete(0, sb.length());
         }
-               
+        */
+        
         // ----- find sequential correspondences ----
         
         for (int idx1 = 0; idx1 < n1; ++idx1) {
@@ -476,7 +483,6 @@ public class PartialShapeMatcher {
                 }
                 if (!didAdd) {
                     if (minDiffOffset <= maxDiffOffset) {                    
-                        // TODO: may want to revise this
                         currentTrack.sequences.add(minOffsetS.copy());
                         copy.remove(minOffsetS);
                         didAdd = true;
@@ -597,13 +603,7 @@ public class PartialShapeMatcher {
         //log.fine("a2:");
         float[][] a2 = createDescriptorMatrix(q, q.getN());       
     
-        // TODO: look at histograms of angles.  
-        // later, the matching of merged segments needs
-        // a way to prefer high quality matches that
-        // include curves over high quality matches
-        // of straight lines for examples when aggregating
-        // segments.
-        // large angles for small diff between i, j
+        // TODO: look at histograms of angles.
         /*
         float binSz = (float)(Math.PI/8.f);
         HistogramHolder hist1 = createHistogram(a1, binSz);
@@ -631,7 +631,7 @@ public class PartialShapeMatcher {
 
           //s range 0 to M-1
           //m range 0 to M-1, M<=N
-          //r range 2 to sqrt(min(n, n))
+          //r range 2 to sqrt(min(N, M))
 
           - to calculate all D_a(s,m,r)
                uses concept of "integral image"
@@ -985,6 +985,14 @@ public class PartialShapeMatcher {
             ((float)n1/(float)n2);
         
         List<Sequence> sqs = sequences.getList();
+        
+        //TODO: this may need revision.
+        // the idx1 axis can wrap around and the
+        // idx2 axis does not.
+        // for consistency, may need to break
+        // a sequence into 2 to keep that pattern
+        // and may need to merge sequences after
+        // these changes.
         
         for (Sequence s : sqs) {
             int n = s.stopIdx2 - s.startIdx2;
@@ -1344,11 +1352,6 @@ public class PartialShapeMatcher {
 
     private boolean canAppend(List<Sequence> track, 
         Sequence testS, int n1) {
-        
-        //24:10
-        if (testS.startIdx1==24 && testS.startIdx2==10){
-            int z = 1;
-        }
         
         if (intersectsExistingRange(track, testS, n1)) {
             return false;
@@ -1732,7 +1735,7 @@ public class PartialShapeMatcher {
                    continue;
                 }
                 
-                // note, idx from q is i + iOffset
+                // note, idx from q is i + jOffset
                 count++;        
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
