@@ -179,6 +179,7 @@ public class MedialAxis1Test extends TestCase {
         
         assertEquals(-2, status);
       
+        /*
         MedialAxisResults results2 = medAxis1.findMedialAxesNearPoint(p);
         assertNotNull(results2);
         
@@ -230,6 +231,7 @@ public class MedialAxis1Test extends TestCase {
             assertFalse(mAPs.contains(pp));
             mAPs.add(pp);
         }
+        */
     }
     
     /*

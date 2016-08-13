@@ -2,6 +2,7 @@ package algorithms.util;
 
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.misc.MiscMath;
 import java.io.IOException;
 
 /**
@@ -67,6 +68,40 @@ public class CorrespondencePlotter {
                 int rgb = img2.getRGB(i, j);
                 comb.setRGB(x, y, rgb);
             }
+        }
+    }
+    
+    public CorrespondencePlotter(PairIntArray 
+        boundary1, PairIntArray boundary2) {
+        
+        width1 = 1 + MiscMath.findMax(boundary1.x, boundary1.getN());
+        height1 = 1 + MiscMath.findMax(boundary1.y, boundary1.getN());
+        
+        width2 = 1 + MiscMath.findMax(boundary2.x, boundary2.getN());
+        height2 = 1 + MiscMath.findMax(boundary2.y, boundary2.getN());
+        
+        xOffset1 = spacerWidth;
+        yOffset1 = spacerWidth;
+        
+        xOffset2 = xOffset1 + width1 + spacerWidth;
+        yOffset2 = spacerWidth;
+        
+        int maxX = xOffset2 + width2 + spacerWidth;
+        int maxY = Math.max(yOffset1 + height1, 
+            yOffset2 + height2) + spacerWidth;
+    
+        comb = new Image(maxX, maxY);
+
+        for (int i = 0; i < boundary1.getN(); ++i) {        
+            int x = boundary1.getX(i) + xOffset1;
+            int y = boundary1.getY(i) + yOffset1;
+            comb.setRGB(x, y, 255, 255, 255);
+        }
+        
+        for (int i = 0; i < boundary2.getN(); ++i) {        
+            int x = boundary2.getX(i) + xOffset2;
+            int y = boundary2.getY(i) + yOffset2;
+            comb.setRGB(x, y, 255, 255, 255);
         }
     }
     

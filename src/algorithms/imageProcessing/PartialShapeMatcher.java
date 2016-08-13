@@ -256,7 +256,7 @@ public class PartialShapeMatcher {
         }
         
         // 10 degrees is 0.175
-        double tolerance = 0.25;
+        double tolerance = 0.1;//0.25;
           
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = rMin; r <= rMax; ++r) {
@@ -456,7 +456,7 @@ public class PartialShapeMatcher {
                     if (off == offset) {                        
                         st = copy.remove(j);
                         if (!canAppend(currentTrack.sequences, st, n1)) {                                           
-                            // merge
+                            // merge, if mergeable, else it is appended
                             currentTrack.sequences.add(st.copy());
                             merge(currentTrack.sequences, n1, n2);
                             continue;
@@ -530,7 +530,6 @@ public class PartialShapeMatcher {
                 copy2.remove(st);
                 didAdd = true;
             }
-          
         }
         
         for (int i = 0; i < seedTracks.size(); ++i) {

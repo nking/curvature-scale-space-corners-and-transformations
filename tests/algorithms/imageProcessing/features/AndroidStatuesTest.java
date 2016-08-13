@@ -14,6 +14,7 @@ import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
 import algorithms.imageProcessing.PartialShapeMatcher;
 import algorithms.imageProcessing.PartialShapeMatcher.Sequence;
 import algorithms.imageProcessing.PartialShapeMatcher.Sequences;
+import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -22,10 +23,12 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.MiscStats;
 import algorithms.misc.MiscDebug;
+import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntPair;
+import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.QuadInt;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
@@ -299,34 +302,37 @@ public class AndroidStatuesTest extends TestCase {
      
     public void test1() throws Exception {
 
-        String fileName0 = "android_statues_01_sz1_mask.png";
+        String fileName0 
+            = "android_statues_03_sz1_mask_small.png";
         int idx = fileName0.lastIndexOf(".");
         String fileName0Root = fileName0.substring(0, idx);
         String filePath0 = ResourceFinder
-                .findFileInTestResources(fileName0);
+            .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
 
         PairIntArray p = extractOrderedBoundary(img0);
-            
+        plot(p, 100);
+        
         String fileName1 = "";
 
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 1; i < 4; ++i) {
             
             switch(i) {
                 case 0: {
-                    fileName1 = "android_statues_01_sz1_mask.png";
+                    fileName1 
+                        = "android_statues_01_sz1_mask_small.png";
                     break;
                 }
                 case 1: {
-                    fileName1 = "android_statues_02_sz1_mask.png";
+                    fileName1 = "android_statues_02_sz1_mask_small.png";
                     break;
                 }
                 case 2: {
-                    fileName1 = "android_statues_03_sz1_mask.png";
+                    fileName1 = "android_statues_03_sz1_mask_small.png";
                     break;
                 }
                 case 3: {
-                    fileName1 = "android_statues_04_sz1_mask.png";
+                    fileName1 = "android_statues_04_sz1_mask_small.png";
                     break;
                 }
                 default: {
@@ -372,15 +378,15 @@ public class AndroidStatuesTest extends TestCase {
                      of super pixels)
                 - smooth the bounds?
             ===> before that, extract the shapes 
-                 aggregated (and smoothed in needed),
+                 aggregated (and smoothed if needed),
                  to make tests for the partial shape
                  matcher to adapt it for use.
-                 (might need to add directed features of
+                 (might need to add descriptors, the
                  color or gradient too, hopefully not)
-            
             */
             
             PairIntArray q = extractOrderedBoundary(img);
+            plot(q, (i+1)*100 + 1);
             
             PartialShapeMatcher matcher = 
                 new PartialShapeMatcher();
@@ -396,7 +402,7 @@ public class AndroidStatuesTest extends TestCase {
                 sequences.toString());
             
             CorrespondencePlotter plotter = new
-                CorrespondencePlotter(img0, img);
+                CorrespondencePlotter(p, q);
             
             for (Sequence s : sequences.getList()) {
                 int len = s.getStopIdx2() - s.getStartIdx2()
@@ -501,11 +507,16 @@ public class AndroidStatuesTest extends TestCase {
         
     }
 
-    private PairIntArray extractOrderedBoundary(ImageExt img) {
+    private PairIntArray extractOrderedBoundary(ImageExt image) {
 
+        GreyscaleImage img = image.copyToGreyscale();
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.ONE);
+        
         Set<PairInt> blob = new HashSet<PairInt>();
         for (int i = 0; i < img.getNPixels(); ++i) {
-            if (img.getB(i) > 0) {
+            if (img.getValue(i) > 0) {
                 blob.add(new PairInt(img.getCol(i),
                     img.getRow(i)));
             }
@@ -995,6 +1006,27 @@ public class AndroidStatuesTest extends TestCase {
                 bReader.close();
             }
         }        
+    }
+
+    private void plot(PairIntArray p, int fn) throws Exception {
+
+        float[] x = new float[p.getN()];
+        float[] y = new float[p.getN()];
+        
+        for (int i = 0; i < x.length; ++i) {
+            x[i] = p.getX(i);
+            y[i] = p.getY(i);
+        }
+        
+        float xMax = MiscMath.findMax(x) + 1;
+        float yMax = MiscMath.findMax(y) + 1;
+        
+        PolygonAndPointPlotter plot = new PolygonAndPointPlotter();
+        
+        plot.addPlot(0, xMax, 0, yMax, 
+            x, y, x, y, "");
+        
+        plot.writeFile(fn);
     }
 
 }

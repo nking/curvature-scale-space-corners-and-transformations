@@ -20,7 +20,7 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
  
-    public void testDescriptors() throws Exception {
+    public void estDescriptors() throws Exception {
         
         PairIntArray p = getWineGlassShape();
         
@@ -51,7 +51,7 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void testSummedAreaTables() {
+    public void estSummedAreaTables() {
         
         /*
         2 9  2  7     9 11  18   16 22  36
@@ -74,11 +74,13 @@ public class PartialShapeMatcherTest extends TestCase {
         
     }
     
-    public void testDescriptors2() throws Exception {
+    public void estMatch2() throws Exception {
         
+        // 60
         PairIntArray p = getScissors1();
         //plot(p, 200);
         
+        // 63
         PairIntArray q = getScissors2();
         //plot(q, 201);
         
@@ -112,10 +114,13 @@ public class PartialShapeMatcherTest extends TestCase {
         assertTrue(sequences.fractionOfWhole > 0.6);
 
         // assert the correspondence range
-
+        List<Sequence> list = sequences.sequences;
+        for (Sequence s : list) {
+            System.out.println("SEQ0=" + s);
+        }
     }
 
-    public void testDescriptors3() throws Exception {
+    public void testMatch3() throws Exception {
 
         // rotate points p so that start points are 
         // different and assert that wrap around is
@@ -164,7 +169,9 @@ public class PartialShapeMatcherTest extends TestCase {
 
         // assert the correspondence range
         List<Sequence> list = sequences.sequences;
-        //System.out.println("SEQ0=" + list.get(0).toString());
+        for (Sequence s : list) {
+            System.out.println("SEQ0=" + s);
+        }
         //System.out.println("p=" + p.toString());
         //System.out.println("q=" + q.toString());
 
