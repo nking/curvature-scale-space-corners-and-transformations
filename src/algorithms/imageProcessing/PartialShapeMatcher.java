@@ -2,6 +2,9 @@ package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.misc.Histogram;
+import algorithms.misc.HistogramHolder;
+import algorithms.util.Errors;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -124,7 +127,7 @@ public class PartialShapeMatcher {
         
         /*
         the matrices in md can be analyzed for best
-        global solution and separately for best local
+        global solution and/or separately for best local
         solution.
         
         This method will return results for a local
@@ -140,11 +143,6 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
         */
         
-        List<Sequence> sequences = new ArrayList<Sequence>();
-        List<Sequence> discarded = new ArrayList<Sequence>();
-                
-        extractSimilar(md, sequences, discarded);
-       
         /*
         need sum of differences in sequence and the fraction
         of the whole.
@@ -162,9 +160,59 @@ public class PartialShapeMatcher {
         The articulated model chooses the 2nd point, second to get 
         best fits of components first.
         */
+        
+        /*
+        NOTE: this may change with more testing.
+        
+        goal is to find the best chains of sequential
+        matches below a threshold and then use
+        multi-objective optimization to choose the
+        best consistent aggregation of chains as the
+        final correspondence list.
+        
+        the rigid model allowing occlusiong 
+        (not yet implemented) will
+        likely be a better solution and is similar to
+        matching patterns elsewhere in this project.
+        
+        focusing first on this articulated match to
+        look at the range of ability to identify a
+        whole object which may be occluded and which
+        may have parts which have separate rigid 
+        rotation (such as the scissors opened bersus
+        closed).
+           
+        caveats to the articulated match are that
+        greedy solutions built by fraction of whole
+        may have many different kinds of errors,
+        but composing sequences with the top k 
+        fraction quickly leads to an unfeasibly
+        large number of sequences to evaluate.
+        
+        */
+        
+        List<Sequence> sequences = new ArrayList<Sequence>();
+        List<Sequence> discarded = new ArrayList<Sequence>();
                 
+        extractSimilar(md, sequences, discarded, 3, 3);
+        
+        // sort by descending fraction of whole
+        Collections.sort(sequences, new SequenceComparator2());
+        
+        Sequence s0 = sequences.get(0);
+                
+        int rMax = (int)Math.sqrt(n1);
+        if (rMax < 2) {
+            rMax = 2;
+        }
+        
+        sequences = new ArrayList<Sequence>();
+        discarded = new ArrayList<Sequence>();
+                
+        extractSimilar(md, sequences, discarded, 2, rMax);
+        
         Sequences sequences0 = matchArticulated(
-            sequences, n1, n2);
+            sequences, discarded, s0, n1, n2);
         
         //addFeasibleDiscarded(sequences0, discarded);
         
@@ -178,18 +226,14 @@ public class PartialShapeMatcher {
     }
     
     protected void extractSimilar(float[][][] md,
-        List<Sequence> sequences, List<Sequence> discarded) {
+        List<Sequence> sequences, 
+        List<Sequence> discarded, int rMin, int rMax) {
         
         //md[0:n2-1][0:n1-1][0:n1-1]
         
         int n2 = md.length;
         int n1 = md[0].length;
-       
-        int rMax = (int)Math.sqrt(n1);
-        if (rMax < 1) {
-            rMax = 1;
-        }
-     
+      
         // 23 degrees is 0.4014
         double thresh = 23. * Math.PI/180.;
         
@@ -197,22 +241,24 @@ public class PartialShapeMatcher {
         TODO: will apply a different pattern of reading
         the blocks and merging results next.
         */
-    
+        
+        //NOTE: presumably, at least 3 consecutive
+        // points are needed for a good match,
+        // so will start r block size at 3
         MinDiffs mins = new MinDiffs(n1);
-        for (int r = 2; r <= rMax; ++r) {
+        for (int r = rMin; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
         }
-       
+        
         // 10 degrees is 0.175
         double tolerance = 0.25;
-  
+          
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
-        for (int r = 2; r <= rMax; ++r) {
+        for (int r = rMin; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
-        
-        
+                
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             sb.append(String.format("[%4d]: ", i));
@@ -230,8 +276,7 @@ public class PartialShapeMatcher {
             log.info(sb.toString());
             sb.delete(0, sb.length());
         }
-        
-        
+               
         // ----- find sequential correspondences ----
         
         for (int idx1 = 0; idx1 < n1; ++idx1) {
@@ -267,11 +312,12 @@ public class PartialShapeMatcher {
                         
                         s.stopIdx2 = idx3;
                         
-                        // NOTE: an expensive operation which will be
-                        // replaced with new block pattern reading:
+                        // TODO: replace this expensive operation 
+                        // with a better data type after refactor logic
                         int rmIdx = list2.indexOf(idx3);
                         
                         diff = equivBest.diffs[nextLIdx].get(rmIdx);
+                        
                         sumAbsDiff += Math.abs(diff);
                         
                         list2.removeAt(rmIdx);
@@ -295,7 +341,8 @@ public class PartialShapeMatcher {
                         sequences.add(s);
                     
                         log.info(String.format(
-                            "seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                            "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                            (sequences.size() - 1), 
                             s.startIdx1, s.startIdx2, s.stopIdx2,
                             s.fractionOfWhole, s.absAvgSumDiffs));
                     
@@ -310,180 +357,185 @@ public class PartialShapeMatcher {
     }
     
     protected Sequences matchArticulated(List<Sequence> sequences,
-        int n1, int n2) {
-        
-        //(1) ascending sort ordered by startIdx1 and then
-        // descending fraction of whole 
-        Collections.sort(sequences, new SequenceComparator());
-        
-        // (1.5) descending sort of fraction, then diff, then startIdx
-        List<Sequence> list2 = new ArrayList<Sequence>(sequences);
-        float maxAvgDiff = findMaxAvgDiff(list2);
-        System.out.println("list2.sz=" + list2.size());
-        Collections.sort(list2, new SequenceComparator3(maxAvgDiff));
-        //Collections.sort(list2, new SequenceComparator2());
+        List<Sequence> higherErrorSequences, Sequence s0, int n1, int n2) {
 
-        //(2) a lookup for items in list2
-        //    belonging to >= startIdx1.
-        TreeMap<Integer, TIntList> startLookup =
-            new TreeMap<Integer, TIntList>();
-        for (int i = 0; i < list2.size(); ++i) {
-            Sequence s1 = list2.get(i);
-            Integer key = Integer.valueOf(s1.startIdx1);
-            for (int j = 0; j < list2.size(); ++j) {
-                Sequence s2 = list2.get(j);
-                if (s2.startIdx1 < key.intValue()) {
-                    continue;
-                }
-                if (!startLookup.containsKey(key)) {
-                    startLookup.put(key, new TIntArrayList());
-                }                
-                // TODO: revisit this...avoiding adding entire list
-                if (startLookup.get(key).size() > n1/4) {
-                    break;
-                }
-                startLookup.get(key).add(j);
-            }
-            log.fine("FSORT: " + i + " " + s1.toString());
-        }
-
-        //(2.5) a lookup for items in list2
-        //    belonging to >= startIdx2.
-        TreeMap<Integer, TIntList> startLookup2 =
-            new TreeMap<Integer, TIntList>();
-        for (int i = 0; i < list2.size(); ++i) {
-            Sequence s1 = list2.get(i);
-            Integer key = Integer.valueOf(s1.startIdx2);
-            for (int j = 0; j < list2.size(); ++j) {
-                Sequence s2 = list2.get(j);
-                if (s2.startIdx2 < key.intValue()) {
-                    continue;
-                }
-                if (!startLookup2.containsKey(key)) {
-                    startLookup2.put(key, new TIntArrayList());
-                }                
-                // TODO: revisit this...avoiding adding entire list
-                if (startLookup2.get(key).size() > n2/4) {
-                    break;
-                }
-                startLookup2.get(key).add(j);
-            }
-        }
-        
-        // (3) create "tracks" of sequences
-        Set<Sequence> added = new HashSet<Sequence>();
-        
         List<Sequences> tracks = new ArrayList<Sequences>();
+        Sequences track = new Sequences();
+        tracks.add(track);
+        track.sequences.add(s0.copy());
         
-        for (int i = 0; i < sequences.size(); ++i) {
-            
+        return matchArticulated(sequences, higherErrorSequences, 
+            tracks, n1, n2);
+    }
+    
+    protected Sequences matchArticulated(List<Sequence> sequences,
+        List<Sequence> higherErrorSequences, int n1, int n2) {
+    
+        // (1) choose the topK from sequences sorted by fraction
+        // and then add to those
+        int topK = 15;
+        
+        Collections.sort(sequences, new SequenceComparator2());
+                
+        List<Sequences> tracks = new ArrayList<Sequences>();
+        for (int i = 0; i < topK; ++i) {
             Sequence s = sequences.get(i);
-            if (added.contains(s)) {
-                continue;
-            }
-            added.add(s);
-            
-            Sequences currentTrack = new Sequences();
-            tracks.add(currentTrack);
-            currentTrack.sequences.add(s);
+            Sequences track = new Sequences();
+            tracks.add(track);
+            track.sequences.add(s.copy());
+        }
         
-            /*
-            (next.startIdx1 >
-                   startIdx1 + (stopIdx2 - stopIdx1))
-            */
-            Sequence lastSequence = s;
-            while (true) {
-                
-                int nextStartIdx1 = lastSequence.startIdx1
-                    + (lastSequence.stopIdx2 -
-                    lastSequence.startIdx2) + 1;
-
-                // if nextStartIdx1 is larger than n1, it will
-                // be missing from startLookup and we've
-                // ended the progression through idx1
-                
-                Entry<Integer, TIntList> entry = 
-                    startLookup.ceilingEntry(
-                        Integer.valueOf(nextStartIdx1));
-
-                if (entry == null) {
-                    break;
-                }
-               
-                TIntList list2Indexes = entry.getValue();
-                boolean appended = false;
-                for (int j = 0; j < list2Indexes.size(); ++j) {
-                    int list2Idx = list2Indexes.get(j);
-                    Sequence s2 = list2.get(list2Idx);
-                    if (s2.startIdx2 <= lastSequence.stopIdx2) {
-                        continue;
-                    }
-                    /*
-                    if (!verifyConsistenCW(currentTrack, s2)) {
-                        continue;
-                    }*/
-                    currentTrack.sequences.add(s2);
-                    added.add(s2);
-                    appended = true;
-                    lastSequence = s2;
-                    break;
-                }
-                if (!appended) {
-                    break;
+        return matchArticulated(sequences, higherErrorSequences, 
+            tracks, n1, n2);
+    }
+    
+    protected Sequences matchArticulated(List<Sequence> sequences,
+        List<Sequence> higherErrorSequences, 
+        List<Sequences> seedTracks, int n1, int n2) {
+    
+        print0(sequences, "S");
+        
+        print0(higherErrorSequences, "DS");
+    
+        //(1) merge overlapping consistent
+        mergeOverlappingConsistent(seedTracks,
+            sequences, n1, n2);
+       
+        print("sort0:", sequences);
+        
+        //TODO: revise the datastructures here to make the
+        // runtime complexity smaller after logic changes are finished.
+        
+        // (6) add to "tracks", sequences w/ similar offset then best
+        //      of those that don't conflict w/ existing
+        for (int i = 0; i < seedTracks.size(); ++i) {
+            
+            Sequences currentTrack = seedTracks.get(i);
+            Sequence s0 = currentTrack.sequences.get(0);
+            
+            List<Sequence> copy = new ArrayList<Sequence>(sequences);
+            Collections.sort(copy, new SequenceComparator2());
+            for (int j = (copy.size() - 1); j > -1; --j) {
+                Sequence s = copy.get(j);
+                if (s.equals(s0) || 
+                    intersectsExistingRange(
+                        currentTrack.sequences, s, n1)) {
+                    copy.remove(j);
                 }
             }
-
-            // if first sequence startIdx2 is > 0, need to
-            // search the region before startIdx2 also
-            if (currentTrack.sequences.get(0).startIdx2 > 1) {
-                int nextStartIdx2 = 0;
-                while (true) {
-                    Entry<Integer, TIntList> entry = 
-                        startLookup2.ceilingEntry(
-                            Integer.valueOf(nextStartIdx2));
-
-                    if (entry == null) {
-                        break;
-                    }
-
-                    TIntList list2Indexes = entry.getValue();
-                    boolean appended = false;
-                    for (int j = 0; j < list2Indexes.size(); ++j) {
-                        int list2Idx = list2Indexes.get(j);
-                        Sequence s2 = list2.get(list2Idx);
-                        if (s2.stopIdx2 >= 
-                            currentTrack.sequences.get(0).startIdx2) {
+            List<Sequence> copy2 = new ArrayList<Sequence>(copy);
+            
+            boolean didAdd = true;
+            while (didAdd) {
+                didAdd = false;
+                
+                if (copy.isEmpty()) {
+                    break;
+                }
+                
+                //TODO: may revise this:
+                int maxDiffOffset = 5;
+                // prefer same offset if it exists,
+                // else, choose top of sort
+                Sequence ls = currentTrack.sequences
+                    .get(currentTrack.sequences.size() - 1);
+                    
+                int offset = calcOffset12(ls, n1); 
+                int minDiffOffset = Integer.MAX_VALUE;
+                Sequence minOffsetS = null;
+                for (int j = (copy.size() - 1); j > -1; --j) {
+                    Sequence st = copy.get(j);
+                    int off = calcOffset12(st, n1);
+                    if (off == offset) {                        
+                        st = copy.remove(j);
+                        if (!canAppend(currentTrack.sequences, st, n1)) {                                           
+                            // merge
+                            currentTrack.sequences.add(st.copy());
+                            merge(currentTrack.sequences, n1, n2);
                             continue;
                         }
-                        
-                        // check for range clash...
-                        if (intersectsExistingRange1(currentTrack.sequences,
-                            s2)) {
+                        currentTrack.sequences.add(st.copy());
+                        didAdd = true;
+                        break;
+                    } else {
+                        int diffOffset = Math.abs(Math.abs(off) - 
+                            Math.abs(offset));
+                        if (diffOffset < minDiffOffset) {   
+                            if (!canAppend(currentTrack.sequences,
+                            st, n1)) {
+                                copy2.remove(j);
+                                continue;
+                            }
+                            minDiffOffset = diffOffset;
+                            minOffsetS = st;
+                        } else if (diffOffset > maxDiffOffset) {
+                            copy.remove(j);
                             continue;
-                        } 
-                        
-                        currentTrack.sequences.add(s2);
-                        added.add(s2);
-                        appended = true;
-                        lastSequence = s2;
-                        break;
+                        }
                     }
-                    if (!appended) {
-                        break;
-                    }
-
-                    nextStartIdx2 = lastSequence.stopIdx2 + 1;
-                    if (nextStartIdx2 > currentTrack.sequences.get(0).startIdx2) {
-                        break;
+                }
+                if (!didAdd) {
+                    if (minDiffOffset <= maxDiffOffset) {                    
+                        // TODO: may want to revise this
+                        currentTrack.sequences.add(minOffsetS.copy());
+                        copy.remove(minOffsetS);
+                        didAdd = true;
                     }
                 }
             }
+            
+            Set<Sequence> exists = new HashSet<Sequence>(currentTrack.sequences);
+            
+            // add the top of sorted, if it fits into remaining space
+            // TOOO: consider a higher quality filter here?
+            // tolerance = 0.1?  that should probably be done
+            // at an earlier stage
+            for (int j = (copy2.size() - 1); j > -1; --j) {
+                Sequence s = copy2.get(j);
+                if (exists.contains(s) || 
+                    intersectsExistingRange(
+                        currentTrack.sequences, s, n1)) {
+                    copy2.remove(j);
+                }
+            }
+            didAdd = true;
+            while (didAdd) {
+                didAdd = false;
+                if (copy2.isEmpty()) {
+                    break;
+                }
+                Sequence st = copy2.get(0);
+                while (!canAppend(currentTrack.sequences,
+                    st, n1)) {
+                    copy2.remove(0);
+                    //TODO: replace w/ a linked list or other
+                    // to improve runtime complexity here when
+                    // logic changes are finished
+                    if (copy2.isEmpty()) {
+                        st = null;
+                        break;
+                    }
+                    st = copy2.get(0);
+                }
+                if (st == null) {
+                    break;
+                }
+                currentTrack.sequences.add(st.copy());
+                copy2.remove(st);
+                didAdd = true;
+            }
+          
+        }
+        
+        for (int i = 0; i < seedTracks.size(); ++i) {
+            Sequences track = seedTracks.get(i);
+            log.info("pre-sorted track " + i + ": " + track.toString());
         }
      
-        filterForConsistentClockwise(tracks);
+        //filterForConsistentClockwise(tracks);
      
         // calculate the stats for each track (== Sequences)
-        for (Sequences track : tracks) {
+        for (Sequences track : seedTracks) {
             int sumLen = 0;
             float sumFrac = 0;
             double sumDiffs = 0;
@@ -501,13 +553,13 @@ public class PartialShapeMatcher {
         
         // sorting here needs to prefer higher fraction and
         // longer segments too
-        Collections.sort(tracks, new TrackComparator(n1));
-        for (int i = 0; i < tracks.size(); ++i) {
-            Sequences track = tracks.get(i);
+        Collections.sort(seedTracks, new TrackComparator(n1));
+        for (int i = 0; i < seedTracks.size(); ++i) {
+            Sequences track = seedTracks.get(i);
             log.info("track " + i + ": " + track.toString());
         }
 
-        return tracks.get(0);
+        return seedTracks.get(0);
     }
     
     protected double matchRigidWithOcclusion(List<Sequence> srquences,
@@ -544,6 +596,26 @@ public class PartialShapeMatcher {
         
         //log.fine("a2:");
         float[][] a2 = createDescriptorMatrix(q, q.getN());       
+    
+        // TODO: look at histograms of angles.  
+        // later, the matching of merged segments needs
+        // a way to prefer high quality matches that
+        // include curves over high quality matches
+        // of straight lines for examples when aggregating
+        // segments.
+        // large angles for small diff between i, j
+        /*
+        float binSz = (float)(Math.PI/8.f);
+        HistogramHolder hist1 = createHistogram(a1, binSz);
+        
+        HistogramHolder hist2 = createHistogram(a2, binSz);
+        
+        try {
+            hist1.plotHistogram("a1 hist", "a1_hist");
+            hist2.plotHistogram("a2 hist", "a2_hist");
+        } catch(Throwable t) {
+        }
+        */
         
         /*
         - find rxr sized blocks similar to one another
@@ -839,64 +911,9 @@ public class PartialShapeMatcher {
 
             Sequences sequences = tracks.get(i);
 
-            if (sequences.sequences.isEmpty()) {
+            if (!isConsistentClockwise(sequences.sequences)) {
                 rmList.add(i);
-                continue;
             }
-
-            Collections.sort(sequences.sequences,
-                new SequenceComparator4());
-
-            /*
-             all startIdx1 should be increasing,
-             and wrap around should be considered.
-             then, all startIdx2 should be increasing
-             and wrap around whould be considered.
-             */
-            Sequence s0 = sequences.sequences.get(0);
-
-            boolean notValid = false;
-            
-            int ns = sequences.sequences.size();
-
-            // check startIdx1 then startIdx2
-            for (int check = 0; check < 2; ++check) {
-                boolean wrapped = false;
-                int prev = (check == 0) ? s0.startIdx1
-                    : s0.startIdx2;
-                for (int j = 1; j <= ns; ++j) {                   
-                    Sequence s;
-                    if (j == ns) {
-                        if (check == 0) {
-                            break;
-                        }
-                        s = sequences.sequences.get(0);
-                    } else {
-                        s = sequences.sequences.get(j);
-                    }
-                    int idx = (check == 0) ? s.startIdx1
-                        : s.startIdx2;
-                    if (idx == prev) {
-                        rmList.add(i);
-                        notValid = true;
-                        break;
-                    } else if (idx < prev) {
-                        if (wrapped) {
-                            rmList.add(i);
-                            notValid = true;
-                            break;
-                        }
-                        wrapped = true;
-                        prev = idx;
-                    }
-                    prev = idx;
-                } // end loop over j sequences in a track
-
-                if (notValid) {
-                    break;
-                }
-                
-            } // end loop over check
         }
         
         log.info("removing " + rmList.size() 
@@ -907,6 +924,58 @@ public class PartialShapeMatcher {
             tracks.remove(rmIdx);
         }
        
+    }
+    
+    private boolean isConsistentClockwise(
+        List<Sequence> sequences) {
+
+        if (sequences.isEmpty()) {
+            return true;
+        }
+
+        Collections.sort(sequences, new SequenceComparator4());
+
+        /*
+         all startIdx1 should be increasing,
+         and wrap around should be considered.
+         then, all startIdx2 should be increasing
+         and wrap around whould be considered.
+         */
+        Sequence s0 = sequences.get(0);
+
+        int ns = sequences.size();
+
+        // check startIdx1 then startIdx2
+        for (int check = 0; check < 2; ++check) {
+            boolean wrapped = false;
+            int prev = (check == 0) ? s0.startIdx1
+                : s0.startIdx2;
+            for (int j = 1; j <= ns; ++j) {                   
+                Sequence s;
+                if (j == ns) {
+                    if (check == 0) {
+                        break;
+                    }
+                    s = sequences.get(0);
+                } else {
+                    s = sequences.get(j);
+                }
+                int idx = (check == 0) ? s.startIdx1
+                    : s.startIdx2;
+                if (idx == prev) {
+                    return false;
+                } else if (idx < prev) {
+                    if (wrapped) {
+                        return false;
+                    }
+                    wrapped = true;
+                    prev = idx;
+                }
+                prev = idx;
+            } // end loop over j sequences in a track
+        } // end loop over check
+        
+        return true;        
     }
 
     private void transpose(Sequences sequences, 
@@ -924,6 +993,377 @@ public class PartialShapeMatcher {
             s.startIdx2 = startIdx2;
             s.stopIdx2 = s.startIdx2 + n;
         }
+    }
+
+    private void print(String prefix, List<Sequence> sequences) {
+        for (int i = 0; i < sequences.size(); ++i) {
+            System.out.println(String.format(
+                "%d %s %s", i, prefix, sequences.get(i)));
+        }
+    }
+
+    private void print0(List<Sequence> sequences,
+        String label) {
+        
+        // --- sort a copy of sequences by fraction, diff, then
+        // startIdx1 and print
+    
+        List<Sequence> copy = new ArrayList<Sequence>(sequences);
+        Collections.sort(copy, new SequenceComparator2());
+        
+        float maxDiff = Float.MIN_VALUE;
+        
+        for (int i = 0; i < copy.size(); ++i) {
+            
+            log.info(String.format("%s FSORT %d  %s", label, i, copy.get(i).toString()));
+            
+            if (copy.get(i).absAvgSumDiffs > maxDiff) {
+                maxDiff = copy.get(i).absAvgSumDiffs;
+            }
+        }
+        
+        Collections.sort(copy, new SequenceComparator3(maxDiff));
+        for (int i = 0; i < copy.size(); ++i) {            
+            log.info(String.format("%s FDSORT %d  %s", label, i, 
+                copy.get(i).toString()));
+        }
+    }
+
+    private HistogramHolder createHistogram(float[][] a, 
+        float binSz) {
+        
+        float[] values = new float[a.length * a.length - 
+            a.length];
+        
+        int count = 0;
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 0; j < a[0].length; ++j) {
+                if (i == j) {
+                    continue;
+                }
+                values[count] = Math.abs(a[i][j]);
+                count++;
+            }
+        }
+        
+        HistogramHolder hist = 
+            Histogram.createSimpleHistogram(binSz, values, 
+                Errors.populateYErrorsBySqrt(values));
+        
+        return hist;
+    }
+
+    private void mergeOverlappingConsistent(List<Sequences> 
+        seedTracks, List<Sequence> sequences, int n1, int n2) {
+
+        /*
+        NOTE: if seedTracks becomes a large number of
+        tracks, should use a data structure here to make
+        finding an intersection of ranges faster
+        (e.g. range tree).
+        */
+        
+        for (Sequences track : seedTracks) {
+            
+            assert(track.sequences.size() == 1);
+            
+            Sequence s0 = track.sequences.get(0);
+            int s0startIdx1 = s0.startIdx1;
+            int s0stopIdx1 = s0startIdx1 +
+                (s0.stopIdx2 - s0.startIdx2);
+            int s0Offset = s0.startIdx2 - s0.startIdx1;
+            
+            TIntSet skip = new TIntHashSet();
+            
+            boolean merged = true;
+            while (merged) {
+                merged = false;
+                for (int i = 0; i < sequences.size(); ++i) {
+                    if (skip.contains(i)) {
+                        continue;
+                    }
+                    Sequence s = sequences.get(i);
+                    int sOffset = s.startIdx2 - s.startIdx1;
+                    if (sOffset != s0Offset) {
+                        skip.add(i);
+                        continue;
+                    }
+                    int startIdx1 = s.startIdx1;
+                    int stopIdx1 = startIdx1 +
+                        (s.stopIdx2 - s.startIdx2);
+                    if (startIdx1 == s0startIdx1 && 
+                        stopIdx1 == s0stopIdx1) {
+                        skip.add(i);
+                        continue;
+                    }
+                    boolean doMerge = false;
+                    if (s0startIdx1 >= startIdx1 &&  
+                        s0startIdx1 <= stopIdx1) {
+                        doMerge = true;
+                    } else if (s0stopIdx1 >= startIdx1 &&
+                        s0stopIdx1 <= stopIdx1) {
+                        doMerge = true;
+                    } else if (s0startIdx1 <= startIdx1 &&
+                        s0stopIdx1 >= stopIdx1) {
+                        doMerge = true;
+                    }
+                    if (doMerge) {                      
+                        merged = merge(s0, s, n1, n2);
+                        skip.add(i);
+                    }
+                }
+            }
+        }   
+    }
+    
+    protected void merge(List<Sequence> sequences, 
+        int n1, int n2) {
+
+        if (sequences.size() < 2) {
+            return;
+        }
+        
+        /*
+        0
+        1
+        2 
+        3  --0
+        4  -- 
+        */
+               
+        for (int i = (sequences.size() - 1); i > 0; --i) {
+            boolean merged = merge(sequences.get(i - 1),
+                sequences.get(i), n1, n2);
+            if (merged) {
+                sequences.remove(i);
+            }
+        }
+    }
+    
+    /**
+     * TODO:  this method needs tests
+     * 
+     * @param mergeInto
+     * @param mergeFrom
+     * @param n1
+     * @param n2
+     * @return 
+     */
+    protected boolean merge(Sequence mergeInto, Sequence mergeFrom,
+        int n1, int n2) {
+ 
+        int s0stopIdx1 = mergeInto.startIdx1 +
+            (mergeInto.stopIdx2 - mergeInto.startIdx2);
+        int s0Offset = calcOffset12(mergeInto, n1);
+
+        int sOffset = calcOffset12(mergeFrom, n1);
+        if (sOffset != s0Offset) {
+            return false;
+        }
+        int stopIdx1 = mergeFrom.startIdx1 +
+            (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
+        if ((mergeFrom.startIdx1 == mergeInto.startIdx1) && 
+            (stopIdx1 == s0stopIdx1)) {
+            // these are same ranges, so let invoker remove mergeFrom
+            return true;
+        }
+
+        if (!intersects(mergeInto, mergeFrom, n1)) {
+            return false;
+        }
+
+        int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+        float f0 = mergeInto.fractionOfWhole;
+        float d0 = mergeInto.absAvgSumDiffs;
+        float d0Tot = d0 * len0;
+
+        int len = mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1;
+        float f = mergeFrom.fractionOfWhole;
+        float d = mergeFrom.absAvgSumDiffs;
+        float dTot = d * len;
+
+        // handle wrap around for idx1 axis, 
+        // but never wrap the idx2 axis.
+
+        if (stopIdx1 < n1 && s0stopIdx1 < n1) {
+
+            if (mergeFrom.startIdx1 < mergeInto.startIdx1) {
+                int nAdded = mergeInto.startIdx1 - mergeFrom.startIdx1;
+                d0Tot += (dTot/(float)nAdded);
+                mergeInto.startIdx1 = mergeFrom.startIdx1;
+                mergeInto.startIdx2 = mergeFrom.startIdx2;
+                len0 += nAdded;
+            }
+            if (stopIdx1 > s0stopIdx1) {
+                int nAdded = stopIdx1 - s0stopIdx1;
+                d0Tot += (dTot/(float)nAdded);
+                s0stopIdx1 = stopIdx1;
+                mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+                len0 += nAdded;
+            }
+
+            mergeInto.fractionOfWhole = (float)len0/(float)n1;
+            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+
+            return true;
+        }
+
+        if (s0stopIdx1 > (n1 - 1)) {
+
+            s0stopIdx1 -= n1;
+
+            if (stopIdx1 > (n1 - 1)) {
+
+                stopIdx1 -= n1;
+
+                boolean didMerge = false;
+                
+                /*
+                s : 0-->lstPt     frstPt   n-1   (lstPt overrun)
+
+                s0: 0-->lstPt     frstPt   n-1   (lstPt overrun)
+                */
+                if (stopIdx1 > s0stopIdx1) {
+                    if (stopIdx1 >= mergeInto.startIdx1) {
+                        // the merge would make a full circle
+                        // which would not be interpretable w/
+                        // current logic and data structure, so
+                        // keep the sequences separate.
+                        // TODO: might need to add a flag indicating
+                        // that the sequences represent full possible
+                        // correspondence
+                        return false;
+                    }
+                    /*
+                    s : 0----->lstPt     frstPt   n-1   (lstPt overrun)
+
+                    s0: 0-->lstPt     frstPt   n-1   (lstPt overrun)
+                    */
+                    assert(mergeFrom.stopIdx2 > mergeInto.stopIdx2);
+                    int nAdded = stopIdx1 - s0stopIdx1;
+                    d0Tot += (dTot/(float)nAdded);
+                    s0stopIdx1 = stopIdx1;
+                    mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+                    len0 += nAdded;
+                    didMerge = true;
+                } 
+                if (mergeFrom.startIdx1 < mergeInto.startIdx1) {
+                    /*
+                    s : 0-->lstPt  frstPt   n-1   (lstPt overrun)
+
+                    s0: 0-->lstPt     frstPt   n-1   (lstPt overrun)
+                    */
+                    if (mergeFrom.startIdx1 <= s0stopIdx1) {
+                        // the merge would make a full circle
+                        // which would not be interpretable w/
+                        // current logic and data structure, so
+                        // keep the sequences separate.
+                        // TODO: might need to add a flag indicating
+                        // that the sequences represent full possible
+                        // correspondence
+                        return false;
+                    }
+                    assert(mergeFrom.stopIdx2 < mergeInto.stopIdx2);
+                    int nAdded = mergeInto.startIdx1 - mergeFrom.startIdx1;
+                    d0Tot += (dTot/(float)nAdded);
+                    mergeInto.startIdx1 = mergeFrom.startIdx1;
+                    mergeInto.startIdx2 = mergeFrom.startIdx2;
+                    len0 += nAdded;
+                    didMerge = true;
+                }
+                if (!didMerge) {
+                    return false;
+                }
+             } else {
+                boolean didMerge = false;
+                if (mergeFrom.startIdx1 < mergeInto.startIdx1) {
+                    /*
+                    s :           frstPt  lstPt   n-1
+
+                    s0: 0-->lstPt      frstPt   n-1   (lstPt overrun)
+                    */
+                    if (mergeFrom.startIdx1 <= s0stopIdx1) {
+                        // see merge notes in block above
+                        return false;
+                    }
+                    assert(mergeFrom.stopIdx2 < mergeInto.stopIdx2);
+                    int nAdded = mergeInto.startIdx1 - mergeFrom.startIdx1;
+                    d0Tot += (dTot/(float)nAdded);
+                    mergeInto.startIdx1 = mergeFrom.startIdx1;
+                    mergeInto.startIdx2 = mergeFrom.startIdx2;
+                    len0 += nAdded;
+                    didMerge = true;
+                }
+                if (!didMerge) {
+                    return false;
+                }
+            }
+        } else if (stopIdx1 > (n1 - 1)) {
+
+            stopIdx1 -= n1;
+
+            boolean didMerge = false;
+            
+            if (mergeInto.startIdx1 < mergeFrom.startIdx1) {
+                /*
+                s : 0-->lstPt               frstPt  n-1  (lstPt overrun)
+
+                s0:                 frstPt  lstPt
+                */
+                if (stopIdx1 < mergeInto.startIdx1) {
+                    int nAdded = n1 - s0stopIdx1 + stopIdx1; 
+                    d0Tot += (dTot/(float)nAdded);
+                    s0stopIdx1 = stopIdx1;
+                    mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+                    len0 += nAdded;
+                    didMerge = true;
+                }
+            }
+            if (!didMerge) {
+                return false;
+            }
+        }
+
+        mergeInto.fractionOfWhole = (float)len0/(float)n1;
+        mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+
+        return true;
+    }
+
+    private int calcOffset12(Sequence s, int n1) {
+        int offset = s.startIdx2 - s.startIdx1;
+        if (offset < 0) {
+            // assuming the smaller is correct answer
+            int offset2 = (n1 - s.startIdx1) + s.startIdx2;
+            if (offset2 < -offset) {
+                return offset2;
+            }
+        }
+        return offset;
+    }
+
+    private boolean canAppend(List<Sequence> track, 
+        Sequence testS, int n1) {
+        
+        //24:10
+        if (testS.startIdx1==24 && testS.startIdx2==10){
+            int z = 1;
+        }
+        
+        if (intersectsExistingRange(track, testS, n1)) {
+            return false;
+        }
+        
+        //TODO: could improve the datastructure
+        // to make this delete faster.  logic in 
+        // the code is still changing currently.
+        
+        track.add(testS);
+        boolean isC = isConsistentClockwise(track);
+        boolean rmvd = track.remove(testS);
+        assert(rmvd);
+        
+        return isC;
     }
 
     private class DiffMatrixResults {
@@ -964,6 +1404,15 @@ public class PartialShapeMatcher {
         }
         public int getStopIdx2() {
             return stopIdx2;
+        }
+        public Sequence copy() {
+            Sequence cp = new Sequence();
+            cp.startIdx1 = startIdx1;
+            cp.startIdx2 = startIdx2;
+            cp.stopIdx2 = stopIdx2;
+            cp.absAvgSumDiffs = absAvgSumDiffs;
+            cp.fractionOfWhole = fractionOfWhole;
+            return cp;
         }
         @Override
         public String toString() {
@@ -1432,30 +1881,112 @@ public class PartialShapeMatcher {
         return max;
     }
 
-    private boolean intersectsExistingRange1(
-        List<Sequence> existingList, Sequence s) {
+    private boolean intersectsExistingRange(
+        List<Sequence> existingList, Sequence sTest,
+        int n1) {
 
-        int stopIdx1 = s.startIdx1 +
-            (s.stopIdx2 - s.startIdx2);
-        
-        for (Sequence s0 : existingList) {
-            
-            int s0stopIdx1 = s0.startIdx1 +
-                (s0.stopIdx2 - s0.startIdx2);
-            if (s.startIdx1 >= s0.startIdx1 &&
-                s.startIdx1 <= s0stopIdx1) {
-                return true;
-            }
-            if (stopIdx1 >= s0.startIdx1 &&
-                stopIdx1 <= s0stopIdx1) {
-                return true;
-            }
-            if (s.startIdx1 <= s0.startIdx1 &&
-                stopIdx1 >= s0stopIdx1) {
+        for (Sequence s : existingList) {
+            if (intersects(s, sTest, n1)) {
                 return true;
             }
         }
-
+        
         return false;
+    }
+    
+    private boolean intersects(Sequence s, Sequence sTest,
+        int n1) {
+        
+        int sTestStopIdx1 = sTest.startIdx1 +
+            (sTest.stopIdx2 - sTest.startIdx2);
+         
+        int stopIdx1 = s.startIdx1
+            + (s.stopIdx2 - s.startIdx2);
+        
+        // aggregation does not extend idx2 past n2-1
+        if (sTestStopIdx1 < n1 && stopIdx1 < n1) {
+            return intersectsNoWrapAroundCheck(s, sTest);
+        }
+
+        if (sTestStopIdx1 > (n1 - 1)) {
+            
+            sTestStopIdx1 -= n1;
+            
+            if (stopIdx1 > (n1 - 1)) {
+            
+                stopIdx1 -= n1;
+                
+                /*
+                s    : 0-->lastPoint     firstPoint   n-1   (lastPoint overrun)
+                
+                sTest: 0-->lastPoint     firstPoint   n-1   (lastPoint overrun)
+                */
+
+                // test that they don't intersect
+                if (sTestStopIdx1 > stopIdx1 && sTest.startIdx1 < s.startIdx1) {
+                    if ((sTest.stopIdx2 < s.startIdx2)
+                        || (sTest.startIdx2 > s.stopIdx2)) {
+                        return false;
+                    }
+                }
+                
+            } else {
+                /*
+                s    :              firstPoint  lastPoint   n-1
+                
+                sTest: 0-->lastPoint                     firstPoint   n-1   (lastPoint overrun)
+                */ 
+                // test that they do not intersect
+                if (sTestStopIdx1 < s.startIdx1 && sTest.startIdx1 > 
+                    stopIdx1) {
+                    if ((sTest.stopIdx2 < s.startIdx2)
+                        || (sTest.startIdx2 > s.stopIdx2)) {
+                        return false;
+                    }
+                }
+            }
+            
+        } else if (stopIdx1 > (n1 - 1)) {
+            
+            stopIdx1 -= n1;
+            
+            /*
+            s    : 0-->lastPoint                     firstPoint   n-1   (lastPoint overrun)
+                
+            sTest:              firstPoint  lastPoint 
+            */
+            // test that they do not intersect
+            if (stopIdx1 < sTest.startIdx1 && s.startIdx1 > 
+                sTestStopIdx1) {
+                if ((sTest.stopIdx2 < s.startIdx2)
+                    || (sTest.startIdx2 > s.stopIdx2)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean intersectsNoWrapAroundCheck(
+        Sequence s, Sequence sTest) {
+        
+        int sTestStopIdx1 = sTest.startIdx1 +
+            (sTest.stopIdx2 - sTest.startIdx2);
+         
+        int stopIdx1 = s.startIdx1
+            + (s.stopIdx2 - s.startIdx2);
+
+        // test that first indexes don't intersect
+        if ((sTestStopIdx1 < s.startIdx1)
+            || (sTest.startIdx1 > stopIdx1)) {
+            // test that second indexes don't intersect
+            if ((sTest.stopIdx2 < s.startIdx2)
+                || (sTest.startIdx2 > s.stopIdx2)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }
