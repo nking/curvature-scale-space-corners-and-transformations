@@ -203,14 +203,13 @@ public class PartialShapeMatcher {
             rMax = 2;
         }
                
-        // rebuild the sequential sequences by searching from
+        // build the matching sequential sequences by searching from
         // block size 2 to size sqrt(n1)
         extractSimilar(md, sequences, discarded, 2, rMax);
         
-        // starting with s0, aggregate from sequences
         Sequences sequences0 = matchArticulated(
             sequences, discarded, n1, n2);
-        
+     
         //addFeasibleDiscarded(sequences0, discarded);
         
         if (diffN <= 0) {
@@ -269,7 +268,7 @@ public class PartialShapeMatcher {
         */
         
         // ----- find sequential correspondences ----
-        
+ 
         for (int idx1 = 0; idx1 < n1; ++idx1) {
             TIntList list = equivBest.indexes[idx1];
             if (list == null) {
@@ -348,18 +347,6 @@ public class PartialShapeMatcher {
     }
     
     protected Sequences matchArticulated(List<Sequence> sequences,
-        List<Sequence> higherErrorSequences, Sequence s0, int n1, int n2) {
-
-        List<Sequences> tracks = new ArrayList<Sequences>();
-        Sequences track = new Sequences();
-        tracks.add(track);
-        track.sequences.add(s0.copy());
-        
-        return matchArticulated(sequences, higherErrorSequences, 
-            tracks, n1, n2);
-    }
-    
-    protected Sequences matchArticulated(List<Sequence> sequences,
         List<Sequence> higherErrorSequences, int n1, int n2) {
     
         // (1) choose the topK from sequences sorted by fraction
@@ -389,10 +376,6 @@ public class PartialShapeMatcher {
         
         print0(higherErrorSequences, "DS");
     
-        //(1) merge overlapping consistent
-        mergeOverlappingConsistent(seedTracks,
-            sequences, n1, n2);
-       
         print("sort0:", sequences);
         
         //TODO: revise the datastructures here to make the
@@ -1045,69 +1028,6 @@ public class PartialShapeMatcher {
                 Errors.populateYErrorsBySqrt(values));
         
         return hist;
-    }
-
-    private void mergeOverlappingConsistent(List<Sequences> 
-        seedTracks, List<Sequence> sequences, int n1, int n2) {
-
-        /*
-        NOTE: if seedTracks becomes a large number of
-        tracks, should use a data structure here to make
-        finding an intersection of ranges faster
-        (e.g. range tree).
-        */
-        
-        for (Sequences track : seedTracks) {
-            
-            assert(track.sequences.size() == 1);
-            
-            Sequence s0 = track.sequences.get(0);
-            int s0startIdx1 = s0.startIdx1;
-            int s0stopIdx1 = s0startIdx1 +
-                (s0.stopIdx2 - s0.startIdx2);
-            int s0Offset = s0.startIdx2 - s0.startIdx1;
-            
-            TIntSet skip = new TIntHashSet();
-            
-            boolean merged = true;
-            while (merged) {
-                merged = false;
-                for (int i = 0; i < sequences.size(); ++i) {
-                    if (skip.contains(i)) {
-                        continue;
-                    }
-                    Sequence s = sequences.get(i);
-                    int sOffset = s.startIdx2 - s.startIdx1;
-                    if (sOffset != s0Offset) {
-                        skip.add(i);
-                        continue;
-                    }
-                    int startIdx1 = s.startIdx1;
-                    int stopIdx1 = startIdx1 +
-                        (s.stopIdx2 - s.startIdx2);
-                    if (startIdx1 == s0startIdx1 && 
-                        stopIdx1 == s0stopIdx1) {
-                        skip.add(i);
-                        continue;
-                    }
-                    boolean doMerge = false;
-                    if (s0startIdx1 >= startIdx1 &&  
-                        s0startIdx1 <= stopIdx1) {
-                        doMerge = true;
-                    } else if (s0stopIdx1 >= startIdx1 &&
-                        s0stopIdx1 <= stopIdx1) {
-                        doMerge = true;
-                    } else if (s0startIdx1 <= startIdx1 &&
-                        s0stopIdx1 >= stopIdx1) {
-                        doMerge = true;
-                    }
-                    if (doMerge) {                      
-                        merged = merge(s0, s, n1, n2);
-                        skip.add(i);
-                    }
-                }
-            }
-        }   
     }
     
     protected void merge(List<Sequence> sequences, 
