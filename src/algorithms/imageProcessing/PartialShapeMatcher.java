@@ -181,51 +181,35 @@ public class PartialShapeMatcher {
         whole object which may be occluded and which
         may have parts which have separate rigid 
         rotation (such as the scissors opened bersus
-        closed).
+        closed) and which may include extended objects due
+        to the segmentation including a part of 
+        the background.
            
         caveats to the articulated match are that
         greedy solutions built by fraction of whole
         may have many different kinds of errors,
         but composing sequences with the top k 
-        fraction quickly leads to an unfeasibly
+        fraction (at every aggregation of sequential
+        segments) quickly leads to an unfeasibly
         large number of sequences to evaluate.
         
         */
         
         List<Sequence> sequences = new ArrayList<Sequence>();
         List<Sequence> discarded = new ArrayList<Sequence>();
-        
-        /*
-        choosing a block size of 3 to read from md and taking
-        the best fraction from that as the seed sequential
-        matches to build upon.
-        This will likely be increased to include more than
-        one with more testing.
-        */        
-        
-        extractSimilar(md, sequences, discarded, 3, 3);
-        
-        // sort by descending fraction of whole
-        Collections.sort(sequences, new SequenceComparator2());
-        
-        // pick the best as the starter sequence
-        Sequence s0 = sequences.get(0);
-                
+       
         int rMax = (int)Math.sqrt(n1);
         if (rMax < 2) {
             rMax = 2;
         }
-        
-        sequences = new ArrayList<Sequence>();
-        discarded = new ArrayList<Sequence>();
-                
+               
         // rebuild the sequential sequences by searching from
         // block size 2 to size sqrt(n1)
         extractSimilar(md, sequences, discarded, 2, rMax);
         
         // starting with s0, aggregate from sequences
         Sequences sequences0 = matchArticulated(
-            sequences, discarded, s0, n1, n2);
+            sequences, discarded, n1, n2);
         
         //addFeasibleDiscarded(sequences0, discarded);
         
@@ -380,7 +364,7 @@ public class PartialShapeMatcher {
     
         // (1) choose the topK from sequences sorted by fraction
         // and then add to those
-        int topK = 15;
+        int topK = 10 * (1 + ((int)Math.max(n1, n2))/250);
         
         Collections.sort(sequences, new SequenceComparator2());
                 
@@ -390,6 +374,7 @@ public class PartialShapeMatcher {
             Sequences track = new Sequences();
             tracks.add(track);
             track.sequences.add(s.copy());
+            log.info("seed " + i + " : " + s);
         }
         
         return matchArticulated(sequences, higherErrorSequences, 
@@ -455,6 +440,7 @@ public class PartialShapeMatcher {
                     int off = calcOffset12(st, n1);
                     if (off == offset) {                        
                         st = copy.remove(j);
+
                         if (!canAppend(currentTrack.sequences, st, n1)) {                                           
                             // merge, if mergeable, else it is appended
                             currentTrack.sequences.add(st.copy());
@@ -485,11 +471,11 @@ public class PartialShapeMatcher {
                     if (minDiffOffset <= maxDiffOffset) {                    
                         currentTrack.sequences.add(minOffsetS.copy());
                         copy.remove(minOffsetS);
-                        didAdd = true;
+                        didAdd = true;                      
                     }
                 }
             }
-            
+            /*
             Set<Sequence> exists = new HashSet<Sequence>(currentTrack.sequences);
             
             // add the top of sorted, if it fits into remaining space
@@ -525,11 +511,12 @@ public class PartialShapeMatcher {
                 }
                 if (st == null) {
                     break;
-                }
+                }  
                 currentTrack.sequences.add(st.copy());
                 copy2.remove(st);
                 didAdd = true;
             }
+            */
         }
         
         for (int i = 0; i < seedTracks.size(); ++i) {
@@ -1407,6 +1394,25 @@ public class PartialShapeMatcher {
         public int getStopIdx2() {
             return stopIdx2;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            
+            if (obj == null || !(obj instanceof Sequence)) {
+                return false;
+            }
+            
+            Sequence other = (Sequence)obj;
+            
+            if (startIdx1 == other.startIdx1 && 
+                startIdx2 == other.startIdx2 &&
+                stopIdx2 == other.stopIdx2) {
+                return true;
+            }
+            
+            return false;
+        }
+        
         public Sequence copy() {
             Sequence cp = new Sequence();
             cp.startIdx1 = startIdx1;
@@ -1477,6 +1483,35 @@ public class PartialShapeMatcher {
         
         @Override
         public int compare(Sequences o1, Sequences o2) {
+            
+            // prefer high fraction of whole, then diff
+            
+            // hard wiring a minimum size of 5 for segments
+            float ns = (float)(maxNPoints/5);
+           
+            float ns1 = 1.f - ((float)o1.sequences.size()/ns);
+            
+            float ns2 = 1.f - ((float)o2.sequences.size()/ns);
+            
+            float s1 = o1.fractionOfWhole;
+            float s2 = o2.fractionOfWhole;
+            
+            if (s1 > s2) {
+                return -1;
+            } else if (s1 < s2) {
+                return 1;
+            }
+            
+            if (ns1 > ns2) {
+                return -1;
+            } else if (ns1 < ns2) {
+                return 1;
+            }
+            
+            return 0;
+        }
+        
+        public int compareOther(Sequences o1, Sequences o2) {
             
             // adding a term to prefer the larger
             // fraction, but in a smaller number of 
