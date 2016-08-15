@@ -285,6 +285,22 @@ public class SequenceTest extends TestCase {
         the above will be missing the last numbers in 
         idx1
         */
+        /*
+        TODO:   
+           need to edit to not generate sequence
+           with length len that causes overrun in idx1
+        
+        SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
+            SEQ (41:0 to 49, f=1.0000 d=NaN  n1=50, n2=50)
+            SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
+should be written:
+            SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
+            SEQ (41:0 to 8, f=1.0000 d=NaN  n1=50, n2=50)
+            SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
+
+
+        */
+        
         
         int len = sr.nextInt(n1 - 1);
         

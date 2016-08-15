@@ -5,7 +5,47 @@ import java.util.logging.Logger;
 import sun.misc.Unsafe;
 
 /**
- *
+ <pe>
+The rules for sequence fields are
+presented here.  note that for
+best use as an api, they should be
+encapsuled by Sequences.java or other
+means.
+  The idx1 axis range is 0 to n1-1.
+  The idx2 axis range is 0 to n2-1.
+  The field offset is always g.e. 0.
+  The field startIdx1 is in range of n1.
+  The fields startIdx2 and stopIdx2 are
+  in range of n2. 
+  stopIdx2 is g.e. startIdx2.
+  The length of the sequence is stopIdx2 - startIdx2.
+  The implied stopIdx1 is g.e. startIdx1.
+Note that because the indexes are on
+  closed curves, the indexes at n1-1 are
+  adjacent to those at index 0.
+  The wrap-around is handled by cutting the
+  sequence into pieces that obey the above rules
+  and by adding a sentinel sequence when the
+  wrap around has occurred.
+  The sentinel sequence is setting the startIdx2
+  and stopIdx2 to value n2 (and the corresponding
+  startIdx1 caculated from the offset).
+
+    For example, a set of sequences that have
+    offset=1, n1=n2=4:
+                      start  stop  start   stop
+                       idx1   idx1   idx2   idx2
+      idx1: 0 1 2 3      0      2      1      3  --- seq 0
+      idx2: 1 2 3 0      3      3      4      4  --- seq 2
+                         3      3      0      0  --- seq 1
+
+ Another example, written in format written by toString():
+       offset=9, n1=n2=50
+
+       SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
+       SEQ (41:0 to 8, f=0.0800 d=NaN  n1=50, n2=50)
+       SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
+ </pre>
  * @author nichole
  */
 public class Sequence {
@@ -110,29 +150,14 @@ public class Sequence {
         For idx2, to handle wrap around, need to
         make sentinel sequences of value n2 and 0.
           
-        examples w/ n1=4; n2=4;
-        
-                          start  stop  start   stop
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      3      0      3
-        idx2: 0 1 2 3         
-        
-        a wrap around 
-        idx2 offset=1:     
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      2      1      3
-        idx2: 1 2 3 0      3      3      4      4
-                           3      3      0      0
-        
-        a wrap around 
-        idx2 offset=-1
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      0      3      3
-        idx2: 3 0 1 2      1      1      4      4
-                           1      1      0      0
-                           2      3      1      2
-        </pre>
-     
+       For example, written in format written by toString():
+       offset=9, n1=n2=50
+
+       SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
+       SEQ (41:0 to 8, f=0.0800 d=NaN  n1=50, n2=50)
+       SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
+       where the later is the stop sentinel sequence.
+       </pre>
      * @param mergeFrom
      * @return 
      */
@@ -159,11 +184,7 @@ public class Sequence {
             // this sequence should be followed by a 
             // sequence indicating it's the end sentinel, then
             // can return all 3 sequences
-            /*               idx1   idx1   idx2   idx2
-            idx1: 0 1 2 3      0      2      1      3
-            idx2: 1 2 3 0      3      3      4      4
-                               3      3      0      0  
-            
+            /*
             example w/ n1=n2=50 and offset=3
             48 :  1   49
             47 : 50   50
@@ -207,11 +228,7 @@ public class Sequence {
             // this sequence should be followed by a 
             // sequence indicating it's the end sentinel, then
             // can return all 3 sequences
-            /*               idx1   idx1   idx2   idx2
-            idx1: 0 1 2 3      0      2      1      3
-            idx2: 1 2 3 0      3      3      4      4
-                               3      3      0      0 
-            
+            /*
             example w/ n1=n2=50 and offset=3
             48 :  1   49
             47 : 50   50 
@@ -304,19 +321,7 @@ public class Sequence {
 
         // can merge if they are adjacent or 
         // intersecting.
-        
-        /*
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      2      1      3
-        idx2: 1 2 3 0      3      3      4      4
-                           3      3      0      0        
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      0      3      3
-        idx2: 3 0 1 2      1      1      4      4
-                           1      1      0      0
-                           2      3      1      2
-        */
-
+      
         assert(mergeInto.stopIdx2 >= mergeInto.startIdx2);
         assert(mergeFrom.stopIdx2 >= mergeFrom.startIdx2);
         
