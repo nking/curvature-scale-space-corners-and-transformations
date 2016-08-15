@@ -65,8 +65,8 @@ public class Sequence {
         int stopIdx1 = startIdx1
             + (stopIdx2 - startIdx2);
         
-        assert(sTestStopIdx1 < n1);
-        assert(stopIdx1 < n1);
+        assert(sTestStopIdx1 <= n1);
+        assert(stopIdx1 <= n1);
                 
         //       s s
         //  t t      t t
@@ -172,6 +172,24 @@ public class Sequence {
             idx2: 1 2 3 0      3      3      4      4
                                3      3      0      0  
             */
+            
+            // merge this and mergeFrom, then add a stop sentinel
+            Sequence mergeInto = copy();
+            
+            int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+            float f0 = mergeInto.fractionOfWhole;
+            float d0 = mergeInto.absAvgSumDiffs;
+            float d0Tot = d0 * len0;
+            int nAdded = mergeFrom.stopIdx2 - 
+                mergeInto.stopIdx2;
+            len0 += nAdded;
+            float d1Tot = mergeFrom.absAvgSumDiffs * 
+                (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+            d0Tot += (d1Tot/(float)nAdded);
+            mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+            mergeInto.fractionOfWhole = (float)len0/(float)n1;
+            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+            
             Sequence endS = new Sequence(n1, n2);
             endS.startIdx1 = 1 + mergeFrom.startIdx1 
                 + (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
@@ -185,7 +203,7 @@ public class Sequence {
             endS.absAvgSumDiffs = 0;
             log.info("***sentinels:" + 
                 mergeFrom + " \n " + endS + "\n " + this);
-            return new Sequence[]{mergeFrom, endS, this.copy()};
+            return new Sequence[]{mergeInto, endS};
         } else if (stopIdx2 == (n2 - 1) && 
             mergeFrom.isStartSentinel()) {
             // this sequence should be followed by a 
@@ -196,6 +214,24 @@ public class Sequence {
             idx2: 1 2 3 0      3      3      4      4
                                3      3      0      0  
             */
+            
+            // merge this and mergeFrom, then add a stop sentinel
+            Sequence mergeInto = mergeFrom.copy();
+            
+            int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+            float f0 = mergeInto.fractionOfWhole;
+            float d0 = mergeInto.absAvgSumDiffs;
+            float d0Tot = d0 * len0;
+            int nAdded = this.stopIdx2 - mergeInto.stopIdx2;
+   
+            len0 += nAdded;
+            float d1Tot = this.absAvgSumDiffs * 
+                (this.stopIdx2 - this.startIdx2 + 1);
+            d0Tot += (d1Tot/(float)nAdded);
+            mergeInto.stopIdx2 = this.stopIdx2;
+            mergeInto.fractionOfWhole = (float)len0/(float)n1;
+            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+            
             Sequence endS = new Sequence(n1, n2);
             endS.startIdx1 = 1 + startIdx1 + (stopIdx2 - startIdx2);
             endS.startIdx2 = n2;
@@ -244,7 +280,7 @@ public class Sequence {
         
         if (mergeInto.equals(mergeFrom)) {
             // these are same ranges, so let invoker remove mergeFrom
-            log.info("same sequence: " + " \n " + 
+            log.fine("same sequence: " + " \n " + 
                 mergeInto + " \n " + mergeFrom);
             return new Sequence[]{mergeInto};
         }
@@ -255,7 +291,7 @@ public class Sequence {
         int mFStopIdx1 = mergeFrom.startIdx1 +
             (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
         
-        assert(mFStopIdx1 < n1 && mIStopIdx1 < n1);
+        assert(mFStopIdx1 <= n1 && mIStopIdx1 <= n1);
 
         // can merge if they are adjacent or 
         // intersecting.
@@ -289,12 +325,40 @@ public class Sequence {
             int nAdded = mergeFrom.stopIdx2 - 
                 mergeInto.stopIdx2;
             len0 += nAdded;
+            
+            float d1Tot = mergeFrom.absAvgSumDiffs * 
+                (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+            d0Tot += (d1Tot/(float)nAdded);
+            
             mergeInto.stopIdx2 = mergeFrom.stopIdx2;
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
             
             sb.append("\n => ").append(mergeInto.toString());
+            
+            
+            // if stopIdx2 == n2-1, create a sentinel too
+            if (mergeInto.stopIdx2 == (n2 - 1)) {
+                Sequence endS = new Sequence(n1, n2);
+                endS.startIdx1 = 1 + mergeFrom.startIdx1 
+                    + (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
+                endS.startIdx2 = n2;
+                endS.stopIdx2 = n2;
+                // in order to not add to the class Sequences stats, 
+                // the end sentinel sequence will have values
+                // that do not affect the result, but this
+                // needs to be enforced elsewhere too.
+                endS.fractionOfWhole = 0;
+                endS.absAvgSumDiffs = 0;
+                
+                sb.append("\n  + sentinel=" + endS);
+                
+                return new Sequence[]{mergeInto, endS};
+            }
+            
             log.info(sb.toString());
+            
+            return new Sequence[]{mergeInto};
         }  
         if (!mergeInto.intersects(mergeFrom)) {
             log.info("NO MERGE: not intersecting: " + 
@@ -368,6 +432,11 @@ public class Sequence {
         float d0Tot = d0 * len0;
         int nAdded = mergeFrom.stopIdx2 - mergeInto.stopIdx2;
         len0 += nAdded;
+        
+        float d1Tot = mergeFrom.absAvgSumDiffs * 
+            (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+        d0Tot += (d1Tot/(float)nAdded);
+            
         mergeInto.stopIdx2 = mergeFrom.stopIdx2;
         mergeInto.fractionOfWhole = (float)len0/(float)n1;
         mergeInto.absAvgSumDiffs = d0Tot/(float)len0;

@@ -1,8 +1,12 @@
 package algorithms.imageProcessing.matching;
 
+import java.io.Console;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import junit.framework.TestCase;
 
 /**
@@ -146,13 +150,14 @@ public class SequenceTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance(
             "SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1471234517417L;
+        //seed = 1471239341724L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
+        System.out.flush();
         
         int n1 = 50;
         int n2 = n1;
-        int nSeq = 10;//10 * n2;
+        int nSeq = 10 * n2;
         
         int nTests = 1;
         for (int nTest = 0; nTest < nTests; ++nTest) {
@@ -165,8 +170,8 @@ public class SequenceTest extends TestCase {
             // hard wire while debugging
             offset12 = 0;
             
-            LinkedHashSet<Sequence> seqs = 
-                new LinkedHashSet<Sequence>();
+            List<Sequence> seqs = 
+                new ArrayList<Sequence>();
             
             for (int i = 0; i < nSeq; ++i) {
                 Sequence s0 = createSequence(n1, n2, sr, offset12);
@@ -178,12 +183,25 @@ public class SequenceTest extends TestCase {
             
             int nIter = 0;
             
+            // TODO: the sequences need to be sorted
+            // by startIdx1, then startIdx2
+            
             boolean didMerge = false;
             do {
                 
                 if (seqs.size() == 1) {
                     // break because loop below won't store it
                     break;
+                }
+                
+                // sort seqs
+                Collections.sort(seqs, new SequenceComparator4());
+                
+                if (seqs.size() == 2) {
+                    if (seqs.get(0).isStartSentinel() &&
+                        seqs.get(1).isStopSentinel()) {
+                        break;
+                    }
                 }
                 
                 System.out.println("seqs.size=" + seqs.size());
@@ -197,6 +215,10 @@ public class SequenceTest extends TestCase {
                 boolean prevMerged = false;
                 while (iter.hasNext()) {
                     Sequence s = iter.next();
+            
+            if (seqs.size() == 24) {
+               int z = 1;
+            }
                     Sequence[] merged = prev.merge(s);
                     if (merged == null) {
                         if (!prevMerged) {
@@ -269,7 +291,7 @@ public class SequenceTest extends TestCase {
         int len = sr.nextInt(n1 - 2 - offset) + 1;
         
         Sequence s = new Sequence(n1, n2);
-        s.startIdx1 = sr.nextInt(n1 - 1 - len - offset);
+        s.startIdx1 = sr.nextInt(n1 - len - offset);
         int stopIdx1 = s.startIdx1 + len;
         s.startIdx2 = s.startIdx1 + offset;
         s.stopIdx2 = s.startIdx2 + len;
