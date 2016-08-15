@@ -194,20 +194,20 @@ public class Sequence {
             // merge this and mergeFrom, then add a stop sentinel
             Sequence mergeInto = copy();
             
-            int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+            int len0 = mergeInto.length();
             float f0 = mergeInto.fractionOfWhole;
             float d0 = mergeInto.absAvgSumDiffs;
             float d0Tot = d0 * len0;
             int nAdded = mergeFrom.stopIdx2 - 
                 mergeInto.stopIdx2;
             len0 += nAdded;
-            float d1Tot = mergeFrom.absAvgSumDiffs * 
-                (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+            float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
             d0Tot += (d1Tot/(float)nAdded);
             mergeInto.stopIdx2 = mergeFrom.stopIdx2;
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-                 
+            assert(mergeInto.length() == len0);     
+            
             Sequence endS = new Sequence(n1, n2, offset);
             endS.startIdx1 = n1 - offset;
             endS.startIdx2 = n2;
@@ -238,19 +238,19 @@ public class Sequence {
             // merge this and mergeFrom, then add a stop sentinel
             Sequence mergeInto = mergeFrom.copy();
             
-            int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+            int len0 = mergeInto.length();
             float f0 = mergeInto.fractionOfWhole;
             float d0 = mergeInto.absAvgSumDiffs;
             float d0Tot = d0 * len0;
             int nAdded = this.stopIdx2 - mergeInto.stopIdx2;
    
             len0 += nAdded;
-            float d1Tot = this.absAvgSumDiffs * 
-                (this.stopIdx2 - this.startIdx2 + 1);
+            float d1Tot = this.absAvgSumDiffs * this.length();
             d0Tot += (d1Tot/(float)nAdded);
             mergeInto.stopIdx2 = this.stopIdx2;
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+            assert(mergeInto.length() == len0);
             
             Sequence endS = new Sequence(n1, n2, offset);
             endS.startIdx1 = n1 - offset;
@@ -321,7 +321,7 @@ public class Sequence {
 
         // can merge if they are adjacent or 
         // intersecting.
-      
+
         assert(mergeInto.stopIdx2 >= mergeInto.startIdx2);
         assert(mergeFrom.stopIdx2 >= mergeFrom.startIdx2);
         
@@ -332,7 +332,7 @@ public class Sequence {
                 .append(mergeInto).append("\n into ")
                 .append(mergeFrom);
             
-            int len0 = mergeInto.stopIdx2 - mergeInto.startIdx2 + 1;
+            int len0 = mergeInto.length();
             float f0 = mergeInto.fractionOfWhole;
             float d0 = mergeInto.absAvgSumDiffs;
             float d0Tot = d0 * len0;
@@ -340,13 +340,13 @@ public class Sequence {
                 mergeInto.stopIdx2;
             len0 += nAdded;
             
-            float d1Tot = mergeFrom.absAvgSumDiffs * 
-                (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+            float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
             d0Tot += (d1Tot/(float)nAdded);
             
             mergeInto.stopIdx2 = mergeFrom.stopIdx2;
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
+            assert(mergeInto.length() == len0);
             
             sb.append("\n => ").append(mergeInto.toString());
             
@@ -444,14 +444,14 @@ public class Sequence {
         int nAdded = mergeFrom.stopIdx2 - mergeInto.stopIdx2;
         len0 += nAdded;
         
-        float d1Tot = mergeFrom.absAvgSumDiffs * 
-            (mergeFrom.stopIdx2 - mergeFrom.startIdx2 + 1);
+        float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
         d0Tot += (d1Tot/(float)nAdded);
             
         mergeInto.stopIdx2 = mergeFrom.stopIdx2;
         mergeInto.fractionOfWhole = (float)len0/(float)n1;
         mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-
+        assert(mergeInto.length() == len0);
+        
         sb.append("\n => ").append(mergeInto.toString());
         log.info(sb.toString());
 

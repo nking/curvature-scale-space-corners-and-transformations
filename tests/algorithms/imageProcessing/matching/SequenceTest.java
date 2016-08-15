@@ -148,7 +148,7 @@ public class SequenceTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance(
             "SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1471293077611L;
+        seed = 1471293393476L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         System.out.flush();
@@ -274,43 +274,35 @@ public class SequenceTest extends TestCase {
         offset>=0
         offset=stopIdx2-stopIdx1=startIdx2-startIdx1
         len=stopIdx2-startIdx2=stopIdx1-startIdx1
-           stopIdx2  range: len+offset  : n1-1 + len + offset
-           startIdx2 range: offset      : n1-1 + offset
+           stopIdx2  range: len-1+offset  : n1-1 + len + offset
+           startIdx2 range: offset        : n1-1 + offset
         
-           stopIdx1  range: len         : n1-1 + len
-           startIdx1 range:   0         : n1-1
+           stopIdx1  range: len-1         : n1-1 + len
+           startIdx1 range:   0           : n1-1
        
         len = randomInt(n1-1)
         
         the above will be missing the last numbers in 
         idx1
         */
-        /*
-        TODO:   
-           need to edit to not generate sequence
-           with length len that causes overrun in idx1
         
-        SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
-            SEQ (41:0 to 49, f=1.0000 d=NaN  n1=50, n2=50)
-            SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
-should be written:
-            SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
-            SEQ (41:0 to 8, f=1.0000 d=NaN  n1=50, n2=50)
-            SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
-
-
-        */
-        
-        
-        int len = sr.nextInt(n1 - 1);
+        //len = stopIdx2 - startIdx2 + 1
+        int len = sr.nextInt(n1) + 1;
         
         Sequence s = new Sequence(n1, n2, offset);
         s.fractionOfWhole = (float)len/(float)n1;
         s.absAvgSumDiffs = 0;
         s.startIdx1 = sr.nextInt(n1);
-        int stopIdx1 = s.startIdx1 + len;
+        int stopIdx1 = s.startIdx1 + len - 1;
         if (stopIdx1 >= n1) {
-            stopIdx1 -= n1;
+            // truncate an rewrite length len
+            len -= (stopIdx1 - (n1 - 1));
+            if (len <= 0) {
+                // unlikely to be caught in endless loop
+                return createSequence(n1, n2, sr, offset);
+            }
+            stopIdx1 = s.startIdx1 + (len - 1);
+            s.fractionOfWhole = (float)len/(float)n1;
         }
         s.startIdx2 = s.startIdx1 + offset;
         if (s.startIdx2 >= n2) {
@@ -324,9 +316,9 @@ should be written:
             /* needs to return 2 sequences to
                keep idx2 ranges increasing in value
             example:
-            39:42 to 2  len=10, n1=n2=50
-               should be
-            39:42 to 49
+            39:42 to 2  len=11, n1=n2=50
+               should be    
+            39:42 to 49  len=8
             47:0  to 2
                since the code is handling the mergine,
                and there are many random sequences,
@@ -335,14 +327,15 @@ should be written:
                instead of returning 2 sequences. 
             */
             len -= (s.stopIdx2 - (n2-1));
-            s.fractionOfWhole = (float)len/(float)n1;
-            stopIdx1 = s.startIdx1 + len;
-            if (stopIdx1 >= n1) {
-                stopIdx1 -= n1;
+            if (len <= 0) {
+                // unlikely to be caught in endless loop
+                return createSequence(n1, n2, sr, offset);
             }
-            s.stopIdx2 = s.startIdx2 + len;
+            s.fractionOfWhole = (float)len/(float)n1;
+            stopIdx1 = s.startIdx1 + (len - 1);
+            s.stopIdx2 = s.startIdx2 + (len - 1);
             return s;
-        }        
+        }     
     }
     
 }
