@@ -308,9 +308,10 @@ public class SequenceTest extends TestCase {
         if (s.startIdx2 >= n2) {
             s.startIdx2 -= n2;
         }
-        s.stopIdx2 = s.startIdx2 + len;
+        s.stopIdx2 = s.startIdx2 + len - 1;
 
         if (s.stopIdx2 < n2) {
+            assert(s.length() == len);
             return s;
         } else {
             /* needs to return 2 sequences to
@@ -334,6 +335,7 @@ public class SequenceTest extends TestCase {
             s.fractionOfWhole = (float)len/(float)n1;
             stopIdx1 = s.startIdx1 + (len - 1);
             s.stopIdx2 = s.startIdx2 + (len - 1);
+            assert(s.length() == len);
             return s;
         }     
     }
