@@ -148,7 +148,7 @@ public class SequenceTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance(
             "SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1471279984472L;
+        //seed = 1471293077611L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         System.out.flush();
@@ -186,7 +186,7 @@ public class SequenceTest extends TestCase {
                 // sort seqs
                 Collections.sort(seqs, new SequenceComparator4());
                 
-                if (seqs.size() <= 4) {
+                if (seqs.size() <= 3) {
                     boolean found0 = false;
                     boolean found1 = false;
                     for (Sequence seq : seqs) {
