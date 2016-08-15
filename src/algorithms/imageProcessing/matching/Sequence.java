@@ -299,35 +299,44 @@ public class Sequence {
             return null;
         }
         
+        if (mergeInto.isStopSentinel() || mergeFrom.isStopSentinel()) {
+            return new Sequence[]{mergeInto, mergeFrom};
+        }
+        
         if (mergeInto.equals(mergeFrom)) {
             // these are same ranges, so let invoker remove mergeFrom
             log.fine("same sequence: " + " \n " + 
                 mergeInto + " \n " + mergeFrom);
             return new Sequence[]{mergeInto};
         }
-        
+
+        // a rule is that for a single sequence,
+        // the implied stops should be in range n1 too        
         int mIStopIdx1 = mergeInto.startIdx1 +
             (mergeInto.stopIdx2 - mergeInto.startIdx2);
         
         int mFStopIdx1 = mergeFrom.startIdx1 +
             (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
 
-        if (mIStopIdx1 >= n1) {
-            mIStopIdx1 -= n1;
-        }
-        if (mFStopIdx1 >= n1) {
-            mFStopIdx1 -= n1;
-        }   
-
+        assert(mIStopIdx1 <= n1);
+        assert(mFStopIdx1 <= n1);
+        
         // can merge if they are adjacent or 
         // intersecting.
+
+//if (!(mergeFrom.stopIdx2 >= mergeFrom.startIdx2)) {
+    log.info("****CHECK: " + 
+    "\n  mergeFrom=" + mergeFrom +
+    "\n  mergeIntp=" + mergeInto
+    + "\n   mIStopIdx1=" + mIStopIdx1);
+//}
 
         assert(mergeInto.stopIdx2 >= mergeInto.startIdx2);
         assert(mergeFrom.stopIdx2 >= mergeFrom.startIdx2);
         
         // -- check for adjacent (before intersects filter) --
         if ((mIStopIdx1 + 1) == mergeFrom.startIdx1) {
-           
+
             StringBuilder sb = new StringBuilder("*merge ")
                 .append(mergeInto).append("\n into ")
                 .append(mergeFrom);
@@ -605,9 +614,10 @@ public class Sequence {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format(
-            "(%d:%d to %d, f=%.4f d=%.4f  n1=%d, n2=%d)",
+            "(%d:%d to %d, f=%.4f d=%.4f  n1=%d, n2=%d offset=%d)",
             startIdx1, startIdx2, stopIdx2,
-            fractionOfWhole, absAvgSumDiffs, n1, n2));
+            fractionOfWhole, absAvgSumDiffs, n1, n2,
+            offset));
         return sb.toString();
     }
 }
