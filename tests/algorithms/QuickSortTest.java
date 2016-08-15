@@ -2,6 +2,10 @@ package algorithms;
 
 import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.util.PairInt;
+import gnu.trove.list.TDoubleList;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TDoubleArrayList;
+import gnu.trove.list.array.TIntArrayList;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -366,4 +370,24 @@ public class QuickSortTest extends TestCase {
         }
     }
 
+    public void testSortBy1stArg() {
+        
+        TIntList a = new TIntArrayList();
+        TDoubleList b = new TDoubleArrayList();
+        TIntList c = new TIntArrayList();
+        
+        for (int i = 0; i < 10; ++i) {
+            a.add(9 - i);
+            b.add(9 - i);
+            c.add(9 - i);
+        }
+        
+        QuickSort.sortBy1stArg(a, b, c);
+        
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(i, a.get(i));
+            assertEquals((double)i, b.get(i));
+            assertEquals(i, c.get(i));
+        }
+    }
 }

@@ -23,16 +23,18 @@ public class SequenceTest extends TestCase {
         Sequence s1, s2;
         int n1 = 187;
         int n2 = 231;
+        int offset;
         
         // 7:19 to 21
         // 11:23 to 29
-        s1 = new Sequence(n1, n2);
+        offset = 12;
+        s1 = new Sequence(n1, n2, offset);
         s1.startIdx1 = 7;
         s1.startIdx2 = 19;
         s1.stopIdx2 = 21;
         assertEquals(12, s1.calcOffset12());
         
-        s2 = new Sequence(n1, n2);
+        s2 = new Sequence(n1, n2, offset);
         s2.startIdx1 = 11;
         s2.startIdx2 = 23;
         s2.stopIdx2 = 29;
@@ -43,13 +45,14 @@ public class SequenceTest extends TestCase {
         
         // 17:54 to 62  n1=187  n2=231
         // 15:54 to 64
-        s1 = new Sequence(n1, n2);
+        
+        s1 = new Sequence(n1, n2, 54-17);
         s1.startIdx1 = 17;
         s1.startIdx2 = 54;
         s1.stopIdx2 = 62;
         assertEquals(54 - 17, s1.calcOffset12());
         
-        s2 = new Sequence(n1, n2);
+        s2 = new Sequence(n1, n2, 54-15);
         s2.startIdx1 = 15;
         s2.startIdx2 = 54;
         s2.stopIdx2 = 64;
@@ -59,13 +62,13 @@ public class SequenceTest extends TestCase {
         
         //43:0 to 8
         //44:0 to 7
-        s1 = new Sequence(n1, n2);
+        s1 = new Sequence(n1, n2, -43);
         s1.startIdx1 = 43;
         s1.startIdx2 = 0;
         s1.stopIdx2 = 8;
         assertEquals(0 - 43, s1.calcOffset12());
         
-        s2 = new Sequence(n1, n2);
+        s2 = new Sequence(n1, n2, -44);
         s2.startIdx1 = 44;
         s2.startIdx2 = 0;
         s2.stopIdx2 = 9;
@@ -73,13 +76,6 @@ public class SequenceTest extends TestCase {
         
         assertTrue(s1.intersects(s2));
         
-        n1 = 50;
-        n2 = 60;
-        s2 = new Sequence(n1, n2);
-        s2.startIdx1 = 44;
-        s2.startIdx2 = 0;
-        s2.stopIdx2 = 9;
-        assertEquals(n1 - 44, s2.calcOffset12());
     }
     
     public void estMerge() {
@@ -91,12 +87,12 @@ public class SequenceTest extends TestCase {
         
         // 2:11  34
         // 13:22 67
-        s1 = new Sequence(n1, n2);
+        s1 = new Sequence(n1, n2, 9);
         s1.startIdx1 = 2;
         s1.startIdx2 = 11;
         s1.stopIdx2 = 34;
         
-        s2 = new Sequence(n1, n2);
+        s2 = new Sequence(n1, n2, 9);
         s2.startIdx1 = 13;
         s2.startIdx2 = 22;
         s2.stopIdx2 = 67;
@@ -116,12 +112,12 @@ public class SequenceTest extends TestCase {
 
         //43:0 to 8
         //44:0 to 7
-        s1 = new Sequence(n1, n2);
+        s1 = new Sequence(n1, n2, -43);
         s1.startIdx1 = 43;
         s1.startIdx2 = 0;
         s1.stopIdx2 = 8;
         
-        s2 = new Sequence(n1, n2);
+        s2 = new Sequence(n1, n2, -44);
         s2.startIdx1 = 44;
         s2.startIdx2 = 0;
         s2.stopIdx2 = 9;
@@ -183,9 +179,6 @@ public class SequenceTest extends TestCase {
             
             int nIter = 0;
             
-            // TODO: the sequences need to be sorted
-            // by startIdx1, then startIdx2
-            
             boolean didMerge = false;
             do {
                 
@@ -215,10 +208,7 @@ public class SequenceTest extends TestCase {
                 boolean prevMerged = false;
                 while (iter.hasNext()) {
                     Sequence s = iter.next();
-            
-            if (seqs.size() == 24) {
-               int z = 1;
-            }
+          
                     Sequence[] merged = prev.merge(s);
                     if (merged == null) {
                         if (!prevMerged) {
@@ -251,9 +241,10 @@ public class SequenceTest extends TestCase {
                 System.out.println("SEQ " + s);
             }
             
-            //TODO: assert seqs2 is 3 or 4 in size
-            // and has the start sentinel and a 
-            // stop sentinel
+            assertEquals(2, seqs.size());
+            assertTrue(seqs.get(0).isStartSentinel());
+            assertTrue(seqs.get(1).isStopSentinel());
+          
         }
         
         // TODO: test for larger n where the calc offset
@@ -290,7 +281,7 @@ public class SequenceTest extends TestCase {
         */
         int len = sr.nextInt(n1 - 2 - offset) + 1;
         
-        Sequence s = new Sequence(n1, n2);
+        Sequence s = new Sequence(n1, n2, offset);
         s.startIdx1 = sr.nextInt(n1 - len - offset);
         int stopIdx1 = s.startIdx1 + len;
         s.startIdx2 = s.startIdx1 + offset;

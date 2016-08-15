@@ -21,10 +21,13 @@ public class Sequence {
 
     private final int n1;
     private final int n2;
+    private final int offset;
     
-    public Sequence(int nIndexes1, int nIndexes2) {
-         n1 = nIndexes1;
-         n2 = nIndexes2;
+    public Sequence(int nIndexes1, int nIndexes2,
+        int offset12) {
+        n1 = nIndexes1;
+        n2 = nIndexes2;
+        offset = offset12;
     }
     
     public int getN1() {
@@ -84,25 +87,7 @@ public class Sequence {
     }
         
     public int calcOffset12() {
-        
-        /* TODO: this might need to be revised.
-           trying to correct the offset for
-           correspondence near the sentinels
-           idx1: 0 1 2 3 
-           idx2: 3 0 1 2
-           offset is -1, but would be naively calculated
-           as 3. 
-           idx1: 1 2 3 4 0  
-           idx2: 3 4 0 1 2    5/2ceil=3-1=2 
-        */
-        
-        int offset0 = startIdx2 - startIdx1;
-        int offset1 = (n1 - startIdx1) + startIdx2;
-        if (Math.abs(offset0) <= Math.abs(offset1)) {
-            return offset0;
-        }
-        
-        return offset1;
+        return offset;
     }
 
     /**
@@ -190,7 +175,7 @@ public class Sequence {
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
             
-            Sequence endS = new Sequence(n1, n2);
+            Sequence endS = new Sequence(n1, n2, offset);
             endS.startIdx1 = 1 + mergeFrom.startIdx1 
                 + (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
             endS.startIdx2 = n2;
@@ -232,7 +217,7 @@ public class Sequence {
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
             
-            Sequence endS = new Sequence(n1, n2);
+            Sequence endS = new Sequence(n1, n2, offset);
             endS.startIdx1 = 1 + startIdx1 + (stopIdx2 - startIdx2);
             endS.startIdx2 = n2;
             endS.stopIdx2 = n2;
@@ -339,7 +324,7 @@ public class Sequence {
             
             // if stopIdx2 == n2-1, create a sentinel too
             if (mergeInto.stopIdx2 == (n2 - 1)) {
-                Sequence endS = new Sequence(n1, n2);
+                Sequence endS = new Sequence(n1, n2, offset);
                 endS.startIdx1 = 1 + mergeFrom.startIdx1 
                     + (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
                 endS.startIdx2 = n2;
@@ -581,7 +566,7 @@ public class Sequence {
     }
     
     public Sequence copy() {
-        Sequence cp = new Sequence(n1, n2);
+        Sequence cp = new Sequence(n1, n2, offset);
         cp.startIdx1 = startIdx1;
         cp.startIdx2 = startIdx2;
         cp.stopIdx2 = stopIdx2;
