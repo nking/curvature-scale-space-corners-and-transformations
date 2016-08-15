@@ -4,9 +4,11 @@ import java.io.Console;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import junit.framework.TestCase;
 
 /**
@@ -146,7 +148,7 @@ public class SequenceTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance(
             "SHA1PRNG");
         long seed = System.currentTimeMillis();
-        //seed = 1471239341724L;
+        seed = 1471279984472L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         System.out.flush();
@@ -159,12 +161,6 @@ public class SequenceTest extends TestCase {
         for (int nTest = 0; nTest < nTests; ++nTest) {
             
             int offset12 = sr.nextInt((n1 - 2)/2);
-            //if (sr.nextBoolean()) {
-            //    offset12 *= -1;
-            //}
-            
-            // hard wire while debugging
-            offset12 = 0;
             
             List<Sequence> seqs = 
                 new ArrayList<Sequence>();
@@ -190,9 +186,18 @@ public class SequenceTest extends TestCase {
                 // sort seqs
                 Collections.sort(seqs, new SequenceComparator4());
                 
-                if (seqs.size() == 2) {
-                    if (seqs.get(0).isStartSentinel() &&
-                        seqs.get(1).isStopSentinel()) {
+                if (seqs.size() <= 4) {
+                    boolean found0 = false;
+                    boolean found1 = false;
+                    for (Sequence seq : seqs) {
+                        if (seq.isStartSentinel()) {
+                            found0 = true;
+                        }
+                        if (seq.isStopSentinel()) {
+                            found1 = true;
+                        }
+                    }
+                    if (found0 && found1) {
                         break;
                     }
                 }
@@ -201,6 +206,8 @@ public class SequenceTest extends TestCase {
                 for (Sequence s : seqs) {
                     System.out.println(nIter + ": SEQ " + s);
                 }
+
+                Set<Sequence> processed = new HashSet<Sequence>();                
                 
                 didMerge = false;
                 Iterator<Sequence> iter = seqs.iterator();
@@ -208,18 +215,17 @@ public class SequenceTest extends TestCase {
                 boolean prevMerged = false;
                 while (iter.hasNext()) {
                     Sequence s = iter.next();
-          
+                    
                     Sequence[] merged = prev.merge(s);
                     if (merged == null) {
-                        if (!prevMerged) {
-                            seqs2.add(prev);
-                        }
+                        seqs2.add(prev);
                         seqs2.add(s);
                         prevMerged = false;
                         prev = s;
                     } else {
                         didMerge = true;
-                        prevMerged = true;
+                        seqs2.remove(prev);
+                        seqs2.remove(s);
                         for (Sequence st : merged) {
                             seqs2.add(st);
                             prev = st;
@@ -240,64 +246,87 @@ public class SequenceTest extends TestCase {
             for (Sequence s : seqs) {
                 System.out.println("SEQ " + s);
             }
-            
-            assertEquals(2, seqs.size());
-            assertTrue(seqs.get(0).isStartSentinel());
-            assertTrue(seqs.get(1).isStopSentinel());
-          
+              
+            assertTrue(seqs.size() <= 4);
+            boolean found0 = false;
+            boolean found1 = false;
+            for (Sequence seq : seqs) {
+                if (seq.isStartSentinel()) {
+                    found0 = true;
+                }
+                if (seq.isStopSentinel()) {
+                    found1 = true;
+                }
+            }
+            assertTrue(found0);
+            assertTrue(found1);          
         }
         
-        // TODO: test for larger n where the calc offset
-        // may need revision
+        // TODO: test for larger n1, n2 with mixed offsets
         
     }
 
     private Sequence createSequence(int n1, int n2, 
         SecureRandom sr, int offset) {
         
-        if (offset < 0) {
-            return createSequence1(n1, n2, sr, offset);
-        }
-        
-        return createSequence0(n1, n2, sr, offset);
-    }
-    
-    // tailored for positive offsets
-    private Sequence createSequence0(int n1, int n2, 
-        SecureRandom sr, int offset) {
-       
         /*
         n2 >= 0
         offset>=0
         offset=stopIdx2-stopIdx1=startIdx2-startIdx1
         len=stopIdx2-startIdx2=stopIdx1-startIdx1
-           stopIdx2  range: len+offset  : n1-1
-           startIdx2 range: offset      : n1-1-len
+           stopIdx2  range: len+offset  : n1-1 + len + offset
+           startIdx2 range: offset      : n1-1 + offset
         
-           stopIdx1  range: len         : n1-1-offset
-           startIdx1 range:   0         : n1-1-len-offset 
+           stopIdx1  range: len         : n1-1 + len
+           startIdx1 range:   0         : n1-1
        
-        len = randomInt(n1-1-offset)
+        len = randomInt(n1-1)
+        
+        the above will be missing the last numbers in 
+        idx1
         */
-        int len = sr.nextInt(n1 - 2 - offset) + 1;
+        
+        int len = sr.nextInt(n1 - 1);
         
         Sequence s = new Sequence(n1, n2, offset);
-        s.startIdx1 = sr.nextInt(n1 - len - offset);
-        int stopIdx1 = s.startIdx1 + len;
-        s.startIdx2 = s.startIdx1 + offset;
-        s.stopIdx2 = s.startIdx2 + len;
         s.fractionOfWhole = (float)len/(float)n1;
         s.absAvgSumDiffs = 0;
-        
-        return s;
-    }
-    
-    // tailored for offset < 0
-    private Sequence createSequence1(int n1, int n2, 
-        SecureRandom sr, int offset) {
-        
-        // calc ranges for offset<0
-        throw new UnsupportedOperationException("not yet impl");
+        s.startIdx1 = sr.nextInt(n1);
+        int stopIdx1 = s.startIdx1 + len;
+        if (stopIdx1 >= n1) {
+            stopIdx1 -= n1;
+        }
+        s.startIdx2 = s.startIdx1 + offset;
+        if (s.startIdx2 >= n2) {
+            s.startIdx2 -= n2;
+        }
+        s.stopIdx2 = s.startIdx2 + len;
+
+        if (s.stopIdx2 < n2) {
+            return s;
+        } else {
+            /* needs to return 2 sequences to
+               keep idx2 ranges increasing in value
+            example:
+            39:42 to 2  len=10, n1=n2=50
+               should be
+            39:42 to 49
+            47:0  to 2
+               since the code is handling the mergine,
+               and there are many random sequences,
+               including the 2nd portion,
+               will just truncate the range here
+               instead of returning 2 sequences. 
+            */
+            len -= (s.stopIdx2 - (n2-1));
+            s.fractionOfWhole = (float)len/(float)n1;
+            stopIdx1 = s.startIdx1 + len;
+            if (stopIdx1 >= n1) {
+                stopIdx1 -= n1;
+            }
+            s.stopIdx2 = s.startIdx2 + len;
+            return s;
+        }        
     }
     
 }
