@@ -9,7 +9,7 @@ import sun.misc.Unsafe;
 The rules for sequence fields are
 presented here.  note that for
 best use as an api, they should be
-encapsuled by Sequences.java or other
+encapsulated by Sequences.java or other
 means.
   The idx1 axis range is 0 to n1-1.
   The idx2 axis range is 0 to n2-1.
@@ -18,7 +18,7 @@ means.
   The fields startIdx2 and stopIdx2 are
   in range of n2. 
   stopIdx2 is g.e. startIdx2.
-  The length of the sequence is stopIdx2 - startIdx2.
+  The length of the sequence is stopIdx2 - startIdx2 + 1.
   The implied stopIdx1 is g.e. startIdx1.
 Note that because the indexes are on
   closed curves, the indexes at n1-1 are
@@ -29,7 +29,7 @@ Note that because the indexes are on
   wrap around has occurred.
   The sentinel sequence is setting the startIdx2
   and stopIdx2 to value n2 (and the corresponding
-  startIdx1 caculated from the offset).
+  startIdx1 calculated from the offset).
 
     For example, a set of sequences that have
     offset=1, n1=n2=4:
