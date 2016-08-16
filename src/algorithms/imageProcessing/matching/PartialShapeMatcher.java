@@ -263,26 +263,26 @@ public class PartialShapeMatcher {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
-
         /*
+ equivBest.sortListIndexes();
+        
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
-            sb.append(String.format("[%4d]: ", i));
-            TIntList list = equivBest.indexes[i];
-            if (list == null) {
-                sb.append("  NA");
-            } else {
-                list.sort();
-                for (int j = 0; j < list.size(); ++j) {
-                    sb.append(Integer.toString(list.get(j)));
-                    sb.append(",");
+            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
+            if (iad != null) {
+                LinkedList<IntIntDouble> list =
+                    iad.list;
+                for (IntIntDouble iid : list) {
+                    sb.append(String.format(
+                        "i=%d j=%d offset=%d d=%.4f\n", 
+                        i, iid.getA(), iid.getB(), 
+                        iid.getC()));
                 }
             }
-            sb.append(" | ");
             log.info(sb.toString());
             sb.delete(0, sb.length());
-        }
-        */
+        }*/
+        
 
         // ----- find sequential correspondences ----
         equivBest.sortListIndexes();
@@ -373,7 +373,7 @@ public class PartialShapeMatcher {
         // (1) choose the topK from sequences sorted by fraction
         // and then add to those
         int topK = 10 * (1 + (Math.max(n1, n2))/250);
-       
+        
         Collections.sort(sequences, new SequenceComparator2());
 
         List<Sequences> tracks = new ArrayList<Sequences>();
@@ -840,8 +840,8 @@ public class PartialShapeMatcher {
 
     private void print(String prefix, List<Sequence> sequences) {
         for (int i = 0; i < sequences.size(); ++i) {
-            System.out.println(String.format(
-                "%d %s %s", i, prefix, sequences.get(i)));
+            log.info(String.format("%d %s %s", i, prefix, 
+                sequences.get(i)));
         }
     }
 
@@ -1410,7 +1410,7 @@ public class PartialShapeMatcher {
         int count = 0;
 
         for (int jOffset = 0; jOffset < md.length; jOffset++) {
-            log.info(String.format("block=%d md[%d]", r, jOffset));
+            log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
             float sum = 0;
             //for (int i = 0; i < a.length; i+=r) {
@@ -1458,10 +1458,21 @@ public class PartialShapeMatcher {
                     mins[i] = s1;
                     idxs0[i] = jOffset;
 
+                    if (false)
                     // fill in the rest of the diagonal in this block
                     for (int k = (i-1); k > (i-r); k--) {
                         if (k < 0) {
                             break;
+                        }
+//NOTE: that the kOffset would need
+// to wrap around, suggest the summed
+// area table might need to be created
+// in opposite direction in y and read
+// in opposite direction here, (then kOffset is jOffset - 1, for example)
+// ...haven't thought this through yet... 
+                        int kOffset = n1 - (i - k);
+                        if (kOffset < 0) {
+                            continue;
                         }
                         if (absS1 < Math.abs(mins[k])) {
                             idx2 = k + jOffset;
@@ -1469,15 +1480,20 @@ public class PartialShapeMatcher {
                                 idx2 -= n1;
                             }
                             mins[k] = s1;
-                            idxs0[k] = jOffset;
+                            // for consistency between i and j, need an edited
+                            // offset instead of jOffset:
+                            idxs0[k] = kOffset;
+log.info("CHECK: i=" + i + " j=" + (i + jOffset)
++ " jOffset=" + jOffset + " k=" + k
++ " kOffset=" + kOffset + " r=" + r);
                         }
                     }
-                }
+                }//i=1.  j=i+joffset  k=
             }
             if (count == 0) {
                 sum = Integer.MAX_VALUE;
             }
-            log.info(String.format(
+            log.fine(String.format(
                 "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
 
@@ -1550,10 +1566,15 @@ public class PartialShapeMatcher {
 
                 output.add(i, idx2, jOffset, s1);
 
+                if (false)
                 // fill in the rest of the diagonal in this block
                 for (int k = (i-1); k > (i-r); k--) {
                     if (k < 0) {
                         break;
+                    }
+                    int kOffset = n1 - (i - k);
+                    if (kOffset < 0) {
+                        continue;
                     }
                     if ((k - r) > -1) {
                         s1 = a[k][k] - a[k-r][k] - a[k][k-r] +
@@ -1578,7 +1599,12 @@ public class PartialShapeMatcher {
                     if (idx2 >= n1) {
                         idx2 -= n1;
                     }
-                    output.add(k, idx2, jOffset, s1);
+log.info("CHECK: i=" + i + " j=" + (i + jOffset)
++ " jOffset=" + jOffset + " k=" + k
++ " kOffset=" + kOffset + " r=" + r);
+                    // for consistency between i and j, need an edited
+                    // offset instead of jOffset:
+                    output.add(k, idx2, kOffset, s1);
                 }
             }
         }
