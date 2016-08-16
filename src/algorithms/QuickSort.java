@@ -1,5 +1,6 @@
 package algorithms;
 
+import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -86,6 +87,15 @@ public class QuickSort {
         }
         
         sortBy1stArg(a, b, 0, a.length - 1);
+    }
+    
+    public static void sortByA(IntIntDouble[] abc) {
+        
+        if (abc == null) {
+            throw new IllegalArgumentException("abc cannot be null");
+        }
+        
+        sortByA(abc, 0, abc.length - 1);
     }
     
     /**
@@ -232,6 +242,55 @@ public class QuickSort {
             sortBy1stArg(a, b, c, idxLo, idxMid - 1);
 
             sortBy1stArg(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortByA(IntIntDouble[] abc, int idxLo, 
+        int idxHi) {
+        
+        if (abc == null) {
+            throw new IllegalArgumentException("abc cannot be null");
+        }
+        
+        if (abc.length < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            int x = abc[idxLo].getA();
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (abc[store].getA() < x));
+                do {
+                    idxMid--;
+                } while (abc[idxMid].getA() > x);
+                if (store > idxMid) {
+                    break;
+                }
+                IntIntDouble swap = abc[store];
+                abc[store] = abc[idxMid];
+                abc[idxMid] = swap;
+            }
+            IntIntDouble swap = abc[idxLo];
+            abc[idxLo] = abc[idxMid];
+            abc[idxMid] = swap;
+         
+            sortByA(abc, idxLo, idxMid - 1);
+
+            sortByA(abc, idxMid + 1, idxHi);
         }
     }
     

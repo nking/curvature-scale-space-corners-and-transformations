@@ -2,6 +2,7 @@ package algorithms;
 
 import algorithms.imageProcessing.util.PairIntWithIndex0;
 import algorithms.util.PairInt;
+import algorithms.util.IntIntDouble;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -388,6 +389,24 @@ public class QuickSortTest extends TestCase {
             assertEquals(i, a.get(i));
             assertEquals((double)i, b.get(i));
             assertEquals(i, c.get(i));
+        }
+    }
+    
+    public void testSortByA() {
+        
+        int n = 10;
+        
+        IntIntDouble[] abc = new IntIntDouble[n];
+    
+        for (int i = 0; i < abc.length; ++i) {
+            int v = n - 1 - i;
+            abc[i] = new IntIntDouble(v, v, v);
+        }
+        
+        QuickSort.sortByA(abc);
+        
+        for (int i = 0; i < abc.length; ++i) {
+            assertEquals(i, abc[i].getA());
         }
     }
 }

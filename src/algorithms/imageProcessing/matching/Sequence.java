@@ -1,6 +1,10 @@
 package algorithms.imageProcessing.matching;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.logging.Logger;
 import sun.misc.Unsafe;
 
@@ -131,8 +135,88 @@ public class Sequence {
        
         return true;
     }
+    
+    /**
+     * this method works best if sequences have the same offset
+     * due to internal re-ordering of the sequences.
+     * @param sequences 
+     */
+    public static void mergeSequences(List<Sequence> sequences) {
+
+        LinkedHashSet<Sequence> seqs2 = 
+            new LinkedHashSet<Sequence>();
         
-    public int calcOffset12() {
+        int nIter = 0;
+        
+        int nIterMax = 2 * sequences.size();
+        
+        boolean didMerge = false;
+        do {
+
+            if (sequences.size() == 1) {
+                // break because loop below won't store it
+                break;
+            }
+
+            // sort sequences
+            Collections.sort(sequences, new SequenceComparator4());
+
+            if (sequences.size() <= 3) {
+                boolean found0 = false;
+                boolean found1 = false;
+                for (Sequence seq : sequences) {
+                    if (seq.isStartSentinel()) {
+                        found0 = true;
+                    }
+                    if (seq.isStopSentinel()) {
+                        found1 = true;
+                    }
+                }
+                if (found0 && found1) {
+                    break;
+                }
+            }
+
+            System.out.println("seqs.size=" + 
+                sequences.size());
+            for (Sequence s : sequences) {
+                System.out.println(nIter + ": SEQ " + s);
+            }
+
+            didMerge = false;
+            Iterator<Sequence> iter = sequences.iterator();
+            Sequence prev = iter.next();
+            boolean prevMerged = false;
+            while (iter.hasNext()) {
+                Sequence s = iter.next();
+
+                Sequence[] merged = prev.merge(s);
+                if (merged == null) {
+                    seqs2.add(prev);
+                    seqs2.add(s);
+                    prevMerged = false;
+                    prev = s;
+                } else {
+                    didMerge = true;
+                    seqs2.remove(prev);
+                    seqs2.remove(s);
+                    for (Sequence st : merged) {
+                        seqs2.add(st);
+                        prev = st;
+                    }
+                }
+            }
+
+            sequences.clear();
+            sequences.addAll(seqs2);
+            seqs2.clear();
+
+            nIter++;
+
+        } while (didMerge);
+    }
+    
+    public int getOffset() {
         return offset;
     }
 
@@ -291,11 +375,11 @@ public class Sequence {
             mergeInto = this.copy();
         }
                 
-        if (mergeInto.calcOffset12() != 
-            mergeFrom.calcOffset12()) {
+        if (mergeInto.getOffset() != 
+            mergeFrom.getOffset()) {
             log.info("NO MERGE. offsets=" + 
-                mergeInto.calcOffset12() + " " +
-                mergeFrom.calcOffset12());
+                mergeInto.getOffset() + " " +
+                mergeFrom.getOffset());
             return null;
         }
         

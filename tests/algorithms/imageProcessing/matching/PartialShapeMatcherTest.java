@@ -1,12 +1,10 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.matching;
 
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.Arrays;
 import java.util.List;
-import algorithms.imageProcessing.PartialShapeMatcher.Sequences;
-import algorithms.imageProcessing.PartialShapeMatcher.Sequence;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -111,10 +109,10 @@ public class PartialShapeMatcherTest extends TestCase {
         */
 
         assertNotNull(sequences);
-        assertTrue(sequences.fractionOfWhole > 0.6);
+        assertTrue(sequences.getFractionOfWhole() > 0.6);
 
         // assert the correspondence range
-        List<Sequence> list = sequences.sequences;
+        List<Sequence> list = sequences.getSequences();
         for (Sequence s : list) {
             System.out.println("SEQ0=" + s);
         }
@@ -165,10 +163,10 @@ public class PartialShapeMatcherTest extends TestCase {
         */
 
         assertNotNull(sequences);
-        assertTrue(sequences.fractionOfWhole > 0.6);
+        assertTrue(sequences.getFractionOfWhole() > 0.6);
 
         // assert the correspondence range
-        List<Sequence> list = sequences.sequences;
+        List<Sequence> list = sequences.getSequences();
         for (Sequence s : list) {
             System.out.println("SEQ0=" + s);
         }
