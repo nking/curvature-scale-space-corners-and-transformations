@@ -4,6 +4,7 @@ import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.MiscMath;
 import algorithms.util.Errors;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
@@ -137,6 +138,9 @@ public class PartialShapeMatcher {
             md = createDifferenceMatrices(q, p);
         }
 
+        log.info("p=" + p.toString());
+        log.info("q=" + q.toString());
+       
         /*
         the matrices in md can be analyzed for best
         global solution and/or separately for best local
@@ -844,11 +848,79 @@ public class PartialShapeMatcher {
         sqs.clear();
         sqs.addAll(tr);
     }
+    
+    protected int[] findOffsets(List<Sequence> sequences) {
+        // histogram with bins 10 degrees in size
+        float[] values = new float[sequences.size()];
+
+        for (int i = 0; i < sequences.size(); ++i) {
+            values[i] = sequences.get(i).getOffset();
+        }
+
+        float binWidth = 10.f;
+        int nBins = 10;
+        HistogramHolder hist =
+            Histogram.createSimpleHistogram(
+                //binWidth,
+                nBins,
+                values,
+                Errors.populateYErrorsBySqrt(values));
+        
+        List<Integer> indexes = 
+            MiscMath.findStrongPeakIndexesDescSort(hist, 0.5f);
+        
+        int[] offsets;
+        if (indexes.size() >= 2) {
+            offsets = new int[] {
+                Math.round(hist.getXHist()[
+                    indexes.get(0).intValue()]),
+                Math.round(hist.getXHist()[
+                    indexes.get(1).intValue()])
+            };
+        } else if (indexes.size() == 1) {
+            offsets = new int[] {
+                Math.round(hist.getXHist()[
+                    indexes.get(0).intValue()])
+            };
+        } else {
+            offsets = null;
+        }
+        
+        return offsets;
+        
+        /*try {
+            hist.plotHistogram("offsets", "offsets");
+        } catch (Throwable t) {
+            
+        }*/
+    }
 
     private void print(String prefix, List<Sequence> sequences) {
+        
         for (int i = 0; i < sequences.size(); ++i) {
             log.info(String.format("%d %s %s", i, prefix, 
                 sequences.get(i)));
+        }
+        
+        // histogram with bins 10 degrees in size
+        float[] values = new float[sequences.size()];
+
+        for (int i = 0; i < sequences.size(); ++i) {
+            values[i] = sequences.get(i).getOffset();
+        }
+
+        float binWidth = 10.f;
+        int nBins = 10;
+        HistogramHolder hist =
+            Histogram.createSimpleHistogram(
+                //binWidth,
+                nBins,
+                values,
+                Errors.populateYErrorsBySqrt(values));
+        try {
+            hist.plotHistogram("offsets", "offsets");
+        } catch (Throwable t) {
+            
         }
     }
 
