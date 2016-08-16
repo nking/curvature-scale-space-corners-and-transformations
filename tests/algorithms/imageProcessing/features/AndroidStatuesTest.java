@@ -337,6 +337,7 @@ public class AndroidStatuesTest extends TestCase {
         -- when pattern is robust, witl consider a larger dp
            (which will make smaller number of points, hence
            speed up algorithm...larger dp's lose curvatur info though
+        
         */
         for (int i = 0; i < 4; ++i) {
             
@@ -417,7 +418,7 @@ public class AndroidStatuesTest extends TestCase {
             
             PartialShapeMatcher matcher = 
                 new PartialShapeMatcher();
-            matcher.overrideSamplingDistance(2);
+            matcher.overrideSamplingDistance(1);
 
             Sequences sequences = matcher.match(p, q);
             
@@ -541,6 +542,7 @@ public class AndroidStatuesTest extends TestCase {
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(img, 
             SIGMA.TWO);
+            //SIGMA.FOUR);
         
         Set<PairInt> blob = new HashSet<PairInt>();
         for (int i = 0; i < img.getNPixels(); ++i) {

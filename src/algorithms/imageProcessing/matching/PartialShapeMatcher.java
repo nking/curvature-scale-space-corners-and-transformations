@@ -257,7 +257,7 @@ public class PartialShapeMatcher {
         }
 
         // 10 degrees is 0.175
-        double tolerance = 0.2;//0.1;//0.25;
+        double tolerance = 0.25;//0.1;//0.25;
 
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = rMin; r <= rMax; ++r) {
@@ -1445,6 +1445,10 @@ public class PartialShapeMatcher {
                     ((i + jOffset - r + 1) < n2) ?
                     i + jOffset - r + 1 : (i + jOffset - r + 1) - n2,
                     s1*c));
+                
+log.fine("*CHECK: i=" + i + " j=" + (i + jOffset)
++ " jOffset=" + jOffset
++ " d=" + s1 + " r=" + r);
 
                 float absS1 = s1;
                 if (absS1 < 0) {
@@ -1459,7 +1463,7 @@ public class PartialShapeMatcher {
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
                     int idx2 = i + jOffset;
-                    if (idx2 >= n1) {
+                    if (idx2 >= n2) {
                         // idx2 - (n1-i) = offset
                         idx2 -= n1;
                     }
@@ -1472,28 +1476,22 @@ public class PartialShapeMatcher {
                         if (k < 0) {
                             break;
                         }
-//NOTE: that the kOffset would need
-// to wrap around, suggests the summed
-// area table might need to be created
-// in opposite direction in y and read
-// in opposite direction here, (then kOffset is jOffset - 1, for example)
-// ...haven't thought this through yet... 
                         int kOffset = n1 - (i - k);
                         if (kOffset < 0) {
                             continue;
                         }
                         if (absS1 < Math.abs(mins[k])) {
                             idx2 = k + jOffset;
-                            if (idx2 >= n1) {
+                            if (idx2 >= n2) {
                                 idx2 -= n1;
                             }
                             mins[k] = s1;
                             // for consistency between i and j, need an edited
                             // offset instead of jOffset:
                             idxs0[k] = kOffset;
-log.info("CHECK: i=" + i + " j=" + (i + jOffset)
+log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset + " k=" + k
-+ " kOffset=" + kOffset + " r=" + r);
++ " kOffset=" + kOffset + " d=" + s1 + " r=" + r);
                         }
                     }
                 }
@@ -1505,6 +1503,19 @@ log.info("CHECK: i=" + i + " j=" + (i + jOffset)
                 "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
 
+        {
+            for (int i = 0; i < idxs0.length; ++i) {
+                if (mins[i] == Float.MAX_VALUE) {
+                    continue;
+                }
+                int j = i + idxs0[i];
+                if (j > n2) {
+                    j -= n1;
+                }
+                System.out.println("i=" + i + " j=" 
+                + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
+            }
+        }
         log.fine("OFFSETS=" + Arrays.toString(idxs0));
         log.fine("mins=" + Arrays.toString(mins));
     }
@@ -1568,7 +1579,7 @@ log.info("CHECK: i=" + i + " j=" + (i + jOffset)
                 }
 
                 int idx2 = jOffset + i;
-                if (idx2 >= n1) {
+                if (idx2 >= n2) {
                     idx2 -= n1;
                 }
 
@@ -1604,10 +1615,10 @@ log.info("CHECK: i=" + i + " j=" + (i + jOffset)
                         continue;
                     }
                     idx2 = jOffset + k;
-                    if (idx2 >= n1) {
+                    if (idx2 >= n2) {
                         idx2 -= n1;
                     }
-log.info("CHECK: i=" + i + " j=" + (i + jOffset)
+log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset + " k=" + k
 + " kOffset=" + kOffset + " r=" + r);
                     // for consistency between i and j, need an edited
