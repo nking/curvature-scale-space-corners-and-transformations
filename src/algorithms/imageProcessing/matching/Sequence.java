@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.logging.Logger;
-import sun.misc.Unsafe;
 
 /**
  <pe>
@@ -398,7 +397,7 @@ public class Sequence {
         // the implied stops should be in range n1 too        
         int mIStopIdx1 = mergeInto.startIdx1 +
             (mergeInto.stopIdx2 - mergeInto.startIdx2);
-        
+
         int mFStopIdx1 = mergeFrom.startIdx1 +
             (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
 
@@ -624,64 +623,39 @@ public class Sequence {
         return hash;
     }
     
-    public void transpose() {
+    /**
+     * transpose the sequence to swap reference frames idx1
+     * with idx2.  more than one sequence is possibly
+     * returned to keep a format following class rules
+     * (see class documentation).
+     * @return 
+     */
+    public Sequence transpose() {
         
-        //TODO: this may need revision.
-        // the idx1 axis can wrap around and the
-        // idx2 axis does not.
-        // for consistency, may need to break
-        // a sequence into 2 to keep that pattern
-        // and may need to merge sequences after
-        // these changes.
-                
-        int n = stopIdx2 - startIdx2;
-        int tmpStartIdx2 = startIdx1;
-        startIdx1 = startIdx2;
-        startIdx2 = tmpStartIdx2;
-        stopIdx2 = startIdx2 + n;
-            
-        String errMsg = "jvm not allowing this method to "
-            + " change 2 variables.  The code needs to be edited "
-            + " and recompiled if this is the case.";
+        Sequence s0 = new Sequence(n2, n1, n2 - offset);
         
-        try {
-            // reset n1 and n2 which are final fields
-            
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            Unsafe unsafe = (Unsafe) f.get(null);
-
-            int tmpN1 = n1;
-            int tmpN2 = n2;
-
-            Field f2 = this.getClass().getDeclaredField("n1");
-            long offset = unsafe.objectFieldOffset(f2);
-            unsafe.putObject(this, offset, tmpN2);
-
-            f2 = this.getClass().getDeclaredField("n2");
-            offset = unsafe.objectFieldOffset(f2);
-            unsafe.putObject(this, offset, tmpN1);
-
-            assert (n1 == tmpN2);
-            assert (n2 == tmpN1);
-
-        } catch (NoSuchFieldException ex) {
-            log.severe(errMsg + " : " + ex.getMessage());
-        } catch (SecurityException ex) {
-            log.severe(errMsg + " : " + ex.getMessage());
-        } catch (IllegalArgumentException ex) {
-            log.severe(errMsg + " : " + ex.getMessage());
-        } catch (IllegalAccessException ex) {
-            log.severe(errMsg + " : " + ex.getMessage());
-        }
+        int len = length();
         
+        s0.startIdx1 = startIdx2;
+        s0.startIdx2 = startIdx1;
+        s0.stopIdx2 = startIdx1 + len;
+        //int stopIdx1 = stopIdx2;
+        
+        s0.absAvgSumDiffs = absAvgSumDiffs;
+        s0.fractionOfWhole = fractionOfWhole;
+        return s0;        
     }
     
     boolean assertNoWrapAround() {
         
-        int stopIdx1 = startIdx1 + (stopIdx2 - startIdx2);
+        int stopIdx1 = startIdx1 + length() - 1;
     
-        return (stopIdx1 < n1);
+        if (stopIdx1 > n1) {
+            log.info("WRAPPED? stopIdx1=" + stopIdx1 
+                + " : " + toString());
+        }
+        
+        return (stopIdx1 <= n1);
     }
     
     public Sequence copy() {
@@ -698,10 +672,10 @@ public class Sequence {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format(
-            "(%d:%d to %d, f=%.4f d=%.4f  n1=%d, n2=%d offset=%d)",
+            "(%d:%d to %d, f=%.4f d=%.4f  n1=%d, n2=%d offset=%d len=%d)",
             startIdx1, startIdx2, stopIdx2,
             fractionOfWhole, absAvgSumDiffs, n1, n2,
-            offset));
+            offset, length()));
         return sb.toString();
     }
 }

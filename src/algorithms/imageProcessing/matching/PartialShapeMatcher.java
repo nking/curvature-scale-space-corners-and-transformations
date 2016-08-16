@@ -372,8 +372,8 @@ public class PartialShapeMatcher {
 
         // (1) choose the topK from sequences sorted by fraction
         // and then add to those
-        int topK = 10 * (1 + ((int)Math.max(n1, n2))/250);
-
+        int topK = 10 * (1 + (Math.max(n1, n2))/250);
+       
         Collections.sort(sequences, new SequenceComparator2());
 
         List<Sequences> tracks = new ArrayList<Sequences>();
@@ -829,10 +829,13 @@ public class PartialShapeMatcher {
         sequences.setFractionOfWhole(f);
 
         List<Sequence> sqs = sequences.getSequences();
-
+        List<Sequence> tr = new ArrayList<Sequence>();
         for (Sequence s : sqs) {
-            s.transpose();
+            Sequence str = s.transpose();
+            tr.add(str);
         }
+        sqs.clear();
+        sqs.addAll(tr);
     }
 
     private void print(String prefix, List<Sequence> sequences) {

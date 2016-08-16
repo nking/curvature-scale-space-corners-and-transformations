@@ -11,11 +11,11 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
-import algorithms.imageProcessing.PartialShapeMatcher;
-import algorithms.imageProcessing.PartialShapeMatcher.Sequence;
-import algorithms.imageProcessing.PartialShapeMatcher.Sequences;
+import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
+import algorithms.imageProcessing.matching.Sequence;
+import algorithms.imageProcessing.matching.Sequences;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -315,7 +315,30 @@ public class AndroidStatuesTest extends TestCase {
         
         String fileName1 = "";
 
-        for (int i = 1; i < 4; ++i) {
+        /*
+        (required tol=0.25 or 0.35)
+        0: offset approx 0  NOTE: p.n=187 q.n=231, needed topJ=5
+        1: offset approx 0  NOTE: p.n=187 q.n=144, needs topJ=15
+                         correct answer is trck 3,
+                         sol= looking at tolerance and topK
+                         to make it trck 0.
+                         note that havne;t impl the append
+                         be min offset near offse too/
+                         nor did add back the higher error sequences/
+        2: 
+        3: offset approx 0  NOTE: p.n=187 q.n=181, needs topK=5
+           
+        -- the rigid model should solve this more easily
+           as it will have an eval stage for transformation.
+        -- meanwhile, could try two things with current model:
+            -- lower threshold in search of diff matrix then
+               filter to create a low and high threshold list
+               and solve both, keeping best.
+        -- when pattern is robust, witl consider a larger dp
+           (which will make smaller number of points, hence
+           speed up algorithm...larger dp's lose curvatur info though
+        */
+        for (int i = 0; i < 4; ++i) {
             
             switch(i) {
                 case 0: {
@@ -387,10 +410,14 @@ public class AndroidStatuesTest extends TestCase {
             
             PairIntArray q = extractOrderedBoundary(img);
             plot(q, (i+1)*100 + 1);
+
+            System.out.println("matching " + fileName0Root
+            + " to " + fileName1Root + " (" + p.getN() 
+            + " points to " + q.getN() + " points");
             
             PartialShapeMatcher matcher = 
                 new PartialShapeMatcher();
-            matcher.overrideSamplingDistance(3);
+            matcher.overrideSamplingDistance(2);
 
             Sequences sequences = matcher.match(p, q);
             
@@ -404,7 +431,7 @@ public class AndroidStatuesTest extends TestCase {
             CorrespondencePlotter plotter = new
                 CorrespondencePlotter(p, q);
             
-            for (Sequence s : sequences.getList()) {
+            for (Sequence s : sequences.getSequences()) {
                 int len = s.getStopIdx2() - s.getStartIdx2()
                     + 1;
                 for (int offset = 0; offset <= len; ++offset) {
@@ -420,8 +447,8 @@ public class AndroidStatuesTest extends TestCase {
                     int y1 = p.getY(idx1);
                     int x2 = q.getX(idx2);
                     int y2 = q.getY(idx2);
-                    System.out.println(String.format(
-                    "(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+                    //System.out.println(String.format(
+                    //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
                 
                     if ((offset % 5) == 0) {
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 
@@ -512,13 +539,16 @@ public class AndroidStatuesTest extends TestCase {
         GreyscaleImage img = image.copyToGreyscale();
         
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.blur(img, SIGMA.ONE);
+        imageProcessor.blur(img, 
+            SIGMA.TWO);
         
         Set<PairInt> blob = new HashSet<PairInt>();
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > 0) {
-                blob.add(new PairInt(img.getCol(i),
-                    img.getRow(i)));
+                int x = img.getCol(i);
+                int y = img.getRow(i);
+                img.setValue(x, y, 255);
+                blob.add(new PairInt(x, y));
             }
         }
         
