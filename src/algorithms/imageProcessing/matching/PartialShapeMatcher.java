@@ -263,6 +263,7 @@ public class PartialShapeMatcher {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
+        
         /*
  equivBest.sortListIndexes();
         
@@ -1446,13 +1447,14 @@ public class PartialShapeMatcher {
                 if (absS1 > threshold) {
                    continue;
                 }
-
+               
                 // note, idx from q is i + jOffset
                 count++;
                 sum += absS1;
                 if (absS1 < Math.abs(mins[i])) {
                     int idx2 = i + jOffset;
                     if (idx2 >= n1) {
+                        // idx2 - (n1-i) = offset
                         idx2 -= n1;
                     }
                     mins[i] = s1;
@@ -1465,7 +1467,7 @@ public class PartialShapeMatcher {
                             break;
                         }
 //NOTE: that the kOffset would need
-// to wrap around, suggest the summed
+// to wrap around, suggests the summed
 // area table might need to be created
 // in opposite direction in y and read
 // in opposite direction here, (then kOffset is jOffset - 1, for example)
@@ -1488,7 +1490,7 @@ log.info("CHECK: i=" + i + " j=" + (i + jOffset)
 + " kOffset=" + kOffset + " r=" + r);
                         }
                     }
-                }//i=1.  j=i+joffset  k=
+                }
             }
             if (count == 0) {
                 sum = Integer.MAX_VALUE;
@@ -1560,8 +1562,8 @@ log.info("CHECK: i=" + i + " j=" + (i + jOffset)
                 }
 
                 int idx2 = jOffset + i;
-                if (idx2 >= n2) {
-                    idx2 -= n2;
+                if (idx2 >= n1) {
+                    idx2 -= n1;
                 }
 
                 output.add(i, idx2, jOffset, s1);
