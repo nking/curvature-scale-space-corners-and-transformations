@@ -213,10 +213,11 @@ public class PartialShapeMatcher {
         if (rMax < 2) {
             rMax = 2;
         }
+        int rMin = 2;
 
         // build the matching sequential sequences by
         // searching from block size 2 to size sqrt(n1)
-        extractSimilar(md, sequences, discarded, 2, rMax);
+        extractSimilar(md, sequences, discarded, rMin, rMax);
 
         //changed to form adjacent segments where wrap
         // around is present, so assert format here
@@ -256,7 +257,7 @@ public class PartialShapeMatcher {
         }
 
         // 10 degrees is 0.175
-        double tolerance = 0.1;//0.25;
+        double tolerance = 0.2;//0.1;//0.25;
 
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = rMin; r <= rMax; ++r) {
@@ -374,11 +375,12 @@ public class PartialShapeMatcher {
         // (1) choose the topK from sequences sorted by fraction
         // and then add to those
         int topK = 10 * (1 + (Math.max(n1, n2))/250);
+        int end = (topK > sequences.size()) ? sequences.size() : topK;
         
         Collections.sort(sequences, new SequenceComparator2());
 
         List<Sequences> tracks = new ArrayList<Sequences>();
-        for (int i = 0; i < topK; ++i) {
+        for (int i = 0; i < end; ++i) {
             Sequence s = sequences.get(i);
             Sequences track = new Sequences();
             tracks.add(track);
@@ -459,6 +461,10 @@ public class PartialShapeMatcher {
         for (int i = 0; i < seedTracks.size(); ++i) {
             Sequences track = seedTracks.get(i);
             log.info("track " + i + ": " + track.toString());
+        }
+        
+        if (seedTracks.isEmpty()) {
+            return null;
         }
 
         return seedTracks.get(0);
