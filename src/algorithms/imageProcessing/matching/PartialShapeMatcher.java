@@ -218,8 +218,8 @@ public class PartialShapeMatcher {
             rMax = 2;
         }
         int rMin = 2;
-        //rMax = n1/4;
-        //rMin = rMax;
+   //     rMax = n1/4;
+   //     rMin = rMax;
 
         // build the matching sequential sequences by
         // searching from block size 2 to size sqrt(n1)
@@ -255,8 +255,8 @@ public class PartialShapeMatcher {
         int n1 = md[0].length;
 
         // 23 degrees is 0.4014
-        double thresh = 23. * Math.PI/180.;
-
+        double thresh = (Math.PI/180.) * 10.;//*23.;
+        
         MinDiffs mins = new MinDiffs(n1);
         for (int r = rMin; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -264,41 +264,26 @@ public class PartialShapeMatcher {
 
         // 10 degrees is 0.175
         double tolerance = 0.25;//0.1;//0.25;
-
+        
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = rMin; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
         
-        equivBest.sortListIndexes();
+        printEquivBest(equivBest);
         
+        equivBest.sortListIndexes();
+       
         int[] topOffsets = findTopOffsets(equivBest, n1, n2);
         
         if (topOffsets != null) {
             log.info("topOffsets=" + Arrays.toString(topOffsets));
         }
-        
-        /*
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < n1; ++i) {
-            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
-            if (iad != null) {
-                LinkedList<IntIntDouble> list =
-                    iad.list;
-                for (IntIntDouble iid : list) {
-                    sb.append(String.format(
-                        "i=%d j=%d offset=%d d=%.4f\n", 
-                        i, iid.getA(), iid.getB(), 
-                        iid.getC()));
-                }
-            }
-            log.info(sb.toString());
-            sb.delete(0, sb.length());
-        }*/
-        
+                
         // ----- find sequential correspondences ----
-        for (int idx1 = 0; idx1 < n1; ++idx1) {
+        for (int idx1 = 0; idx1 < equivBest.indexesAndDiff.length; 
+            ++idx1) {
 
             IndexesAndDiff indexesAndDiff =
                 equivBest.indexesAndDiff[idx1];
@@ -331,11 +316,11 @@ public class PartialShapeMatcher {
                     if (indexesAndDiff2 == null) {
                         break;
                     }
+                    
+                    int idx3 = s.stopIdx2 + 1;
 
                     Map<PairInt, IntIntDouble> jLookupMap2 =
                         indexesAndDiff2.jLookupMap;
-
-                    int idx3 = s.stopIdx2 + 1;
                     
                     PairInt key2 = new PairInt(idx3, offset);
                     IntIntDouble node2 = jLookupMap2.get(key2);
@@ -343,7 +328,7 @@ public class PartialShapeMatcher {
                         s.stopIdx2 = idx3;
 
                         diff = node2.getC();
-                        sumAbsDiff += Math.abs(diff);
+                        sumAbsDiff += diff;
 
                         LinkedList<IntIntDouble> list2
                             = indexesAndDiff2.list;
@@ -360,17 +345,18 @@ public class PartialShapeMatcher {
                 s.fractionOfWhole = (float)n/(float)n1;
                 s.absAvgSumDiffs = (float)(sumAbsDiff/(float)n);
 
-                if (s.stopIdx2 - s.startIdx2 > 1) {
-                    if (s.absAvgSumDiffs <= tolerance) {
+                if (s.length() > 1) {
+                    //TODO: tolerance should be calculted for length
+                    //if (s.absAvgSumDiffs <= tolerance) {
                         sequences.add(s);
                         log.info(String.format(
                             "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
                             (sequences.size() - 1),
                             s.startIdx1, s.startIdx2, s.stopIdx2,
                             s.fractionOfWhole, s.absAvgSumDiffs));
-                    } else if (s.absAvgSumDiffs <= 3*tolerance) {
-                        discarded.add(s);
-                    }
+                    //} else if (s.absAvgSumDiffs <= 3*tolerance) {
+                    //    discarded.add(s);
+                    //}
                 }
             }
         }
@@ -1252,6 +1238,28 @@ public class PartialShapeMatcher {
         return map;
     }
 
+    private void printEquivBest(DiffMatrixResults equivBest) {
+        
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
+            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
+            if (iad != null) {
+                LinkedList<IntIntDouble> list =
+                    iad.list;
+                for (IntIntDouble iid : list) {
+                    sb.append(String.format(
+                        "equivBest: i=%d j=%d offset=%d d=%.4f\n", 
+                        i, iid.getA(), iid.getB(), 
+                        iid.getC()));
+                }
+            }
+            if (sb.length() > 0) {
+                log.info(sb.toString());
+                sb.delete(0, sb.length());
+            }
+        }
+    }
+
     private class IndexesAndDiff {
 
         private final LinkedList<IntIntDouble> list;
@@ -1268,6 +1276,8 @@ public class PartialShapeMatcher {
 
         public void add(int j, int jOffset, double diff) {
 
+            assert(diff >= 0);
+            
             IntIntDouble node = new IntIntDouble(j, jOffset, diff);
 
             PairInt key = new PairInt(j, jOffset);
@@ -1276,7 +1286,7 @@ public class PartialShapeMatcher {
 
             if (existing != null) {
                 double diff0 = Math.abs(existing.getC());
-                if (diff0 > Math.abs(node.getC())) {
+                if (diff0 > node.getC()) {
                     list.add(node);
                     jLookupMap.put(key, node);
                 }
@@ -1288,15 +1298,21 @@ public class PartialShapeMatcher {
 
         void sortByJ() {
             
-            if (list.size() > 1) {
+            int n = list.size();
+            
+            if (n > 1) {
 
                 IntIntDouble[] a
-                    = list.toArray(new IntIntDouble[list.size()]);
+                    = list.toArray(new IntIntDouble[n]);
+                
                 QuickSort.sortByA(a);
+                
                 list.clear();
                 for (IntIntDouble abc : a) {
                     list.add(abc);
                 }
+                
+                assert(list.size() == n);
             }
 
             rewriteJLookupMap();
@@ -1590,6 +1606,8 @@ public class PartialShapeMatcher {
 
         int count = 0;
 
+        double lThresh = Math.sqrt(r) * threshold;
+        
         for (int jOffset = 0; jOffset < md.length; jOffset++) {
             log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
@@ -1624,18 +1642,14 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset
 + " d=" + s1 + " r=" + r);
 
-                float absS1 = s1;
-                if (absS1 < 0) {
-                    absS1 *= -1;
-                }
-                if (absS1 > threshold) {
+                if (s1 > lThresh) {
                    continue;
                 }
                
                 // note, idx from q is i + jOffset
                 count++;
-                sum += absS1;
-                if (absS1 < Math.abs(mins[i])) {
+                sum += s1;
+                if (s1 < Math.abs(mins[i])) {
                     int idx2 = i + jOffset;
                     if (idx2 >= n2) {
                         // idx2 - (n1-i) = offset
@@ -1654,7 +1668,14 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                         if (kOffset < 0) {
                             continue;
                         }
-                        if (absS1 < Math.abs(mins[k])) {
+                        if ((k - r) > -1) {
+                            s1 = a[k][k] - a[k-r][k] - a[k][k-r] +
+                                a[k-r][k-r];
+                        } else {
+                            s1 = a[k][k];
+                        }
+                        s1 *= c;
+                        if (s1 < Math.abs(mins[k])) {
                             idx2 = k + jOffset;
                             if (idx2 >= n2) {
                                 idx2 -= n1;
@@ -1686,7 +1707,7 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
                 if (j > n2) {
                     j -= n1;
                 }
-                System.out.println("i=" + i + " j=" 
+                log.info("MIN i=" + i + " j=" 
                 + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
             }
         }
@@ -1716,11 +1737,14 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
 
         double c = 1./(double)(r*r);
 
+        double lThresh = Math.sqrt(r) * threshold;
+        
         // capture all "best" within mins[i] += tolerance
 
         for (int jOffset = 0; jOffset < n2; jOffset++) {
             float[][] a = md[jOffset];
-            for (int i = 0; i < n1; i+=r) {
+            //for (int i = 0; i < n1; i+=r) {
+            for (int i = 0; i < n1; ++i) {
                 if (mins.idxs0[i] == -1) {
                     // there is no best for this p index
                     continue;
@@ -1737,12 +1761,13 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
                     s1 = a[i][i];
                 }
                 s1 *= c;
-
-                float absS1 = s1;
-                if (absS1 < 0) {
-                    absS1 *= -1;
+                
+                if (s1 < 0) {
+                    log.warning("s1=" + s1);
+                    s1 += -1;
                 }
-                if (absS1 > threshold) {
+
+                if (s1 > lThresh) {
                    continue;
                 }
 
@@ -1777,11 +1802,11 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
                     }
                     s1 *= c;
 
-                    absS1 = s1;
-                    if (absS1 < 0) {
-                        absS1 *= -1;
+                    s1 = s1;
+                    if (s1 < 0) {
+                        s1 *= -1;
                     }
-                    if (absS1 > threshold) {
+                    if (s1 > threshold) {
                         continue;
                     }
 
