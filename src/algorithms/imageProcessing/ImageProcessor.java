@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.MiscMath;
@@ -224,13 +225,19 @@ public class ImageProcessor {
                 
                 PairInt p = new PairInt(xp, yp);
                 
+                if (!convX.containsKey(p) || !convY.containsKey(p)) {
+                    continue;
+                }
+                
                 int vX = convX.get(p).intValue();
 
                 int vY = convY.get(p).intValue();
                 
                 int v = (int) Math.round(Math.sqrt(vX * vX + vY * vY));
 
-                outputGradientValues.put(p, Integer.valueOf(v));
+                if (v != 0) {
+                    outputGradientValues.put(p, Integer.valueOf(v));
+                }
             }
         }        
     }
@@ -602,13 +609,22 @@ if (sum > 511) {
                         }
                     }
                     
-                    int v = pointValues.get(new PairInt(x2, y2)).intValue();
+                    // TODO: revisit this for normalization
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!pointValues.containsKey(p2)) {
+                        continue;
+                    }
+                    
+                    int v = pointValues.get(p2).intValue();
 
                     sum += gg * v;
                     
                 } // end sum over kernl for a pixel
                 
-                output.put(p, Integer.valueOf((int) sum));
+                int v = Math.round(sum);
+                if (v != 0) {
+                    output.put(p, Integer.valueOf(v));
+                }
             }
         }
 
@@ -1318,6 +1334,13 @@ if (sum > 511) {
 
         applyKernel1D(input, kernel, false);
     }
+    
+    protected void blur(int[][] input, float[] kernel) {
+
+        applyKernel1D(input, kernel, true);
+
+        applyKernel1D(input, kernel, false);
+    }
 
     /**
      * apply a sigma=0.5 first derivative of Gaussian ([0.5, 0, -0.5], a.k.a. Sobel)
@@ -1641,6 +1664,31 @@ if (sum > 511) {
         }
 
         input.resetTo(output);
+    }
+    
+    public void applyKernel1D(int[][] input, float[] kernel,
+        boolean calcForX) {
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        int w = input.length;
+        int h = input[0].length;
+        
+        int[][] output = new int[w][];
+
+        for (int i = 0; i < w; i++) {
+            output[i] = new int[h];
+            for (int j = 0; j < h; j++) {
+                double conv = kernel1DHelper.convolvePointWithKernel(
+                    input, i, j, kernel, calcForX);
+                int g = (int)Math.round(conv);
+                output[i][j] = g;
+            }
+        }
+
+        for (int i = 0; i < w; i++) {
+            System.arraycopy(output[i], 0, input[i], 0, h);
+        }
     }
 
     public void applyKernel1D(GreyscaleImage input, float[] kernel,
@@ -5882,27 +5930,99 @@ if (sum > 511) {
         // apply post thinning corrections?
     }
 
-    public int[] getAverageRGB(Image img, PairIntArray pia) {
+    public int[] getAverageRGB(Image img, PairIntArray pArr) {
     
-        if (pia.getN() == 0) {
+        if (pArr.getN() == 0) {
             return null;
         }
         
         int rSum = 0;
         int gSum = 0;
         int bSum = 0;
-        for (int i = 0; i < pia.getN(); ++i) {
-            int x = pia.getX(i);
-            int y = pia.getY(i);
+        for (int i = 0; i < pArr.getN(); ++i) {
+            int x = pArr.getX(i);
+            int y = pArr.getY(i);
             rSum += img.getR(x, y);
             gSum += img.getG(x, y);
             bSum += img.getB(x, y);
         }
-        rSum /= pia.getN();
-        gSum /= pia.getN();
-        bSum /= pia.getN();
+        rSum /= pArr.getN();
+        gSum /= pArr.getN();
+        bSum /= pArr.getN();
         
         return new int[]{rSum, gSum, bSum};
+    }
+    
+    /**
+     * NOTE: needs testing...
+     * @param points
+     * @param sigma
+     */
+    public void blur(Set<PairInt> points, SIGMA sigma) {
+        
+        int[] minMaxXY = MiscMath.findMinMaxXY(points);
+        
+        int xLL = minMaxXY[0] - 10;
+        if (xLL < 0) {
+            xLL = 0;
+        }
+        int yLL = minMaxXY[2] - 10;
+        if (yLL < 0) {
+            yLL = 0;
+        }
+        
+        int xUR = minMaxXY[1] + 10;
+        int yUR = minMaxXY[3] + 10;
+        
+        int w = xUR - xLL + 1;
+        int h = yUR - yLL + 1;
+        
+        int[][] img = new int[w][];
+        for (int i = 0; i < w; ++i) {
+            img[i] = new int[h];
+        }
+        
+        for (PairInt p : points) {
+            int x = p.getX() - xLL;
+            int y = p.getY() - yLL;
+            img[x][y] = 126;
+        }
+        
+        // gaussian smoothing by sigma
+        float[] kernel = Gaussian1D.getKernel(sigma);
+        
+        blur(img, kernel);
+        
+        points.clear();
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                if (img[i][j] <= 0) {
+                    continue;
+                }
+                int x = i + xLL;
+                int y = j + yLL;
+                PairInt p = new PairInt(x, y);
+                points.add(p);
+            }
+        }
+    }
+    
+    /**
+     * NOTE: modifies input by the blur step.
+     * @param contiguousPoints
+     * @return 
+     */
+    public PairIntArray extractSmoothedOrderedBoundary(
+        Set<PairInt> contiguousPoints) {
+                
+        blur(contiguousPoints, SIGMA.TWO);
+        
+        PerimeterFinder2 finder = new PerimeterFinder2();
+        PairIntArray ordered = finder.extractOrderedBorder(
+            contiguousPoints);
+    
+        return ordered;
     }
     
 }
