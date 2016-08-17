@@ -1110,7 +1110,7 @@ public class MiscMath {
             int idx = minMaxIndexes.get(ii).intValue();
 
             if (idx > -1) {
-                // this is maximum
+                // this is a maxima
                 
                 boolean found = false;
                 
@@ -1386,7 +1386,7 @@ public class MiscMath {
 
         List<Integer> indexes = findStrongPeakIndexes(hist, fracMax);
         
-        if (indexes.size() < 2) {
+        if (indexes == null || indexes.size() < 2) {
             return indexes;
         }
         

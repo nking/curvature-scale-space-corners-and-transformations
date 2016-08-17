@@ -947,7 +947,7 @@ public class PartialShapeMatcher {
         }
         
         int[] offsets;
-        if (indexes.size() > 0) {
+        if (indexes != null && indexes.size() > 0) {
             int end = (indexes.size() < 3) ? indexes.size() : 3;
             offsets = new int[end];
             for (int j = 0; j < end; ++j) {
