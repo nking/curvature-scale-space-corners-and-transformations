@@ -10,14 +10,9 @@ import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -26,17 +21,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
-import javax.swing.JScrollPane;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -140,7 +130,7 @@ public class PartialShapeMatcher {
 
         log.info("p=" + p.toString());
         log.info("q=" + q.toString());
-       
+
         /*
         the matrices in md can be analyzed for best
         global solution and/or separately for best local
@@ -210,52 +200,87 @@ public class PartialShapeMatcher {
 
         */
 
-        List<Sequence> sequences = new ArrayList<Sequence>();
+        /*
+        pattern (1):
+            a. set rMax = n1/3 and use extractSimilat.
+            n. create Sequences from best of those results
+               without further use of matchArticulated
+            c. repeat a and b for rMax = n1/4
+            d. compare results and keep best
+            e. if optional (unimplemented) performEval is
+               set, create a projection to match the remaining
+               points which belong to the shape.
+        pattern (2):
+            same as patthern (1) except that 1.b. uses
+            matchArticulated
+        */
 
-        int rMax = (int)Math.sqrt(n1);
-        if (rMax < 2) {
-            rMax = 2;
+        boolean usePattern1 = true;
+        boolean performEval = false;
+        
+        int[] rs = new int[]{n1/3, n1/4};
+
+        List<Sequences> results =
+            new ArrayList<Sequences>();
+
+        for (int r : rs) {
+
+            List<Sequence> sequences = new ArrayList<Sequence>();
+
+            if (r < 2) {
+                // r=1 reads diagonal of 0's only
+                r = 2;
+            }
+
+            // build the matching sequential sequences by
+            // searching from block size rMin to size rMax, incl
+            extractSimilar(md, sequences, r, r);
+
+            //changed to form adjacent segments where wrap
+            // around is present, so assert format here
+            assert(assertNoWrapAround(sequences));
+
+            Sequences result;
+
+            if (usePattern1) {
+                result = createSequencesWithBest(sequences,n1, n2);
+            } else {
+                result = matchArticulated(sequences, n1, n2);
+                assert(assertNoWrapAround(sequences));
+            }
+
+            if (result != null) {
+                results.add(result);
+            }
         }
-        //TODO: need a pattern of trying longest
-        // separately and comparing results
-        int rMin = 2;
-        rMax = n1/3;// n1/4;
-        rMin = rMax;
 
-        // build the matching sequential sequences by
-        // searching from block size 2 to size sqrt(n1)
-        extractSimilar(md, sequences, rMin, rMax);
-
-        //changed to form adjacent segments where wrap
-        // around is present, so assert format here
-        assert(assertNoWrapAround(sequences));
-
-        Sequences sequences0 = matchArticulated(
-            sequences, n1, n2);
-
-        //TODO: need a pattern within matchArticulated 
-        // to try separate large 
-        // r block solutions and keep the best
-        // (rather than searching all r and aggregating
-        // sequences from all at same time)
         //TODO: an optional, but default evaluation
         // stage to match the remaining points with
         // a transformation model (and ransac)
         // that would include those separated by
         // occlusion and exclude those not part
         // of the p shape.
-
-        assert(assertNoWrapAround(sequences));
-
-        //addFeasibleDiscarded(sequences0, discarded);
-
+        Sequences best;
+        if (performEval) {
+            // solve for transformation, add points, and
+            // return best solution.
+            if (diffN <= 0) {
+                best = transformAndEvaluate(results, p, q, md);
+            } else {
+                best = transformAndEvaluate(results, q, p, md);
+            }
+        } else {
+            // compare fraction and sum of differences
+            best = findBest(results);
+        }
+        
         if (diffN <= 0) {
-            return sequences0;
+            return best;
         }
 
-        transpose(sequences0, n1, n2);
+        transpose(best, n1, n2);
 
-        return sequences0;
+        return best;
     }
 
     protected void extractSimilar(float[][][] md,
@@ -268,7 +293,7 @@ public class PartialShapeMatcher {
 
         // 23 degrees is 0.4014
         double thresh = (Math.PI/180.) * 10.;//*23.;
-        
+
         MinDiffs mins = new MinDiffs(n1);
         for (int r = rMin; r <= rMax; ++r) {
             findMinDifferenceMatrix(md, r, thresh, mins);
@@ -276,27 +301,27 @@ public class PartialShapeMatcher {
 
         // 10 degrees is 0.175
         double tolerance = 0.25;//0.1;//0.25;
-        
+
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
         for (int r = rMin; r <= rMax; ++r) {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
-                
+
         equivBest.sortListIndexes();
-       
+
         /*
         printEquivBest(equivBest);
-        
+
         int[] topOffsets = findTopOffsets(equivBest, n1, n2);
-        
+
         if (topOffsets != null) {
             log.info("topOffsets=" + Arrays.toString(topOffsets));
         }
         */
-                
+
         // ----- find sequential correspondences ----
-        for (int idx1 = 0; idx1 < equivBest.indexesAndDiff.length; 
+        for (int idx1 = 0; idx1 < equivBest.indexesAndDiff.length;
             ++idx1) {
 
             IndexesAndDiff indexesAndDiff =
@@ -330,12 +355,12 @@ public class PartialShapeMatcher {
                     if (indexesAndDiff2 == null) {
                         break;
                     }
-                    
+
                     int idx3 = s.stopIdx2 + 1;
 
                     Map<PairInt, IntIntDouble> jLookupMap2 =
                         indexesAndDiff2.jLookupMap;
-                    
+
                     PairInt key2 = new PairInt(idx3, offset);
                     IntIntDouble node2 = jLookupMap2.get(key2);
                     if (node2 != null) {
@@ -372,6 +397,38 @@ public class PartialShapeMatcher {
 
         log.info(sequences.size() + " sequences");
     }
+    
+    private Sequences createSequencesWithBest(
+        List<Sequence> sequences, int n1, int n2) {
+    
+        if (sequences.isEmpty()) {
+            return null;
+        }
+        
+        Collections.sort(sequences, new SequenceComparator2());
+
+        Sequence best = sequences.get(0);
+    
+        Sequences track = new Sequences();
+        track.getSequences().add(best);
+        
+        // calculate the stats for track
+        int sumLen = 0;
+        float sumFrac = 0;
+        double sumDiffs = 0;
+        for (Sequence s : track.getSequences()) {
+            int len = s.length();
+            float diff = s.absAvgSumDiffs * len;
+            sumLen += len;
+            sumDiffs += diff;
+            sumFrac += s.fractionOfWhole;
+        }
+        track.setAbsSumDiffs(sumDiffs);
+        track.setAvgSumDiffs((float)(sumDiffs/(float)sumLen));
+        track.setFractionOfWhole(sumFrac);
+
+        return track;
+    }
 
     protected Sequences matchArticulated(List<Sequence> sequences,
         int n1, int n2) {
@@ -380,7 +437,7 @@ public class PartialShapeMatcher {
         // and then add to those
         int topK = 10 * (1 + (Math.max(n1, n2))/250);
         int end = (topK > sequences.size()) ? sequences.size() : topK;
-        
+
         Collections.sort(sequences, new SequenceComparator2());
 
         List<Sequences> tracks = new ArrayList<Sequences>();
@@ -397,9 +454,9 @@ public class PartialShapeMatcher {
 
     protected Sequences matchArticulated(List<Sequence> sequences,
         List<Sequences> seedTracks, int n1, int n2) {
-        
+
         print0(sequences, "S");
-        
+
         // use histogram to find 2 highest peaks:
         int[] top2Offsets = findOffsets(sequences, n1, n2);
 
@@ -407,7 +464,7 @@ public class PartialShapeMatcher {
             log.info("top offsets=" + Arrays.toString(top2Offsets)
                 + " n1=" + n1 + " n2=" + n2);
         }
-        
+
         // (1) combine seedTracks that have same offset
         combineIfSameOffset(seedTracks);
 
@@ -440,7 +497,7 @@ public class PartialShapeMatcher {
             float sumFrac = 0;
             double sumDiffs = 0;
             for (Sequence s : track.getSequences()) {
-                int len = s.stopIdx2 - s.startIdx2 + 1;
+                int len = s.length();
                 float diff = s.absAvgSumDiffs * len;
                 sumLen += len;
                 sumDiffs += diff;
@@ -456,7 +513,7 @@ public class PartialShapeMatcher {
             Sequences track = seedTracks.get(i);
             log.info("track " + i + ": " + track.toString());
         }
-        
+
         if (seedTracks.isEmpty()) {
             return null;
         }
@@ -469,19 +526,19 @@ public class PartialShapeMatcher {
 
         // sort by desc fraction of whole
         Collections.sort(sequences, new SequenceComparator2());
-        
+
         for (int i = 0; i < sequences.size(); ++i) {
             log.info(String.format("FSORT %d  %s", i, sequences.get(i).toString()));
         }
-        
+
         // evaluate the topk items as a transformation
         int topK = 10 * (1 + (Math.max(n1, n2))/250);
         int end = (topK > sequences.size()) ? sequences.size() : topK;
-        
+
         for (int i = 0; i < sequences.size(); ++i) {
             Sequence s = sequences.get(i);
         }
-        
+
         throw new UnsupportedOperationException("not yet implemented");
     }
 
@@ -847,7 +904,7 @@ public class PartialShapeMatcher {
 
     private void transpose(Sequences sequences,
         int n1, int n2) {
-        
+
         if (sequences == null) {
             return;
         }
@@ -865,12 +922,12 @@ public class PartialShapeMatcher {
         sqs.clear();
         sqs.addAll(tr);
     }
-   
+
     protected int[] findTopOffsets(DiffMatrixResults equivBest,
         int n1, int n2) {
-        
+
         int n = 0;
-        
+
         for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
             IndexesAndDiff iad = equivBest.indexesAndDiff[i];
             if (iad == null) {
@@ -898,14 +955,14 @@ public class PartialShapeMatcher {
 
         return offsets;
     }
-    
+
     protected int[] findOffsetHistPeaks(float[] values,
         int n1, int n2) {
-        
+
         if (values == null || values.length == 0) {
             return null;
         }
-        
+
         float binWidth = 6.f;
         //int nBins = 10;
         HistogramHolder hist =
@@ -914,7 +971,7 @@ public class PartialShapeMatcher {
                 //nBins,
                 values,
                 Errors.populateYErrorsBySqrt(values));
-    
+
         // to help wrap around, moving items in last bin
         // into first bin.  then offset of 0 +- binWidth/2
         // should be present there
@@ -927,18 +984,18 @@ public class PartialShapeMatcher {
             hist.getYHist()[0] += hist.getYHist()[i];
             hist.getYHist()[i] = 0;
         }
-        
-        List<Integer> indexes = 
+
+        List<Integer> indexes =
             MiscMath.findStrongPeakIndexesDescSort(
             hist, 0.1f);
-        
+
         // also looking at last non zero
         int idx = MiscMath.findLastNonZeroIndex(hist);
         if (idx > -1) {
-            log.info("last non zero offset=" + 
+            log.info("last non zero offset=" +
                 hist.getXHist()[idx]);
         }
-        
+
         int[] offsets;
         if (indexes != null && indexes.size() > 0) {
             int end = (indexes.size() < 3) ? indexes.size() : 3;
@@ -957,27 +1014,27 @@ public class PartialShapeMatcher {
                 Math.round(hist.getXHist()[yPeakIdx])
             };
         }
-                
+
         try {
             hist.plotHistogram("offsets", "offsets");
         } catch (Throwable t) {
-            
+
         }
-        
+
         return offsets;
     }
-    
+
     protected int[] findOffsets(List<Sequence> sequences,
         int n1, int n2) {
-    
+
         // NOTE: if symmetry is present, might need
         // a period analysis
-        
+
         int n = 0;
         for (int i = 0; i < sequences.size(); ++i) {
             n += sequences.get(i).length();
         }
-        
+
         // histogram with bins 10 degrees in size
         float[] values = new float[n];
         n = 0;
@@ -991,14 +1048,14 @@ public class PartialShapeMatcher {
         }
 
         int[] offsets = findOffsetHistPeaks(values, n1, n2);
-        
+
         return offsets;
     }
 
     private void print(String prefix, List<Sequence> sequences) {
-        
+
         for (int i = 0; i < sequences.size(); ++i) {
-            log.info(String.format("%d %s %s", i, prefix, 
+            log.info(String.format("%d %s %s", i, prefix,
                 sequences.get(i)));
         }
     }
@@ -1010,7 +1067,7 @@ public class PartialShapeMatcher {
         // startIdx1 and print
 
         List<Sequence> copy = new ArrayList<Sequence>(sequences);
-        
+
         // desc sort by fraction
         Collections.sort(copy, new SequenceComparator2());
 
@@ -1232,7 +1289,7 @@ public class PartialShapeMatcher {
     }
 
     private void printEquivBest(DiffMatrixResults equivBest) {
-        
+
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
             IndexesAndDiff iad = equivBest.indexesAndDiff[i];
@@ -1241,8 +1298,8 @@ public class PartialShapeMatcher {
                     iad.list;
                 for (IntIntDouble iid : list) {
                     sb.append(String.format(
-                        "equivBest: i=%d j=%d offset=%d d=%.4f\n", 
-                        i, iid.getA(), iid.getB(), 
+                        "equivBest: i=%d j=%d offset=%d d=%.4f\n",
+                        i, iid.getA(), iid.getB(),
                         iid.getC()));
                 }
             }
@@ -1251,6 +1308,35 @@ public class PartialShapeMatcher {
                 sb.delete(0, sb.length());
             }
         }
+    }
+
+    private Sequences transformAndEvaluate(List<Sequences> results,
+        PairIntArray p, PairIntArray q, float[][][] md) {
+        
+        //NOTE: md is psssed in to be able to add stats of
+        // points found after transformation
+        
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private Sequences findBest(List<Sequences> results) {
+    
+        // keep the result with higher fraction.
+        
+        // NOTE: may need to revise to include abs difference
+        
+        Sequences best = null;
+        float bestFraction = Float.MIN_VALUE;
+        for (Sequences result : results) {
+            float frac = result.getFractionOfWhole();
+            log.info("result: " + result.toString());
+            if (frac > bestFraction) {
+                best = result;
+                bestFraction = frac;
+            }
+        }
+
+        return best;        
     }
 
     private class IndexesAndDiff {
@@ -1270,7 +1356,7 @@ public class PartialShapeMatcher {
         public void add(int j, int jOffset, double diff) {
 
             assert(diff >= 0);
-            
+
             IntIntDouble node = new IntIntDouble(j, jOffset, diff);
 
             PairInt key = new PairInt(j, jOffset);
@@ -1283,28 +1369,28 @@ public class PartialShapeMatcher {
                     list.add(node);
                     jLookupMap.put(key, node);
                 }
-            } else {            
+            } else {
                 list.add(node);
                 jLookupMap.put(key, node);
             }
         }
 
         void sortByJ() {
-            
+
             int n = list.size();
-            
+
             if (n > 1) {
 
                 IntIntDouble[] a
                     = list.toArray(new IntIntDouble[n]);
-                
+
                 QuickSort.sortByA(a);
-                
+
                 list.clear();
                 for (IntIntDouble abc : a) {
                     list.add(abc);
                 }
-                
+
                 assert(list.size() == n);
             }
 
@@ -1600,7 +1686,7 @@ public class PartialShapeMatcher {
         int count = 0;
 
         double lThresh = Math.sqrt(r) * threshold;
-        
+
         for (int jOffset = 0; jOffset < md.length; jOffset++) {
             log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
@@ -1630,7 +1716,7 @@ public class PartialShapeMatcher {
                     ((i + jOffset - r + 1) < n2) ?
                     i + jOffset - r + 1 : (i + jOffset - r + 1) - n2,
                     s1*c));
-                
+
 log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset
 + " d=" + s1 + " r=" + r);
@@ -1638,7 +1724,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 if (s1 > lThresh) {
                    continue;
                 }
-               
+
                 // note, idx from q is i + jOffset
                 count++;
                 sum += s1;
@@ -1668,15 +1754,15 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 if (j > n2) {
                     j -= n1;
                 }
-                log.info("MIN i=" + i + " j=" 
+                log.info("MIN i=" + i + " j="
                 + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
             }
         }
         */
-        
+
         log.fine("OFFSETS=" + Arrays.toString(idxs0));
         log.fine("mins=" + Arrays.toString(mins));
-    
+
     }
 
     /**
@@ -1702,7 +1788,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
         double c = 1./(double)(r*r);
 
         double lThresh = Math.sqrt(r) * threshold;
-        
+
         // capture all "best" within mins[i] += tolerance
 
         for (int jOffset = 0; jOffset < n2; jOffset++) {
@@ -1725,7 +1811,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                     s1 = a[i][i];
                 }
                 s1 *= c;
-                
+
                 if (s1 < 0) {
                     if (s1 < -0.016) {
                         // warn if resolution errors are 1 degree or more
