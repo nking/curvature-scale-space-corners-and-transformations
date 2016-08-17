@@ -234,6 +234,18 @@ public class PartialShapeMatcher {
         Sequences sequences0 = matchArticulated(
             sequences, discarded, n1, n2);
 
+        //TODO: need a pattern within matchArticulated 
+        // to try separate large 
+        // r block solutions and keep the best
+        // (rather than searching all r and aggregating
+        // sequences from all at same time)
+        //TODO: an optional, but default evaluation
+        // stage to match the remaining points with
+        // a transformation model (and ransac)
+        // that would include those separated by
+        // occlusion and exclude those not part
+        // of the p shape.
+
         assert(assertNoWrapAround(sequences));
 
         //addFeasibleDiscarded(sequences0, discarded);
@@ -426,22 +438,12 @@ public class PartialShapeMatcher {
             Sequence.mergeSequences(track.getSequences());
         }
 
-        // (4) add to seedTracks, the best of nearest offsets
-        //     within a tolerance, if they don't intersect
-        //     a current range
-        int maxDiffOffset = 5;
-        // -- if does not intersect existing range
-        // -- if is consistent clockwise
-        
-
         assert(assertNoWrapAround2(seedTracks));
 
         for (int i = 0; i < seedTracks.size(); ++i) {
             Sequences track = seedTracks.get(i);
             log.info("pre-sorted track " + i + ": " + track.toString());
         }
-
-        //filterForConsistentClockwise(tracks);
 
         // calculate the stats for each track (== Sequences)
         for (Sequences track : seedTracks) {
