@@ -1652,43 +1652,10 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 if (s1 < Math.abs(mins[i])) {
                     int idx2 = i + jOffset;
                     if (idx2 >= n2) {
-                        // idx2 - (n1-i) = offset
-                        idx2 -= n1;
+                        idx2 -= n2;
                     }
                     mins[i] = s1;
                     idxs0[i] = jOffset;
-
-                    if (false)
-                    // fill in the rest of the diagonal in this block
-                    for (int k = (i-1); k > (i-r); k--) {
-                        if (k < 0) {
-                            break;
-                        }
-                        int kOffset = n1 - (i - k);
-                        if (kOffset < 0) {
-                            continue;
-                        }
-                        if ((k - r) > -1) {
-                            s1 = a[k][k] - a[k-r][k] - a[k][k-r] +
-                                a[k-r][k-r];
-                        } else {
-                            s1 = a[k][k];
-                        }
-                        s1 *= c;
-                        if (s1 < Math.abs(mins[k])) {
-                            idx2 = k + jOffset;
-                            if (idx2 >= n2) {
-                                idx2 -= n1;
-                            }
-                            mins[k] = s1;
-                            // for consistency between i and j, need an edited
-                            // offset instead of jOffset:
-                            idxs0[k] = kOffset;
-log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
-+ " jOffset=" + jOffset + " k=" + k
-+ " kOffset=" + kOffset + " d=" + s1 + " r=" + r);
-                        }
-                    }
                 }
             }
             if (count == 0) {
@@ -1782,51 +1749,10 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
 
                 int idx2 = jOffset + i;
                 if (idx2 >= n2) {
-                    idx2 -= n1;
+                    idx2 -= n2;
                 }
 
                 output.add(i, idx2, jOffset, s1);
-
-                if (false)
-                // fill in the rest of the diagonal in this block
-                for (int k = (i-1); k > (i-r); k--) {
-                    if (k < 0) {
-                        break;
-                    }
-                    int kOffset = n1 - (i - k);
-                    if (kOffset < 0) {
-                        continue;
-                    }
-                    if ((k - r) > -1) {
-                        s1 = a[k][k] - a[k-r][k] - a[k][k-r] +
-                            a[k-r][k-r];
-                    } else {
-                        s1 = a[k][k];
-                    }
-                    s1 *= c;
-
-                    s1 = s1;
-                    if (s1 < 0) {
-                        s1 *= -1;
-                    }
-                    if (s1 > threshold) {
-                        continue;
-                    }
-
-                    if (Math.abs(s1 - best) > tolerance) {
-                        continue;
-                    }
-                    idx2 = jOffset + k;
-                    if (idx2 >= n2) {
-                        idx2 -= n1;
-                    }
-log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
-+ " jOffset=" + jOffset + " k=" + k
-+ " kOffset=" + kOffset + " r=" + r);
-                    // for consistency between i and j, need an edited
-                    // offset instead of jOffset:
-                    output.add(k, idx2, kOffset, s1);
-                }
             }
         }
     }

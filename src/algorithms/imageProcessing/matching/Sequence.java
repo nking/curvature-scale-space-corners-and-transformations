@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- <pe>
+ <pre>
 The rules for sequence fields are
 presented here.  note that for
 best use as an api, they should be
@@ -292,7 +292,7 @@ public class Sequence {
             assert(mergeInto.length() == len0);     
             
             Sequence endS = new Sequence(n1, n2, offset);
-            endS.startIdx1 = n1 - offset;
+            endS.startIdx1 = n2 - offset;
             endS.startIdx2 = n2;
             endS.stopIdx2 = n2;
             // in order to not add to the class Sequences stats, 
@@ -336,7 +336,7 @@ public class Sequence {
             assert(mergeInto.length() == len0);
             
             Sequence endS = new Sequence(n1, n2, offset);
-            endS.startIdx1 = n1 - offset;
+            endS.startIdx1 = n2 - offset;
             endS.startIdx2 = n2;
             endS.stopIdx2 = n2;
             // in order to not add to the class Sequences stats, 
@@ -451,7 +451,7 @@ public class Sequence {
                 47 :  0    0
                 */
                 Sequence endS = new Sequence(n1, n2, offset);
-                endS.startIdx1 = n1 - offset;
+                endS.startIdx1 = n2 - offset;
                 endS.startIdx2 = n2;
                 endS.stopIdx2 = n2;
                 // in order to not add to the class Sequences stats, 
@@ -632,7 +632,7 @@ public class Sequence {
      */
     public Sequence transpose() {
         
-        Sequence s0 = new Sequence(n2, n1, n2 - offset);
+        Sequence s0 = new Sequence(n2, n1, n1 - offset);
         
         int len = length();
         
