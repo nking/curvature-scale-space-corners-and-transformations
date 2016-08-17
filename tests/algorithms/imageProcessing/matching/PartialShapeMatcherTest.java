@@ -1,6 +1,10 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.SIGMA;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.Arrays;
@@ -76,11 +80,11 @@ public class PartialShapeMatcherTest extends TestCase {
         
         // 60
         PairIntArray p = getScissors1();
-        //plot(p, 200);
+        plot(p, 200);
         
         // 63
         PairIntArray q = getScissors2();
-        //plot(q, 201);
+        plot(q, 201);
         
         System.out.println("p.n=" + p.getN() 
             + " q.n=" + q.getN());
@@ -180,24 +184,24 @@ public class PartialShapeMatcherTest extends TestCase {
         PairIntArray p = new PairIntArray();
         p.add(95,55); p.add(102,52); p.add(108,42);
         p.add(110,35); p.add(118,28); p.add(128,25);
-        p.add(135,25); p.add(142,27); p.add(152,32);
-        p.add(150,40); p.add(142,48); p.add(135,52);
-        p.add(128,58); p.add(119,59); p.add(110,60);
+        p.add(135,25); p.add(142,27); p.add(152,32);    //6, 7, 8
+        p.add(150,40); p.add(143,48); p.add(136,52);    //9, 10, 11
+        p.add(128,56); p.add(119,59); p.add(110,60);    // 12
         p.add(102,62); p.add(95,65); p.add(100,72);
         p.add(108,80); p.add(115,87); p.add(122,95);      // 18,19,20
-        p.add(128,104); p.add(130,111); p.add(130,120);   // 21,22, 23
-        p.add(125,120); p.add(116,122); p.add(108,122);
+        p.add(128,104); p.add(130,111); p.add(131,121);   // 21,22, 23
+        p.add(124,122); p.add(117,124); p.add(108,121);
         p.add(100,112); p.add(95,105); p.add(94,98);      // 27
         p.add(96,88); p.add(95,81); p.add(89,72);
         p.add(80,70); p.add(72,70); p.add(63,70);    //33, 34, 35
         p.add(57,70); p.add(49,70); p.add(39,70);
-        p.add(32,70); p.add(23,67); p.add(20,64);    // 39, 40, 41
-        p.add(28,62); p.add(37,63); p.add(45,62);    // 42
+        p.add(32,70); p.add(24,67); p.add(20,64);    // 39, 40, 41
+        p.add(28,63); p.add(37,63); p.add(45,62);    // 42
         p.add(53,61); p.add(60,60); p.add(70,60);    // 45
         p.add(62,55); p.add(53,51); p.add(45,45);    // 48
         p.add(38,40); p.add(29,37); p.add(30,33);    // 51
         p.add(38,34); p.add(47,36); p.add(54,40);    // 54
-        p.add(62,44); p.add(70,49); p.add(78,52);
+        p.add(62,44); p.add(70,49); p.add(78,54);
         p.add(87,58);
         
         // accidently entered y for x, so
@@ -244,8 +248,8 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(38,97); p.add(30,98); 
         p.add(20,100); p.add(29,104); 
         p.add(38,107); p.add(45,107);  // 58,59
-        p.add(52,106); p.add(62,105); 
-        p.add(79,103); p.add(77,102);
+        p.add(52,106); p.add(62,104); 
+        p.add(69,103); p.add(77,102);
         
         return p;
     }

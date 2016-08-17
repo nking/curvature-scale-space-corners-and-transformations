@@ -104,8 +104,11 @@ public class PartialShapeMatcher {
       for scale, need to do so outside of this method, that is, apply
       scale changes to the datasets before use of this method..
 
-     * @param p
-     * @param q
+     NOTE: You may want to pre-process the shape points by using
+     PairIntArray p = ImageProcessor.extractSmoothedOrderedBoundary
+     
+     @param p
+     @param q
     */
     public Sequences match(PairIntArray p, PairIntArray q) {
 
@@ -291,6 +294,12 @@ public class PartialShapeMatcher {
         int n2 = md.length;
         int n1 = md[0].length;
 
+        //TODO:  need to revise block reading
+        // and storage of results.
+        // reading block at i through i-r in both
+        // dimensions is not currently stored
+        // as a sequence of i-r through i
+        
         // 23 degrees is 0.4014
         double thresh = (Math.PI/180.) * 10.;//*23.;
 
