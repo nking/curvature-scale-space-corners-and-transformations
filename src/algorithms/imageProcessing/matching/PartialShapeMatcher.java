@@ -211,7 +211,6 @@ public class PartialShapeMatcher {
         */
 
         List<Sequence> sequences = new ArrayList<Sequence>();
-        List<Sequence> discarded = new ArrayList<Sequence>();
 
         int rMax = (int)Math.sqrt(n1);
         if (rMax < 2) {
@@ -225,14 +224,14 @@ public class PartialShapeMatcher {
 
         // build the matching sequential sequences by
         // searching from block size 2 to size sqrt(n1)
-        extractSimilar(md, sequences, discarded, rMin, rMax);
+        extractSimilar(md, sequences, rMin, rMax);
 
         //changed to form adjacent segments where wrap
         // around is present, so assert format here
         assert(assertNoWrapAround(sequences));
 
         Sequences sequences0 = matchArticulated(
-            sequences, discarded, n1, n2);
+            sequences, n1, n2);
 
         //TODO: need a pattern within matchArticulated 
         // to try separate large 
@@ -260,8 +259,7 @@ public class PartialShapeMatcher {
     }
 
     protected void extractSimilar(float[][][] md,
-        List<Sequence> sequences,
-        List<Sequence> discarded, int rMin, int rMax) {
+        List<Sequence> sequences, int rMin, int rMax) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
@@ -284,16 +282,18 @@ public class PartialShapeMatcher {
             findEquivalentBest(md, r, mins, thresh, tolerance,
                 n1, n2, equivBest);
         }
-        
-        printEquivBest(equivBest);
-        
+                
         equivBest.sortListIndexes();
        
+        /*
+        printEquivBest(equivBest);
+        
         int[] topOffsets = findTopOffsets(equivBest, n1, n2);
         
         if (topOffsets != null) {
             log.info("topOffsets=" + Arrays.toString(topOffsets));
         }
+        */
                 
         // ----- find sequential correspondences ----
         for (int idx1 = 0; idx1 < equivBest.indexesAndDiff.length; 
@@ -360,17 +360,12 @@ public class PartialShapeMatcher {
                 s.absAvgSumDiffs = (float)(sumAbsDiff/(float)n);
 
                 if (s.length() > 1) {
-                    //TODO: tolerance should be calculted for length
-                    //if (s.absAvgSumDiffs <= tolerance) {
-                        sequences.add(s);
-                        log.info(String.format(
-                            "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
-                            (sequences.size() - 1),
-                            s.startIdx1, s.startIdx2, s.stopIdx2,
-                            s.fractionOfWhole, s.absAvgSumDiffs));
-                    //} else if (s.absAvgSumDiffs <= 3*tolerance) {
-                    //    discarded.add(s);
-                    //}
+                    sequences.add(s);
+                    log.info(String.format(
+                        "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                        (sequences.size() - 1),
+                        s.startIdx1, s.startIdx2, s.stopIdx2,
+                        s.fractionOfWhole, s.absAvgSumDiffs));
                 }
             }
         }
@@ -379,7 +374,7 @@ public class PartialShapeMatcher {
     }
 
     protected Sequences matchArticulated(List<Sequence> sequences,
-        List<Sequence> higherErrorSequences, int n1, int n2) {
+        int n1, int n2) {
 
         // (1) choose the topK from sequences sorted by fraction
         // and then add to those
@@ -397,19 +392,13 @@ public class PartialShapeMatcher {
             log.info("seed " + i + " : " + s);
         }
 
-        return matchArticulated(sequences, higherErrorSequences,
-            tracks, n1, n2);
+        return matchArticulated(sequences, tracks, n1, n2);
     }
 
     protected Sequences matchArticulated(List<Sequence> sequences,
-        List<Sequence> higherErrorSequences,
         List<Sequences> seedTracks, int n1, int n2) {
         
         print0(sequences, "S");
-
-        print0(higherErrorSequences, "DS");
-
-        print("sort0:", sequences);
         
         // use histogram to find 2 highest peaks:
         int[] top2Offsets = findOffsets(sequences, n1, n2);
@@ -1669,6 +1658,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
 
+        /*
         {
             for (int i = 0; i < idxs0.length; ++i) {
                 if (mins[i] == Float.MAX_VALUE) {
@@ -1682,8 +1672,11 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
             }
         }
-        log.info("OFFSETS=" + Arrays.toString(idxs0));
-        log.info("mins=" + Arrays.toString(mins));
+        */
+        
+        log.fine("OFFSETS=" + Arrays.toString(idxs0));
+        log.fine("mins=" + Arrays.toString(mins));
+    
     }
 
     /**
