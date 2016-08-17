@@ -218,8 +218,8 @@ public class PartialShapeMatcher {
             rMax = 2;
         }
         int rMin = 2;
-   //     rMax = n1/4;
-   //     rMin = rMax;
+        rMax = n1/4;
+        rMin = rMax;
 
         // build the matching sequential sequences by
         // searching from block size 2 to size sqrt(n1)
@@ -1763,7 +1763,10 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
                 s1 *= c;
                 
                 if (s1 < 0) {
-                    log.warning("s1=" + s1);
+                    if (s1 < -0.016) {
+                        // warn if resolution errors are 1 degree or more
+                        log.warning("s1=" + s1);
+                    }
                     s1 += -1;
                 }
 
