@@ -217,8 +217,10 @@ public class PartialShapeMatcher {
         if (rMax < 2) {
             rMax = 2;
         }
+        //TODO: need a pattern of trying longest
+        // separately and comparing results
         int rMin = 2;
-        rMax = n1/4;
+        rMax = n1/3;// n1/4;
         rMin = rMax;
 
         // build the matching sequential sequences by
