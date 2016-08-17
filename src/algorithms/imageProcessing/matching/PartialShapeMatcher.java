@@ -218,6 +218,8 @@ public class PartialShapeMatcher {
             rMax = 2;
         }
         int rMin = 2;
+        //rMax = n1/4;
+        //rMin = rMax;
 
         // build the matching sequential sequences by
         // searching from block size 2 to size sqrt(n1)
@@ -269,9 +271,15 @@ public class PartialShapeMatcher {
                 n1, n2, equivBest);
         }
         
-        /*
- equivBest.sortListIndexes();
+        equivBest.sortListIndexes();
         
+        int[] topOffsets = findTopOffsets(equivBest, n1, n2);
+        
+        if (topOffsets != null) {
+            log.info("topOffsets=" + Arrays.toString(topOffsets));
+        }
+        
+        /*
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n1; ++i) {
             IndexesAndDiff iad = equivBest.indexesAndDiff[i];
@@ -289,10 +297,7 @@ public class PartialShapeMatcher {
             sb.delete(0, sb.length());
         }*/
         
-
         // ----- find sequential correspondences ----
-        equivBest.sortListIndexes();
-
         for (int idx1 = 0; idx1 < n1; ++idx1) {
 
             IndexesAndDiff indexesAndDiff =
@@ -399,20 +404,25 @@ public class PartialShapeMatcher {
     protected Sequences matchArticulated(List<Sequence> sequences,
         List<Sequence> higherErrorSequences,
         List<Sequences> seedTracks, int n1, int n2) {
-
+        
         print0(sequences, "S");
 
         print0(higherErrorSequences, "DS");
 
         print("sort0:", sequences);
+        
+        // use histogram to find 2 highest peaks:
+        int[] top2Offsets = findOffsets(sequences, n1, n2);
 
+        if (top2Offsets != null) {
+            log.info("top offsets=" + Arrays.toString(top2Offsets)
+                + " n1=" + n1 + " n2=" + n2);
+        }
+        
         // (1) combine seedTracks that have same offset
         combineIfSameOffset(seedTracks);
 
         Collections.sort(sequences, new SequenceComparator2());
-
-        //TODO: revise the datastructures here to make the
-        // runtime complexity smaller after logic changes are finished.
 
         // (2) put the sorted sequences into sets with keys
         //     being offsets
@@ -434,6 +444,7 @@ public class PartialShapeMatcher {
         int maxDiffOffset = 5;
         // -- if does not intersect existing range
         // -- if is consistent clockwise
+        
 
         assert(assertNoWrapAround2(seedTracks));
 
@@ -474,13 +485,31 @@ public class PartialShapeMatcher {
         return seedTracks.get(0);
     }
 
-    protected double matchRigidWithOcclusion(List<Sequence> srquences,
-        int n1) {
+    protected double matchRigidWithOcclusion(List<Sequence> sequences,
+        int n1, int n2) {
 
+        // sort by desc fraction of whole
+        Collections.sort(sequences, new SequenceComparator2());
+        
+        for (int i = 0; i < sequences.size(); ++i) {
+            log.info(String.format("FSORT %d  %s", i, sequences.get(i).toString()));
+        }
+        
+        // evaluate the topk items as a transformation
+        int topK = 10 * (1 + (Math.max(n1, n2))/250);
+        int end = (topK > sequences.size()) ? sequences.size() : topK;
+        
+        for (int i = 0; i < sequences.size(); ++i) {
+            Sequence s = sequences.get(i);
+        }
+        
         throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
+     * create the matrices of differences between p
+     * and q.  Note that the matrix differences are
+     * absolute differences.
      * index0 is rotations of q,  index1 is p.n, index2 is q.n
       returns a[0:q.n-1][0:p.n-1][0:p.n-1]
     */
@@ -610,6 +639,7 @@ public class PartialShapeMatcher {
                 rotate(prevA2Shifted);
                 shifted2 = prevA2Shifted;
             }
+            // NOTE: absolute values are stored.
             //M_D^n = A_1(1:M,1:M) - A_2(n:n+M-1,n:n+M-1)
             md[i] = subtract(a1, shifted2);
             assert(md[i].length == n1);
@@ -769,7 +799,11 @@ public class PartialShapeMatcher {
         for (int i = 0; i < n1; ++i) {
             output[i] = new float[n1];
             for (int j = 0; j < n1; ++j) {
-                output[i][j] = a1[i][j] - a2[i][j];
+                float v = a1[i][j] - a2[i][j];
+                if (v < 0) {
+                    v *= -1;
+                }
+                output[i][j] = v;
             }
         }
 
@@ -834,6 +868,10 @@ public class PartialShapeMatcher {
 
     private void transpose(Sequences sequences,
         int n1, int n2) {
+        
+        if (sequences == null) {
+            return;
+        }
 
         float f = sequences.getFractionOfWhole();
         f *= ((float)n1/(float)n2);
@@ -848,51 +886,134 @@ public class PartialShapeMatcher {
         sqs.clear();
         sqs.addAll(tr);
     }
-    
-    protected int[] findOffsets(List<Sequence> sequences) {
-        // histogram with bins 10 degrees in size
-        float[] values = new float[sequences.size()];
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            values[i] = sequences.get(i).getOffset();
+   
+    protected int[] findTopOffsets(DiffMatrixResults equivBest,
+        int n1, int n2) {
+        
+        int n = 0;
+        
+        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
+            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
+            if (iad == null) {
+                continue;
+            }
+            LinkedList<IntIntDouble> list = iad.list;
+            n += list.size();
         }
 
-        float binWidth = 10.f;
-        int nBins = 10;
+        float[] values = new float[n];
+        n = 0;
+        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
+            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
+            if (iad == null) {
+                continue;
+            }
+            LinkedList<IntIntDouble> list = iad.list;
+            for (IntIntDouble iid : list) {
+                values[n] = iid.getB();
+                n++;
+            }
+        }
+
+        int[] offsets = findOffsetHistPeaks(values, n1, n2);
+
+        return offsets;
+    }
+    
+    protected int[] findOffsetHistPeaks(float[] values,
+        int n1, int n2) {
+        
+        if (values == null || values.length == 0) {
+            return null;
+        }
+        
+        float binWidth = 6.f;
+        //int nBins = 10;
         HistogramHolder hist =
             Histogram.createSimpleHistogram(
-                //binWidth,
-                nBins,
+                binWidth,
+                //nBins,
                 values,
                 Errors.populateYErrorsBySqrt(values));
-        
-        List<Integer> indexes = 
-            MiscMath.findStrongPeakIndexesDescSort(hist, 0.5f);
-        
-        int[] offsets;
-        if (indexes.size() >= 2) {
-            offsets = new int[] {
-                Math.round(hist.getXHist()[
-                    indexes.get(0).intValue()]),
-                Math.round(hist.getXHist()[
-                    indexes.get(1).intValue()])
-            };
-        } else if (indexes.size() == 1) {
-            offsets = new int[] {
-                Math.round(hist.getXHist()[
-                    indexes.get(0).intValue()])
-            };
-        } else {
-            offsets = null;
+    
+        // to help wrap around, moving items in last bin
+        // into first bin.  then offset of 0 +- binWidth/2
+        // should be present there
+        int limit = n2 - (int)Math.ceil((float)binWidth/2.f);
+        for (int i = (hist.getYHist().length - 1); i > -1; --i) {
+            float x = hist.getXHist()[i];
+            if (x < limit) {
+                break;
+            }
+            hist.getYHist()[0] += hist.getYHist()[i];
+            hist.getYHist()[i] = 0;
         }
         
-        return offsets;
+        List<Integer> indexes = 
+            MiscMath.findStrongPeakIndexesDescSort(
+            hist, 0.1f);
         
-        /*try {
+        // also looking at last non zero
+        int idx = MiscMath.findLastNonZeroIndex(hist);
+        if (idx > -1) {
+            log.info("last non zero offset=" + 
+                hist.getXHist()[idx]);
+        }
+        
+        int[] offsets;
+        if (indexes.size() > 0) {
+            int end = (indexes.size() < 3) ? indexes.size() : 3;
+            offsets = new int[end];
+            for (int j = 0; j < end; ++j) {
+                offsets[j] = Math.round(hist.getXHist()
+                    [indexes.get(j).intValue()]);
+            }
+        } else {
+            int yPeakIdx = MiscMath.findYMaxIndex(
+                hist.getYHistFloat());
+            if (yPeakIdx == -1) {
+                return null;
+            }
+            offsets = new int[]{
+                Math.round(hist.getXHist()[yPeakIdx])
+            };
+        }
+                
+        try {
             hist.plotHistogram("offsets", "offsets");
         } catch (Throwable t) {
             
-        }*/
+        }
+        
+        return offsets;
+    }
+    
+    protected int[] findOffsets(List<Sequence> sequences,
+        int n1, int n2) {
+    
+        // NOTE: if symmetry is present, might need
+        // a period analysis
+        
+        int n = 0;
+        for (int i = 0; i < sequences.size(); ++i) {
+            n += sequences.get(i).length();
+        }
+        
+        // histogram with bins 10 degrees in size
+        float[] values = new float[n];
+        n = 0;
+        for (int i = 0; i < sequences.size(); ++i) {
+            int offset = sequences.get(i).getOffset();
+            int len = sequences.get(i).length();
+            for (int j = 0; j < len; ++j) {
+                values[n] = offset;
+                n++;
+            }
+        }
+
+        int[] offsets = findOffsetHistPeaks(values, n1, n2);
+        
+        return offsets;
     }
 
     private void print(String prefix, List<Sequence> sequences) {
@@ -900,27 +1021,6 @@ public class PartialShapeMatcher {
         for (int i = 0; i < sequences.size(); ++i) {
             log.info(String.format("%d %s %s", i, prefix, 
                 sequences.get(i)));
-        }
-        
-        // histogram with bins 10 degrees in size
-        float[] values = new float[sequences.size()];
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            values[i] = sequences.get(i).getOffset();
-        }
-
-        float binWidth = 10.f;
-        int nBins = 10;
-        HistogramHolder hist =
-            Histogram.createSimpleHistogram(
-                //binWidth,
-                nBins,
-                values,
-                Errors.populateYErrorsBySqrt(values));
-        try {
-            hist.plotHistogram("offsets", "offsets");
-        } catch (Throwable t) {
-            
         }
     }
 
@@ -931,6 +1031,8 @@ public class PartialShapeMatcher {
         // startIdx1 and print
 
         List<Sequence> copy = new ArrayList<Sequence>(sequences);
+        
+        // desc sort by fraction
         Collections.sort(copy, new SequenceComparator2());
 
         float maxDiff = Float.MIN_VALUE;
@@ -1518,7 +1620,7 @@ public class PartialShapeMatcher {
                     i + jOffset - r + 1 : (i + jOffset - r + 1) - n2,
                     s1*c));
                 
-log.fine("*CHECK: i=" + i + " j=" + (i + jOffset)
+log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset
 + " d=" + s1 + " r=" + r);
 
@@ -1588,8 +1690,8 @@ log.fine("CHECK: i=" + i + " j=" + (i + jOffset)
                 + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
             }
         }
-        log.fine("OFFSETS=" + Arrays.toString(idxs0));
-        log.fine("mins=" + Arrays.toString(mins));
+        log.info("OFFSETS=" + Arrays.toString(idxs0));
+        log.info("mins=" + Arrays.toString(mins));
     }
 
     /**
