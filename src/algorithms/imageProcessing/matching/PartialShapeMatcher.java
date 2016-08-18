@@ -383,6 +383,13 @@ public class PartialShapeMatcher {
                 Iterator<Entry<PairInt, Sequences>> iter2 =
                     map0.entrySet().iterator();
 
+                //TODO: could make the offset before and after 
+                // depend upon dp, in other words, a large dp
+                // would need a large gap search.
+                // if that change is ever made, one would need to
+                // also need to make a s.precedes and s.proceeds
+                // that accepts a gap argument.
+                
                 int offset1 = offset + 1;
                 int offsetNMinus1 = offset - 1;
                 if (offset1 >= n2) {
@@ -391,6 +398,7 @@ public class PartialShapeMatcher {
                 if (offsetNMinus1 >= n2) {
                     offsetNMinus1 -=  n2;
                 }
+                
                 int[] sOffsets = new int[]{offset1, offsetNMinus1};
 
                 while (iter2.hasNext()) {
@@ -427,7 +435,7 @@ public class PartialShapeMatcher {
                                     s2.getSequences().size() - 1);
 
                                 // look for a sequences that precedes s0
-                                boolean precedes = s1.sequencePrecedes(st1);
+                                boolean precedes = s1.precedes(st1);
                                 if (precedes) {
                                     current.getSequences().addAll(0,
                                         s2.getSequences());
@@ -437,13 +445,15 @@ public class PartialShapeMatcher {
                                     didAppend = true;
                                 } else {
                                     // look for a sequences that follows s1
-                                    boolean proceeds = s1.sequenceProceeds(st0);
-                                    current.getSequences().addAll(
-                                        s2.getSequences());
-                                    //clear s2 in map0 and map1
-                                    s2.getSequences().clear();
-                                    s1 = st1;
-                                    didAppend = true;
+                                    boolean proceeds = s1.proceeds(st0);
+                                    if (proceeds) {
+                                        current.getSequences().addAll(
+                                            s2.getSequences());
+                                        //clear s2 in map0 and map1
+                                        s2.getSequences().clear();
+                                        s1 = st1;
+                                        didAppend = true;
+                                    }
                                 }
                             }
                         }
