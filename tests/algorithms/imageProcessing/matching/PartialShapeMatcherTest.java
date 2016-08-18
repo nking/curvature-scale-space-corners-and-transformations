@@ -80,11 +80,11 @@ public class PartialShapeMatcherTest extends TestCase {
         
         // 60
         PairIntArray p = getScissors1();
-        plot(p, 200);
+        //plot(p, 200);
         
         // 63
         PairIntArray q = getScissors2();
-        plot(q, 201);
+        //plot(q, 201);
         
         System.out.println("p.n=" + p.getN() 
             + " q.n=" + q.getN());

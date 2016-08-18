@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -33,21 +32,30 @@ Note that because the indexes are on
   The sentinel sequence is setting the startIdx2
   and stopIdx2 to value n2 (and the corresponding
   startIdx1 calculated from the offset).
+  
+        example, n1=n2=50, offset=3
+            0  : 3 ...
+            46 : 49  49
+            47 : 0   1
+            49 : 2   2
 
-    For example, a set of sequences that have
-    offset=1, n1=n2=4:
-                      start  stop  start   stop
-                       idx1   idx1   idx2   idx2
-      idx1: 0 1 2 3      0      2      1      3  --- seq 0
-      idx2: 1 2 3 0      3      3      4      4  --- seq 2
-                         3      3      0      0  --- seq 1
+        example, n1=50;n2=55, offset=3
+            0  : 3 ...    note, startIdx2 is never 0, or n2-1
+            46 : 49  49
+            47 : 50  50
+            48 : 51  51
+            49 : 52  52
+        example, n1=50;n2=55, offset=47
+             0 : 47  49
+             3 : 0
+            49 : 46  46
 
- Another example, written in format written by toString():
-       offset=9, n1=n2=50
-
-       SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
-       SEQ (41:0 to 8, f=0.0800 d=NaN  n1=50, n2=50)
-       SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
+   NOTE that much of the logic below relies
+    on n1 <= n2, so if use transpose() to 
+    reverse correspondence, should not use
+    methods such as merge afterwards...
+    TODO: change code to create a corresp
+    list at transpose stage...
  </pre>
  * @author nichole
  */
@@ -71,6 +79,7 @@ public class Sequence {
         n1 = nIndexes1;
         n2 = nIndexes2;
         offset = offset12;
+        //assert(n1 <= n2);
     }
     
     public int getN1() {
@@ -133,6 +142,14 @@ public class Sequence {
         }
        
         return true;
+    }
+    
+    public int getStopIdx1() {
+        int stopIdx1 = startIdx1 + length() - 1;
+        if (stopIdx1 >= n1) {
+            stopIdx1 -= n1;
+        }
+        return stopIdx1;
     }
     
     /**
@@ -228,18 +245,23 @@ public class Sequence {
        <pre>
         Note, in PartialShapeMatcher, aggregation 
         first proceeds by startIdx1 and only
-        up until n1-1.  
-        
-        For idx2, to handle wrap around, need to
-        make sentinel sequences of value n2 and 0.
-          
-       For example, written in format written by toString():
-       offset=9, n1=n2=50
-
-       SEQ (0:9 to 49, f=0.8200 d=0.0000  n1=50, n2=50)
-       SEQ (41:0 to 8, f=0.0800 d=NaN  n1=50, n2=50)
-       SEQ (41:50 to 50, f=0.0000 d=0.0000  n1=50, n2=50)
-       where the later is the stop sentinel sequence.
+        up until n1-1. 
+        * 
+        example, n1=n2=50, offset=3
+            0  : 3 ...
+            46 : 49  49  
+            47 : 0   1                   
+            49 : 2   2
+        example, n1=50;n2=55, offset=3
+            0  : 3 ...    note, startIdx2 is never 0, or n2-1
+            46 : 49  49  
+            47 : 50  50  
+            48 : 51  51
+            49 : 52  52
+        example, n1=50;n2=55, offset=47
+             0 : 47  49
+             3 : 0
+            49 : 46  46
        </pre>
      * @param mergeFrom
      * @return 
@@ -251,117 +273,9 @@ public class Sequence {
             + " of mergeFrom have to be same as this n1 and n2");
         }
         
-        if (this.isStopSentinel() && 
-            mergeFrom.isStartSentinel()) {
-            // return both, they should be kept, but
-            // cannot be merged
+        if (this.isStopSentinel() || mergeFrom.isStopSentinel()) {
             log.info("*sentinels:" + this + "\n " + mergeFrom);
-            return new Sequence[]{this.copy(), mergeFrom};
-        } else if (mergeFrom.isStopSentinel() &&
-            isStartSentinel()) {
-            log.info("**sentinels:" + mergeFrom + "\n " + this);
-            return new Sequence[]{mergeFrom, this.copy()};
-        } else if (mergeFrom.stopIdx2 == (n2 - 1) 
-            && isStartSentinel()) {
-           
-            // this sequence should be followed by a 
-            // sequence indicating it's the end sentinel, then
-            // can return all 3 sequences
-            /*
-            example w/ n1=n2=50 and offset=3
-            48 :  1   49
-            47 : 50   50
-            47 :  0    0
-            */
-            
-            // merge this and mergeFrom, then add a stop sentinel
-            Sequence mergeInto = copy();
-            
-            int len0 = mergeInto.length();
-            float f0 = mergeInto.fractionOfWhole;
-            float d0 = mergeInto.absAvgSumDiffs;
-            float d0Tot = d0 * len0;
-            int nAdded = mergeFrom.stopIdx2 - 
-                mergeInto.stopIdx2;
-            len0 += nAdded;
-            float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
-            d0Tot += (d1Tot/(float)nAdded);
-            mergeInto.stopIdx2 = mergeFrom.stopIdx2;
-            mergeInto.fractionOfWhole = (float)len0/(float)n1;
-            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-            assert(mergeInto.length() == len0);     
-            
-            Sequence endS = new Sequence(n1, n2, offset);
-            endS.startIdx1 = n2 - offset;
-            endS.startIdx2 = n2;
-            endS.stopIdx2 = n2;
-            // in order to not add to the class Sequences stats, 
-            // the end sentinel sequence will have values
-            // that do not affect the result, but this
-            // needs to be enforced elsewhere too.
-            endS.fractionOfWhole = 0;
-            endS.absAvgSumDiffs = 0;
-            log.info("***sentinels: \n" + 
-                mergeFrom + "\n " + this
-                + "\n  ==> " + mergeInto 
-                + "\n  ==> " + endS);
-            return new Sequence[]{mergeInto, endS};
-        } else if (stopIdx2 == (n2 - 1) && 
-            mergeFrom.isStartSentinel()) {
-            // this sequence should be followed by a 
-            // sequence indicating it's the end sentinel, then
-            // can return all 3 sequences
-            /*
-            example w/ n1=n2=50 and offset=3
-            48 :  1   49
-            47 : 50   50 
-            47 :  0    0 
-            */
-            
-            // merge this and mergeFrom, then add a stop sentinel
-            Sequence mergeInto = mergeFrom.copy();
-            
-            int len0 = mergeInto.length();
-            float f0 = mergeInto.fractionOfWhole;
-            float d0 = mergeInto.absAvgSumDiffs;
-            float d0Tot = d0 * len0;
-            int nAdded = this.stopIdx2 - mergeInto.stopIdx2;
-   
-            len0 += nAdded;
-            float d1Tot = this.absAvgSumDiffs * this.length();
-            d0Tot += (d1Tot/(float)nAdded);
-            mergeInto.stopIdx2 = this.stopIdx2;
-            mergeInto.fractionOfWhole = (float)len0/(float)n1;
-            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-            assert(mergeInto.length() == len0);
-            
-            Sequence endS = new Sequence(n1, n2, offset);
-            endS.startIdx1 = n2 - offset;
-            endS.startIdx2 = n2;
-            endS.stopIdx2 = n2;
-            // in order to not add to the class Sequences stats, 
-            // the end sentinel sequence will have values
-            // that do not affect the result, but this
-            // needs to be enforced elsewhere too.
-            endS.fractionOfWhole = 0;
-            endS.absAvgSumDiffs = 0;
-            log.info("****sentinels:" + 
-                this + " \n " + endS 
-                + "\n " + mergeFrom);
-            return new Sequence[]{this.copy(), endS, mergeFrom};
-        } else if (mergeFrom.stopIdx2 == (n2 - 1) &&
-            isStopSentinel()) {
-            // this is a proper sentinel boundary, so return
-            // both in order
-            log.info("existing sentinels:" + 
-                mergeFrom + " \n " + "\n " + this);
-            return new Sequence[]{mergeFrom, this.copy()};
-        } else if ((stopIdx2 == (n2 - 1)) && mergeFrom.isStopSentinel()) {
-            // this is a proper sentinel boundary, so return 
-            // both in order
-            log.info("*existing sentinels:" + 
-                this + " \n " +  "\n " + mergeFrom);
-            return new Sequence[]{this.copy(), mergeFrom};
+            return null;
         }
        
         Sequence mergeInto;
@@ -382,8 +296,8 @@ public class Sequence {
             return null;
         }
         
-        if (mergeInto.isStopSentinel() || mergeFrom.isStopSentinel()) {
-            return new Sequence[]{mergeInto, mergeFrom};
+        if (mergeInto.startIdx2 > mergeFrom.startIdx2) {
+            return null;
         }
         
         if (mergeInto.equals(mergeFrom)) {
@@ -418,58 +332,40 @@ public class Sequence {
         assert(mergeFrom.stopIdx2 >= mergeFrom.startIdx2);
         
         // -- check for adjacent (before intersects filter) --
-        if ((mIStopIdx1 + 1) == mergeFrom.startIdx1) {
+        if (
+            // idx2 has to have room before n2 for a merge
+            (mergeInto.getStopIdx2() < 
+            (n2 - 1 + (mergeFrom.stopIdx2 - mergeInto.stopIdx2))) 
+            &&
+            (mIStopIdx1 + 1) == mergeFrom.startIdx1) {
 
             StringBuilder sb = new StringBuilder("*merge ")
                 .append(mergeInto).append("\n into ")
                 .append(mergeFrom);
             
             int len0 = mergeInto.length();
+            
+            mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+            
             float f0 = mergeInto.fractionOfWhole;
             float d0 = mergeInto.absAvgSumDiffs;
             float d0Tot = d0 * len0;
-            int nAdded = mergeFrom.stopIdx2 - 
-                mergeInto.stopIdx2;
-            len0 += nAdded;
+            int nAdded = mergeInto.length() - len0;
+            len0 = mergeInto.length();
             
             float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
             d0Tot += (d1Tot/(float)nAdded);
             
-            mergeInto.stopIdx2 = mergeFrom.stopIdx2;
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
             assert(mergeInto.length() == len0);
             
             sb.append("\n => ").append(mergeInto.toString());
             
-            // if stopIdx2 == n2-1, create a sentinel too
-            if (mergeInto.stopIdx2 == (n2 - 1)) {
-                /*
-                example w/ n1=n2=50 and offset=3
-                48 :  1   49
-                47 : 50   50
-                47 :  0    0
-                */
-                Sequence endS = new Sequence(n1, n2, offset);
-                endS.startIdx1 = n2 - offset;
-                endS.startIdx2 = n2;
-                endS.stopIdx2 = n2;
-                // in order to not add to the class Sequences stats, 
-                // the end sentinel sequence will have values
-                // that do not affect the result, but this
-                // needs to be enforced elsewhere too.
-                endS.fractionOfWhole = 0;
-                endS.absAvgSumDiffs = 0;
-                
-                sb.append("\n  + sentinel=" + endS);
-                
-                return new Sequence[]{mergeInto, endS};
-            }
-            
             log.info(sb.toString());
             
             return new Sequence[]{mergeInto};
-        }  
+        }
         if (!mergeInto.intersects(mergeFrom)) {
             log.info("NO MERGE: not intersecting: " + 
                 " \n" + mergeInto + "\n " + mergeFrom);
@@ -479,39 +375,9 @@ public class Sequence {
         /*
         Note, in PartialShapeMatcher, aggregation 
         first proceeds by startIdx1 and only
-        up until n1-1.  
-        
-        For idx2, to handle wrap around, need to
-        make sentinel sequences of value n2 and 0.
-          
-        examples w/ n1=4; n2=4;
-        
-                          start  stop  start   stop
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      3      0      3
-        idx2: 0 1 2 3         
-        
-        a wrap around 
-        idx2 offset=1:     
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      2      1      3
-        idx2: 1 2 3 0      3      3      4      4
-                           3      3      0      0
-        
+        up until n1-1.
         */
-
-        // --handle the remaining cases near the sentinels--
-        
-        // mergeInto.startIdx1 < mergeFrom.startIdx1
-        // and the case where both are sentinels already handled
-        if (mergeInto.isStopSentinel()) {
-            // the next would need to be start sentinel
-            // and that case has already been handled
-            log.info("NO MERGE: has a stop sentinel: " + 
-                " \n" + mergeInto + "\n " + mergeFrom);
-            return null;
-        }
-        
+       
         // all cases involving sentinel should be handled
         // by now and so is the adjacent rnage case,
         // so what remains in merging overlapping regions
@@ -520,26 +386,29 @@ public class Sequence {
         // they're ordered by startIdx1.  startIdx2 should be
         // increasing also
         StringBuilder sb = new StringBuilder("**merge ")
-            .append(mergeInto).append("\n into ")
-            .append(mergeFrom);
+            .append(mergeFrom).append("\n into ")
+            .append(mergeInto);
 
-        if (mergeInto.stopIdx2 >= mergeFrom.stopIdx2) {
-            // mergeInto includes all of mergeFrom already
-            log.fine("NO MERGE: already includes other: " + 
-                " \n" + mergeInto + "\n " + mergeFrom);
-            return new Sequence[]{mergeInto};
-        }
         int len0 = mergeInto.length();
+        
+        mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+        
         float f0 = mergeInto.fractionOfWhole;
         float d0 = mergeInto.absAvgSumDiffs;
         float d0Tot = d0 * len0;
-        int nAdded = mergeFrom.stopIdx2 - mergeInto.stopIdx2;
-        len0 += nAdded;
+        int nAdded = (mergeInto.length() - len0);
+        if (nAdded == 0) {
+            sb.append("\n => ").append(mergeInto.toString());
+            log.info(sb.toString());
+
+            return new Sequence[]{mergeInto};
+        }
+        
+        len0 = mergeInto.length();
         
         float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
         d0Tot += (d1Tot/(float)nAdded);
-            
-        mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+        
         mergeInto.fractionOfWhole = (float)len0/(float)n1;
         mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
         assert(mergeInto.length() == len0);
@@ -550,11 +419,27 @@ public class Sequence {
         return new Sequence[]{mergeInto};
     }
 
+    public boolean precedes(Sequence sTest) {
+        //TODO: this may need corrections for wrap around
+        if (sTest.getStopIdx1() == (startIdx1 - 1)) {
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean proceeds(Sequence sTest) {
+        //TODO: this may need corrections for wrap around
+        if (getStopIdx1() == (sTest.getStartIdx1() + 1)) {
+            return true;
+        }
+        return false;
+    }
+    
     public boolean isStartSentinel() {
-        return (startIdx2 == 0);
+        return (startIdx1 == 0);
     }
     public boolean isStopSentinel() {
-        return (stopIdx2 == n2);
+        return (getStopIdx1() == (n1 - 1));
     }
 
     public int length() {
@@ -638,7 +523,7 @@ public class Sequence {
         
         s0.startIdx1 = startIdx2;
         s0.startIdx2 = startIdx1;
-        s0.stopIdx2 = startIdx1 + len;
+        s0.stopIdx2 = startIdx1 + len - 1;
         //int stopIdx1 = stopIdx2;
         
         s0.absAvgSumDiffs = absAvgSumDiffs;
@@ -678,4 +563,5 @@ public class Sequence {
             offset, length()));
         return sb.toString();
     }
+
 }

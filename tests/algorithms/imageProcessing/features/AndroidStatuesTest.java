@@ -539,24 +539,22 @@ public class AndroidStatuesTest extends TestCase {
 
         GreyscaleImage img = image.copyToGreyscale();
         
-        ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.blur(img, 
-            SIGMA.TWO);
-            //SIGMA.FOUR);
-        
         Set<PairInt> blob = new HashSet<PairInt>();
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > 0) {
                 int x = img.getCol(i);
                 int y = img.getRow(i);
-                img.setValue(x, y, 255);
                 blob.add(new PairInt(x, y));
             }
         }
+
+        ImageProcessor imageProcessor =
+            new ImageProcessor();
         
-        PerimeterFinder2 finder = new PerimeterFinder2();
-        PairIntArray ordered = finder.extractOrderedBorder(blob);
-    
+        PairIntArray ordered = 
+            imageProcessor.extractSmoothedOrderedBoundary(
+            blob);
+        
         return ordered;
     }
     
