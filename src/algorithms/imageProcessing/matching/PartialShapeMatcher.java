@@ -237,7 +237,7 @@ public class PartialShapeMatcher {
 
             // build the matching sequential sequences by
             // searching from block size rMin to size rMax, incl
-            extractSimilar(md, sequences, r, r);
+            extractSimilar(md, sequences, r);
 
             //changed to form adjacent segments where wrap
             // around is present, so assert format here
@@ -287,14 +287,14 @@ public class PartialShapeMatcher {
     }
 
     protected void extractSimilar(float[][][] md,
-        List<Sequence> sequences, int rMin, int rMax) {
+        List<Sequence> sequences, int r) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
         int n2 = md.length;
         int n1 = md[0].length;
 
-        //TODO:  need to revise block reading
+        // TODO:  need to revise block reading
         // and storage of results.
         // reading block at i through i-r in both
         // dimensions is not currently stored
@@ -304,18 +304,14 @@ public class PartialShapeMatcher {
         double thresh = (Math.PI/180.) * 10.;//*23.;
 
         MinDiffs mins = new MinDiffs(n1);
-        for (int r = rMin; r <= rMax; ++r) {
-            findMinDifferenceMatrix(md, r, thresh, mins);
-        }
+        findMinDifferenceMatrix(md, r, thresh, mins);
 
         // 10 degrees is 0.175
         double tolerance = 0.25;//0.1;//0.25;
 
         DiffMatrixResults equivBest = new DiffMatrixResults(n1);
-        for (int r = rMin; r <= rMax; ++r) {
-            findEquivalentBest(md, r, mins, thresh, tolerance,
-                n1, n2, equivBest);
-        }
+        findEquivalentBest(md, r, mins, thresh, tolerance,
+            n1, n2, equivBest);
 
         equivBest.sortListIndexes();
 
@@ -395,11 +391,12 @@ public class PartialShapeMatcher {
 
                 if (s.length() > 1) {
                     sequences.add(s);
-                    log.info(String.format(
-                        "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f",
+                    log.fine(String.format(
+                        "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f offset=%d",
                         (sequences.size() - 1),
                         s.startIdx1, s.startIdx2, s.stopIdx2,
-                        s.fractionOfWhole, s.absAvgSumDiffs));
+                        s.fractionOfWhole, s.absAvgSumDiffs,
+                        s.getOffset()));
                 }
             }
         }
@@ -416,6 +413,8 @@ public class PartialShapeMatcher {
         
         Collections.sort(sequences, new SequenceComparator2());
 
+        print("FSORT", sequences);
+        
         Sequence best = sequences.get(0);
     
         Sequences track = new Sequences();
@@ -1700,24 +1699,24 @@ public class PartialShapeMatcher {
             log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
             float sum = 0;
-            //for (int i = 0; i < a.length; i+=r) {
-            for (int i = (r - 1); i < a.length; i++) {
-                float s1;
-                if ((i - r) > -1) {
-                    s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
-                    log.finest(
-                        String.format(
-                        " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f",
-                        i, i, a[i][i], a[i-r][i], a[i][i-r],
-                        a[i-r][i-r], s1*c));
-                } else {
-                    s1 = a[i][i];
-                    log.finest(
-                        String.format(" [%d,%d] %.4f => %.4f",
-                        i, i, a[i][i], s1*c));
-                }
+            for (int i = r; i < a.length; i++) {
+                float s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
+                log.finest(
+                    String.format(
+                    " [%d,%d] %.4f, %.4f, %.4f, %.4f => %.4f",
+                    i, i, a[i][i], a[i-r][i], a[i][i-r],
+                    a[i-r][i-r], s1*c));
+                
                 s1 *= c;
 
+                if (s1 < 0) {
+                    if (s1 < -0.016) {
+                        // warn if resolution errors are 1 degree or more
+                        log.warning("s1=" + s1);
+                    }
+                    s1 += -1;
+                }
+                
                 log.fine(String.format(" [%2d,%2d<-%2d] => %.4f",
                     i,
                     ((i + jOffset) < n2) ?
@@ -1737,14 +1736,28 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 // note, idx from q is i + jOffset
                 count++;
                 sum += s1;
-                if (s1 < Math.abs(mins[i])) {
-                    int idx2 = i + jOffset;
-                    if (idx2 >= n2) {
-                        idx2 -= n2;
+    
+                if (s1 < mins[i]) {
+                        int idx2 = i + jOffset;
+                        if (idx2 >= n2) {
+                            idx2 -= n2;
+                        }
+                        mins[i] = s1;
+                        idxs0[i] = jOffset;
                     }
-                    mins[i] = s1;
-                    idxs0[i] = jOffset;
+                /*
+                // store each index i-r through i if best
+                for (int ii = (i - r); ii <= i; ++ii) {
+                    if (s1 < mins[ii]) {
+                        int idx2 = ii + jOffset;
+                        if (idx2 >= n2) {
+                            idx2 -= n2;
+                        }
+                        mins[ii] = s1;
+                        idxs0[ii] = jOffset;
+                    }
                 }
+                */
             }
             if (count == 0) {
                 sum = Integer.MAX_VALUE;
@@ -1753,7 +1766,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
 
-        /*
+        
         {
             for (int i = 0; i < idxs0.length; ++i) {
                 if (mins[i] == Float.MAX_VALUE) {
@@ -1767,10 +1780,10 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
             }
         }
-        */
+        
 
-        log.fine("OFFSETS=" + Arrays.toString(idxs0));
-        log.fine("mins=" + Arrays.toString(mins));
+        log.info("OFFSETS=" + Arrays.toString(idxs0));
+        log.info("mins=" + Arrays.toString(mins));
 
     }
 
@@ -1800,12 +1813,21 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 
         // capture all "best" within mins[i] += tolerance
 
+  // TODO: this is all in revision.
+  // will be stored as whole block rather
+  // than indiv pixels,
+  // but would still like to store
+  // equivalent best
+        
         for (int jOffset = 0; jOffset < n2; jOffset++) {
             float[][] a = md[jOffset];
-            //for (int i = 0; i < n1; i+=r) {
-            for (int i = 0; i < n1; ++i) {
+            for (int i = r; i < n1; ++i) {
+                
                 if (mins.idxs0[i] == -1) {
                     // there is no best for this p index
+                    // this should not happen with current
+                    // read pattern
+                   // log.severe("ERROR: min not set for i=" + i);
                     continue;
                 }
 
@@ -1813,24 +1835,16 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 // mins.idxs0[i] is jOffset of best
                 // j is index i + jOffset
 
-                float s1;
-                if ((i - r) > -1) {
-                    s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
-                } else {
-                    s1 = a[i][i];
-                }
+                float s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
+                
                 s1 *= c;
-
-                if (s1 < 0) {
-                    if (s1 < -0.016) {
-                        // warn if resolution errors are 1 degree or more
-                        log.warning("s1=" + s1);
-                    }
-                    s1 += -1;
-                }
 
                 if (s1 > lThresh) {
                    continue;
+                }
+                
+                if (s1 < 0) {
+                    s1 *= -1;
                 }
 
                 double best = mins.mins[i];
@@ -1839,12 +1853,25 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                     continue;
                 }
 
+                //TODO: this will be revised to store
+                // the entire block i-r:i as a sequence soon
+                //
+                
                 int idx2 = jOffset + i;
                 if (idx2 >= n2) {
                     idx2 -= n2;
                 }
-
                 output.add(i, idx2, jOffset, s1);
+                /*
+                for (int ii = (i - r); ii <= i; ++ii) { 
+                    int idx2 = jOffset + ii;
+                    if (idx2 >= n2) {
+                        idx2 -= n2;
+                    }
+
+                    output.add(ii, idx2, jOffset, s1);
+                }
+                */
             }
         }
     }
