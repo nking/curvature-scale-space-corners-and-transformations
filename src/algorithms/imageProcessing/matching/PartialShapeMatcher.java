@@ -230,17 +230,11 @@ public class PartialShapeMatcher {
 
             List<Sequences> seqsList = new ArrayList<Sequences>();
             // build the matching sequential sequences by
-            // searching from block size rMin to size rMax, incl
+            // searching md in given block size r
             extractSimilar(md, seqsList, r);
 
-            Collections.sort(seqsList, new TrackComparator(n1));
-            for (int i = 0; i < seqsList.size(); ++i) {
-                Sequences track = seqsList.get(i);
-                log.info("track " + i + ": " + track.toString());
-            }
-
             if (!seqsList.isEmpty()) {
-                Sequences result = seqsList.get(0);
+                Sequences result = findBest(seqsList);
                 results.add(result);
             }
         }
@@ -387,8 +381,8 @@ public class PartialShapeMatcher {
                 // depend upon dp, in other words, a large dp
                 // would need a large gap search.
                 // if that change is ever made, one would need to
-                // also need to make a s.precedes and s.proceeds
-                // that accepts a gap argument.
+                // also need to make a sequence.precedes() and 
+                // sequence.proceeds() that accepts a gap argument.
                 
                 int offset1 = offset + 1;
                 int offsetNMinus1 = offset - 1;
@@ -435,7 +429,7 @@ public class PartialShapeMatcher {
                                     s2.getSequences().size() - 1);
 
                                 // look for a sequences that precedes s0
-                                boolean precedes = s1.precedes(st1);
+                                boolean precedes = s0.precedes(st1);
                                 if (precedes) {
                                     current.getSequences().addAll(0,
                                         s2.getSequences());
@@ -478,104 +472,7 @@ public class PartialShapeMatcher {
 
         log.info(sequences.size() + " sequences");
     }
-
-    protected Sequences matchArticulated(List<Sequence> sequences,
-        int n1, int n2) {
-
-        // (1) choose the topK from sequences sorted by fraction
-        // and then add to those
-        int topK = 10 * (1 + (Math.max(n1, n2))/250);
-        int end = (topK > sequences.size()) ? sequences.size() : topK;
-
-        Collections.sort(sequences, new SequenceComparator2());
-
-        List<Sequences> tracks = new ArrayList<Sequences>();
-        for (int i = 0; i < end; ++i) {
-            Sequence s = sequences.get(i);
-            Sequences track = new Sequences();
-            tracks.add(track);
-            track.getSequences().add(s.copy());
-            log.info("seed " + i + " : " + s);
-        }
-
-        return matchArticulated(sequences, tracks, n1, n2);
-    }
-
-    protected Sequences matchArticulated(List<Sequence> sequences,
-        List<Sequences> seedTracks, int n1, int n2) {
-
-        print0(sequences, "S");
-
-        // use histogram to find 2 highest peaks:
-        int[] top2Offsets = findOffsets(sequences, n1, n2);
-
-        if (top2Offsets != null) {
-            log.info("top offsets=" + Arrays.toString(top2Offsets)
-                + " n1=" + n1 + " n2=" + n2);
-        }
-
-        // (1) combine seedTracks that have same offset
-        combineIfSameOffset(seedTracks);
-
-        Collections.sort(sequences, new SequenceComparator2());
-
-        // (2) put the sorted sequences into sets with keys
-        //     being offsets
-        TreeMap<Integer, List<Sequence>> seqeuncesMap =
-            placeInMapByOffsets(sequences);
-
-        // (3) add to seedTracks, the best of same offset sequences.
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            int offset = track.getSequences().get(0).getOffset();
-            List<Sequence> sList = seqeuncesMap.get(Integer.valueOf(offset));
-            track.getSequences().addAll(sList);
-            Sequence.mergeSequences(track.getSequences());
-        }
-
-        assert(assertNoWrapAround2(seedTracks));
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            log.info("pre-sorted track " + i + ": " + track.toString());
-        }
-
-        populateStats(seedTracks);
-
-        Collections.sort(seedTracks, new TrackComparator(n1));
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            log.info("track " + i + ": " + track.toString());
-        }
-
-        if (seedTracks.isEmpty()) {
-            return null;
-        }
-
-        return seedTracks.get(0);
-    }
-
-    protected double matchRigidWithOcclusion(List<Sequence> sequences,
-        int n1, int n2) {
-
-        // sort by desc fraction of whole
-        Collections.sort(sequences, new SequenceComparator2());
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            log.info(String.format("FSORT %d  %s", i, sequences.get(i).toString()));
-        }
-
-        // evaluate the topk items as a transformation
-        int topK = 10 * (1 + (Math.max(n1, n2))/250);
-        int end = (topK > sequences.size()) ? sequences.size() : topK;
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            Sequence s = sequences.get(i);
-        }
-
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
+    
     /**
      * create the matrices of differences between p
      * and q.  Note that the matrix differences are
@@ -1028,9 +925,6 @@ public class PartialShapeMatcher {
     protected int[] findOffsets(List<Sequence> sequences,
         int n1, int n2) {
 
-        // NOTE: if symmetry is present, might need
-        // a period analysis
-
         int n = 0;
         for (int i = 0; i < sequences.size(); ++i) {
             n += sequences.get(i).length();
@@ -1114,181 +1008,6 @@ public class PartialShapeMatcher {
         return hist;
     }
 
-    protected boolean merge(List<Sequence> sequences) {
-
-        if (sequences.size() < 2) {
-            return false;
-        }
-
-        /*
-        0
-        1
-        2
-        3  --0
-        4  --
-        */
-
-        boolean didMerge = false;
-
-        //TODO: the sequences data structure will
-        // be revised to keep the sequences in order.
-
-        LinkedHashSet<Sequence> results
-            = new LinkedHashSet<Sequence>();
-
-        for (int i = 1; i < sequences.size(); ++i) {
-            Sequence s0 = sequences.get(i - 1);
-            Sequence s = sequences.get(i);
-            Sequence[] merged = s0.merge(s);
-            if (merged == null) {
-                results.add(s0);
-                results.add(s);
-            } else {
-                for (Sequence st : merged) {
-                    results.add(st);
-                    didMerge = true;
-                }
-            }
-        }
-
-        if (didMerge) {
-            sequences.clear();
-            sequences.addAll(results);
-        }
-
-        return didMerge;
-    }
-
-    private boolean canAppend(List<Sequence> track,
-        Sequence testS, int n1) {
-
-        if (intersectsExistingRange(track, testS)) {
-            return false;
-        }
-
-        //TODO: could improve the datastructure
-        // to make this delete faster.  logic in
-        // the code is still changing currently.
-
-        track.add(testS);
-        boolean isC = Sequences.isConsistentClockwise(track);
-        boolean rmvd = track.remove(testS);
-        assert(rmvd);
-
-        return isC;
-    }
-
-    /**
-     * assuming that seedTracks each have only one offset
-     * (expecting only one sequence, more specifically),
-     * combine the items in seedTracks that have the same
-     * offset.  "Combine" means merge if adjacent or overlapping,
-     * else append.
-     * @param seedTracks
-     */
-    private void combineIfSameOffset(List<Sequences> seedTracks) {
-
-        if (seedTracks.size() < 2) {
-            return;
-        }
-
-        // --- make the offset lookup map ----
-        TIntObjectMap<TIntSet> offsetIndexMap
-            = new TIntObjectHashMap<TIntSet>();
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-
-            Sequences track = seedTracks.get(i);
-
-            int offset = track.getSequences().get(0).getOffset();
-
-            TIntSet indexes = offsetIndexMap.get(offset);
-            if (indexes == null) {
-                indexes = new TIntHashSet();
-                offsetIndexMap.put(offset, indexes);
-            }
-            indexes.add(i);
-        }
-
-        // ---- combine tracks that have same offset ----
-
-        TIntSet rmSet = new TIntHashSet();
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-
-            if (rmSet.contains(i)) {
-                continue;
-            }
-
-            Sequences track = seedTracks.get(i);
-            int offset = track.getSequences().get(0).getOffset();
-
-            TIntSet indexes = offsetIndexMap.get(offset);
-            TIntIterator iter = indexes.iterator();
-            while (iter.hasNext()) {
-                int oIdx = iter.next();
-                if (oIdx == i || rmSet.contains(oIdx)) {
-                    continue;
-                }
-                rmSet.add(oIdx);
-
-                // merge all of track2 with track
-                Sequences track2 = seedTracks.get(oIdx);
-                track.getSequences().addAll(track2.getSequences());
-
-                Sequence.mergeSequences(track.getSequences());
-            }
-
-            if (!indexes.isEmpty()) {
-
-                // NOTE: stats not yet popualated, so not updating here
-
-                // clear indexes so no others are merged from it
-                indexes.clear();
-            }
-        }
-
-        if (!rmSet.isEmpty()) {
-            TIntList rmList = new TIntArrayList(rmSet);
-            rmList.sort();
-            for (int i = (rmList.size() - 1); i > -1; --i) {
-                int rmIdx = rmList.get(i);
-                seedTracks.remove(rmIdx);
-            }
-        }
-    }
-
-    /**
-     * create a map with key being offset of the Sequence,
-     * and value being a list of all Sequences in sequences
-     * which have that offset.
-     * each Sequence in a sequences item must have same
-     * offset already.
-     * @param sequences
-     * @return
-     */
-    private TreeMap<Integer, List<Sequence>>
-        placeInMapByOffsets(List<Sequence> sequences) {
-
-        TreeMap<Integer, List<Sequence>> map =
-            new TreeMap<Integer, List<Sequence>>();
-
-        for (Sequence s : sequences) {
-
-            int offset = s.getOffset();
-            Integer key = Integer.valueOf(offset);
-
-            List<Sequence> list = map.get(key);
-            if (list == null) {
-                list = new ArrayList<Sequence>();
-                map.put(key, list);
-            }
-            list.add(s);
-        }
-
-        return map;
-    }
-
     private void printEquivBest(DiffMatrixResults equivBest) {
 
         StringBuilder sb = new StringBuilder();
@@ -1325,7 +1044,7 @@ public class PartialShapeMatcher {
     private Sequences transformAndEvaluate(List<Sequences> results,
         PairIntArray p, PairIntArray q, float[][][] md) {
 
-        //NOTE: md is psssed in to be able to add stats of
+        //NOTE: md is passed in to be able to add stats of
         // points found after transformation
 
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -1918,18 +1637,6 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
             }
        }
         return max;
-    }
-
-    private boolean intersectsExistingRange(
-        List<Sequence> existingList, Sequence sTest) {
-
-        for (Sequence s : existingList) {
-            if (s.intersects(sTest)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private boolean assertNoWrapAround(List<Sequence> sequences) {
