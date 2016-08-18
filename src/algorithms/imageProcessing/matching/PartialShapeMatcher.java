@@ -2,9 +2,17 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.util.MatrixUtil;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
+import algorithms.search.KNearestNeighbors;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.Errors;
 import algorithms.util.IntIntDouble;
 import algorithms.util.PairInt;
@@ -12,8 +20,12 @@ import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectFloatMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -25,8 +37,10 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
+import thirdparty.HungarianAlgorithm;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -221,14 +235,13 @@ public class PartialShapeMatcher {
         boolean usePattern1 = true;
         boolean performEval = false;
         
-        int[] rs = new int[]{n1/3, n1/4};
-
-        List<Sequences> results =
-            new ArrayList<Sequences>();
+        int[] rs = new int[]{n1/3
+            //, n1/4
+        };
+        
+        List<Sequence> sequences = new ArrayList<Sequence>();
 
         for (int r : rs) {
-
-            List<Sequence> sequences = new ArrayList<Sequence>();
 
             if (r < 2) {
                 // r=1 reads diagonal of 0's only
@@ -236,45 +249,39 @@ public class PartialShapeMatcher {
             }
 
             // build the matching sequential sequences by
-            // searching from block size rMin to size rMax, incl
-            extractSimilar(md, sequences, r);
+            // by reading block size matches
+            extractSequences(md, sequences, r);
 
             //changed to form adjacent segments where wrap
             // around is present, so assert format here
             assert(assertNoWrapAround(sequences));
-
-            Sequences result;
-
-            if (usePattern1) {
-                result = createSequencesWithBest(sequences,n1, n2);
-            } else {
-                result = matchArticulated(sequences, n1, n2);
-                assert(assertNoWrapAround(sequences));
-            }
-
-            if (result != null) {
-                results.add(result);
-            }
         }
+        
+        Collections.sort(sequences, new SequenceComparator2());
+        print("FSORT", sequences);
+        
+        if (rs.length > 1) {
+            Sequence.mergeSequences(sequences);
+        }
+        
+        // NOTE: the android statues
+        // and scissor tests show that correct
+        // main offset is within sequences now.
+      
+        // evaluate topK or all sequences
 
-        //TODO: an optional, but default evaluation
-        // stage to match the remaining points with
-        // a transformation model (and ransac)
-        // that would include those separated by
-        // occlusion and exclude those not part
-        // of the p shape.
+        MiscellaneousCurveHelper curveHelper = 
+            new MiscellaneousCurveHelper();
+        double[] pCen = curveHelper.calculateXYCentroids(p);
+        double[] qCen = curveHelper.calculateXYCentroids(q);
+        
         Sequences best;
-        if (performEval) {
-            // solve for transformation, add points, and
-            // return best solution.
-            if (diffN <= 0) {
-                best = transformAndEvaluate(results, p, q, md);
-            } else {
-                best = transformAndEvaluate(results, q, p, md);
-            }
+        // solve for transformation, add points, and
+        // return best solution.
+        if (diffN <= 0) {
+            best = transformAndEvaluate(sequences, p, q, pCen, md);
         } else {
-            // compare fraction and sum of differences
-            best = findBest(results);
+            best = transformAndEvaluate(sequences, q, p, qCen, md);
         }
         
         if (diffN <= 0) {
@@ -286,7 +293,7 @@ public class PartialShapeMatcher {
         return best;
     }
 
-    protected void extractSimilar(float[][][] md,
+    protected void extractSequences(float[][][] md,
         List<Sequence> sequences, int r) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
@@ -306,111 +313,38 @@ public class PartialShapeMatcher {
         MinDiffs mins = new MinDiffs(n1);
         findMinDifferenceMatrix(md, r, thresh, mins);
 
-        //TODO:  since the correct offset always appears
-        // in the mins offsets and there aren't very
-        // many of them,
-        // will evaluate them at this point and
-        // keep the best solution.
-        // evaluate involves a transformation solution
-        // and ransac to remove outliers.
-        
-        TIntSet minIndexes = new TIntHashSet();
-        
-        // 10 degrees is 0.175
-        double tolerance = 0.25;//0.1;//0.25;
-
-        DiffMatrixResults equivBest = new DiffMatrixResults(n1);
-        findEquivalentBest(md, r, mins, thresh, tolerance,
-            n1, n2, equivBest);
-
-        equivBest.sortListIndexes();
-
-        /*
-        printEquivBest(equivBest);
-
-        int[] topOffsets = findTopOffsets(equivBest, n1, n2);
-
-        if (topOffsets != null) {
-            log.info("topOffsets=" + Arrays.toString(topOffsets));
-        }
-        */
-
-        // ----- find sequential correspondences ----
-        for (int idx1 = 0; idx1 < equivBest.indexesAndDiff.length;
-            ++idx1) {
-
-            IndexesAndDiff indexesAndDiff =
-                equivBest.indexesAndDiff[idx1];
-            if (indexesAndDiff == null) {
+        Sequence st = null;
+        int startIdx = 0;
+        int currentOffset = -1;
+        for (int i = r; i < mins.idxs0.length; ++i) {
+            int offset = mins.idxs0[i];
+            if (offset == -1 && st == null) {
                 continue;
             }
-
-            LinkedList<IntIntDouble> list =
-                indexesAndDiff.list;
-
-            double sumAbsDiff = 0;
-
-            for (IntIntDouble node : list) {
-
-                int idx2 = node.getA();
-                double diff = node.getC();
-                sumAbsDiff += Math.abs(diff);
-                int offset = node.getB();
-
-                Sequence s = new Sequence(n1, n2, offset);
-                s.startIdx1 = idx1;
-                s.startIdx2 = idx2;
-                s.stopIdx2 = idx2;
-                //search through higher index lists to aggregate
-                int nextLIdx = idx1 + 1;
-                while (nextLIdx < n1) {
-
-                    IndexesAndDiff indexesAndDiff2 =
-                        equivBest.indexesAndDiff[nextLIdx];
-                    if (indexesAndDiff2 == null) {
-                        break;
-                    }
-
-                    int idx3 = s.stopIdx2 + 1;
-
-                    Map<PairInt, IntIntDouble> jLookupMap2 =
-                        indexesAndDiff2.jLookupMap;
-
-                    PairInt key2 = new PairInt(idx3, offset);
-                    IntIntDouble node2 = jLookupMap2.get(key2);
-                    if (node2 != null) {
-                        s.stopIdx2 = idx3;
-
-                        diff = node2.getC();
-                        sumAbsDiff += diff;
-
-                        LinkedList<IntIntDouble> list2
-                            = indexesAndDiff2.list;
-                        list2.remove(node2);
-                        jLookupMap2.remove(key2);
-                    } else {
-                        break;
-                    }
-
-                    nextLIdx++;
-                }
-
-                int n = s.length();
-                s.fractionOfWhole = (float)n/(float)n1;
-                s.absAvgSumDiffs = (float)(sumAbsDiff/(float)n);
-
-                if (s.length() > 1) {
-                    sequences.add(s);
-                    log.fine(String.format(
-                        "%d seq %d:%d to %d  frac=%.4f  avg diff=%.4f offset=%d",
-                        (sequences.size() - 1),
-                        s.startIdx1, s.startIdx2, s.stopIdx2,
-                        s.fractionOfWhole, s.absAvgSumDiffs,
-                        s.getOffset()));
+            if (st == null) {
+                assert(offset != -1);
+                currentOffset = offset;
+                st = new Sequence(n1, n2, offset);
+                st.startIdx1 = i - r;
+                st.startIdx2 = i - r + offset;
+                st.stopIdx2 = i + offset;
+            } else {
+                if (currentOffset == offset) {
+                    st.stopIdx2 = i + offset;
+                } else {
+                    sequences.add(st);
+                    currentOffset = offset;
+                    st = new Sequence(n1, n2, offset);
+                    st.startIdx1 = i - r;
+                    st.startIdx2 = i - r + offset;
+                    st.stopIdx2 = i + offset;
                 }
             }
         }
-
+        if (st != null) {
+            sequences.add(st);
+        }
+        
         log.info(sequences.size() + " sequences");
     }
     
@@ -446,118 +380,6 @@ public class PartialShapeMatcher {
         track.setFractionOfWhole(sumFrac);
 
         return track;
-    }
-
-    protected Sequences matchArticulated(List<Sequence> sequences,
-        int n1, int n2) {
-
-        // (1) choose the topK from sequences sorted by fraction
-        // and then add to those
-        int topK = 10 * (1 + (Math.max(n1, n2))/250);
-        int end = (topK > sequences.size()) ? sequences.size() : topK;
-
-        Collections.sort(sequences, new SequenceComparator2());
-
-        List<Sequences> tracks = new ArrayList<Sequences>();
-        for (int i = 0; i < end; ++i) {
-            Sequence s = sequences.get(i);
-            Sequences track = new Sequences();
-            tracks.add(track);
-            track.getSequences().add(s.copy());
-            log.info("seed " + i + " : " + s);
-        }
-
-        return matchArticulated(sequences, tracks, n1, n2);
-    }
-
-    protected Sequences matchArticulated(List<Sequence> sequences,
-        List<Sequences> seedTracks, int n1, int n2) {
-
-        print0(sequences, "S");
-
-        // use histogram to find 2 highest peaks:
-        int[] top2Offsets = findOffsets(sequences, n1, n2);
-
-        if (top2Offsets != null) {
-            log.info("top offsets=" + Arrays.toString(top2Offsets)
-                + " n1=" + n1 + " n2=" + n2);
-        }
-
-        // (1) combine seedTracks that have same offset
-        combineIfSameOffset(seedTracks);
-
-        Collections.sort(sequences, new SequenceComparator2());
-
-        // (2) put the sorted sequences into sets with keys
-        //     being offsets
-        TreeMap<Integer, List<Sequence>> seqeuncesMap =
-            placeInMapByOffsets(sequences);
-
-        // (3) add to seedTracks, the best of same offset sequences.
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            int offset = track.getSequences().get(0).getOffset();
-            List<Sequence> sList = seqeuncesMap.get(Integer.valueOf(offset));
-            track.getSequences().addAll(sList);
-            Sequence.mergeSequences(track.getSequences());
-        }
-
-        assert(assertNoWrapAround2(seedTracks));
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            log.info("pre-sorted track " + i + ": " + track.toString());
-        }
-
-        // calculate the stats for each track (== Sequences)
-        for (Sequences track : seedTracks) {
-            int sumLen = 0;
-            float sumFrac = 0;
-            double sumDiffs = 0;
-            for (Sequence s : track.getSequences()) {
-                int len = s.length();
-                float diff = s.absAvgSumDiffs * len;
-                sumLen += len;
-                sumDiffs += diff;
-                sumFrac += s.fractionOfWhole;
-            }
-            track.setAbsSumDiffs(sumDiffs);
-            track.setAvgSumDiffs((float)(sumDiffs/(float)sumLen));
-            track.setFractionOfWhole(sumFrac);
-        }
-
-        Collections.sort(seedTracks, new TrackComparator(n1));
-        for (int i = 0; i < seedTracks.size(); ++i) {
-            Sequences track = seedTracks.get(i);
-            log.info("track " + i + ": " + track.toString());
-        }
-
-        if (seedTracks.isEmpty()) {
-            return null;
-        }
-
-        return seedTracks.get(0);
-    }
-
-    protected double matchRigidWithOcclusion(List<Sequence> sequences,
-        int n1, int n2) {
-
-        // sort by desc fraction of whole
-        Collections.sort(sequences, new SequenceComparator2());
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            log.info(String.format("FSORT %d  %s", i, sequences.get(i).toString()));
-        }
-
-        // evaluate the topk items as a transformation
-        int topK = 10 * (1 + (Math.max(n1, n2))/250);
-        int end = (topK > sequences.size()) ? sequences.size() : topK;
-
-        for (int i = 0; i < sequences.size(); ++i) {
-            Sequence s = sequences.get(i);
-        }
-
-        throw new UnsupportedOperationException("not yet implemented");
     }
 
     /**
@@ -896,30 +718,6 @@ public class PartialShapeMatcher {
         }
     }
 
-    private void filterForConsistentClockwise(
-        List<Sequences> tracks) {
-
-        TIntList rmList = new TIntArrayList();
-
-        for (int i = 0; i < tracks.size(); ++i) {
-
-            Sequences sequences = tracks.get(i);
-
-            if (!sequences.isConsistentClockwise()) {
-                rmList.add(i);
-            }
-        }
-
-        log.info("removing " + rmList.size()
-            + " tracks from " + tracks.size());
-
-        for (int i = (rmList.size() - 1); i > -1; --i) {
-            int rmIdx = rmList.get(i);
-            tracks.remove(rmIdx);
-        }
-
-    }
-
     private void transpose(Sequences sequences,
         int n1, int n2) {
 
@@ -939,39 +737,6 @@ public class PartialShapeMatcher {
         }
         sqs.clear();
         sqs.addAll(tr);
-    }
-
-    protected int[] findTopOffsets(DiffMatrixResults equivBest,
-        int n1, int n2) {
-
-        int n = 0;
-
-        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
-            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
-            if (iad == null) {
-                continue;
-            }
-            LinkedList<IntIntDouble> list = iad.list;
-            n += list.size();
-        }
-
-        float[] values = new float[n];
-        n = 0;
-        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
-            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
-            if (iad == null) {
-                continue;
-            }
-            LinkedList<IntIntDouble> list = iad.list;
-            for (IntIntDouble iid : list) {
-                values[n] = iid.getB();
-                n++;
-            }
-        }
-
-        int[] offsets = findOffsetHistPeaks(values, n1, n2);
-
-        return offsets;
     }
 
     protected int[] findOffsetHistPeaks(float[] values,
@@ -1131,329 +896,205 @@ public class PartialShapeMatcher {
         return hist;
     }
 
-    protected boolean merge(List<Sequence> sequences) {
-
-        if (sequences.size() < 2) {
-            return false;
-        }
-
-        /*
-        0
-        1
-        2
-        3  --0
-        4  --
-        */
-
-        boolean didMerge = false;
-
-        //TODO: the sequences data structure will
-        // be revised to keep the sequences in order.
-
-        LinkedHashSet<Sequence> results
-            = new LinkedHashSet<Sequence>();
-
-        for (int i = 1; i < sequences.size(); ++i) {
-            Sequence s0 = sequences.get(i - 1);
-            Sequence s = sequences.get(i);
-            Sequence[] merged = s0.merge(s);
-            if (merged == null) {
-                results.add(s0);
-                results.add(s);
-            } else {
-                for (Sequence st : merged) {
-                    results.add(st);
-                    didMerge = true;
-                }
-            }
-        }
-
-        if (didMerge) {
-            sequences.clear();
-            sequences.addAll(results);
-        }
-
-        return didMerge;
-    }
-
-    private boolean canAppend(List<Sequence> track,
-        Sequence testS, int n1) {
-
-        if (intersectsExistingRange(track, testS)) {
-            return false;
-        }
-
-        //TODO: could improve the datastructure
-        // to make this delete faster.  logic in
-        // the code is still changing currently.
-
-        track.add(testS);
-        boolean isC = Sequences.isConsistentClockwise(track);
-        boolean rmvd = track.remove(testS);
-        assert(rmvd);
-
-        return isC;
-    }
-
-    /**
-     * assuming that seedTracks each have only one offset
-     * (expecting only one sequence, more specifically),
-     * combine the items in seedTracks that have the same
-     * offset.  "Combine" means merge if adjacent or overlapping,
-     * else append.
-     * @param seedTracks
-     */
-    private void combineIfSameOffset(List<Sequences> seedTracks) {
-
-        if (seedTracks.size() < 2) {
-            return;
-        }
-
-        // --- make the offset lookup map ----
-        TIntObjectMap<TIntSet> offsetIndexMap
-            = new TIntObjectHashMap<TIntSet>();
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-
-            Sequences track = seedTracks.get(i);
-
-            int offset = track.getSequences().get(0).getOffset();
-
-            TIntSet indexes = offsetIndexMap.get(offset);
-            if (indexes == null) {
-                indexes = new TIntHashSet();
-                offsetIndexMap.put(offset, indexes);
-            }
-            indexes.add(i);
-        }
-
-        // ---- combine tracks that have same offset ----
-
-        TIntSet rmSet = new TIntHashSet();
-
-        for (int i = 0; i < seedTracks.size(); ++i) {
-
-            if (rmSet.contains(i)) {
-                continue;
-            }
-
-            Sequences track = seedTracks.get(i);
-            int offset = track.getSequences().get(0).getOffset();
-
-            TIntSet indexes = offsetIndexMap.get(offset);
-            TIntIterator iter = indexes.iterator();
-            while (iter.hasNext()) {
-                int oIdx = iter.next();
-                if (oIdx == i || rmSet.contains(oIdx)) {
-                    continue;
-                }
-                rmSet.add(oIdx);
-
-                // merge all of track2 with track
-                Sequences track2 = seedTracks.get(oIdx);
-                track.getSequences().addAll(track2.getSequences());
-
-                Sequence.mergeSequences(track.getSequences());
-            }
-
-            if (!indexes.isEmpty()) {
-
-                // NOTE: stats not yet popualated, so not updating here
-
-                // clear indexes so no others are merged from it
-                indexes.clear();
-            }
-        }
-
-        if (!rmSet.isEmpty()) {
-            TIntList rmList = new TIntArrayList(rmSet);
-            rmList.sort();
-            for (int i = (rmList.size() - 1); i > -1; --i) {
-                int rmIdx = rmList.get(i);
-                seedTracks.remove(rmIdx);
-            }
-        }
-    }
-
-    /**
-     * create a map with key being offset of the Sequence,
-     * and value being a list of all Sequences in sequences
-     * which have that offset.
-     * each Sequence in a sequences item must have same
-     * offset already.
-     * @param sequences
-     * @return
-     */
-    private TreeMap<Integer, List<Sequence>>
-        placeInMapByOffsets(List<Sequence> sequences) {
-
-        TreeMap<Integer, List<Sequence>> map =
-            new TreeMap<Integer, List<Sequence>>();
-
-        for (Sequence s : sequences) {
-
-            int offset = s.getOffset();
-            Integer key = Integer.valueOf(offset);
-
-            List<Sequence> list = map.get(key);
-            if (list == null) {
-                list = new ArrayList<Sequence>();
-                map.put(key, list);
-            }
-            list.add(s);
-        }
-
-        return map;
-    }
-
-    private void printEquivBest(DiffMatrixResults equivBest) {
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < equivBest.indexesAndDiff.length; ++i) {
-            IndexesAndDiff iad = equivBest.indexesAndDiff[i];
-            if (iad != null) {
-                LinkedList<IntIntDouble> list =
-                    iad.list;
-                for (IntIntDouble iid : list) {
-                    sb.append(String.format(
-                        "equivBest: i=%d j=%d offset=%d d=%.4f\n",
-                        i, iid.getA(), iid.getB(),
-                        iid.getC()));
-                }
-            }
-            if (sb.length() > 0) {
-                log.info(sb.toString());
-                sb.delete(0, sb.length());
-            }
-        }
-    }
-
-    private Sequences transformAndEvaluate(List<Sequences> results,
-        PairIntArray p, PairIntArray q, float[][][] md) {
+    private Sequences transformAndEvaluate(
+        List<Sequence> sequences,
+        PairIntArray p, PairIntArray q, double[] pCen,
+        float[][][] md) {
         
-        //NOTE: md is psssed in to be able to add stats of
+        int topK = 10;
+        if (topK > sequences.size()) {
+            topK = sequences.size();
+        }
+        
+        for (int i = 0; i < topK; ++i) {
+            Sequence s = sequences.get(i);
+            Object result = evaluate(s, p, q, pCen, md);
+        }
+        //NOTE: md is passed in to be able to add stats of
         // points found after transformation
         
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private Sequences findBest(List<Sequences> results) {
+    protected void populatePointArrays(Sequence s,
+        PairIntArray p, PairIntArray q, 
+        PairIntArray pOut, PairIntArray qOut,
+        PairIntArray pUnmatchedOut,
+        PairIntArray qUnmatchedOut) {
+        
+        int n1 = p.getN();
+        int n2 = q.getN();
+        int offset = s.getOffset();
+        
+        TIntSet pIdxs = new TIntHashSet();
+        TIntSet qIdxs = new TIntHashSet();
+        
+        for (int i = s.startIdx1; i <= s.getStopIdx1();
+            ++i) {
+            
+            int pIdx = i;
+            if (pIdx >= n1) {
+                pIdx -= n1;
+            }
+            pIdxs.add(pIdx);
+            pOut.add(p.getX(pIdx), p.getY(pIdx));
+            
+            int qIdx = pIdx + offset;
+            if (qIdx >= n2) {
+                qIdx -= n2;
+            } else if (qIdx < 0) {
+                qIdx += n2;
+            }
+            qIdxs.add(qIdx);
+            qOut.add(q.getX(qIdx), q.getY(qIdx));
+            
+            log.info("pIdx=" + pIdx + " qIdx=" + qIdx);
+        }
+        
+        // -- populate unmatched p ----
+        for (int i = 0; i < p.getN(); ++i) {
+            if (!pIdxs.contains(i)) {
+                pUnmatchedOut.add(p.getX(i), p.getY(i));
+            }
+        }
+        for (int i = 0; i < q.getN(); ++i) {
+            if (!qIdxs.contains(i)) {
+                qUnmatchedOut.add(q.getX(i), q.getY(i));
+            }
+        }
+    }
+
+    // TODO: encapsulate the correspondence list
+    // and summed and averaged distances from transformed
+    private Object evaluate(Sequence s, PairIntArray p, 
+        PairIntArray q, double[] pCen, float[][][] md) {
     
-        // keep the result with higher fraction.
+        PairIntArray leftXY = new PairIntArray(s.length());
+        PairIntArray rightXY = new PairIntArray(s.length());
+        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() -
+            s.length());
+        PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() -
+            s.length());
+        populatePointArrays(s, p, q, leftXY, rightXY, 
+            leftUnmatchedXY, rightUnmatchedXY);
         
-        // NOTE: may need to revise to include abs difference
-        
-        Sequences best = null;
-        float bestFraction = Float.MIN_VALUE;
-        for (Sequences result : results) {
-            float frac = result.getFractionOfWhole();
-            log.info("result: " + result.toString());
-            if (frac > bestFraction) {
-                best = result;
-                bestFraction = frac;
-            }
-        }
+        MatchedPointsTransformationCalculator
+            tc = new MatchedPointsTransformationCalculator();
 
-        return best;        
+        double scale = 1.;
+        TransformationParameters params =
+            tc.calulateEuclideanGivenScale(
+            scale, leftXY, rightXY, pCen[0], pCen[1]);
+
+        if (params == null) {
+            return null;
+        }
+        
+        // 4 pixels or some factor of dp
+        double tolerance = 4;
+        log.info("dp=" + dp + " pixTol=" + tolerance);
+        
+        Transformer transformer = new Transformer();
+        PairIntArray leftTr = transformer.applyTransformation(
+            params, leftUnmatchedXY);
+        
+        // find the best matches to the unmatched in
+        // q
+        
+        // optimal is currently hungarian, but
+        //     may replace w/ another bipartite matcher
+        //     in future
+        
+        boolean useOptimal = true;
+        
+        TIntIntMap idxMap;
+        if (useOptimal) {
+            idxMap = optimalMatch(leftTr, rightUnmatchedXY, 
+                tolerance);
+        } else {
+            idxMap =
+            nearestMatch(leftTr, rightUnmatchedXY, 
+                tolerance);
+        }
+        
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private class IndexesAndDiff {
-
-        private final LinkedList<IntIntDouble> list;
-
-        /**
-         * key = pairint of j, jOffset, value=list node
-         */
-        private final Map<PairInt, IntIntDouble> jLookupMap;
-
-        public IndexesAndDiff() {
-            list = new LinkedList<IntIntDouble>();
-            jLookupMap = new HashMap<PairInt, IntIntDouble>();
-        }
-
-        public void add(int j, int jOffset, double diff) {
-
-            assert(diff >= 0);
-
-            IntIntDouble node = new IntIntDouble(j, jOffset, diff);
-
-            PairInt key = new PairInt(j, jOffset);
-
-            IntIntDouble existing = jLookupMap.get(key);
-
-            if (existing != null) {
-                double diff0 = Math.abs(existing.getC());
-                if (diff0 > node.getC()) {
-                    list.add(node);
-                    jLookupMap.put(key, node);
-                }
-            } else {
-                list.add(node);
-                jLookupMap.put(key, node);
+    private TIntIntMap optimalMatch(PairIntArray xy1, 
+        PairIntArray xy2, double tolerance) {
+        
+        TObjectFloatMap<PairInt> costMap =
+            new TObjectFloatHashMap<PairInt>();
+        
+        float[][] cost = new float[xy1.getN()][xy2.getN()];
+        for (int i1 = 0; i1 < xy1.getN(); ++i1) {
+            cost[i1] = new float[xy2.getN()];
+            //Arrays.fill(cost[i1], Float.MAX_VALUE);
+            int x1Tr = xy1.getX(i1);
+            int y1Tr = xy1.getY(i1);
+            for (int i2 = 0; i2 < xy2.getN(); ++i2) {
+                int x2 = xy2.getX(i2);
+                int y2 = xy2.getY(i2);
+                int diffX = Math.abs(x1Tr - x2);
+                int diffY = Math.abs(y1Tr - y2);
+                cost[i1][i2] = (float)Math.abs(diffX*diffX +
+                    diffY * diffY);
+                costMap.put(new PairInt(i1, i2),
+                    cost[i1][i2]);
             }
         }
-
-        void sortByJ() {
-
-            int n = list.size();
-
-            if (n > 1) {
-
-                IntIntDouble[] a
-                    = list.toArray(new IntIntDouble[n]);
-
-                QuickSort.sortByA(a);
-
-                list.clear();
-                for (IntIntDouble abc : a) {
-                    list.add(abc);
-                }
-
-                assert(list.size() == n);
-            }
-
-            rewriteJLookupMap();
+        
+        boolean transposed = false;
+        if (cost.length > cost[0].length) {
+            cost = MatrixUtil.transpose(cost);
+            transposed = true;
         }
+        
+        HungarianAlgorithm b = new HungarianAlgorithm();
+        int[][] match = b.computeAssignments(cost);
 
-        private void rewriteJLookupMap() {
-
-            jLookupMap.clear();
-
-            for (IntIntDouble node : list) {
-                int j = node.getA();
-                int jOffset = node.getB();
-                PairInt key = new PairInt(j, jOffset);
-                jLookupMap.put(key, node);
+        TIntIntMap map = new TIntIntHashMap();
+        
+        for (int i = 0; i < match.length; i++) {
+            int idx1 = match[i][0];
+            int idx2 = match[i][1];
+            if (idx1 == -1 || idx2 == -1) {
+                continue;
+            }
+            if (transposed) {
+                int swap = idx1;
+                idx1 = idx2;
+                idx2 = swap;
+            }
+            PairInt p = new PairInt(idx1, idx2);
+            float costIJ = costMap.get(p);
+            if (costIJ <= tolerance) {
+                map.put(idx1, idx2);
             }
         }
+        
+        return map;
     }
 
-    private class DiffMatrixResults {
-        /**
-        index = i
-        value = linked list of j,jOffset, and diff
+    private TIntIntMap nearestMatch(PairIntArray xy1, 
+        PairIntArray xy2, double tolerance) {
+        
+        KNearestNeighbors knn = new KNearestNeighbors(
+            xy2.getX(), xy2.getY());
+        
+        Set<PairInt> points = Misc.convert(xy2);
+        
+        /*
+        for each xy1, find nearest xy2
+           idx2 multiple mappings will be decided by
+              smallest diff   
         */
-        private final IndexesAndDiff[] indexesAndDiff;
-
-        public DiffMatrixResults(int n) {
-            indexesAndDiff = new IndexesAndDiff[n];
-        }
-
-        public void add(int i, int j, int jOffset,
-            double diff) {
-            if (indexesAndDiff[i] == null) {
-                indexesAndDiff[i] = new IndexesAndDiff();
-            }
-            indexesAndDiff[i].add(j, jOffset, diff);
-        }
-
-        void sortListIndexes() {
-            for (IndexesAndDiff id : indexesAndDiff) {
-                if (id != null) {
-                    id.sortByJ();
-                }
-            }
-        }
+        
+        // place best in here
+        TIntIntMap map = new TIntIntHashMap();
+        
+        throw new UnsupportedOperationException("not yet imple");
+        //return map;
     }
 
     private class MinDiffs {
@@ -1727,14 +1368,6 @@ public class PartialShapeMatcher {
                     s1 += -1;
                 }
                 
-                log.fine(String.format(" [%2d,%2d<-%2d] => %.4f",
-                    i,
-                    ((i + jOffset) < n2) ?
-                    i + jOffset : (i + jOffset) - n2,
-                    ((i + jOffset - r + 1) < n2) ?
-                    i + jOffset - r + 1 : (i + jOffset - r + 1) - n2,
-                    s1*c));
-
 log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 + " jOffset=" + jOffset
 + " d=" + s1 + " r=" + r);
@@ -1787,7 +1420,8 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                     j -= n1;
                 }
                 log.info("MIN i=" + i + " j="
-                + j + " offset=" + idxs0[i] + "  mind=" + mins[i]);
+                    + j + " offset=" + idxs0[i] + "  mind=" 
+                    + mins[i] + " r=" + r);
             }
         }
         
@@ -1795,119 +1429,6 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
         log.info("OFFSETS=" + Arrays.toString(idxs0));
         log.info("mins=" + Arrays.toString(mins));
 
-    }
-
-    /**
-     *
-     * @param md
-     * @param r
-     * @param mins
-     * @param threshold
-     * @param tolerance
-     * @param n1
-     * @param n2
-     * @param output contains pairs of i and jOffset, where
-     * j is i + jOffset
-     */
-    private void findEquivalentBest(float[][][] md, int r,
-        MinDiffs mins, double threshold, double tolerance,
-        int n1, int n2, DiffMatrixResults output) {
-
-        //md[0:n2-1][0:n1-1][0:n1-1]
-
-        assert(md.length == n2);
-
-        double c = 1./(double)(r*r);
-
-        double lThresh = Math.sqrt(r) * threshold;
-
-        // capture all "best" within mins[i] += tolerance
-
-  // TODO: this is all in revision.
-  // will be stored as whole block rather
-  // than indiv pixels,
-  // but would still like to store
-  // equivalent best
-        
-        for (int jOffset = 0; jOffset < n2; jOffset++) {
-            float[][] a = md[jOffset];
-            for (int i = r; i < n1; ++i) {
-                
-                if (mins.idxs0[i] == -1) {
-                    // there is no best for this p index
-                    // this should not happen with current
-                    // read pattern
-                   // log.severe("ERROR: min not set for i=" + i);
-                    continue;
-                }
-
-                // mins.mins[i] is the best for index i (== P_i)
-                // mins.idxs0[i] is jOffset of best
-                // j is index i + jOffset
-
-                float s1 = a[i][i] - a[i-r][i] - a[i][i-r] + a[i-r][i-r];
-                
-                s1 *= c;
-
-                if (s1 > lThresh) {
-                   continue;
-                }
-                
-                if (s1 < 0) {
-                    s1 *= -1;
-                }
-
-                double best = mins.mins[i];
-
-                if (Math.abs(s1 - best) > tolerance) {
-                    continue;
-                }
-
-                //TODO: this will be revised to store
-                // the entire block i-r:i as a sequence soon
-                //
-                
-                int idx2 = jOffset + i;
-                if (idx2 >= n2) {
-                    idx2 -= n2;
-                }
-                output.add(i, idx2, jOffset, s1);
-                /*
-                for (int ii = (i - r); ii <= i; ++ii) { 
-                    int idx2 = jOffset + ii;
-                    if (idx2 >= n2) {
-                        idx2 -= n2;
-                    }
-
-                    output.add(ii, idx2, jOffset, s1);
-                }
-                */
-            }
-        }
-    }
-
-    private float findMaxAvgDiff(List<Sequence> sequences) {
-
-        float max = Float.MIN_VALUE;
-        for (Sequence s : sequences) {
-            float d = s.absAvgSumDiffs;
-            if (d > max) {
-                max = d;
-            }
-       }
-        return max;
-    }
-
-    private boolean intersectsExistingRange(
-        List<Sequence> existingList, Sequence sTest) {
-
-        for (Sequence s : existingList) {
-            if (s.intersects(sTest)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private boolean assertNoWrapAround(List<Sequence> sequences) {
