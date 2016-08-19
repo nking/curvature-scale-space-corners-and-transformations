@@ -409,4 +409,82 @@ public class QuickSortTest extends TestCase {
             assertEquals(i, abc[i].getA());
         }
     }
+    
+     public void testSortBy1stArg_2() {
+        
+        TIntList a = new TIntArrayList();
+        TIntList c = new TIntArrayList();
+        
+        for (int i = 0; i < 10; ++i) {
+            a.add(9 - i);
+            c.add(9 - i);
+        }
+        
+        QuickSort.sortBy1stArg(a, c);
+        
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(i, a.get(i));
+            assertEquals(i, c.get(i));
+        }
+    }
+    
+    public void testSortBy1stThen2ndThen3rd_2() {
+
+        TIntList a = new TIntArrayList();
+        TIntList b = new TIntArrayList();
+        TIntList c = new TIntArrayList();
+
+        a.add(5);
+        b.add(4);
+        c.add(4);
+        
+        a.add(5);
+        b.add(7);
+        c.add(7);
+        
+        a.add(5);
+        b.add(4);
+        c.add(5);
+
+        a.add(1);
+        b.add(2);
+        c.add(3);
+        
+        QuickSort.sortBy1stThen2ndThen3rd(a, b, c);
+        
+        assertEquals(1, a.get(0));
+        assertEquals(2, b.get(0));
+        assertEquals(3, c.get(0));
+        
+        assertEquals(5, a.get(1));
+        assertEquals(4, b.get(1));
+        assertEquals(4, c.get(1));
+        
+        assertEquals(5, a.get(2));
+        assertEquals(4, b.get(2));
+        assertEquals(5, c.get(2));
+        
+        assertEquals(5, a.get(3));
+        assertEquals(7, b.get(3));
+        assertEquals(7, c.get(3));
+        
+        /*
+        a.add(1);
+        b.add(2);
+        c.add(3);
+        
+        a.add(5);
+        b.add(4);
+        c.add(4);
+        
+        a.add(5);
+        b.add(4);
+        c.add(5);
+
+        a.add(5);
+        b.add(7);
+        c.add(7);        
+        */
+    }
+
 }

@@ -96,6 +96,13 @@ public class PartialShapeMatcherTest extends TestCase {
         
         // articulated:
         Sequences sequences = shapeMatcher.match(p, q);        
+
+        assertNotNull(sequences);
+
+            System.out.println(
+                "RESULTS=" +
+                " scissors offset0: " +
+                sequences.toString());
     
         /*
         unless improve the first image blade positions:
@@ -146,6 +153,13 @@ public class PartialShapeMatcherTest extends TestCase {
         // articulated:
         Sequences sequences = shapeMatcher.match(p, q);        
     
+        assertNotNull(sequences);
+
+            System.out.println(
+                "RESULTS=" +
+                " scissors offset 16: " +
+                sequences.toString());
+
         /*
         unless improve the first image blade positions:
         expecting roughly for case without

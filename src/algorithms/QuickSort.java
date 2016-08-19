@@ -170,6 +170,21 @@ public class QuickSort {
         sortBy1stArg(a, b, c, 0, a.size() - 1);
     }
     
+    public static void sortBy1stArg(TIntList a, TIntList b) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be the same length");
+        }
+        
+        sortBy1stArg(a, b, 0, a.size() - 1);
+    }
+    
     /**
      * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
      * qsort3 from the book "Programming in Pearls" by Jon Bentley.
@@ -242,6 +257,66 @@ public class QuickSort {
             sortBy1stArg(a, b, c, idxLo, idxMid - 1);
 
             sortBy1stArg(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive.  Uses the optimized
+     * qsort3 from the book "Programming in Pearls" by Jon Bentley.
+     * @param a
+     * @param b
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stArg(TIntList a, TIntList b, int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("v cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and v must be the same length");
+        }
+        
+        if (a.size() < 2) {
+            return;
+        }
+        
+        if (idxLo < idxHi) {
+
+            int x = a.get(idxLo);
+            int store = idxLo;
+            int idxMid = idxHi + 1;
+
+            while (true) {
+                do {
+                    store++;     
+                } while ((store <= idxHi) && (a.get(store) < x));
+                do {
+                    idxMid--;
+                } while (a.get(idxMid) > x);
+                if (store > idxMid) {
+                    break;
+                }
+                int swap = a.get(store);
+                a.set(store, a.get(idxMid));
+                a.set(idxMid, swap);
+                swap = b.get(store);
+                b.set(store, b.get(idxMid));
+                b.set(idxMid, swap);
+            }
+            int swap = a.get(idxLo);
+            a.set(idxLo, a.get(idxMid));
+            a.set(idxMid, swap);
+            swap = b.get(idxLo);
+            b.set(idxLo, b.get(idxMid));
+            b.set(idxMid, swap);
+         
+            sortBy1stArg(a, b, idxLo, idxMid - 1);
+
+            sortBy1stArg(a, b, idxMid + 1, idxHi);
         }
     }
     
@@ -1064,6 +1139,78 @@ public class QuickSort {
         }
     }
     
+    /**
+     * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
+     * and all swap operations performed on all 3 arrays.  
+     * @param a
+     * @param b
+     * @param c
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stThen2ndThen3rd(
+        TIntList a, TIntList b, TIntList c) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.size() < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (a.size() != c.size()) {
+            throw new IllegalArgumentException("a and c must be same length");
+        }
+        sortBy1stThen2ndThen3rd(a, b, c, 0, a.size() - 1);
+    }
+    
+    /**
+     * sort a from index idxLo to idxHi, inclusive, with next sorting by b and c
+     * and all swap operations performed on all 3 arrays.  
+     * @param a
+     * @param b
+     * @param c
+     * @param idxLo
+     * @param idxHi 
+     */
+    public static void sortBy1stThen2ndThen3rd(
+        TIntList a, TIntList b, TIntList c, 
+        int idxLo, int idxHi) {
+        
+        if (a == null) {
+            throw new IllegalArgumentException("a cannot be null");
+        }
+        if (a.size() < 2) {
+            return;
+        }
+        if (b == null) {
+            throw new IllegalArgumentException("b cannot be null");
+        }
+        if (c == null) {
+            throw new IllegalArgumentException("c cannot be null");
+        }
+        if (a.size() != b.size()) {
+            throw new IllegalArgumentException("a and b must be same length");
+        }
+        if (a.size() != c.size()) {
+            throw new IllegalArgumentException("a and c must be same length");
+        }
+        
+        if (idxLo < idxHi) {
+            int idxMid = partitionBy1stThen2ndThen3rd(a, b, c, idxLo, idxHi);
+            sortBy1stThen2ndThen3rd(a, b, c, idxLo, idxMid - 1);
+            sortBy1stThen2ndThen3rd(a, b, c, idxMid + 1, idxHi);
+        }
+    }
+    
     public static void sortBy1stThen2nd(float[] a, float[] b) {
         if (a == null) {
             throw new IllegalArgumentException("a cannot be null");
@@ -1292,6 +1439,52 @@ public class QuickSort {
         swap2 = c[store];
         c[store] = c[idxHi];
         c[idxHi] = swap2;
+        return store;
+    }
+    
+    private static int partitionBy1stThen2ndThen3rd(
+        TIntList a, TIntList b, 
+        TIntList c, int idxLo, int idxHi) {
+        
+        int x = a.get(idxHi);
+        int store = idxLo - 1;
+        
+        for (int i = idxLo; i < idxHi; i++) {
+            boolean doSwap = false;
+            if (a.get(i) < x) {
+                doSwap = true;
+            } else if (a.get(i) == x) {
+                if (b.get(i) < b.get(idxHi)) {
+                    doSwap = true;
+                } else if (b.get(i) == b.get(idxHi)) {
+                    if (c.get(i) <= c.get(idxHi)) {
+                        doSwap = true;
+                    }
+                }
+            }
+            if (doSwap) {
+                store++;
+                int swap = a.get(store);
+                a.set(store, a.get(i));
+                a.set(i, swap);
+                int swap2 = b.get(store);
+                b.set(store, b.get(i));
+                b.set(i, swap2);
+                swap2 = c.get(store);
+                c.set(store, c.get(i));
+                c.set(i, swap2);
+            }
+        }
+        store++;
+        int swap = a.get(store);
+        a.set(store, a.get(idxHi));
+        a.set(idxHi, swap);
+        int swap2 = b.get(store);
+        b.set(store, b.get(idxHi));
+        b.set(idxHi, swap2);
+        swap2 = c.get(store);
+        c.set(store, c.get(idxHi));
+        c.set(idxHi, swap2);
         return store;
     }
     
