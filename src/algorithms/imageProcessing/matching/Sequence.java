@@ -18,7 +18,7 @@ means.
   The field offset is always g.e. 0.
   The field startIdx1 is in range of n1.
   The fields startIdx2 and stopIdx2 are
-  in range of n2. 
+  in range of n2.
   stopIdx2 is g.e. startIdx2.
   The length of the sequence is stopIdx2 - startIdx2 + 1.
   The implied stopIdx1 is g.e. startIdx1.
@@ -32,7 +32,7 @@ Note that because the indexes are on
   The sentinel sequence is setting the startIdx2
   and stopIdx2 to value n2 (and the corresponding
   startIdx1 calculated from the offset).
-  
+
         example, n1=n2=50, offset=3
             0  : 3 ...
             46 : 49  49
@@ -51,7 +51,7 @@ Note that because the indexes are on
             49 : 46  46
 
    NOTE that much of the logic below relies
-    on n1 leq n2, so if use transpose() to 
+    on n1 leq n2, so if use transpose() to
     reverse correspondence, should not use
     methods such as merge afterwards...
     TODO: change code to create a corresp
@@ -60,7 +60,7 @@ Note that because the indexes are on
  * @author nichole
  */
 public class Sequence {
-    
+
     private Logger log = Logger.getLogger(
         this.getClass().getName());
 
@@ -73,7 +73,7 @@ public class Sequence {
     private final int n1;
     private final int n2;
     private final int offset;
-    
+
     public Sequence(int nIndexes1, int nIndexes2,
         int offset12) {
         n1 = nIndexes1;
@@ -81,15 +81,15 @@ public class Sequence {
         offset = offset12;
         //assert(n1 <= n2);
     }
-    
+
     public int getN1() {
         return n1;
     }
-    
+
     public int getN2() {
         return n2;
     }
-    
+
     public int getStartIdx1() {
         return startIdx1;
     }
@@ -104,31 +104,31 @@ public class Sequence {
 
     /**
      * TODO: this method needs many tests
-     * 
+     *
      * @param sTest
-     * @return 
+     * @return
      */
     public boolean intersects(Sequence sTest) {
-        
+
         if (sTest.getN1() != n1 || sTest.getN2() != n2) {
             throw new IllegalArgumentException("the n1 or n2 "
             + " of sTest have to be same as this n1 and n2");
         }
-        
+
         if ((sTest.isStartSentinel() || sTest.isStopSentinel())
             && (isStartSentinel() || isStopSentinel())) {
             return true;
         }
-           
+
         int sTestStopIdx1 = sTest.startIdx1 +
             (sTest.stopIdx2 - sTest.startIdx2);
-         
+
         int stopIdx1 = startIdx1
             + (stopIdx2 - startIdx2);
-        
-        //TODO: might need corrections for 
+
+        //TODO: might need corrections for
         // wrap around here
-        
+
         //       s s
         //  t t      t t
         // test that first indexes don't intersect
@@ -140,10 +140,10 @@ public class Sequence {
                 return false;
             }
         }
-       
+
         return true;
     }
-    
+
     public int getStopIdx1() {
         int stopIdx1 = startIdx1 + length() - 1;
         if (stopIdx1 >= n1) {
@@ -151,21 +151,21 @@ public class Sequence {
         }
         return stopIdx1;
     }
-    
+
     /**
      * this method works best if sequences have the same offset
      * due to internal re-ordering of the sequences.
-     * @param sequences 
+     * @param sequences
      */
     public static void mergeSequences(List<Sequence> sequences) {
 
-        LinkedHashSet<Sequence> seqs2 = 
+        LinkedHashSet<Sequence> seqs2 =
             new LinkedHashSet<Sequence>();
-        
+
         int nIter = 0;
-        
+
         int nIterMax = 2 * sequences.size();
-        
+
         boolean didMerge = false;
         do {
 
@@ -193,7 +193,7 @@ public class Sequence {
                 }
             }
 
-            System.out.println("seqs.size=" + 
+            System.out.println("seqs.size=" +
                 sequences.size());
             for (Sequence s : sequences) {
                 System.out.println(nIter + ": SEQ " + s);
@@ -231,31 +231,31 @@ public class Sequence {
 
         } while (didMerge);
     }
-    
+
     public int getOffset() {
         return offset;
     }
 
     /**
-     NOTE: not ready for use.  needs alot of tests.... 
-     
+     NOTE: not ready for use.  needs alot of tests....
+
      merge this sequence with mergeFrom if they have the
      same offsets from idx1 to idx2.
-       
+
        <pre>
-        Note, in PartialShapeMatcher, aggregation 
+        Note, in PartialShapeMatcher, aggregation
         first proceeds by startIdx1 and only
-        up until n1-1. 
-        * 
+        up until n1-1.
+        *
         example, n1=n2=50, offset=3
             0  : 3 ...
-            46 : 49  49  
-            47 : 0   1                   
+            46 : 49  49
+            47 : 0   1
             49 : 2   2
         example, n1=50;n2=55, offset=3
             0  : 3 ...    note, startIdx2 is never 0, or n2-1
-            46 : 49  49  
-            47 : 50  50  
+            46 : 49  49
+            47 : 50  50
             48 : 51  51
             49 : 52  52
         example, n1=50;n2=55, offset=47
@@ -264,22 +264,33 @@ public class Sequence {
             49 : 46  46
        </pre>
      * @param mergeFrom
-     * @return 
+     * @return
      */
     public Sequence[] merge(Sequence mergeFrom) {
-        
+
         if (mergeFrom.getN1() != n1 || mergeFrom.getN2() != n2) {
             throw new IllegalArgumentException("the n1 or n2 "
             + " of mergeFrom have to be same as this n1 and n2");
         }
-        
+
+        if (getOffset() != mergeFrom.getOffset()) {
+            log.info("NO MERGE. offsets=" +
+                getOffset() + " " +
+                mergeFrom.getOffset());
+            return null;
+        }
+
+if (mergeFrom.offset == 48) {
+    log.info("in merge for " + mergeFrom);
+}
+
         if (this.isStopSentinel() || mergeFrom.isStopSentinel()) {
             log.info("*sentinels:" + this + "\n " + mergeFrom);
             return null;
         }
-       
+
         Sequence mergeInto;
-        
+
         // make mergeInto.startIdx1 < mergeFrom.startIdx1
         if (mergeFrom.startIdx1 < startIdx1) {
             mergeInto = mergeFrom;
@@ -287,102 +298,93 @@ public class Sequence {
         } else {
             mergeInto = this.copy();
         }
-                
-        if (mergeInto.getOffset() != 
-            mergeFrom.getOffset()) {
-            log.info("NO MERGE. offsets=" + 
-                mergeInto.getOffset() + " " +
-                mergeFrom.getOffset());
-            return null;
-        }
-        
+
         if (mergeInto.startIdx2 > mergeFrom.startIdx2) {
             return null;
         }
-        
+
         if (mergeInto.equals(mergeFrom)) {
             // these are same ranges, so let invoker remove mergeFrom
-            log.fine("same sequence: " + " \n " + 
+            log.fine("same sequence: " + " \n " +
                 mergeInto + " \n " + mergeFrom);
             return new Sequence[]{mergeInto};
         }
 
         // a rule is that for a single sequence,
-        // the implied stops should be in range n1 too        
-        int mIStopIdx1 = mergeInto.startIdx1 +
-            (mergeInto.stopIdx2 - mergeInto.startIdx2);
+        // the implied stops should be in range n1 too
+        int mIStopIdx1 = mergeInto.getStopIdx1();
 
-        int mFStopIdx1 = mergeFrom.startIdx1 +
-            (mergeFrom.stopIdx2 - mergeFrom.startIdx2);
+        int mFStopIdx1 = mergeFrom.getStopIdx1();
+
+//if (!(mergeFrom.stopIdx2 >= mergeFrom.startIdx2)) {
+    log.info("****CHECK: " +
+    "\n  mergeFrom=" + mergeFrom +
+    "\n  mergeIntp=" + mergeInto
+    + "\n   mIStopIdx1=" + mIStopIdx1
+    + "\n   mFStopIdx1=" + mFStopIdx1);
+//}
 
         assert(mIStopIdx1 <= n1);
         assert(mFStopIdx1 <= n1);
-        
-        // can merge if they are adjacent or 
-        // intersecting.
 
-//if (!(mergeFrom.stopIdx2 >= mergeFrom.startIdx2)) {
-    log.info("****CHECK: " + 
-    "\n  mergeFrom=" + mergeFrom +
-    "\n  mergeIntp=" + mergeInto
-    + "\n   mIStopIdx1=" + mIStopIdx1);
-//}
+        // can merge if they are adjacent or
+        // intersecting.
 
         assert(mergeInto.stopIdx2 >= mergeInto.startIdx2);
         assert(mergeFrom.stopIdx2 >= mergeFrom.startIdx2);
-        
+
         // -- check for adjacent (before intersects filter) --
         if (
             // idx2 has to have room before n2 for a merge
-            (mergeInto.getStopIdx2() < 
-            (n2 - 1 + (mergeFrom.stopIdx2 - mergeInto.stopIdx2))) 
+            (mergeInto.getStopIdx2() <
+            (n2 - 1 + (mergeFrom.stopIdx2 - mergeInto.stopIdx2)))
             &&
             (mIStopIdx1 + 1) == mergeFrom.startIdx1) {
 
             StringBuilder sb = new StringBuilder("*merge ")
                 .append(mergeInto).append("\n into ")
                 .append(mergeFrom);
-            
+
             int len0 = mergeInto.length();
-            
+
             mergeInto.stopIdx2 = mergeFrom.stopIdx2;
-            
+
             float f0 = mergeInto.fractionOfWhole;
             float d0 = mergeInto.absAvgSumDiffs;
             float d0Tot = d0 * len0;
             int nAdded = mergeInto.length() - len0;
             len0 = mergeInto.length();
-            
+
             float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
             d0Tot += (d1Tot/(float)nAdded);
-            
+
             mergeInto.fractionOfWhole = (float)len0/(float)n1;
             mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
             assert(mergeInto.length() == len0);
-            
+
             sb.append("\n => ").append(mergeInto.toString());
-            
+
             log.info(sb.toString());
-            
+
             return new Sequence[]{mergeInto};
         }
         if (!mergeInto.intersects(mergeFrom)) {
-            log.info("NO MERGE: not intersecting: " + 
+            log.info("NO MERGE: not intersecting: " +
                 " \n" + mergeInto + "\n " + mergeFrom);
             return null;
         }
-        
+
         /*
-        Note, in PartialShapeMatcher, aggregation 
+        Note, in PartialShapeMatcher, aggregation
         first proceeds by startIdx1 and only
         up until n1-1.
         */
-       
+
         // all cases involving sentinel should be handled
         // by now and so is the adjacent rnage case,
         // so what remains in merging overlapping regions
         // that do not cross the sentinels
-        
+
         // they're ordered by startIdx1.  startIdx2 should be
         // increasing also
         StringBuilder sb = new StringBuilder("**merge ")
@@ -390,9 +392,9 @@ public class Sequence {
             .append(mergeInto);
 
         int len0 = mergeInto.length();
-        
+
         mergeInto.stopIdx2 = mergeFrom.stopIdx2;
-        
+
         float f0 = mergeInto.fractionOfWhole;
         float d0 = mergeInto.absAvgSumDiffs;
         float d0Tot = d0 * len0;
@@ -403,20 +405,146 @@ public class Sequence {
 
             return new Sequence[]{mergeInto};
         }
-        
+
         len0 = mergeInto.length();
-        
+
         float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
         d0Tot += (d1Tot/(float)nAdded);
-        
+
         mergeInto.fractionOfWhole = (float)len0/(float)n1;
         mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
         assert(mergeInto.length() == len0);
-        
+
         sb.append("\n => ").append(mergeInto.toString());
         log.info(sb.toString());
 
         return new Sequence[]{mergeInto};
+    }
+
+    /**
+     *
+     * @param s
+     * @return
+     */
+    public static Sequence[] parse(Sequence s) {
+
+        // used to correct the bounds of a sequence
+        // which has been aggregated from min diffs,
+        // for example.
+        // the idx2 values have not been corrected for
+        // wrap around so their differences should
+        // give the correct length and offsets to
+        // start with.
+        // note that startIdx1 should always be in n1 range
+        // at this point already too and that n1 <= n2.
+
+        int startIdx1 = s.startIdx1;
+        int len = s.length();
+        int offset = s.getOffset();
+        int stopIdx1 = s.getStopIdx1();
+
+        int startIdx2 = s.startIdx2;
+        int stopIdx2 = s.stopIdx2;
+
+        // if location idx1 + offset == n2 is within
+        // s range of idx1, then need at least one split
+        //
+
+        int t1 = s.n2 - offset;
+        if ((t1 >= startIdx1) && (t1 <= stopIdx1)) {
+            // s0 startIdx1 to t1-1
+            // s1 t1 to stopIdx1
+
+            Sequence[] seqs = new Sequence[2];
+            seqs[0] = new Sequence(s.n1, s.n2, offset);
+            seqs[0].startIdx1 = startIdx1;
+            int len0 = t1 - startIdx1;
+            seqs[0].startIdx2 = startIdx1 + offset;
+            seqs[0].stopIdx2 = seqs[0].startIdx2 + len0 - 1;
+
+            float f0 = (float)len0/(float)len;
+            seqs[0].absAvgSumDiffs = s.absAvgSumDiffs * f0;
+            seqs[0].fractionOfWhole = (float)len0/(float)s.n1;
+
+            seqs[1] = new Sequence(s.n1, s.n2, offset);
+            seqs[1].startIdx1 = t1;
+            int len1 = stopIdx1 - seqs[1].startIdx1 + 1;
+            seqs[1].startIdx2 = 0;
+            seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
+
+            seqs[1].absAvgSumDiffs = s.absAvgSumDiffs
+                * (float)len1/(float)len;
+            seqs[1].fractionOfWhole = (float)len1/(float)s.n1;
+
+            System.out.println("parsed s=" + s +
+                "\n into " + seqs[0] +
+                "\n and  " + seqs[1]);
+
+            assert(len0 + len1 == len);
+
+            return seqs;
+        }
+        
+        // look for idx2 being out of range of n2
+        if (s.startIdx2 < s.n2 && s.stopIdx2 >= s.n2) {
+            
+            Sequence[] seqs = new Sequence[2];
+            seqs[0] = new Sequence(s.n1, s.n2, offset);
+            seqs[0].startIdx1 = startIdx1;
+            seqs[0].startIdx2 = startIdx2;
+            seqs[0].stopIdx2 = s.n2 - 1;
+            int len0 = seqs[0].length();
+            
+            float f0 = (float)len0/(float)len;
+            seqs[0].absAvgSumDiffs = s.absAvgSumDiffs * f0;
+            seqs[0].fractionOfWhole = (float)len0/(float)s.n1;
+
+            seqs[1] = new Sequence(s.n1, s.n2, offset);
+            seqs[1].startIdx1 = seqs[0].getStopIdx1() + 1;
+            seqs[1].startIdx2 = 0;
+            int len1 = stopIdx1 - seqs[1].startIdx1 + 1;
+            seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
+        
+            seqs[1].absAvgSumDiffs = s.absAvgSumDiffs
+                * (float)len1/(float)len;
+            seqs[1].fractionOfWhole = (float)len1/(float)s.n1;
+
+            System.out.println("*parsed s=" + s +
+                "\n into " + seqs[0] +
+                "\n and  " + seqs[1]);
+
+            assert(len0 + len1 == len);
+
+            return seqs;
+            
+        } else if (s.startIdx2 >= s.n2) {
+            
+            assert(s.stopIdx2 >= s.n2);
+            startIdx2 -= s.n2;
+            stopIdx2 -= s.n2;
+            assert(startIdx2 < s.n2);
+            if (stopIdx2 < s.n2) {
+                Sequence[] seqs = new Sequence[1];
+                seqs[0] = new Sequence(s.n1, s.n2, offset);
+                seqs[0].startIdx1 = startIdx1;
+                seqs[0].startIdx2 = startIdx2;
+                seqs[0].stopIdx2 = stopIdx2;
+                int len0 = seqs[0].length();
+                System.out.println("*parsed s=" + s +
+                "\n into " + seqs[0]);
+                assert(len0 == len);
+            
+                return seqs;
+            }
+            
+            throw new IllegalStateException(
+                "ERROR: Does this case "
+               + " happen?  think not because reading the matrix"
+               + " dimensions will wrap at most once"
+            );            
+        }
+
+        return new Sequence[]{s};
     }
 
     public boolean precedes(Sequence sTest) {
@@ -426,7 +554,7 @@ public class Sequence {
         }
         return false;
     }
-    
+
     public boolean proceeds(Sequence sTest) {
         //TODO: this may need corrections for wrap around
         if (getStopIdx1() == (sTest.getStartIdx1() + 1)) {
@@ -434,7 +562,7 @@ public class Sequence {
         }
         return false;
     }
-    
+
     public boolean isStartSentinel() {
         return (startIdx1 == 0);
     }
@@ -445,7 +573,7 @@ public class Sequence {
     public int length() {
         return stopIdx2 - startIdx2 + 1;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
 
@@ -457,7 +585,7 @@ public class Sequence {
 
         if (startIdx1 == other.startIdx1
             && startIdx2 == other.startIdx2
-            && stopIdx2 == other.stopIdx2 
+            && stopIdx2 == other.stopIdx2
             && n1 == other.n1 && n2 == other.n2) {
             return true;
         }
@@ -470,7 +598,7 @@ public class Sequence {
 
     protected int fnvHashCode(int i0, int i1,
         int i2, int i3, int i4) {
-        
+
         /*
          * hash = offset_basis
          * for each octet_of_data to be hashed
@@ -483,7 +611,7 @@ public class Sequence {
         int hash = 0;
         int sum = fnv321aInit;
         sum ^= i0;
-        sum *= fnv32Prime;        
+        sum *= fnv32Prime;
         sum ^= i1;
         sum *= fnv32Prime;
         sum ^= i2;
@@ -492,57 +620,57 @@ public class Sequence {
         sum *= fnv32Prime;
         sum ^= i4;
         sum *= fnv32Prime;
-        
+
         hash = sum;
-        
+
         return hash;
     }
-    
+
     @Override
     public int hashCode() {
-        
+
         int hash = fnvHashCode(this.startIdx1,
             this.startIdx2, this.stopIdx2, this.n1,
             this.n2);
 
         return hash;
     }
-    
+
     /**
      * transpose the sequence to swap reference frames idx1
      * with idx2.  more than one sequence is possibly
      * returned to keep a format following class rules
      * (see class documentation).
-     * @return 
+     * @return
      */
     public Sequence transpose() {
-        
+
         Sequence s0 = new Sequence(n2, n1, n1 - offset);
-        
+
         int len = length();
-        
+
         s0.startIdx1 = startIdx2;
         s0.startIdx2 = startIdx1;
         s0.stopIdx2 = startIdx1 + len - 1;
         //int stopIdx1 = stopIdx2;
-        
+
         s0.absAvgSumDiffs = absAvgSumDiffs;
         s0.fractionOfWhole = fractionOfWhole;
-        return s0;        
+        return s0;
     }
-    
+
     boolean assertNoWrapAround() {
-        
+
         int stopIdx1 = startIdx1 + length() - 1;
-    
+
         if (stopIdx1 > n1) {
-            log.info("WRAPPED? stopIdx1=" + stopIdx1 
+            log.info("WRAPPED? stopIdx1=" + stopIdx1
                 + " : " + toString());
         }
-        
+
         return (stopIdx1 <= n1);
     }
-    
+
     public Sequence copy() {
         Sequence cp = new Sequence(n1, n2, offset);
         cp.startIdx1 = startIdx1;

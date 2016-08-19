@@ -136,7 +136,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void testMatch3() throws Exception {
+    public void estMatch3() throws Exception {
 
         // rotate points p so that start points are 
         // different and assert that wrap around is

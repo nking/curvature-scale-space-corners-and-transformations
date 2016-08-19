@@ -339,7 +339,7 @@ public class AndroidStatuesTest extends TestCase {
            speed up algorithm...larger dp's lose curvatur info though
         
         */
-        for (int i = 3; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) {
             
             switch(i) {
                 case 0: {

@@ -1,9 +1,7 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
@@ -15,24 +13,18 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.search.KNearestNeighbors;
-import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.Errors;
-import algorithms.util.IntIntDouble;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.iterator.TIntIntIterator;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TObjectFloatIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectFloatMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
@@ -42,13 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 
@@ -294,7 +280,7 @@ public class PartialShapeMatcher {
             }
 
             // build the matching sequential sequences by
-            // by reading block size matches
+            // by reading chord difference over a block size 
             extractSequences(md, sequences, r);
 
             //changed to form adjacent segments where wrap
@@ -305,9 +291,9 @@ public class PartialShapeMatcher {
         Collections.sort(sequences, new SequenceComparator2());
         print("SORT", sequences);
 
-        if (rs.length > 1) {
-            Sequence.mergeSequences(sequences);
-        }
+        //if (rs.length > 1) {
+            mergeSequences(sequences);
+        //}
 
         // NOTE: the android statues
         // and scissor tests show that correct
@@ -341,12 +327,6 @@ public class PartialShapeMatcher {
         int n2 = md.length;
         int n1 = md[0].length;
 
-        // TODO:  need to revise block reading
-        // and storage of results.
-        // reading block at i through i-r in both
-        // dimensions is not currently stored
-        // as a sequence of i-r through i
-
         // 23 degrees is 0.4014
         double thresh = (Math.PI/180.) * 10.;//*23.;
 
@@ -361,6 +341,9 @@ public class PartialShapeMatcher {
             if (offset == -1 && st == null) {
                 continue;
             }
+            // using the edited block size pattern present
+            // in findMinDifferenceMatrix to recover the
+            // block size used for the specific min entry.
             int blockSize = r;
             if ((i - r + 1) < 0) {
                 if (i < 2) {
@@ -374,20 +357,23 @@ public class PartialShapeMatcher {
                 currentOffset = offset;
                 st = new Sequence(n1, n2, offset);
                 st.startIdx1 = i - blockSize + 1;
-if (st.startIdx1 < 0) {
-log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
-+ " st=" + st);
-}
                 assert(st.startIdx1 >= 0);
             } else {
                 if (currentOffset != offset) {
                     int stopIdx1 = i - 1;
-                    int len = stopIdx1 - st.startIdx1;
+                    int len = stopIdx1 - st.startIdx1 + 1;
                     st.startIdx2 = st.startIdx1 + offset;
                     st.stopIdx2 = st.startIdx2 + len - 1;
                     assert(st.length() == len);
-
-                    sequences.add(st);
+                    //adding the block size to the front of
+                    // the sequence leads to possibility that
+                    // idx2 is outside the n2 range,
+                    // so parse the sequence into more than
+                    // one if needed
+                    Sequence[] sts = Sequence.parse(st);
+                    for (Sequence t : sts) {
+                        sequences.add(t);
+                    }
 
                     currentOffset = offset;
                     if (offset != -1) {
@@ -402,14 +388,47 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         }
         if (st != null) {
             int stopIdx1 = n1 - 1;
-            int len = stopIdx1 - st.startIdx1;
+            int len = stopIdx1 - st.startIdx1 + 1;
             st.startIdx2 = st.startIdx1 + st.getOffset();
             st.stopIdx2 = st.startIdx2 + len - 1;
             assert(st.length() == len);
-            sequences.add(st);
+            Sequence[] sts = Sequence.parse(st);
+            for (Sequence t : sts) {
+                 sequences.add(t);
+            }
         }
 
         log.info(sequences.size() + " sequences");
+    }
+    
+    protected void mergeSequences(List<Sequence> sequences) {
+        
+        TIntObjectMap<List<Sequence>> offsetMap =
+            new TIntObjectHashMap<List<Sequence>>();
+        
+        for (Sequence s : sequences) {
+            int offset = s.getOffset();
+            List<Sequence> list = offsetMap.get(offset);
+            if (list == null) {
+                list = new ArrayList<Sequence>();
+                offsetMap.put(offset, list);
+            }
+            list.add(s);
+        }
+        
+        TIntObjectIterator<List<Sequence>> iter =
+            offsetMap.iterator();
+        sequences.clear();
+        for (int i = 0; i < offsetMap.size(); ++i) {
+            iter.advance();
+            int offset = iter.key();
+            if (offset == 0) {
+                int z = 1;
+            }
+            List<Sequence> list = iter.value();
+            Sequence.mergeSequences(list);
+            sequences.addAll(list);
+        }
     }
 
     private Sequences createSequencesWithBest(
@@ -1172,9 +1191,14 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
     private Result addByTransformation(Sequence s, PairIntArray p,
         PairIntArray q) throws NoSuchAlgorithmException {
 
+log.info("s.len=" + s.length() + " p.n=" + p.getN());
+if (s.length() >= p.getN()) {
+    log.info("ERROR:" + s);
+}
         PairIntArray leftXY = new PairIntArray(s.length());
         PairIntArray rightXY = new PairIntArray(s.length());
-        PairIntArray leftUnmatchedXY = new PairIntArray(p.getN() -
+        PairIntArray leftUnmatchedXY 
+            = new PairIntArray(p.getN() -
             s.length());
         PairIntArray rightUnmatchedXY = new PairIntArray(q.getN() -
             s.length());
@@ -1949,8 +1973,8 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                     continue;
                 }
                 int j = i + idxs0[i];
-                if (j > n2) {
-                    j -= n1;
+                if (j >= n2) {
+                    j -= n2;
                 }
                 log.info("MIN i=" + i + " j="
                     + j + " offset=" + idxs0[i] + "  mind="
