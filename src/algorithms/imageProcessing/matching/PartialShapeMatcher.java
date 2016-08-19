@@ -4,6 +4,8 @@ import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.features.RANSACEuclideanSolver;
+import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -33,6 +35,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,7 +132,7 @@ public class PartialShapeMatcher {
      @param p
      @param q
     */
-    public Sequences match(PairIntArray p, PairIntArray q) {
+    public Sequences match(PairIntArray p, PairIntArray q) throws NoSuchAlgorithmException {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -353,7 +356,7 @@ public class PartialShapeMatcher {
             st.stopIdx2 = st.startIdx2 + len - 1;
             assert(st.length() == len);
             sequences.add(st);
-if (st.getOffset() == 217) {
+if (st.getOffset() == 27) {
     int z = 1;
 }
         }
@@ -936,7 +939,7 @@ if (st.getOffset() == 217) {
     private Sequences transformAndEvaluate(
         List<Sequence> sequences,
         PairIntArray p, PairIntArray q, double[] pCen,
-        float[][][] md) {
+        float[][][] md) throws NoSuchAlgorithmException {
 
         int topK = 10;
         if (topK > sequences.size()) {
@@ -1022,7 +1025,7 @@ if (st.getOffset() == 217) {
     }
 
     private Result evaluate(Sequence s, PairIntArray p,
-        PairIntArray q, double[] pCen, float[][][] md) {
+        PairIntArray q, double[] pCen, float[][][] md) throws NoSuchAlgorithmException {
 
         PairIntArray leftXY = new PairIntArray(s.length());
         PairIntArray rightXY = new PairIntArray(s.length());
@@ -1039,18 +1042,41 @@ if (st.getOffset() == 217) {
         double scale = 1.;
         //TransformationParameters params =
         //    tc.calulateEuclideanGivenScale(
-        //    scale, leftXY, rightXY, pCen[0], pCen[1]);
+        //    scale, leftXY, rightXY, 0, 0);
         
+        /*
         TransformationParameters params =
             tc.calulateEuclideanWithoutFilter(
             leftXY, rightXY, 0, 0);
-
+        */
+    
+        /*
+        float[] weights = new float[leftXY.getN()];
+        Arrays.fill(weights, 1.f/(float)leftXY.getN());
+        float[] outputScaleRotTransXYStDev = new float[4];
+        TransformationParameters params =
+            tc.calulateEuclidean(
+            leftXY, rightXY, weights, 0, 0,
+            outputScaleRotTransXYStDev);
+        */
+    
+        PairIntArray outLeft = new PairIntArray();
+        PairIntArray outRight = new PairIntArray();
+        RANSACEuclideanSolver euclid = 
+            new RANSACEuclideanSolver();
+        EuclideanTransformationFit fit = euclid.calculateEuclideanTransformation(
+            leftXY, rightXY, outLeft, outRight);
+        
+        TransformationParameters params = (fit != null) ? 
+            fit.getTransformationParameters() : null;
+        leftXY = outLeft;
+        rightXY = outRight;
         if (params == null) {
             return null;
         }
 
         // 4 pixels or some factor of dp
-        double pixTol = 30;
+        double pixTol = 20;//30;
         log.info("dp=" + dp + " pixTol=" + pixTol);
 
         Transformer transformer = new Transformer();
@@ -1059,7 +1085,7 @@ if (st.getOffset() == 217) {
         PairIntArray leftTr0 = transformer.applyTransformation(
             params, leftXY);
         
-if (s.getOffset() == 217) {
+if (s.getOffset() == 27) {
     try {
        CorrespondencePlotter plotter = new
            CorrespondencePlotter(p, q);
@@ -1182,7 +1208,7 @@ if (s.getOffset() == 217) {
             result.distSum += dist;
             results.add(new IntIntDouble(pIdx, qIdx, dist));
         }
-if (s.getOffset() == 217) {
+if (s.getOffset() == 27) {
     try {
        CorrespondencePlotter plotter = new
            CorrespondencePlotter(p, q);
@@ -1200,7 +1226,7 @@ if (s.getOffset() == 217) {
        String filePath = plotter.writeImage("_" +
            "_debug4");
     } catch (Throwable t) {}
-    log.info("offset=217 RESULTS=" + result.toString());
+    log.info("offset=27 RESULTS=" + result.toString());
     int z = 1;
 }   
         assert(result.nMatched == result.matches.size());
