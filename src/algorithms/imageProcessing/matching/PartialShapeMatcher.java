@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
@@ -16,6 +17,7 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.Errors;
 import algorithms.util.IntIntDouble;
+import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.iterator.TIntIterator;
@@ -1048,7 +1050,7 @@ if (st.getOffset() == 217) {
         }
 
         // 4 pixels or some factor of dp
-        double pixTol = 10;
+        double pixTol = 30;
         log.info("dp=" + dp + " pixTol=" + pixTol);
 
         Transformer transformer = new Transformer();
@@ -1115,7 +1117,7 @@ if (s.getOffset() == 217) {
         //     may replace w/ another bipartite matcher
         //     in future
 
-        boolean useOptimal = true;
+        boolean useOptimal = false;
 
         TObjectFloatMap<PairInt> idxMap;
         if (useOptimal) {
@@ -1198,6 +1200,7 @@ if (s.getOffset() == 217) {
        String filePath = plotter.writeImage("_" +
            "_debug4");
     } catch (Throwable t) {}
+    log.info("offset=217 RESULTS=" + result.toString());
     int z = 1;
 }   
         assert(result.nMatched == result.matches.size());
@@ -1267,22 +1270,67 @@ if (s.getOffset() == 217) {
         PairIntArray xy1, PairIntArray xy2, 
         double tolerance) {
 
+        int k = 3;
+        
         KNearestNeighbors knn = new KNearestNeighbors(
             xy2.getX(), xy2.getY());
 
-        Set<PairInt> points = Misc.convert(xy2);
-
-        /*
-        for each xy1, find nearest xy2
-           idx2 multiple mappings will be decided by
-              smallest diff
-        */
-
-        // place best in here
-        TIntIntMap map = new TIntIntHashMap();
-
-        throw new UnsupportedOperationException("not yet imple");
-        //return map;
+        TObjectIntMap<PairInt> indexMap2 = 
+            Misc.convertToPointIndex(xy2);
+        
+        float[] dist = new float[3*xy1.getN()];
+        int[] idx2s = new int[dist.length];
+        int[] idx1s = new int[dist.length];
+        int count = 0;
+        for (int i = 0; i < xy1.getN(); ++i) {
+            int x = xy1.getX(i);
+            int y = xy1.getY(i);
+            List<PairFloat> nearest = 
+                knn.findNearest(k, x, y, (float)tolerance);
+            if (nearest == null) {
+                continue;
+            }
+            for (PairFloat p : nearest) {
+                int x2 = Math.round(p.getX());
+                int y2 = Math.round(p.getY());
+                double d = Math.sqrt(
+                    distanceSqEucl(x, y, x2, y2));
+                dist[count] = (float)d;
+                idx1s[count] = i;
+                idx2s[count] = indexMap2.get(new PairInt(x2, y2));
+                count++;
+            }
+        }
+        
+        idx1s = Arrays.copyOf(idx1s, count);
+        idx2s = Arrays.copyOf(idx2s, count);
+        dist = Arrays.copyOf(dist, count);
+        int[] ilu = new int[count];
+        for (int i = 0; i < count; ++i) {
+            ilu[i] = i;
+        }
+        QuickSort.sortBy1stArg(dist, ilu);
+        
+        TIntSet a1 = new TIntHashSet();
+        TIntSet a2 = new TIntHashSet();
+        
+        TObjectFloatMap<PairInt> costMap =
+            new TObjectFloatHashMap<PairInt>();
+       
+        for (int i = 0; i < dist.length; ++i) {
+            int idx = ilu[i];
+            int idx1 = idx1s[idx];
+            int idx2 = idx2s[idx];
+            if (a1.contains(idx1) || a2.contains(idx2)) {
+                continue;
+            }
+            PairInt p = new PairInt(idx1, idx2);
+            costMap.put(p, dist[i]);
+            a1.add(idx1);
+            a2.add(idx2);
+        }
+         
+        return costMap;
     }
 
     private class MinDiffs {
