@@ -263,9 +263,8 @@ public class PartialShapeMatcher {
             matchArticulated
         */
 
-        boolean usePattern1 = true;
-        boolean performEval = false;
-
+        boolean srchForArticulatedParts = false;
+        
         int[] rs = new int[]{n1/3
             //, n1/4
         };
@@ -301,13 +300,28 @@ public class PartialShapeMatcher {
 
         // evaluate topK or all sequences
 
-        Result best;
+        List<Result> results;
         // solve for transformation, add points, and
-        // return best solution.
+        // return sorted solutions, best is at top.
         if (diffN <= 0) {
-            best = transformAndEvaluate(sequences, p, q, md);
+            results = transformAndEvaluate(sequences, p, q, md);
         } else {
-            best = transformAndEvaluate(sequences, q, p, md);
+            results = transformAndEvaluate(sequences, q, p, md);
+        }
+
+        {//DEBUG
+            for (int i = 0; i < results.size(); ++i) {
+                Result r = results.get(i);
+                log.info(i + " transform result=" + 
+                    r.toStringAbbrev());
+            }
+        }
+        
+        Result best;
+        if (srchForArticulatedParts) {
+            best = combineBestDisjoint(results);
+        } else {
+            best = results.get(0);
         }
 
         if (diffN <= 0) {
@@ -1014,6 +1028,16 @@ public class PartialShapeMatcher {
         return list;
     }
 
+    private Result combineBestDisjoint(List<Result> results) {
+        
+        for (int i = 0; i < results.size(); ++i) {
+            Result r = results.get(i);
+            //Set<PairInt> p0 = r.createIndexSet();
+        }
+
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public static class Result {
         private double distSum = 0;
         private double chordDiffSum = 0;
@@ -1095,7 +1119,7 @@ public class PartialShapeMatcher {
         }
     }
 
-    private Result transformAndEvaluate(
+    private List<Result> transformAndEvaluate(
         List<Sequence> sequences,
         PairIntArray p, PairIntArray q,
         float[][][] md) throws NoSuchAlgorithmException {
@@ -1123,14 +1147,7 @@ public class PartialShapeMatcher {
         Collections.sort(results,
             new ResultComparator(results, p.getN()));
 
-        {//DEBUG
-            for (int i = 0; i < results.size(); ++i) {
-                Result r = results.get(i);
-                log.info(i + " transform result=" + r.toStringAbbrev());
-            }
-        }
-
-        return results.get(0);
+        return results;
     }
 
     protected void populatePointArrays(Sequence s,
