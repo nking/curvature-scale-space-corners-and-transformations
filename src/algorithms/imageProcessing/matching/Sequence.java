@@ -47,7 +47,7 @@ Note that because the indexes are on
             49 : 52  52
         example, n1=50;n2=55, offset=47
              0 : 47  49
-             3 : 0
+             3 : 50
             49 : 46  46
 
    NOTE that much of the logic below relies
@@ -260,7 +260,7 @@ public class Sequence {
             49 : 52  52
         example, n1=50;n2=55, offset=47
              0 : 47  49
-             3 : 0
+             3 : 50
             49 : 46  46
        </pre>
      * @param mergeFrom

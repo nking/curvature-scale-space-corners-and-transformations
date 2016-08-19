@@ -5,6 +5,8 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.ResourceFinder;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -488,5 +490,20 @@ public class Misc {
             list.set(i, list.get(idx2));
             list.set(idx2, swap);
         }
+    }
+
+    public static TObjectIntMap<PairInt> convertToPointIndex(
+        PairIntArray p) {
+        
+        TObjectIntMap<PairInt> map = 
+            new TObjectIntHashMap<PairInt>();
+        
+        for (int i = 0; i < p.getN(); ++i) {
+            PairInt pt = new PairInt(p.getX(i),
+                p.getY(i));
+            map.put(pt, i);
+        }
+        
+        return map;
     }
 }
