@@ -54,8 +54,6 @@ import thirdparty.HungarianAlgorithm;
 
 /**
  NOTE: NOT READY FOR USE YET.
- TODO: need to change read pattern of
- difference sat, and optimization.
 
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
@@ -92,11 +90,40 @@ import thirdparty.HungarianAlgorithm;
        The runtime complexity for the search of the
        integral image of summed differences and analysis
        will be added here:
-       *
+       
  * @author nichole
  */
 public class PartialShapeMatcher {
 
+    /*
+    TODO: scissors test shows that rigid model evaluation
+    matches half of the set very well, but filters out
+    the other half of the scissors.
+    The scissors case shows that the articulated solution
+    still needs to be implemented differently or additionally.
+    -- might try combining more than one non-intersecting
+       results from "transformAndEvaluate".  would 
+       expect to see both halves in separate solution
+       Result instances.
+    -- might try an analysis of the arguments given
+       to "transformAndEvaluate".  The correct answer
+       is present in those sequences, but distinguishing
+       it from the other answers is not yet straight
+       forward without the projection evaluation.
+       still thinking about an evaluator that handles
+       the articulation (components with different rotation)
+       and possible occlusion or extraneous parts...
+       the concept of "parreto efficiency" using just
+       the chord differences and fraction of whole is 
+       the final stage evaulation of the currently implemented
+       results to "transformAndEvaluate", but it might
+       be possible to apply that to the input to 
+       "transformAndEvaluate" alone...just haven't seen
+       a clear pattern to do so that succeeds with
+       all of the tests (and am not using many tests at
+       this point).
+    */
+    
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -115,14 +142,17 @@ public class PartialShapeMatcher {
     }
 
     /**
-     * NOT READY FOR USE.
+      NOT READY FOR USE.
 
       A shape is defined as the clockwise ordered sequence
       of points P_1...P_N
       and the shape to match has points Q_1...Q_N.
       The spacings used within this method are equidistant
       and the default is 5, so override that if a different number
-      is needed.
+      is needed.  For shapes with less than 200 points
+      in the perimeters, tests with override to set 
+      spacing dp to 1 have worked well.
+      
       The fixed equidistant spacing is invariant to rotation
       and translation, but not to scale, so if the user needs to solve
       for scale, need to do so outside of this method, that is, apply
@@ -1033,6 +1063,17 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
             
             return sb.toString();
         }
+        
+        public String toStringAbbrev() {
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format(
+                "offset=%d nMatched=%d distSum=%.4f dChordSum=%.4f",
+                origOffset, idx1s.size(), (float)distSum,
+                (float)chordDiffSum));
+            
+            return sb.toString();
+        }
     }
 
     private Result transformAndEvaluate(
@@ -1066,7 +1107,7 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         {//DEBUG
             for (int i = 0; i < results.size(); ++i) {
                 Result r = results.get(i);
-                log.info(i + " transform result=" + r.toString());
+                log.info(i + " transform result=" + r.toStringAbbrev());
             }
         }
 
