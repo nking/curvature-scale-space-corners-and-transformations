@@ -134,7 +134,7 @@ public class PartialShapeMatcher {
      @param p
      @param q
     */
-    public Sequences match(PairIntArray p, PairIntArray q) throws NoSuchAlgorithmException {
+    public Result match(PairIntArray p, PairIntArray q) throws NoSuchAlgorithmException {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -273,7 +273,7 @@ public class PartialShapeMatcher {
         }
 
         Collections.sort(sequences, new SequenceComparator2());
-        print("FSORT", sequences);
+        print("SORT", sequences);
 
         if (rs.length > 1) {
             Sequence.mergeSequences(sequences);
@@ -285,7 +285,7 @@ public class PartialShapeMatcher {
 
         // evaluate topK or all sequences
 
-        Sequences best;
+        Result best;
         // solve for transformation, add points, and
         // return best solution.
         if (diffN <= 0) {
@@ -298,7 +298,7 @@ public class PartialShapeMatcher {
             return best;
         }
 
-        transpose(best, n1, n2);
+        best = best.transpose();
 
         return best;
     }
@@ -752,27 +752,6 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         }
     }
 
-    private void transpose(Sequences sequences,
-        int n1, int n2) {
-
-        if (sequences == null) {
-            return;
-        }
-
-        float f = sequences.getFractionOfWhole();
-        f *= ((float)n1/(float)n2);
-        sequences.setFractionOfWhole(f);
-
-        List<Sequence> sqs = sequences.getSequences();
-        List<Sequence> tr = new ArrayList<Sequence>();
-        for (Sequence s : sqs) {
-            Sequence str = s.transpose();
-            tr.add(str);
-        }
-        sqs.clear();
-        sqs.addAll(tr);
-    }
-
     protected int[] findOffsetHistPeaks(float[] values,
         int n1, int n2) {
 
@@ -946,7 +925,47 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         }
     }
 
-    private class Result {
+    private List<PairFloat> kNearestBruteForce(
+        int k, int x, int y, float tolerance, 
+        PairIntArray xy2) {
+       
+        int nn = 0;
+        float[] dist = new float[xy2.getN()];
+        int[] indexes = new int[xy2.getN()];
+        for (int i = 0; i < xy2.getN(); ++i) {
+            int diffX = xy2.getX(i) - x;
+            int diffY = xy2.getY(i) - y;
+            dist[i] = (float) Math.sqrt(
+                diffX * diffX + diffY * diffY);
+            if (dist[i] <= tolerance) {
+                nn++;
+            }
+            indexes[i] = i;
+        }
+        
+        if (nn == 0) {
+            return null;
+        }
+        
+        QuickSort.sortBy1stArg(dist, indexes);
+        
+        if (k < nn) {
+            nn = k;
+        }
+        
+        List<PairFloat> list = new ArrayList<PairFloat>(nn);
+        for (int i = 0; i < nn; ++i) {
+            int idx = indexes[i];
+            int x2 = xy2.getX(idx);
+            int y2 = xy2.getY(idx);
+            PairFloat p = new PairFloat(x2, y2);
+            list.add(p);
+        }
+        
+        return list;
+    }
+
+    public static class Result {
         private double distSum = 0;
         private double chordDiffSum = 0;
         private TIntList idx1s = new TIntArrayList();
@@ -981,6 +1000,22 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
             chordDiffSum += diff;
         }
         
+        /**
+         * reverse the mappings from list 1 to list 2
+         * to the reference frame of list 2 to list 1.
+         * @return 
+         */
+        public Result transpose() {
+            
+            Result t = new Result(n2, n1, n1 - origOffset);
+            t.idx1s.addAll(idx2s);
+            t.idx2s.addAll(idx1s);
+            t.distSum = distSum;
+            t.chordDiffSum = chordDiffSum;
+            
+            return t;
+        }
+        
         @Override
         public String toString() {
             
@@ -998,49 +1033,9 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
             
             return sb.toString();
         }
-
-        /*
-        private TIntObjectMap<TIntIntMap> 
-            calculateOffSetIndexRanges() {
-       
-            // offset  diagonal i,  j
-            
-            TIntList offsets = new TIntArrayList(idx1s.size());
-            for (int i = 0; i < idx1s.size(); ++i) {
-                int idx1 = idx1s.get(i);
-                int idx2 = idx2s.get(i);
-                int offset = idx2 - idx1;
-                if (offset < 0) {
-                    offset += n2;
-                } else if (offset >= n2) {
-                    offset -= n2;
-                }
-                offsets.add(offset);
-            }
-            
-            QuickSort.sortBy1stThen2ndThen3rd(offsets, 
-                idx1s, idx2s);
-            
-            for (int i = 0; i < offsets.size(); ++i) {
-                int offset = offsets.get(i);
-                int idx1 = idx1s.get(i);
-                int idx2 = idx2s.get(i);
-                log.info("offset=" + offset  + " idx1=" + 
-                    idx1 + " idx2=" + idx2);
-            }
-            
-            // paused here
-            
-            TIntObjectMap<TIntIntMap> map =
-                new TIntObjectHashMap<TIntIntMap>();
-            
-            return map;
-        }
-        */
-
     }
 
-    private Sequences transformAndEvaluate(
+    private Result transformAndEvaluate(
         List<Sequence> sequences,
         PairIntArray p, PairIntArray q,
         float[][][] md) throws NoSuchAlgorithmException {
@@ -1060,6 +1055,10 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
             populateWithChordDiffs(result, md, p.getN(), q.getN());
             results.add(result);
         }
+        
+        if (results.isEmpty()) {
+            return null;
+        }
 
         Collections.sort(results,
             new ResultComparator(results, p.getN()));
@@ -1071,7 +1070,7 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
             }
         }
 
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return results.get(0);
     }
 
     protected void populatePointArrays(Sequence s,
@@ -1404,10 +1403,14 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         PairIntArray xy1, PairIntArray xy2,
         double tolerance) {
 
+        KNearestNeighbors knn = null;
+        
+        if (xy1.getN() > 3) {
+            knn = new KNearestNeighbors(
+                xy2.getX(), xy2.getY());
+        }
+        
         int k = 3;
-
-        KNearestNeighbors knn = new KNearestNeighbors(
-            xy2.getX(), xy2.getY());
 
         TObjectIntMap<PairInt> indexMap2 =
             Misc.convertToPointIndex(xy2);
@@ -1419,8 +1422,13 @@ log.info("i=" + i + " r=" + r + " blockSize=" + blockSize
         for (int i = 0; i < xy1.getN(); ++i) {
             int x = xy1.getX(i);
             int y = xy1.getY(i);
-            List<PairFloat> nearest =
-                knn.findNearest(k, x, y, (float)tolerance);
+            List<PairFloat> nearest = null;
+            if (knn != null) {
+                nearest = knn.findNearest(k, x, y, (float)tolerance);
+            } else {
+                nearest = kNearestBruteForce(k, x, y,
+                    (float)tolerance, xy2);
+            }
             if (nearest == null) {
                 continue;
             }

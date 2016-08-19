@@ -95,14 +95,14 @@ public class PartialShapeMatcherTest extends TestCase {
         shapeMatcher.overrideSamplingDistance(1);
         
         // articulated:
-        Sequences sequences = shapeMatcher.match(p, q);        
+        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);        
 
-        assertNotNull(sequences);
+        assertNotNull(result);
 
             System.out.println(
                 "RESULTS=" +
                 " scissors offset0: " +
-                sequences.toString());
+                result.toString());
     
         /*
         unless improve the first image blade positions:
@@ -119,14 +119,6 @@ public class PartialShapeMatcherTest extends TestCase {
          [junit] (40:40 to 45, f=0.0984 d=0.3784)
         */
 
-        assertNotNull(sequences);
-        assertTrue(sequences.getFractionOfWhole() > 0.6);
-
-        // assert the correspondence range
-        List<Sequence> list = sequences.getSequences();
-        for (Sequence s : list) {
-            System.out.println("SEQ0=" + s);
-        }
     }
 
     public void estMatch3() throws Exception {
@@ -151,15 +143,15 @@ public class PartialShapeMatcherTest extends TestCase {
         shapeMatcher.overrideSamplingDistance(1);
         
         // articulated:
-        Sequences sequences = shapeMatcher.match(p, q);        
-    
-        assertNotNull(sequences);
+        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);        
+
+        assertNotNull(result);
 
             System.out.println(
                 "RESULTS=" +
-                " scissors offset 16: " +
-                sequences.toString());
-
+                " scissors offset15: " +
+                result.toString());
+    
         /*
         unless improve the first image blade positions:
         expecting roughly for case without
@@ -179,18 +171,6 @@ public class PartialShapeMatcherTest extends TestCase {
             (37:57 to 60, f=0.0656 d=0.2804)
             (45:0 to 13,  f=0.2295 d=0.3385)
         */
-
-        assertNotNull(sequences);
-        assertTrue(sequences.getFractionOfWhole() > 0.6);
-
-        // assert the correspondence range
-        List<Sequence> list = sequences.getSequences();
-        for (Sequence s : list) {
-            System.out.println("SEQ0=" + s);
-        }
-        //System.out.println("p=" + p.toString());
-        //System.out.println("q=" + q.toString());
-
     }
     
     protected PairIntArray getScissors1() {

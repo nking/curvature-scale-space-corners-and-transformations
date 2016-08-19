@@ -51,7 +51,7 @@ Note that because the indexes are on
             49 : 46  46
 
    NOTE that much of the logic below relies
-    on n1 <= n2, so if use transpose() to 
+    on n1 leq n2, so if use transpose() to 
     reverse correspondence, should not use
     methods such as merge afterwards...
     TODO: change code to create a corresp

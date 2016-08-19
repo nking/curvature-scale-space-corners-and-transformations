@@ -339,7 +339,7 @@ public class AndroidStatuesTest extends TestCase {
            speed up algorithm...larger dp's lose curvatur info though
         
         */
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 3; i < 4; ++i) {
             
             switch(i) {
                 case 0: {
@@ -420,46 +420,35 @@ public class AndroidStatuesTest extends TestCase {
                 new PartialShapeMatcher();
             matcher.overrideSamplingDistance(1);
 
-            Sequences sequences = matcher.match(p, q);
+            PartialShapeMatcher.Result result = matcher.match(p, q);
             
-            assertNotNull(sequences);
+            assertNotNull(result);
             
             System.out.println(
                 "RESULTS=" + 
                 fileName1Root + " : " +
-                sequences.toString());
+                result.toString());
             
             CorrespondencePlotter plotter = new
                 CorrespondencePlotter(p, q);
             
-            for (Sequence s : sequences.getSequences()) {
-                int len = s.getStopIdx2() - s.getStartIdx2()
-                    + 1;
-                for (int offset = 0; offset <= len; ++offset) {
-                    int idx1 = s.getStartIdx1() + offset;
-                    if (idx1 > (p.getN() - 1)) {
-                        idx1 -= p.getN();
-                    }
-                    int idx2 = s.getStartIdx2() + offset;
-                    if (idx2 > (q.getN() - 1)) {
-                        idx2 -= q.getN();
-                    }
-                    int x1 = p.getX(idx1);
-                    int y1 = p.getY(idx1);
-                    int x2 = q.getX(idx2);
-                    int y2 = q.getY(idx2);
-                    //System.out.println(String.format(
-                    //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-                
-                    if ((offset % 5) == 0) {
-                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 
-                            0);
-                    }
-                }
-                String filePath = plotter.writeImage("_" +
-                    fileName1Root + "_corres");
+            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                int idx1 = result.getIdx1(ii);
+                int idx2 = result.getIdx2(ii);
+                int x1 = p.getX(idx1);
+                int y1 = p.getY(idx1);
+                int x2 = q.getX(idx2);
+                int y2 = q.getY(idx2);
+                //System.out.println(String.format(
+                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+                if ((ii % 5) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 
+                        0);
+                }                
             }
-            
+            String filePath = plotter.writeImage("_" +
+                    fileName1Root + "_corres");
             /*
             MiscDebug.writeImage(img,  "_img_" + fileName1Root);
             int nClusters = 200;//100;

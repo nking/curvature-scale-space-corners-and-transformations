@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * A class to find the k nearest neighbors of a given
@@ -87,6 +88,10 @@ public class KNearestNeighbors {
                 "x and y cannot be null or empty "
                     + "and must be same lengths");
         }
+        if (x.length < 3) {
+            throw new IllegalArgumentException("x and y "
+            + " must be at least length 3 in size");
+        }
         
         int n = x.length;
         
@@ -152,6 +157,13 @@ public class KNearestNeighbors {
         // points closer than minDist are not present,
         // so the map is possibly smaller than all points.
         // therefore, for this use of voronoi, need minDist=0.
+        {//DEBUG
+            if (siteIndexesMap.size() != x.length) {
+                Logger.getLogger(this.getClass().getName())
+                    .warning("siteMap.size=" + siteIndexesMap.size()
+                    + " x.length=" + x.length);
+            }
+        }
         assert(siteIndexesMap.size() == x.length);
         
         // retrieve the points from voronoi sites because they are sorted
