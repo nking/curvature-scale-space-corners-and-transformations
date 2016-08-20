@@ -32,10 +32,9 @@ public class PartialShapeMatcherTest extends TestCase {
         PairIntArray q = p.copy();
         q.rotateLeft(q.getN() - 3);
 
-        //TODO: add occlusion to q
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-
+        
         /*
         float[][] a = shapeMatcher.createDescriptorMatrix(p);    
         for (int i = 0; i < a.length; ++i) {
@@ -89,8 +88,8 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
-
-        // articulated:
+        shapeMatcher.setToArticulatedMatch();
+        
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
         assertNotNull(result);
@@ -136,7 +135,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void estMatch3() throws Exception {
+    public void testMatch3() throws Exception {
 
         // rotate points p so that start points are 
         // different and assert that wrap around is
@@ -154,6 +153,7 @@ public class PartialShapeMatcherTest extends TestCase {
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
+        shapeMatcher.setToArticulatedMatch();
 
         // articulated:
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);

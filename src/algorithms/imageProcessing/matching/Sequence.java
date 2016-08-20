@@ -280,10 +280,6 @@ public class Sequence {
             return null;
         }
 
-if (mergeFrom.offset == 48) {
-    log.info("in merge for " + mergeFrom);
-}
-
         if (this.isStopSentinel() || mergeFrom.isStopSentinel()) {
             log.info("*sentinels:" + this + "\n " + mergeFrom);
             return null;
@@ -319,7 +315,7 @@ if (mergeFrom.offset == 48) {
 //if (!(mergeFrom.stopIdx2 >= mergeFrom.startIdx2)) {
     log.info("****CHECK: " +
     "\n  mergeFrom=" + mergeFrom +
-    "\n  mergeIntp=" + mergeInto
+    "\n  mergeInto=" + mergeInto
     + "\n   mIStopIdx1=" + mIStopIdx1
     + "\n   mFStopIdx1=" + mFStopIdx1);
 //}
@@ -422,21 +418,19 @@ if (mergeFrom.offset == 48) {
     }
 
     /**
-     *
-     * @param s
-     * @return
-     */
+     used to correct the bounds of a sequence
+     which has been aggregated from min diffs,
+     for example.
+     the idx2 values have not been corrected for
+     wrap around so their differences should
+     give the correct length and offsets to
+     start with.
+     note that startIdx1 should always be in n1 range
+     at this point already too and that n1 leq n2.
+     @param s
+     @return
+    */
     public static Sequence[] parse(Sequence s) {
-
-        // used to correct the bounds of a sequence
-        // which has been aggregated from min diffs,
-        // for example.
-        // the idx2 values have not been corrected for
-        // wrap around so their differences should
-        // give the correct length and offsets to
-        // start with.
-        // note that startIdx1 should always be in n1 range
-        // at this point already too and that n1 <= n2.
 
         int startIdx1 = s.startIdx1;
         int len = s.length();
@@ -448,7 +442,6 @@ if (mergeFrom.offset == 48) {
 
         // if location idx1 + offset == n2 is within
         // s range of idx1, then need at least one split
-        //
 
         int t1 = s.n2 - offset;
         if ((t1 >= startIdx1) && (t1 <= stopIdx1)) {
