@@ -279,7 +279,7 @@ public class PartialShapeMatcher {
             // with larger block size
             rs = new int[]{n1/2};
         } else {
-            rs = new int[]{n1/3};
+            rs = new int[]{n1/3};// n1/3
         };
 
         List<Sequence> sequences = new ArrayList<Sequence>();
@@ -1178,6 +1178,8 @@ public class PartialShapeMatcher {
 
             populateWithChordDiffs(tmpBest, md, n1, n2);
 
+            log.info("*calc'ed chords: " + tmpBest.toStringAbbrev());
+            
             // NOTE: distSum update is not accurate, but is
             // not used after transformations,
             // so if that ever changes,
@@ -1324,6 +1326,7 @@ public class PartialShapeMatcher {
             Result result = addByTransformation(s, p, q);
             if (result != null) {
                 populateWithChordDiffs(result, md, p.getN(), q.getN());
+                log.info("calc'ed chords: " + result.toStringAbbrev());
                 results.add(result);
             }
         }
@@ -1603,7 +1606,7 @@ if (s.length() >= p.getN()) {
        String filePath = plotter.writeImage("_" +
            "_debug4_" + offset);
     } catch (Throwable t) {}
-    log.info("offset=27 RESULTS=" + result.toString());
+    //log.info("offset=27 RESULTS=" + result.toString());
     int z0 = 1;
 //}
 
@@ -2139,7 +2142,7 @@ if (s.length() >= p.getN()) {
                         // warn if resolution errors are 1 degree or more
                         log.warning("s1=" + s1);
                     }
-                    s1 += -1;
+                    s1 *= -1;
                 }
 
 log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
@@ -2298,7 +2301,11 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
 
         s1 *= c;
         if (s1 < 0) {
-            s1 += -1;
+            if (s1 < -0.016) {
+                // warn if resolution errors are 1 degree or more
+                log.warning("s1=" + s1 + " deg="  + (s1*180./Math.PI));
+            }
+            s1 *= -1;
         }
 
         return s1;
