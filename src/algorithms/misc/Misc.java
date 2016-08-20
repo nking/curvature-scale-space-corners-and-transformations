@@ -492,7 +492,7 @@ public class Misc {
         }
     }
 
-    public static TObjectIntMap<PairInt> convertToPointIndex(
+    public static TObjectIntMap<PairInt> createPointIndexMap(
         PairIntArray p) {
         
         TObjectIntMap<PairInt> map = 

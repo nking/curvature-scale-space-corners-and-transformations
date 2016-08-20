@@ -18,6 +18,7 @@ import algorithms.util.Errors;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TObjectFloatIterator;
 import gnu.trove.list.TIntList;
@@ -295,17 +296,17 @@ public class PartialShapeMatcher {
             // by reading chord difference over a block size
             extractSequences(md, sequences, r);
 
-            //changed to form adjacent segments where wrap
-            // around is present, so assert format here
             assert(assertNoWrapAround(sequences));
         }
-
-        Collections.sort(sequences, new SequenceComparator2());
-        print("SORT", sequences);
-
-        //if (rs.length > 1) {
+        
+        if (rs.length > 1) {
             mergeSequences(sequences);
-        //}
+            for (Sequence s : sequences) {
+                if (s.sumDiffsIsNotFilled()) {
+                    populateWithChordDiffs(s, md);
+                }
+            }
+        }        
 
         // NOTE: the android statues
         // and scissor tests show that correct
@@ -323,11 +324,37 @@ public class PartialShapeMatcher {
         }
 
         {//DEBUG
+            float[] x = new float[results.size()];
+            float[] y = new float[x.length];
+            
             for (int i = 0; i < results.size(); ++i) {
                 Result r = results.get(i);
                 log.info(i + " transform result=" +
                     r.toStringAbbrev());
+                x[i] = 1.f - (float)r.getNumberOfMatches()/(float)n1;
+                //x[i] = r.getNumberOfMatches();
+                y[i] = (float)r.chordDiffSum;
             }
+            try {
+                float[] xPoly = null;
+                float[] yPoly = null;
+                float xmin = MiscMath.findMin(x);
+                float ymin = MiscMath.findMin(y);
+                float xmax = MiscMath.findMax(x);
+                float ymax = MiscMath.findMax(y);
+                for (int i = 0; i < results.size(); ++i) {
+                    y[i] /= ymax;
+                }
+                ymin /= ymax;
+                ymax /= ymax;
+                PolygonAndPointPlotter plotter = 
+                    new PolygonAndPointPlotter();
+                plotter.addPlot(
+                    xmin, xmax, ymin, ymax,
+                    x, y, xPoly, yPoly, 
+                    "fraction vs chord diffs");
+                plotter.writeFile2();
+            } catch (Throwable t) {}
         }
 
         Result best;
@@ -361,68 +388,57 @@ public class PartialShapeMatcher {
         MinDiffs mins = new MinDiffs(n1);
         findMinDifferenceMatrix(md, r, thresh, mins);
 
-        Sequence st = null;
+        // condensing mins to merge ranges of sequential offsets
+        // while noting the start block size (to include
+        // in start of final merged range).
+        // key=offset, data=start i, start r, stop i
+        
         int currentOffset = -1;
-        //for (int i = r; i < mins.idxs0.length; ++i) {
+        int startBlock = -1;
+        int startI = -1;
         for (int i = 1; i < mins.idxs0.length; ++i) {
             int offset = mins.idxs0[i];
-            if (offset == -1 && st == null) {
+            if (offset == -1) {
+                if (currentOffset != -1) {
+                    // create and store sequence
+                    Sequence[] seqs = createSequences(
+                        n1, n2, currentOffset, 
+                        startI - startBlock + 1, i - 1);
+                    for (Sequence s : seqs) {
+                        populateWithChordDiffs(s, md);
+                        sequences.add(s);
+                    }
+                    currentOffset = offset;
+                    startI = i;
+                    startBlock = mins.blockSizes[i];
+                }
                 continue;
             }
-            // using the edited block size pattern present
-            // in findMinDifferenceMatrix to recover the
-            // block size used for the specific min entry.
-            int blockSize = r;
-            if ((i - r + 1) < 0) {
-                if (i < 2) {
-                    blockSize = 2;
-                } else {
-                    blockSize = i + 1;
-                }
-            }
-            if (st == null) {
-                assert(offset != -1);
+            if (currentOffset == -1) {
+                startI = i;
+                startBlock = mins.blockSizes[i];
                 currentOffset = offset;
-                st = new Sequence(n1, n2, offset);
-                st.startIdx1 = i - blockSize + 1;
-                assert(st.startIdx1 >= 0);
-            } else {
-                if (currentOffset != offset) {
-                    int stopIdx1 = i - 1;
-                    int len = stopIdx1 - st.startIdx1 + 1;
-                    st.startIdx2 = st.startIdx1 + offset;
-                    st.stopIdx2 = st.startIdx2 + len - 1;
-                    assert(st.length() == len);
-                    //adding the block size to the front of
-                    // the sequence leads to possibility that
-                    // idx2 is outside the n2 range,
-                    // so parse the sequence into more than
-                    // one if needed
-                    Sequence[] sts = Sequence.parse(st);
-                    for (Sequence t : sts) {
-                        sequences.add(t);
-                    }
-
-                    currentOffset = offset;
-                    if (offset != -1) {
-                        st = new Sequence(n1, n2, offset);
-                        st.startIdx1 = i - blockSize + 1;
-                        assert(st.startIdx1 >= 0);
-                    } else {
-                        st = null;
-                    }
+            } else if (currentOffset != offset) {
+                // create and store sequence
+                Sequence[] seqs = createSequences(
+                    n1, n2, currentOffset, 
+                    startI - startBlock + 1, i - 1);
+                for (Sequence s : seqs) {
+                    populateWithChordDiffs(s, md);
+                    sequences.add(s);
                 }
+                currentOffset = offset;
+                startI = i;
+                startBlock = mins.blockSizes[i];
             }
         }
-        if (st != null) {
-            int stopIdx1 = n1 - 1;
-            int len = stopIdx1 - st.startIdx1 + 1;
-            st.startIdx2 = st.startIdx1 + st.getOffset();
-            st.stopIdx2 = st.startIdx2 + len - 1;
-            assert(st.length() == len);
-            Sequence[] sts = Sequence.parse(st);
-            for (Sequence t : sts) {
-                 sequences.add(t);
+        if (currentOffset != -1) {
+            Sequence[] seqs = createSequences(
+                n1, n2, currentOffset, 
+                startI - startBlock + 1, n1 - 1);
+            for (Sequence s : seqs) {
+                populateWithChordDiffs(s, md);
+                sequences.add(s);
             }
         }
 
@@ -457,40 +473,6 @@ public class PartialShapeMatcher {
         }
     }
 
-    private Sequences createSequencesWithBest(
-        List<Sequence> sequences, int n1, int n2) {
-
-        if (sequences.isEmpty()) {
-            return null;
-        }
-
-        Collections.sort(sequences, new SequenceComparator2());
-
-        print("FSORT", sequences);
-
-        Sequence best = sequences.get(0);
-
-        Sequences track = new Sequences();
-        track.getSequences().add(best);
-
-        // calculate the stats for track
-        int sumLen = 0;
-        float sumFrac = 0;
-        double sumDiffs = 0;
-        for (Sequence s : track.getSequences()) {
-            int len = s.length();
-            float diff = s.absAvgSumDiffs * len;
-            sumLen += len;
-            sumDiffs += diff;
-            sumFrac += s.fractionOfWhole;
-        }
-        track.setAbsSumDiffs(sumDiffs);
-        track.setAvgSumDiffs((float)(sumDiffs/(float)sumLen));
-        track.setFractionOfWhole(sumFrac);
-
-        return track;
-    }
-
     /**
      * create the matrices of differences between p
      * and q.  Note that the matrix differences are
@@ -522,20 +504,6 @@ public class PartialShapeMatcher {
 
         //log.fine("a2:");
         float[][] a2 = createDescriptorMatrix(q, q.getN());
-
-        // TODO: look at histograms of angles.
-        /*
-        float binSz = (float)(Math.PI/8.f);
-        HistogramHolder hist1 = createHistogram(a1, binSz);
-
-        HistogramHolder hist2 = createHistogram(a2, binSz);
-
-        try {
-            hist1.plotHistogram("a1 hist", "a1_hist");
-            hist2.plotHistogram("a2 hist", "a2_hist");
-        } catch(Throwable t) {
-        }
-        */
 
         /*
         - find rxr sized blocks similar to one another
@@ -827,161 +795,12 @@ public class PartialShapeMatcher {
         }
     }
 
-    protected int[] findOffsetHistPeaks(float[] values,
-        int n1, int n2) {
-
-        if (values == null || values.length == 0) {
-            return null;
-        }
-
-        float binWidth = 6.f;
-        //int nBins = 10;
-        HistogramHolder hist =
-            Histogram.createSimpleHistogram(
-                binWidth,
-                //nBins,
-                values,
-                Errors.populateYErrorsBySqrt(values));
-
-        // to help wrap around, moving items in last bin
-        // into first bin.  then offset of 0 +- binWidth/2
-        // should be present there
-        int limit = n2 - (int)Math.ceil((float)binWidth/2.f);
-        for (int i = (hist.getYHist().length - 1); i > -1; --i) {
-            float x = hist.getXHist()[i];
-            if (x < limit) {
-                break;
-            }
-            hist.getYHist()[0] += hist.getYHist()[i];
-            hist.getYHist()[i] = 0;
-        }
-
-        List<Integer> indexes =
-            MiscMath.findStrongPeakIndexesDescSort(
-            hist, 0.1f);
-
-        // also looking at last non zero
-        int idx = MiscMath.findLastNonZeroIndex(hist);
-        if (idx > -1) {
-            log.info("last non zero offset=" +
-                hist.getXHist()[idx]);
-        }
-
-        int[] offsets;
-        if (indexes != null && indexes.size() > 0) {
-            int end = (indexes.size() < 3) ? indexes.size() : 3;
-            offsets = new int[end];
-            for (int j = 0; j < end; ++j) {
-                offsets[j] = Math.round(hist.getXHist()
-                    [indexes.get(j).intValue()]);
-            }
-        } else {
-            int yPeakIdx = MiscMath.findYMaxIndex(
-                hist.getYHistFloat());
-            if (yPeakIdx == -1) {
-                return null;
-            }
-            offsets = new int[]{
-                Math.round(hist.getXHist()[yPeakIdx])
-            };
-        }
-
-        try {
-            hist.plotHistogram("offsets", "offsets");
-        } catch (Throwable t) {
-
-        }
-
-        return offsets;
-    }
-
-    protected int[] findOffsets(List<Sequence> sequences,
-        int n1, int n2) {
-
-        // NOTE: if symmetry is present, might need
-        // a period analysis
-
-        int n = 0;
-        for (int i = 0; i < sequences.size(); ++i) {
-            n += sequences.get(i).length();
-        }
-
-        // histogram with bins 10 degrees in size
-        float[] values = new float[n];
-        n = 0;
-        for (int i = 0; i < sequences.size(); ++i) {
-            int offset = sequences.get(i).getOffset();
-            int len = sequences.get(i).length();
-            for (int j = 0; j < len; ++j) {
-                values[n] = offset;
-                n++;
-            }
-        }
-
-        int[] offsets = findOffsetHistPeaks(values, n1, n2);
-
-        return offsets;
-    }
-
     private void print(String prefix, List<Sequence> sequences) {
 
         for (int i = 0; i < sequences.size(); ++i) {
             log.info(String.format("%d %s %s", i, prefix,
                 sequences.get(i)));
         }
-    }
-
-    private void print0(List<Sequence> sequences,
-        String label) {
-
-        // --- sort a copy of sequences by fraction, diff, then
-        // startIdx1 and print
-
-        List<Sequence> copy = new ArrayList<Sequence>(sequences);
-
-        // desc sort by fraction
-        Collections.sort(copy, new SequenceComparator2());
-
-        float maxDiff = Float.MIN_VALUE;
-
-        for (int i = 0; i < copy.size(); ++i) {
-
-            log.info(String.format("%s FSORT %d  %s", label, i, copy.get(i).toString()));
-
-            if (copy.get(i).absAvgSumDiffs > maxDiff) {
-                maxDiff = copy.get(i).absAvgSumDiffs;
-            }
-        }
-
-        Collections.sort(copy, new SequenceComparator3(maxDiff));
-        for (int i = 0; i < copy.size(); ++i) {
-            log.info(String.format("%s FDSORT %d  %s", label, i,
-                copy.get(i).toString()));
-        }
-    }
-
-    private HistogramHolder createHistogram(float[][] a,
-        float binSz) {
-
-        float[] values = new float[a.length * a.length -
-            a.length];
-
-        int count = 0;
-        for (int i = 0; i < a.length; ++i) {
-            for (int j = 0; j < a[0].length; ++j) {
-                if (i == j) {
-                    continue;
-                }
-                values[count] = Math.abs(a[i][j]);
-                count++;
-            }
-        }
-
-        HistogramHolder hist =
-            Histogram.createSimpleHistogram(binSz, values,
-                Errors.populateYErrorsBySqrt(values));
-
-        return hist;
     }
 
     private void populateWithChordDiffs(Result result,
@@ -998,6 +817,42 @@ public class PartialShapeMatcher {
 
             result.addToChordDifferenceSum(d);
         }
+    }
+
+    private void populateWithChordDiffs(Sequence s,
+        float[][][] md) {
+
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
+        int n1 = s.getN1();
+        int n2 = s.getN2();
+        int offset = s.getOffset();
+
+        float[][] a = md[offset];
+        
+        // r is block size
+        int r = s.length();
+        assert(r < n1);
+        
+        int i = s.getStopIdx1();
+        if ((i - r + 1) < 0) {
+            r = i - 1;
+            if (i < 2) {
+                // read at i=1, block of size 2
+                i = 1;
+                r = 2;
+            }
+        }
+        
+        float c = 1.f/((float)r*r);
+        float s1 = a[i][i] - a[i-r+1][i] - a[i][i-r+1]
+            + a[i-r+1][i-r+1];
+        s1 *= c;
+        if (s1 < 0) {
+            s1 *= -1;
+        }
+        
+        s.sumDiffs = s1;
     }
 
     private List<PairFloat> kNearestBruteForce(
@@ -1208,6 +1063,37 @@ public class PartialShapeMatcher {
         return best;
     }
 
+    /**
+     * create a sequence out of the given parameters,
+     * and parse it into ranges such that both idx1
+     * and idx2 are increasing in both (splits on the
+     * wrap around indexes for the shapes). 
+     * Note that the method does not fill in the
+     * sum of chords.
+     * @param n1
+     * @param n2
+     * @param offset
+     * @param startIdx1
+     * @param stopIdx1
+     * @return 
+     */
+    private Sequence[] createSequences(int n1, int n2, 
+        int offset, int startIdx1, int stopIdx1) {
+       
+        assert(startIdx1 >= 0);
+        assert(stopIdx1 < n1);
+        
+        Sequence s = new Sequence(n1, n2, offset);
+        s.startIdx1 = startIdx1;
+        int len = stopIdx1 - startIdx1 + 1;
+        s.startIdx2 = s.startIdx1 + offset;
+        s.stopIdx2 = s.startIdx2 + len - 1;
+        
+        Sequence[] seqs = Sequence.parse(s);
+        
+        return seqs;
+    }
+
     public static class Result {
         private double distSum = 0;
         private double chordDiffSum = 0;
@@ -1312,6 +1198,14 @@ public class PartialShapeMatcher {
         PairIntArray p, PairIntArray q,
         float[][][] md) throws NoSuchAlgorithmException {
 
+        // debug: print sequences sorted by fraction of whole
+        Collections.sort(sequences, new SequenceComparator2());
+        print("FSORT", sequences);
+        
+        Collections.sort(sequences, 
+            new SequenceComparator3(sequences));
+        print("PSORT", sequences);
+        
         int topK = 20;
         if (topK > sequences.size()) {
             topK = sequences.size();
@@ -1354,17 +1248,19 @@ public class PartialShapeMatcher {
         TIntSet pIdxs = new TIntHashSet();
         TIntSet qIdxs = new TIntHashSet();
 
+        log.info("s=" + s);
+        
         for (int i = s.startIdx1; i <= s.getStopIdx1();
             ++i) {
 
             int pIdx = i;
-            if (pIdx >= n1) {
-                pIdx -= n1;
-            }
+            assert(pIdx < n1);
+            
             pIdxs.add(pIdx);
             pOut.add(p.getX(pIdx), p.getY(pIdx));
 
             int qIdx = pIdx + offset;
+            
             if (qIdx >= n2) {
                 qIdx -= n2;
             } else if (qIdx < 0) {
@@ -1372,9 +1268,10 @@ public class PartialShapeMatcher {
             }
             qIdxs.add(qIdx);
             qOut.add(q.getX(qIdx), q.getY(qIdx));
-
-            log.fine("pIdx=" + pIdx + " qIdx=" + qIdx +
-                " offset=" + offset);
+            
+        }
+        if (!(pOut.getN() == s.length())) {
+            log.info("s=" + s + " pOut.n=" + pOut.getN());
         }
         assert(pOut.getN() == s.length());
         assert(qOut.getN() == s.length());
@@ -1399,10 +1296,8 @@ public class PartialShapeMatcher {
     private Result addByTransformation(Sequence s, PairIntArray p,
         PairIntArray q) throws NoSuchAlgorithmException {
 
-log.info("s.len=" + s.length() + " p.n=" + p.getN());
-if (s.length() >= p.getN()) {
-    log.info("ERROR:" + s);
-}
+        int offset = s.getOffset();
+        
         PairIntArray leftXY = new PairIntArray(s.length());
         PairIntArray rightXY = new PairIntArray(s.length());
         PairIntArray leftUnmatchedXY
@@ -1413,10 +1308,9 @@ if (s.length() >= p.getN()) {
         populatePointArrays(s, p, q, leftXY, rightXY,
             leftUnmatchedXY, rightUnmatchedXY);
 
-        log.info("lft.n=" + leftXY.getN() +
-            " rgt.n=" + rightXY.getN());
-
-        int offset = s.getOffset();
+        log.info("offset=" + offset 
+            + " lft.n=" + leftXY.getN() 
+            + " rgt.n=" + rightXY.getN());
 
         MatchedPointsTransformationCalculator
             tc = new MatchedPointsTransformationCalculator();
@@ -1451,14 +1345,25 @@ if (s.length() >= p.getN()) {
 
         TransformationParameters params = (fit != null) ?
             fit.getTransformationParameters() : null;
-        leftXY = outLeft;
-        rightXY = outRight;
+        
         if (params == null) {
             //TODO: reconsider whether to package up
             // the given sequence s and return it here
+            log.info("offset=" + offset + " no euclidean fit");
             return null;
         }
-        log.info("offset=" + offset + " partial fit=" + fit.toString());
+        
+        // since this class is using equidistant
+        // points on shape boundary, need to compare
+        // for same scale.
+        if (params.getScale() < 0.9 || params.getScale() > 1.1) {
+            int z = 1;
+        }
+        leftXY = outLeft;
+        rightXY = outRight;
+        log.info("offset=" + offset 
+            + " partial fit=" + fit.toString()
+            + " params=" + params);
 
         // 4 pixels or some factor of dp
         double pixTol = 20;//30;
@@ -1470,7 +1375,7 @@ if (s.length() >= p.getN()) {
         PairIntArray leftTr0 = transformer.applyTransformation(
             params, leftXY);
 
-        /*
+        
         try {
             CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
             for (int i = 0; i < leftXY.getN(); ++i) {
@@ -1516,7 +1421,7 @@ if (s.length() >= p.getN()) {
         } catch (Throwable t) {
         }
         log.info("offset=" + offset + " params=" + params);
-        */
+        
             
         // find the best matches to the unmatched in
         // q
@@ -1546,8 +1451,8 @@ if (s.length() >= p.getN()) {
         i, j, diff where i and j are w.r.t. p and q
         */
 
-        TObjectIntMap<PairInt> pPoints = Misc.convertToPointIndex(p);
-        TObjectIntMap<PairInt> qPoints = Misc.convertToPointIndex(q);
+        TObjectIntMap<PairInt> pPoints = Misc.createPointIndexMap(p);
+        TObjectIntMap<PairInt> qPoints = Misc.createPointIndexMap(q);
 
         Result result = new Result(p.getN(), q.getN(), offset);
 
@@ -1685,7 +1590,7 @@ if (s.length() >= p.getN()) {
         int k = 3;
 
         TObjectIntMap<PairInt> indexMap2 =
-            Misc.convertToPointIndex(xy2);
+            Misc.createPointIndexMap(xy2);
 
         float[] dist = new float[3*xy1.getN()];
         int[] idx2s = new int[dist.length];
@@ -1756,9 +1661,11 @@ if (s.length() >= p.getN()) {
         //       of point in q array
 
         float[] mins;
+        int[] blockSizes;
         public MinDiffs(int n) {
             idxs0 = new int[n];
             mins = new float[n];
+            blockSizes = new int[n];
             Arrays.fill(idxs0, -1);
             Arrays.fill(mins, Float.MAX_VALUE);
         }
@@ -1848,7 +1755,7 @@ if (s.length() >= p.getN()) {
     private class ResultComparator implements
         Comparator<Result> {
 
-        final float maxDiff;
+        final float maxDist;
         final float maxChord;
 
         final float n;
@@ -1864,7 +1771,7 @@ if (s.length() >= p.getN()) {
                     max2 = r.chordDiffSum;
                 }
             }
-            maxDiff = (float)max;
+            maxDist = (float)max;
             maxChord = (float)max2;
             n = n1;
         }
@@ -1876,33 +1783,37 @@ if (s.length() >= p.getN()) {
 
         public int compare1(Result o1, Result o2) {
 
-            //float d1 = 1.f - (float)(o1.distSum/maxDiff);
-            //float d2 = 1.f - (float)(o2.distSum/maxDiff);
-            float d1 = 1.f - (float)(o1.chordDiffSum/maxChord);
-            float d2 = 1.f - (float)(o2.chordDiffSum/maxChord);
+            float d1 = (float)(o1.chordDiffSum/maxChord);
+            float d2 = (float)(o2.chordDiffSum/maxChord);
 
-            float f1 = (float)o1.getNumberOfMatches()/n;
-            float f2 = (float)o2.getNumberOfMatches()/n;
+            float f1 = 1.f - 
+                ((float)o1.getNumberOfMatches()/(float)n);
+            float f2 = 1.f - 
+                ((float)o2.getNumberOfMatches()/(float)n);
 
-            float s1 = f1 + d1;
+            // salukwdze distance squared
+            float s1 = f1*f1 + d1*d1;
+            float s2 = f2*f2 + d2*d2;
+            
+            // needs nMatches to be weighted more highly
+            //float s1 = f1*f1 + 2*d1*d1;
+            //float s2 = f2*f2 + 2*d2*d2;
 
-            float s2 = f2 + d2;
-
-            if (s1 > s2) {
+            if (s1 < s2) {
                 return -1;
-            } else if (s1 < s2) {
+            } else if (s1 > s2) {
                 return 1;
             }
 
-            if (f1 > f2) {
+            if (f1 < f2) {
                 return -1;
-            } else if (f1 < f2) {
+            } else if (f1 > f2) {
                 return 1;
             }
 
-            if (d1 > d2) {
+            if (d1 < d2) {
                 return -1;
-            } else if (d1 < d2) {
+            } else if (d1 > d2) {
                 return 1;
             }
 
@@ -1960,56 +1871,61 @@ if (s.length() >= p.getN()) {
     }
 
     /**
-     * comparator for a preferring high fraction and low differences,
-       then descending sort of fraction,
-     * then diff, then startIdx
+     * paretto frontier salukwdze comparator using
+     * differnce in chords and fraction of whole
      */
     private class SequenceComparator3 implements
         Comparator<Sequence> {
 
-        private final float maxDiff;
+        final float maxChord;
 
-        public SequenceComparator3(float maxDiff) {
-            this.maxDiff = maxDiff;
+        public SequenceComparator3(List<Sequence> list) {
+            double max = Float.MIN_VALUE;
+            for (Sequence s : list) {
+                assert(!s.sumDiffsIsNotFilled());
+                if (s.sumDiffs > max) {
+                    max = s.sumDiffs;
+                }
+            }
+            maxChord = (float)max;
         }
 
         @Override
         public int compare(Sequence o1, Sequence o2) {
+        
+            assert(!o1.sumDiffsIsNotFilled());
+            assert(!o2.sumDiffsIsNotFilled());
+            
+            float d1 = (float)(o1.sumDiffs/maxChord);
+            float d2 = (float)(o2.sumDiffs/maxChord);
 
-            float d1 = 1.f - (o1.absAvgSumDiffs/maxDiff);
-            float d2 = 1.f - (o2.absAvgSumDiffs/maxDiff);
+            float f1 = 1.f - o1.getFractionOfWhole();
+            float f2 = 1.f - o2.getFractionOfWhole();
 
-            float s1 = o1.fractionOfWhole + d1;
-
-            float s2 = o2.fractionOfWhole + d2;
-
-            if (s1 > s2) {
+            // salukwdze distance squared
+            float s1 = f1*f1 + d1*d1;
+            float s2 = f2*f2 + d2*d2;
+            
+            if (s1 < s2) {
                 return -1;
-            } else if (s1 < s2) {
+            } else if (s1 > s2) {
                 return 1;
             }
 
-            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+            if (f1 < f2) {
                 return -1;
-            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+            } else if (f1 > f2) {
                 return 1;
             }
 
-            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+            if (d1 < d2) {
                 return -1;
-            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
-                return 1;
-            }
-
-            if (o1.startIdx1 < o2.startIdx1) {
-                return -1;
-            } else if (o1.startIdx1 > o2.startIdx1) {
+            } else if (d1 > d2) {
                 return 1;
             }
 
             return 0;
         }
-
     }
 
     /**
@@ -2022,15 +1938,21 @@ if (s.length() >= p.getN()) {
         @Override
         public int compare(Sequence o1, Sequence o2) {
 
-            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+            float f1 = o1.getFractionOfWhole();
+            float f2 = o2.getFractionOfWhole();
+            
+            if (f1 > f2) {
                 return -1;
-            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+            } else if (f1 < f2) {
                 return 1;
             }
-
-            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+            
+            assert(!o1.sumDiffsIsNotFilled());
+            assert(!o2.sumDiffsIsNotFilled());
+            
+            if (o1.sumDiffs < o2.sumDiffs) {
                 return -1;
-            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
+            } else if (o1.sumDiffs > o2.sumDiffs) {
                 return 1;
             }
 
@@ -2039,6 +1961,7 @@ if (s.length() >= p.getN()) {
             } else if (o1.startIdx1 > o2.startIdx1) {
                 return 1;
             }
+            
             return 0;
         }
 
@@ -2059,9 +1982,11 @@ if (s.length() >= p.getN()) {
             } else if (o1.startIdx1 > o2.startIdx1) {
                 return 1;
             }
-            if (o1.fractionOfWhole > o2.fractionOfWhole) {
+            float f1 = o1.getFractionOfWhole();
+            float f2 = o2.getFractionOfWhole();
+            if (f1 > f2) {
                 return -1;
-            } else if (o1.fractionOfWhole < o2.fractionOfWhole) {
+            } else if (f1 < f2) {
                 return 1;
             }
 
@@ -2071,9 +1996,12 @@ if (s.length() >= p.getN()) {
                 return 1;
             }
 
-            if (o1.absAvgSumDiffs < o2.absAvgSumDiffs) {
+            assert(!o1.sumDiffsIsNotFilled());
+            assert(!o2.sumDiffsIsNotFilled());
+            
+            if (o1.sumDiffs < o2.sumDiffs) {
                 return -1;
-            } else if (o1.absAvgSumDiffs > o2.absAvgSumDiffs) {
+            } else if (o1.sumDiffs > o2.sumDiffs) {
                 return 1;
             }
 
@@ -2105,7 +2033,8 @@ if (s.length() >= p.getN()) {
 
         int[] idxs0 = output.idxs0;
         float[] mins = output.mins;
-
+        int[] rs = output.blockSizes;
+        
         int count = 0;
 
         double lThresh = Math.sqrt(r) * threshold;
@@ -2114,22 +2043,21 @@ if (s.length() >= p.getN()) {
             log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
             float sum = 0;
-            //for (int i = r; i < a.length; i++) {
             for (int i = 0; i < a.length; i++) {
+                int r1 = r;
                 float s1;
                 if ((i - r + 1) < 0) {
-                    int rTmp;
                     if (i < 2) {
-                        rTmp = 2;
+                        r1 = 2;
                         s1 = a[1][1] - a[0][1] - a[1][0]
                             + a[0][0];
                     } else {
-                        rTmp = i + 1;
-                        s1 = a[i][i] - a[i-rTmp+1][i]
-                            - a[i][i-rTmp+1]
-                            + a[i-rTmp+1][i-rTmp+1];
+                        r1 = i + 1;
+                        s1 = a[i][i] - a[i-r1+1][i]
+                            - a[i][i-r1+1]
+                            + a[i-r1+1][i-r1+1];
                     }
-                    float cTmp = 1.f/(float)(rTmp*rTmp);
+                    float cTmp = 1.f/(float)(r1*r1);
                     s1 *= cTmp;
                 } else {
                     s1 = a[i][i] - a[i-r+1][i] - a[i][i-r+1]
@@ -2164,6 +2092,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                     }
                     mins[i] = s1;
                     idxs0[i] = jOffset;
+                    rs[i] = r1;
                 }
             }
             if (count == 0) {
@@ -2172,7 +2101,6 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
             log.fine(String.format(
                 "SUM=%.4f block=%d md[%d]", sum, r, jOffset));
         }
-
 
         {
             for (int i = 0; i < idxs0.length; ++i) {
@@ -2185,7 +2113,7 @@ log.info("*CHECK: i=" + i + " j=" + (i + jOffset)
                 }
                 log.info("MIN i=" + i + " j="
                     + j + " offset=" + idxs0[i] + "  mind="
-                    + mins[i] + " r=" + r);
+                    + mins[i] + " r=" + rs[i]);
             }
         }
 

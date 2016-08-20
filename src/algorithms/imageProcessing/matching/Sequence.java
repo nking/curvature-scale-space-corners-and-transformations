@@ -64,11 +64,11 @@ public class Sequence {
     private Logger log = Logger.getLogger(
         this.getClass().getName());
 
-    int startIdx1;
+    int startIdx1 = -1;
     int startIdx2 = -1;
     int stopIdx2 = -1;
-    float absAvgSumDiffs;
-    float fractionOfWhole;
+    // sum differences of chords
+    double sumDiffs = Double.MAX_VALUE;
 
     private final int n1;
     private final int n2;
@@ -86,6 +86,10 @@ public class Sequence {
         return n1;
     }
 
+    public float getFractionOfWhole() {
+        return (float)length()/(float)n1;
+    }
+
     public int getN2() {
         return n2;
     }
@@ -100,6 +104,10 @@ public class Sequence {
 
     public int getStopIdx2() {
         return stopIdx2;
+    }
+    
+    public boolean sumDiffsIsNotFilled() {
+        return (sumDiffs == Double.MAX_VALUE);
     }
 
     /**
@@ -163,6 +171,7 @@ public class Sequence {
 
     public int getStopIdx1() {
         int stopIdx1 = startIdx1 + length() - 1;
+        assert(stopIdx1 < n1);
         if (stopIdx1 >= n1) {
             stopIdx1 -= n1;
         }
@@ -362,18 +371,10 @@ public class Sequence {
 
             mergeInto.stopIdx2 = mergeFrom.stopIdx2;
 
-            float f0 = mergeInto.fractionOfWhole;
-            float d0 = mergeInto.absAvgSumDiffs;
-            float d0Tot = d0 * len0;
             int nAdded = mergeInto.length() - len0;
-            len0 = mergeInto.length();
 
-            float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
-            d0Tot += (d1Tot/(float)nAdded);
-
-            mergeInto.fractionOfWhole = (float)len0/(float)n1;
-            mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-            assert(mergeInto.length() == len0);
+            // set to a value to recalculate sum:
+            mergeInto.sumDiffs = Double.MAX_VALUE;;
 
             sb.append("\n => ").append(mergeInto.toString());
 
@@ -405,9 +406,6 @@ public class Sequence {
 
         mergeInto.stopIdx2 = mergeFrom.stopIdx2;
 
-        float f0 = mergeInto.fractionOfWhole;
-        float d0 = mergeInto.absAvgSumDiffs;
-        float d0Tot = d0 * len0;
         int nAdded = (mergeInto.length() - len0);
         if (nAdded == 0) {
             sb.append("\n => ").append(mergeInto.toString());
@@ -418,14 +416,8 @@ public class Sequence {
             return new Sequence[]{mergeInto};
         }
 
-        len0 = mergeInto.length();
-
-        float d1Tot = mergeFrom.absAvgSumDiffs * mergeFrom.length();
-        d0Tot += (d1Tot/(float)nAdded);
-
-        mergeInto.fractionOfWhole = (float)len0/(float)n1;
-        mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
-        assert(mergeInto.length() == len0);
+        // set to a value to recalculate sum:
+        mergeInto.sumDiffs = Double.MAX_VALUE;;
 
         sb.append("\n ==> ").append(mergeInto.toString());
         log.info(sb.toString());
@@ -473,9 +465,8 @@ public class Sequence {
             seqs[0].startIdx2 = startIdx1 + offset;
             seqs[0].stopIdx2 = seqs[0].startIdx2 + len0 - 1;
 
-            float f0 = (float)len0/(float)len;
-            seqs[0].absAvgSumDiffs = s.absAvgSumDiffs * f0;
-            seqs[0].fractionOfWhole = (float)len0/(float)s.n1;
+            // set to a value indicating it needs to be recalculated
+            seqs[0].sumDiffs = Double.MAX_VALUE;
 
             seqs[1] = new Sequence(s.n1, s.n2, offset);
             seqs[1].startIdx1 = t1;
@@ -483,9 +474,8 @@ public class Sequence {
             seqs[1].startIdx2 = 0;
             seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
 
-            seqs[1].absAvgSumDiffs = s.absAvgSumDiffs
-                * (float)len1/(float)len;
-            seqs[1].fractionOfWhole = (float)len1/(float)s.n1;
+            // set to a value indicating it needs to be recalculated
+            seqs[1].sumDiffs = Double.MAX_VALUE;
 
             System.out.println("parsed s=" + s +
                 "\n into " + seqs[0] +
@@ -506,9 +496,8 @@ public class Sequence {
             seqs[0].stopIdx2 = s.n2 - 1;
             int len0 = seqs[0].length();
             
-            float f0 = (float)len0/(float)len;
-            seqs[0].absAvgSumDiffs = s.absAvgSumDiffs * f0;
-            seqs[0].fractionOfWhole = (float)len0/(float)s.n1;
+            // set to a value indicating it needs to be recalculated
+            seqs[0].sumDiffs = Double.MAX_VALUE;
 
             seqs[1] = new Sequence(s.n1, s.n2, offset);
             seqs[1].startIdx1 = seqs[0].getStopIdx1() + 1;
@@ -516,9 +505,8 @@ public class Sequence {
             int len1 = stopIdx1 - seqs[1].startIdx1 + 1;
             seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
         
-            seqs[1].absAvgSumDiffs = s.absAvgSumDiffs
-                * (float)len1/(float)len;
-            seqs[1].fractionOfWhole = (float)len1/(float)s.n1;
+            // set to a value indicating it needs to be recalculated
+            seqs[1].sumDiffs = Double.MAX_VALUE;
 
             System.out.println("*parsed s=" + s +
                 "\n into " + seqs[0] +
@@ -665,8 +653,7 @@ public class Sequence {
         s0.stopIdx2 = startIdx1 + len - 1;
         //int stopIdx1 = stopIdx2;
 
-        s0.absAvgSumDiffs = absAvgSumDiffs;
-        s0.fractionOfWhole = fractionOfWhole;
+        s0.sumDiffs = sumDiffs;
         return s0;
     }
 
@@ -687,8 +674,7 @@ public class Sequence {
         cp.startIdx1 = startIdx1;
         cp.startIdx2 = startIdx2;
         cp.stopIdx2 = stopIdx2;
-        cp.absAvgSumDiffs = absAvgSumDiffs;
-        cp.fractionOfWhole = fractionOfWhole;
+        cp.sumDiffs = sumDiffs;
         return cp;
     }
 
@@ -698,7 +684,7 @@ public class Sequence {
         sb.append(String.format(
             "(%d:%d to %d, f=%.4f d=%.4f  n1=%d, n2=%d offset=%d len=%d)",
             startIdx1, startIdx2, stopIdx2,
-            fractionOfWhole, absAvgSumDiffs, n1, n2,
+            getFractionOfWhole(), (float)sumDiffs, n1, n2,
             offset, length()));
         return sb.toString();
     }

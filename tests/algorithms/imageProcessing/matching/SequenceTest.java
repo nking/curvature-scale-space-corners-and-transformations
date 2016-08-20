@@ -363,8 +363,7 @@ public class SequenceTest extends TestCase {
         int len = sr.nextInt(n1) + 1;
         
         Sequence s = new Sequence(n1, n2, offset);
-        s.fractionOfWhole = (float)len/(float)n1;
-        s.absAvgSumDiffs = 0;
+        s.sumDiffs = 0;
         s.startIdx1 = sr.nextInt(n1);
         int stopIdx1 = s.startIdx1 + len - 1;
         if (stopIdx1 >= n1) {
@@ -375,7 +374,6 @@ public class SequenceTest extends TestCase {
                 return createSequence(n1, n2, sr, offset);
             }
             stopIdx1 = s.startIdx1 + (len - 1);
-            s.fractionOfWhole = (float)len/(float)n1;
         }
         s.startIdx2 = s.startIdx1 + offset;
         if (s.startIdx2 >= n2) {
@@ -405,9 +403,6 @@ public class SequenceTest extends TestCase {
                 // unlikely to be caught in endless loop
                 return createSequence(n1, n2, sr, offset);
             }
-            s.fractionOfWhole = (float)len/(float)n1;
-            stopIdx1 = s.startIdx1 + (len - 1);
-            s.stopIdx2 = s.startIdx2 + (len - 1);
             assert(s.length() == len);
             return s;
         }     
