@@ -280,7 +280,10 @@ public class PartialShapeMatcher {
             // with larger block size
             rs = new int[]{n1/2};
         } else {
-            rs = new int[]{n1/3};// n1/3
+            rs = new int[]{
+                n1/3
+                //n1/5
+            };
         };
 
         List<Sequence> sequences = new ArrayList<Sequence>();
@@ -393,6 +396,12 @@ public class PartialShapeMatcher {
         // in start of final merged range).
         // key=offset, data=start i, start r, stop i
         
+        int[] offsets = new int[n1];
+        int[] startIs = new int[n1];
+        int[] startRs = new int[n1];
+        int[] stopIs = new int[n1];
+        
+        int cIdx = -1;
         int currentOffset = -1;
         int startBlock = -1;
         int startI = -1;
@@ -400,14 +409,12 @@ public class PartialShapeMatcher {
             int offset = mins.idxs0[i];
             if (offset == -1) {
                 if (currentOffset != -1) {
-                    // create and store sequence
-                    Sequence[] seqs = createSequences(
-                        n1, n2, currentOffset, 
-                        startI - startBlock + 1, i - 1);
-                    for (Sequence s : seqs) {
-                        populateWithChordDiffs(s, md);
-                        sequences.add(s);
-                    }
+                    offsets[cIdx] = currentOffset;
+                    startIs[cIdx] = startI;
+                    startRs[cIdx] = startBlock;
+                    stopIs[cIdx] = i - 1;
+                    cIdx++;
+                    
                     currentOffset = -1;
                     startI = -1;
                     startBlock = -1;
@@ -418,24 +425,48 @@ public class PartialShapeMatcher {
                 startI = i;
                 startBlock = mins.blockSizes[i];
                 currentOffset = offset;
+                cIdx++;
             } else if (currentOffset != offset) {
                 // create and store sequence
-                Sequence[] seqs = createSequences(
-                    n1, n2, currentOffset, 
-                    startI - startBlock + 1, i - 1);
-                for (Sequence s : seqs) {
-                    populateWithChordDiffs(s, md);
-                    sequences.add(s);
-                }
+                offsets[cIdx] = currentOffset;
+                startIs[cIdx] = startI;
+                startRs[cIdx] = startBlock;
+                stopIs[cIdx] = i - 1;
+                cIdx++;
+                    
                 currentOffset = offset;
                 startI = i;
                 startBlock = mins.blockSizes[i];
             }
         }
         if (currentOffset != -1) {
+            offsets[cIdx] = currentOffset;
+            startIs[cIdx] = startI;
+            startRs[cIdx] = startBlock;
+            stopIs[cIdx] = n1 - 1;
+            cIdx++;
+        }
+        
+        if (cIdx == -1) {
+            return;
+        }
+        
+        offsets = Arrays.copyOf(offsets, cIdx);
+        startIs = Arrays.copyOf(startIs, cIdx);
+        startRs = Arrays.copyOf(startRs, cIdx);
+        stopIs = Arrays.copyOf(stopIs, cIdx);
+        
+        // TODO: experimental:  for each item in aggregated
+        // sequential offsets, 
+        // read md to see if the previous 
+        // block is within tolerance
+        // of the minDiffs for that index,
+        // and if so, extend the aggregated item range.
+        
+        for (int i = 0; i < cIdx; ++i) {
             Sequence[] seqs = createSequences(
-                n1, n2, currentOffset, 
-                startI - startBlock + 1, n1 - 1);
+                n1, n2, offsets[i],
+                startIs[i] - startRs[i] + 1, stopIs[i]);
             for (Sequence s : seqs) {
                 populateWithChordDiffs(s, md);
                 sequences.add(s);
