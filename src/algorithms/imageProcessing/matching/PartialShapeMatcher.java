@@ -286,6 +286,11 @@ public class PartialShapeMatcher {
             };
         };
 
+        float pixTolerance = 20;
+        
+        // 10 degrees is 0.1745
+        float thresh = (float)(Math.PI/180.) * 10.f;;
+
         List<Sequence> sequences = new ArrayList<Sequence>();
 
         for (int r : rs) {
@@ -297,7 +302,8 @@ public class PartialShapeMatcher {
 
             // build the matching sequential sequences by
             // by reading chord difference over a block size
-            extractSequences(md, sequences, r);
+            // and aggregating sequential same offsets
+            extractSequences(md, sequences, r, thresh);
 
             assert(assertNoWrapAround(sequences));
         }
@@ -378,22 +384,18 @@ public class PartialShapeMatcher {
     }
 
     protected void extractSequences(float[][][] md,
-        List<Sequence> sequences, int r) {
+        List<Sequence> sequences, int r, 
+        float thresh) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
         int n2 = md.length;
         int n1 = md[0].length;
 
-        // 23 degrees is 0.4014
-        double thresh = (Math.PI/180.) * 10.;//*23.;
-
         MinDiffs mins = new MinDiffs(n1);
         findMinDifferenceMatrix(md, r, thresh, mins);
 
-        // condensing mins to merge ranges of sequential offsets
-        // while noting the start block size (to include
-        // in start of final merged range).
+        // merge ranges of sequential offsets.
         // key=offset, data=start i, start r, stop i
         
         int[] offsets = new int[n1];
@@ -462,6 +464,38 @@ public class PartialShapeMatcher {
         // block is within tolerance
         // of the minDiffs for that index,
         // and if so, extend the aggregated item range.
+        int stopI, readI;
+        int[] rUsed = new int[1];
+        for (int i = 0; i < cIdx; ++i) {
+            
+            currentOffset = offsets[i];
+                        
+            // read backwards from current start block
+            readI = startIs[i] - startRs[i];
+            while (readI > 0) {
+            
+                startBlock = startRs[i];
+                
+                float min = mins.mins[readI];
+                
+                double lThresh = Math.sqrt(startBlock) * thresh;
+        
+                float s1 = read(md, readI, currentOffset, 
+                    startBlock, rUsed);
+                
+                log.info("s1=" + s1 + " lThresh=" 
+                    + lThresh + " min=" + min + 
+                    " i=" + readI + " r=" + rUsed[0]);
+            
+                if (Math.abs(s1 - min) > lThresh) {
+                    break;
+                }
+                
+                startIs[i] = readI;
+                startRs[i] = rUsed[0];
+                readI = startIs[i] - startRs[i];
+            }
+        }
         
         for (int i = 0; i < cIdx; ++i) {
             Sequence[] seqs = createSequences(
@@ -472,6 +506,9 @@ public class PartialShapeMatcher {
                 sequences.add(s);
             }
         }
+        
+        // NOTE: at this stage, a salukdwze sort
+        // produces the right answer as item 0
 
         log.info(sequences.size() + " sequences");
     }
@@ -856,10 +893,7 @@ public class PartialShapeMatcher {
         //md[0:n2-1][0:n1-1][0:n1-1]
         
         int n1 = s.getN1();
-        int n2 = s.getN2();
         int offset = s.getOffset();
-
-        float[][] a = md[offset];
         
         // r is block size
         int r = s.length();
@@ -867,6 +901,33 @@ public class PartialShapeMatcher {
         assert(r <= n1);
         
         int i = s.getStopIdx1();
+        
+        float s1 = read(md, i, offset, r, null);
+      
+        s.sumDiffs = s1;
+    }
+    
+    /**
+     * 
+     * @param md
+     * @param i
+     * @param offset
+     * @param blockSize
+     * @param blockUsed the output variable to return the
+     * actual block size used if i is small.  this variable
+     * can be null.
+     * @return 
+     */
+    private float read(float[][][] md, int i, int offset, 
+        int blockSize, int[] blockUsed) {
+
+        //md[0:n2-1][0:n1-1][0:n1-1]
+        
+        float[][] a = md[offset];
+        
+        // r is block size
+        int r = blockSize;
+        
         if ((i - r + 1) < 0) {
             r = i - 1;
             if (i < 2) {
@@ -884,7 +945,11 @@ public class PartialShapeMatcher {
             s1 *= -1;
         }
         
-        s.sumDiffs = s1;
+        if (blockUsed != null) {
+            blockUsed[0] = r;
+        }
+        
+        return s1;
     }
 
     private List<PairFloat> kNearestBruteForce(
@@ -2049,14 +2114,14 @@ public class PartialShapeMatcher {
      * @return
      */
     private void findMinDifferenceMatrix(
-        float[][][] md, int r, double threshold,
+        float[][][] md, int r, float threshold,
         MinDiffs output) {
 
         if (r < 1) {
             throw new IllegalArgumentException("r cannot be < 1");
         }
 
-        double c = 1./(double)(r*r);
+        float c = 1.f/(float)(r*r);
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
@@ -2071,6 +2136,8 @@ public class PartialShapeMatcher {
 
         double lThresh = Math.sqrt(r) * threshold;
 
+        log.info("lThresh=" + lThresh);
+        
         for (int jOffset = 0; jOffset < md.length; jOffset++) {
             log.fine(String.format("block=%d md[%d]", r, jOffset));
             float[][] a = md[jOffset];
