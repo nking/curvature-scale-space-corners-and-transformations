@@ -408,9 +408,9 @@ public class PartialShapeMatcher {
                         populateWithChordDiffs(s, md);
                         sequences.add(s);
                     }
-                    currentOffset = offset;
-                    startI = i;
-                    startBlock = mins.blockSizes[i];
+                    currentOffset = -1;
+                    startI = -1;
+                    startBlock = -1;
                 }
                 continue;
             }
@@ -832,7 +832,8 @@ public class PartialShapeMatcher {
         
         // r is block size
         int r = s.length();
-        assert(r < n1);
+        
+        assert(r <= n1);
         
         int i = s.getStopIdx1();
         if ((i - r + 1) < 0) {
