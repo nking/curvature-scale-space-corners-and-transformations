@@ -271,8 +271,15 @@ public class PartialShapeMatcher {
             matchArticulated
         */
 
-        int[] rs = new int[]{n1/3
-            //, n1/4
+        //TODO: revisit this.  might need to depend
+        // upon p.n
+        int[] rs;
+        if (srchForArticulatedParts) {
+            // the scissors tests gave better results
+            // with larger block size
+            rs = new int[]{n1/2};
+        } else {
+            rs = new int[]{n1/3};
         };
 
         List<Sequence> sequences = new ArrayList<Sequence>();
@@ -1146,7 +1153,8 @@ public class PartialShapeMatcher {
 
                 //TODO: this should be revised
                 float f = (float)nAdded/(float)best.getNumberOfMatches();
-                log.info("fraction of pts to possibly add = " + f);
+                log.info("fraction of pts to possibly " 
+                    + "add = " + f + " nAdded=" + nAdded);
                 if (f < 0.333 || (nAdded < 1)) {
                     continue;
                 }
@@ -1314,8 +1322,10 @@ public class PartialShapeMatcher {
                 continue;
             }
             Result result = addByTransformation(s, p, q);
-            populateWithChordDiffs(result, md, p.getN(), q.getN());
-            results.add(result);
+            if (result != null) {
+                populateWithChordDiffs(result, md, p.getN(), q.getN());
+                results.add(result);
+            }
         }
 
         if (results.isEmpty()) {
@@ -1441,6 +1451,8 @@ if (s.length() >= p.getN()) {
         leftXY = outLeft;
         rightXY = outRight;
         if (params == null) {
+            //TODO: reconsider whether to package up
+            // the given sequence s and return it here
             return null;
         }
         log.info("offset=" + offset + " partial fit=" + fit.toString());

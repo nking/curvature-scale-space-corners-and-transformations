@@ -111,7 +111,7 @@ public class PartialShapeMatcherTest extends TestCase {
             //System.out.println(String.format(
             //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
 
-            if ((ii % 5) == 0) {
+            if ((ii % 4) == 0) {
                 plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
                     0);
             }
@@ -177,7 +177,7 @@ public class PartialShapeMatcherTest extends TestCase {
             //System.out.println(String.format(
             //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
 
-            if ((ii % 5) == 0) {
+            if ((ii % 4) == 0) {
                 plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
                     0);
             }

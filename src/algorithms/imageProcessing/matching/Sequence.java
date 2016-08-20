@@ -119,12 +119,29 @@ public class Sequence {
             && (isStartSentinel() || isStopSentinel())) {
             return true;
         }
-
-        int sTestStopIdx1 = sTest.startIdx1 +
-            (sTest.stopIdx2 - sTest.startIdx2);
-
-        int stopIdx1 = startIdx1
-            + (stopIdx2 - startIdx2);
+        
+        // order by startIdx1
+        Sequence s0, s1;
+        // make mergeInto.startIdx1 < mergeFrom.startIdx1
+        if (sTest.startIdx1 <= startIdx1) {
+            s0 = sTest;
+            s1 = this;
+        } else {
+            s0 = this;
+            s1 = sTest;
+        }
+        
+        int s0Sentinel1 = (n2 - 1 - offset);
+        if (s0Sentinel1 < s1.startIdx1) {
+            // can compare idx2 alone to see does not
+            // intersect
+            if ((s0.getStopIdx2() < s1.startIdx2)
+                || (s0.startIdx2 > s1.getStopIdx2())) {
+                return false;
+            } else {
+                return true;
+            }
+        }
 
         //TODO: might need corrections for
         // wrap around here
@@ -132,11 +149,11 @@ public class Sequence {
         //       s s
         //  t t      t t
         // test that first indexes don't intersect
-        if ((sTestStopIdx1 < startIdx1)
-            || (sTest.startIdx1 > stopIdx1)) {
+        if ((s0.getStopIdx1() < s1.startIdx1)
+            || (s0.startIdx1 > s1.getStopIdx1())) {
             // test that second indexes don't intersect
-            if ((sTest.stopIdx2 < startIdx2)
-                || (sTest.startIdx2 > stopIdx2)) {
+            if ((s0.getStopIdx2() < s1.startIdx2)
+                || (s0.startIdx2 > s1.getStopIdx2())) {
                 return false;
             }
         }
@@ -362,6 +379,8 @@ public class Sequence {
 
             log.info(sb.toString());
 
+            assert(mergeInto.length() <= n1);
+            
             return new Sequence[]{mergeInto};
         }
         if (!mergeInto.intersects(mergeFrom)) {
@@ -375,11 +394,6 @@ public class Sequence {
         first proceeds by startIdx1 and only
         up until n1-1.
         */
-
-        // all cases involving sentinel should be handled
-        // by now and so is the adjacent rnage case,
-        // so what remains in merging overlapping regions
-        // that do not cross the sentinels
 
         // they're ordered by startIdx1.  startIdx2 should be
         // increasing also
@@ -399,6 +413,8 @@ public class Sequence {
             sb.append("\n => ").append(mergeInto.toString());
             log.info(sb.toString());
 
+            assert(mergeInto.length() <= n1);
+            
             return new Sequence[]{mergeInto};
         }
 
@@ -411,9 +427,11 @@ public class Sequence {
         mergeInto.absAvgSumDiffs = d0Tot/(float)len0;
         assert(mergeInto.length() == len0);
 
-        sb.append("\n => ").append(mergeInto.toString());
+        sb.append("\n ==> ").append(mergeInto.toString());
         log.info(sb.toString());
 
+        assert(mergeInto.length() <= n1);
+        
         return new Sequence[]{mergeInto};
     }
 
@@ -426,7 +444,7 @@ public class Sequence {
      give the correct length and offsets to
      start with.
      note that startIdx1 should always be in n1 range
-     at this point already too and that n1 leq n2.
+     at this point already too and n1 is leq n2.
      @param s
      @return
     */
