@@ -6015,8 +6015,20 @@ if (sum > 511) {
      */
     public PairIntArray extractSmoothedOrderedBoundary(
         Set<PairInt> contiguousPoints) {
+        
+        return extractSmoothedOrderedBoundary(contiguousPoints, 
+            SIGMA.TWO);
+    }
+    
+    /**
+     * NOTE: modifies input by the blur step.
+     * @param contiguousPoints
+     * @return 
+     */
+    public PairIntArray extractSmoothedOrderedBoundary(
+        Set<PairInt> contiguousPoints, SIGMA sigma) {
                 
-        blur(contiguousPoints, SIGMA.TWO);
+        blur(contiguousPoints, sigma);
         
         PerimeterFinder2 finder = new PerimeterFinder2();
         PairIntArray ordered = finder.extractOrderedBorder(

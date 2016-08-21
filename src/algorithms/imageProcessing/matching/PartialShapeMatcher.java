@@ -29,10 +29,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.RangeSearch;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -219,8 +225,8 @@ public class PartialShapeMatcher {
 
         int topK = 1;
 
-        List<Sequence> sequences = new ArrayList<Sequence>();
-
+        MergedMinDiffs mergedMinDiffs = null;
+        
         for (int r : rs) {
 
             if (r < 2) {
@@ -231,20 +237,27 @@ public class PartialShapeMatcher {
             // build the matching sequential sequences by
             // by reading chord difference over a block size
             // and aggregating sequential same offsets
-            extractSequences(md, sequences, r, thresh);
-
-            assert(assertNoWrapAround(sequences));
-        }
-
-        if (rs.length > 1) {
-            mergeSequences(sequences);
-            for (Sequence s : sequences) {
-                if (s.sumDiffsIsNotFilled()) {
-                    populateWithChordDiffs(s, md);
-                }
+            MergedMinDiffs mmd = extractSequences(md, r, thresh);
+            if (mergedMinDiffs == null) {
+                mergedMinDiffs = mmd;
+            } else {
+                mergedMinDiffs = merge(md, mergedMinDiffs, mmd);
             }
         }
+        
+        /*
+        TODO: after this.merge(...) is implemented,
+        consider refactoring everything below
+        to continue to use ranges as is done with
+        MergedMinDiffs, where idx2 is a positive number
+        greater than idx1.
+        */
 
+        List<Sequence> sequences = createSequences(md, 
+            mergedMinDiffs);
+        
+        assert(assertNoWrapAround(sequences));
+        
         // NOTE: the android statues
         // and scissor tests show that correct
         // main offset is now the top item
@@ -301,10 +314,172 @@ public class PartialShapeMatcher {
 
         return best;
     }
+    
+    private class MergedMinDiffs {
+        int[] offsets;
+        int[] startIs;
+        int[] startRs;
+        int[] stopIs;
+        public MergedMinDiffs(int n1) {
+            offsets = new int[n1];
+            startIs = new int[n1];
+            startRs = new int[n1];
+            stopIs = new int[n1];
+        }
+    }
+    
+    private MergedMinDiffs merge(float[][][] md,
+        MergedMinDiffs mmd1, MergedMinDiffs mmd2) {
+    
+        int n2 = md.length;
+        int n1 = md[0].length;
+        
+        /*
+        at this point all idx1's are within range n1
+        and all idx2's are greater than idx1's by 
+        the offset amount (and might not be within
+        range of n2 because no corrections are made
+        before merging is finished, making intersection
+        checks easier).
+        
+        mmd2 map w/key=offset, 
+            value= range search tree of intervals
+        
+        loop over mmd1
+            while true, for mmd1.offset iterate over i
+                from startI-r to stopI plus one on each
+                end to see if there is a member in mmd2
+                and if so, 
+                   if it's not completely contained in mmd1,
+                      extend mmd1
+                   remove entry from mmd2
+                   if mmd1 didn't expand break and continue to
+                   next offset in mmd1
+        the remaining items in mmd2 were not merged,
+        
+        make new MergedMinDiff
+           and put mmd1 in it and mmd2 remaining items
+                   
+        */
+       
+        Map<Integer, RangeSearch<Interval<Integer>, Integer>> offsetRS2 = 
+            new HashMap<Integer, RangeSearch<Interval<Integer>, Integer>>();
+        
+        for (int i = 0; i < mmd2.offsets.length; ++i) {
+            int offset = mmd2.offsets[i];
+            int blockSize = mmd2.startRs[i];
+            int startI = mmd2.startIs[i] - blockSize;
+            int stopI = mmd2.stopIs[i];
+            
+            Integer key = Integer.valueOf(offset);
+            Integer index = Integer.valueOf(i);
+            
+            RangeSearch<Interval<Integer>, Integer> rt =
+                offsetRS2.get(key);
+            
+            if (key == null) {
+                rt = new RangeSearch<Interval<Integer>, Integer>();
+                offsetRS2.put(key, rt);
+            }
+            
+            Interval<Integer> interval = new Interval<Integer>(
+                startI, stopI);
+            
+            rt.put(interval, index);
+        }
+        
+        TIntSet rmIndex2 = new TIntHashSet();
+        
+        for (int i = 0; i < mmd1.offsets.length; ++i) {
+            // search for adjacent or overlapping in mmd2
+            int offset = mmd1.offsets[i];
+            int blockSize = mmd1.startRs[i];
+            int startI = mmd1.startIs[i] - blockSize;
+            int stopI = mmd1.stopIs[i];
+            
+            Integer key = Integer.valueOf(offset);
+            
+            RangeSearch<Interval<Integer>, Integer> rt =
+                offsetRS2.get(key);
+            
+            if (rt == null) {
+                continue;
+            }
+            
+            int s0 = startI - 1;
+            if (s0 < 0) {
+                s0 = 0;
+            }
+            int s1 = stopI + 1;
+            if (s1 >= n1) {
+                s1 = n1 - 1;
+            }
+            
+            // TODO: write a test to check this query:
+            Interval<Integer> srchMin = new Interval<Integer>(
+               s0, s0);
+            Interval<Integer> srchMax = new Interval<Integer>(
+               s1, s1);
+            
+            Iterable<Interval<Integer>> iter = rt.range(
+                srchMin, srchMax);
+            
+            Set<Interval<Integer>> rmSet = new HashSet<Interval<Integer>>();
+            for (Interval<Integer> m2 : iter) {
+                Integer index2 = rt.get(m2);
+                // determine if completely within startI-blck+1 and stopI
+                // else can be used to extend the start or stop.
+                // 
+                // if merged,
+                //   rmIndex2.add(index2.intValue());
+                //   rm.add(m2)
+                //
+                // paused here
+            }
+            
+            for (Interval<Integer> rm : rmSet) {
+                rt.remove(rm);
+            }
+        }
+        
+        // create new MergedMinDiffs to hold mmd1 and 
+        //   the items in mmd2 not in rmIndex2 set
+        
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+    
+    private List<Sequence> createSequences(float[][][] md,
+        MergedMinDiffs mmd) {
+        
+        int n2 = md.length;
+        int n1 = md[0].length;
+        
+        List<Sequence> sequences = new ArrayList<Sequence>();
+        
+        for (int i = 0; i < mmd.offsets.length; ++i) {
+            
+            Sequence[] seqs = createSequences(
+                n1, n2, mmd.offsets[i],
+                mmd.startIs[i] - mmd.startRs[i] + 1, mmd.stopIs[i]);
+            
+            for (Sequence s : seqs) {
+                assert(s.length() <= n1);
+                assert(s.length() > 0);
+                populateWithChordDiffs(s, md);
+                sequences.add(s);
+            }
+        }
 
-    protected void extractSequences(float[][][] md,
-        List<Sequence> sequences, int r,
-        float thresh) {
+        // NOTE: at this stage, a salukdwze sort
+        // produces the right answer as item 0
+
+        log.fine(sequences.size() + " sequences");
+        
+        return sequences;
+    }
+
+    protected MergedMinDiffs extractSequences(float[][][] md,
+        int r, float thresh) {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
 
@@ -317,10 +492,11 @@ public class PartialShapeMatcher {
         // merge ranges of sequential offsets.
         // key=offset, data=start i, start r, stop i
 
-        int[] offsets = new int[n1];
-        int[] startIs = new int[n1];
-        int[] startRs = new int[n1];
-        int[] stopIs = new int[n1];
+        MergedMinDiffs mmd = new MergedMinDiffs(n1);
+        int[] offsets = mmd.offsets;
+        int[] startIs = mmd.startIs;
+        int[] startRs = mmd.startRs;
+        int[] stopIs = mmd.stopIs;
 
         int cIdx = -1;
         int currentOffset = -1;
@@ -367,28 +543,28 @@ public class PartialShapeMatcher {
         }
 
         if (cIdx == -1) {
-            return;
+            return null;
         }
 
         // once more to equal length
         ++cIdx;
 
-        offsets = Arrays.copyOf(offsets, cIdx);
-        startIs = Arrays.copyOf(startIs, cIdx);
-        startRs = Arrays.copyOf(startRs, cIdx);
-        stopIs = Arrays.copyOf(stopIs, cIdx);
+        mmd.offsets = Arrays.copyOf(offsets, cIdx);
+        mmd.startIs = Arrays.copyOf(startIs, cIdx);
+        mmd.startRs = Arrays.copyOf(startRs, cIdx);
+        mmd.stopIs = Arrays.copyOf(stopIs, cIdx);
 
         int stopI, readI;
         int[] rUsed = new int[1];
         for (int i = 0; i < cIdx; ++i) {
 
-            currentOffset = offsets[i];
+            currentOffset = mmd.offsets[i];
 
             // read backwards from current start block
-            readI = startIs[i] - startRs[i];
+            readI = mmd.startIs[i] - mmd.startRs[i];
             while (readI > 0) {
 
-                startBlock = startRs[i];
+                startBlock = mmd.startRs[i];
 
                 if (mins.idxs0[readI] == -1) {
                     break;
@@ -409,30 +585,15 @@ public class PartialShapeMatcher {
                     break;
                 }
 
-                startIs[i] = readI;
-                startRs[i] = rUsed[0];
-                readI = startIs[i] - startRs[i];
+                mmd.startIs[i] = readI;
+                mmd.startRs[i] = rUsed[0];
+                readI = mmd.startIs[i] - mmd.startRs[i];
             }
 
             //TODO: add a read forward from stopI + block size
         }
-
-        for (int i = 0; i < cIdx; ++i) {
-            Sequence[] seqs = createSequences(
-                n1, n2, offsets[i],
-                startIs[i] - startRs[i] + 1, stopIs[i]);
-            for (Sequence s : seqs) {
-                assert(s.length() <= n1);
-                assert(s.length() > 0);
-                populateWithChordDiffs(s, md);
-                sequences.add(s);
-            }
-        }
-
-        // NOTE: at this stage, a salukdwze sort
-        // produces the right answer as item 0
-
-        log.fine(sequences.size() + " sequences");
+        
+        return mmd;
     }
 
     protected void mergeSequences(List<Sequence> sequences) {
