@@ -105,9 +105,13 @@ public class Sequence {
     public int getStopIdx2() {
         return stopIdx2;
     }
-    
+
     public boolean sumDiffsIsNotFilled() {
         return (sumDiffs == Double.MAX_VALUE);
+    }
+    
+    public void setSumDiffsToRequireUpdate() {
+        sumDiffs = Double.MAX_VALUE;
     }
 
     /**
@@ -127,7 +131,7 @@ public class Sequence {
             && (isStartSentinel() || isStopSentinel())) {
             return true;
         }
-        
+
         // order by startIdx1
         Sequence s0, s1;
         // make mergeInto.startIdx1 < mergeFrom.startIdx1
@@ -138,7 +142,7 @@ public class Sequence {
             s0 = this;
             s1 = sTest;
         }
-        
+
         int s0Sentinel1 = (n2 - 1 - offset);
         if (s0Sentinel1 < s1.startIdx1) {
             // can compare idx2 alone to see does not
@@ -220,8 +224,7 @@ public class Sequence {
                 }
             }
 
-            System.out.println("seqs.size=" +
-                sequences.size());
+            log.info("seqs.size=" + sequences.size());
             for (Sequence s : sequences) {
                 log.info("nIter=" + nIter + ": SEQ " + s);
             }
@@ -307,10 +310,22 @@ public class Sequence {
             return null;
         }
 
-        if (this.isStopSentinel() || mergeFrom.isStopSentinel()) {
+        /*
+        if (mergeFrom.isStopSentinel()) {
+            if (this.startIdx1 <= mergeFrom.startIdx1 &&
+                this.startIdx2 < mergeFrom.stopIdx2) {
+                Sequence mergeInto = this.copy();
+                mergeInto.stopIdx2 = mergeFrom.stopIdx2;
+                log.info("mergeFrom=" + mergeFrom
+                    + "\n  mergeInto=" + this
+                    + "\n  ==>" + mergeInto);
+            }
+        }*/
+        
+        /*if (this.isStopSentinel() || mergeFrom.isStopSentinel()) {
             log.info("*sentinels:" + this + "\n " + mergeFrom);
             return null;
-        }
+        }*/
 
         Sequence mergeInto;
 
@@ -321,7 +336,7 @@ public class Sequence {
         } else {
             mergeInto = this.copy();
         }
-
+                
         if (mergeInto.startIdx2 > mergeFrom.startIdx2) {
             return null;
         }
@@ -375,7 +390,7 @@ public class Sequence {
             int nAdded = mergeInto.length() - len0;
 
             // set to a value to recalculate sum:
-            mergeInto.sumDiffs = Double.MAX_VALUE;;
+            mergeInto.setSumDiffsToRequireUpdate();
 
             sb.append("\n => ").append(mergeInto.toString());
 
@@ -383,7 +398,7 @@ public class Sequence {
 
             assert(mergeInto.length() <= n1);
             assert(mergeInto.length() > 0);
-            
+
             return new Sequence[]{mergeInto};
         }
         if (!mergeInto.intersects(mergeFrom)) {
@@ -400,11 +415,30 @@ public class Sequence {
 
         // they're ordered by startIdx1.  startIdx2 should be
         // increasing also
-        StringBuilder sb = new StringBuilder("**merge ")
-            .append(mergeFrom).append("\n into ")
-            .append(mergeInto);
-
+        StringBuilder sb = new StringBuilder("**merge ");
+            
         int len0 = mergeInto.length();
+
+        if (len0 >= mergeFrom.length()) {
+            // return mergeInto or split it
+            sb.append(mergeFrom).append("\n into ")
+                .append(mergeInto);
+            Sequence[] seqs = Sequence.parse(mergeInto);
+            for (Sequence st : seqs) {
+               sb.append("\n ==> ").append(st.toString());
+            }
+            log.info(sb.toString());
+            return seqs;
+        }
+        
+        if (mergeFrom.stopIdx2 < mergeInto.stopIdx2) {
+            Sequence tmp = mergeFrom;
+            mergeFrom = mergeInto;
+            mergeInto = tmp;
+        }
+        
+        sb.append(mergeFrom).append("\n into ")
+            .append(mergeInto);
 
         mergeInto.stopIdx2 = mergeFrom.stopIdx2;
 
@@ -415,20 +449,17 @@ public class Sequence {
 
             assert(mergeInto.length() <= n1);
             assert(mergeInto.length() > 0);
-            
+
             return new Sequence[]{mergeInto};
         }
 
-        // set to a value to recalculate sum:
-        mergeInto.sumDiffs = Double.MAX_VALUE;;
-
-        sb.append("\n ==> ").append(mergeInto.toString());
+        Sequence[] seqs = Sequence.parse(mergeInto);
+        for (Sequence st : seqs) {
+            sb.append("\n ==> ").append(st.toString());
+        }
         log.info(sb.toString());
-
-        assert(mergeInto.length() <= n1);
-        assert(mergeInto.length() > 0);
         
-        return new Sequence[]{mergeInto};
+        return seqs;
     }
 
     /**
@@ -458,7 +489,8 @@ public class Sequence {
         // s range of idx1, then need at least one split
 
         int t1 = s.n2 - offset;
-        if ((t1 >= startIdx1) && (t1 <= stopIdx1)) {
+        
+        if ((startIdx1 < t1) && (t1 <= stopIdx1)) {
             // s0 startIdx1 to t1-1
             // s1 t1 to stopIdx1
 
@@ -470,7 +502,7 @@ public class Sequence {
             seqs[0].stopIdx2 = seqs[0].startIdx2 + len0 - 1;
 
             // set to a value indicating it needs to be recalculated
-            seqs[0].sumDiffs = Double.MAX_VALUE;
+            seqs[0].setSumDiffsToRequireUpdate();
 
             seqs[1] = new Sequence(s.n1, s.n2, offset);
             seqs[1].startIdx1 = t1;
@@ -479,7 +511,7 @@ public class Sequence {
             seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
 
             // set to a value indicating it needs to be recalculated
-            seqs[1].sumDiffs = Double.MAX_VALUE;
+            seqs[1].setSumDiffsToRequireUpdate();
 
             System.out.println("parsed s=" + s +
                 "\n into " + seqs[0] +
@@ -491,31 +523,31 @@ public class Sequence {
             assert(seqs[1].length() <= s.n1);
             assert(seqs[0].length() > 0);
             assert(seqs[1].length() > 0);
-            
+
             return seqs;
         }
-        
+
         // look for idx2 being out of range of n2
         if (s.startIdx2 < s.n2 && s.stopIdx2 >= s.n2) {
-            
+
             Sequence[] seqs = new Sequence[2];
             seqs[0] = new Sequence(s.n1, s.n2, offset);
             seqs[0].startIdx1 = startIdx1;
             seqs[0].startIdx2 = startIdx2;
             seqs[0].stopIdx2 = s.n2 - 1;
             int len0 = seqs[0].length();
-            
+
             // set to a value indicating it needs to be recalculated
-            seqs[0].sumDiffs = Double.MAX_VALUE;
+            seqs[0].setSumDiffsToRequireUpdate();
 
             seqs[1] = new Sequence(s.n1, s.n2, offset);
             seqs[1].startIdx1 = seqs[0].getStopIdx1() + 1;
             seqs[1].startIdx2 = 0;
             int len1 = stopIdx1 - seqs[1].startIdx1 + 1;
             seqs[1].stopIdx2 = seqs[1].startIdx2 + len1 - 1;
-        
+
             // set to a value indicating it needs to be recalculated
-            seqs[1].sumDiffs = Double.MAX_VALUE;
+            seqs[1].setSumDiffsToRequireUpdate();
 
             System.out.println("*parsed s=" + s +
                 "\n into " + seqs[0] +
@@ -526,11 +558,11 @@ public class Sequence {
             assert(seqs[1].length() <= s.n1);
             assert(seqs[0].length() > 0);
             assert(seqs[1].length() > 0);
-            
+
             return seqs;
-            
+
         } else if (s.startIdx2 >= s.n2) {
-            
+
             assert(s.stopIdx2 >= s.n2);
             startIdx2 -= s.n2;
             stopIdx2 -= s.n2;
@@ -542,20 +574,20 @@ public class Sequence {
                 seqs[0].startIdx2 = startIdx2;
                 seqs[0].stopIdx2 = stopIdx2;
                 int len0 = seqs[0].length();
-                System.out.println("*parsed s=" + s +
+                System.out.println("**parsed s=" + s +
                 "\n into " + seqs[0]);
                 assert(len0 == len);
                 assert(seqs[0].length() <= s.n1);
                 assert(seqs[0].length() > 0);
-   
+
                 return seqs;
             }
-            
+
             throw new IllegalStateException(
                 "ERROR: Does this case "
                + " happen?  think not because reading the matrix"
                + " dimensions will wrap at most once"
-            );            
+            );
         }
 
         return new Sequence[]{s};
@@ -669,10 +701,10 @@ public class Sequence {
         //int stopIdx1 = stopIdx2;
 
         s0.sumDiffs = sumDiffs;
-        
+
         assert(s0.length() <= s0.getN1());
         assert(s0.length() > 0);
-     
+
         return s0;
     }
 

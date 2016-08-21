@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 
 /**
@@ -16,6 +17,9 @@ import junit.framework.TestCase;
  * @author nichole
  */
 public class SequenceTest extends TestCase {
+    
+    private Logger log = Logger.getLogger(this.getClass()
+        .getName());
     
     public SequenceTest() {
     }
@@ -130,7 +134,7 @@ public class SequenceTest extends TestCase {
         assertNull(merged);
     }
     
-    public void estMerge2() throws Exception {
+    public void testMerge2() throws Exception {
         
         /* trying to test all of the merge branch logic
            by making many valid random sequences within
@@ -148,14 +152,14 @@ public class SequenceTest extends TestCase {
         SecureRandom sr = SecureRandom.getInstance(
             "SHA1PRNG");
         long seed = System.currentTimeMillis();
-        seed = 1471293393476L;
+        //seed = 1471758649833L;
         sr.setSeed(seed);
         System.out.println("SEED=" + seed);
         System.out.flush();
         
         int n1 = 50;
         int n2 = n1;
-        int nSeq = 10 * n2;
+        int nSeq = 50 * n2;
         
         int nTests = 1;
         for (int nTest = 0; nTest < nTests; ++nTest) {
@@ -170,18 +174,19 @@ public class SequenceTest extends TestCase {
                 seqs.add(s0);
             }
             
-            Sequence.mergeSequences(seqs);
+            Sequence.mergeSequences(seqs, log);
             
-            System.out.println("final nMerged=" + seqs.size());
-            
+            log.info("final nMerged=" + seqs.size());
             for (Sequence s : seqs) {
-                System.out.println("SEQ " + s);
+                log.info("SEQ " + s);
             }
               
             assertTrue(seqs.size() <= 4);
             boolean found0 = false;
             boolean found1 = false;
+            int lenTot = 0;
             for (Sequence seq : seqs) {
+                lenTot += seq.length();
                 if (seq.isStartSentinel()) {
                     found0 = true;
                 }
@@ -189,154 +194,13 @@ public class SequenceTest extends TestCase {
                     found1 = true;
                 }
             }
-            assertTrue(found0);
-            assertTrue(found1);          
+            
+            assert((found0 && found1) || 
+                (((n1 - lenTot) < 3) && (found0 || found1)));
         }
         
         // TODO: test for larger n1, n2 with mixed offsets
         
-    }
-
-    public void testMerge3() throws Exception {
-        
-        /* trying to test all of the merge branch logic
-           by making many valid random sequences within
-           same n1, n2 space and merging them.
-           eventually, should have 3 or 4 sequences, 
-           two of which are the start and stop sentinel 
-           sequences.
-                          idx1   idx1   idx2   idx2
-        idx1: 0 1 2 3      0      0      3      3
-        idx2: 3 0 1 2      1      1      4      4
-                           1      1      0      0
-                           2      3      1      2
-        */
-        
-        SecureRandom sr = SecureRandom.getInstance(
-            "SHA1PRNG");
-        long seed = System.currentTimeMillis();
-        seed = 1471293393476L;
-        sr.setSeed(seed);
-        System.out.println("SEED3=" + seed);
-        System.out.flush();
-        
-        int n1 = 50;
-        int n2 = n1;
-        int nSeq = 10 * n2;
-        
-        int nTests = 1;
-        for (int nTest = 0; nTest < nTests; ++nTest) {
-            
-            int[] offsets = new int[4];
-            for (int j = 0; j < offsets.length; ++j) {
-                offsets[j] = sr.nextInt((n1 - 2)/2);
-            }
-            
-            List<Sequence> seqs = 
-                new ArrayList<Sequence>();
-            
-            int j = 0;
-            for (int i = 0; i < nSeq; ++i) {
-                Sequence s0 = createSequence(n1, n2, sr, offsets[j]);
-                seqs.add(s0);
-                j++;
-                if (j > (offsets.length - 1)) {
-                    j = 0;
-                }
-            }
-            
-            LinkedHashSet<Sequence> seqs2 = 
-                new LinkedHashSet<Sequence>();
-            
-            int nIter = 0;
-            
-            boolean didMerge = false;
-            do {
-                
-                if (seqs.size() == 1) {
-                    // break because loop below won't store it
-                    break;
-                }
-                
-                // sort seqs
-                Collections.sort(seqs, new SequenceComparator4());
-                
-                if (seqs.size() <= 3) {
-                    boolean found0 = false;
-                    boolean found1 = false;
-                    for (Sequence seq : seqs) {
-                        if (seq.isStartSentinel()) {
-                            found0 = true;
-                        }
-                        if (seq.isStopSentinel()) {
-                            found1 = true;
-                        }
-                    }
-                    if (found0 && found1) {
-                        break;
-                    }
-                }
-                
-                System.out.println("seqs.size=" + seqs.size());
-                for (Sequence s : seqs) {
-                    System.out.println(nIter + ": SEQ " + s);
-                }
-                
-                didMerge = false;
-                Iterator<Sequence> iter = seqs.iterator();
-                Sequence prev = iter.next();
-                boolean prevMerged = false;
-                while (iter.hasNext()) {
-                    Sequence s = iter.next();
-                    
-                    Sequence[] merged = prev.merge(s);
-                    if (merged == null) {
-                        seqs2.add(prev);
-                        seqs2.add(s);
-                        prevMerged = false;
-                        prev = s;
-                    } else {
-                        didMerge = true;
-                        seqs2.remove(prev);
-                        seqs2.remove(s);
-                        for (Sequence st : merged) {
-                            seqs2.add(st);
-                            prev = st;
-                        }
-                    }
-                }
-
-                seqs.clear();
-                seqs.addAll(seqs2);
-                seqs2.clear();
-                
-                nIter++;
-            
-            } while (didMerge);
-            
-            System.out.println("final nMerged=" + seqs.size());
-            
-            for (Sequence s : seqs) {
-                System.out.println("SEQ " + s);
-            }
-              
-            /*
-            assertTrue(seqs.size() <= 4);
-            boolean found0 = false;
-            boolean found1 = false;
-            for (Sequence seq : seqs) {
-                if (seq.isStartSentinel()) {
-                    found0 = true;
-                }
-                if (seq.isStopSentinel()) {
-                    found1 = true;
-                }
-            }
-            assertTrue(found0);
-            assertTrue(found1); 
-            */
-        }
-       
     }
 
     private Sequence createSequence(int n1, int n2, 
@@ -403,7 +267,6 @@ public class SequenceTest extends TestCase {
                 // unlikely to be caught in endless loop
                 return createSequence(n1, n2, sr, offset);
             }
-            assert(s.length() == len);
             return s;
         }     
     }

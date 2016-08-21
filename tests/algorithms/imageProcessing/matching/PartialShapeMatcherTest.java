@@ -10,6 +10,7 @@ import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -20,43 +21,19 @@ import static org.junit.Assert.*;
  */
 public class PartialShapeMatcherTest extends TestCase {
 
+    private Logger log = Logger.getLogger(
+        this.getClass().getName());
+
     public PartialShapeMatcherTest() {
     }
 
-    public void estDescriptors() throws Exception {
-
-        PairIntArray p = getWineGlassShape();
-
-        plot(p, 101);
-
-        PairIntArray q = p.copy();
-        q.rotateLeft(q.getN() - 3);
-
-        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
-        shapeMatcher.overrideSamplingDistance(1);
-        
-        /*
-        float[][] a = shapeMatcher.createDescriptorMatrix(p);    
-        for (int i = 0; i < a.length; ++i) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(String.format("row=%3d: ", i));
-            for (int j = 0; j < a[i].length; ++j) {
-                sb.append(
-                String.format("[%2d] %.4f,", j, a[i][j]));
-            }
-            System.out.println(sb.toString());
-        }*/
-        shapeMatcher.match(p, q);
-
-    }
-
-    public void estSummedAreaTables() {
+    public void testSummedAreaTables() {
 
         /*
         2 9  2  7     9 11  18   16 22  36
         1 5  1  2     5  6   8    7 11  18
         0 2  3  5     2  5  10    2  5  10
-          0  1  2      
+          0  1  2
          */
         float[][] a = new float[3][];
         a[0] = new float[]{2, 3, 5};
@@ -82,21 +59,18 @@ public class PartialShapeMatcherTest extends TestCase {
         PairIntArray q = getScissors2();
         //plot(q, 201);
 
-        System.out.println("p.n=" + p.getN()
-            + " q.n=" + q.getN());
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         shapeMatcher.setToArticulatedMatch();
-        
+
         PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
         assertNotNull(result);
 
-        System.out.println(
-            "RESULTS="
-            + " scissors offset0: "
+        log.info("RESULTS= scissors offset0: "
             + result.toString());
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
@@ -118,26 +92,15 @@ public class PartialShapeMatcherTest extends TestCase {
         }
         String filePath = plotter.writeImage("_"
             + "_scissors_offset0_corres");
-        /*
-        unless improve the first image blade positions:
-        expecting roughly:
-         [junit] frac=0.7541, avgDiff=0.5967,  sumDiff=27.4475
-            [junit] (0:0 to 14, f=0.2459 d=0.1464)
-            [junit] (17:17 to 38, f=0.3607 d=0.6057)
-            [junit] (48:51 to 59, f=0.1475 d=1.3251)
 
-       for alt sorting which includes diff angles:
-         [junit] frac=0.7049, avgDiff=0.4138,  sumDiff=17.7920
-         [junit] (0:0 to 14, f=0.2459 d=0.1464)
-         [junit] (17:17 to 38, f=0.3607 d=0.6057)
-         [junit] (40:40 to 45, f=0.0984 d=0.3784)
-         */
+        assertTrue(Math.abs(result.getOriginalOffset() - 0) < 3);
+        assertTrue(result.getFractionOfWhole() > 0.4);
 
     }
 
     public void testMatch3() throws Exception {
 
-        // rotate points p so that start points are 
+        // rotate points p so that start points are
         // different and assert that wrap around is
         // handled correctly
         PairIntArray p = getScissors1();
@@ -147,8 +110,7 @@ public class PartialShapeMatcherTest extends TestCase {
         PairIntArray q = getScissors2();
         //plot(q, 201);
 
-        System.out.println("p.n=" + p.getN()
-            + " q.n=" + q.getN());
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
@@ -160,9 +122,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
         assertNotNull(result);
 
-        System.out.println(
-            "RESULTS="
-            + " scissors offset15: "
+        log.info("RESULTS= scissors offset15: "
             + result.toString());
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
@@ -185,25 +145,8 @@ public class PartialShapeMatcherTest extends TestCase {
         String filePath = plotter.writeImage("_"
             + "_scissors_offset16_corres");
 
-        /*
-        unless improve the first image blade positions:
-        expecting roughly for case without
-        rotation:
-            frac=0.7541, avgDiff=0.5967,  sumDiff=27.4475
-            (0:0 to 14, f=0.2459 d=0.1464)
-            (17:17 to 38, f=0.3607 d=0.6057)
-            (48:51 to 59, f=0.1475 d=1.3251)
-        rotation left by 16 becomes:
-            (45:0 to 14, f=0.2459 d=0.1464)
-            (1:17 to 38, f=0.3607 d=0.6057)
-            (32:51 to 59, f=0.1475 d=1.3251)
-
-        found:
-            frac=0.6721, avgDiff=0.9792,  sumDiff=40.1460
-            (0:16 to 38,  f=0.3770 d=1.4907)
-            (37:57 to 60, f=0.0656 d=0.2804)
-            (45:0 to 13,  f=0.2295 d=0.3385)
-         */
+        assertTrue(Math.abs(result.getOriginalOffset() - 16) < 3);
+        assertTrue(result.getFractionOfWhole() > 0.4);
     }
 
     protected PairIntArray getScissors1() {

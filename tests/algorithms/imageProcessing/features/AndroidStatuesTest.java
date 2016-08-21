@@ -77,7 +77,7 @@ public class AndroidStatuesTest extends TestCase {
         //11, 12, 21, 30
         //for (int i = 11; i < 13; ++i) {
         for (int i = 0; i < 37; ++i) {
-            
+
             /*
             if ( !( (i==8)||(i==12)||(i==21)||(i==30))) {
                 continue;
@@ -166,7 +166,7 @@ public class AndroidStatuesTest extends TestCase {
                     fileName1 = "stinson_beach.jpg";
                     //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
                     break;
-                }                
+                }
                 case 19: {
                     fileName1 = "norwegian_mtn_range.jpg";
                     //mt = SegmentationMergeThreshold.HIGH_CONTRAST_ONLY;
@@ -252,7 +252,7 @@ public class AndroidStatuesTest extends TestCase {
                     break;
                 }
             }
-       
+
             int idx = fileName1.lastIndexOf(".");
             String fileName1Root = fileName1.substring(0, idx);
 
@@ -274,15 +274,15 @@ public class AndroidStatuesTest extends TestCase {
             List<Set<PairInt>> segmentedCellList
                 = imageSegmentation.createColorEdgeSegmentation(
                     img, fileName1Root);
-            
-            MiscDebug.writeAlternatingColor(img, 
+
+            MiscDebug.writeAlternatingColor(img,
                 segmentedCellList, "_final_" + fileName1Root);
-                                   
+
             /*
             int nClusters = 200;
             //int clrNorm = 5;
-            
-            SLICSuperPixels slic 
+
+            SLICSuperPixels slic
                 = new SLICSuperPixels(img, nClusters);
 
             slic.calculate();
@@ -291,7 +291,7 @@ public class AndroidStatuesTest extends TestCase {
 
             ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
             MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
-            
+
             img = ImageIOHelper.readImageExt(filePath1);
             img = imageProcessor.binImage(img, binFactor1);
             LabelToColorHelper.applyLabels(img, labels);
@@ -299,10 +299,10 @@ public class AndroidStatuesTest extends TestCase {
             */
         }
     }
-     
-    public void test1() throws Exception {
 
-        String fileName0 
+    public void testShapeMatcher() throws Exception {
+
+        String fileName0
             = "android_statues_03_sz1_mask_small.png";
         int idx = fileName0.lastIndexOf(".");
         String fileName0Root = fileName0.substring(0, idx);
@@ -312,38 +312,14 @@ public class AndroidStatuesTest extends TestCase {
 
         PairIntArray p = extractOrderedBoundary(img0);
         plot(p, 100);
-        
+
         String fileName1 = "";
 
-        /*
-        (required tol=0.25 or 0.35)
-        0: offset approx 0  NOTE: p.n=187 q.n=231, needed topJ=5
-        1: offset approx 0  NOTE: p.n=187 q.n=144, needs topJ=15
-                         correct answer is trck 3,
-                         sol= looking at tolerance and topK
-                         to make it trck 0.
-                         note that havne;t impl the append
-                         be min offset near offse too/
-                         nor did add back the higher error sequences/
-        2: 
-        3: offset approx 0  NOTE: p.n=187 q.n=181, needs topK=5
-           
-        -- the rigid model should solve this more easily
-           as it will have an eval stage for transformation.
-        -- meanwhile, could try two things with current model:
-            -- lower threshold in search of diff matrix then
-               filter to create a low and high threshold list
-               and solve both, keeping best.
-        -- when pattern is robust, witl consider a larger dp
-           (which will make smaller number of points, hence
-           speed up algorithm...larger dp's lose curvatur info though
-        
-        */
         for (int i = 0; i < 4; ++i) {
-            
+
             switch(i) {
                 case 0: {
-                    fileName1 
+                    fileName1
                         = "android_statues_01_sz1_mask_small.png";
                     break;
                 }
@@ -363,7 +339,7 @@ public class AndroidStatuesTest extends TestCase {
                     break;
                 }
             }
-       
+
             idx = fileName1.lastIndexOf(".");
             String fileName1Root = fileName1.substring(0, idx);
 
@@ -380,10 +356,10 @@ public class AndroidStatuesTest extends TestCase {
 
             img = imageProcessor.binImage(img, binFactor1);
             */
-            
+
             /*
             (1) make template objects to search for in other
-                images. 
+                images.
                 - a color version for each image binned scale
                 - a contour of the object at each image binned scale
             (2) use super pixels on segmented images.
@@ -395,43 +371,42 @@ public class AndroidStatuesTest extends TestCase {
                 segmented cells.
                 - determine different combinations of each with
                   its neighbors that might create the needed
-                  area?  
+                  area?
                   - exclude adding neighbors that don't match any
                     color segment in the search object?
                     (might not be a good idea considering resolution
                      of super pixels)
                 - smooth the bounds?
-            ===> before that, extract the shapes 
+            ===> before that, extract the shapes
                  aggregated (and smoothed if needed),
                  to make tests for the partial shape
                  matcher to adapt it for use.
                  (might need to add descriptors, the
                  color or gradient too, hopefully not)
             */
-            
+
             PairIntArray q = extractOrderedBoundary(img);
             plot(q, (i+1)*100 + 1);
 
-            System.out.println("matching " + fileName0Root
-            + " to " + fileName1Root + " (" + p.getN() 
+            log.info("matching " + fileName0Root
+            + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
-            
-            PartialShapeMatcher matcher = 
+
+            PartialShapeMatcher matcher =
                 new PartialShapeMatcher();
+            matcher.setToDebug();
             matcher.overrideSamplingDistance(1);
 
             PartialShapeMatcher.Result result = matcher.match(p, q);
-            
+
             assertNotNull(result);
-            
-            System.out.println(
-                "RESULTS=" + 
-                fileName1Root + " : " +
+
+            log.info("RESULTS=" + fileName1Root + " : " +
                 result.toString());
-            
+
             CorrespondencePlotter plotter = new
                 CorrespondencePlotter(p, q);
-            
+
             for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
                 int idx1 = result.getIdx1(ii);
                 int idx2 = result.getIdx2(ii);
@@ -442,18 +417,43 @@ public class AndroidStatuesTest extends TestCase {
                 //System.out.println(String.format(
                 //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
 
-                if ((ii % 5) == 0) {
-                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
                         0);
-                }                
+                }
             }
             String filePath = plotter.writeImage("_" +
                     fileName1Root + "_corres");
+
+            int expOffset = 0;
+            float expFrac = 0.4f;
+            switch (i) {
+                case 0:
+                    expOffset = 217;
+                    break;
+                case 1:
+                    expOffset = 112;
+                    break;
+                case 2:
+                    expOffset = 0;
+                    expFrac = 1.0f;
+                    break;
+                case 3:
+                    expOffset = 173;//168
+                    break;
+                default:
+                    break;
+            }
+
+            assertTrue(Math.abs(result.getOriginalOffset() -
+                expOffset) < 6);
+            assertTrue(result.getFractionOfWhole() >= expFrac);
+
             /*
             MiscDebug.writeImage(img,  "_img_" + fileName1Root);
             int nClusters = 200;//100;
-            //int clrNorm = 5;            
-            SLICSuperPixels slic 
+            //int clrNorm = 5;
+            SLICSuperPixels slic
                 = new SLICSuperPixels(img, nClusters);
             slic.calculate();
             int[] labels = slic.getLabels();
@@ -464,39 +464,39 @@ public class AndroidStatuesTest extends TestCase {
             LabelToColorHelper.applyLabels(img, labels);
             MiscDebug.writeImage(img,  "_slic_img_" + fileName1Root);
             */
-            
+
         }
     }
-    
+
     public void estColorLayout() throws Exception {
 
         String[] fileNames = new String[]{
             "android_statues_01.jpg",
-            "android_statues_02.jpg", 
+            "android_statues_02.jpg",
             "android_statues_03.jpg",
             "android_statues_04.jpg"
         };
 
         // paused here.  editing to use super pixels
-        //   and a pattern of color aggregation 
+        //   and a pattern of color aggregation
         //   w/ voronoi cells for comparison to model,
         //   then a partial shape matching algorithm.
-        
+
         ImageProcessor imageProcessor = new ImageProcessor();
-        
+
         ImageSegmentation imageSegmentation = new ImageSegmentation();
 
         List<ImageExt> images = new ArrayList<ImageExt>();
-        
+
         for (int i = 0; i < fileNames.length; ++i) {
-            
+
             String fileName = fileNames[i];
             String filePath = ResourceFinder.findFileInTestResources(fileName);
-            String fileNameRoot = fileName.substring(0, 
+            String fileNameRoot = fileName.substring(0,
                 fileName.lastIndexOf("."));
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             images.add(img);
-                        
+
             /*
             wanting to look at color similarity of pixels
                 holding known objects that have different
@@ -509,25 +509,25 @@ public class AndroidStatuesTest extends TestCase {
             bigger goal is to use segmentation to find object
             outlines then identify the object in other images
             and follow that with detailed feature matching.
-            
+
             the method has to work on objects that have changed
             position and possibly also lighting.
-            
+
             the method may need some form of contour matching
             for pure sillouhette conditions
             but would need to allow for occlusion.
-            
+
             deltaE for gingerbread man in the 4 images
-            is at most 5, else 3.7 and 1.8.           
+            is at most 5, else 3.7 and 1.8.
             */
         }
-        
+
     }
 
     private PairIntArray extractOrderedBoundary(ImageExt image) {
 
         GreyscaleImage img = image.copyToGreyscale();
-        
+
         Set<PairInt> blob = new HashSet<PairInt>();
         for (int i = 0; i < img.getNPixels(); ++i) {
             if (img.getValue(i) > 0) {
@@ -539,14 +539,14 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageProcessor imageProcessor =
             new ImageProcessor();
-        
-        PairIntArray ordered = 
+
+        PairIntArray ordered =
             imageProcessor.extractSmoothedOrderedBoundary(
             blob);
-        
+
         return ordered;
     }
-    
+
     private class DeltaESim implements Comparable<DeltaESim> {
 
         private int x1;
@@ -554,7 +554,7 @@ public class AndroidStatuesTest extends TestCase {
         private int x2;
         private int y2;
         private double deltaE;
-        
+
         public DeltaESim(GroupAverageColors avg1,
             GroupAverageColors avg2) {
             this.x1 = avg1.getXCen();
@@ -562,12 +562,12 @@ public class AndroidStatuesTest extends TestCase {
             this.x2 = avg2.getXCen();
             this.y2 = avg2.getYCen();
             CIEChromaticity cieC = new CIEChromaticity();
-            this.deltaE = 
+            this.deltaE =
                 Math.abs(cieC.calcDeltaECIE2000(
-                avg1.getCIEL(), avg1.getCIEA(), avg1.getCIEB(), 
+                avg1.getCIEL(), avg1.getCIEA(), avg1.getCIEB(),
                 avg2.getCIEL(), avg2.getCIEA(), avg2.getCIEB()));
         }
-        
+
         @Override
         public int compareTo(DeltaESim other) {
             if (deltaE < other.deltaE) {
@@ -578,7 +578,7 @@ public class AndroidStatuesTest extends TestCase {
             return 0;
         }
     }
-    
+
     public void estMatching() throws Exception {
 
         String fileName1, fileName2;
@@ -703,7 +703,7 @@ public class AndroidStatuesTest extends TestCase {
         int h1 = img1.getHeight();
         int w2 = img2.getWidth();
         int h2 = img2.getHeight();
-        
+
         int maxDimension = 350;
         int binFactor1 = (int) Math.ceil(Math.max((float)w1/maxDimension,
             (float)h1/ maxDimension));
@@ -712,7 +712,7 @@ public class AndroidStatuesTest extends TestCase {
 
         ImageExt img1Binned = imageProcessor.binImage(img1, binFactor1);
         ImageExt img2Binned = imageProcessor.binImage(img2, binFactor2);
-         
+
         if (rotateBy90) {
             TransformationParameters params90 = new TransformationParameters();
             params90.setRotationInDegrees(90);
@@ -766,7 +766,7 @@ public class AndroidStatuesTest extends TestCase {
 
         } catch(Exception e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
+            System.err.println(e.getMessage());
             fail(e.getMessage());
         }
     }
@@ -971,50 +971,50 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    private void populateClasses(Set<PairIntPair> similarClass, 
+    private void populateClasses(Set<PairIntPair> similarClass,
         Set<PairIntPair> differentClass, String fileNameRoot) throws IOException {
-        
+
         BufferedReader bReader = null;
         FileReader reader = null;
-        
+
         String fileName = "label_" + fileNameRoot + "_coords.csv";
-        
+
         String filePath = ResourceFinder.findFileInTestResources(fileName);
-        
+
         try {
             reader = new FileReader(new File(filePath));
-            
+
             bReader = new BufferedReader(reader);
-            
+
             //read comment line and discard
             String line = bReader.readLine();
             line = bReader.readLine();
-                        
+
             while (line != null) {
-                
+
                 String[] items = line.split(",");
                 if (items.length != 5) {
                     throw new IllegalStateException("Error while reading " +
                         fileName + " expecting 5 items in a line");
                 }
- 
+
                 PairIntPair pp = new PairIntPair(
                     Integer.valueOf(items[0]).intValue(),
                     Integer.valueOf(items[1]).intValue(),
                     Integer.valueOf(items[2]).intValue(),
                     Integer.valueOf(items[3]).intValue());
-                
+
                 int classValue = Integer.valueOf(items[4]).intValue();
-                
+
                 if (classValue == 0) {
                     similarClass.add(pp);
                 } else {
                     differentClass.add(pp);
                 }
-                
-                line = bReader.readLine();                
+
+                line = bReader.readLine();
             }
-                        
+
         } catch (IOException e) {
             log.severe(e.getMessage());
         } finally {
@@ -1024,27 +1024,27 @@ public class AndroidStatuesTest extends TestCase {
             if (bReader == null) {
                 bReader.close();
             }
-        }        
+        }
     }
 
     private void plot(PairIntArray p, int fn) throws Exception {
 
         float[] x = new float[p.getN()];
         float[] y = new float[p.getN()];
-        
+
         for (int i = 0; i < x.length; ++i) {
             x[i] = p.getX(i);
             y[i] = p.getY(i);
         }
-        
+
         float xMax = MiscMath.findMax(x) + 1;
         float yMax = MiscMath.findMax(y) + 1;
-        
+
         PolygonAndPointPlotter plot = new PolygonAndPointPlotter();
-        
-        plot.addPlot(0, xMax, 0, yMax, 
+
+        plot.addPlot(0, xMax, 0, yMax,
             x, y, x, y, "");
-        
+
         plot.writeFile(fn);
     }
 
