@@ -183,7 +183,8 @@ public class Sequence {
      * due to internal re-ordering of the sequences.
      * @param sequences
      */
-    public static void mergeSequences(List<Sequence> sequences) {
+    public static void mergeSequences(List<Sequence> sequences,
+        Logger log) {
 
         LinkedHashSet<Sequence> seqs2 =
             new LinkedHashSet<Sequence>();
@@ -222,7 +223,7 @@ public class Sequence {
             System.out.println("seqs.size=" +
                 sequences.size());
             for (Sequence s : sequences) {
-                System.out.println(nIter + ": SEQ " + s);
+                log.info("nIter=" + nIter + ": SEQ " + s);
             }
 
             didMerge = false;
@@ -381,6 +382,7 @@ public class Sequence {
             log.info(sb.toString());
 
             assert(mergeInto.length() <= n1);
+            assert(mergeInto.length() > 0);
             
             return new Sequence[]{mergeInto};
         }
@@ -412,6 +414,7 @@ public class Sequence {
             log.info(sb.toString());
 
             assert(mergeInto.length() <= n1);
+            assert(mergeInto.length() > 0);
             
             return new Sequence[]{mergeInto};
         }
@@ -423,6 +426,7 @@ public class Sequence {
         log.info(sb.toString());
 
         assert(mergeInto.length() <= n1);
+        assert(mergeInto.length() > 0);
         
         return new Sequence[]{mergeInto};
     }
@@ -483,6 +487,11 @@ public class Sequence {
 
             assert(len0 + len1 == len);
 
+            assert(seqs[0].length() <= s.n1);
+            assert(seqs[1].length() <= s.n1);
+            assert(seqs[0].length() > 0);
+            assert(seqs[1].length() > 0);
+            
             return seqs;
         }
         
@@ -513,7 +522,11 @@ public class Sequence {
                 "\n and  " + seqs[1]);
 
             assert(len0 + len1 == len);
-
+            assert(seqs[0].length() <= s.n1);
+            assert(seqs[1].length() <= s.n1);
+            assert(seqs[0].length() > 0);
+            assert(seqs[1].length() > 0);
+            
             return seqs;
             
         } else if (s.startIdx2 >= s.n2) {
@@ -532,7 +545,9 @@ public class Sequence {
                 System.out.println("*parsed s=" + s +
                 "\n into " + seqs[0]);
                 assert(len0 == len);
-            
+                assert(seqs[0].length() <= s.n1);
+                assert(seqs[0].length() > 0);
+   
                 return seqs;
             }
             
@@ -654,6 +669,10 @@ public class Sequence {
         //int stopIdx1 = stopIdx2;
 
         s0.sumDiffs = sumDiffs;
+        
+        assert(s0.length() <= s0.getN1());
+        assert(s0.length() > 0);
+     
         return s0;
     }
 
