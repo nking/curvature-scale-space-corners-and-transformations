@@ -59,6 +59,17 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
             this.val = val;
             this.N   = 1;
         }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder("key=");
+            sb.append(key).append(" n=").append(N)
+            .append(" left=").append(left)
+            .append(" right=").append(right)
+            .append(" val=").append(val);
+            return sb.toString();
+        }
+        
     }
 
    /***************************************************************************
@@ -88,6 +99,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     ***************************************************************************/
     public void put(Key key, Value val) {
         root = put(root, key, val);
+        int z = 1;
     }
 
     // make new node the root with uniform probability
@@ -95,9 +107,14 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         if (x == null) return new Node(key, val);
         int cmp = key.compareTo(x.key);
         if (cmp == 0) { x.val = val; return x; }
-        if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) return putRoot(x, key, val);
-        if (cmp < 0) x.left  = put(x.left,  key, val); 
-        else         x.right = put(x.right, key, val); 
+        if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {
+            return putRoot(x, key, val);
+        }
+        if (cmp < 0) {
+            x.left  = put(x.left,  key, val);
+        } else {
+            x.right = put(x.right, key, val);
+        } 
         // (x.N)++;
         fix(x);
         return x;
@@ -159,6 +176,58 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     *  Range searching
     ***************************************************************************/
 
+    /**
+     * temporary work around to a specialized search
+     * that will be changed to not restrict the
+     * parameterization so narrowly in the future.
+     * @param interval
+     * @return 
+     */
+    public Queue<Key> _range0(Key interval) {
+        
+        if (!(interval instanceof Interval)) {
+            throw new IllegalArgumentException("work around "
+                + " for interval<integer> search"
+                + " requires Key be instance of"
+                + " Interval<Integer>");
+        }
+        Queue<Key> list = new Queue<Key>();
+        _range(root, (Interval<Integer>)interval, list);
+        return list;
+    }
+    private void _range(Node x, Interval<Integer> interval, Queue<Key> list) {
+        
+        if (x == null) return;
+        
+        /*
+        interval has min max
+        
+                     x
+              lft         rgt
+           lft  rgt     lft  rgt
+        */
+       
+        Interval<Integer> xKey = (Interval<Integer>) x.key;
+       
+        if (interval.intersects(xKey)) {
+            list.enqueue(x.key);
+        }
+        
+        // if x.max < interval.min
+        //   do not search left
+        // if xmin > interval.max
+        //   do not search right
+        
+        int comp = xKey.max().compareTo(interval.min());
+        if (comp > -1) {
+            _range(x.left, interval, list);
+        }
+        
+        comp = xKey.min().compareTo(interval.max());
+        if (comp < 1) {
+            _range(x.right, interval, list);
+        }
+    }
 
     // return all keys in given interval
     public Iterable<Key> range(Key min, Key max) {
@@ -169,6 +238,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         range(root, interval, list);
         return list;
     }
+
     private void range(Node x, Interval<Key> interval, Queue<Key> list) {
         if (x == null) return;
         if (!less(x.key, interval.min()))  range(x.left, interval, list);

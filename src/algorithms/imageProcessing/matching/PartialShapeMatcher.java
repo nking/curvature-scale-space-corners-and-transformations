@@ -38,6 +38,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Queue;
 import thirdparty.edu.princeton.cs.algs4.RangeSearch;
 
 /**
@@ -415,17 +416,13 @@ public class PartialShapeMatcher {
                 s1 = n1 - 1;
             }
             
-            // TODO: write a test to check this query:
-            Interval<Integer> srchMin = new Interval<Integer>(
-               s0, s0);
-            Interval<Integer> srchMax = new Interval<Integer>(
-               s1, s1);
+            Interval<Integer> srch = new Interval<Integer>(
+               s0, s1);
             
-            Iterable<Interval<Integer>> iter = rt.range(
-                srchMin, srchMax);
+            Queue<Interval<Integer>> queue = rt._range0(srch);
             
             Set<Interval<Integer>> rmSet = new HashSet<Interval<Integer>>();
-            for (Interval<Integer> m2 : iter) {
+            for (Interval<Integer> m2 : queue) {
                 Integer index2 = rt.get(m2);
                 // determine if completely within startI-blck+1 and stopI
                 // else can be used to extend the start or stop.

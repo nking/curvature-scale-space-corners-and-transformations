@@ -9,11 +9,16 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.Queue;
+import thirdparty.edu.princeton.cs.algs4.RangeSearch;
 
 /**
  *
@@ -147,6 +152,35 @@ public class PartialShapeMatcherTest extends TestCase {
 
         assertTrue(Math.abs(result.getOriginalOffset() - 16) < 3);
         assertTrue(result.getFractionOfWhole() > 0.4);
+    }
+    
+    public void testRangeSearh() {
+        
+        RangeSearch<Interval<Integer>, Integer> rt =
+            new RangeSearch<Interval<Integer>, Integer>();
+        
+        // the mmd2 ranges are non overlapping for inserts
+        Interval<Integer> o1 = new Interval<Integer>(15, 20);
+        Interval<Integer> o2 = new Interval<Integer>(21, 22);
+        Interval<Integer> o3 = new Interval<Integer>(45, 60);
+        rt.put(o1, Integer.valueOf(1));
+        rt.put(o2, Integer.valueOf(2));
+        rt.put(o3, Integer.valueOf(3));
+        
+        Set<Interval<Integer>> expected = new
+            HashSet<Interval<Integer>>();
+        expected.add(o1);
+        expected.add(o2);
+        
+        Interval<Integer> s0 = new Interval<Integer>(19, 23);
+        
+        Queue<Interval<Integer>> queue = rt._range0(s0);
+        int nq = queue.size();
+        for (Interval<Integer> fnd : queue) {
+            assertTrue(expected.remove(fnd));
+        }
+        assertEquals(2, nq);
+        assertTrue(expected.isEmpty());
     }
 
     protected PairIntArray getScissors1() {

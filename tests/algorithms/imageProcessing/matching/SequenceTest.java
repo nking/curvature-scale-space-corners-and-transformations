@@ -1,14 +1,8 @@
 package algorithms.imageProcessing.matching;
 
-import java.io.Console;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 
