@@ -2204,6 +2204,9 @@ public class MiscellaneousCurveHelper {
     public void createLinePoints(int x1, int y1, 
         int x2, int y2, Set<PairInt> output) {
 
+        //TODO: this needs to be improved
+        // for very steep (large slope) lines
+        
         if (x2 < x1) {
             int swap = x1;
             x1 = x2;
