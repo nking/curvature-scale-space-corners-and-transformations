@@ -324,9 +324,14 @@ public class PartialShapeMatcher {
                 rt = new IntervalRangeSearch<Integer, Integer>();
                 offsetMap.put(key, rt);
             }
+       
+            // NOTE: making the interval min and max
+            // 1 pixel wider in order to collide with
+            // adjacent intervals too, so can merge them
+            // also.
             
             Interval<Integer> interval = new Interval<Integer>(
-                startI, stopI);
+                startI - 1, stopI + 1);
    
             Integer replaced = rt.put(interval, Integer.valueOf(i));
 
@@ -375,10 +380,6 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
                 }
             }
         }
-        
-        // TODO: the above doesn't merge adjacent, so need
-        // one more pass through the indexes, but with
-        // a query for adjacent pixel values
         
         if (rmSet.isEmpty()) {
             return mmd;
