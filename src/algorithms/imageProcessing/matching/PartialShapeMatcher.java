@@ -241,10 +241,7 @@ public class PartialShapeMatcher {
         MergedMinDiffs2 mergedMinDiffs2 = 
             new MergedMinDiffs2(mergedMinDiffs, n1, n2);
         populateChordDifferences(md, mergedMinDiffs2);
-        
- mergedMinDiffs2.sortBySalukwdzeDistance();
- mergedMinDiffs2.print("PPSORT");
-        
+   
         // NOTE: the android statues
         // and scissor tests show that correct
         // main offset is now the top item
@@ -437,8 +434,6 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             float s1 = read(md, stopI, offset, r, 
                 rUsed);
             
- log.info("rUsed=" + rUsed[0] + " r=" + r);
-
             mmd2.sumChordDiffs[i] = s1;        
         }
         
@@ -456,6 +451,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             sumChordDiffs = new float[mmd.offsets.length];
             this.n1 = n1;
             this.n2 = n2;
+            assert(mmd.n1 == n1);
         }
         public int length() {
             return sumChordDiffs.length;
@@ -501,12 +497,14 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             int[] str1 = Arrays.copyOf(mmd.startIs, n);
             int[] strR1 = Arrays.copyOf(mmd.startRs, n);
             int[] stp1 = Arrays.copyOf(mmd.stopIs, n);
+            float[] sumDiffs = Arrays.copyOf(sumChordDiffs, n);
             for (int i = 0; i < n; ++i) {
                 int idx = indexes[i];
                 mmd.offsets[i] = off[idx];
                 mmd.startIs[i] = str1[idx];
                 mmd.startRs[i] = strR1[idx];
                 mmd.stopIs[i] = stp1[idx];
+                sumChordDiffs[i] = sumDiffs[idx];
             }
             
             if (debug) {
@@ -521,10 +519,10 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             for (int i = 0; i < n; ++i) {
                 
                 log.info(String.format(
-                    "%d %s offset=%d  f=%.4f  d=%.4f  startI=%d  stopI=%d", 
+                    "%d %s offset=%d  f=%.4f  d=%.4f  startI=%d  stopI=%d len=%d", 
                      i, label, mmd.offsets[i], 
                      getFraction(i), sumChordDiffs[i],
-                     getStartIMinusBlock(i), mmd.stopIs[i]));
+                     getStartIMinusBlock(i), mmd.stopIs[i], getLength(i)));
             }
         }
     }
@@ -696,7 +694,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             currentOffset = mmd.offsets[i];
 
             // read backwards from current start block
-            readI = mmd.getStartIMinusBlock(i) - 1;
+            readI = mmd.startIs[i] - mmd.startRs[i];
             while (readI > 0) {
 
                 if (mins.idxs0[readI] == -1) {
@@ -719,10 +717,10 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
                 if (Math.abs(s1 - min) > lThresh) {
                     break;
                 }
-
+                
                 mmd.startIs[i] = readI;
                 mmd.startRs[i] = rUsed[0];
-                readI = mmd.getStartIMinusBlock(i) - 1;
+                readI = mmd.startIs[i] - mmd.startRs[i];
             }
 
             //TODO: add a read forward from stopI + block size
@@ -1094,27 +1092,35 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         float[][] a = md[offset];
 
         // r is block size
-        int r = blockSize;
-
-        if ((i - r + 1) < 0) {
-            r = i - 1;
+        int r1 = blockSize;
+        
+        float s1;
+        if ((i - r1 + 1) < 0) {
             if (i < 2) {
-                // read at i=1, block of size 2
-                i = 1;
-                r = 2;
+                r1 = 2;
+                s1 = a[1][1] - a[0][1] - a[1][0]
+                    + a[0][0];
+            } else {
+                r1 = i + 1;
+                s1 = a[i][i] - a[i-r1+1][i]
+                    - a[i][i-r1+1]
+                    + a[i-r1+1][i-r1+1];
             }
+            float cTmp = 1.f/(float)(r1*r1);
+            s1 *= cTmp;
+        } else {
+            s1 = a[i][i] - a[i-r1+1][i] - a[i][i-r1+1]
+                + a[i-r1+1][i-r1+1];
+            float c = 1.f/((float)r1*r1);
+            s1 *= c;
         }
 
-        float c = 1.f/((float)r*r);
-        float s1 = a[i][i] - a[i-r+1][i] - a[i][i-r+1]
-            + a[i-r+1][i-r+1];
-        s1 *= c;
         if (s1 < 0) {
-            s1 *= -1;
-        }
+            s1 *= -1.f;
+        }  
 
         if (blockUsed != null) {
-            blockUsed[0] = r;
+            blockUsed[0] = r1;
         }
 
         return s1;
