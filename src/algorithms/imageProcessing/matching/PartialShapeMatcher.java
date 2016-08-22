@@ -14,16 +14,13 @@ import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairFloat;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
-import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TObjectFloatIterator;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectFloatMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -33,16 +30,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
-import thirdparty.edu.princeton.cs.algs4.Queue;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -88,6 +82,14 @@ public class PartialShapeMatcher {
     The scissors case shows that the articulated solution
     still needs improvement, specifically the method
     combineBestDisjoint(...).
+    Also, cases that have projections that are not 
+    euclidean need improvements in the addByTransformation
+    method.
+    
+    when articulated works well, need to offer an
+    option to perform and save results before and 
+    after the articulated additions so that user
+    can examine both and decide between them.
     */
 
     /**
@@ -101,10 +103,11 @@ public class PartialShapeMatcher {
      */
     protected int dp = 5;
 
-    private boolean srchForArticulatedParts = true;
+    private boolean srchForArticulatedParts = false;
 
     // this helps to remove points far from
     // euclidean transformations using RANSAC.
+    // it should probably always be true.
     private boolean performEuclidTrans = true;
 
     private float pixTolerance = 20;
@@ -265,6 +268,11 @@ public class PartialShapeMatcher {
             }
 
             if (srchForArticulatedParts) {
+       /*paused here:
+        TODO:
+        combinedBestDisjoint needs to receive results 
+        and mergedMinDiffs[i>=topK]
+        */
                 best = combineBestDisjoint(results, md,
                     n1, n2);
             } else {
@@ -281,6 +289,7 @@ public class PartialShapeMatcher {
         } else {
 
             if (srchForArticulatedParts) {
+                //NOTE: to combine best disjoint, need topK > 1            
                 List<Result> results =
                     createSortedResults(mergedMinDiffs2, n1, n2, topK);
                 best = combineBestDisjoint(results, md,
@@ -432,7 +441,7 @@ public class PartialShapeMatcher {
             
             mmd2.sumChordDiffs[i] = s1;        
         }
-        
+         
         mmd2.chordsNeedUpdates = false;
     }
     
@@ -1122,7 +1131,7 @@ public class PartialShapeMatcher {
         if (blockUsed != null) {
             blockUsed[0] = r1;
         }
-
+        
         return s1;
     }
 
