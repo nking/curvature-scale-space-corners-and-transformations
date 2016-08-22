@@ -314,7 +314,7 @@ public class PartialShapeMatcher {
             int offset = mmd.offsets[i];
             int startI = mmd.getStartIMinusBlock(i);
             int stopI = mmd.stopIs[i];
-            
+       
             Integer key = Integer.valueOf(offset);
             
             IntervalRangeSearch<Integer, Integer> rt =
@@ -376,6 +376,10 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             }
         }
         
+        // TODO: the above doesn't merge adjacent, so need
+        // one more pass through the indexes, but with
+        // a query for adjacent pixel values
+        
         if (rmSet.isEmpty()) {
             return mmd;
         }
@@ -396,7 +400,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             count++;
         }
         assert(count == nTot);
-        
+    
         log.fine("condensed " + rmSet.size() + " items");
         
         return mmdm;
@@ -415,21 +419,22 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         int n = mmd2.sumChordDiffs.length;
         assert(n <= n1);
         
+        int[] rUsed = new int[1];
+        
         for (int i = 0; i < n; ++i) {
            
             int offset = mmd2.mmd.offsets[i];
 
-            int startI = mmd2.getStartIMinusBlock(i);
-            assert(startI >= 0);
-            
             int stopI = mmd2.mmd.stopIs[i];
             assert(stopI <= n1);
             
-            // r is block size
-            int r = stopI - startI;
+            int r = mmd2.getLength(i);
             assert(r <= n1);
 
-            float s1 = read(md, stopI, offset, r, null);
+            float s1 = read(md, stopI, offset, r, 
+                rUsed);
+            
+ log.info("rUsed=" + rUsed[0] + " r=" + r);
 
             mmd2.sumChordDiffs[i] = s1;        
         }
@@ -660,7 +665,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             offsets[cIdx] = currentOffset;
             startIs[cIdx] = startI;
             startRs[cIdx] = startBlock;
-            stopIs[cIdx] = n1 - 1;
+            stopIs[cIdx] = n1 - 1;        
         }
 
         if (cIdx == -1) {
@@ -686,15 +691,15 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             currentOffset = mmd.offsets[i];
 
             // read backwards from current start block
-            readI = mmd.startIs[i] - mmd.startRs[i];
+            readI = mmd.getStartIMinusBlock(i) - 1;
             while (readI > 0) {
-
-                startBlock = mmd.startRs[i];
 
                 if (mins.idxs0[readI] == -1) {
                     break;
                 }
 
+                startBlock = mmd.startRs[i];
+                
                 float min = mins.mins[readI];
 
                 double lThresh = Math.sqrt(startBlock) * thresh;
@@ -712,7 +717,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
 
                 mmd.startIs[i] = readI;
                 mmd.startRs[i] = rUsed[0];
-                readI = mmd.startIs[i] - mmd.startRs[i];
+                readI = mmd.getStartIMinusBlock(i) - 1;
             }
 
             //TODO: add a read forward from stopI + block size
@@ -2096,10 +2101,6 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
                 sum += s1;
 
                 if (s1 < mins[i]) {
-                    int idx2 = i + jOffset;
-                    if (idx2 >= n2) {
-                        idx2 -= n2;
-                    }
                     mins[i] = s1;
                     idxs0[i] = jOffset;
                     rs[i] = r1;
