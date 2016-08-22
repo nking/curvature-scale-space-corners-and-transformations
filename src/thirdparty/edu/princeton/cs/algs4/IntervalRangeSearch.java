@@ -3,6 +3,11 @@ package thirdparty.edu.princeton.cs.algs4;
 /******************************************************************************
  A specialization of RangeSearch for an Interval parameterized type.
   
+ NOTE that the intervals cannot overlap.  If a put of an interval
+ intersects with a key, the existing interval in the tree gets
+ the value of the new interval, but the key range does not
+ change.
+ 
  @author nichole
  
  * @param <T> the data type used in the Intervals

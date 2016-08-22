@@ -1,7 +1,11 @@
 package thirdparty.edu.princeton.cs.algs4;
 
 /******************************************************************************
- *  Compilation:  javac RangeSearch.java
+adapted from http://algs4.cs.princeton.edu/92search/
+    copyright for authors Robert Sedgewick and Kevin Wayne
+    is GPLV3, http://algs4.cs.princeton.edu/faq/ 
+*  
+* Compilation:  javac RangeSearch.java
  *  Execution:    java RangeSearch < words.txt
  *  
  *  Range search implemented using a randomized BST.
@@ -36,10 +40,6 @@ package thirdparty.edu.princeton.cs.algs4;
  *  pastry
  *  pasture
  *  pasty
-
-    class downloaded from http://algs4.cs.princeton.edu/92search/
-    copyright for authors Robert Sedgewick and Kevin Wayne
-    is GPLV3, http://algs4.cs.princeton.edu/faq/
  
  ******************************************************************************/
 
@@ -96,40 +96,66 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
    /***************************************************************************
     *  randomized insertion
     ***************************************************************************/
-    public void put(Key key, Value val) {
-        root = put(root, key, val);
+    /**
+     * 
+     * @param key
+     * @param val
+     * @return the value that was replaced with given val
+     * if the Key intersected with another, preventing 
+     * an insert of Key, but updating existing with val.
+     * Note that the return is null when the insert
+     * succeeded.
+     */
+    public Value put(Key key, Value val) {
+        
+        //to return whether insert was successful
+        Object[] replaced = new Object[1];
+        
+        root = put(root, key, val, replaced);
+        
+        return (replaced[0] == null) ? null : (Value)replaced[0];
+        
         //System.out.println("<==root=" + root);
     }
     
     // make new node the root with uniform probability
     private RangeSearchNode<Key, Value> put(RangeSearchNode<Key, Value> x, 
-        Key key, Value val) {
+        Key key, Value val, Object[] replaced) {
         if (x == null) return new RangeSearchNode(key, val);
         int cmp = key.compareTo(x.key);
-        if (cmp == 0) { x.val = val; return x; }
+        if (cmp == 0) {
+            replaced[0] = x.val;
+            x.val = val;
+            return x; 
+        }
         if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {
-            return putRoot(x, key, val);
+            return putRoot(x, key, val, replaced);
         }
         if (cmp < 0) {
-            x.left  = put(x.left,  key, val);
+            x.left  = put(x.left,  key, val, replaced);
         } else {
-            x.right = put(x.right, key, val);
+            x.right = put(x.right, key, val, replaced);
         } 
         // (x.N)++;
         fix(x);
         return x;
     }
 
-    private RangeSearchNode<Key, Value> putRoot(RangeSearchNode<Key, Value> x, Key key, Value val) {
+    private RangeSearchNode<Key, Value> putRoot(
+        RangeSearchNode<Key, Value> x, Key key, Value val,
+        Object[] replaced) {
+        
         if (x == null) return new RangeSearchNode<Key, Value>(key, val);
         int cmp = key.compareTo(x.key);
-        if (cmp == 0) { 
-            x.val = val; return x; 
+        if (cmp == 0) {
+            replaced[0] = x.val;
+            x.val = val;
+            return x; 
         } else if (cmp  < 0) { 
-            x.left  = putRoot(x.left,  key, val); 
+            x.left  = putRoot(x.left,  key, val, replaced); 
             x = rotR(x); 
         } else { 
-            x.right = putRoot(x.right, key, val); 
+            x.right = putRoot(x.right, key, val, replaced); 
             x = rotL(x); 
         }
         return x;
