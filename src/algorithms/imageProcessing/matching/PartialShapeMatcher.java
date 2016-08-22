@@ -208,8 +208,6 @@ public class PartialShapeMatcher {
 
         //TODO: revisit this.  might need to depend
         // upon p.n
-//NOTE: there's currently an error in merge
-// so cannot use more than one r until fix that
         int[] rs = new int[]{
             n1/2, 
             n1/5
@@ -238,7 +236,7 @@ public class PartialShapeMatcher {
         }
         
         /*
-        TODO: after this.merge(...) is implemented,
+        TODO:
         consider refactoring everything below
         to continue to use ranges as is done with
         MergedMinDiffs, where idx2 is a positive number
@@ -424,6 +422,8 @@ public class PartialShapeMatcher {
             count++;
         }
         assert(count == nTot);
+        
+        log.fine("condensed " + rmSet.size() + " items");
         
         return mmdm;
     }
