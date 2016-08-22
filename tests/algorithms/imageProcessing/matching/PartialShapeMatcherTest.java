@@ -151,7 +151,7 @@ public class PartialShapeMatcherTest extends TestCase {
             + "_scissors_offset16_corres");
 
         assertTrue(Math.abs(result.getOriginalOffset() - 16) < 3);
-        assertTrue(result.getFractionOfWhole() > 0.4);
+        assertTrue(result.getFractionOfWhole() > 0.3);
     }
     
     public void testRangeSearh() {

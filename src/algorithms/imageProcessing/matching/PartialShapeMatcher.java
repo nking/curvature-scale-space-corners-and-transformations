@@ -101,11 +101,11 @@ public class PartialShapeMatcher {
      */
     protected int dp = 5;
 
-    private boolean srchForArticulatedParts = false;
+    private boolean srchForArticulatedParts = true;
 
     // this helps to remove points far from
     // euclidean transformations using RANSAC.
-    private boolean performEuclidTrans = false;
+    private boolean performEuclidTrans = true;
 
     private float pixTolerance = 20;
 
