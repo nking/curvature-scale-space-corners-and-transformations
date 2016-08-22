@@ -241,7 +241,10 @@ public class PartialShapeMatcher {
         MergedMinDiffs2 mergedMinDiffs2 = 
             new MergedMinDiffs2(mergedMinDiffs, n1, n2);
         populateChordDifferences(md, mergedMinDiffs2);
-                
+        
+ mergedMinDiffs2.sortBySalukwdzeDistance();
+ mergedMinDiffs2.print("PPSORT");
+        
         // NOTE: the android statues
         // and scissor tests show that correct
         // main offset is now the top item
@@ -386,7 +389,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         
         int nTot = mmd.offsets.length - rmSet.size();
         
-        MergedMinDiffs mmdm = new MergedMinDiffs(nTot);
+        MergedMinDiffs mmdm = new MergedMinDiffs(nTot, n1);
         
         int count = 0;
         for (int i = 0; i < mmd.offsets.length; ++i) {
@@ -532,11 +535,11 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         int[] startIs;
         int[] startRs;
         int[] stopIs;
-        public MergedMinDiffs(int n1) {
-            offsets = new int[n1];
-            startIs = new int[n1];
-            startRs = new int[n1];
-            stopIs = new int[n1];
+        public MergedMinDiffs(int size, int n1) {
+            offsets = new int[size];
+            startIs = new int[size];
+            startRs = new int[size];
+            stopIs = new int[size];
             this.n1 = n1;
         }
         
@@ -547,7 +550,9 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         }
            
         public float getFraction(int index) {
-            float f = (float)getLength(index)/(float)n1;
+            float len = getLength(index);
+            assert(len <= n1);
+            float f = len/(float)n1;
             return f;
         }
         
@@ -562,10 +567,10 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             for (int i = 0; i < n; ++i) {
                 
                 log.info(String.format(
-                    "%d %s offset=%d  f=%.4f  startI=%d  stopI=%d", 
+                    "%d %s offset=%d  f=%.4f  startI=%d  stopI=%d len=%d", 
                      i, label, offsets[i], 
                      getFraction(i), getStartIMinusBlock(i),
-                     stopIs[i]));
+                     stopIs[i], getLength(i)));
             }
         }
     }
@@ -578,7 +583,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         
         int nTot = mmd1.offsets.length + mmd2.offsets.length;
         
-        MergedMinDiffs comb = new MergedMinDiffs(nTot);
+        MergedMinDiffs comb = new MergedMinDiffs(nTot, n1);
         
         int nmmd1 = mmd1.offsets.length;
         System.arraycopy(mmd1.offsets, 0, comb.offsets, 0, nmmd1);
@@ -618,7 +623,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
         // merge ranges of sequential offsets.
         // key=offset, data=start i, start r, stop i
 
-        MergedMinDiffs mmd = new MergedMinDiffs(n1);
+        MergedMinDiffs mmd = new MergedMinDiffs(n1, n1);
         int[] offsets = mmd.offsets;
         int[] startIs = mmd.startIs;
         int[] startRs = mmd.startRs;
