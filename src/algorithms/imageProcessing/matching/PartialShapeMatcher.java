@@ -260,20 +260,54 @@ public class PartialShapeMatcher {
 
             // solve for transformation, add points near projection,
             // return sorted solutions, best is at top.
+            // note that RANSAC has been used remove outliers
+            // from the already matched points too and those
+            // are not tracked, just removed.
+            
+            // the added points are additionally added to this
+            // separate list
+            List<PairIntArray> addedPoints = new ArrayList<PairIntArray>();
+            
             if (diffN <= 0) {
                 results = transformAndEvaluate(mergedMinDiffs2, p, q,
-                    md, pixTolerance, topK);
+                    md, pixTolerance, topK, addedPoints);
             } else {
                 results = transformAndEvaluate(mergedMinDiffs2, q, p,
-                    md, pixTolerance, topK);
+                    md, pixTolerance, topK, addedPoints);
+            }
+            
+            if (results != null && !results.isEmpty()) {
+                // TODO: calc equiv offsets of addedPoints and
+                // if the mmd2 entry w/ that offset and
+                // point(s) has significant number of 
+                // consecutive points not already in results[i],
+                // add those to results[i].
+                // TODO: ideally, might want to evaluate
+                // this candidate section of consecutive points 
+                // with euclidean transformation before adding.
+                //
+                // In summary, the methods in "performEuclidTrans"
+                // start with the best main offset of matching
+                // points for an mmd2 item, 
+                // calculate a euclidean transformation 
+                // to roughly add new unmatched points and then
+                // from those points, bootstrap to their implied
+                // offsets found in another item in mmd2 
+                // and use euclidean transformation on those
+                // new items (the disoint consecutive portion)
+                // to remove outliers from those and then add them
+                // to the best results for the mmd2 item being
+                // analyzed.
             }
 
             if (srchForArticulatedParts) {
-       /*paused here:
-        TODO:
-        combinedBestDisjoint needs to receive results 
-        and mergedMinDiffs[i>=topK]
-        */
+                
+                /*
+                TODO:
+                combinedBestDisjoint needs to receive results 
+                and mergedMinDiffs[i>=topK]
+                */
+                
                 best = combineBestDisjoint(results, md,
                     n1, n2);
             } else {
@@ -1403,7 +1437,7 @@ public class PartialShapeMatcher {
          * @param maxChordSum
          * @return 
          */
-        public float getSalukwdzeDistance(double maxChordSum) {
+        public float calculateSalukwdzeDistance(double maxChordSum) {
             float f = 1.f - getFractionOfWhole();
             double d = getNormalizedChordDiff(maxChordSum);
             float s = (float)Math.sqrt(f * f + d * d);
@@ -1494,10 +1528,42 @@ public class PartialShapeMatcher {
         return results;
     }
 
+    /**
+     * 
+     * @param mmd2 list of merged sequential minima 
+     * as ranges of correspondence of p and q with
+     * different offsets.  the list contains many
+     * different solutions.
+     * @param p array of shape p boundary coordinates
+     * @param q array of shape q boundary coordinates
+     * @param md the summed permuted chord difference matrix.
+     * @param pixTol a tolerance for use in matching
+     * projected unmatched points using derived transformation.
+     * @param topK the number of top items in mmd2
+     * to analyze, where top is w.r.t. the order after
+     * mmd2 has been sorted by Salukwdze distance 
+     * (a side effect of this method).
+     * @param addedPointLists an <em>output list</em> 
+     * of same size as results (which is size topK or null). 
+     * each item contains a list of
+     * points added to the result item because it was
+     * found via projection.  the points have different
+     * "offsets" than the mmd2 best item they were derived
+     * from by projection.
+     * @return list of topK results from the sorted
+     * mmd2 list and it's projection analysis.
+       Note that mmd2 and return results have same 
+       ordering and indexes, that is results[0] is
+       derived from mmd2 item 0.
+     * @throws NoSuchAlgorithmException thrown when the
+     * chosen algorithm used in ransac is not available.
+     * TODO: change that so that it finds an algorithm
+       and doesn't throw the exception.
+     */
     private List<Result> transformAndEvaluate(
-        MergedMinDiffs2 mmd2,
-        PairIntArray p, PairIntArray q,
-        float[][][] md, float pixTol, int topK)
+        MergedMinDiffs2 mmd2, PairIntArray p, PairIntArray q,
+        float[][][] md, float pixTol, int topK,
+        List<PairIntArray> addedPointLists)
         throws NoSuchAlgorithmException {
 
         if (mmd2.length() == 0) {
@@ -1507,7 +1573,8 @@ public class PartialShapeMatcher {
         mmd2.sortBySalukwdzeDistance();
         
         //NOTE: at this stage, the top item in sequences
-        // is the correct answer in tests so far
+        // is the correct answer for the main offset
+        // of matches in tests so far
 
         if (topK > mmd2.length()) {
             topK = mmd2.length();
@@ -1520,20 +1587,20 @@ public class PartialShapeMatcher {
                 // 7 points are needed for the RANSAC algorithm
                 continue;
             }
-            Result result = addByTransformation(mmd2, i, p, q, pixTol);
+            PairIntArray added = new PairIntArray();
+            Result result = addByTransformation(mmd2, i, p, q, 
+                pixTol, added);
             if (result != null) {
                 populateWithChordDiffs(result, md, p.getN(), q.getN());
                 log.fine("calc'ed chords: " + result.toStringAbbrev());
                 results.add(result);
+                addedPointLists.add(added);
             }
         }
 
         if (results.isEmpty()) {
             return null;
         }
-
-        Collections.sort(results,
-            new ResultComparator(results));
 
         return results;
     }
@@ -1636,7 +1703,8 @@ public class PartialShapeMatcher {
     }
 
     private Result addByTransformation(MergedMinDiffs2 mmd2, 
-        int index, PairIntArray p, PairIntArray q, double pixTol) throws
+        int index, PairIntArray p, PairIntArray q, 
+        double pixTol, PairIntArray outputAddedPoints) throws
         NoSuchAlgorithmException {
 
         int offset = mmd2.mmd.offsets[index];
@@ -1764,9 +1832,10 @@ public class PartialShapeMatcher {
                 pixTol);
         }
 
-        log.info("for offset=" + offset + "transformation nearest matches=" +
+        log.info("for offset=" + offset 
+            + "transformation nearest matches=" +
             idxMap.size());
-        
+       
         /*
         combine results from leftXY-rightXY
         with idxMap where idxMap is
@@ -1798,6 +1867,19 @@ public class PartialShapeMatcher {
             assert(qIdx > -1);
 
             result.insert(pIdx, qIdx, dist);
+            
+            outputAddedPoints.add(pIdx, qIdx);
+            
+            // quick look at properties to find these
+            // added points in the min diff merged lists
+            {
+                if (qIdx < pIdx) {
+                    qIdx += q.getN();
+                }
+                int offsetA = qIdx - pIdx;
+                log.info("added pair with implied offset=" + 
+                    offsetA + " i=" + pIdx);
+            }
         }
 
         for (int i = 0; i < rightXY.getN(); ++i) {
