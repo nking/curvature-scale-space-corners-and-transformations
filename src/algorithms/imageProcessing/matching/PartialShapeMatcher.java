@@ -90,6 +90,7 @@ public class PartialShapeMatcher {
     option to perform and save results before and 
     after the articulated additions so that user
     can examine both and decide between them.
+    
     */
 
     /**
@@ -1380,7 +1381,20 @@ public class PartialShapeMatcher {
         }
 
         public float getFractionOfWhole() {
-            return (float)idx1s.size()/(float)n1;
+            float n = (n1 < n2) ? n1 : n2;
+            return (float)idx1s.size()/(float)n;
+        }
+        
+        protected double getNormalizedChordDiff(double maxChordSum) {
+            double d = chordDiffSum/maxChordSum;
+            return d;
+        }
+        
+        public float getSalukwdzeDistance(double maxChordSum) {
+            float f = 1.f - getFractionOfWhole();
+            double d = getNormalizedChordDiff(maxChordSum);
+            float s = (float)Math.sqrt(f * f + d * d);
+            return s;
         }
 
         void addToChordDifferenceSum(float diff) {
