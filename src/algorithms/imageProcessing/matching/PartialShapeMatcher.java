@@ -1390,6 +1390,19 @@ public class PartialShapeMatcher {
             return d;
         }
         
+        /**
+         * The Salukwdze distance is the metric used as a 
+         * cost in comparisons.
+         * (note that other portions of the code use
+         * the square of the distance.  also note that 
+         * the maximum chord sum that was used to determine
+         * a best solution is not stored, because the
+         * Result membership grows afterwards depending
+         * upon options, though this could change in 
+         * the future).
+         * @param maxChordSum
+         * @return 
+         */
         public float getSalukwdzeDistance(double maxChordSum) {
             float f = 1.f - getFractionOfWhole();
             double d = getNormalizedChordDiff(maxChordSum);
