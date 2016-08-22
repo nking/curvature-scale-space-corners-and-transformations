@@ -266,7 +266,8 @@ public class PartialShapeMatcher {
             
             // the added points are additionally added to this
             // separate list
-            List<PairIntArray> addedPoints = new ArrayList<PairIntArray>();
+            List<PairIntArray> addedPoints = 
+                new ArrayList<PairIntArray>(topK);
             
             if (diffN <= 0) {
                 results = transformAndEvaluate(mergedMinDiffs2, p, q,
@@ -277,6 +278,7 @@ public class PartialShapeMatcher {
             }
             
             if (results != null && !results.isEmpty()) {
+                
                 // TODO: calc equiv offsets of addedPoints and
                 // if the mmd2 entry w/ that offset and
                 // point(s) has significant number of 
@@ -285,7 +287,9 @@ public class PartialShapeMatcher {
                 // TODO: ideally, might want to evaluate
                 // this candidate section of consecutive points 
                 // with euclidean transformation before adding.
-                //
+                // -- any added points from an mmd2 item should
+                //    be noted or zeroed out so can't be added
+                //    in next code block.
                 // In summary, the methods in "performEuclidTrans"
                 // start with the best main offset of matching
                 // points for an mmd2 item, 
@@ -294,7 +298,7 @@ public class PartialShapeMatcher {
                 // from those points, bootstrap to their implied
                 // offsets found in another item in mmd2 
                 // and use euclidean transformation on those
-                // new items (the disoint consecutive portion)
+                // new items (the disjoint consecutive portion)
                 // to remove outliers from those and then add them
                 // to the best results for the mmd2 item being
                 // analyzed.
@@ -1580,7 +1584,7 @@ public class PartialShapeMatcher {
             topK = mmd2.length();
         }
 
-        List<Result> results = new ArrayList<Result>();
+        List<Result> results = new ArrayList<Result>(topK);
         for (int i = 0; i < topK; ++i) {
             int len = mmd2.getLength(i);
             if (len < 7) {
@@ -1727,10 +1731,28 @@ public class PartialShapeMatcher {
         PairIntArray outLeft = new PairIntArray();
         PairIntArray outRight = new PairIntArray();
 
+        return addByTransformation(p, q,
+            leftXY, rightXY,
+            leftUnmatchedXY, rightUnmatchedXY,
+            pixTol, offset,
+            outLeft, outRight, outputAddedPoints);
+     }
+    
+    private Result addByTransformation(
+        PairIntArray p, PairIntArray q,
+        PairIntArray left, PairIntArray right,
+        PairIntArray leftUnmatched, PairIntArray rightUnmatched,
+        double pixTol, int origOffset,
+        PairIntArray outLeft, PairIntArray outRight,
+        PairIntArray outAddedPoints) throws
+        NoSuchAlgorithmException {
+         
+        String debugTag = "offset=" + Integer.toString(origOffset);
+        
         RANSACEuclideanSolver euclid =
             new RANSACEuclideanSolver();
         EuclideanTransformationFit fit = euclid.calculateEuclideanTransformation(
-            leftXY, rightXY, outLeft, outRight);
+            left, right, outLeft, outRight);
 
         TransformationParameters params = (fit != null) ?
             fit.getTransformationParameters() : null;
@@ -1738,7 +1760,7 @@ public class PartialShapeMatcher {
         if (params == null) {
             //TODO: reconsider whether to package up
             // the given sequence s and return it here
-            log.fine("offset=" + offset + " no euclidean fit");
+            log.fine(debugTag + " no euclidean fit");
             return null;
         }
 
@@ -1746,44 +1768,43 @@ public class PartialShapeMatcher {
         // points on shape boundary, need to compare
         // for same scale.
         if (params.getScale() < 0.9 || params.getScale() > 1.1) {
-            log.warning("offset=" + offset +
+            log.warning(debugTag +
                 " euclidean transformation scale: "  + params);
         }
-        leftXY = outLeft;
-        rightXY = outRight;
-        log.fine("offset=" + offset
-            + " partial fit=" + fit.toString()
+        left = outLeft;
+        right = outRight;
+        log.fine(debugTag + " partial fit=" + fit.toString()
             + " params=" + params
-            + " reset left.n=" + leftXY.getN()
-            + " right.n=" + rightXY.getN());
+            + " reset left.n=" + left.getN()
+            + " right.n=" + right.getN());
 
         log.fine("dp=" + dp + " pixTol=" + pixTol);
 
         Transformer transformer = new Transformer();
         PairIntArray leftTr = transformer.applyTransformation(
-            params, leftUnmatchedXY);
+            params, leftUnmatched);
         PairIntArray leftTr0 = transformer.applyTransformation(
-            params, leftXY);
+            params, left);
 
         if (debug) {
             try {
                 CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
-                for (int i = 0; i < leftXY.getN(); ++i) {
-                    int x1 = leftXY.getX(i);
-                    int y1 = leftXY.getY(i);
-                    int x2 = rightXY.getX(i);
-                    int y2 = rightXY.getY(i);
+                for (int i = 0; i < left.getN(); ++i) {
+                    int x1 = left.getX(i);
+                    int y1 = left.getY(i);
+                    int x2 = right.getX(i);
+                    int y2 = right.getY(i);
                     if ((i % 5) == 0) {
                         plotter.drawLineInAlternatingColors(x1, y1,
                             x2, y2, 0);
                     }
                 }
                 String filePath = plotter.writeImage("_"
-                    + "_debug1_" + offset);
+                    + "_debug1_" + debugTag);
                 plotter = new CorrespondencePlotter(p, q);
-                for (int i = 0; i < leftXY.getN(); ++i) {
-                    int x1 = leftXY.getX(i);
-                    int y1 = leftXY.getY(i);
+                for (int i = 0; i < left.getN(); ++i) {
+                    int x1 = left.getX(i);
+                    int y1 = left.getY(i);
                     int x2 = leftTr0.getX(i);
                     int y2 = leftTr0.getY(i);
                     if ((i % 5) == 0) {
@@ -1792,12 +1813,12 @@ public class PartialShapeMatcher {
                     }
                 }
                 filePath = plotter.writeImage("_"
-                    + "_debug2_" + offset);
+                    + "_debug2_" + debugTag);
 
                 plotter = new CorrespondencePlotter(p, q);
-                for (int i = 0; i < leftUnmatchedXY.getN(); ++i) {
-                    int x1 = leftUnmatchedXY.getX(i);
-                    int y1 = leftUnmatchedXY.getY(i);
+                for (int i = 0; i < leftUnmatched.getN(); ++i) {
+                    int x1 = leftUnmatched.getX(i);
+                    int y1 = leftUnmatched.getY(i);
                     int x2 = leftTr.getX(i);
                     int y2 = leftTr.getY(i);
                     if ((i % 5) == 0) {
@@ -1807,12 +1828,12 @@ public class PartialShapeMatcher {
                 }
 
                 filePath = plotter.writeImage("_"
-                    + "_debug3_" + offset);
+                    + "_debug3_" + debugTag);
             } catch (Throwable t) {
             }
         }
 
-        log.fine("offset=" + offset + " params=" + params);
+        log.fine(debugTag + " params=" + params);
 
         // find the best matches to the unmatched in
         // q
@@ -1825,15 +1846,14 @@ public class PartialShapeMatcher {
 
         TObjectFloatMap<PairInt> idxMap;
         if (useOptimal) {
-            idxMap = optimalMatch(leftTr, rightUnmatchedXY,
+            idxMap = optimalMatch(leftTr, rightUnmatched,
                 pixTol);
         } else {
-            idxMap = nearestMatch(leftTr, rightUnmatchedXY,
+            idxMap = nearestMatch(leftTr, rightUnmatched,
                 pixTol);
         }
 
-        log.info("for offset=" + offset 
-            + "transformation nearest matches=" +
+        log.info(debugTag + "transformation nearest matches=" +
             idxMap.size());
        
         /*
@@ -1846,7 +1866,7 @@ public class PartialShapeMatcher {
         TObjectIntMap<PairInt> pPoints = Misc.createPointIndexMap(p);
         TObjectIntMap<PairInt> qPoints = Misc.createPointIndexMap(q);
 
-        Result result = new Result(p.getN(), q.getN(), offset);
+        Result result = new Result(p.getN(), q.getN(), origOffset);
 
         TObjectFloatIterator<PairInt> iter = idxMap.iterator();
         for (int i = 0; i < idxMap.size(); ++i) {
@@ -1854,21 +1874,21 @@ public class PartialShapeMatcher {
             PairInt idxIdx = iter.key();
             float dist = iter.value();
             PairInt ell = new PairInt(
-                leftUnmatchedXY.getX(idxIdx.getX()),
-                leftUnmatchedXY.getY(idxIdx.getX())
+                leftUnmatched.getX(idxIdx.getX()),
+                leftUnmatched.getY(idxIdx.getX())
             );
             int pIdx = pPoints.get(ell);
             assert(pIdx > -1);
             PairInt ar = new PairInt(
-                rightUnmatchedXY.getX(idxIdx.getY()),
-                rightUnmatchedXY.getY(idxIdx.getY())
+                rightUnmatched.getX(idxIdx.getY()),
+                rightUnmatched.getY(idxIdx.getY())
             );
             int qIdx = qPoints.get(ar);
             assert(qIdx > -1);
 
             result.insert(pIdx, qIdx, dist);
             
-            outputAddedPoints.add(pIdx, qIdx);
+            outAddedPoints.add(pIdx, qIdx);
             
             // quick look at properties to find these
             // added points in the min diff merged lists
@@ -1877,24 +1897,25 @@ public class PartialShapeMatcher {
                     qIdx += q.getN();
                 }
                 int offsetA = qIdx - pIdx;
-                log.info("added pair with implied offset=" + 
+                log.info(debugTag 
+                    + ": added pair with implied offset=" + 
                     offsetA + " i=" + pIdx);
             }
         }
 
-        for (int i = 0; i < rightXY.getN(); ++i) {
-            int diffX = leftTr0.getX(i) - rightXY.getX(i);
-            int diffY = leftTr0.getY(i) - rightXY.getY(i);
+        for (int i = 0; i < right.getN(); ++i) {
+            int diffX = leftTr0.getX(i) - right.getX(i);
+            int diffY = leftTr0.getY(i) - right.getY(i);
             float dist = (float)Math.sqrt(diffX * diffX +
                 diffY * diffY);
 
-            PairInt ell = new PairInt(leftXY.getX(i),
-                leftXY.getY(i));
+            PairInt ell = new PairInt(left.getX(i),
+                left.getY(i));
             int pIdx = pPoints.get(ell);
             assert(pIdx > -1);
 
-            PairInt ar = new PairInt(rightXY.getX(i),
-                rightXY.getY(i));
+            PairInt ar = new PairInt(right.getX(i),
+                right.getY(i));
             int qIdx = qPoints.get(ar);
             assert(qIdx > -1);
 
@@ -1917,7 +1938,7 @@ public class PartialShapeMatcher {
                     }
                 }
                 String filePath = plotter.writeImage("_"
-                    + "_debug4_" + offset);
+                    + "_debug4_" + debugTag);
             } catch (Throwable t) {
             }
         }
