@@ -45,33 +45,32 @@ package thirdparty.edu.princeton.cs.algs4;
 
 public class RangeSearch<Key extends Comparable<Key>, Value>  {
 
-    private Node root;   // root of the BST
+    protected RangeSearchNode<Key, Value> root;   // root of the BST
 
-    // BST helper node data type
-    private class Node {
-        Key key;            // key
-        Value val;          // associated data
-        Node left, right;   // left and right subtrees
+    //BST helper node data type
+    protected class RangeSearchNode<T, S> {
+        T key;              // key
+        S val;              // associated data
+        RangeSearchNode<T, S> left, right;   // left and right subtrees
         int N;              // node count of descendents
 
-        public Node(Key key, Value val) {
+        public RangeSearchNode(T key, S val) {
             this.key = key;
             this.val = val;
-            this.N   = 1;
+            this.N = 1;
         }
 
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder("key=");
             sb.append(key).append(" n=").append(N)
-            .append(" left=").append(left)
-            .append(" right=").append(right)
-            .append(" val=").append(val);
+                .append(" left=").append(left)
+                .append(" right=").append(right)
+                .append(" val=").append(val);
             return sb.toString();
         }
-        
     }
-
+    
    /***************************************************************************
     *  BST search
     ***************************************************************************/
@@ -86,7 +85,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         return get(root, key);
     }
 
-    private Value get(Node x, Key key) {
+    private Value get(RangeSearchNode<Key, Value> x, Key key) {
         if (x == null) return null;
         int cmp = key.compareTo(x.key);
         if      (cmp == 0) return x.val;
@@ -99,12 +98,13 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     ***************************************************************************/
     public void put(Key key, Value val) {
         root = put(root, key, val);
-        int z = 1;
+        System.out.println("<==root=" + root);
     }
-
+    
     // make new node the root with uniform probability
-    private Node put(Node x, Key key, Value val) {
-        if (x == null) return new Node(key, val);
+    private RangeSearchNode<Key, Value> put(RangeSearchNode<Key, Value> x, 
+        Key key, Value val) {
+        if (x == null) return new RangeSearchNode(key, val);
         int cmp = key.compareTo(x.key);
         if (cmp == 0) { x.val = val; return x; }
         if (StdRandom.bernoulli(1.0 / (size(x) + 1.0))) {
@@ -120,23 +120,26 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         return x;
     }
 
-
-    private Node putRoot(Node x, Key key, Value val) {
-        if (x == null) return new Node(key, val);
+    private RangeSearchNode<Key, Value> putRoot(RangeSearchNode<Key, Value> x, Key key, Value val) {
+        if (x == null) return new RangeSearchNode<Key, Value>(key, val);
         int cmp = key.compareTo(x.key);
-        if      (cmp == 0) { x.val = val; return x; }
-        else if (cmp  < 0) { x.left  = putRoot(x.left,  key, val); x = rotR(x); }
-        else               { x.right = putRoot(x.right, key, val); x = rotL(x); }
+        if (cmp == 0) { 
+            x.val = val; return x; 
+        } else if (cmp  < 0) { 
+            x.left  = putRoot(x.left,  key, val); 
+            x = rotR(x); 
+        } else { 
+            x.right = putRoot(x.right, key, val); 
+            x = rotL(x); 
+        }
         return x;
     }
-
-
-
 
    /***************************************************************************
     *  deletion
     ***************************************************************************/
-    private Node joinLR(Node a, Node b) { 
+    private RangeSearchNode<Key, Value> joinLR(RangeSearchNode<Key, Value> a, 
+        RangeSearchNode<Key, Value> b) { 
         if (a == null) return b;
         if (b == null) return a;
 
@@ -144,15 +147,14 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
             a.right = joinLR(a.right, b);
             fix(a);
             return a;
-        }
-        else {
+        } else {
             b.left = joinLR(a, b.left);
             fix(b);
             return b;
         }
     }
 
-    private Node remove(Node x, Key key) {
+    private RangeSearchNode<Key, Value> remove(RangeSearchNode<Key, Value> x, Key key) {
         if (x == null) return null; 
         int cmp = key.compareTo(x.key);
         if      (cmp == 0) x = joinLR(x.left, x.right);
@@ -176,59 +178,6 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     *  Range searching
     ***************************************************************************/
 
-    /**
-     * temporary work around to a specialized search
-     * that will be changed to not restrict the
-     * parameterization so narrowly in the future.
-     * @param interval
-     * @return 
-     */
-    public Queue<Key> _range0(Key interval) {
-        
-        if (!(interval instanceof Interval)) {
-            throw new IllegalArgumentException("work around "
-                + " for interval<integer> search"
-                + " requires Key be instance of"
-                + " Interval<Integer>");
-        }
-        Queue<Key> list = new Queue<Key>();
-        _range(root, (Interval<Integer>)interval, list);
-        return list;
-    }
-    private void _range(Node x, Interval<Integer> interval, Queue<Key> list) {
-        
-        if (x == null) return;
-        
-        /*
-        interval has min max
-        
-                     x
-              lft         rgt
-           lft  rgt     lft  rgt
-        */
-       
-        Interval<Integer> xKey = (Interval<Integer>) x.key;
-       
-        if (interval.intersects(xKey)) {
-            list.enqueue(x.key);
-        }
-        
-        // if x.max < interval.min
-        //   do not search left
-        // if xmin > interval.max
-        //   do not search right
-        
-        int comp = xKey.max().compareTo(interval.min());
-        if (comp > -1) {
-            _range(x.left, interval, list);
-        }
-        
-        comp = xKey.min().compareTo(interval.max());
-        if (comp < 1) {
-            _range(x.right, interval, list);
-        }
-    }
-
     // return all keys in given interval
     public Iterable<Key> range(Key min, Key max) {
         return range(new Interval<Key>(min, max));
@@ -239,7 +188,8 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
         return list;
     }
 
-    private void range(Node x, Interval<Key> interval, Queue<Key> list) {
+    private void range(RangeSearchNode<Key, Value> x, Interval<Key> interval, 
+        Queue<Key> list) {
         if (x == null) return;
         if (!less(x.key, interval.min()))  range(x.left, interval, list);
         if (interval.contains(x.key))      list.enqueue(x.key);
@@ -255,7 +205,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     // return the smallest key
     public Key min() {
         Key key = null;
-        for (Node x = root; x != null; x = x.left)
+        for (RangeSearchNode<Key, Value> x = root; x != null; x = x.left)
             key = x.key;
         return key;
     }
@@ -263,7 +213,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     // return the largest key
     public Key max() {
         Key key = null;
-        for (Node x = root; x != null; x = x.right)
+        for (RangeSearchNode<Key, Value> x = root; x != null; x = x.right)
             key = x.key;
         return key;
     }
@@ -275,14 +225,14 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
 
     // return number of nodes in subtree rooted at x
     public int size() { return size(root); }
-    private int size(Node x) { 
+    private int size(RangeSearchNode<Key, Value> x) { 
         if (x == null) return 0;
         else           return x.N;
     }
 
     // height of tree (empty tree height = 0)
     public int height() { return height(root); }
-    private int height(Node x) {
+    private int height(RangeSearchNode<Key, Value> x) {
         if (x == null) return 0;
         return 1 + Math.max(height(x.left), height(x.right));
     }
@@ -293,14 +243,14 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     ***************************************************************************/
 
     // fix subtree count field
-    private void fix(Node x) {
+    private void fix(RangeSearchNode<Key, Value> x) {
         if (x == null) return;                 // check needed for remove
         x.N = 1 + size(x.left) + size(x.right);
     }
 
     // right rotate
-    private Node rotR(Node h) {
-        Node x = h.left;
+    private RangeSearchNode<Key, Value> rotR(RangeSearchNode<Key, Value> h) {
+        RangeSearchNode<Key, Value> x = h.left;
         h.left = x.right;
         x.right = h;
         fix(h);
@@ -309,8 +259,8 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     }
 
     // left rotate
-    private Node rotL(Node h) {
-        Node x = h.right;
+    private RangeSearchNode<Key, Value> rotL(RangeSearchNode<Key, Value> h) {
+        RangeSearchNode<Key, Value> x = h.right;
         h.right = x.left;
         x.left = h;
         fix(h);
@@ -328,7 +278,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
 
     // check integrity of count fields
     private boolean checkCount() { return checkCount(root); }
-    private boolean checkCount(Node x) {
+    private boolean checkCount(RangeSearchNode<Key, Value> x) {
         if (x == null) return true;
         return checkCount(x.left) && checkCount(x.right) && (x.N == 1 + size(x.left) + size(x.right));
     }
@@ -338,7 +288,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     private boolean isBST() { return isBST(root, min(), max()); }
 
     // are all the values in the BST rooted at x between min and max, and recursively?
-    private boolean isBST(Node x, Key min, Key max) {
+    private boolean isBST(RangeSearchNode<Key, Value> x, Key min, Key max) {
         if (x == null) return true;
         if (less(x.key, min) || less(max, x.key)) return false;
         return isBST(x.left, min, x.key) && isBST(x.right, x.key, max);

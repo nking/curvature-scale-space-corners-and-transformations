@@ -38,8 +38,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 import thirdparty.edu.princeton.cs.algs4.Interval;
+import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 import thirdparty.edu.princeton.cs.algs4.Queue;
-import thirdparty.edu.princeton.cs.algs4.RangeSearch;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -339,9 +339,9 @@ public class PartialShapeMatcher {
         at this point all idx1's are within range n1
         and all idx2's are greater than idx1's by 
         the offset amount (and might not be within
-        range of n2 because no corrections are made
-        before merging is finished, making intersection
-        checks easier).
+        range of n2 because no corrections to put it
+        into strict n2 range are made before this
+        point, making interval checks easier).
         
         mmd2 map w/key=offset, 
             value= range search tree of intervals
@@ -363,8 +363,8 @@ public class PartialShapeMatcher {
                    
         */
        
-        Map<Integer, RangeSearch<Interval<Integer>, Integer>> offsetRS2 = 
-            new HashMap<Integer, RangeSearch<Interval<Integer>, Integer>>();
+        Map<Integer, IntervalRangeSearch<Integer, Integer>> offsetRS2 = 
+            new HashMap<Integer, IntervalRangeSearch<Integer, Integer>>();
         
         for (int i = 0; i < mmd2.offsets.length; ++i) {
             int offset = mmd2.offsets[i];
@@ -375,11 +375,11 @@ public class PartialShapeMatcher {
             Integer key = Integer.valueOf(offset);
             Integer index = Integer.valueOf(i);
             
-            RangeSearch<Interval<Integer>, Integer> rt =
+            IntervalRangeSearch<Integer, Integer> rt =
                 offsetRS2.get(key);
             
             if (key == null) {
-                rt = new RangeSearch<Interval<Integer>, Integer>();
+                rt = new IntervalRangeSearch<Integer, Integer>();
                 offsetRS2.put(key, rt);
             }
             
@@ -400,7 +400,7 @@ public class PartialShapeMatcher {
             
             Integer key = Integer.valueOf(offset);
             
-            RangeSearch<Interval<Integer>, Integer> rt =
+            IntervalRangeSearch<Integer, Integer> rt =
                 offsetRS2.get(key);
             
             if (rt == null) {
@@ -419,7 +419,7 @@ public class PartialShapeMatcher {
             Interval<Integer> srch = new Interval<Integer>(
                s0, s1);
             
-            Queue<Interval<Integer>> queue = rt._range0(srch);
+            Queue<Interval<Integer>> queue = rt.range0(srch);
             
             Set<Interval<Integer>> rmSet = new HashSet<Interval<Integer>>();
             for (Interval<Integer> m2 : queue) {
@@ -431,7 +431,7 @@ public class PartialShapeMatcher {
                 //   rmIndex2.add(index2.intValue());
                 //   rm.add(m2)
                 //
-                // paused here
+                //paused here
             }
             
             for (Interval<Integer> rm : rmSet) {

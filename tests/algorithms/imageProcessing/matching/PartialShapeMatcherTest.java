@@ -18,7 +18,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.Queue;
-import thirdparty.edu.princeton.cs.algs4.RangeSearch;
+import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
  *
@@ -156,8 +156,8 @@ public class PartialShapeMatcherTest extends TestCase {
     
     public void testRangeSearh() {
         
-        RangeSearch<Interval<Integer>, Integer> rt =
-            new RangeSearch<Interval<Integer>, Integer>();
+        IntervalRangeSearch<Integer, Integer> rt =
+            new IntervalRangeSearch<Integer, Integer>();
         
         // the mmd2 ranges are non overlapping for inserts
         Interval<Integer> o1 = new Interval<Integer>(15, 20);
@@ -166,7 +166,7 @@ public class PartialShapeMatcherTest extends TestCase {
         rt.put(o1, Integer.valueOf(1));
         rt.put(o2, Integer.valueOf(2));
         rt.put(o3, Integer.valueOf(3));
-        
+                
         Set<Interval<Integer>> expected = new
             HashSet<Interval<Integer>>();
         expected.add(o1);
@@ -174,9 +174,10 @@ public class PartialShapeMatcherTest extends TestCase {
         
         Interval<Integer> s0 = new Interval<Integer>(19, 23);
         
-        Queue<Interval<Integer>> queue = rt._range0(s0);
+        Queue<Interval<Integer>> queue = rt.range0(s0);
         int nq = queue.size();
         for (Interval<Integer> fnd : queue) {
+            System.out.println("found=" + fnd);
             assertTrue(expected.remove(fnd));
         }
         assertEquals(2, nq);
