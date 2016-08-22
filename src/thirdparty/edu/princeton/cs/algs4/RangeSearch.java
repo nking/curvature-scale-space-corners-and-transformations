@@ -98,7 +98,7 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     ***************************************************************************/
     public void put(Key key, Value val) {
         root = put(root, key, val);
-        System.out.println("<==root=" + root);
+        //System.out.println("<==root=" + root);
     }
     
     // make new node the root with uniform probability
