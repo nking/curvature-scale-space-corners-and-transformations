@@ -765,39 +765,6 @@ public class PartialShapeMatcher {
         return mmd;
     }
 
-    protected void mergeSequences(List<Sequence> sequences) {
-
-        // separate the sequences into lists by offset
-
-        TIntObjectMap<List<Sequence>> offsetMap =
-            new TIntObjectHashMap<List<Sequence>>();
-
-        for (Sequence s : sequences) {
-            int offset = s.getOffset();
-            List<Sequence> list = offsetMap.get(offset);
-            if (list == null) {
-                list = new ArrayList<Sequence>();
-                offsetMap.put(offset, list);
-            }
-            list.add(s);
-        }
-
-        // merge each offset list and place results
-        // back into sequences.
-
-        TIntObjectIterator<List<Sequence>> iter =
-            offsetMap.iterator();
-        sequences.clear();
-        for (int i = 0; i < offsetMap.size(); ++i) {
-            iter.advance();
-            int offset = iter.key();
-
-            List<Sequence> list = iter.value();
-            Sequence.mergeSequences(list, log);
-            sequences.addAll(list);
-        }
-    }
-
     /**
      * create the matrices of differences between p
      * and q.  Note that the matrix differences are
