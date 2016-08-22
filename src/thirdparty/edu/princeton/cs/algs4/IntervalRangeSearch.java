@@ -1,11 +1,14 @@
 package thirdparty.edu.princeton.cs.algs4;
 
 /******************************************************************************
- Adapted from RangeSearch, specialized for Interval parameterization.
+ A specialization of RangeSearch for an Interval parameterized type.
   
  @author nichole
+ 
+ * @param <T> the data type used in the Intervals
+ * @param <Value> the data type of the key associated with each
+ * tree interval.
  ******************************************************************************/
-
 public class IntervalRangeSearch<T extends Comparable<T>, Value> extends
     RangeSearch<Interval<T>, Value> {
     
