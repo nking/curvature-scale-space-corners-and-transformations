@@ -335,12 +335,9 @@ public class PartialShapeMatcher {
    
             Integer replaced = rt.put(interval, Integer.valueOf(i));
 
-log.info("i=" + i + " offset=" + offset + " store=" + interval
-+ " tree.n=" + rt.size() + " inserted=" + (replaced == null));
-            
             if (replaced != null) {
                 
-                // existing interval.  handle the merge
+                // existing interval, so merge
                 
                 int mergeIntoIdx = replaced.intValue();
                 if (collisionMap.containsKey(mergeIntoIdx)) {
@@ -348,9 +345,7 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
                 }
                 collisionMap.put(i, mergeIntoIdx);
                 rmSet.add(i);
-                
-                log.info("merging " + i + " w/ index=" + mergeIntoIdx);
-                
+                                
                 /*                
                 collision with "replaced" and "i"
                    - merge i with mmd[mergeIntoIdx]
@@ -598,12 +593,16 @@ log.info("i=" + i + " offset=" + offset + " store=" + interval
             count++;
         }
         assert(count == nTot);      
-                    
-        mmd1.print("mmd1 before condense");
+            
+        if (debug) {        
+            mmd1.print("mmd1 before condense");
+        }
         
         mmd1 = condense(comb, n1, n2);
             
-        mmd1.print("mmd1 after condense");
+        if (debug) {
+            mmd1.print("mmd1 after condense");
+        }
         
         return mmd1;
     }
