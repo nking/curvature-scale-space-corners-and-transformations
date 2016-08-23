@@ -1,5 +1,8 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.Misc;
@@ -8,12 +11,15 @@ import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
+import algorithms.util.ResourceFinder;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertTrue;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import thirdparty.edu.princeton.cs.algs4.Interval;
@@ -54,7 +60,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void testMatch2() throws Exception {
+    public void testScissorsMatch0() throws Exception {
 
         // 60
         PairIntArray p = getScissors1();
@@ -103,7 +109,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void testMatch3() throws Exception {
+    public void testScissorsMatch16() throws Exception {
 
         // rotate points p so that start points are
         // different and assert that wrap around is
@@ -152,6 +158,130 @@ public class PartialShapeMatcherTest extends TestCase {
 
         assertTrue(Math.abs(result.getOriginalOffset() - 16) < 3);
         assertTrue(result.getFractionOfWhole() > 0.3);
+    }
+    
+    public void testAndroidGingerbreadSameScale() throws Exception {
+
+        String fileName0
+            = "android_statues_03_sz1_mask_small.png";
+        int idx = fileName0.lastIndexOf(".");
+        String fileName0Root = fileName0.substring(0, idx);
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+
+        PairIntArray p = extractOrderedBoundary(img0);
+        plot(p, 100);
+
+        String fileName1 = "";
+
+        for (int i = 0; i < 4; ++i) {
+
+            switch(i) {
+                case 0: {
+                    fileName1
+                        = "android_statues_01_sz1_mask_small.png";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02_sz1_mask_small.png";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03_sz1_mask_small.png";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "android_statues_04_sz1_mask_small.png";
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            PairIntArray q = extractOrderedBoundary(img);
+            plot(q, (i+1)*100 + 1);
+
+            log.info("matching " + fileName0Root
+            + " to " + fileName1Root + " (" + p.getN()
+            + " points to " + q.getN() + " points");
+
+            int dp = 1;
+
+            PartialShapeMatcher matcher =
+                new PartialShapeMatcher();
+            matcher.setToDebug();
+            matcher.overrideSamplingDistance(dp);
+
+            PartialShapeMatcher.Result result = matcher.match(p, q);
+
+            assertNotNull(result);
+
+            log.info("RESULTS=" + fileName1Root + " : " +
+                result.toString());
+
+            CorrespondencePlotter plotter = new
+                CorrespondencePlotter(p, q);
+
+            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                int idx1 = result.getIdx1(ii);
+                int idx2 = result.getIdx2(ii);
+                int x1 = p.getX(idx1);
+                int y1 = p.getY(idx1);
+                int x2 = q.getX(idx2);
+                int y2 = q.getY(idx2);
+                //System.out.println(String.format(
+                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                        0);
+                }
+            }
+            String filePath = plotter.writeImage("_" +
+                    fileName1Root + "_corres");
+
+            int expOffset = 0;
+            float expFrac = 0.4f;
+            switch (i) {
+                case 0:
+                    expOffset = 217;
+                    break;
+                case 1:
+                    expOffset = 112;
+                    break;
+                case 2:
+                    expOffset = 0;
+                    expFrac = 1.0f;
+                    break;
+                case 3:
+                    expOffset = 173;//168
+                    break;
+                default:
+                    break;
+            }
+
+            int diffOff = Math.abs(result.getOriginalOffset() -
+                expOffset);
+            expFrac /= (float)dp;
+
+            System.out.println("diffOff=" + diffOff); 
+
+            assertTrue(Math.abs(result.getOriginalOffset() -
+                expOffset) < 6);
+            assertTrue(result.getFractionOfWhole() >= expFrac);
+        }
+    }
+    
+    public void testAndroidGingerbreadDiffScale() throws Exception {
+        // not yet impl
     }
     
     public void testRangeSearch() {
@@ -375,6 +505,29 @@ public class PartialShapeMatcherTest extends TestCase {
             x, y, x, y, "");
 
         plot.writeFile(fn);
+    }
+
+    private PairIntArray extractOrderedBoundary(ImageExt image) {
+
+        GreyscaleImage img = image.copyToGreyscale();
+
+        Set<PairInt> blob = new HashSet<PairInt>();
+        for (int i = 0; i < img.getNPixels(); ++i) {
+            if (img.getValue(i) > 0) {
+                int x = img.getCol(i);
+                int y = img.getRow(i);
+                blob.add(new PairInt(x, y));
+            }
+        }
+
+        ImageProcessor imageProcessor =
+            new ImageProcessor();
+
+        PairIntArray ordered =
+            imageProcessor.extractSmoothedOrderedBoundary(
+            blob);
+
+        return ordered;
     }
 
 }

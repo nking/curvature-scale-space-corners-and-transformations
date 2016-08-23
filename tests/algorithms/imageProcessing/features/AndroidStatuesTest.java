@@ -382,6 +382,12 @@ public class AndroidStatuesTest extends TestCase {
                  (might need to add descriptors, the
                  color or gradient too, hopefully not)
             */
+            
+            // NOTE the shape matching portion of this
+            // test is in PartialShapeMatcher now,
+            // but is left here also while stepping
+            // through the identification using 
+            //  super pixels + aggregation + partial shape matching
 
             PairIntArray q = extractOrderedBoundary(img);
             plot(q, (i+1)*100 + 1);
