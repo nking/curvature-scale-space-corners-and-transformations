@@ -479,6 +479,65 @@ public class AndroidStatuesTest extends TestCase {
 
         }
     }
+    
+    public void estMkImgs() throws Exception {
+
+        String fileName1 = "";
+        
+        for (int i = 0; i < 4; ++i) {
+
+            switch(i) {
+                case 0: {
+                    fileName1
+                        = "android_statues_01.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02.jpg";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03.jpg";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "android_statues_04.jpg";
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            int w1 = img.getWidth();
+            int h1 = img.getHeight();
+
+            int maxDimension = 512;
+            int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
+                (float) h1 / maxDimension));
+
+            ImageProcessor imageProcessor = new ImageProcessor();
+            img = imageProcessor.binImage(img, binFactor1);
+            
+            int nClusters = 200;//100;
+            //int clrNorm = 5;
+            SLICSuperPixels slic
+                = new SLICSuperPixels(img, nClusters);
+            slic.calculate();
+            int[] labels = slic.getLabels();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
+            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
+            img = ImageIOHelper.readImageExt(filePath1);
+            img = imageProcessor.binImage(img, binFactor1);
+            MiscDebug.writeImage(img,  "_512_img_" + fileName1Root);
+        }
+    }
 
     public void estColorLayout() throws Exception {
 
