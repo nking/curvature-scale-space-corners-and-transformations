@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -1237,24 +1238,24 @@ public class PartialShapeMatcher {
 
         int[] startStopI = new int[2];
 
-        for (int i = 1; i < results.size(); ++i) {
-            
+        for (int i = 0; i < results.size(); ++i) {
+
             Result result = results.get(i);
-            
+
             TreeMap<Integer, Integer> valueIdx1Map = new
                 TreeMap<Integer, Integer>();
-            
+
             PairIntArray gaps = result
                 .findGapRangesDescBySize(minGapSize, valueIdx1Map);
-            
+
             if (gaps.getN() == 0) {
                 continue;
             }
-            
+
             for (int j = (i + 1); j < mmd2.length(); ++j) {
                 int s0 = mmd2.getStartIMinusBlock(j);
                 int s1 = mmd2.mmd.stopIs[j];
-                
+
                 int mOffset = mmd2.getOffset(j);
                 boolean didAdd = false;
                 for (int g = 0; g < gaps.getN(); ++g) {
@@ -1273,21 +1274,37 @@ public class PartialShapeMatcher {
                     // test whether each point in startStopI
                     // range is between the idx1 and idx2 points
                     // surrounding that gap
-                    
-                    Integer preGap1 = valueIdx1Map.floorEntry(
-                        Integer.valueOf(startStopI[0])).getValue();
-                    Integer postGap1 = valueIdx1Map.ceilingEntry(
-                        Integer.valueOf(startStopI[1])).getValue();
-                
-                    int preGapIdx1 = result.getIdx1(preGap1.intValue());
-                    int preGapIdx2 = result.getIdx2(preGap1.intValue());
 
-                    int postGapIdx1 = result.getIdx1(postGap1.intValue());
-                    int postGapIdx2 = result.getIdx2(postGap1.intValue());
+                    Entry<Integer, Integer> ePre1 = valueIdx1Map.floorEntry(
+                        Integer.valueOf(startStopI[0]));
+                    Entry<Integer, Integer> ePost1 = valueIdx1Map.ceilingEntry(
+                        Integer.valueOf(startStopI[1]));
+
+                    Integer preGap1, postGap1;
+                    int preGapIdx1, preGapIdx2;
+                    int postGapIdx1, postGapIdx2;
+                    if (ePre1 == null) {
+                        preGap1 = null;
+                        preGapIdx1 = -1;
+                        preGapIdx2 = -1;
+                    } else {
+                        preGap1 = ePre1.getValue();
+                        preGapIdx1 = result.getIdx1(preGap1.intValue());
+                        preGapIdx2 = result.getIdx2(preGap1.intValue());
+                    }
+                    if (ePost1 == null) {
+                        postGap1 = null;
+                        postGapIdx1 = -1;
+                        postGapIdx2 = -1;
+                    } else {
+                        postGap1 = ePost1.getValue();
+                        postGapIdx1 = result.getIdx1(postGap1.intValue());
+                        postGapIdx2 = result.getIdx2(postGap1.intValue());
+                    }
 
                     Set<PairInt> cwConsistent =
                         filterForClockwiseConsistent(
-                            mOffset, startStopI, result.n1, result.n2, 
+                            mOffset, startStopI, result.n1, result.n2,
                             preGapIdx1, preGapIdx2,
                             postGapIdx1, postGapIdx2);
 
@@ -1310,7 +1327,7 @@ public class PartialShapeMatcher {
                 }
             }
         }
-        
+
         // TODO: consider recalculting the chord sums
         //   and sorting for top item by Salukwdze dist
 
@@ -1446,7 +1463,7 @@ public class PartialShapeMatcher {
          * lookups).
          * @param minGapSize
          * @param outputValueIdx1Map
-         * @return 
+         * @return
          */
         PairIntArray findGapRanges(int minGapSize,
             TreeMap<Integer, Integer> outputValueIdx1Map) {
@@ -2521,27 +2538,43 @@ public class PartialShapeMatcher {
 
         return s1;
     }
-    
+
     private Set<PairInt> filterForClockwiseConsistent(
-        int offset, int[] startStopI, int n1, int n2, 
+        int offset, int[] startStopI, int n1, int n2,
         int preGapIdx1, int preGapIdx2,
         int postGapIdx1, int postGapIdx2) {
-        
+
         Set<PairInt> set = new HashSet<PairInt>();
-        
+
+        // put the idx2 indexes in reference frame of
+        //   always being larger than idx1, which means
+        //   adding n2 at times.
+
         int prev1 = preGapIdx1;
         int prev2 = preGapIdx2;
+        if (prev2 < prev1) {
+            prev2 += n2;
+        }
         for (int idx1 = startStopI[0]; idx1 <= startStopI[1]; ++idx1) {
             int idx2 = idx1 + offset;
-            if (idx2 >= n2) {
-                idx2 -= n2;
+            if (idx2 < idx1) {
+                idx2 += n2;
             }
             log.info(String.format(
-            "prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d", 
-             prev1, prev2, idx1, idx2, postGapIdx1, postGapIdx2));
-            // paused here
+            "offset=%d prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d",
+             offset, prev1, prev2, idx1, idx2, postGapIdx1, postGapIdx2));
+
+             if ((idx1 > prev1 || prev1 == -1)
+                 && (idx1 < postGapIdx1 || postGapIdx1 == -1)
+                 && (idx2 > prev2 || prev2 == -1)
+                 && (idx2 < postGapIdx2 || postGapIdx1 == -1)) {
+                 if (idx2 >= n2) {
+                     n2 -= n2;
+                 }
+                 set.add(new PairInt(idx1, idx2));
+             }
         }
-        
+
         return set;
     }
 }
