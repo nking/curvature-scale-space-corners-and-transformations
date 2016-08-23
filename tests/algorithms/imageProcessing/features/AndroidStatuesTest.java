@@ -390,10 +390,12 @@ public class AndroidStatuesTest extends TestCase {
             + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
 
+            int dp = 2;
+
             PartialShapeMatcher matcher =
                 new PartialShapeMatcher();
             matcher.setToDebug();
-            matcher.overrideSamplingDistance(2);
+            matcher.overrideSamplingDistance(dp);
 
             PartialShapeMatcher.Result result = matcher.match(p, q);
 
@@ -442,6 +444,12 @@ public class AndroidStatuesTest extends TestCase {
                 default:
                     break;
             }
+
+            int diffOff = Math.abs(result.getOriginalOffset() -
+                expOffset);
+            expFrac /= (float)dp;
+
+            System.out.println("diffOff=" + diffOff); 
 
             assertTrue(Math.abs(result.getOriginalOffset() -
                 expOffset) < 6);

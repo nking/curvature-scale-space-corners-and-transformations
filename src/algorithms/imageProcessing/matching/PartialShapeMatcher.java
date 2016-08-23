@@ -83,22 +83,6 @@ import thirdparty.ods.XFastTrie;
  */
 public class PartialShapeMatcher {
 
-    /*
-    TODO:
-    The scissors case shows that the articulated solution
-    still needs improvement, specifically the method
-    combineBestDisjoint(...).
-    Also, cases that have projections that are not
-    euclidean need improvements in the addByTransformation
-    method.
-
-    when articulated works well, need to offer an
-    option to perform and save results before and
-    after the articulated additions so that user
-    can examine both and decide between them.
-
-    */
-
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -156,9 +140,10 @@ public class PartialShapeMatcher {
       for scale, need to do so outside of this method, that is, apply
       scale changes to the datasets before use of this method..
 
-     NOTE: You may want to pre-process the shape points by using
+     <em>NOTE: You may want to pre-process the shape points by using
      PairIntArray p = ImageProcessor.extractSmoothedOrderedBoundary
-
+     </em>
+     
      @param p
      @param q
     */
@@ -199,7 +184,8 @@ public class PartialShapeMatcher {
           
         // TODO: consider matching the points in the dp size gaps.
        
-        Result r = new Result(p.getN(), q.getN(), rSub.origOffset);
+        Result r = new Result(p.getN(), q.getN(), 
+            dp*rSub.origOffset);
         for (int i = 0; i < rSub.idx1s.size(); ++i) {
             int idx1 = rSub.idx1s.get(i);
             int idx2 = rSub.idx2s.get(i);
@@ -880,11 +866,8 @@ public class PartialShapeMatcher {
                 mmd.startRs[i] = rUsed[0];
                 readI = mmd.startIs[i] - mmd.startRs[i];
             }
-
-            //TODO: add a read forward from stopI + block size
-
         }
-
+        
         return mmd;
     }
 
