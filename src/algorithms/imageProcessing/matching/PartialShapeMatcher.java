@@ -28,7 +28,6 @@ import gnu.trove.set.hash.TIntHashSet;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +41,6 @@ import java.util.logging.Logger;
 import thirdparty.HungarianAlgorithm;
 import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
-import thirdparty.ods.XFastTrie;
 
 /**
  NOTE: NOT READY FOR USE YET.
@@ -91,8 +89,13 @@ public class PartialShapeMatcher {
      * points.
      * dp is the set distance between sampling points.
        The authors use 3 as an example.
+       Unless user specifies, setToUseSameNumberOfPoints,
+       the equidistant and possibly uneven number of points
+       are used instead.
      */
     protected int dp = 3;
+
+    private boolean useSameNumberOfPoints = false;
 
     private boolean srchForArticulatedParts = false;
 
@@ -112,6 +115,17 @@ public class PartialShapeMatcher {
 
     public void setToArticulatedMatch() {
         srchForArticulatedParts = true;
+    }
+
+    /**
+    if this is set, the same number of points
+    are used to sample both shapes.
+    The number of points is min(p.n, q.n)/dp.
+    You can change dp from the default of
+    3 by using the method overrideSamplingDistance(dp)
+    */
+    public void setToUseSameNumberOfPoints() {
+        useSameNumberOfPoints = true;
     }
 
     public void overrideSamplingDistance(int d) {
@@ -156,6 +170,10 @@ public class PartialShapeMatcher {
             throw new IllegalArgumentException("p and q must "
             + " have at least dp*2 points = " + (dp * 2));
         }
+
+        if (useSameNumberOfPoints) {
+            return matchSameNumber(p, q);
+        }
         
         if (dp == 1) {
             return match0(p, q);
@@ -194,6 +212,60 @@ public class PartialShapeMatcher {
         }
         r.chordDiffSum = rSub.chordDiffSum;
         
+        return r;
+    }
+
+    private Result matchSameNumber(PairIntArray p, PairIntArray q) throws
+        NoSuchAlgorithmException {
+
+        log.info("p.n=" + p.getN() + " q.n=" + q.getN());
+
+        if (p.getN() < 2 || q.getN() < 2) {
+            throw new IllegalArgumentException("p and q must "
+            + " have at least dp*2 points = " + (dp * 2));
+        }
+
+        int nSampl = Math.min(p.getN(), q.getN())/dp;
+
+        PairIntArray pSub = new PairIntArray(nSampl);
+        PairIntArray qSub = new PairIntArray(nSampl);
+
+        int pDp = p.getN()/nSampl;
+        int qDp = q.getN()/nSampl;
+    
+        for (int i = 0; i < p.getN(); i += pDp) {
+            pSub.add(p.getX(i), p.getY(i));
+        }
+        
+        for (int i = 0; i < q.getN(); i += qDp) {
+            qSub.add(q.getX(i), q.getY(i));
+        }
+        
+        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        
+        Result rSub = match0(pSub, qSub);
+        
+        if (rSub == null) {
+            return null;
+        }
+        
+        // -- put results back into frame of p and q --
+          
+        // TODO: consider matching the points in the dp size gaps.
+       
+        // unrealistic value to ensure it's not used.
+        int offset = Integer.MAX_VALUE;
+
+        Result r = new Result(p.getN(), q.getN(), offset);
+            
+        for (int i = 0; i < rSub.idx1s.size(); ++i) {
+            int idx1 = rSub.idx1s.get(i);
+            int idx2 = rSub.idx2s.get(i);
+            r.idx1s.add(pDp * idx1);
+            r.idx2s.add(qDp * idx2);
+        }
+        r.chordDiffSum = rSub.chordDiffSum;
+
         return r;
     }
         
