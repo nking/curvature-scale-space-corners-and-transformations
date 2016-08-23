@@ -282,6 +282,9 @@ public class PartialShapeMatcher {
 
         MergedMinDiffs mergedMinDiffs = null;
 
+        // runtime complexity is rs.length * O(N * log_2(N))
+        // where N is merged min diffs length which is usally
+        // much less than p.getN().
         for (int r : rs) {
 
             if (r < 2) {
@@ -309,7 +312,26 @@ public class PartialShapeMatcher {
         // main offset is now the top item
         // when sequences are sorted by
         // salukwzde distance.
-
+        
+        // -- runtime complexity below here: --
+        //    a sort of merged min diffs
+        //       gives a runtime complexity of O(N*log_2(N))
+        //       where N is the length of merged min diffs
+        //    articulated search depends upon 
+        //       occlusion which makes more gaps
+        //       in the matched list.
+        //       topK * nGaps * merged min diffs.length
+        //       TODO: This could be improved by limiting 
+        //       the length of merged min diffs searched.
+        //    euclidean transformations:
+        //        roughly topK * number of points in matched list 
+        //            * nRANSAC iterations.
+        //        since topK is one, this is essentially linear
+        //        dependence on number of matched points.
+        //        the matching of unmatched has runtime complexity
+        //        that is O(N * log_2(N)) where N is the number
+        //        of unmatched points in p
+        
         Result best;
 
         if (performEuclidTrans) {
@@ -381,6 +403,14 @@ public class PartialShapeMatcher {
         return best;
     }
 
+    /**
+     * worse case runtime complexity is O(N ( log_2(N)) where
+     *  N is mmd.length()
+     * @param mmd
+     * @param n1
+     * @param n2
+     * @return 
+     */
     private MergedMinDiffs condense(MergedMinDiffs mmd,
         int n1, int n2) {
 
@@ -680,6 +710,15 @@ public class PartialShapeMatcher {
         }
     }
 
+    /**
+     * worse case runtime complexity is O(N ( log_2(N)) where
+     *  N is mmd.length() and mmd.length() is usually much
+     * smaller than p.getN().
+     * @param md
+     * @param mmd1
+     * @param mmd2
+     * @return 
+     */
     private MergedMinDiffs merge(float[][][] md,
         MergedMinDiffs mmd1, MergedMinDiffs mmd2) {
 
@@ -718,6 +757,14 @@ public class PartialShapeMatcher {
         return mmd1;
     }
 
+    /**
+     * runtime complexity is O(mins.idxs0.length)
+     * 
+     * @param md
+     * @param r
+     * @param thresh
+     * @return 
+     */
     protected MergedMinDiffs extractSequences(float[][][] md,
         int r, float thresh) {
 
