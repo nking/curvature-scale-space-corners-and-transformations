@@ -43,7 +43,9 @@ import thirdparty.edu.princeton.cs.algs4.Interval;
 import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
 /**
- NOTE: NOT READY FOR USE YET.
+ NOTE: NOT READY FOR USE YET... still testing.
+
+<pre>
 
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
@@ -64,10 +66,26 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
 
        * point sampling:
          (a) same number of points over each contour
-             - can handle similarity transforms, but not occlusion
+             - can handle similarity transforms.
+               disadvantage is that it is less able to
+               handle occlusion or extraneous shapes in
+               the shape, though the euclidean projection
+               used within, works around this.
+             - to use in this mode:
+                   setToUseSameNumberOfPoints()
+                      and the number of points can be set 
+                      using dp, with nSample = min(p.n, q.n)/dp
+                      and
+                   overrideSamplingDistance(dp)
          (b) OR, equidistant points
-             - can handle occlusion, but not scale
-       ** equidistant is used here.
+             - can handle occlusion.
+               disadvantage in matching when there are
+               scale differences between the shapes is
+               handled in part by an internal euclidean
+               projection.
+             - the default sampling of pixels is 3.
+               this can be changed using
+                   overrideSamplingDistance(dp)
 
        The runtime complexity for building the integral
        image is O(m*n) where n and m are the number of sampled
@@ -76,8 +94,9 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
        The runtime complexity for the search of the
        integral image of summed differences and analysis
        will be added here:
+ </pre>
 
- * @author nichole
+  @author nichole
  */
 public class PartialShapeMatcher {
 
@@ -88,10 +107,7 @@ public class PartialShapeMatcher {
      * or one can choose a set distance between sampling
      * points.
      * dp is the set distance between sampling points.
-       The authors use 3 as an example.
-       Unless user specifies, setToUseSameNumberOfPoints,
-       the equidistant and possibly uneven number of points
-       are used instead.
+       The authors of the paper use 3 as an example.
      */
     protected int dp = 3;
 
@@ -122,7 +138,7 @@ public class PartialShapeMatcher {
     are used to sample both shapes.
     The number of points is min(p.n, q.n)/dp.
     You can change dp from the default of
-    3 by using the method overrideSamplingDistance(dp)
+    3 by using the method overrideSamplingDistance(dp).
     */
     public void setToUseSameNumberOfPoints() {
         useSameNumberOfPoints = true;
@@ -138,7 +154,7 @@ public class PartialShapeMatcher {
     }
 
     /**
-      NOT READY FOR USE.
+      NOT READY FOR USE... still testing...
 
       A shape is defined as the clockwise ordered sequence
       of points P_1...P_N
@@ -200,10 +216,12 @@ public class PartialShapeMatcher {
         
         // -- put results back into frame of p and q --
           
-        // TODO: consider matching the points in the dp size gaps.
+        // TODO: consider an option to further match the
+        // points between correspondence if dp > 1
        
         Result r = new Result(p.getN(), q.getN(), 
             dp*rSub.origOffset);
+
         for (int i = 0; i < rSub.idx1s.size(); ++i) {
             int idx1 = rSub.idx1s.get(i);
             int idx2 = rSub.idx2s.get(i);
@@ -251,8 +269,6 @@ public class PartialShapeMatcher {
         
         // -- put results back into frame of p and q --
           
-        // TODO: consider matching the points in the dp size gaps.
-       
         // unrealistic value to ensure it's not used.
         int offset = Integer.MAX_VALUE;
 
@@ -618,7 +634,6 @@ public class PartialShapeMatcher {
         int s0 = gaps.getX(gapIndex);
         int s1 = gaps.getY(gapIndex);
 
-        //      s0  s1
         if (startStopI[1] < s0 || startStopI[0] > s1) {
             startStopI[0] = -1;
             startStopI[1] = -1;

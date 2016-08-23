@@ -213,7 +213,7 @@ public class PartialShapeMatcherTest extends TestCase {
             + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
 
-            int dp = 1;
+            int dp = 2;
 
             PartialShapeMatcher matcher =
                 new PartialShapeMatcher();
@@ -281,7 +281,112 @@ public class PartialShapeMatcherTest extends TestCase {
     }
     
     public void testAndroidGingerbreadDiffScale() throws Exception {
-        // not yet impl
+
+        SIGMA sigma = SIGMA.ONE;
+
+        String fileName0
+            = "android_statues_04_sz2_mask2_small.png";
+        int idx = fileName0.lastIndexOf(".");
+        String fileName0Root = fileName0.substring(0, idx);
+        String filePath0 = ResourceFinder
+            .findFileInTestResources(fileName0);
+        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+
+        PairIntArray p = extractOrderedBoundary(img0, sigma);
+        plot(p, 100);
+
+        String fileName1 = "";
+
+        for (int i = 0; i < 4; ++i) {
+
+            switch(i) {
+                case 0: {
+                    fileName1
+                        = "android_statues_01_sz2_mask_small.png";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02_sz2_mask_small.png";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03_sz2_mask_small.png";
+                    break;
+                }
+                case 3: {
+                    fileName1 = "android_statues_04_sz2_mask_small.png";
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            PairIntArray q = extractOrderedBoundary(img, sigma);
+            plot(q, (i+1)*100 + 1);
+
+            log.info("matching " + fileName0Root
+            + " to " + fileName1Root + " (" + p.getN()
+            + " points to " + q.getN() + " points");
+
+            int dp = 1;
+            PartialShapeMatcher matcher =
+                new PartialShapeMatcher();
+            matcher.setToDebug();
+            matcher.setToUseSameNumberOfPoints();
+            matcher.overrideSamplingDistance(dp);
+
+            PartialShapeMatcher.Result result = matcher.match(p, q);
+
+            assertNotNull(result);
+
+            log.info("RESULTS=" + fileName1Root + " : " +
+                result.toString());
+
+            CorrespondencePlotter plotter = new
+                CorrespondencePlotter(p, q);
+
+            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
+                int idx1 = result.getIdx1(ii);
+                int idx2 = result.getIdx2(ii);
+                int x1 = p.getX(idx1);
+                int y1 = p.getY(idx1);
+                int x2 = q.getX(idx2);
+                int y2 = q.getY(idx2);
+                //System.out.println(String.format(
+                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+
+                if ((ii % 4) == 0) {
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
+                        0);
+                }
+            }
+            String filePath = plotter.writeImage("_" +
+                    fileName1Root + "_corres");
+
+            /*
+            float expFrac = 0.4f;
+            switch (i) {
+                case 0:
+                    break;
+                case 1:
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    break;
+                default:
+                    break;
+            }
+            assertTrue(result.getFractionOfWhole() >= expFrac);
+            */
+        }
     }
     
     public void testRangeSearch() {
@@ -508,6 +613,11 @@ public class PartialShapeMatcherTest extends TestCase {
     }
 
     private PairIntArray extractOrderedBoundary(ImageExt image) {
+        return extractOrderedBoundary(image, SIGMA.TWO);
+    }
+
+    private PairIntArray extractOrderedBoundary(ImageExt image,
+        SIGMA sigma) {
 
         GreyscaleImage img = image.copyToGreyscale();
 
@@ -525,7 +635,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
         PairIntArray ordered =
             imageProcessor.extractSmoothedOrderedBoundary(
-            blob);
+            blob, sigma);
 
         return ordered;
     }
