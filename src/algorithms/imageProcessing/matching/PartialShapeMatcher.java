@@ -318,12 +318,10 @@ public class PartialShapeMatcher {
 
             // solve for transformation, add points near projection,
             // return sorted solutions, best is at top.
-            // note that RANSAC has been used remove outliers
-            // from the already matched points too and those
-            // are not tracked, just removed.
+            // note that RANSAC has been used to remove outliers
+            // from the already matched points too
 
-            // the added points are additionally added to this
-            // separate list
+            // the added points from the projection
             List<PairIntArray> addedPoints =
                 new ArrayList<PairIntArray>(topK);
 
@@ -339,6 +337,7 @@ public class PartialShapeMatcher {
             }
 
             // -- results is now a list of size .leq. topK --
+            //    and the chord diff sums have been updated
 
             if (srchForArticulatedParts) {
                 //NOTE: results is derived from the topK of
@@ -352,22 +351,24 @@ public class PartialShapeMatcher {
                     best = results.get(0);
                 }
             }
-            if (best != null) {
-                populateWithChordDiffs(best, md, n1, n2);
-            }
-
+            
         } else {
-
+            
+            mergedMinDiffs2.sortBySalukwdzeDistance();
+            
             if (srchForArticulatedParts) {
-                //NOTE: to combine best disjoint, need topK > 1
                 List<Result> results =
-                    createSortedResults(mergedMinDiffs2, n1, n2, topK);
+                    createResults(mergedMinDiffs2, n1, n2, topK);
                 best = combineBestDisjoint(results, md,
                      mergedMinDiffs2);
-                populateWithChordDiffs(best, md, n1, n2);
             } else {
-                mergedMinDiffs2.sortBySalukwdzeDistance();
                 best = createResult(mergedMinDiffs2, 0);
+            }
+        }
+        
+        if (best != null) {
+            if (best.chordsNeedUpdates) {
+                populateWithChordDiffs(best, md, n1, n2);
             }
         }
 
@@ -1179,10 +1180,10 @@ public class PartialShapeMatcher {
             int idx1 = result.getIdx1(i);
             int idx2 = result.getIdx2(i);
 
-            float d = read(md, idx1, idx2);
-
-            result.addToChordDifferenceSum(d);
+            result.distSum += read(md, idx1, idx2);
         }
+        
+        result.chordsNeedUpdates = false;
     }
 
     /**
@@ -1369,6 +1370,7 @@ public class PartialShapeMatcher {
                             result.idx2s.add(p.getY());
                         }
                         didAdd = true;
+                        result.chordsNeedUpdates = true;
                     }
                 }
                 if (didAdd) {
@@ -1391,6 +1393,7 @@ public class PartialShapeMatcher {
     public static class Result {
         private double distSum = 0;
         private double chordDiffSum = 0;
+        private boolean chordsNeedUpdates = true;
         private TIntList idx1s = new TIntArrayList();
         private TIntList idx2s = new TIntArrayList();
         private final int n1;
@@ -1600,17 +1603,12 @@ public class PartialShapeMatcher {
         }
     }
 
-    private List<Result> createSortedResults(
+    private List<Result> createResults(
         MergedMinDiffs2 mmd2, int n1, int n2, int topK) {
 
         if (mmd2.length() == 0) {
             return null;
         }
-
-        mmd2.sortBySalukwdzeDistance();
-
-        //NOTE: at this stage, the top item in sequences
-        // is the correct answer in tests so far
 
         if (topK > mmd2.length()) {
             topK = mmd2.length();
