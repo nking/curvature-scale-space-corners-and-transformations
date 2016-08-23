@@ -154,7 +154,7 @@ public class PartialShapeMatcherTest extends TestCase {
         assertTrue(result.getFractionOfWhole() > 0.3);
     }
     
-    public void testRangeSearh() {
+    public void testRangeSearch() {
         
         IntervalRangeSearch<Integer, Integer> rt =
             new IntervalRangeSearch<Integer, Integer>();

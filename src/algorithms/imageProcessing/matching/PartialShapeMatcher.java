@@ -108,7 +108,7 @@ public class PartialShapeMatcher {
      * dp is the set distance between sampling points.
        The authors use 3 as an example.
      */
-    protected int dp = 5;
+    protected int dp = 3;
 
     private boolean srchForArticulatedParts = false;
 
@@ -169,9 +169,61 @@ public class PartialShapeMatcher {
 
         if (p.getN() < 2 || q.getN() < 2) {
             throw new IllegalArgumentException("p and q must "
-            + " have at least 2 points");
+            + " have at least dp*2 points = " + (dp * 2));
         }
+        
+        if (dp == 1) {
+            return match0(p, q);
+        }
+     
+        PairIntArray pSub = new PairIntArray(p.getN()/dp);
+        PairIntArray qSub = new PairIntArray(q.getN()/dp);
+    
+        for (int i = 0; i < p.getN(); i += dp) {
+            pSub.add(p.getX(i), p.getY(i));
+        }
+        
+        for (int i = 0; i < q.getN(); i += dp) {
+            qSub.add(q.getX(i), q.getY(i));
+        }
+        
+        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        
+        Result rSub = match0(pSub, qSub);
+        
+        if (rSub == null) {
+            return null;
+        }
+        
+        // -- put results back into frame of p and q --
+          
+        // TODO: consider matching the points in the dp size gaps.
+       
+        Result r = new Result(p.getN(), q.getN(), rSub.origOffset);
+        for (int i = 0; i < rSub.idx1s.size(); ++i) {
+            int idx1 = rSub.idx1s.get(i);
+            int idx2 = rSub.idx2s.get(i);
+            r.idx1s.add(dp * idx1);
+            r.idx2s.add(dp * idx2);
+        }
+        r.chordDiffSum = rSub.chordDiffSum;
+        
+        return r;
+    }
+        
+    private Result match0(PairIntArray p, PairIntArray q) throws
+        NoSuchAlgorithmException {
 
+        if (p == null || p.getN() < 2) {
+            throw new IllegalArgumentException("p must have at "
+                + "least 2 points");
+        }
+        
+        if (q == null || q.getN() < 2) {
+            throw new IllegalArgumentException("q must have at "
+                + "least 2 points");
+        }
+        
         int diffN = p.getN() - q.getN();
 
         // --- make difference matrices ---
@@ -275,7 +327,7 @@ public class PartialShapeMatcher {
             List<PairIntArray> addedPoints =
                 new ArrayList<PairIntArray>(topK);
 
-            //TODO: adjust this for dp
+            //TODO: adjust this to scale by dp
             int offsetTol = 5;
 
             if (diffN <= 0) {
@@ -942,6 +994,8 @@ public class PartialShapeMatcher {
     */
     protected float[][] createDescriptorMatrix(PairIntArray p,
         int n) {
+        
+        int dp1 = 1;
 
         float[][] a = new float[n][];
         for (int i = 0; i < n; ++i) {
@@ -957,11 +1011,11 @@ public class PartialShapeMatcher {
         log.fine("n=" + n);
 
         for (int i1 = 0; i1 < n; ++i1) {
-            int start = i1 + 1 + dp;
-            for (int ii = start; ii < (start + n - 1 - dp); ++ii) {
+            int start = i1 + 1 + dp1;
+            for (int ii = start; ii < (start + n - 1 - dp1); ++ii) {
                 int i2 = ii;
 
-                int imid = i2 - dp;
+                int imid = i2 - dp1;
                 // wrap around
                 if (imid > (n - 1)) {
                     imid -= n;
@@ -2560,19 +2614,20 @@ public class PartialShapeMatcher {
             if (idx2 < idx1) {
                 idx2 += n2;
             }
-            log.info(String.format(
-            "offset=%d prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d",
-             offset, prev1, prev2, idx1, idx2, postGapIdx1, postGapIdx2));
 
-             if ((idx1 > prev1 || prev1 == -1)
-                 && (idx1 < postGapIdx1 || postGapIdx1 == -1)
-                 && (idx2 > prev2 || prev2 == -1)
-                 && (idx2 < postGapIdx2 || postGapIdx1 == -1)) {
-                 if (idx2 >= n2) {
-                     n2 -= n2;
-                 }
-                 set.add(new PairInt(idx1, idx2));
-             }
+            log.fine(String.format(
+                "offset=%d prev1=%d,prev2=%d  test1=%d,test2=%d  post1=%d,post2=%d",
+                offset, prev1, prev2, idx1, idx2, postGapIdx1, postGapIdx2));
+
+            if ((idx1 > prev1 || prev1 == -1)
+                && (idx1 < postGapIdx1 || postGapIdx1 == -1)
+                && (idx2 > prev2 || prev2 == -1)
+                && (idx2 < postGapIdx2 || postGapIdx1 == -1)) {
+                if (idx2 >= n2) {
+                    n2 -= n2;
+                }
+                set.add(new PairInt(idx1, idx2));
+            }
         }
 
         return set;

@@ -14,8 +14,6 @@ import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
 import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
-import algorithms.imageProcessing.matching.Sequence;
-import algorithms.imageProcessing.matching.Sequences;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.TransformationParameters;
@@ -395,7 +393,7 @@ public class AndroidStatuesTest extends TestCase {
             PartialShapeMatcher matcher =
                 new PartialShapeMatcher();
             matcher.setToDebug();
-            matcher.overrideSamplingDistance(1);
+            matcher.overrideSamplingDistance(2);
 
             PartialShapeMatcher.Result result = matcher.match(p, q);
 
