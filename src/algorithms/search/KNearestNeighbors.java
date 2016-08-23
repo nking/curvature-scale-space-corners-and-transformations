@@ -164,7 +164,7 @@ public class KNearestNeighbors {
                     + " x.length=" + x.length);
             }
         }
-        assert(siteIndexesMap.size() == x.length);
+        //assert(siteIndexesMap.size() == x.length);
         
         // retrieve the points from voronoi sites because they are sorted
         n = sites.length;

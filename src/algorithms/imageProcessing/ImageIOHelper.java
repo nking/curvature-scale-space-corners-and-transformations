@@ -932,12 +932,9 @@ public class ImageIOHelper {
         int w = input.getWidth();
         int h = input.getHeight();
 
-        MiscellaneousCurveHelper curveHelper =
-            new MiscellaneousCurveHelper();
-        
         Set<PairInt> output = new HashSet<PairInt>();
         
-        curveHelper.createLinePoints(x1, y1, x2, y2,
+        BresenhamsLine.createLinePoints(x1, y1, x2, y2,
             output);
         
         for (PairInt p : output) {

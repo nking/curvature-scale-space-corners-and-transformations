@@ -4,7 +4,7 @@ package thirdparty.edu.princeton.cs.algs4;
 adapted from http://algs4.cs.princeton.edu/92search/
     copyright for authors Robert Sedgewick and Kevin Wayne
     is GPLV3, http://algs4.cs.princeton.edu/faq/ 
-*  
+*
 * Compilation:  javac RangeSearch.java
  *  Execution:    java RangeSearch < words.txt
  *  
@@ -97,6 +97,12 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     *  randomized insertion
     ***************************************************************************/
     /**
+     * insert interval, but if it intersects with an 
+     * interval already in tree, set the existing value
+     * to the given val, and return the previous value
+     * before the overwrite by val.  If null is returned
+     * from this method, then the insert succeeded,
+     * that is, there were no collisions.
      * 
      * @param key
      * @param val
@@ -275,7 +281,8 @@ public class RangeSearch<Key extends Comparable<Key>, Value>  {
     }
 
     // right rotate
-    private RangeSearchNode<Key, Value> rotR(RangeSearchNode<Key, Value> h) {
+    private RangeSearchNode<Key, Value> rotR(
+        RangeSearchNode<Key, Value> h) {
         RangeSearchNode<Key, Value> x = h.left;
         h.left = x.right;
         x.right = h;

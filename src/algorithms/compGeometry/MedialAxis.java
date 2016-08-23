@@ -3,7 +3,7 @@ package algorithms.compGeometry;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.GraphEdge;
 import algorithms.compGeometry.voronoi.VoronoiFortunesSweep.Site;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.imageProcessing.BresenhamsLine;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.imageProcessing.ZhangSuenLineThinner;
 import algorithms.misc.MiscMath;
@@ -549,10 +549,7 @@ public class MedialAxis {
         if (edgePoints != null) {
             return edgePoints;
         }
-        
-        MiscellaneousCurveHelper curveHelper =
-            new MiscellaneousCurveHelper();
-        
+       
         Set<PairInt> output = new HashSet<PairInt>();
         
         for (GraphEdge edge : edges) {
@@ -562,7 +559,7 @@ public class MedialAxis {
             int x2 = Math.round(edge.x2);
             int y2 = Math.round(edge.y2);
 
-            curveHelper.createLinePoints(x1, y1, x2, y2,
+            BresenhamsLine.createLinePoints(x1, y1, x2, y2,
                 output);
         }
         

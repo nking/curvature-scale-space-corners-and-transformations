@@ -1789,9 +1789,6 @@ public class MiscellaneousCurveHelperTest extends TestCase {
     
     public void testCreateLines() {
         
-        MiscellaneousCurveHelper curveHelper = 
-            new MiscellaneousCurveHelper();
-        
         Set<PairInt> output = new HashSet<PairInt>();
         
         /*
@@ -1803,7 +1800,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         expected.add(new PairInt(3, 3));
         expected.add(new PairInt(3, 4));
         expected.add(new PairInt(3, 5));
-        curveHelper.createLinePoints(3, 3, 3, 5, output);
+        BresenhamsLine.createLinePoints(3, 3, 3, 5, output);
         
         for (PairInt p : output) {
             assertTrue(expected.remove(p));
@@ -1818,7 +1815,7 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         expected.add(new PairInt(3, 3));
         expected.add(new PairInt(4, 3));
         expected.add(new PairInt(5, 3));
-        curveHelper.createLinePoints(3, 3, 5, 3, output);
+        BresenhamsLine.createLinePoints(3, 3, 5, 3, output);
         
         for (PairInt p : output) {
             assertTrue(expected.remove(p));
@@ -1832,9 +1829,10 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         */
         output.clear();
         expected.add(new PairInt(3, 3));
+        expected.add(new PairInt(4, 4));
         expected.add(new PairInt(4, 5));
         expected.add(new PairInt(5, 6));
-        curveHelper.createLinePoints(3, 3, 5, 6, output);
+        BresenhamsLine.createLinePoints(3, 3, 5, 6, output);
         
         for (PairInt p : output) {
             assertTrue(expected.remove(p));
@@ -1848,9 +1846,10 @@ public class MiscellaneousCurveHelperTest extends TestCase {
         */
         output.clear();
         expected.add(new PairInt(3, 6));
+        expected.add(new PairInt(4, 4));
         expected.add(new PairInt(4, 5));
         expected.add(new PairInt(5, 3));
-        curveHelper.createLinePoints(3, 6, 5, 3, output);
+        BresenhamsLine.createLinePoints(3, 6, 5, 3, output);
         
         for (PairInt p : output) {
             assertTrue(expected.remove(p));
