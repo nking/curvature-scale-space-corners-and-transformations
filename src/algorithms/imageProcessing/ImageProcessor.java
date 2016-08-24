@@ -5457,6 +5457,45 @@ if (sum > 511) {
 
         return c;
     }
+    
+    /**
+     * calculate CIE LAB mean and standard deviation of
+     * the mean.
+     * @param input
+     * @param points
+     * @return 
+     */
+    public double[] calculateCIELABStats(ImageExt input, 
+        Set<PairInt> points) {
+
+        int n = points.size();
+        double[] labA = new double[n];
+        double[] labB = new double[n];
+        double[] labL = new double[n];
+
+        int count = 0;
+        for (PairInt p : points) {
+            float[] lab = input.getCIELAB(p.getX(), p.getY());
+            labL[count] = lab[0];
+            labA[count] = lab[1];
+            labB[count] = lab[2];
+            count++;
+        }
+        
+        double[] lAS = MiscMath.getAvgAndStDev(labL);
+        double[] aAS = MiscMath.getAvgAndStDev(labA);
+        double[] bAS = MiscMath.getAvgAndStDev(labB);        
+
+        double[] out = new double[6];
+        out[0] = lAS[0];
+        out[1] = lAS[1];
+        out[2] = aAS[0];
+        out[3] = aAS[1];
+        out[4] = bAS[0];
+        out[5] = bAS[1];
+        
+        return out;
+    }
 
     public int calculateAverageHueAngle(ImageExt input, Set<PairInt> points) {
 

@@ -1,7 +1,15 @@
 package algorithms.imageProcessing.segmentation;
 
+import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.MiscMath;
+import algorithms.util.PairInt;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -52,5 +60,24 @@ public class LabelToColorHelper {
             int label = labels[i];
             img.setRGB(i, (int)rSum[label], (int)gSum[label], (int)bSum[label]);
         }
+    }
+    
+    public static TIntObjectMap<Set<PairInt>> extractLabelPoints(
+        Image img, int[] labels) {
+        
+        TIntObjectMap<Set<PairInt>> out 
+            = new TIntObjectHashMap<Set<PairInt>>();
+        
+        for (int i = 0; i < labels.length; ++i) {
+            int label = labels[i];
+            Set<PairInt> set = out.get(label);
+            if (set == null) {
+                set = new HashSet<PairInt>();
+                out.put(label, set);
+            }
+            set.add(new PairInt(img.getCol(i), img.getRow(i)));
+        }
+        
+        return out;
     }
 }

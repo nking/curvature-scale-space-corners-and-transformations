@@ -2,19 +2,24 @@ package algorithms.imageProcessing.features;
 
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.RotatedOffsets;
+import algorithms.compGeometry.clustering.KMeansPlusPlus;
+import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.GroupPixelColors;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.ImageProcessor.Colors;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.ImageSegmentation.DecimatedData;
 import algorithms.imageProcessing.matching.PartialShapeMatcher;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.SegmentationMergeThreshold;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
+import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
@@ -300,67 +305,151 @@ public class AndroidStatuesTest extends TestCase {
 
     public void testShapeMatcher() throws Exception {
 
+        int maxDimension = 512;
+        int nClusters = 200;
+        //int clrNorm = 5;
+
+        ImageProcessor imageProcessor = new ImageProcessor();        
+        ImageSegmentation imageSegmentation = new
+            ImageSegmentation();
+        
+        String fileNameMask0
+            = "android_statues_03_sz2_mask.png";
+        String filePathMask0 = ResourceFinder
+            .findFileInTestResources(fileNameMask0);
+        ImageExt imgMask0 = ImageIOHelper.readImageExt(filePathMask0);
+        
         String fileName0
-            = "android_statues_03_sz1_mask_small.png";
+            = "android_statues_03.jpg";
         int idx = fileName0.lastIndexOf(".");
         String fileName0Root = fileName0.substring(0, idx);
         String filePath0 = ResourceFinder
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+        int w0 = img0.getWidth();
+        int h0 = img0.getHeight();
+        int binFactor0 = (int) Math.ceil(Math.max(
+            (float) w0 / maxDimension, (float) h0 / maxDimension));
+        img0 = imageProcessor.binImage(img0, binFactor0);
+        
+        assert(img0.getNPixels() == imgMask0.getNPixels());
+        
+        Set<PairInt> shape0 = new HashSet<PairInt>();
+        // multiply img0 by imgMask0 to leave only the pixels
+        // of the model shape in the image.
+        for (int i = 0; i < img0.getNPixels(); ++i) {
+            if (imgMask0.getR(i) == 0) {
+                img0.setRGB(i, 0, 0, 0);
+            } else {
+                shape0.add(new PairInt(img0.getCol(i),
+                   img0.getRow(i)));
+            }
+        }
+        
+        //PairIntArray p = extractOrderedBoundary(imgMask0, SIGMA.ONE);
+        //plot(p, 100);
+        
+        // extract color stats for img0
+        double[] cIELABStats0 = 
+            imageProcessor.calculateCIELABStats(img0, shape0);
 
-        PairIntArray p = extractOrderedBoundary(img0);
-        plot(p, 100);
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        // -------
 
-        String fileName1 = "";
+        String fileNameRoot1 = "";
 
         for (int i = 0; i < 4; ++i) {
-
             switch(i) {
                 case 0: {
-                    fileName1
-                        = "android_statues_01_sz1_mask_small.png";
-                    break;
-                }
+                    fileNameRoot1 = "android_statues_01";
+                    break;}
                 case 1: {
-                    fileName1 = "android_statues_02_sz1_mask_small.png";
-                    break;
-                }
+                    fileNameRoot1 = "android_statues_02";
+                    break;}
                 case 2: {
-                    fileName1 = "android_statues_03_sz1_mask_small.png";
-                    break;
-                }
+                    fileNameRoot1 = "android_statues_03";
+                    break;}
                 case 3: {
-                    fileName1 = "android_statues_04_sz1_mask_small.png";
-                    break;
-                }
-                default: {
-                    break;
-                }
+                    fileNameRoot1 = "android_statues_04";
+                    break;}
+                default: { break;}
             }
 
-            idx = fileName1.lastIndexOf(".");
-            String fileName1Root = fileName1.substring(0, idx);
+            String fileNameMask1 = fileNameRoot1 + "_sz1_mask.png";
+            String fileName1 = fileNameRoot1 + ".jpg";
 
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
-            ImageExt img = ImageIOHelper.readImageExt(filePath1);
-
-            /*
-            int w1 = img.getWidth();
-            int h1 = img.getHeight();
-
-            int maxDimension = 256;
+            ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+            int w1 = img1.getWidth();
+            int h1 = img1.getHeight();
             int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
                 (float) h1 / maxDimension));
+            img1 = imageProcessor.binImage(img1, binFactor1);
+            
+            String filePathMask1 = ResourceFinder.findFileInTestResources(fileNameMask1);
+            ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
 
-            img = imageProcessor.binImage(img, binFactor1);
-            */
+            ImageExt img1Cp = img1.copyToImageExt();
+            
+            // -- use superpixels on img1
+            // -- then kmpp w/ k=6
+            // -- filter superpixel labels for model colors
+           
+            SLICSuperPixels slic
+                = new SLICSuperPixels(img1, nClusters);
+            slic.calculate();
+            int[] labels = slic.getLabels();
 
+            ImageExt img1Labeled = img1Cp.copyToImageExt();
+            LabelToColorHelper.applyLabels(img1Labeled, labels);
+            MiscDebug.writeImage(img1Labeled,  "_slic_" + fileNameRoot1);
+            
+            ImageExt img1Cp2 = img1Cp.copyToImageExt();
+            ImageExt img1Cp3 = img1Cp.copyToImageExt();
+            
+            int k = 8;
+            // labeled then kmeans
+            KMeansPlusPlusColor kmpp = new KMeansPlusPlusColor();
+            kmpp.computeMeans(k, img1Labeled);
+            int[] labels2 = kmpp.getImgPixelSeedIndexes();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img1Cp2, labels2);
+            MiscDebug.writeImage(img1Cp2,  "_slic_kmpp_" + fileNameRoot1);
+            
+            TIntObjectMap<Set<PairInt>> labelMap =
+                LabelToColorHelper.extractLabelPoints(
+                img1Cp3, labels2);
+
+            List<Set<PairInt>> filtered = new ArrayList<Set<PairInt>>();
+            TIntObjectIterator<Set<PairInt>> iter = 
+                labelMap.iterator();
+            for (int j = 0; j < labelMap.size(); ++j) {
+                iter.advance();
+                Set<PairInt> points = iter.value();
+                Colors cieLab = imageProcessor
+                    .calculateAverageLAB(img1, points);
+                double deltaE = cieC.calcDeltaECIE2000(
+                    (float)cIELABStats0[0], 
+                    (float)cIELABStats0[1], 
+                    (float)cIELABStats0[2], 
+                    cieLab.getColors()[0], 
+                    cieLab.getColors()[1], cieLab.getColors()[2]);
+                if (deltaE < 0) {
+                    deltaE *= -1;
+                }
+                if (deltaE <= 7.0) {
+                    filtered.add(points);
+                }
+            }
+            for (Set<PairInt> set : filtered) {
+                for (PairInt pt : set) {
+                    img1.setRGB(pt.getX(), pt.getY(), 255, 255, 255);
+                }
+            }
+            MiscDebug.writeImage(img1,  "_filtered_" + fileNameRoot1);
+            
             /*
-            (1) make template objects to search for in other
-                images.
-                - a color version for each image binned scale
-                - a contour of the object at each image binned scale
-            (2) use super pixels on segmented images.
             (3) for segment centroids, build k nearest neighbors.
             (4) search image for segments that match the search object
                 in color.
@@ -383,88 +472,21 @@ public class AndroidStatuesTest extends TestCase {
                  color or gradient too, hopefully not)
             */
             
-            // NOTE the shape matching portion of this
-            // test is in PartialShapeMatcher now,
-            // but is left here also while stepping
-            // through the identification using 
-            //  super pixels + aggregation + partial shape matching
-
+            /*
             PairIntArray q = extractOrderedBoundary(img);
-            plot(q, (i+1)*100 + 1);
-
-            log.info("matching " + fileName0Root
-            + " to " + fileName1Root + " (" + p.getN()
-            + " points to " + q.getN() + " points");
+            plot(q, fileNumber);
 
             int dp = 2;
-
             PartialShapeMatcher matcher =
                 new PartialShapeMatcher();
             matcher.setToDebug();
             matcher.overrideSamplingDistance(dp);
-
             PartialShapeMatcher.Result result = matcher.match(p, q);
-
-            assertNotNull(result);
-
-            log.info("RESULTS=" + fileName1Root + " : " +
-                result.toString());
-
-            CorrespondencePlotter plotter = new
-                CorrespondencePlotter(p, q);
-
-            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-                int idx1 = result.getIdx1(ii);
-                int idx2 = result.getIdx2(ii);
-                int x1 = p.getX(idx1);
-                int y1 = p.getY(idx1);
-                int x2 = q.getX(idx2);
-                int y2 = q.getY(idx2);
-                //System.out.println(String.format(
-                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-                if ((ii % 4) == 0) {
-                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                        0);
-                }
-            }
-            String filePath = plotter.writeImage("_" +
-                    fileName1Root + "_corres");
-
-            int expOffset = 0;
-            float expFrac = 0.4f;
-            switch (i) {
-                case 0:
-                    expOffset = 217;
-                    break;
-                case 1:
-                    expOffset = 112;
-                    break;
-                case 2:
-                    expOffset = 0;
-                    expFrac = 1.0f;
-                    break;
-                case 3:
-                    expOffset = 173;//168
-                    break;
-                default:
-                    break;
-            }
-
-            int diffOff = Math.abs(result.getOriginalOffset() -
-                expOffset);
-            expFrac /= (float)dp;
-
-            System.out.println("diffOff=" + diffOff); 
-
-            assertTrue(Math.abs(result.getOriginalOffset() -
-                expOffset) < 6);
-            assertTrue(result.getFractionOfWhole() >= expFrac);
-
+            */
+            
             /*
             MiscDebug.writeImage(img,  "_img_" + fileName1Root);
-            int nClusters = 200;//100;
-            //int clrNorm = 5;
+            
             SLICSuperPixels slic
                 = new SLICSuperPixels(img, nClusters);
             slic.calculate();
@@ -490,23 +512,17 @@ public class AndroidStatuesTest extends TestCase {
                 case 0: {
                     fileName1
                         = "android_statues_01.jpg";
-                    break;
-                }
+                    break;}
                 case 1: {
                     fileName1 = "android_statues_02.jpg";
-                    break;
-                }
+                    break;}
                 case 2: {
                     fileName1 = "android_statues_03.jpg";
-                    break;
-                }
+                    break;}
                 case 3: {
                     fileName1 = "android_statues_04.jpg";
-                    break;
-                }
-                default: {
-                    break;
-                }
+                    break;}
+                default: {break;}
             }
 
             int idx = fileName1.lastIndexOf(".");
@@ -531,11 +547,24 @@ public class AndroidStatuesTest extends TestCase {
                 = new SLICSuperPixels(img, nClusters);
             slic.calculate();
             int[] labels = slic.getLabels();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
-            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
-            img = ImageIOHelper.readImageExt(filePath1);
-            img = imageProcessor.binImage(img, binFactor1);
-            MiscDebug.writeImage(img,  "_512_img_" + fileName1Root);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+            //LabelToColorHelper.applyLabels(
+                img, labels);
+            MiscDebug.writeImage(img, "_slic_" + fileName1Root);
+            
+            /*
+            NormalizedCuts normCuts = new NormalizedCuts();
+            normCuts.setColorSpaceToHSV();
+            int[] labels2 = normCuts.normalizedCut(img, labels);
+            labels = labels2;
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img, labels);
+            MiscDebug.writeImage(img, "_norm_cuts_" + fileName1Root);
+            */
+            
+            //img = ImageIOHelper.readImageExt(filePath1);
+            //img = imageProcessor.binImage(img, binFactor1);
+            //MiscDebug.writeImage(img,  "_512_img_" + fileName1Root);
         }
     }
 
@@ -596,6 +625,11 @@ public class AndroidStatuesTest extends TestCase {
     }
 
     private PairIntArray extractOrderedBoundary(ImageExt image) {
+        return extractOrderedBoundary(image, SIGMA.TWO);
+    }
+    
+    private PairIntArray extractOrderedBoundary(ImageExt image,
+        SIGMA sigma) {
 
         GreyscaleImage img = image.copyToGreyscale();
 
@@ -613,7 +647,7 @@ public class AndroidStatuesTest extends TestCase {
 
         PairIntArray ordered =
             imageProcessor.extractSmoothedOrderedBoundary(
-            blob);
+            blob, sigma);
 
         return ordered;
     }
