@@ -95,7 +95,15 @@ based upon algorithm in paper
        integral image of summed differences and analysis
        will be added here:
  </pre>
-
+ <em>NOTE: You may need to pre-process the shape points
+     to smooth the boundary.</em>
+ <pre>
+     This method:  
+        PairIntArray p = imageProcessor
+            .extractSmoothedOrderedBoundary()
+        uses a Gaussian smoothing of 2 sigma,
+        but a smaller sigma can be specified.
+  </pre>
   @author nichole
  */
 public class PartialShapeMatcher {
@@ -170,8 +178,13 @@ public class PartialShapeMatcher {
       for scale, need to do so outside of this method, that is, apply
       scale changes to the datasets before use of this method..
 
-     <em>NOTE: You may want to pre-process the shape points by using
-     PairIntArray p = ImageProcessor.extractSmoothedOrderedBoundary
+     <em>NOTE: You may need to pre-process the shape points
+     to smooth the boundary.  
+     This method:  
+        PairIntArray p = imageProcessor
+            .extractSmoothedOrderedBoundary()
+        uses a Gaussian smoothing of 2 sigma,
+        but a smaller sigma can be specified.
      </em>
      
      @param p
