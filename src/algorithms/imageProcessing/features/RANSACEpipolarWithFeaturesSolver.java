@@ -6,9 +6,9 @@ import algorithms.imageProcessing.transform.EpipolarFeatureTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;
 import algorithms.imageProcessing.transform.EpipolarTransformer;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +62,6 @@ public class RANSACEpipolarWithFeaturesSolver {
      * @param outputRightXY
      * @param useHalfDescriptors
      * @return
-     * @throws NoSuchAlgorithmException
      */
     public EpipolarFeatureTransformationFit calculateEpipolarProjection(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
@@ -71,7 +70,7 @@ public class RANSACEpipolarWithFeaturesSolver {
         GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1, 
         GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2, 
         PairIntArray outputLeftXY, PairIntArray outputRightXY, 
-        boolean useHalfDescriptors) throws NoSuchAlgorithmException {
+        boolean useHalfDescriptors) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -124,7 +123,6 @@ public class RANSACEpipolarWithFeaturesSolver {
      * @param outputRightXY
      * @param useHalfDescriptors
      * @return
-     * @throws NoSuchAlgorithmException
      */
     public EpipolarFeatureTransformationFit calculateEpipolarProjection(
         SimpleMatrix matchedLeftXY, SimpleMatrix matchedRightXY,
@@ -133,7 +131,7 @@ public class RANSACEpipolarWithFeaturesSolver {
         GreyscaleImage rImg1, GreyscaleImage gImg1, GreyscaleImage bImg1, 
         GreyscaleImage rImg2, GreyscaleImage gImg2, GreyscaleImage bImg2, 
         PairIntArray outputLeftXY, PairIntArray outputRightXY,
-        boolean useHalfDescriptors) throws NoSuchAlgorithmException {
+        boolean useHalfDescriptors) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -176,7 +174,7 @@ public class RANSACEpipolarWithFeaturesSolver {
 
         EpipolarTransformer spTransformer = new EpipolarTransformer();
             
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);

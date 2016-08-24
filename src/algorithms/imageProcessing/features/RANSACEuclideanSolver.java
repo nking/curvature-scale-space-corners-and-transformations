@@ -5,9 +5,9 @@ import algorithms.imageProcessing.transform.EuclideanTransformationFit;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.util.RANSACAlgorithmIterations;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.logging.Logger;
@@ -41,12 +41,10 @@ public class RANSACEuclideanSolver {
      * @param outputLeftXY
      * @param outputRightXY
      * @return
-     * @throws NoSuchAlgorithmException
      */
     public EuclideanTransformationFit calculateEuclideanTransformation(
         PairIntArray matchedLeftXY, PairIntArray matchedRightXY,
-        PairIntArray outputLeftXY, PairIntArray outputRightXY)
-        throws NoSuchAlgorithmException {
+        PairIntArray outputLeftXY, PairIntArray outputRightXY) {
 
         if (matchedLeftXY == null) {
             throw new IllegalArgumentException("matchedLeftXY cannot be null");
@@ -85,7 +83,7 @@ public class RANSACEuclideanSolver {
         
         EuclideanEvaluator evaluator = new EuclideanEvaluator();
             
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        SecureRandom sr = Misc.getSecureRandom();
         long seed = System.currentTimeMillis();
         log.info("SEED=" + seed + " nPoints=" + nPoints);
         sr.setSeed(seed);

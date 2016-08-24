@@ -25,7 +25,6 @@ import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectFloatHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -96,7 +95,7 @@ based upon algorithm in paper
        will be added here:
  </pre>
  <em>NOTE: You may need to pre-process the shape points
-     to smooth the boundary.</em>
+     for example, smooth the boundary.</em>
  <pre>
      This method:  
         PairIntArray p = imageProcessor
@@ -168,30 +167,24 @@ public class PartialShapeMatcher {
       of points P_1...P_N
       and the shape to match has points Q_1...Q_N.
       The spacings used within this method are equidistant
-      and the default is 5, so override that if a different number
-      is needed.  For shapes with less than 200 points
-      in the perimeters, tests with override to set
-      spacing dp to 1 have worked well.
-
-      The fixed equidistant spacing is invariant to rotation
-      and translation, but not to scale, so if the user needs to solve
-      for scale, need to do so outside of this method, that is, apply
-      scale changes to the datasets before use of this method..
-
+      unless changed using method setToUseSameNumberOfPoints().
+      The default spacing is 3, 
+      so override that if a different number
+      is needed.
+      
      <em>NOTE: You may need to pre-process the shape points
-     to smooth the boundary.  
+     for example, smooth the boundary.</em>
+     <pre>
      This method:  
         PairIntArray p = imageProcessor
             .extractSmoothedOrderedBoundary()
         uses a Gaussian smoothing of 2 sigma,
         but a smaller sigma can be specified.
-     </em>
-     
+      </pre>
      @param p
      @param q
     */
-    public Result match(PairIntArray p, PairIntArray q) throws
-        NoSuchAlgorithmException {
+    public Result match(PairIntArray p, PairIntArray q) {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -246,8 +239,7 @@ public class PartialShapeMatcher {
         return r;
     }
 
-    private Result matchSameNumber(PairIntArray p, PairIntArray q) throws
-        NoSuchAlgorithmException {
+    private Result matchSameNumber(PairIntArray p, PairIntArray q) {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -299,8 +291,7 @@ public class PartialShapeMatcher {
         return r;
     }
         
-    private Result match0(PairIntArray p, PairIntArray q) throws
-        NoSuchAlgorithmException {
+    private Result match0(PairIntArray p, PairIntArray q) {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "
@@ -1812,16 +1803,11 @@ public class PartialShapeMatcher {
        Note that mmd2 and return results have same
        ordering and indexes, that is results[0] is
        derived from mmd2 item 0.
-     * @throws NoSuchAlgorithmException thrown when the
-     * chosen algorithm used in ransac is not available.
-     * TODO: change that so that it finds an algorithm
-       and doesn't throw the exception.
      */
     private List<Result> transformAndEvaluate(
         MergedMinDiffs2 mmd2, PairIntArray p, PairIntArray q,
         float[][][] md, float pixTol, int topK,
-        List<PairIntArray> addedPointLists)
-        throws NoSuchAlgorithmException {
+        List<PairIntArray> addedPointLists) {
 
         if (mmd2.length() == 0) {
             return null;
@@ -1961,8 +1947,7 @@ public class PartialShapeMatcher {
 
     private Result addByTransformation(MergedMinDiffs2 mmd2,
         int index, PairIntArray p, PairIntArray q,
-        double pixTol, PairIntArray outputAddedPoints) throws
-        NoSuchAlgorithmException {
+        double pixTol, PairIntArray outputAddedPoints) {
 
         int offset = mmd2.mmd.offsets[index];
         int len = mmd2.getLength(index);
@@ -1997,8 +1982,7 @@ public class PartialShapeMatcher {
         PairIntArray leftUnmatched, PairIntArray rightUnmatched,
         double pixTol, int origOffset,
         PairIntArray outLeft, PairIntArray outRight,
-        PairIntArray outAddedPoints) throws
-        NoSuchAlgorithmException {
+        PairIntArray outAddedPoints) {
 
         String debugTag = "offset=" + Integer.toString(origOffset);
 
