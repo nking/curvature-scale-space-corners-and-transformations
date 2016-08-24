@@ -81,8 +81,14 @@ public class NormalizedCuts {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
+    // 0.001 to 0.1
     private double thresh = 0.06;
     
+    // number of normalizd cuts to perform before 
+    // determining optimal among them.
+    // cannot be smaller than 2
+    private int numCuts = 10;
+        
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
      * to segment the image into regions.
@@ -138,19 +144,15 @@ public class NormalizedCuts {
       */
     private void performNormalizedCuts(RAGCSubGraph graph) {
         
-        // number of normalizd cuts to perform before determinging optimal among them
-        int numCuts = 10;
-        
-        nCutRelabel(graph, numCuts);        
+        nCutRelabel(graph);        
     }
 
     /**
      * perform 2-way recursive splitting of graph
      * @param regionsList
      * @param rag
-     * @param numCuts 
      */
-    private void nCutRelabel(RAGCSubGraph graph, int numCuts) {
+    private void nCutRelabel(RAGCSubGraph graph) {
         
         FlexCompRowMatrix w = graph.getEdgeMatrix();
         if (w.numRows() < 5) {
@@ -232,13 +234,14 @@ public class NormalizedCuts {
 
                 log.finest("eigenVector=" + eigenVector);
 
-                MinCut minCut = getMinNCut(eigenVector, d, w, numCuts);
+                MinCut minCut = getMinNCut(eigenVector, d, w);
 
                 if (minCut != null) {
 
                     log.fine("mCut=" + minCut.mCut);
                     log.fine("cut=" + Arrays.toString(minCut.minMask));
-
+                    log.info("mCut=" + minCut.mCut + " thresh=" + thresh);
+                    
                     if (minCut.mCut < thresh) {
 
                         RAGCSubGraph[] subGraphs = graph.partition(minCut.minMask);
@@ -247,8 +250,8 @@ public class NormalizedCuts {
 
                         log.fine("len(sub2)=" + subGraphs[1].getNumberOfNodes());
 
-                        nCutRelabel(subGraphs[1], numCuts);
-                        nCutRelabel(subGraphs[0], numCuts);
+                        nCutRelabel(subGraphs[1]);
+                        nCutRelabel(subGraphs[0]);
 
                         return;
                     }
@@ -273,11 +276,10 @@ public class NormalizedCuts {
      * the graph by finding the splitting point such that Ncut is minimized.
      * @param graph
      * @param eigenVector
-     * @param numCuts 
      */
     private MinCut getMinNCut(
-        DenseVectorSub eigenVector, FlexCompRowMatrix d, FlexCompRowMatrix w,
-        int numCuts) {
+        DenseVectorSub eigenVector, FlexCompRowMatrix d, 
+        FlexCompRowMatrix w) {
         
         double minEV = Double.MAX_VALUE;
         double maxEV = Double.MIN_VALUE;
