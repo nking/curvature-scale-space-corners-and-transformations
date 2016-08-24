@@ -260,7 +260,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     float sumDiff = 0;
                     for (int m = 0; m < 3; ++m) {
                         float d = nodeColors[m][idx1] - nodeColors[m][idx2];
-                        sumDiff += (d * d);
+                        sumDiff += Math.sqrt(d * d);
                     }
                     diff = Math.sqrt(sumDiff);
                 } else if (clrSpace.equals(ColorSpace.CIELAB)) {

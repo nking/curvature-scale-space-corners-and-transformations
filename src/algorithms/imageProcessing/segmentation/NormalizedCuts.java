@@ -81,14 +81,23 @@ public class NormalizedCuts {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    // 0.001 to 0.1
+    // 0.001 to 0.1 for RGB, 0.06
+    // 0.0001 for CIELAB, 5.e-4
+    // 1e-16 to 1e-12 for HSV
     private double thresh = 0.06;
     
     // number of normalizd cuts to perform before 
     // determining optimal among them.
     // cannot be smaller than 2
     private int numCuts = 10;
-        
+
+    private ColorSpace colorSpace = ColorSpace.RGB;
+    
+    public void setColorSpaceToHSV() {
+        colorSpace = ColorSpace.HSV;
+        thresh = 1.e-16;
+    }
+    
     /**
      * using the recursive 2-way Ncut pattern in normalized cuts 
      * to segment the image into regions.
@@ -111,8 +120,6 @@ public class NormalizedCuts {
             img, labels);
 
         log.fine("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
-
-        ColorSpace colorSpace = ColorSpace.RGB;
                         
         rag.populateEdgesWithColorSimilarity(colorSpace);
         
