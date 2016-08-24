@@ -46,7 +46,7 @@ import thirdparty.edu.princeton.cs.algs4.IntervalRangeSearch;
  NOTE: NOT READY FOR USE YET... still testing.
 
 <pre>
-
+based upon algorithm in paper
  "Efficient Partial Shape Matching
     of Outer Contours: by Donoser
      - called IS-Match, integral shape match
@@ -218,9 +218,9 @@ public class PartialShapeMatcher {
           
         // TODO: consider an option to further match the
         // points between correspondence if dp > 1
-       
+      
         Result r = new Result(p.getN(), q.getN(), 
-            dp*rSub.origOffset);
+            rSub.getOriginalN1(), dp*rSub.origOffset);
 
         for (int i = 0; i < rSub.idx1s.size(); ++i) {
             int idx1 = rSub.idx1s.get(i);
@@ -272,7 +272,8 @@ public class PartialShapeMatcher {
         // unrealistic value to ensure it's not used.
         int offset = Integer.MAX_VALUE;
 
-        Result r = new Result(p.getN(), q.getN(), offset);
+        Result r = new Result(p.getN(), q.getN(), 
+            rSub.getOriginalN1(), offset);
             
         for (int i = 0; i < rSub.idx1s.size(); ++i) {
             int idx1 = rSub.idx1s.get(i);
@@ -335,14 +336,10 @@ public class PartialShapeMatcher {
            an example, the scissors opened versus closed.
            The occlusion should be handled for this one too.
 
-        for the multi-objective optimization score,
-        need sum of differences in sequence and the fraction
-        of the whole as the variables in the
-        Salukwdze distance of the Paretto frontier.
-
-        Note, there is an optional ability to use euclidean
-        transformation to add points to the solutions
-        (still in progress...)
+        For the multi-objective optimization cost,
+        need the sum of differences of chords and the fraction
+        of the whole to calculate the Salukwdze distance 
+        of the Paretto frontier.
         */
 
         //TODO: revisit this.  might need to depend
@@ -357,7 +354,7 @@ public class PartialShapeMatcher {
         MergedMinDiffs mergedMinDiffs = null;
 
         // runtime complexity is rs.length * O(N * log_2(N))
-        // where N is merged min diffs length which is usally
+        // where N is merged min diffs length which is usually
         // much less than p.getN().
         for (int r : rs) {
 
@@ -367,8 +364,9 @@ public class PartialShapeMatcher {
             }
 
             // build the matching sequential sequences by
-            // by reading chord difference over a block size
+            // by reading chord difference over a block size r
             // and aggregating sequential same offsets
+            
             MergedMinDiffs mmd = extractSequences(md, r, thresh);
             if (mergedMinDiffs == null) {
                 mergedMinDiffs = mmd;
@@ -402,8 +400,8 @@ public class PartialShapeMatcher {
         //            * nRANSAC iterations.
         //        since topK is one, this is essentially linear
         //        dependence on number of matched points.
-        //        the matching of unmatched has runtime complexity
-        //        that is O(N * log_2(N)) where N is the number
+        //        Then the matching of unmatched has runtime complexity
+        //        O(N * log_2(N)) where N is the number
         //        of unmatched points in p
         
         Result best;
@@ -421,9 +419,6 @@ public class PartialShapeMatcher {
             List<PairIntArray> addedPoints =
                 new ArrayList<PairIntArray>(topK);
 
-            //TODO: adjust this to scale by dp
-            int offsetTol = 5;
-
             if (diffN <= 0) {
                 results = transformAndEvaluate(mergedMinDiffs2, p, q,
                     md, pixTolerance, topK, addedPoints);
@@ -433,11 +428,11 @@ public class PartialShapeMatcher {
             }
 
             // -- results is now a list of size .leq. topK --
-            //    and the chord diff sums have been updated
-
+            //    and the results' chord diff sums have been updated
+            
             if (srchForArticulatedParts) {
                 //NOTE: results is derived from the topK of
-                // mergedMinDiffs2
+                // mergedMinDiffs2, the items are parallel
                 best = combineBestDisjoint(results, md,
                      mergedMinDiffs2);
             } else {
@@ -511,8 +506,7 @@ public class PartialShapeMatcher {
 
             // NOTE: making the interval min and max
             // 1 pixel wider in order to collide with
-            // adjacent intervals too, so can merge them
-            // also.
+            // adjacent intervals, so can merge them also.
 
             Interval<Integer> interval = new Interval<Integer>(
                 startI - 1, stopI + 1);
@@ -611,8 +605,7 @@ public class PartialShapeMatcher {
             int r = mmd2.getLength(i);
             assert(r <= n1);
 
-            float s1 = read(md, stopI, offset, r,
-                rUsed);
+            float s1 = read(md, stopI, offset, r, rUsed);
 
             mmd2.sumChordDiffs[i] = s1;
         }
@@ -1272,7 +1265,6 @@ public class PartialShapeMatcher {
 
         for (int x = 0; x < mdI.length; ++x) {
             for (int y = 0; y < mdI[x].length; ++y) {
-
                 if (x > 0 && y > 0) {
                     mdI[x][y] += (mdI[x - 1][y] + mdI[x][y - 1]
                         - mdI[x - 1][y - 1]);
@@ -1400,7 +1392,9 @@ public class PartialShapeMatcher {
         float[][][] md, MergedMinDiffs2 mmd2) {
 
         // NOTE: results is derived from the topK of
-        // mergedMinDiffs2
+        // mergedMinDiffs2 and the items are parallel,
+        // that is results.get(0) is derived from
+        // data in mmd2.mmd[0], etc.
 
         if (results == null || results.isEmpty()) {
             return null;
@@ -1445,7 +1439,7 @@ public class PartialShapeMatcher {
 
                     // test whether each point in startStopI
                     // range is between the idx1 and idx2 points
-                    // surrounding that gap
+                    // surrounding that gap.
 
                     Entry<Integer, Integer> ePre1 = valueIdx1Map.floorEntry(
                         Integer.valueOf(startStopI[0]));
@@ -1501,8 +1495,15 @@ public class PartialShapeMatcher {
             }
         }
 
-        // TODO: consider recalculting the chord sums
-        //   and sorting for top item by Salukwdze dist
+        // TODO: the case in which a shape is highly
+        // occluded may lead to the right solution 
+        // not being results[0] when given to this
+        // method, but the appending of points from 
+        // other offsets has changed that by the end
+        // of this method.  In that case, one would
+        // need to recalculate the chord sums here at
+        // the end and sort results by Salukwdze dist, then
+        // choose the top item as the best to return.
 
         return results.get(0);
     }
@@ -1516,10 +1517,28 @@ public class PartialShapeMatcher {
         private final int n1;
         private final int n2;
         private final int origOffset;
+        private final int origN1;
         public Result(int n1, int n2, int offset) {
             this.n1 = n1;
             this.n2 = n2;
             this.origOffset = offset;
+            this.origN1 = n1;
+        }
+        
+        /**
+         * 
+         * @param n1
+         * @param n2
+         * @param nOriginal the original n1 used to
+         * make the correspondence list.
+         * @param offset 
+         */
+        public Result(int n1, int n2, int nOriginal, 
+            int offset) {
+            this.n1 = n1;
+            this.n2 = n2;
+            this.origOffset = offset;
+            this.origN1 = nOriginal;
         }
 
         public void insert(int idx1, int idx2, float dist) {
@@ -1540,8 +1559,7 @@ public class PartialShapeMatcher {
         }
 
         public float getFractionOfWhole() {
-            float n = (n1 < n2) ? n1 : n2;
-            return (float)idx1s.size()/(float)n;
+            return (float)idx1s.size()/(float)origN1;
         }
 
         protected double getNormalizedChordDiff(double maxChordSum) {
@@ -1553,12 +1571,11 @@ public class PartialShapeMatcher {
          * The Salukwdze distance is the metric used as a
          * cost in comparisons.
          * (note that other portions of the code use
-         * the square of the distance.  also note that
+         * the square of that distance.  also note that
          * the maximum chord sum that was used to determine
          * a best solution is not stored, because the
-         * Result membership grows afterwards depending
-         * upon options, though this could change in
-         * the future).
+         * Result correspondence lists grow afterwards depending
+         * upon options.
          * @param maxChordSum
          * @return
          */
@@ -1576,6 +1593,10 @@ public class PartialShapeMatcher {
         public int getOriginalOffset() {
             return origOffset;
         }
+        
+        public int getOriginalN1() {
+            return origN1;
+        }
 
         /**
          * reverse the mappings from list 1 to list 2
@@ -1584,7 +1605,7 @@ public class PartialShapeMatcher {
          */
         public Result transpose() {
 
-            Result t = new Result(n2, n1, n1 - origOffset);
+            Result t = new Result(n2, n1, n1, n1 - origOffset);
             t.idx1s.addAll(idx2s);
             t.idx2s.addAll(idx1s);
             t.distSum = distSum;
@@ -1616,9 +1637,9 @@ public class PartialShapeMatcher {
 
             StringBuilder sb = new StringBuilder();
             sb.append(String.format(
-                "offset=%d nMatched=%d distSum=%.4f dChordSum=%.4f",
-                origOffset, idx1s.size(), (float)distSum,
-                (float)chordDiffSum));
+                "offset=%d nMatched=%d frac=%.4f dChordSum=%.4f distSum=%.4f ",
+                origOffset, idx1s.size(), getFractionOfWhole(),
+                (float)chordDiffSum, (float)distSum));
 
             return sb.toString();
         }
@@ -1687,6 +1708,17 @@ public class PartialShapeMatcher {
             return ranges;
         }
 
+        /**
+         * find the gaps in idx1s values and return
+         * the start and end of the gap values in
+         * a range as pairs in PairIntArray.  Note that
+         * the returned PairIntArray has been sorted
+         * so that the longest gap ranges are at the
+         * smallest indexes.
+         * @param minGapSize
+         * @param outputValueIdx1Map
+         * @return 
+         */
         private PairIntArray findGapRangesDescBySize(
             int minGapSize, TreeMap<Integer, Integer>
                 outputValueIdx1Map) {
@@ -1946,127 +1978,6 @@ public class PartialShapeMatcher {
             outLeft, outRight, outputAddedPoints);
     }
 
-    private boolean addByTransformation(PairIntArray p,
-        PairIntArray q, int[] startStopI, int offset,
-        Result result, float pixTolerance) throws NoSuchAlgorithmException {
-
-        int len = startStopI[1] - startStopI[0] + 1;
-        int n2 = result.n2;
-        assert(n2 == q.getN());
-
-        if (len < 7) {
-            // cannot make a transformation and eval w/ RANSAC.
-            //TODO: consider adding to result
-            return false;
-        }
-
-        PairIntArray left = new PairIntArray(len);
-        PairIntArray right = new PairIntArray(len);
-
-        TIntSet alreadyMatched1 = new TIntHashSet(result.idx1s);
-        TIntSet alreadyMatched2 = new TIntHashSet(result.idx2s);
-
-        for (int pIdx = startStopI[0]; pIdx <= startStopI[1]; ++pIdx) {
-            assert(pIdx > -1);
-            int qIdx = pIdx + offset;
-            if (qIdx >= n2) {
-                qIdx -= n2;
-            }
-            assert(qIdx > -1);
-            left.add(p.getX(pIdx), p.getY(pIdx));
-            right.add(q.getX(qIdx), q.getY(qIdx));
-            alreadyMatched1.add(pIdx);
-            alreadyMatched2.add(qIdx);
-        }
-
-        PairIntArray leftUnmatched
-            = new PairIntArray(p.getN() - alreadyMatched1.size());
-        PairIntArray rightUnmatched = new PairIntArray(
-            q.getN() - alreadyMatched2.size());
-
-        for (int i = 0; i < p.getN(); ++i) {
-            if (alreadyMatched1.contains(i)) {
-                leftUnmatched.add(p.getX(i), p.getY(i));
-            }
-        }
-
-        for (int i = 0; i < q.getN(); ++i) {
-            if (alreadyMatched2.contains(i)) {
-                rightUnmatched.add(q.getX(i), q.getY(i));
-            }
-        }
-
-        PairIntArray outLeft = new PairIntArray();
-        PairIntArray outRight = new PairIntArray();
-
-        PairIntArray outAddedPoints = new PairIntArray();
-
-        Result result2 = addByTransformation(p, q,
-            left, right,
-            leftUnmatched, rightUnmatched,
-            pixTolerance, offset,
-            outLeft, outRight, outAddedPoints);
-
-        if (result2 != null && result2.getNumberOfMatches() > 0) {
-            // add to result
-            alreadyMatched1 = new TIntHashSet(result.idx1s);
-            alreadyMatched2 = new TIntHashSet(result.idx2s);
-
-            int n = result2.getNumberOfMatches();
-            result2.sortByIdx1();
-            for (int i = 0; i < n; ++i) {
-                int idx1 = result2.idx1s.get(i);
-                int idx2 = result2.idx2s.get(i);
-                if (alreadyMatched1.contains(idx1) ||
-                    alreadyMatched2.contains(idx2)) {
-                    result.idx1s.add(idx1);
-                    result.idx2s.add(idx2);
-                }
-            }
-            if (debug) {
-                // plot result2 then result
-                try {
-                    CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
-                    for (int i = 0; i < result2.getNumberOfMatches(); ++i) {
-                        int idx1 = result2.getIdx1(i);
-                        int idx2 = result2.getIdx2(i);
-                        int x1 = p.getX(idx1);
-                        int y1 = p.getY(idx1);
-                        int x2 = q.getX(idx2);
-                        int y2 = q.getY(idx2);
-                        if ((i % 4) == 0) {
-                            plotter.drawLineInAlternatingColors(
-                                x1, y1, x2, y2, 0);
-                        }
-                    }
-                    String filePath = plotter.writeImage("_"
-                        + "_debug10_added_" + offset);
-
-                    plotter = new CorrespondencePlotter(p, q);
-                    for (int i = 0; i < result.getNumberOfMatches(); ++i) {
-                        int idx1 = result.getIdx1(i);
-                        int idx2 = result.getIdx2(i);
-                        int x1 = p.getX(idx1);
-                        int y1 = p.getY(idx1);
-                        int x2 = q.getX(idx2);
-                        int y2 = q.getY(idx2);
-                        if ((i % 4) == 0) {
-                            plotter.drawLineInAlternatingColors(
-                                x1, y1, x2, y2, 0);
-                        }
-                    }
-                    filePath = plotter.writeImage("_"
-                        + "_debug11_added_" + offset);
-                } catch (Throwable t) {
-                }
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
     private Result addByTransformation(
         PairIntArray p, PairIntArray q,
         PairIntArray left, PairIntArray right,
@@ -2262,7 +2173,7 @@ public class PartialShapeMatcher {
                     int y1 = p.getY(idx1);
                     int x2 = q.getX(idx2);
                     int y2 = q.getY(idx2);
-                    if ((i % 5) == 0) {
+                    if ((i % 4) == 0) {
                         plotter.drawLineInAlternatingColors(
                             x1, y1, x2, y2, 0);
                     }
@@ -2476,10 +2387,6 @@ public class PartialShapeMatcher {
             // salukwdze distance squared
             float s1 = f1*f1 + d1*d1;
             float s2 = f2*f2 + d2*d2;
-
-            // needs nMatches to be weighted more highly
-            //float s1 = f1*f1 + 2*d1*d1;
-            //float s2 = f2*f2 + 2*d2*d2;
 
             if (s1 < s2) {
                 return -1;
@@ -2717,7 +2624,7 @@ public class PartialShapeMatcher {
 
         // put the idx2 indexes in reference frame of
         //   always being larger than idx1, which means
-        //   adding n2 at times.
+        //   adding n2 if needed.
 
         int prev1 = preGapIdx1;
         int prev2 = preGapIdx2;
