@@ -11683,6 +11683,39 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
     
     /**
+     * erode the set
+     * @param list
+     * @param nPix 
+     */
+    public void erode(Set<PairInt> set, int nPix) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        MiscellaneousCurveHelper curveHelper =
+            new MiscellaneousCurveHelper();
+                
+        // any pixel that is missing a neighbor can be removed
+        Set<PairInt> rmvd = new HashSet<PairInt>();
+        for (int nIter = 0; nIter < nPix; ++nIter) {
+            for (PairInt p : set) {
+                int x = p.getX();
+                int y = p.getY();
+                for (int i = 0; i < dxs.length; ++i) {
+                    int x2 = x + dxs[i];
+                    int y2 = y + dys[i];
+                    PairInt p2 = new PairInt(x2, y2);
+                    if (!set.contains(p2)) {
+                        rmvd.add(p);
+                        break;
+                    }
+                }
+            }
+            set.removeAll(rmvd);
+        }
+    }
+    
+    /**
      * segment the image by creating super pixels, then
      * merging them by a polar cie xy clustering 
      * algorithm.  NOTE that the later and this method

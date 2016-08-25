@@ -1,5 +1,6 @@
 package algorithms.imageProcessing.features;
 
+import algorithms.MultiArrayMergeSort;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
@@ -393,7 +394,7 @@ public class AndroidStatuesTest extends TestCase {
             ImageExt img1Cp = img1.copyToImageExt();
             
             // -- use superpixels on img1
-            // -- then kmpp w/ k=6
+            // -- then cluster the super pixels by polar cie xy
             // -- filter superpixel labels for model colors
            
             SLICSuperPixels slic
@@ -402,32 +403,73 @@ public class AndroidStatuesTest extends TestCase {
             int[] labels = slic.getLabels();
 
             ImageExt img1Labeled = img1Cp.copyToImageExt();
+            ImageExt img1LabeledAlt = img1Cp.copyToImageExt();
             LabelToColorHelper.applyLabels(img1Labeled, labels);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img1LabeledAlt, labels);
             MiscDebug.writeImage(img1Labeled,  "_slic_" + fileNameRoot1);
-            
-            ImageExt img1Cp2 = img1Cp.copyToImageExt();
+            MiscDebug.writeImage(img1LabeledAlt,  "_slic_alt_" + fileNameRoot1);
+
+            ImageExt img1Cp2 = img1Cp.createWithDimensions();
             ImageExt img1Cp3 = img1Cp.copyToImageExt();
+            ImageExt img1Cp4 = img1Cp.copyToImageExt();
+            
+            List<Set<PairInt>> filtered 
+                = new ArrayList<Set<PairInt>>();
             
             int nExtraForDot = 0;
             
-            List<Set<PairInt>> clusterSets1S = imageSegmentation.calculateUsingPolarCIEXYAndFrequency(
+            List<Set<PairInt>> clusterSets1S = 
+                imageSegmentation.calculateUsingPolarCIEXYAndFrequency(
                 img1Labeled, 0.1f, true);
             for (int j = 0; j < clusterSets1S.size(); ++j) {
                 int[] rgb = ImageIOHelper.getNextRGB(j);
                 Set<PairInt> set = clusterSets1S.get(j);
-                ImageIOHelper.addToImage(set, 0, 0, img1Labeled, 
+                
+                imageSegmentation.erode(set, 2);
+                
+                ImageIOHelper.addToImage(set, 0, 0, img1Cp2, 
                     nExtraForDot, rgb[0], rgb[1], rgb[2]);
+                
             }
-            MiscDebug.writeImage(img1Labeled,  
+            MiscDebug.writeImage(img1Cp2,  
                 "_slic_pclstr_" + fileNameRoot1);
+            
+            // -- combine information in labels
+            //    and clusterSets1S to make better segmentation
+            //    (NOTE: the clustering algorithm could better
+            //     incorporate this too...needs improvements one day)
+            sortByDecrSize(clusterSets1S);
             
             TIntObjectMap<Set<PairInt>> labelMap =
                 LabelToColorHelper.extractLabelPoints(
-                img1Cp3, 
+                img1Cp3,
                 labels);
-            //    labels2);
-
-            List<Set<PairInt>> filtered = new ArrayList<Set<PairInt>>();
+            
+            List<Set<PairInt>> segmentedList = new ArrayList<Set<PairInt>>();
+            TIntSet mergedIndexes = new TIntHashSet();
+            for (Set<PairInt> set : clusterSets1S) {
+                Set<PairInt> set2 = new HashSet<PairInt>();
+                for (PairInt p : set) {
+                    int pixIdx = img1.getInternalIndex(p.getX(), p.getY());
+                    int lIdx = labels[pixIdx];
+                    if (!mergedIndexes.contains(lIdx)) {
+                        set2.addAll(labelMap.get(lIdx));
+                        mergedIndexes.add(lIdx);
+                    }
+                }
+                segmentedList.add(set2);
+            }
+            
+            for (int j = 0; j < segmentedList.size(); ++j) {
+                int[] rgb = ImageIOHelper.getNextRGB(j);
+                Set<PairInt> set = segmentedList.get(j);
+                ImageIOHelper.addToImage(set, 0, 0, img1Cp4, 
+                    nExtraForDot, rgb[0], rgb[1], rgb[2]);
+            }
+            MiscDebug.writeImage(img1Cp4,  
+                "_segmented_" + fileNameRoot1);
+            
             TIntObjectIterator<Set<PairInt>> iter = 
                 labelMap.iterator();
             for (int j = 0; j < labelMap.size(); ++j) {
@@ -648,6 +690,24 @@ public class AndroidStatuesTest extends TestCase {
             blob, sigma);
 
         return ordered;
+    }
+
+    private void sortByDecrSize(List<Set<PairInt>> clusterSets) {
+        int n = clusterSets.size();
+        int[] sizes = new int[n];
+        int[] indexes = new int[n];
+        for (int i = 0; i < n; ++i) {
+            sizes[i] = clusterSets.get(i).size();
+            indexes[i] = i;
+        }
+        MultiArrayMergeSort.sortByDecr(sizes, indexes);
+        List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
+        for (int i = 0; i < n; ++i) {
+            int idx = indexes[i];
+            out.add(clusterSets.get(idx));
+        }
+        clusterSets.clear();
+        clusterSets.addAll(out);
     }
 
     private class DeltaESim implements Comparable<DeltaESim> {
