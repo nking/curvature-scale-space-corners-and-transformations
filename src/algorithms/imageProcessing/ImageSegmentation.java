@@ -11681,4 +11681,45 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         list.clear();
         list.addAll(out);
     }
+    
+    /**
+     * segment the image by creating super pixels, then
+     * merging them by a polar cie xy clustering 
+     * algorithm.  NOTE that the later and this method
+     * could be improved.  It's a quick look at merging
+     * super pixels.  CIE XY color space helps to lessen 
+     * the effects of grey illumination.
+       <pre>
+       To visualize the results:
+           for (int j = 0; j lt clusterSets.size(); ++j) {
+                int[] rgb = ImageIOHelper.getNextRGB(j);
+                Set PairInt  set = clusterSets1S.get(j);
+                ImageIOHelper.addToImage(set, 0, 0, img1Labeled, 
+                    nExtraForDot, rgb[0], rgb[1], rgb[2]);
+            }
+       </pre>
+     * @param input
+     * @return 
+     */
+    public List<Set<PairInt>> segmentForObjects(
+        ImageExt input) {
+        
+        ImageExt img = input.copyToImageExt();
+        
+        int nClusters = 200;
+        
+        SLICSuperPixels slic
+            = new SLICSuperPixels(img, nClusters);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+        
+        LabelToColorHelper.applyLabels(img, labels);
+        
+        List<Set<PairInt>> clusterSets = 
+            calculateUsingPolarCIEXYAndFrequency(
+            img, 0.1f, true);
+       
+        return clusterSets;
+    }
+    
 }
