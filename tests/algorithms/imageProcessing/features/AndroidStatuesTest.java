@@ -408,18 +408,24 @@ public class AndroidStatuesTest extends TestCase {
             ImageExt img1Cp2 = img1Cp.copyToImageExt();
             ImageExt img1Cp3 = img1Cp.copyToImageExt();
             
-            int k = 8;
-            // labeled then kmeans
-            KMeansPlusPlusColor kmpp = new KMeansPlusPlusColor();
-            kmpp.computeMeans(k, img1Labeled);
-            int[] labels2 = kmpp.getImgPixelSeedIndexes();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1Cp2, labels2);
-            MiscDebug.writeImage(img1Cp2,  "_slic_kmpp_" + fileNameRoot1);
+            int nExtraForDot = 0;
+            
+            List<Set<PairInt>> clusterSets1S = imageSegmentation.calculateUsingPolarCIEXYAndFrequency(
+                img1Labeled, 0.1f, true);
+            for (int j = 0; j < clusterSets1S.size(); ++j) {
+                int[] rgb = ImageIOHelper.getNextRGB(j);
+                Set<PairInt> set = clusterSets1S.get(j);
+                ImageIOHelper.addToImage(set, 0, 0, img1Labeled, 
+                    nExtraForDot, rgb[0], rgb[1], rgb[2]);
+            }
+            MiscDebug.writeImage(img1Labeled,  
+                "_slic_pclstr_" + fileNameRoot1);
             
             TIntObjectMap<Set<PairInt>> labelMap =
                 LabelToColorHelper.extractLabelPoints(
-                img1Cp3, labels2);
+                img1Cp3, 
+                labels);
+            //    labels2);
 
             List<Set<PairInt>> filtered = new ArrayList<Set<PairInt>>();
             TIntObjectIterator<Set<PairInt>> iter = 
@@ -449,28 +455,20 @@ public class AndroidStatuesTest extends TestCase {
             }
             MiscDebug.writeImage(img1,  "_filtered_" + fileNameRoot1);
             
-            /*
-            (3) for segment centroids, build k nearest neighbors.
-            (4) search image for segments that match the search object
-                in color.
-                these form the core of what will be aggregated search.
-            (5) create best pattern to search the candidate
-                segmented cells.
-                - determine different combinations of each with
-                  its neighbors that might create the needed
-                  area?
-                  - exclude adding neighbors that don't match any
-                    color segment in the search object?
-                    (might not be a good idea considering resolution
-                     of super pixels)
-                - smooth the bounds?
-            ===> before that, extract the shapes
-                 aggregated (and smoothed if needed),
-                 to make tests for the partial shape
-                 matcher to adapt it for use.
-                 (might need to add descriptors, the
-                 color or gradient too, hopefully not)
-            */
+            // -- loop over filtered
+            //    -- erode by 2 pixels (keeping the removed pixels)
+            //       -- if it separates the set,
+            //          put the separated components
+            //          into different sets
+            //
+            
+            // -- make one pass over filtered to fit against
+            //    template.
+            //    -- for the best fitting, 
+            //       try to aggregate adjacent sets to
+            //       obtain a better fit to template
+            //       (adjacent sets could be found in
+            //        many different ways)
             
             /*
             PairIntArray q = extractOrderedBoundary(img);
