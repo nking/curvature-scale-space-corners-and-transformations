@@ -28,6 +28,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.KDTreeNode;
+import algorithms.search.NearestNeighbor2D;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -11597,5 +11598,87 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 }
             }
         }
+    }
+    
+    /**
+     * erode each set by nPix and create new sets for
+     * the disconnected contiguous points while adding
+     * the eroded points back in.  The method is meant
+     * to help separate sets and is designed for small
+     * nPix such as 1 or 2.
+     * 
+     * @param list
+     * @param nPix 
+     */
+    public void separateByErosion(List<Set<PairInt>> list, 
+        int nPix) {
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        
+        MiscellaneousCurveHelper curveHelper =
+            new MiscellaneousCurveHelper();
+        
+        List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
+        
+        for (Set<PairInt> set : list) {
+            // any pixel that is missing a neighbor can be removed
+            Set<PairInt> rmvd = new HashSet<PairInt>();
+            int[] minMaxXY = MiscMath.findMinMaxXY(set);
+            for (int nIter = 0; nIter < nPix; ++nIter) {
+                for (PairInt p : set) {
+                    int x = p.getX();
+                    int y = p.getY();
+                    for (int i = 0; i < dxs.length; ++i) {
+                        int x2 = x + dxs[i];
+                        int y2 = y + dys[i];
+                        PairInt p2 = new PairInt(x2, y2);
+                        if (!set.contains(p2)) {
+                            rmvd.add(p);
+                            break;
+                        }
+                    }
+                }
+                set.removeAll(rmvd);
+            }
+            DFSConnectedGroupsFinder finder 
+                = new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(1);
+            finder.findConnectedPointGroups(set);
+            int nGroups = finder.getNumberOfGroups();
+            if (nGroups == 1) {
+                set.addAll(rmvd);
+                out.add(set);
+                continue;
+            }
+            List<Set<PairInt>> separatedSets = 
+                new ArrayList<Set<PairInt>>(nGroups);
+            TObjectIntMap<PairInt> xyCens = 
+                new TObjectIntHashMap<PairInt>();
+            for (int i = 0; i < nGroups; ++i) {
+                Set<PairInt> group = finder.getXY(i);
+                double[] c = curveHelper
+                    .calculateXYCentroids(group);
+                xyCens.put(new PairInt((int)Math.round(c[0]),
+                    (int)Math.round(c[1])), i);
+                separatedSets.add(group);
+            }
+            NearestNeighbor2D nn = new NearestNeighbor2D(
+                xyCens.keySet(), minMaxXY[1], minMaxXY[3]);
+            for (PairInt p : rmvd) {
+                Set<PairInt> nearest = nn.findClosest(
+                    p.getX(), p.getY());
+                assert(nearest != null);
+                for (PairInt gc : nearest) {
+                    int idx = xyCens.get(gc);
+                    assert(idx > -1);
+                    separatedSets.get(idx).add(p);
+                    break;
+                }
+            }
+            out.addAll(separatedSets);
+        }
+        list.clear();
+        list.addAll(out);
     }
 }
