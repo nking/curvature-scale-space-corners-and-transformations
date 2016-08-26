@@ -461,10 +461,12 @@ public class PartialShapeMatcher {
             }
         }
         
-        if (best != null) {
-            if (best.chordsNeedUpdates) {
-                populateWithChordDiffs(best, md, n1, n2);
-            }
+        if (best == null) {
+            return null;
+        }
+
+        if (best.chordsNeedUpdates) {
+            populateWithChordDiffs(best, md, n1, n2);
         }
 
         if (diffN <= 0) {
@@ -595,7 +597,6 @@ public class PartialShapeMatcher {
         int n2 = mmd2.n2;
 
         int n = mmd2.sumChordDiffs.length;
-        assert(n <= n1);
 
         int[] rUsed = new int[1];
 

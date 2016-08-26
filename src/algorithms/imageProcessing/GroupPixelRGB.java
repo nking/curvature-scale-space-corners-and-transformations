@@ -162,6 +162,11 @@ public class GroupPixelRGB {
     public float getAvgBlue() {
         return avgBlue;
     }
+    
+    public int getAvgRGB() {
+        float avg = (avgRed + avgGreen + avgBlue)/3.f;
+        return Math.round(avg);
+    }
 
     /**
      * @return the standardDeviationRed

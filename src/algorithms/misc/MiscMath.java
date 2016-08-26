@@ -1310,7 +1310,7 @@ public class MiscMath {
      * 
      * @param x
      * @param y
-     * @return degrees in radians
+     * @return theta in radians
      */
     public static double calculatePolarTheta(float x, float y) {
         

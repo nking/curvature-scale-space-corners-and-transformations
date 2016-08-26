@@ -308,7 +308,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estShapeMatcher() throws Exception {
+    public void testShapeMatcher() throws Exception {
 
         int maxDimension = 512;
         int nClusters = 200;
@@ -352,21 +352,14 @@ public class AndroidStatuesTest extends TestCase {
             }
         }
 
-        //PairIntArray p = extractOrderedBoundary(imgMask0, SIGMA.ONE);
-        //plot(p, 100);
-
-        // extract color stats for img0
-        GroupPixelRGB rgb0 = new GroupPixelRGB(shape0, img0, 0, 0);
-        float[] lab0 = cieC.rgbToCIELAB(
-            Math.round(rgb0.getAvgRed()),
-            Math.round(rgb0.getAvgGreen()),
-            Math.round(rgb0.getAvgBlue()));
+        PairIntArray p = extractOrderedBoundary(imgMask0, SIGMA.ONE);
+        plot(p, 100);
 
         // -------
 
         String fileNameRoot1 = "";
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 1; ++i) {
             switch(i) {
                 case 0: {
                     fileNameRoot1 = "android_statues_01";
@@ -398,10 +391,10 @@ public class AndroidStatuesTest extends TestCase {
             ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
 
             ImageExt img1Cp = img1.copyToImageExt();
+            ImageExt img1Cp2 = img1.copyToImageExt();
 
             // -- use superpixels on img1
-            // -- then cluster the super pixels by polar cie xy
-            // -- filter superpixel labels for model colors
+            // -- then hsv normalized cuts
 
             SLICSuperPixels slic
                 = new SLICSuperPixels(img1, nClusters);
@@ -416,117 +409,78 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img1Labeled,  "_slic_" + fileNameRoot1);
             MiscDebug.writeImage(img1LabeledAlt,  "_slic_alt_" + fileNameRoot1);
 
-            ImageExt img1Cp2 = img1Cp.createWithDimensions();
-            ImageExt img1Cp3 = img1Cp.copyToImageExt();
-            ImageExt img1Cp4 = img1Cp.copyToImageExt();
+            NormalizedCuts normCuts = new NormalizedCuts();
+            normCuts.setColorSpaceToHSV();
+            int[] labels2 = normCuts.normalizedCut(img1Cp, labels);
+            labels = labels2;
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img1Cp, labels);
+            MiscDebug.writeImage(img1Cp, "_norm_cuts_" 
+                + fileNameRoot1);
+            
+            // with labels and img1Cp2, find the
+            // contiguous same label regions and
+            // search for shape matches.
+            
+            List<Set<PairInt>> contigSets = 
+                LabelToColorHelper.extractContiguousLabelPoints(
+                    img1Cp2, labels);
+            
+            sortByDecrSize(contigSets);
+            
+            System.out.println("contigSets.size=" + contigSets.size());
 
-            List<Set<PairInt>> filtered
-                = new ArrayList<Set<PairInt>>();
-
-            int nExtraForDot = 0;
-
-            List<Set<PairInt>> contiguousSets = LabelToColorHelper
-                .extractContiguousLabelPoints(
-                    //img1Labeled,
-                    img1,
-                    labels);
-            List<TIntList> mergedContigIndexes =
-                imageSegmentation.
-                mergeUsingPolarCIEXYAndFrequency(
-                    //img1Labeled,
-                    img1,
-                    contiguousSets, 0.1f);
-            List<Set<PairInt>> clusterSets1S = new
-                ArrayList<Set<PairInt>>();
-            for (TIntList list : mergedContigIndexes) {
-                Set<PairInt> set = new HashSet<PairInt>();
-                for (int ii = 0; ii < list.size(); ++ii) {
-                    int cIdx = list.get(ii);
-                    set.addAll(contiguousSets.get(cIdx));
+            // a quick look to see that matching a part
+            // of the undersegmented contiguous regions
+            // (normalized cuts results) is not the best approach...
+            //    in contrast: assembly of superpixels and matching
+            //    those looks more promising,
+            //    ideally, want a segmentation algorithm
+            //    that merges super pixels without losing
+            //    the boundaries of the objects of interest
+            
+            //for (int j = 0; j < contigSets.size(); ++j) {
+            for (int j = 1; j < 2; ++j) {
+                
+                Set<PairInt> set1 = contigSets.get(j);
+                System.out.println("set j=" + j + ".size=" + set1.size());
+                if (set1.size() < 12) {
+                    break;
                 }
-                clusterSets1S.add(set);
-            }
-
-            for (int j = 0; j < clusterSets1S.size(); ++j) {
-                int[] rgb = ImageIOHelper.getNextRGB(j);
-                Set<PairInt> set = clusterSets1S.get(j);
-
-              //  imageSegmentation.erode(set, 2);
-
-                ImageIOHelper.addToImage(set, 0, 0, img1Cp2,
-                    nExtraForDot, rgb[0], rgb[1], rgb[2]);
-            }
-            MiscDebug.writeImage(img1Cp2,
-                "_slic_pclstr_" + fileNameRoot1);
-
-            for (int j = 0; j < clusterSets1S.size(); ++j) {
-
-                Set<PairInt> points = clusterSets1S.get(j);
-
-                GroupPixelRGB rgb1
-                    = new GroupPixelRGB(points, img1, 0, 0);
-
-                float[] lab1 = cieC.rgbToCIELAB(
-                    Math.round(rgb1.getAvgRed()),
-                    Math.round(rgb1.getAvgGreen()),
-                    Math.round(rgb1.getAvgBlue()));
-
-                double deltaE = cieC.calcDeltaECIE2000(
-                    lab0[0], lab0[1], lab0[2],
-                    lab1[0], lab1[1], lab1[2]);
-                if (deltaE < 0) {
-                    deltaE *= -1;
+                
+                //TODO: error in perimeterfinder2
+                // for j=30
+                
+                //160,78
+                if (set1.contains(new PairInt(120, 80))) {
+                    //102
+                    System.out.println("gbm j=" + j);
                 }
-                if (deltaE <= 8.0) {
-                    filtered.add(points);
-                }
-            }
-            for (Set<PairInt> set : filtered) {
-                for (PairInt pt : set) {
-                    img1.setRGB(pt.getX(), pt.getY(), 255, 255, 255);
+                
+                PairIntArray q1 =
+                    imageProcessor.extractSmoothedOrderedBoundary(
+                    set1, SIGMA.ZEROPOINTFIVE);
+                
+                plot(q1, 101+j);
+                
+                int dp = 2;
+                PartialShapeMatcher matcher
+                    = new PartialShapeMatcher();
+                matcher.setToDebug();
+                matcher.overrideSamplingDistance(dp);
+                
+                PartialShapeMatcher.Result result 
+                    = matcher.match(p, q1);
+
+                if (result != null) {
+                    System.out.println("j=" + j + " result=" +
+                        result.toString());
                 }
             }
-            MiscDebug.writeImage(img1,  "_filtered_" + fileNameRoot1);
-
-            // -- make one pass over filtered to fit against
-            //    template.
-            //    -- for the best fitting,
-            //       try to aggregate adjacent sets to
-            //       obtain a better fit to template
-            //       (adjacent sets could be found in
-            //        many different ways)
-
-            /*
-            PairIntArray q = extractOrderedBoundary(img);
-            plot(q, fileNumber);
-
-            int dp = 2;
-            PartialShapeMatcher matcher =
-                new PartialShapeMatcher();
-            matcher.setToDebug();
-            matcher.overrideSamplingDistance(dp);
-            PartialShapeMatcher.Result result = matcher.match(p, q);
-            */
-
-            /*
-            MiscDebug.writeImage(img,  "_img_" + fileName1Root);
-
-            SLICSuperPixels slic
-                = new SLICSuperPixels(img, nClusters);
-            slic.calculate();
-            int[] labels = slic.getLabels();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
-            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
-            img = ImageIOHelper.readImageExt(filePath1);
-            //img = imageProcessor.binImage(img, binFactor1);
-            LabelToColorHelper.applyLabels(img, labels);
-            MiscDebug.writeImage(img,  "_slic_img_" + fileName1Root);
-            */
-
         }
     }
 
-    public void testMkImgs() throws Exception {
+    public void estMkImgs() throws Exception {
 
         String fileName1 = "";
 

@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * class to hold some of the newer methods
@@ -195,7 +196,9 @@ public class PerimeterFinder2 {
         LinkedHashSet<Integer> jassocInserted = 
             new LinkedHashSet<Integer>();
         
+        boolean err = false;
         while (!remaining.isEmpty()) {
+            err = false;
             int prevIdx = output.getN() - 1;
             int x = output.getX(prevIdx);
             int y = output.getY(prevIdx);
@@ -213,13 +216,17 @@ public class PerimeterFinder2 {
                 int ns2 = 0;
                 while (ns2 == 0) {                    
                     // TODO: revisit this for complex shapes
-                    
                     Integer index = junctionNodes.pollLast();
                     if (index == null) {
-                        throw new IllegalStateException("Error in algorithm:"
+                        debug(contiguousShapePoints, output);      
+                        //throw new IllegalStateException(
+                        Logger.getLogger(this.getClass().getName()).warning(
+                            "Error in algorithm:"
                             + " no adjacent points for (" + x + " " + y
                             + ") but remaining is not empty and "
                             + " junction list is empty");
+                        err = true;
+                        break;
                     }
                     int x3 = output.getX(index.intValue());
                     int y3 = output.getY(index.intValue());
@@ -396,10 +403,16 @@ public class PerimeterFinder2 {
                 output.add(neighborsX[minAngleIdx], neighborsY[minAngleIdx]);                
             }
             
-            boolean rmvd = remaining.remove(
-                new PairInt(output.getX(output.getN() - 1),
-                output.getY(output.getN() - 1)));
-            assert(rmvd);
+            if (err) {
+                System.err.println("not adding back: " +
+                    remaining.toString());
+                remaining.clear();
+            } else {           
+                boolean rmvd = remaining.remove(
+                    new PairInt(output.getX(output.getN() - 1),
+                    output.getY(output.getN() - 1)));
+                assert(rmvd);
+            }
         }
         
         if (!jassocInserted.isEmpty()) {
@@ -1004,5 +1017,35 @@ int z = 1;
         }
         
         return pointsNS;
+    }
+    
+    private void debug(Set<PairInt> contiguousShapePoints,
+        PairIntArray output) {
+        try {
+
+            int[] xPolygon = null;
+            int[] yPolygon = null;
+            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
+            int[] xminmxyminmiac = MiscMath.findMinMaxXY(
+                contiguousShapePoints);
+            int[] xp, yp;
+            int n, count;
+
+            n = output.getN();
+            xp = new int[n];
+            yp = new int[n];
+            for (int i = 0; i < output.getN(); ++i) {
+                xp[i] = output.getX(i);
+                yp[i] = output.getY(i);
+            }
+            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],
+                xminmxyminmiac[2], xminmxyminmiac[3],
+                xp, yp, xPolygon, yPolygon, "ordered bunds");
+            plotter.writeFile2();
+
+            System.out.println("output=" + output.toString());
+        } catch (Throwable t) {
+
+        }
     }
 }

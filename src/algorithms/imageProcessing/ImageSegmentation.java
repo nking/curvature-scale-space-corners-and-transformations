@@ -3120,13 +3120,6 @@ public class ImageSegmentation {
             float[] cieXY = cieC._rgbToXYChromaticity(
                 r, g, b);
 
-double t = cieC.calculateXYTheta(
-cieXY[0], cieXY[1]) * 180. / Math.PI;
-System.out.println("i=" + lIdx + 
-String.format("(%d,%d,%d) ciexy=%.4f,%.4f theta=%d",
-Math.round(r), Math.round(g), Math.round(b),
-cieXY[0], cieXY[1], (int)Math.round(t)));
-
             if (cieC.isWhite2(cieXY[0], cieXY[1]) &&
                 (Math.abs(0.333f - bDivTot) < 0.02f) &&
                 (Math.abs(0.333f - rDivTot) < 0.02f) &&
@@ -12393,7 +12386,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         
         assert(contiguousSets.size() == contigRGB.size());
         
-{
+/*{
 ImageExt img00 = input.createWithDimensions();
 int nExtraForDot = 0;
 MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
@@ -12414,7 +12407,7 @@ for (int j = 0; j < contigRGB.size(); ++j) {
 }
 MiscDebug.writeImage(img00, "_DEBUG_");
 int z = 1;
-}
+}*/
         //making a segmentation method using CIEXY polar theta
         // and the number of points with those colors.
         // choosing the peaks to be the cluster centers, then
@@ -12517,9 +12510,6 @@ int z = 1;
                 Math.round(fracFreqLimit * maxFreq));
         }
         
-System.out.println("peaks=" + peaks.toString() 
-+ " reduced by factor " + binWidth);
-
         /*
         // ----- debug ---
         // plot the points as an image to see the data first

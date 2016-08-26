@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.segmentation;
 
+import algorithms.imageProcessing.DFSConnectedGroupsFinder;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.ArrayList;
@@ -60,6 +62,30 @@ public class LabelToColorHelper {
             int label = labels[i];
             img.setRGB(i, (int)rSum[label], (int)gSum[label], (int)bSum[label]);
         }
+    }
+    
+    public static List<Set<PairInt>> 
+        extractContiguousLabelPoints(Image img, int[] labels) {
+        
+        List<Set<PairInt>> out = new ArrayList<Set<PairInt>>();
+        
+        TIntObjectMap<Set<PairInt>> lMap = extractLabelPoints(img, labels);
+      
+        TIntObjectIterator<Set<PairInt>> iter = lMap.iterator();
+        for (int i = 0; i < lMap.size(); ++i) {
+            iter.advance();
+            Set<PairInt> set = iter.value();
+            DFSConnectedGroupsFinder finder = 
+                new DFSConnectedGroupsFinder();
+            finder.setMinimumNumberInCluster(1);
+            finder.findConnectedPointGroups(set);
+            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
+                Set<PairInt> group = finder.getXY(j);
+                out.add(group);
+            }
+        }
+        
+        return out;
     }
     
     public static TIntObjectMap<Set<PairInt>> extractLabelPoints(

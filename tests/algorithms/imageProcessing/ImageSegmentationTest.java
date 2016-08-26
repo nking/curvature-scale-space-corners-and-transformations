@@ -10,6 +10,18 @@ import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
@@ -18,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import algorithms.imageProcessing.segmentation.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -1127,5 +1140,96 @@ public class ImageSegmentationTest extends TestCase {
             assertTrue(expected.removeAll(set));
         }
         assertTrue(expected.isEmpty());
+    }
+
+    public void testMergeUsingPolarCIEXYAndFrequency() 
+        throws Exception {
+       
+        int maxDimension = 512;
+        int nClusters = 200;
+        ImageProcessor imageProcessor = new ImageProcessor();
+        ImageSegmentation imageSegmentation = new
+            ImageSegmentation();
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        String fileNameRoot1 = "android_statues_04";
+        
+       String fileNameMask1 = fileNameRoot1 + "_sz1_mask.png";
+       String fileName1 = fileNameRoot1 + ".jpg";
+
+       String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+       ImageExt img1 = ImageIOHelper.readImageExt(filePath1);
+       int w1 = img1.getWidth();
+       int h1 = img1.getHeight();
+       int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
+           (float) h1 / maxDimension));
+       img1 = imageProcessor.binImage(img1, binFactor1);
+
+       String filePathMask1 = 
+           ResourceFinder.findFileInTestResources(fileNameMask1);
+       ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
+
+       ImageExt img1Cp = img1.copyToImageExt();
+
+       // -- use superpixels on img1
+       // -- then cluster the super pixels by polar cie xy
+
+        SLICSuperPixels slic
+            = new SLICSuperPixels(img1, nClusters);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+
+        ImageExt img1Labeled = img1Cp.copyToImageExt();
+        ImageExt img1LabeledAlt = img1Cp.copyToImageExt();
+        LabelToColorHelper.applyLabels(img1Labeled, labels);
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img1LabeledAlt, labels);
+        MiscDebug.writeImage(img1Labeled,  "_slic_" + 
+            fileNameRoot1);
+        MiscDebug.writeImage(img1LabeledAlt,  
+            "_slic_alt_" + fileNameRoot1);
+
+        ImageExt img1Cp2 = img1Cp.createWithDimensions();
+        ImageExt img1Cp3 = img1Cp.copyToImageExt();
+        ImageExt img1Cp4 = img1Cp.copyToImageExt();
+
+        List<Set<PairInt>> filtered
+            = new ArrayList<Set<PairInt>>();
+
+        int nExtraForDot = 0;
+
+        List<Set<PairInt>> contiguousSets = LabelToColorHelper
+            .extractContiguousLabelPoints(
+                //img1Labeled,
+                img1,
+                labels);
+        List<TIntList> mergedContigIndexes =
+            imageSegmentation.
+            mergeUsingPolarCIEXYAndFrequency(
+                //img1Labeled,
+                img1,
+                contiguousSets, 0.1f);
+        List<Set<PairInt>> clusterSets1S = new
+            ArrayList<Set<PairInt>>();
+        for (TIntList list : mergedContigIndexes) {
+            Set<PairInt> set = new HashSet<PairInt>();
+            for (int ii = 0; ii < list.size(); ++ii) {
+                int cIdx = list.get(ii);
+                set.addAll(contiguousSets.get(cIdx));
+            }
+            clusterSets1S.add(set);
+        }
+
+        for (int j = 0; j < clusterSets1S.size(); ++j) {
+            int[] rgb = ImageIOHelper.getNextRGB(j);
+            Set<PairInt> set = clusterSets1S.get(j);
+
+          //  imageSegmentation.erode(set, 2);
+
+            ImageIOHelper.addToImage(set, 0, 0, img1Cp2,
+                nExtraForDot, rgb[0], rgb[1], rgb[2]);
+        }
+        MiscDebug.writeImage(img1Cp2,
+            "_slic_pclstr_" + fileNameRoot1); 
     }
 }
