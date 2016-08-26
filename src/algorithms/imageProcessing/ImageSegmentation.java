@@ -3100,7 +3100,7 @@ public class ImageSegmentation {
         int[] whiteBlackLimits =
             findByHistogramLimitsForBlackAndWhite(input);
         // overriding:
-        int whiteLimit = 245;
+        int whiteLimit = 229;//245;
 
         for (int lIdx = 0; lIdx < input.size(); ++lIdx) {
             GroupPixelRGB group = input.get(lIdx);
@@ -3328,7 +3328,7 @@ cieXY[0], cieXY[1], (int)Math.round(t)));
         //looking for limits of (r,g,b) <= (45,45,45) and > (180,180,180)
         int l0 = 45;
         int l0B = 70;
-        int h0 = 245;
+        int h0 = 229;//245;
 
         List<Integer> avgL = new ArrayList<Integer>();
 
@@ -12671,21 +12671,13 @@ System.out.println("peaks=" + peaks.toString()
             blackPixels, whitePixels);
 
         // add back in blackPixels and whitePixels
-        /*if (!blackPixels.isEmpty()) {
+        if (!blackPixels.isEmpty()) {
             groupList.add(blackPixels);
         }
         if (!whitePixels.isEmpty()) {
             groupList.add(whitePixels);
         }
 
-        int nTot2 = 0;
-        for (Set<PairInt> groups : groupList) {
-            nTot2 += groups.size();
-        }
-
-        log.info("img nPix=" + input.getNPixels() + " nTot2=" + nTot2);
-        assert(nTot2 == input.getNPixels());
-        */
         return groupList;
     }
 }
