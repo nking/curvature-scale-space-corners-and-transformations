@@ -308,7 +308,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void testShapeMatcher() throws Exception {
+    public void estShapeMatcher() throws Exception {
 
         int maxDimension = 512;
         int nClusters = 200;
@@ -526,7 +526,7 @@ public class AndroidStatuesTest extends TestCase {
         }
     }
 
-    public void estMkImgs() throws Exception {
+    public void testMkImgs() throws Exception {
 
         String fileName1 = "";
 
@@ -565,6 +565,8 @@ public class AndroidStatuesTest extends TestCase {
             ImageProcessor imageProcessor = new ImageProcessor();
             img = imageProcessor.binImage(img, binFactor1);
 
+            ImageExt imgCp = img.copyToImageExt();
+            
             int nClusters = 200;//100;
             //int clrNorm = 5;
             SLICSuperPixels slic
@@ -576,15 +578,14 @@ public class AndroidStatuesTest extends TestCase {
                 img, labels);
             MiscDebug.writeImage(img, "_slic_" + fileName1Root);
 
-            /*
             NormalizedCuts normCuts = new NormalizedCuts();
             normCuts.setColorSpaceToHSV();
-            int[] labels2 = normCuts.normalizedCut(img, labels);
+            int[] labels2 = normCuts.normalizedCut(imgCp, labels);
             labels = labels2;
             ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img, labels);
-            MiscDebug.writeImage(img, "_norm_cuts_" + fileName1Root);
-            */
+                imgCp, labels);
+            MiscDebug.writeImage(imgCp, "_norm_cuts_" + fileName1Root);
+            
 
             //img = ImageIOHelper.readImageExt(filePath1);
             //img = imageProcessor.binImage(img, binFactor1);
