@@ -366,7 +366,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String fileNameRoot1 = "";
 
-        for (int i = 1; i < 2; ++i) {
+        for (int i = 0; i < 4; ++i) {
             switch(i) {
                 case 0: {
                     fileNameRoot1 = "android_statues_01";
@@ -426,11 +426,16 @@ public class AndroidStatuesTest extends TestCase {
             int nExtraForDot = 0;
 
             List<Set<PairInt>> contiguousSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img1Labeled, labels);
+                .extractContiguousLabelPoints(
+                    //img1Labeled,
+                    img1,
+                    labels);
             List<TIntList> mergedContigIndexes =
                 imageSegmentation.
-                mergeUsingPolarCIEXYAndFrequency(img1Labeled,
-                contiguousSets, 0.1f);
+                mergeUsingPolarCIEXYAndFrequency(
+                    //img1Labeled,
+                    img1,
+                    contiguousSets, 0.1f);
             List<Set<PairInt>> clusterSets1S = new
                 ArrayList<Set<PairInt>>();
             for (TIntList list : mergedContigIndexes) {
@@ -454,44 +459,9 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img1Cp2,
                 "_slic_pclstr_" + fileNameRoot1);
 
-            // -- combine information in labels
-            //    and clusterSets1S to make better segmentation
-            //    (NOTE: the clustering algorithm could better
-            //     incorporate this too...needs improvements one day)
-            sortByDecrSize(clusterSets1S);
+            for (int j = 0; j < clusterSets1S.size(); ++j) {
 
-            TIntObjectMap<Set<PairInt>> labelMap =
-                LabelToColorHelper.extractLabelPoints(
-                img1Cp3,
-                labels);
-
-            List<Set<PairInt>> segmentedList = new ArrayList<Set<PairInt>>();
-            TIntSet mergedIndexes = new TIntHashSet();
-            for (Set<PairInt> set : clusterSets1S) {
-                Set<PairInt> set2 = new HashSet<PairInt>();
-                for (PairInt p : set) {
-                    int pixIdx = img1.getInternalIndex(p.getX(), p.getY());
-                    int lIdx = labels[pixIdx];
-                    if (!mergedIndexes.contains(lIdx)) {
-                        set2.addAll(labelMap.get(lIdx));
-                        mergedIndexes.add(lIdx);
-                    }
-                }
-                segmentedList.add(set2);
-            }
-
-            for (int j = 0; j < segmentedList.size(); ++j) {
-                int[] rgb = ImageIOHelper.getNextRGB(j);
-                Set<PairInt> set = segmentedList.get(j);
-                ImageIOHelper.addToImage(set, 0, 0, img1Cp4,
-                    nExtraForDot, rgb[0], rgb[1], rgb[2]);
-            }
-            MiscDebug.writeImage(img1Cp4,
-                "_segmented_" + fileNameRoot1);
-
-            for (int j = 0; j < segmentedList.size(); ++j) {
-
-                Set<PairInt> points = segmentedList.get(j);
+                Set<PairInt> points = clusterSets1S.get(j);
 
                 GroupPixelRGB rgb1
                     = new GroupPixelRGB(points, img1, 0, 0);

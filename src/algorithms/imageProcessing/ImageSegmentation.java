@@ -28,6 +28,7 @@ import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.search.KDTreeNode;
+import algorithms.search.NearestNeighbor1D;
 import algorithms.search.NearestNeighbor2D;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
@@ -2183,18 +2184,16 @@ public class ImageSegmentation {
     }
 
     private TIntObjectMap<TIntSet> createThetaCIEXYMap(
-        TIntList points, TIntList thetaValues, int binWidth) {
+        TIntList indexes, TIntList thetaValues, int binWidth) {
 
-        assert(points.size() == thetaValues.size());
-
-        CIEChromaticity cieC = new CIEChromaticity();
+        assert(indexes.size() == thetaValues.size());
 
         // key = theta, value = pixels having that key
         TIntObjectMap<TIntSet> thetaPointMap =
             new TIntObjectHashMap<TIntSet>();
 
-        for (int i = 0; i < points.size(); ++i) {
-            int lIdx = points.get(i);
+        for (int i = 0; i < indexes.size(); ++i) {
+            int lIdx = indexes.get(i);
             int thetaDeg = thetaValues.get(i);
 
             int binKey = thetaDeg/binWidth;
@@ -12468,9 +12467,10 @@ int z = 1;
         few pixels.
         */
 
-        int binWidth = 3;
+        int binWidth = 5;//3;
         TIntObjectMap<TIntSet> thetaPointMap
-            = createThetaCIEXYMap(points0, thetaForPoints0, binWidth);
+            = createThetaCIEXYMap(points0, thetaForPoints0, 
+            binWidth);
 
         int n = (360/binWidth) + 1;
         
@@ -12502,10 +12502,24 @@ int z = 1;
         the peaks.
         */
 
-        PairIntArray peaks = findPeaksInThetaPointMap(orderedThetaKeys,
-            thetaPointMap,
-            Math.round(fracFreqLimit * maxFreq));
+        boolean useAll = true;
+        PairIntArray peaks;
+        if (useAll) {
+            peaks = new PairIntArray(thetaPointMap.size());
+            iter = thetaPointMap.iterator();
+            for (int i = 0; i < thetaPointMap.size(); ++i) {
+                iter.advance();
+                peaks.add(iter.key(), iter.value().size());
+            }
+        } else {
+            peaks = findPeaksInThetaPointMap(orderedThetaKeys,
+                thetaPointMap,
+                Math.round(fracFreqLimit * maxFreq));
+        }
         
+System.out.println("peaks=" + peaks.toString() 
++ " reduced by factor " + binWidth);
+
         /*
         // ----- debug ---
         // plot the points as an image to see the data first
@@ -12575,61 +12589,73 @@ int z = 1;
            then place it in the groupsList.
            points before the first peak are compared with last peak too for wrap around.
         */
-        int currentPeakIdx = -1;
-        for (int i : orderedThetaKeys) {
-            TIntSet set = thetaPointMap.get(i);
-            if (set == null) {
-                continue;
-            }
+        int maxC = (int)Math.ceil(minMaxTheta0[1]/(double)binWidth);
+        NearestNeighbor1D nn1d = new NearestNeighbor1D(maxC);
+        TIntIntMap valueIndexMap = new TIntIntHashMap();
+        for (int i = 0; i < peaks.getN(); ++i) {
+            nn1d.insert(peaks.getX(i));
+            valueIndexMap.put(peaks.getX(i), i);
+        }
+        int firstPeak = peaks.getX(0);
+        int lastPeak = peaks.getX(peaks.getN() - 1);
+        
+        iter = thetaPointMap.iterator();
+        for (int i = 0; i < thetaPointMap.size(); ++i) {
+            iter.advance();
+            TIntSet set = iter.value();
+            final int thetaBin = iter.key();
+            
+            // find nearest peak, including wrap around if near ends
+            TIntSet nearest = nn1d.findClosest(thetaBin);
             int idx = -1;
-            if ((currentPeakIdx == -1) || (currentPeakIdx == (peaks.getN() - 1))) {
-                int diffL, diffF;
-                if (currentPeakIdx == -1) {
-                    diffL = i + 360 - peaks.getX(peaks.getN() - 1);
-                    diffF = peaks.getX(0) - i;
-                    if (diffF == 0) {
-                        currentPeakIdx = 0;
+            if (nearest.size() > 1) {
+                // choose by frequency
+                int max = Integer.MIN_VALUE;
+                TIntIterator iter2 = nearest.iterator();
+                while (iter2.hasNext()) {
+                    int t = iter2.next();
+                    int tIdx = valueIndexMap.get(t);
+                    int f = peaks.getY(tIdx);
+                    if (f > max) {
+                        max = f;
+                        idx = tIdx;
                     }
-                } else {
-                    diffL = i - peaks.getX(currentPeakIdx);
-                    diffF = peaks.getX(0) + 360 - i;
-                }
-                if (diffL < diffF) {
-                    idx = peaks.getN() - 1;
-                } else if (diffL == diffF) {
-                    int freqL = peaks.getY(peaks.getN() - 1);
-                    int freqF = peaks.getY(0);
-                    if (freqL < freqF) {
-                        idx = peaks.getN() - 1;
-                    } else {
-                        idx = 0;
-                    }
-                } else {
-                    idx = 0;
                 }
             } else {
-                // this has to update currentPeakIdx
-                int diffP = i - peaks.getX(currentPeakIdx);
-                int diffN = peaks.getX(currentPeakIdx + 1) - i;
-                if (diffN == 0) {
-                    currentPeakIdx++;
-                    idx = currentPeakIdx;
-                } else {
-                    if (diffP < diffN) {
-                        idx = currentPeakIdx;
-                    } else if (diffP == diffN) {
-                        int freqP = peaks.getY(currentPeakIdx);
-                        int freqN = peaks.getY(currentPeakIdx + 1);
-                        if (freqP < freqN) {
-                            idx = currentPeakIdx;
-                        } else {
-                            idx = currentPeakIdx + 1;
-                        }
-                    } else {
-                        idx = currentPeakIdx + 1;
+                int t = nearest.iterator().next();
+                idx = valueIndexMap.get(t);
+            }
+            
+            assert(idx != -1);
+            
+            if (idx == firstPeak) {
+                // compare dist to last, wrap around
+                int diffL = Math.abs(thetaBin + 360 - peaks.getX(peaks.getN() - 1));
+                int diff = Math.abs(peaks.getX(idx) - thetaBin);
+                if (diffL < diff) {
+                    idx = peaks.getN() - 1;
+                } else if (diff == diffL) {
+                   int f = peaks.getY(idx);
+                   int fL = peaks.getY(peaks.getN() - 1);
+                   if (fL > f) {
+                       idx = peaks.getN() - 1;
+                   }
+                }
+            } else if (idx == lastPeak) {
+                // compare dist to first, wrap around
+                int diffF = Math.abs(360 - thetaBin + peaks.getX(0));
+                int diff = Math.abs(peaks.getX(idx) - thetaBin);
+                if (diffF < diff) {
+                    idx = 0;
+                } else if (diffF == diff) {
+                    int f = peaks.getY(idx);
+                    int fF = peaks.getY(0);
+                    if (fF > f) {
+                        idx = 0;
                     }
                 }
-            }
+            }        
+
             assert(idx != -1);
             groupList.get(idx).addAll(set);
         }
@@ -12637,8 +12663,8 @@ int z = 1;
         // create an adjacency map between sets in
         // contiguousSets.
         TIntObjectMap<TIntSet> contigAdjacencyMap =
-            createAdjacencySetMap(contiguousSets);        
-        
+            createAdjacencySetMap(contiguousSets);
+
         mergeOrAppendGreyWithOthers(
             contigAdjacencyMap, contigRGB,
             greyPixelGroups, groupList,
