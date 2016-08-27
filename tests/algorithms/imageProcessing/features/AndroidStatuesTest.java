@@ -473,12 +473,7 @@ public class AndroidStatuesTest extends TestCase {
                 l0++;
             }
 
-            //TODO: one more revision to labels3,
-            //   anywhere it was made to be more segmented
-            //   than before should be restored to
-            //   the larger segmentation in labels2.
-            //   in other words, only want merging operations
-            
+                 
             img1Cp = img1.createWithDimensions();            
             List<Set<PairInt>> contigSets = 
                 LabelToColorHelper
