@@ -392,101 +392,17 @@ public class AndroidStatuesTest extends TestCase {
             String filePathMask1 = ResourceFinder.findFileInTestResources(fileNameMask1);
             ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
 
-            //printGradients(img1, fileNameRoot1);
-        
-            GreyscaleImage gsImg = img1.copyToGreyscale();
-            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
-            canny.setToNotUseZhangSuen();
-            canny.applyFilter(gsImg);
             
-            ImageExt img1Cp = img1.copyToImageExt();
-            ImageExt img1Cp2 = img1.copyToImageExt();
-
-            // -- use superpixels on img1
-            // -- then hsv normalized cuts
-
-            SLICSuperPixels slic
-                = new SLICSuperPixels(img1, nClusters);
-            slic.calculate();
-            int[] labels = slic.getLabels();
+            int[] labels4 = imageSegmentation.objectSegmentation(img1);
             
-            ImageExt img1Labeled = img1Cp.copyToImageExt();
-            ImageExt img1LabeledAlt = img1Cp.copyToImageExt();
-            LabelToColorHelper.applyLabels(img1Labeled, labels);
+            ImageExt img11 = img1.createWithDimensions();
             ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1LabeledAlt, labels);
-            MiscDebug.writeImage(img1Labeled,  "_slic_" + fileNameRoot1);
-            MiscDebug.writeImage(img1LabeledAlt,  "_slic_alt_" + fileNameRoot1);
+                img11, labels4);
+            MiscDebug.writeImage(img11, "_comb_" + fileNameRoot1);
 
-            // where the gradient intersects 2 different
-            // superpixels (is on the boundary of 
-            // superpixels), change the pixel to a 
-            // new label which represents a gradient
-            // separation.
-            // adding this step before normalized
-            // cuts to try to prevent merging of 
-            // some boundaries
-            TIntList gradSP = addIntersection(gsImg, labels);
             
-            NormalizedCuts normCuts = new NormalizedCuts();
-            normCuts.setColorSpaceToHSV();
-            int[] labels2 = normCuts.normalizedCut(img1Cp, labels);
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1Cp, labels2);
-            MiscDebug.writeImage(img1Cp, "_norm_cuts_" 
-                + fileNameRoot1);
-            
-            labels2 = desegment(img1.copyToImageExt(), 
-                gradSP, labels, labels2);
-            ImageExt img1Cp5 = img1.createWithDimensions();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1Cp5, labels2);
-            MiscDebug.writeImage(img1Cp5, "_norm_cuts_restored_" 
-                + fileNameRoot1);
-            
-            img1Cp = img1.copyToImageExt();
-            
-            //feed this into cie xy theta clusterer
-            List<Set<PairInt>> contiguousSets = 
-                LabelToColorHelper
-                .extractContiguousLabelPoints(
-                img1Cp, labels2);
-            List<TIntList> mergedContigIndexes =
-                imageSegmentation.
-                mergeUsingPolarCIEXYAndFrequency(
-                img1Cp, contiguousSets, 0.1f);
-            
-            int[] labels3 = new int[labels2.length];
-            int l0 = 0;
-            for (TIntList list : mergedContigIndexes) {
-                Set<PairInt> set = new HashSet<PairInt>();
-                for (int ii = 0; ii < list.size(); ++ii) {
-                    int cIdx = list.get(ii);
-                    Set<PairInt> set2 = contiguousSets.get(cIdx);
-                    set.addAll(set2);
-                    for (PairInt p2 : set2) {
-                        int pixIdx = img1.getInternalIndex(
-                            p2.getX(), p2.getY());
-                        labels3[pixIdx] = l0;
-                    }
-                }
-                l0++;
-            }
-
-                 
-            img1Cp = img1.createWithDimensions();            
-            List<Set<PairInt>> contigSets = 
-                LabelToColorHelper
-                .extractContiguousLabelPoints(
-                img1Cp, labels3);
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1Cp, labels3);
-            MiscDebug.writeImage(img1Cp, "_seg3_" 
-                + fileNameRoot1);
-            
-            sortByDecrSize(contigSets);
-            
-            System.out.println("contigSets.size=" + contigSets.size());
+            //sortByDecrSize(contigSets);
+            //System.out.println("contigSets.size=" + contigSets.size());
 
             // a quick look to see that matching a part
             // of the undersegmented contiguous regions
