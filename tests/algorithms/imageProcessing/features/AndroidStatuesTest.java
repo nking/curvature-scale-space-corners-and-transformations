@@ -6,6 +6,7 @@ import algorithms.compGeometry.RotatedOffsets;
 import algorithms.compGeometry.clustering.KMeansPlusPlus;
 import algorithms.compGeometry.clustering.KMeansPlusPlusColor;
 import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.CannyEdgeFilterAdaptive;
 import algorithms.imageProcessing.DFSContiguousIntValueFinder;
 import algorithms.imageProcessing.DFSContiguousValueFinder;
 import algorithms.imageProcessing.GreyscaleImage;
@@ -29,6 +30,7 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.GroupAverageColors;
 import algorithms.imageProcessing.util.MiscStats;
+import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
@@ -359,7 +361,7 @@ public class AndroidStatuesTest extends TestCase {
 
         String fileNameRoot1 = "";
 
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < 4; ++i) {
             switch(i) {
                 case 0: {
                     fileNameRoot1 = "android_statues_01";
@@ -390,6 +392,13 @@ public class AndroidStatuesTest extends TestCase {
             String filePathMask1 = ResourceFinder.findFileInTestResources(fileNameMask1);
             ImageExt imgMask1 = ImageIOHelper.readImageExt(filePathMask1);
 
+            //printGradients(img1, fileNameRoot1);
+        
+            GreyscaleImage gsImg = img1.copyToGreyscale();
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+            canny.setToNotUseZhangSuen();
+            canny.applyFilter(gsImg);
+            
             ImageExt img1Cp = img1.copyToImageExt();
             ImageExt img1Cp2 = img1.copyToImageExt();
 
@@ -400,7 +409,7 @@ public class AndroidStatuesTest extends TestCase {
                 = new SLICSuperPixels(img1, nClusters);
             slic.calculate();
             int[] labels = slic.getLabels();
-
+            
             ImageExt img1Labeled = img1Cp.copyToImageExt();
             ImageExt img1LabeledAlt = img1Cp.copyToImageExt();
             LabelToColorHelper.applyLabels(img1Labeled, labels);
@@ -409,22 +418,76 @@ public class AndroidStatuesTest extends TestCase {
             MiscDebug.writeImage(img1Labeled,  "_slic_" + fileNameRoot1);
             MiscDebug.writeImage(img1LabeledAlt,  "_slic_alt_" + fileNameRoot1);
 
+            // where the gradient intersects 2 different
+            // superpixels (is on the boundary of 
+            // superpixels), change the pixel to a 
+            // new label which represents a gradient
+            // separation.
+            // adding this step before normalized
+            // cuts to try to prevent merging of 
+            // some boundaries
+            TIntList gradSP = addIntersection(gsImg, labels);
+            
             NormalizedCuts normCuts = new NormalizedCuts();
             normCuts.setColorSpaceToHSV();
             int[] labels2 = normCuts.normalizedCut(img1Cp, labels);
-            labels = labels2;
             ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img1Cp, labels);
+                img1Cp, labels2);
             MiscDebug.writeImage(img1Cp, "_norm_cuts_" 
                 + fileNameRoot1);
             
-            // with labels and img1Cp2, find the
-            // contiguous same label regions and
-            // search for shape matches.
+            labels2 = desegment(img1.copyToImageExt(), 
+                gradSP, labels, labels2);
+            ImageExt img1Cp5 = img1.createWithDimensions();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img1Cp5, labels2);
+            MiscDebug.writeImage(img1Cp5, "_norm_cuts_restored_" 
+                + fileNameRoot1);
             
+            img1Cp = img1.copyToImageExt();
+            
+            //feed this into cie xy theta clusterer
+            List<Set<PairInt>> contiguousSets = 
+                LabelToColorHelper
+                .extractContiguousLabelPoints(
+                img1Cp, labels2);
+            List<TIntList> mergedContigIndexes =
+                imageSegmentation.
+                mergeUsingPolarCIEXYAndFrequency(
+                img1Cp, contiguousSets, 0.1f);
+            
+            int[] labels3 = new int[labels2.length];
+            int l0 = 0;
+            for (TIntList list : mergedContigIndexes) {
+                Set<PairInt> set = new HashSet<PairInt>();
+                for (int ii = 0; ii < list.size(); ++ii) {
+                    int cIdx = list.get(ii);
+                    Set<PairInt> set2 = contiguousSets.get(cIdx);
+                    set.addAll(set2);
+                    for (PairInt p2 : set2) {
+                        int pixIdx = img1.getInternalIndex(
+                            p2.getX(), p2.getY());
+                        labels3[pixIdx] = l0;
+                    }
+                }
+                l0++;
+            }
+
+            //TODO: one more revision to labels3,
+            //   anywhere it was made to be more segmented
+            //   than before should be restored to
+            //   the larger segmentation in labels2.
+            //   in other words, only want merging operations
+            
+            img1Cp = img1.createWithDimensions();            
             List<Set<PairInt>> contigSets = 
-                LabelToColorHelper.extractContiguousLabelPoints(
-                    img1Cp2, labels);
+                LabelToColorHelper
+                .extractContiguousLabelPoints(
+                img1Cp, labels3);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img1Cp, labels3);
+            MiscDebug.writeImage(img1Cp, "_seg3_" 
+                + fileNameRoot1);
             
             sortByDecrSize(contigSets);
             
@@ -439,6 +502,7 @@ public class AndroidStatuesTest extends TestCase {
             //    that merges super pixels without losing
             //    the boundaries of the objects of interest
             
+            /*
             //for (int j = 0; j < contigSets.size(); ++j) {
             for (int j = 1; j < 2; ++j) {
                 
@@ -477,6 +541,7 @@ public class AndroidStatuesTest extends TestCase {
                         result.toString());
                 }
             }
+            */
         }
     }
 
@@ -647,6 +712,160 @@ public class AndroidStatuesTest extends TestCase {
         }
         clusterSets.clear();
         clusterSets.addAll(out);
+    }
+
+    private void printGradients(ImageExt img, 
+        String fileNameRoot) {
+    
+        GreyscaleImage gsImg = img.copyToGreyscale();
+        GreyscaleImage gsImg1 = gsImg.copyImage();
+        GreyscaleImage gsImg2 = gsImg.copyImage();
+        
+        CannyEdgeFilterAdaptive canny = 
+            new CannyEdgeFilterAdaptive();
+        canny.setToNotUseZhangSuen();
+        canny.applyFilter(gsImg);
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            if (gsImg.getValue(i) > 0) {
+                gsImg.setValue(i, 255);
+            }
+        }
+        MiscDebug.writeImage(gsImg, 
+            "_canny_" + fileNameRoot);
+        
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.applyFirstDerivGaussian(gsImg1, 
+            SIGMA.ONE, 0, 255);
+        for (int i = 0; i < gsImg1.getNPixels(); ++i) {
+            if (gsImg1.getValue(i) > 0) {
+                gsImg1.setValue(i, 255);
+            }
+        }
+        MiscDebug.writeImage(gsImg1, 
+            "_firstderiv_" + fileNameRoot);
+        
+        PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
+        PhaseCongruencyDetector.PhaseCongruencyProducts 
+            product = pcd.phaseCongMono(gsImg2);
+        MiscDebug.writeImage(product.getThinned(), 
+            "_pcd_" + fileNameRoot);
+    }
+
+    private TIntList addIntersection(GreyscaleImage gradient, 
+        int[] labels) {
+        
+        assert(gradient.getNPixels() == labels.length);
+        
+        int maxLabel = MiscMath.findMax(labels) + 1;
+        
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        int w = gradient.getWidth();
+        int h = gradient.getHeight();
+        
+        TIntList change = new TIntArrayList();
+        
+        for (int i = 0; i < gradient.getNPixels(); ++i) {
+            if (gradient.getValue(i) < 1) {
+                continue;
+            }
+            int x = gradient.getCol(i);
+            int y = gradient.getRow(i);
+            int l0 = labels[i];
+            int l1 = -1;
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 > (w - 1))
+                    || (y2 > (h - 1))) {
+                    continue;
+                }
+                int j = gradient.getInternalIndex(x2, y2);
+                int lt = labels[j];
+                if (lt != l0) {
+                    if (l1 == -1) {
+                        l1 = lt;
+                    }
+                }
+            }
+            if (l1 != -1) {
+                // gradient is on edge of superpixels
+                change.add(i);
+                System.out.println(
+                    "x=" + x  + " y=" + y 
+                    + "  pixIdx=" + i);
+            }
+        }
+        return change;
+    }
+
+    private int[] desegment(ImageExt img, 
+        TIntList gradSP, int[] labels, int[] labels2) {
+
+        int[] dxs = Misc.dx8;
+        int[] dys = Misc.dy8;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        
+        TIntSet restore = new TIntHashSet();
+        
+        for (int i = 0; i < gradSP.size(); ++i) {
+            int pixIdx = gradSP.get(i);
+            
+            int l0 = labels2[pixIdx];
+            int l1 = -1;
+            int x = img.getCol(pixIdx);
+            int y = img.getRow(pixIdx);
+            for (int k = 0; k < dxs.length; ++k) {
+                int x2 = x + dxs[k];
+                int y2 = y + dys[k];
+                if (x2 < 0 || y2 < 0 || (x2 > (w - 1))
+                    || (y2 > (h - 1))) {
+                    continue;
+                }
+                int j = img.getInternalIndex(x2, y2);
+                int lt = labels2[j];
+                if (lt != l0) {
+                    if (l1 == -1) {
+                        l1 = lt;
+                    }
+                }
+            }
+            if (l1 == -1) {
+                // these need boundaries restored
+                ImageIOHelper.addPointToImage(x, y,
+                    img, 1, 255, 0, 0);
+                restore.add(labels[pixIdx]);
+            }
+        }
+        MiscDebug.writeImage(img, "restore");
+        
+        if (restore.isEmpty()) {
+            return labels2;
+        }
+        
+        TIntObjectMap<Set<PairInt>> label1PointMap =
+            LabelToColorHelper.extractLabelPoints(img, 
+                labels);
+        
+        int[] labels3 = Arrays.copyOf(labels2, 
+            labels2.length);
+        
+        int maxLabel = MiscMath.findMax(labels2);
+        maxLabel++;
+        TIntIterator iter = restore.iterator();
+        while (iter.hasNext()) {
+            int label = iter.next();
+            Set<PairInt> pts = label1PointMap.get(label);
+            for (PairInt pt : pts) {
+                int x = pt.getX();
+                int y = pt.getY();
+                int pixIdx = img.getInternalIndex(x, y);
+                labels3[pixIdx] = maxLabel;
+            }
+            maxLabel++;
+        }
+        return labels3;
     }
 
     private class DeltaESim implements Comparable<DeltaESim> {
