@@ -31,6 +31,7 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
          
     Much of the logic here is adopted from the scipy skimage 
     implementation of normalized cuts.
+    * https://github.com/scikit-image/scikit-image/blob/master/skimage/future/graph/
     The skimage API license is at
     https://github.com/scikit-image/scikit-image/blob/master/LICENSE.txt  
     and is:
@@ -81,21 +82,38 @@ public class NormalizedCuts {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    // 0.001 to 0.1 for RGB, 0.06
-    // 0.0001 for CIELAB, 5.e-4
-    // 1e-16 to 1e-12 for HSV
     private double thresh = 0.06;
     
-    // number of normalizd cuts to perform before 
+    // number of normalized cuts to perform before 
     // determining optimal among them.
     // cannot be smaller than 2
     private int numCuts = 10;
 
     private ColorSpace colorSpace = ColorSpace.RGB;
+    private boolean ltRGB = false;
+    
+    public void setToLowThresholdRGB() {
+        ltRGB = true;
+        colorSpace = ColorSpace.RGB;
+        thresh = 1.e-16;
+    }
+    
+    public void setColorSpaceToRGB() {
+        ltRGB = false;
+        colorSpace = ColorSpace.RGB;
+        thresh = 0.06;
+    }
     
     public void setColorSpaceToHSV() {
+        ltRGB = false;
         colorSpace = ColorSpace.HSV;
-        thresh = 1.e-16;
+        thresh = 0.25;
+    }
+    
+    public void setColorSpaceToCIELAB() {
+        ltRGB = false;
+        colorSpace = ColorSpace.CIELAB;
+        thresh = 5.e-17;
     }
     
     /**
@@ -120,8 +138,12 @@ public class NormalizedCuts {
             img, labels);
 
         log.fine("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
-                        
-        rag.populateEdgesWithColorSimilarity(colorSpace);
+                       
+        if (ltRGB) {
+            rag.populateEdgesWithLowThreshRGBSimilarity();
+        } else {
+            rag.populateEdgesWithColorSimilarity(colorSpace);
+        }
         
         RAGCSubGraph nodesGraph = rag.createANodesGraph();
         

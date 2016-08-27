@@ -5,6 +5,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.util.PairInt;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +50,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     protected final ImageExt img;
     
     protected final List<NormalizedCutsNode> nodes;
+    
+    private boolean ltRGB = false;
     
      /**
      * constructor.  
@@ -119,6 +122,10 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         return labeled;
     }
     
+    public void populateEdgesWithLowThreshRGBSimilarity() {
+        this.ltRGB = true;
+        populateEdgesWithColorSimilarity(ColorSpace.RGB);
+    }
    
     public void populateEdgesWithColorSimilarity(ColorSpace clrSpace) {
         
@@ -126,19 +133,22 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
 
         double sigma;
         if (clrSpace.equals(ColorSpace.HSV)) {
-            // max possible = sqrt(1*1 + 1*1 + 1*1) = sqrt3
-            sigma = 1.7320508;
-
+            // max possible, errs add in quad: sqrt(1 + 1 + 1)
+            sigma = 0.5;
         } else if (clrSpace.equals(ColorSpace.CIELAB)) {
             // max possible deltaE2000 = 19.22
-            sigma = 19.22;
-
+            sigma = Math.sqrt(19.22);
+           
         } else {
-             // rgb
-            // max possible = math.sqrt(3*255*255) = sqrt(3)*255
-            sigma = 441.6729559;
+            if (ltRGB) {
+                sigma = 1.7320508;
+            } else {
+                // rgb  max: errs add in quad, so sqrt(3*(255*255))
+                //sigma = 441.6729559;
+                sigma = 22; //30
+            }
         }
-        
+       
         Set<PairInt> added = new HashSet<PairInt>();
         
         for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
@@ -164,6 +174,39 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 double similarity = Math.exp(-1*d*d/sigma);
                 diffOrSim.set(idx1, idx2, similarity);
                 diffOrSim.set(idx2, idx1, similarity);
+            }
+        }
+    }
+    
+    public void populateEdgesWithColorDifference(ColorSpace clrSpace) {
+        
+        populatePairDifferences(clrSpace);
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // set both [i][j] and [j][i] to make symmetric matrix
+                double d = diffOrSim.get(idx1, idx2);
+                assert(d == diffOrSim.get(idx2, idx1));
+                double diff = Math.abs(d);
+                diffOrSim.set(idx1, idx2, diff);
+                diffOrSim.set(idx2, idx1, diff);
             }
         }
     }
@@ -197,7 +240,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
     private void populatePairDifferences(ColorSpace clrSpace) {
         
         if (diffOrSim != null) {
-            throw new IllegalStateException("this method is expected to be inoked only once");
+            throw new IllegalStateException("this method is expected to be invoked only once");
         }
         
         this.colorSpace = clrSpace;
@@ -220,9 +263,21 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
 
                 int label = labels[row][col];
                 
-                nodeColors[0][label] += img.getR(col, row);
-                nodeColors[1][label] += img.getG(col, row);
-                nodeColors[2][label] += img.getB(col, row);
+                int r = img.getR(col, row);
+                int g = img.getG(col, row);
+                int b = img.getB(col, row);
+                
+                if (colorSpace.equals(ColorSpace.HSV)) {
+                    float[] hsb = new float[3];
+                    Color.RGBtoHSB(r, g, b, hsb);
+                    nodeColors[0][label] += hsb[0];
+                    nodeColors[1][label] += hsb[1];
+                    nodeColors[2][label] += hsb[2];
+                } else {
+                    nodeColors[0][label] += r;
+                    nodeColors[1][label] += g;
+                    nodeColors[2][label] += b;
+                }
                 count[label]++;
             }
         }
@@ -270,10 +325,12 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                     ));
                 } else {
                     //RGB
-                    float diffR = nodeColors[0][idx1] - nodeColors[0][idx2];
-                    float diffG = nodeColors[1][idx1] - nodeColors[1][idx2];
-                    float diffB = nodeColors[2][idx1] - nodeColors[2][idx2];
-                    diff = Math.sqrt(diffR * diffR + diffG * diffG + diffB * diffB);
+                    float sumDiff = 0;
+                    for (int m = 0; m < 3; ++m) {
+                        float d = nodeColors[m][idx1] - nodeColors[m][idx2];
+                        sumDiff += Math.sqrt(d * d);
+                    }
+                    diff = Math.sqrt(sumDiff);
                 }
                 // set both [i][j] and [j][i] to make matrix symmetric
                 diffOrSim.set(idx1, idx2, diff);
