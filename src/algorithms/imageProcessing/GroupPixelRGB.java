@@ -7,15 +7,11 @@ import java.util.Set;
  *
  * @author nichole
  */
-public class GroupPixelRGB {
+public class GroupPixelRGB extends GroupPixelRGB0 {
     
-    protected float avgRed;
-    protected float avgGreen;
-    protected float avgBlue;
     protected float stdDevRed;
     protected float stdDevGreen;
     protected float stdDevBlue;
-    
     protected float avgColorDiff;
     protected float stdDevColorDiff;
     
@@ -32,88 +28,47 @@ public class GroupPixelRGB {
         calculateColors(points, colorImage, xOffset, yOffset);
     }
     
-    protected void calculateColors(final Set<PairInt> points, ImageExt colorImage,
-        int xOffset, int yOffset) {
+    protected void calculateColors(final Set<PairInt> points, 
+        ImageExt colorImage, int xOffset, int yOffset) {
+        
+        super.calculateColors(points, colorImage, xOffset, yOffset);
         
         float n = points.size();
-        
-        float sumRed = 0;
-        float sumGreen = 0;
-        float sumBlue = 0;
-        
         int i = 0;
-        
-        for (PairInt p : points) {
-            
-            int x = p.getX() + xOffset;
-            int y = p.getY() + yOffset;
-            int idx = colorImage.getInternalIndex(x, y);
-                        
-            sumRed += colorImage.getR(idx);
-            sumGreen += colorImage.getG(idx);
-            sumBlue += colorImage.getB(idx);
-            
-            i++;
-        }
-        
-        avgRed = sumRed/n;
-        avgGreen = sumGreen/n;
-        avgBlue = sumBlue/n;
         
         double sumStdDevRed = 0;
         double sumStdDevGreen = 0;
         double sumStdDevBlue = 0;
         double sumColorDiff = 0;
-        
         float[] colorDiff = new float[points.size()];
-        
-        i = 0;
         for (PairInt p : points) {
-            
             int x = p.getX() + xOffset;
             int y = p.getY() + yOffset;
             int idx = colorImage.getInternalIndex(x, y);
-            
             int r = colorImage.getR(idx);
             int g = colorImage.getG(idx);
             int b = colorImage.getB(idx);
-            
             float diffR = r - avgRed;
             float diffG = g - avgGreen;
             float diffB = b - avgBlue;
-            
             sumStdDevRed += (diffR * diffR);
             sumStdDevGreen += (diffG * diffG);
             sumStdDevBlue += (diffB * diffB);
-            
-            colorDiff[i] = (float)Math.sqrt(diffR*diffR + diffG*diffG + 
-                diffB*diffB);
+            colorDiff[i] = (float) Math.sqrt(diffR * diffR + diffG * diffG + diffB * diffB);
             sumColorDiff += colorDiff[i];
-            
             i++;
         }
-        
-        avgColorDiff = (float)sumColorDiff/n;
-        
-        stdDevRed = (n > 1) ? 
-            (float)Math.sqrt(sumStdDevRed/(n - 1)) : Float.POSITIVE_INFINITY;
-        
-        stdDevGreen = (n > 1) ? 
-            (float)Math.sqrt(sumStdDevGreen/(n - 1)) : Float.POSITIVE_INFINITY;
-        
-        stdDevBlue = (n > 1) ? 
-            (float)Math.sqrt(sumStdDevBlue/(n - 1)) : Float.POSITIVE_INFINITY;
-        
+        avgColorDiff = (float) sumColorDiff / n;
+        stdDevRed = (n > 1) ? (float) Math.sqrt(sumStdDevRed / (n - 1)) : Float.POSITIVE_INFINITY;
+        stdDevGreen = (n > 1) ? (float) Math.sqrt(sumStdDevGreen / (n - 1)) : Float.POSITIVE_INFINITY;
+        stdDevBlue = (n > 1) ? (float) Math.sqrt(sumStdDevBlue / (n - 1)) : Float.POSITIVE_INFINITY;
         double sumStdDevColorDiff = 0;
-        
-        for (i = 0; i < points.size(); i++) {            
+        for (i = 0; i < points.size(); i++) {
             float diffColorDiff = colorDiff[i] - avgColorDiff;
-            sumStdDevColorDiff += (diffColorDiff * diffColorDiff);            
+            sumStdDevColorDiff += (diffColorDiff * diffColorDiff);
         }
-        
-        stdDevColorDiff = (n > 1) ? 
-            (float)Math.sqrt(sumStdDevColorDiff/(n - 1)) : Float.POSITIVE_INFINITY;
-    }
+        stdDevColorDiff = (n > 1) ? (float) Math.sqrt(sumStdDevColorDiff / (n - 1)) : Float.POSITIVE_INFINITY;
+    }    
     
     public float calcColorDiffToOther(int otherRed, int otherGreen, 
         int otherBlue) {
@@ -127,14 +82,6 @@ public class GroupPixelRGB {
         return dist;
     }    
 
-
-    /**
-     * @return the averageColorDifference
-     */
-    public float getAvgColorDiff() {
-        return avgColorDiff;
-    }
-
     /**
      * @return the standardDeviationColorDifference
      */
@@ -142,31 +89,6 @@ public class GroupPixelRGB {
         return stdDevColorDiff;
     }
 
-    /**
-     * @return the averageRed
-     */
-    public float getAvgRed() {
-        return avgRed;
-    }
-
-    /**
-     * @return the averageGreen
-     */
-    public float getAvgGreen() {
-        return avgGreen;
-    }
-
-    /**
-     * @return the averageBlue
-     */
-    public float getAvgBlue() {
-        return avgBlue;
-    }
-    
-    public int getAvgRGB() {
-        float avg = (avgRed + avgGreen + avgBlue)/3.f;
-        return Math.round(avg);
-    }
 
     /**
      * @return the standardDeviationRed
@@ -189,6 +111,13 @@ public class GroupPixelRGB {
         return stdDevBlue;
     }
 
+    /**
+     * @return the averageColorDifference
+     */
+    public float getAvgColorDiff() {
+        return avgColorDiff;
+    }
+    
     @Override
     public String toString() {
         

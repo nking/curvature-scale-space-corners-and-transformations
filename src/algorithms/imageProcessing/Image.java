@@ -193,6 +193,16 @@ public class Image {
     public int getInternalIndex(int col, int row) {
         return (row * width) + col;
     }
+    
+    /**
+     * given the image column and row, return a pixel number which can be used
+     * to retrieve data.
+     * @param p pixels coordinates x and y
+     * @return 
+     */
+    public int getInternalIndex(PairInt p) {
+        return getInternalIndex(p.getX(), p.getY());
+    }
   
     /**
      * set the r, g, and b values for the pixel at location with col and row
