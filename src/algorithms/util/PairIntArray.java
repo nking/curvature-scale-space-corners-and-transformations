@@ -1,5 +1,7 @@
 package algorithms.util;
 
+import algorithms.MultiArrayMergeSort;
+import algorithms.QuickSort;
 import algorithms.Rotate;
 import java.util.Arrays;
 
@@ -326,6 +328,14 @@ public class PairIntArray {
             y[idx2] = swapY;
             count++;
         }
+    }
+    
+    /**
+     * sort by x ascending, then break ties
+     * by y ascending.
+     */
+    public void sortByXAsc() {
+        QuickSort.sortBy1stArg(x, y, 0, n - 1);
     }
     
     public PairIntArray copy() {

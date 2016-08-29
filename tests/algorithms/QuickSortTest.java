@@ -487,4 +487,19 @@ public class QuickSortTest extends TestCase {
         */
     }
 
+    public void testSortByXAsc() {
+        
+        int[] x = new int[]{10, 1, 5, 30,  5};
+        int[] y = new int[]{10, 1, 6, 30,  5};
+        
+        int[] expectedX = new int[]{1, 5, 5, 10, 30};
+        int[] expectedY = new int[]{1, 5, 6, 10, 30};
+        
+        QuickSort.sortBy1stThen2nd(x, y);
+        
+        for (int i = 0; i < x.length; i++) {
+            assertEquals(expectedX[i], x[i]);
+            assertEquals(expectedY[i], y[i]);
+        }
+    }
 }

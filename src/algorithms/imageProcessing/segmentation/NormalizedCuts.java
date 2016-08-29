@@ -81,8 +81,6 @@ import no.uib.cipr.matrix.sparse.FlexCompRowMatrix;
 public class NormalizedCuts {
     
     protected Logger log = Logger.getLogger(this.getClass().getName());
-
-    private double thresh = 0.06;
     
     // number of normalized cuts to perform before 
     // determining optimal among them.
@@ -91,29 +89,39 @@ public class NormalizedCuts {
 
     private ColorSpace colorSpace = ColorSpace.RGB;
     private boolean ltRGB = false;
+    private double thresh = 0.06;
+    double sigma = 22;
     
     public void setToLowThresholdRGB() {
         ltRGB = true;
         colorSpace = ColorSpace.RGB;
+        // for superpixels w/ n=200
         thresh = 1.e-16;
+        sigma = 1.7320508;
     }
     
     public void setColorSpaceToRGB() {
         ltRGB = false;
         colorSpace = ColorSpace.RGB;
+        // for superpixels w/ n=200 thresh=0.06 sigma=22
         thresh = 0.06;
+        sigma = 22;
     }
     
     public void setColorSpaceToHSV() {
         ltRGB = false;
         colorSpace = ColorSpace.HSV;
-        thresh = 0.25;
+        // for superpixels w/ n=200  thresh=0.05, sigma=0.1
+        thresh = 0.05;
+        sigma = 0.1;
     }
     
     public void setColorSpaceToCIELAB() {
         ltRGB = false;
         colorSpace = ColorSpace.CIELAB;
-        thresh = 5.e-17;
+        // for superpixels w/ n=200 thresh=1e-12  sigma=6
+        thresh = 1e-12;//-12
+        sigma = 6;
     }
     
     /**
@@ -140,9 +148,10 @@ public class NormalizedCuts {
         log.fine("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
                        
         if (ltRGB) {
-            rag.populateEdgesWithLowThreshRGBSimilarity();
+            rag.populateEdgesWithLowThreshRGBSimilarity(sigma);
         } else {
-            rag.populateEdgesWithColorSimilarity(colorSpace);
+            rag.populateEdgesWithColorSimilarity(colorSpace,
+                sigma);
         }
         
         RAGCSubGraph nodesGraph = rag.createANodesGraph();

@@ -122,33 +122,18 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         return labeled;
     }
     
-    public void populateEdgesWithLowThreshRGBSimilarity() {
+    public void populateEdgesWithLowThreshRGBSimilarity(
+        double sigma) {
         this.ltRGB = true;
-        populateEdgesWithColorSimilarity(ColorSpace.RGB);
+        populateEdgesWithColorSimilarity(ColorSpace.RGB,
+            sigma);
     }
    
-    public void populateEdgesWithColorSimilarity(ColorSpace clrSpace) {
+    public void populateEdgesWithColorSimilarity(
+        ColorSpace clrSpace, double sigma) {
         
         populatePairDifferences(clrSpace);
 
-        double sigma;
-        if (clrSpace.equals(ColorSpace.HSV)) {
-            // max possible, errs add in quad: sqrt(1 + 1 + 1)
-            sigma = 0.5;
-        } else if (clrSpace.equals(ColorSpace.CIELAB)) {
-            // max possible deltaE2000 = 19.22
-            sigma = Math.sqrt(19.22);
-           
-        } else {
-            if (ltRGB) {
-                sigma = 1.7320508;
-            } else {
-                // rgb  max: errs add in quad, so sqrt(3*(255*255))
-                //sigma = 441.6729559;
-                sigma = 22; //30
-            }
-        }
-       
         Set<PairInt> added = new HashSet<PairInt>();
         
         for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
