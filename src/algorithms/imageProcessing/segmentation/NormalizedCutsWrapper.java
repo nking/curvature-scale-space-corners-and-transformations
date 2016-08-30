@@ -2,6 +2,15 @@ package algorithms.imageProcessing.segmentation;
 
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.MiscMath;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.iterator.TIntObjectIterator;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+import java.util.logging.Logger;
 
 /**
  * a class to subdivide the data, run
@@ -16,6 +25,8 @@ public class NormalizedCutsWrapper {
     
     private ColorSpace colorSpace = ColorSpace.RGB;
     private boolean ltRGB = false;
+    
+    private Logger log = Logger.getLogger(this.getClass().getName());
    
     public NormalizedCutsWrapper() {
     }
@@ -72,11 +83,16 @@ public class NormalizedCutsWrapper {
         int binX = img.getWidth()/nX;
         int binY = img.getHeight()/nY;
         
+        log.info("nX=" + nX + " nY=" + nY + " binX=" + binX
+            + " binY=" + binY);
+        
         if (binX < 2*nBuffer) {
             //TODO: handle this
+            int z = 1;
         }
         if (binY < 2*nBuffer) {
             //TODO: handle this
+            int z = 1;
         }
         
         int nSub = nX * nY;
@@ -120,6 +136,7 @@ public class NormalizedCutsWrapper {
                         sLabels[pixIdx2] = labels[pixIdx];
                     }
                 }
+                LabelToColorHelper.condenseLabels(sLabels);
                 
                 int[] labels2 = run(img2, sLabels);
                 
@@ -132,13 +149,17 @@ public class NormalizedCutsWrapper {
                 // or overlap below in cLabels
                 if (i > 0) {
                     // merge the overlapping buffer region to left
-                    maxLabel2 = mergeLeft(cLabels, x0, y0, y1, 
+                    maxLabel2 = mergeLeft(cLabels, w, h,
+                        labels2, img2.getWidth(), img2.getHeight(),
+                        x0, y0, y1, 
                         nBuffer, maxLabel2);
                     x0 += nBuffer;
                 }
                 if (j > 0) {
                     // merge the overlapping buffer region below
-                    maxLabel2 = mergeBelow(cLabels, y0, x0, x1, 
+                    maxLabel2 = mergeBelow(cLabels, w, h,
+                        labels2, img2.getWidth(), img2.getHeight(),
+                        y0, x0, x1, 
                         nBuffer, maxLabel2);
                     y0 += nBuffer;
                 }
@@ -180,21 +201,121 @@ public class NormalizedCutsWrapper {
         return normCuts.normalizedCut(img, labels);
     }
 
-    private int mergeLeft(int[] labels, int x0, 
-        int y0, int y1, int nBuffer, int maxLabel) {
+    private int mergeLeft(int[] labels1, int w1, int h1, 
+        int[] labels2, int w2, int h2,
+        final int x0, final int y0, final int y1, 
+        int nBuffer, int maxLabel) {
         
         /*
                 | binX   |    i=1
                 |      [ | ]       
                          x0
         */
-
-        throw new UnsupportedOperationException(
-            "Not implemented yet."); 
+        
+        // key = label from labels2, value=existing label in
+        //       labels1
+        TIntObjectMap<TIntSet> overlap2 
+            = new TIntObjectHashMap<TIntSet>();
+        
+        // key = label from labels1, value = set of pixels 
+        //       in labels2 at that overlapping location
+        TIntObjectMap<TIntSet> map1 = 
+            new TIntObjectHashMap<TIntSet>();
+       
+        // key = label from labels2, value = set of pixels 
+        //       in labels2 with that label
+        TIntObjectMap<TIntSet> map2 = 
+            new TIntObjectHashMap<TIntSet>();
+        
+        for (int i = x0 - nBuffer; i < x0 + nBuffer; ++i) {
+            int i2 = i - x0;
+            for (int j = y0; j < y1; ++j) {
+                int j2 = j - y0;
+                int pixIdx1 = (j * w1) + i;
+                int pixIdx2 = (j2 * w2) + i2;
+                int l1 = labels1[pixIdx1];
+                int l2 = labels2[pixIdx1];
+                
+                TIntSet set0 = overlap2.get(l2);
+                if (set0 == null) {
+                    set0 = new TIntHashSet();
+                    overlap2.put(l2, set0);
+                }
+                set0.add(l1);
+                
+                TIntSet set2 = map2.get(l2);
+                if (set2 == null) {
+                    set2 = new TIntHashSet();
+                    map2.put(l2, set2);
+                }
+                set2.add(pixIdx2);
+                
+                TIntSet set1 = map1.get(l1);
+                if (set1 == null) {
+                    set1 = new TIntHashSet();
+                    map1.put(l1, set1);
+                }
+                set1.add(pixIdx2);
+            }
+        }
+        
+        // --------
+        
+        // key=original label2, value=new label2 assignment
+        TIntIntMap labels2Map = new TIntIntHashMap();
+        
+        TIntObjectIterator<TIntSet> iter = overlap2.iterator();
+        for (int i = 0; i < overlap2.size(); ++i) {
+            iter.advance();
+            int l2 = iter.key();
+            TIntSet l1Set = iter.value();
+            int l1Assign = -1;
+            if (l1Set.size() > 1) {
+                int maxL1Sz = Integer.MIN_VALUE;
+                int maxL1 = -1;
+                TIntIterator iter2 = l1Set.iterator();
+                while (iter2.hasNext()) {
+                    int l1T = iter2.next();
+                    int sz = map1.get(l1T).size();
+                    if (sz > maxL1Sz) {
+                        maxL1Sz = sz;
+                        maxL1 = l1T;
+                    }
+                }
+                l1Assign = maxL1;
+            } else {
+                l1Assign = l1Set.iterator().next();
+            }
+            labels2Map.put(l2, l1Assign);
+        }
+        
+        // -- iterate over map2, skipping existing in labels2Map
+        //    else, assign value of maxValue+1
+        iter = map2.iterator();
+        for (int i = 0; i < map2.size(); ++i) {
+            iter.advance();
+            int l2Orig = iter.key();
+            if (!labels2Map.containsKey(l2Orig)) {
+                maxLabel++;
+                labels2Map.put(l2Orig, maxLabel);
+            }
+        }
+        
+        // reassign labels2 using labels2Map
+        for (int i2 = 0; i2 < w2; ++i2) {
+            for (int j2 = 0; j2 < h2; ++j2) {
+                int pixIdx2 = (j2 * w2) + i2;
+                int l2 = labels2[pixIdx2];
+                labels2[pixIdx2] = labels2Map.get(l2);
+            }
+        }
+        
+        return maxLabel;
     }
     
-    private int mergeBelow(int[] labels, int y0, 
-        int x0, int x1, int nBuffer, int maxLabel) {
+    private int mergeBelow(int[] labels1, int w1, int h1, 
+        int[] labels2, int w2, int h2,
+        int y0, int x0, int x1, int nBuffer, int maxLabel) {
         
         /*
         
