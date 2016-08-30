@@ -13205,11 +13205,45 @@ int z = 1;
         
         int nClusters = 200;
 
+        // TODO: consider reducing the clrNorm from default
         SLICSuperPixels slic
             = new SLICSuperPixels(img, nClusters);
         slic.calculate();
         int[] labels = slic.getLabels();
     
+        {
+            NormalizedCuts normCuts = new NormalizedCuts();
+            normCuts.setColorSpaceToHSV();
+            int[] labels3 = normCuts.normalizedCut(imgCp, labels);
+
+            log.info("norm 0 cuts finished");
+
+            List<Set<PairInt>> contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels3);
+            for (int i = 0; i< contigSets.size(); ++i) {
+                for (PairInt p : contigSets.get(i)) {
+                    int pixIdx = img.getInternalIndex(p);
+                    labels3[pixIdx] = i;
+                }
+            }
+
+            TIntList gradSP = findIntersection(gsImg, labels);
+
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                imgCp, labels3);
+            MiscDebug.writeImage(imgCp, "_norm0_"
+                + MiscDebug.getCurrentTimeFormatted());
+
+            labels3 = desegment(imgCp, gradSP, labels, labels3);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                imgCp, labels3);
+            MiscDebug.writeImage(imgCp, "_norm0_2_"
+                + MiscDebug.getCurrentTimeFormatted());
+            // this is to compare to the final results
+            
+            imgCp = img.copyToImageExt();
+        }
+        
         // modify labels by intersection with canny edges.
         // NOTE: that when a working pattern is in place,
         // can make this more efficient.  for example,
