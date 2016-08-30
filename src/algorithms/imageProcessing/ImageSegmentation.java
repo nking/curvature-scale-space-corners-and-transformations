@@ -18,6 +18,7 @@ import algorithms.imageProcessing.features.PhaseCongruencyDetector;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
+import algorithms.imageProcessing.segmentation.NormalizedCutsWrapper;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.imageProcessing.util.MiscStats;
@@ -13284,7 +13285,7 @@ int z = 1;
         Arrays.fill(labels2, contigSets.size());
         // examine fraction of boundaries
         //    and then consider chaining the
-        //    large fraction sup
+        //    large fraction 
         for (int i = 0; i < nSize.size(); ++i) {
             float fraction = (float)nInter.get(i)/
                 (float)nSize.get(i);
@@ -13328,16 +13329,15 @@ int z = 1;
         MiscDebug.writeImage(img3, "_slic_grad__hsv_" +
             MiscDebug.getCurrentTimeFormatted());
 
-        // NOTE: for normalized cuts the number of labels 
-        // should be kept to 200 or smaller if possible.
-        //    so need to chop the image up into 
-        //    overlapping sections, each of which have 200 or 
-        //    so labels and then combine the results.
-        // TODO: make a wrapper class for that
-        
         log.info("nLabels = " + MiscMath.findMax(labels3));
         
-        NormalizedCuts normCuts = new NormalizedCuts();
+        //NOTE: the merging to recombine the
+        // results correctly int NormalizedCutsWrapper
+        // needs alot of changes.
+        // considering other techniques to still use
+        // normalized cuts, but with a label limit
+        // of about 200.
+        NormalizedCutsWrapper normCuts = new NormalizedCutsWrapper();
         normCuts.setColorSpaceToHSV();
         labels3 = normCuts.normalizedCut(imgCp, labels3);
 

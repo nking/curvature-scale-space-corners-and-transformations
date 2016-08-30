@@ -299,5 +299,23 @@ public class LabelToColorHelper {
         
         return adjacencyMap;
     }
+
+    public static void condenseLabels(int[] labels) {
+        
+        int count = 0;
+        TIntIntMap map = new TIntIntHashMap();
+        for (int i = 0; i < labels.length; ++i) {
+            int label = labels[i];
+            int label2;
+            if (map.containsKey(label)) {
+                label2 = map.get(label);
+            } else {
+                label2 = count;
+                count++;
+                map.put(label, label2);
+            }
+            labels[i] = label2;
+        }
+    }
     
 }
