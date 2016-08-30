@@ -595,6 +595,59 @@ public class Image {
         return img2;
     }
     
+    /**
+     * copy the image to another instance
+     * @param x0 inclusive start x coordinate of subimage
+     * @param x1 exclusive stop x coordinate of sub image
+     * @param y0 inclusive
+     * @param y1 exclusive
+     * @return 
+     */
+    public Image copySubImage(int x0, int x1, int y0, int y1) {
+        
+        if (x0 < 0 || x0 > width){
+            throw new IllegalArgumentException(
+                "x0 is out of bounds");
+        } else if (x1 < 0 || x1 > width){
+            throw new IllegalArgumentException(
+                "x1 is out of bounds");
+        } else if (x1 <= x0) {
+            throw new IllegalArgumentException(
+                "x1 must be larger than x0");
+        }
+        if (y0 < 0 || y0 > height){
+            throw new IllegalArgumentException(
+                "y0 is out of bounds");
+        } else if (y1 < 0 || y1 > height){
+            throw new IllegalArgumentException(
+                "y1 is out of bounds");
+        } else if (y1 <= y0) {
+            throw new IllegalArgumentException(
+                "y1 must be larger than y0");
+        }
+        
+        int w = x1 - x0 + 1;
+        int h = y1 - y0 + 1;
+       
+        Image img2 = createNewImage(w, h);
+        
+        for (int i = x0; i < x1; ++i) {
+            for (int j = y0; j < y1; ++j) {
+                int pixIdx = getInternalIndex(i, j);
+                int r = getR(pixIdx);
+                int g = getG(pixIdx);
+                int b = getB(pixIdx);
+                img2.setRGB(i - x0, j - y0, r, g, b);
+            }
+        }
+       
+        return img2;
+    }
+    
+    protected Image createNewImage(int width, int height) {
+        return new Image(width, height, !is64Bit);
+    }
+    
     public int[] getRValues() {
         
         int[] values = new int[nPixels];

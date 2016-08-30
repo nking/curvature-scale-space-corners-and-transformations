@@ -308,6 +308,11 @@ public class ImageExt extends Image {
     }
     
     @Override
+    protected Image createNewImage(int width, int height) {
+        return new ImageExt(width, height, !is64Bit);
+    }
+    
+    @Override
     public ImageExt createWithDimensions() {
        
         ImageExt img2 = new ImageExt(width, height, is64Bit);
@@ -370,6 +375,36 @@ public class ImageExt extends Image {
         return img2;
     }
    
+    /**
+     * copy the image to another instance
+     * @param x0 inclusive start x coordinate of subimage
+     * @param x1 exclusive stop x coordinate of sub image
+     * @param y0 inclusive
+     * @param y1 exclusive
+     * @return 
+     */
+    @Override
+    public Image copySubImage(int x0, int x1, int y0, int y1) {
+        
+        ImageExt img2 = (ImageExt) super.copySubImage(x0, x1, y0, y1);
+               
+        for (int i = x0; i < x1; ++i) {
+            for (int j = y0; j < y1; ++j) {
+                int pixIdx = getInternalIndex(i, j);
+                int pixIdx2 = img2.getInternalIndex(i - x0, j - y0);
+                img2.cieX[pixIdx2] = cieX[pixIdx];
+                img2.cieY[pixIdx2] = cieY[pixIdx];
+                img2.hue[pixIdx2] = hue[pixIdx];
+                img2.saturation[pixIdx2] = saturation[pixIdx];
+                img2.brightness[pixIdx2] = brightness[pixIdx];
+                img2.luma[pixIdx2] = luma[pixIdx];
+                img2.extPopulated[pixIdx2] = extPopulated[pixIdx];
+            }
+        }
+       
+        return img2;
+    }
+    
     public void resetTo(Image copyThis) {
         
         if (copyThis.getNPixels() != nPixels) {

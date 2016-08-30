@@ -345,5 +345,52 @@ public class ImageExtTest extends TestCase {
         
     }
     
+    public void testCopySubImage() {
+        
+        int w = 10;
+        int h = 10;
+        
+        ImageExt img = new ImageExt(w, h);
+        
+        for (int i = 0; i < w; ++i) {
+            for (int j = 0; j < h; ++j) {
+                int pixIdx = img.getInternalIndex(i, j);
+                img.setRGB(pixIdx, i, i, j);
+                img.calculateColorIncludingNeighbors(pixIdx, 0);
+            }
+        }
+        
+        double tol = 0.01;
+        
+        ImageExt img2 = (ImageExt)img.copySubImage(5, w, 5, h);
+        for (int i = 5; i < w; ++i) {
+            for (int j = 5; j < h; ++j) {
+                int pixIdx = img.getInternalIndex(i, j);
+                int pixIdx2 = img2.getInternalIndex(i - 5, j - 5);
+                int r = img.getR(pixIdx);
+                int g = img.getG(pixIdx);
+                int b = img.getB(pixIdx);
+                int r2 = img2.getR(pixIdx2);
+                int g2 = img2.getG(pixIdx2);
+                int b2 = img2.getB(pixIdx2);
+                assertEquals(r, r2);
+                assertEquals(g, g2);
+                assertEquals(b, b2);
+                assertTrue(Math.abs(img.cieX[pixIdx] -
+                    img2.cieX[pixIdx2]) < tol);
+                assertTrue(Math.abs(img.cieY[pixIdx] -
+                    img2.cieY[pixIdx2]) < tol);
+                assertTrue(Math.abs(img.hue[pixIdx] -
+                    img2.hue[pixIdx2]) < tol);
+                assertTrue(Math.abs(img.saturation[pixIdx] -
+                    img2.saturation[pixIdx2]) < tol);
+                assertTrue(Math.abs(img.brightness[pixIdx] -
+                    img2.brightness[pixIdx2]) < tol);
+                assertTrue(Math.abs(img.luma[pixIdx] -
+                    img2.luma[pixIdx2]) < tol);
+            }
+        }
+        
+    }
     
 }
