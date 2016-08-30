@@ -75,7 +75,7 @@ public class LinearRegression {
             median = s[idx];
         }
         
-        log.info("thiel sen beta=" + median);
+        log.fine("thiel sen beta=" + median);
        
         // find the y-intercept as the median of the values y[i] − median * x[i]
         float[] s2 = new float[x.length];
@@ -262,7 +262,7 @@ public class LinearRegression {
             median = s[idx];
         }
         
-        log.info("thiel sen beta=" + median);
+        log.fine("thiel sen beta=" + median);
        
         // find the y-intercept as the median of the values y[i] − median * x[i]
         float[] s2 = new float[x.length];
@@ -349,7 +349,7 @@ public class LinearRegression {
             median = s[idx];
         }
         
-        log.info("thiel sen beta=" + median);
+        log.fine("thiel sen beta=" + median);
        
         // find the y-intercept as the median of the values y[i] − median * x[i]
         float[] s2 = new float[x.length];

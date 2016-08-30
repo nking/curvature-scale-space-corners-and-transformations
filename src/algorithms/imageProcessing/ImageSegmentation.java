@@ -10090,8 +10090,7 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
     }
 
     private void mergeSmallSegments(ImageExt img,
-        int[] labels, int sizeLimit, ColorSpace clrSpace,
-        double clrThresh) {
+        int[] labels, int sizeLimit, ColorSpace clrSpace) {
         
         CIEChromaticity cieC = null;
         if (ColorSpace.CIELAB.equals(clrSpace)) {
@@ -13022,6 +13021,154 @@ int z = 1;
      * @param img
      * @return
      */
+    public int[] objectSegmentation0(ImageExt img) {
+
+        GreyscaleImage gsImg = img.copyToGreyscale();
+        ImageExt imgCp = img.copyToImageExt();
+
+        boolean usePhaseCongruency = false;
+        
+        if (!usePhaseCongruency) {
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+            canny.setToNotUseZhangSuen();
+            canny.applyFilter(gsImg);
+            // for DEBUGGING
+            for (int i = 0; i < gsImg.getNPixels(); ++i) {
+                if (gsImg.getValue(i) > 0) {
+                    gsImg.setValue(i, 255);
+                }
+            }
+        } else {
+            PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
+            PhaseCongruencyDetector.PhaseCongruencyProducts pr 
+                = pcd.phaseCongMono(gsImg);
+            for (int i = 0; i < pr.getThinned().length; ++i) {
+                for (int j = 0; j < pr.getThinned()[i].length; ++j) {
+                    if (pr.getThinned()[i][j] > 0) {
+                        gsImg.setValue(j, i, 255);
+                    } else {
+                        gsImg.setValue(j, i, 0);
+                    }
+                }
+            }
+        }
+        MiscDebug.writeImage(gsImg, "_gradient_" + 
+            MiscDebug.getCurrentTimeFormatted());
+        
+        int nClusters = 200;
+
+        SLICSuperPixels slic
+            = new SLICSuperPixels(img, nClusters);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+        
+        TIntList gradSP = findIntersection(gsImg, labels);
+
+        NormalizedCuts normCuts = new NormalizedCuts();
+        normCuts.setColorSpaceToRGB();
+        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
+
+        {
+            ImageExt img3 = img.copyToImageExt();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img3, labels2);
+            MiscDebug.writeImage(img3, "_norm_"
+                + MiscDebug.getCurrentTimeFormatted());
+        
+            List<Set<PairInt>> contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels);
+            algorithms.compGeometry.PerimeterFinder2 
+                finder2 
+                = new algorithms.compGeometry.PerimeterFinder2();
+            List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
+            for (Set<PairInt> set : contigSets) {
+                borders.add(finder2.extractBorder(set));
+            }
+            TIntList nInter = new TIntArrayList();
+            TIntList nSize = new TIntArrayList();
+            TObjectIntMap pointIndexMap = new TObjectIntHashMap();
+            for (int i = 0; i < borders.size(); ++i) {
+                Set<PairInt> set = borders.get(i);
+                for (PairInt p : set) {
+                    pointIndexMap.put(p, i);
+                }
+                nInter.add(0);
+                nSize.add(set.size());
+            }
+            for (int i = 0; i < gsImg.getNPixels(); ++i) {
+                if (gsImg.getValue(i) > 0) {
+                    PairInt p = new PairInt(gsImg.getCol(i),
+                        gsImg.getRow(i));
+                    if (pointIndexMap.containsKey(p)) {
+                        int idx = pointIndexMap.get(p);
+                        nInter.set(idx, nInter.get(idx) + 1);
+                    }
+                }
+            }
+            // examine fraction of boundaries
+            //    and then consider chaining the
+            //    large fraction sup
+            for (int i = 0; i < nSize.size(); ++i) {
+                float fraction = (float)nInter.get(i)/
+                    (float)nSize.get(i);
+                if (fraction > 0.25) {
+                    Set<PairInt> set = borders.get(i);
+                    for (PairInt p : set) {
+                        img3.setRGB(p.getX(), p.getY(), 0, 0, 0);
+                    }
+                }
+            }
+            MiscDebug.writeImage(img3, "_slic_grad_" +
+                MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        labels2 = desegment(imgCp, gradSP, labels, labels2);
+
+        List<Set<PairInt>> contiguousSets =
+            LabelToColorHelper
+            .extractContiguousLabelPoints(imgCp, labels2);
+
+        {
+            ImageExt img3 = img.copyToImageExt();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img3, labels2);
+            MiscDebug.writeImage(img3, "_norm2_"
+                + MiscDebug.getCurrentTimeFormatted());
+        }
+        
+        int sizeLimit = 7;
+        if (img.getNPixels() < 100) {
+            sizeLimit = 1;
+        }
+
+        List<Set<PairInt>> csa = copy(contiguousSets);
+        int[] labels3a = mergeByCIEXYTheta(imgCp, csa);
+
+        mergeSmallSegments(imgCp, labels3a,
+            sizeLimit, ColorSpace.CIELAB);
+
+        int[] labels3 = mergeByHSV(imgCp, contiguousSets);
+
+        mergeSmallSegments(imgCp, labels3,
+            sizeLimit, ColorSpace.HSV);
+
+        examineOverlappingEdges(imgCp, labels3a, labels3);
+
+        /*
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels3);
+        MiscDebug.writeImage(imgCp, "_comb3_"
+            + MiscDebug.getCurrentTimeFormatted());
+        */
+
+        return labels3;
+    }
+
+    /**
+     * 
+     * @param img
+     * @return
+     */
     public int[] objectSegmentation(ImageExt img) {
 
         GreyscaleImage gsImg = img.copyToGreyscale();
@@ -13062,53 +13209,115 @@ int z = 1;
             = new SLICSuperPixels(img, nClusters);
         slic.calculate();
         int[] labels = slic.getLabels();
+    
+        // modify labels by intersection with canny edges.
+        // NOTE: that when a working pattern is in place,
+        // can make this more efficient.  for example,
+        // the superpixels alg uses a gradient, so might as
+        // well give it the canny edges gradient
 
-        TIntList gradSP = findIntersection(gsImg, labels);
-
-        NormalizedCuts normCuts = new NormalizedCuts();
-        normCuts.setColorSpaceToRGB();
-        int[] labels2 = normCuts.normalizedCut(imgCp, labels);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_norm_"
-                + MiscDebug.getCurrentTimeFormatted());
+        List<Set<PairInt>> contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        algorithms.compGeometry.PerimeterFinder2 finder2 
+            = new algorithms.compGeometry.PerimeterFinder2();
+        List<Set<PairInt>> borders = new ArrayList<Set<PairInt>>();
+        for (Set<PairInt> set : contigSets) {
+            borders.add(finder2.extractBorder(set));
         }
-        
-        labels2 = desegment(imgCp, gradSP, labels, labels2);
 
-        List<Set<PairInt>> contiguousSets =
-            LabelToColorHelper
-            .extractContiguousLabelPoints(imgCp, labels2);
-
-        {
-            ImageExt img3 = img.copyToImageExt();
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                img3, labels2);
-            MiscDebug.writeImage(img3, "_norm2_"
-                + MiscDebug.getCurrentTimeFormatted());
+        TIntList nInter = new TIntArrayList();
+        TIntList nSize = new TIntArrayList();
+        TObjectIntMap pointIndexMap = new TObjectIntHashMap();
+        for (int i = 0; i < borders.size(); ++i) {
+            Set<PairInt> set = borders.get(i);
+            for (PairInt p : set) {
+                pointIndexMap.put(p, i);
+            }
+            nInter.add(0);
+            nSize.add(set.size());
         }
-        
+        for (int i = 0; i < gsImg.getNPixels(); ++i) {
+            if (gsImg.getValue(i) > 0) {
+                PairInt p = new PairInt(gsImg.getCol(i),
+                    gsImg.getRow(i));
+                if (pointIndexMap.containsKey(p)) {
+                    int idx = pointIndexMap.get(p);
+                    nInter.set(idx, nInter.get(idx) + 1);
+                }
+            }
+        }
+        int[] labels2 = new int[labels.length];
+        Arrays.fill(labels2, contigSets.size());
+        // examine fraction of boundaries
+        //    and then consider chaining the
+        //    large fraction sup
+        for (int i = 0; i < nSize.size(); ++i) {
+            float fraction = (float)nInter.get(i)/
+                (float)nSize.get(i);
+            if (fraction > 0.05) {//0.075
+                Set<PairInt> set = borders.get(i);
+                set = contigSets.get(i);
+                for (PairInt p : set) {
+                    int pixIdx = img.getInternalIndex(p);
+                    labels2[pixIdx] = i;
+                }
+            }
+        }
         int sizeLimit = 7;
         if (img.getNPixels() < 100) {
             sizeLimit = 1;
         }
+        mergeSmallSegments(img, labels2, sizeLimit, 
+            ColorSpace.RGB);
+        
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels2);
+        for (int i = 0; i< contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels2[pixIdx] = i;
+            }
+        }
+        
+        ImageExt img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img3, labels2);
+        MiscDebug.writeImage(img3, "_slic_grad_" +
+            MiscDebug.getCurrentTimeFormatted());
 
-        List<Set<PairInt>> csa = copy(contiguousSets);
-        int[] labels3a = mergeByCIEXYTheta(imgCp, csa);
+        
+        int[] labels3 = mergeByHSV(img, contigSets);
+        
+        img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            img3, labels3);
+        MiscDebug.writeImage(img3, "_slic_grad__hsv_" +
+            MiscDebug.getCurrentTimeFormatted());
 
-        mergeSmallSegments(imgCp, labels3a,
-            sizeLimit, ColorSpace.CIELAB, 5.0);
+        // NOTE: for normalized cuts the number of labels 
+        // should be kept to 200 or smaller if possible.
+        //    so need to chop the image up into 
+        //    overlapping sections, each of which have 200 or 
+        //    so labels and then combine the results.
+        // TODO: make a wrapper class for that
+        
+        log.info("nLabels = " + MiscMath.findMax(labels3));
+        
+        NormalizedCuts normCuts = new NormalizedCuts();
+        normCuts.setColorSpaceToHSV();
+        labels3 = normCuts.normalizedCut(imgCp, labels3);
 
-        int[] labels3 = mergeByHSV(imgCp, contiguousSets);
-
-        mergeSmallSegments(imgCp, labels3,
-            sizeLimit, ColorSpace.HSV, 5.0);
-
-        examineOverlappingEdges(imgCp, labels3a, labels3);
-
+        log.info("norm cuts finished");
+        
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels3);
+        for (int i = 0; i< contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels3[pixIdx] = i;
+            }
+        }
+         
         /*
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             imgCp, labels3);
@@ -13118,7 +13327,7 @@ int z = 1;
 
         return labels3;
     }
-
+    
     private TIntList findIntersection(GreyscaleImage gradient,
         int[] labels) {
 
@@ -13422,8 +13631,8 @@ int z = 1;
                         - hsv2.getColors()[1]);
                     float diffB = Math.abs(hsv1.getColors()[2]
                         - hsv2.getColors()[2]);
-                    double diff = Math.sqrt(diffH * diffH
-                        + diffS * diffS + diffB * diffB);
+                    //double diff = Math.sqrt(diffH * diffH
+                    //    + diffS * diffS + diffB * diffB);
                     if ((diffH > threshold) || (diffS > threshold)
                         || (diffB > threshold)) {
                         continue;

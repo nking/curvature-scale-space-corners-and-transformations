@@ -85,7 +85,7 @@ public class NormalizedCuts {
     // number of normalized cuts to perform before 
     // determining optimal among them.
     // cannot be smaller than 2
-    private int numCuts = 10;
+    private int numCuts = 5;
 
     private ColorSpace colorSpace = ColorSpace.RGB;
     private boolean ltRGB = false;
@@ -99,7 +99,7 @@ public class NormalizedCuts {
         thresh = 1.e-16;
         sigma = 1.7320508;
     }
-    
+   
     public void setColorSpaceToRGB() {
         ltRGB = false;
         colorSpace = ColorSpace.RGB;
@@ -145,7 +145,7 @@ public class NormalizedCuts {
         RegionAdjacencyGraphColor rag = new RegionAdjacencyGraphColor(
             img, labels);
 
-        log.fine("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
+        log.info("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
                        
         if (ltRGB) {
             rag.populateEdgesWithLowThreshRGBSimilarity(sigma);
@@ -278,7 +278,7 @@ public class NormalizedCuts {
 
                     log.fine("mCut=" + minCut.mCut);
                     log.fine("cut=" + Arrays.toString(minCut.minMask));
-                    log.info("mCut=" + minCut.mCut + " thresh=" + thresh);
+                    log.fine("mCut=" + minCut.mCut + " thresh=" + thresh);
                     
                     if (minCut.mCut < thresh) {
 

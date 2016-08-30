@@ -79,20 +79,16 @@ public class AndroidStatuesTest extends TestCase {
     public AndroidStatuesTest() {
     }
 
-     public void est0() throws Exception {
+     public void test0() throws Exception {
 
+        int maxDimension = 512;
+        
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
-        //11, 12, 21, 30
-        //for (int i = 11; i < 13; ++i) {
-        for (int i = 0; i < 37; ++i) {
+        //for (int i = 0; i < 37; ++i) {
+        for (int i = 0; i < 4; ++i) {
 
-            /*
-            if ( !( (i==8)||(i==12)||(i==21)||(i==30))) {
-                continue;
-            }
-            */
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {
                 case 0: {
@@ -275,45 +271,25 @@ public class AndroidStatuesTest extends TestCase {
             int w1 = img.getWidth();
             int h1 = img.getHeight();
 
-            int maxDimension = 256;
             int binFactor1 = (int) Math.ceil(Math.max((float) w1 / maxDimension,
                 (float) h1 / maxDimension));
 
             img = imageProcessor.binImage(img, binFactor1);
 
-            List<Set<PairInt>> segmentedCellList
-                = imageSegmentation.createColorEdgeSegmentation(
-                    img, fileName1Root);
-
-            MiscDebug.writeAlternatingColor(img,
-                segmentedCellList, "_final_" + fileName1Root);
-
-            /*
-            int nClusters = 200;
-            //int clrNorm = 5;
-
-            SLICSuperPixels slic
-                = new SLICSuperPixels(img, nClusters);
-
-            slic.calculate();
-
-            int[] labels = slic.getLabels();
-
-            ImageIOHelper.addAlternatingColorLabelsToRegion(img, labels);
-            MiscDebug.writeImage(img,  "_slic_" + fileName1Root);
-
-            img = ImageIOHelper.readImageExt(filePath1);
-            img = imageProcessor.binImage(img, binFactor1);
-            LabelToColorHelper.applyLabels(img, labels);
-            MiscDebug.writeImage(img,  "_slic_img_" + fileName1Root);
-            */
+            int[] labels4 = imageSegmentation
+                .objectSegmentation(img);
+            
+            ImageExt img11 = img.createWithDimensions();
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                img11, labels4);
+            
+            MiscDebug.writeImage(img11, "_final_" + fileName1Root);
         }
     }
 
-    public void testShapeMatcher() throws Exception {
+    public void estShapeMatcher() throws Exception {
 
         int maxDimension = 512;
-        int nClusters = 200;
         //int clrNorm = 5;
 
         ImageProcessor imageProcessor = new ImageProcessor();
