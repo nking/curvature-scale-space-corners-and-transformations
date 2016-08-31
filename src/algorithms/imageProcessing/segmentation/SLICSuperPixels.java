@@ -3,6 +3,7 @@ package algorithms.imageProcessing.segmentation;
 import algorithms.QuickSort;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.Gaussian1DFirstDeriv;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
@@ -47,6 +48,8 @@ public class SLICSuperPixels {
     protected final float[][] seedDescriptors;
     
     protected final ImageExt img;
+    
+    protected double[][] gradient = null;
     
     protected final double threshold;
     
@@ -106,6 +109,32 @@ public class SLICSuperPixels {
         double maxError = 2*(maxCIELAB * maxCIELAB * k);
         maxError = Math.sqrt(maxError);
         threshold = 0.01 * maxError;
+    }
+    
+    /**
+     * an optional method to set the gradient, else is
+     * calculated internal to the class and discarded.
+     * @param gradient 
+     */
+    public void setGradient(GreyscaleImage gradientImg) {
+       
+        if (gradientImg.getNPixels() != img.getNPixels()
+            || gradientImg.getWidth() != img.getWidth()
+            || gradientImg.getHeight() != img.getHeight()) {
+            throw new IllegalArgumentException(
+                "gradientImg must be same size as img");
+        }
+
+        int width = gradientImg.getWidth();
+        int height = gradientImg.getHeight();
+
+        gradient = new double[width][];
+        for (int i = 0; i < width; ++i) {
+            gradient[i] = new double[height];
+            for (int j = 0; j < height; ++j) {
+                gradient[i][j] = gradientImg.getValue(i, j);
+            }
+        }
     }
     
     /**
@@ -206,7 +235,9 @@ public class SLICSuperPixels {
     
     private void populateSeedDescriptors() {
         
-        double[][] gradient = calcGradient();
+        if (gradient == null) {
+            gradient = calcGradient();
+        }
         
         /*
         sampled on a regular grid spaced S pixels apart. 
