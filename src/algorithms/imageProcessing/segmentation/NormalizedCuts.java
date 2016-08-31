@@ -85,12 +85,19 @@ public class NormalizedCuts {
     // number of normalized cuts to perform before 
     // determining optimal among them.
     // cannot be smaller than 2
-    private int numCuts = 5;
+    private int numCuts = 3;//5;
 
     private ColorSpace colorSpace = ColorSpace.RGB;
     private boolean ltRGB = false;
     private double thresh = 0.06;
     double sigma = 22;
+
+    public void setThreshold(double thresh) {
+        this.thresh = thresh;
+    }
+    public void setSigma(double sigma) {
+        this.sigma = sigma;
+    }
     
     public void setToLowThresholdRGB() {
         ltRGB = true;

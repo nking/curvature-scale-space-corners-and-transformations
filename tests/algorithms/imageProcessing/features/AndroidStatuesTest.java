@@ -81,13 +81,13 @@ public class AndroidStatuesTest extends TestCase {
 
      public void test0() throws Exception {
 
-        int maxDimension = 512;
+        int maxDimension = 256;//512;
         
         String fileName1 = "";
         SegmentationMergeThreshold mt = SegmentationMergeThreshold.DEFAULT;
 
         //for (int i = 0; i < 37; ++i) {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 1; i < 2; ++i) {
 
             mt = SegmentationMergeThreshold.DEFAULT;
             switch(i) {

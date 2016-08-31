@@ -10348,6 +10348,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
             boundaries.add(boundary);
         }
         
+        {
+            Image imgCp = img.copyToColorGreyscale().createWithDimensions();
+            ImageIOHelper.addAlternatingColorPointSetsToImage(
+                boundaries, 0, 0, 0, imgCp);
+            MiscDebug.writeImage(imgCp, "_bounds_");
+        }
+        
+        //TODO: errors below. merging where there is
+        //   gradient
+        
         int maxLabel = MiscMath.findMax(labels);
         
         // key = label, value = labels to merge with this one
@@ -13306,6 +13316,8 @@ int z = 1;
         if (!usePhaseCongruency) {
             CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
             canny.setToNotUseZhangSuen();
+            canny.setOtsuScaleFactor(0.3f);
+            canny.setToUseSingleThresholdIn2LayerFilter();
             canny.applyFilter(gsImg);
             // value >= 7 or 10 for strongest features
             MiscDebug.writeImage(gsImg, "_gradient_0_" + ts);
@@ -13319,9 +13331,23 @@ int z = 1;
                 MiscDebug.writeImage(gsImg2, "_gradient_1_" + ts);
             }
         } else {
+            float cutOff = 0.5f;//0.3f;//0.5f;
+            int nScale = 5;
+            int minWavelength = 3;//nScale;//3;
+            float mult = 2.1f;
+            float sigmaOnf = 0.55f;
+            int k = 2;
+            float g = 10;
+            float deviationGain = 1.5f;
+            int noiseMethod = -1;
+            double tLow = 0.05;
+            double tHigh = 0.1;
+            boolean increaseKIfNeeded = false;
             PhaseCongruencyDetector pcd = new PhaseCongruencyDetector();
             PhaseCongruencyDetector.PhaseCongruencyProducts pr 
-                = pcd.phaseCongMono(gsImg);
+                = pcd.phaseCongMono(gsImg, nScale, minWavelength, mult, 
+                sigmaOnf, k, increaseKIfNeeded,
+                cutOff, g, deviationGain, noiseMethod, tLow, tHigh);
             for (int i = 0; i < pr.getThinned().length; ++i) {
                 for (int j = 0; j < pr.getThinned()[i].length; ++j) {
                     if (pr.getThinned()[i][j] > 0) {
@@ -13331,9 +13357,10 @@ int z = 1;
                     }
                 }
             }
-            MiscDebug.writeImage(gsImg, "_gradient_" + ts);
+            MiscDebug.writeImage(gsImg, "_gradient0_" + ts);
         }
         
+        // NOTE: good to use the detailed canny gradient w/ super pixels:
         int nClusters = 100;//200;
         int clrNorm = 7;
         SLICSuperPixels slic
@@ -13363,32 +13390,65 @@ int z = 1;
                 labels[pixIdx] = i;
             }
         }
-        
+       
         log.info("merge small, RGB: nLabels=" + MiscMath.findMax(labels));
         
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             imgCp, labels);
         MiscDebug.writeImage(imgCp, "_slic_" + ts);
         
-//TODO: mergeByGradient needs improvements        
-        
-        imgCp = img.copyToImageExt();
-        mergeByGradient(gsImg, labels, contigSets);
+        labels = mergeByHSV(img, contigSets, 0.04f);
+        LabelToColorHelper.condenseLabels(labels);
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             imgCp, labels);
-        MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
-        
+        MiscDebug.writeImage(imgCp, "_slic_HSV_" + ts);
+ 
+        { // experimental merge between gradient edges
+            gsImg = img.copyBlueToGreyscale();
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+            canny.setToNotUseZhangSuen();
+            canny.applyFilter(gsImg);
+            {
+                GreyscaleImage gsImg2 = gsImg.copyImage();
+                for (int i = 0; i < gsImg2.getNPixels(); ++i) {
+                    if (gsImg2.getValue(i) > 0) {
+                        gsImg2.setValue(i, 255);
+                    }
+                }
+                MiscDebug.writeImage(gsImg2, "_gradient_3_" + ts);
+            }
+            
+            contigSets = LabelToColorHelper
+                .extractContiguousLabelPoints(img, labels);
+            for (int i = 0; i < contigSets.size(); ++i) {
+                for (PairInt p : contigSets.get(i)) {
+                    int pixIdx = img.getInternalIndex(p);
+                    labels[pixIdx] = i;
+                }
+            }
+            //TODO: mergeByGradient needs improvements 
+            imgCp = img.copyToImageExt();
+            mergeByGradient(gsImg, labels, contigSets);
+            ImageIOHelper.addAlternatingColorLabelsToRegion(
+                imgCp, labels);
+            MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
+        }
+ 
         int[] labels3;
         ImageExt img3;
         NormalizedCuts normCuts;
-        
-        labels3 = mergeByHSV(img, contigSets, 0.04f);
-        
-        //mergeSmallSegments(img, labels3, sizeLimit, 
-        //    ColorSpace.HSV);
-        
-        LabelToColorHelper.condenseLabels(labels3);
-        
+
+        if (true) {
+            imgCp = img.copyToImageExt();
+            normCuts = new NormalizedCuts();
+            normCuts.setColorSpaceToHSV();
+            //normCuts.setThreshold(0.2); 
+            //normCuts.setSigma(0.1); 
+            labels3 = normCuts.normalizedCut(imgCp, labels);
+        } else {
+            labels3 = mergeByHSV(img, contigSets, 0.04f);
+            LabelToColorHelper.condenseLabels(labels3);
+        }
         log.info("merge HSV: nLabels=" + MiscMath.findMax(labels3));
         
         img3 = img.createWithDimensions();
