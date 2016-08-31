@@ -28,11 +28,11 @@ public class LabelToColorHelper {
     
     /**
      * calculate the average r,g,b of pixels grouped by their labels and
-     * reassigne those pixels the average colors.
+     * reassign those pixels the average colors.
      * @param img
      * @param labels 
      */
-    public static void applyLabels(ImageExt img, int[] labels) {
+    public static void applyLabels(Image img, int[] labels) {
         
         if (img.getNPixels() != labels.length) {
             throw new IllegalArgumentException("labels.length must equal img.nPixels");
@@ -91,6 +91,8 @@ public class LabelToColorHelper {
                 out.add(group);
             }
         }
+    
+        assert(assertAllPointsFound(out, img.getWidth(), img.getHeight()));
         
         return out;
     }
@@ -106,33 +108,20 @@ public class LabelToColorHelper {
         int[] labels) {
 
         assert(labels.length == img.getNPixels());
-        
-        int[] out = new int[labels.length];        
-        
-        TIntObjectMap<Set<PairInt>> lMap = 
-            extractLabelPoints(img, labels);
+                
+        List<Set<PairInt>> list = 
+            extractContiguousLabelPoints(img, labels);
         
         int count = 0;
         
-        TIntObjectIterator<Set<PairInt>> iter = lMap.iterator();
-        for (int i = 0; i < lMap.size(); ++i) {
-            iter.advance();
-            Set<PairInt> set = iter.value();
-            DFSConnectedGroupsFinder finder = 
-                new DFSConnectedGroupsFinder();
-            finder.setMinimumNumberInCluster(1);
-            finder.findConnectedPointGroups(set);
-            for (int j = 0; j < finder.getNumberOfGroups(); ++j) {
-                Set<PairInt> group = finder.getXY(j);
-                for (PairInt p : group) {
-                    int pixIdx = img.getInternalIndex(p);
-                    out[pixIdx] = count;
-                }
-                count++;
+        for (int i = 0; i < list.size(); ++i) {
+            Set<PairInt> set = list.get(i);
+            for (PairInt p : set) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = count;
             }
-        }
-        
-        System.arraycopy(out, 0, labels, 0, labels.length);
+            count++;
+        }        
     }
     
     /**
@@ -209,56 +198,14 @@ public class LabelToColorHelper {
     }
 
     /**
-     * create a map with key = point index, value = 
-     * a set of the 8 adjacent neighbors which have a
-     * different label.
-     * 
+     * create a map with key = label, value = set of adjacent
+     * labels.
      * @param img
      * @param labels
      * @return 
      */
-    public static TIntObjectMap<TIntSet> createAdjacencyPointMap(
-        ImageExt img, int[] labels) {
-        
-        TIntObjectMap<TIntSet> adjacencyMap =
-            new TIntObjectHashMap<TIntSet>();
-
-        int h = img.getHeight();
-        int w = img.getWidth();
-        
-        int[] dxs = Misc.dx8;
-        int[] dys = Misc.dy8;
-        
-        for (int idx1 = 0; idx1 < labels.length; ++idx1) {
-            
-            TIntSet setIdx1 = new TIntHashSet();
-            adjacencyMap.put(idx1, setIdx1);
-            
-            int l1 = labels[idx1];
-            
-            int x = img.getCol(idx1);
-            int y = img.getRow(idx1);
-            for (int j = 0; j < dxs.length; ++j) {
-                int x2 = x + dxs[j];
-                int y2 = y + dys[j];
-                if (x2 < 0 || y2 < 0 || (x2 > (w - 1) ||
-                    (y2 > (h - 1)))) {
-                    continue;
-                }
-                int idx2 = img.getInternalIndex(x2, y2);
-                int l2 = labels[idx2];
-                if (l1 == l2) {
-                    continue;
-                }
-                setIdx1.add(idx2);
-            }
-        }
-        
-        return adjacencyMap;
-    }
-    
     public static TIntObjectMap<TIntSet> createAdjacencyLabelMap(
-        ImageExt img, int[] labels) {
+        Image img, int[] labels) {
         
         TIntObjectMap<TIntSet> adjacencyMap =
             new TIntObjectHashMap<TIntSet>();
@@ -316,6 +263,33 @@ public class LabelToColorHelper {
             }
             labels[i] = label2;
         }
+    }
+
+    private static boolean assertAllPointsFound(
+        List<Set<PairInt>> listOfSets, int width, int height) {
+
+        Set<PairInt> allPoints = new HashSet<PairInt>();
+        for (Set<PairInt> set : listOfSets) {
+            for (PairInt p : set) {
+                boolean exists = allPoints.contains(p);
+                assert(!exists);
+                allPoints.add(p);
+            }
+        }
+        assert(allPoints.size() == width * height);
+        
+        for (int i = 0; i < width; ++i) {
+            for (int j = 0; j < height; ++j) {
+                PairInt p = new PairInt(i, j);
+                boolean exists = allPoints.contains(p);
+                assert(exists);
+                boolean rmvd = allPoints.remove(p);
+                assert(rmvd);
+            }
+        }
+        assert(allPoints.isEmpty());
+        
+        return true;
     }
     
 }
