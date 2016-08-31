@@ -10359,23 +10359,16 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
         //   gradient
         
         int maxLabel = MiscMath.findMax(labels);
-        
-        // key = label, value = labels to merge with this one
-        TIntObjectMap<TIntSet> mergeMap = new TIntObjectHashMap<TIntSet>();
-        
+                 
         int[] dxs = Misc.dx8;
         int[] dys = Misc.dy8;
         
+        // key=label1,label2, value = adjacent pixel indexes 
+        Map<PairInt, TIntSet> adjPixMap = new HashMap<PairInt, TIntSet>();
+            
         for (int label = 0; label < maxLabel; ++label) {
                         
             Set<PairInt> boundary1 = boundaries.get(label);
-            
-            // store adjacent pixels by key adjlabel, value = pixIdxs 
-            // if the adjlabel pixels doesn't contain a gradient pixel, merge them
-            TIntObjectMap<TIntSet> labelIndexesMap = new TIntObjectHashMap<TIntSet>();
-            
-            Set<PairInt> compared = new HashSet<PairInt>();
-            
             for (PairInt p1 : boundary1) {
                 int x = p1.getX();
                 int y = p1.getY();
@@ -10392,85 +10385,112 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                     if (label == label2) {
                         continue;
                     }
-                    TIntSet idxs2 = labelIndexesMap.get(label2);
+                    PairInt pC;
+                    if (label < label2) {
+                        pC = new PairInt(label, label2);
+                    } else {
+                        pC = new PairInt(label2, label);
+                    }
+                    
+                    TIntSet idxs2 = adjPixMap.get(pC);
                     if (idxs2 == null) {
                         idxs2 = new TIntHashSet();
-                        labelIndexesMap.put(label2, idxs2);
+                        adjPixMap.put(pC, idxs2);
                     }
                     idxs2.add(pixIdx2);
                     idxs2.add(pixIdx);
                 }
+            } // end loop over boundary of label1
+        } // end loop over labels
+        
+        // x = one label, y = another.  x < y.
+        Set<PairInt> mergeThese = new HashSet<PairInt>();
+        
+        Set<PairInt> doNotMergeThese = new HashSet<PairInt>();
+     
+        for (Entry<PairInt, TIntSet> entry : adjPixMap.entrySet()) {
+            TIntSet adjIndexes = entry.getValue();
+            int nInGradient = 0;
+            TIntIterator iter = adjIndexes.iterator();
+            while (iter.hasNext()) {
+                int pixIdx = iter.next();
+                if (gradientIndexes.contains(pixIdx)) {
+                    nInGradient++;
+                }
             }
-            
+            PairInt l12 = entry.getKey();
+            //42,50 [180, 78] : [202, 80]
+            // debug 
             MiscellaneousCurveHelper curveHelper = new 
                 MiscellaneousCurveHelper();
+            log.info("nInGradient=" + nInGradient + " " + l12 
+                + "==> " +
+                Arrays.toString(curveHelper.calculateRoundedXYCentroids(
+                    boundaries.get(l12.getX()))) + " : " +
+                Arrays.toString(curveHelper.calculateRoundedXYCentroids(
+                    boundaries.get(l12.getY())))
+            );
             
-            // any values in labelIndexesMap lacking gradient points
-            //   can be merged
-            TIntObjectIterator<TIntSet> labelIndexesIter = labelIndexesMap.iterator();
-            for (int j = 0; j < labelIndexesMap.size(); ++j) {
-                labelIndexesIter.advance();
-                int label2 = labelIndexesIter.key();
-                if (label == label2) {
-                    continue;
-                }
-                PairInt pComp;
-                if (label < label2) {
-                    pComp = new PairInt(label, label2);
-                } else {
-                    pComp = new PairInt(label2, label);
-                }
-                if (compared.contains(pComp)) {
-                    continue;
-                }
-                TIntSet pixIndexes = labelIndexesIter.value();
-                int nInGrad = 0;
-                TIntIterator iter = pixIndexes.iterator();
-                while (iter.hasNext()) {
-                    int pixIdx3 = iter.next();
-                    if (gradientIndexes.contains(pixIdx3)) {
-                        nInGrad++;
-                    }
-                }
-                compared.add(pComp);
-               
-                if (nInGrad == 0) {
-                   //TIntObjectMap<TIntSet> mergeMap
-                   TIntSet mLabels = mergeMap.get(label);
-                   if (mLabels == null) {
-                       mLabels = new TIntHashSet();
-                       mergeMap.put(label, mLabels);
-                   }
-                   mLabels.add(label2); 
-                }
+            if (nInGradient == 0) {
+                mergeThese.add(l12);
+            } else {
+                doNotMergeThese.add(l12);
             }
         }
-   
-        TIntIntMap rMap = new TIntIntHashMap();
         
-        TIntList keys = new TIntArrayList(mergeMap.keySet());
-        keys.sort();
-        for (int i = 0; i < keys.size(); ++i) {
-            int label = keys.get(i);
-            while (rMap.containsKey(label)) {
-                label = rMap.get(label);
+        // doNotMergeThese has to be findable w/ the updated
+        // labels as merges happen.  this could be improved...
+        // easier to debug for now using 2 parallel lists
+        // each update and search is O(N) unfortunately, for now.
+        TIntList list1 = new TIntArrayList();
+        TIntList list2 = new TIntArrayList();
+        for (PairInt pL : doNotMergeThese) {
+            list1.add(pL.getX());
+            list2.add(pL.getY());
+        }
+        
+        // a map to find where a label is if it's merged
+        TIntIntMap rMap = new TIntIntHashMap();
+       
+        for (PairInt l12 : mergeThese) {
+            int label1 = l12.getX();
+            log.info("merge: " + l12);
+            while (rMap.containsKey(label1)) {
+                label1 = rMap.get(label1);
             }
-            Set<PairInt> set = contigSets.get(label);
+            int label2 = l12.getY();
+            while (rMap.containsKey(label2)) {
+                label2 = rMap.get(label2);
+            }
+            if (label1 == label2) {
+                continue;
+            }
+            // make sure these are not equiv to a doNotMerge
+            if (contains(list1, list2, label1, label2)) {
+                continue;
+            }
+                
+            log.info("    --> " + label1 + " , " + label2);
+            Set<PairInt> set1 = contigSets.get(label1);
+            Set<PairInt> set2 = contigSets.get(label2);
+            set1.addAll(set2);
+            set2.clear();
+            rMap.put(label2, label1);
             
-            TIntSet mergeSet = mergeMap.get(label);
-            TIntIterator iter = mergeSet.iterator();
-            while (iter.hasNext()) {
-                int label2 = iter.next();
-                while (rMap.containsKey(label2)) {
-                    label2 = rMap.get(label2);
+            // update doNotMergeMap
+            for (int j = 0; j < list1.size(); ++j) {
+                int l1 = list1.get(j);
+                if (l1 == l12.getX()) {
+                    list1.set(j, label1);
+                } else if (l1 == label2) {
+                    list1.set(j, label1);
                 }
-                if (label == label2) {
-                    continue;
+                int l2 = list2.get(j);
+                if (l2 == l12.getY()) {
+                    list2.set(j, label1);
+                } else if (l2 == label2) {
+                    list2.set(j, label1);
                 }
-                Set<PairInt> set2 = contigSets.get(label2);
-                set.addAll(set2);
-                set2.clear();
-                rMap.put(label2, label);
             }
         }
         
@@ -10489,8 +10509,20 @@ MiscDebug.writeImage(img, "_seg_gs7_" + MiscDebug.getCurrentTimeFormatted());
                 int pixIdx = img.getInternalIndex(p.getX(), p.getY());
                 labels[pixIdx] = i;
             }    
+        } 
+    }
+
+    private boolean contains(TIntList list1, TIntList list2, 
+        int label1, int label2) {
+        for (int j = 0; j < list1.size(); ++j) {
+            int l1 = list1.get(j);
+            int l2 = list2.get(j);
+            if ((l1 == label1 && l2 == label2) || 
+                (l2 == label1 && l1 == label2)) {
+                return true;
+            }
         }
-        
+        return false;
     }
 
     public static class BoundingRegions {
@@ -13403,58 +13435,54 @@ int z = 1;
             imgCp, labels);
         MiscDebug.writeImage(imgCp, "_slic_HSV_" + ts);
  
-        { // experimental merge between gradient edges
-            gsImg = img.copyBlueToGreyscale();
-            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
-            canny.setToNotUseZhangSuen();
-            canny.applyFilter(gsImg);
-            {
-                GreyscaleImage gsImg2 = gsImg.copyImage();
-                for (int i = 0; i < gsImg2.getNPixels(); ++i) {
-                    if (gsImg2.getValue(i) > 0) {
-                        gsImg2.setValue(i, 255);
-                    }
-                }
-                MiscDebug.writeImage(gsImg2, "_gradient_3_" + ts);
-            }
-            
-            contigSets = LabelToColorHelper
-                .extractContiguousLabelPoints(img, labels);
-            for (int i = 0; i < contigSets.size(); ++i) {
-                for (PairInt p : contigSets.get(i)) {
-                    int pixIdx = img.getInternalIndex(p);
-                    labels[pixIdx] = i;
+        // experimental merge between gradient edges
+        /*gsImg = img.copyBlueToGreyscale();
+        CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+        canny.setToNotUseZhangSuen();
+        canny.applyFilter(gsImg);
+        {
+            GreyscaleImage gsImg2 = gsImg.copyImage();
+            for (int i = 0; i < gsImg2.getNPixels(); ++i) {
+                if (gsImg2.getValue(i) > 0) {
+                    gsImg2.setValue(i, 255);
                 }
             }
-            //TODO: mergeByGradient needs improvements 
-            imgCp = img.copyToImageExt();
-            mergeByGradient(gsImg, labels, contigSets);
-            ImageIOHelper.addAlternatingColorLabelsToRegion(
-                imgCp, labels);
-            MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
+            MiscDebug.writeImage(gsImg2, "_gradient_3_" + ts);
+        }*/
+
+        contigSets = LabelToColorHelper
+            .extractContiguousLabelPoints(img, labels);
+        for (int i = 0; i < contigSets.size(); ++i) {
+            for (PairInt p : contigSets.get(i)) {
+                int pixIdx = img.getInternalIndex(p);
+                labels[pixIdx] = i;
+            }
         }
- 
+        
+        
+        mergeByGradient(gsImg, labels, contigSets);
+        
+        imgCp = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(
+            imgCp, labels);
+        MiscDebug.writeImage(imgCp, "_gradientmerge_" + ts);
+
+        
         int[] labels3;
         ImageExt img3;
         NormalizedCuts normCuts;
 
-        if (true) {
-            imgCp = img.copyToImageExt();
-            normCuts = new NormalizedCuts();
-            normCuts.setColorSpaceToHSV();
-            //normCuts.setThreshold(0.2); 
-            //normCuts.setSigma(0.1); 
-            labels3 = normCuts.normalizedCut(imgCp, labels);
-        } else {
-            labels3 = mergeByHSV(img, contigSets, 0.04f);
-            LabelToColorHelper.condenseLabels(labels3);
-        }
+        imgCp = img.copyToImageExt();
+        normCuts = new NormalizedCuts();
+        normCuts.setToLowThresholdHSV();
+        labels3 = normCuts.normalizedCut(imgCp, labels);
+       
         log.info("merge HSV: nLabels=" + MiscMath.findMax(labels3));
         
         img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(
             img3, labels3);
-        MiscDebug.writeImage(img3, "_slic_hsv_" + ts);
+        MiscDebug.writeImage(img3, "_norm_" + ts);
         
         if (true) {
             return labels3;

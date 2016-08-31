@@ -128,6 +128,96 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         populateEdgesWithColorSimilarity(ColorSpace.RGB,
             sigma);
     }
+    
+    public void populateEdgesWithLowThreshHSVSimilarity(
+        double sigma) {
+        
+        if (diffOrSim != null) {
+            throw new IllegalStateException("this method is expected to be invoked only once");
+        }
+        
+        this.colorSpace = ColorSpace.HSV;
+        
+        int nNodes = regions.size();
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+                
+        // calculate the average colors for each node
+        float[][] nodeColors = calculateNodeAverageColors();
+        
+        // calculate pairwise differences for adjacent nodes (similarity or distance edgeS)
+        
+        CIEChromaticity cieC = new CIEChromaticity();
+        
+        Set<PairInt> added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // using max diff as the difference, so that normalized cuts
+                // is less likely to merge (or more likely to see as not the same)
+                double diff = Double.MIN_VALUE;
+                for (int m = 0; m < 3; ++m) {
+                    float d = nodeColors[m][idx1] - nodeColors[m][idx2];
+                    if (d < 0) {
+                        d *= -1;
+                    }
+                    if (d > diff) {
+                        diff = d;
+                    }
+                }
+  
+                // set both [i][j] and [j][i] to make matrix symmetric
+                diffOrSim.set(idx1, idx2, diff);
+                diffOrSim.set(idx2, idx1, diff);
+            }
+        }
+
+        added = new HashSet<PairInt>();
+        
+        for (Entry<Integer, Set<Integer>> entry : adjacencyMap.entrySet()) {
+            Integer index1 = entry.getKey();
+            int idx1 = index1.intValue();
+            for (Integer index2 : entry.getValue()) {
+                int idx2 = index2.intValue();
+                assert(idx1 != idx2);
+                PairInt p;
+                if (idx1 < idx2) {
+                    p = new PairInt(idx1, idx2);
+                } else {
+                    p = new PairInt(idx2, idx1);
+                }
+                if (added.contains(p)) {
+                    continue;
+                }
+                added.add(p);
+                
+                // set both [i][j] and [j][i] to make symmetric matrix
+                double d = diffOrSim.get(idx1, idx2);
+                assert(d == diffOrSim.get(idx2, idx1));
+                double similarity = Math.exp(-1*d*d/sigma);
+  System.out.println("similarity=" + similarity);      
+                diffOrSim.set(idx1, idx2, similarity);
+                diffOrSim.set(idx2, idx1, similarity);
+            }
+        }        
+    }
    
     public void populateEdgesWithColorSimilarity(
         ColorSpace clrSpace, double sigma) {
@@ -221,14 +311,8 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
         int row = pixIdx/imageWidth;
         return pixIdx - (row * imageWidth);
     }
-        
-    private void populatePairDifferences(ColorSpace clrSpace) {
-        
-        if (diffOrSim != null) {
-            throw new IllegalStateException("this method is expected to be invoked only once");
-        }
-        
-        this.colorSpace = clrSpace;
+    
+    private float[][] calculateNodeAverageColors() {
         
         int nNodes = regions.size();
         int nCols = img.getWidth();
@@ -248,21 +332,10 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
 
                 int label = labels[row][col];
                 
-                int r = img.getR(col, row);
-                int g = img.getG(col, row);
-                int b = img.getB(col, row);
+                nodeColors[0][label] += img.getR(col, row);
+                nodeColors[1][label] += img.getG(col, row);
+                nodeColors[2][label] += img.getB(col, row);
                 
-                if (colorSpace.equals(ColorSpace.HSV)) {
-                    float[] hsb = new float[3];
-                    Color.RGBtoHSB(r, g, b, hsb);
-                    nodeColors[0][label] += hsb[0];
-                    nodeColors[1][label] += hsb[1];
-                    nodeColors[2][label] += hsb[2];
-                } else {
-                    nodeColors[0][label] += r;
-                    nodeColors[1][label] += g;
-                    nodeColors[2][label] += b;
-                }
                 count[label]++;
             }
         }
@@ -270,7 +343,36 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
             nodeColors[0][i] /= (float)count[i];
             nodeColors[1][i] /= (float)count[i];
             nodeColors[2][i] /= (float)count[i];
+            if (colorSpace.equals(ColorSpace.HSV)) {
+                float[] hsb = new float[3];
+                Color.RGBtoHSB(Math.round(nodeColors[0][i]), 
+                    Math.round(nodeColors[1][i]), 
+                    Math.round(nodeColors[2][i]), hsb);
+                nodeColors[0][i] = hsb[0];
+                nodeColors[1][i] = hsb[1];
+                nodeColors[2][i] = hsb[2];
+            }
         }
+        
+        return nodeColors;
+    }
+        
+    private void populatePairDifferences(ColorSpace clrSpace) {
+        
+        if (diffOrSim != null) {
+            throw new IllegalStateException("this method is expected to be invoked only once");
+        }
+        
+        this.colorSpace = clrSpace;
+        
+        int nNodes = regions.size();
+        int nCols = img.getWidth();
+        int nRows = img.getHeight();
+
+        diffOrSim = new FlexCompRowMatrix(nNodes, nNodes);
+                
+        // calculate the average colors for each node
+        float[][] nodeColors = calculateNodeAverageColors();
         
         // calculate pairwise differences for adjacent nodes (similarity or distance edgeS)
         

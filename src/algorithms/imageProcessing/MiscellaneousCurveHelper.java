@@ -970,6 +970,17 @@ public class MiscellaneousCurveHelper {
         return new double[]{xc, yc};
     }
 
+    public int[] calculateRoundedXYCentroids(Set<PairInt> points) {
+
+        double[] xyCen = calculateXYCentroids(points);
+
+        int[] out = new int[2];
+        out[0] = (int)Math.round(xyCen[0]);
+        out[1] = (int)Math.round(xyCen[1]);
+
+        return out;
+    }
+
     public double[] calculateXYCentroids(float[] x, float[] y) {
 
         if (x == null) {

@@ -91,6 +91,9 @@ public class NormalizedCuts {
     private boolean ltRGB = false;
     private double thresh = 0.06;
     double sigma = 22;
+    
+    // TODO: change these to an enumberation
+    private boolean ltHSV = false;
 
     public void setThreshold(double thresh) {
         this.thresh = thresh;
@@ -101,14 +104,25 @@ public class NormalizedCuts {
     
     public void setToLowThresholdRGB() {
         ltRGB = true;
+        ltHSV = false;
         colorSpace = ColorSpace.RGB;
         // for superpixels w/ n=200
         thresh = 1.e-16;
         sigma = 1.7320508;
     }
+    
+    public void setToLowThresholdHSV() {
+        ltHSV = true;
+        ltRGB = false;
+        colorSpace = ColorSpace.HSV;
+        // for superpixels w/ n=200  thresh=0.05, sigma=0.1
+        thresh = 1e-13;   //1e-13 and 0.001 are close for a test image
+        sigma = 0.001;//change smaller
+    }
    
     public void setColorSpaceToRGB() {
         ltRGB = false;
+        ltHSV = false;
         colorSpace = ColorSpace.RGB;
         // for superpixels w/ n=200 thresh=0.06 sigma=22
         thresh = 0.06;
@@ -117,6 +131,7 @@ public class NormalizedCuts {
     
     public void setColorSpaceToHSV() {
         ltRGB = false;
+        ltHSV = false;
         colorSpace = ColorSpace.HSV;
         // for superpixels w/ n=200  thresh=0.05, sigma=0.1
         thresh = 0.05;
@@ -125,6 +140,7 @@ public class NormalizedCuts {
     
     public void setColorSpaceToCIELAB() {
         ltRGB = false;
+        ltHSV = false;
         colorSpace = ColorSpace.CIELAB;
         // for superpixels w/ n=200 thresh=1e-12  sigma=6
         thresh = 1e-12;//-12
@@ -153,8 +169,10 @@ public class NormalizedCuts {
             img, labels);
 
         log.info("rag.nNodes=" + rag.getNumberOfRegions() + " at start");
-                       
-        if (ltRGB) {
+         
+        if (ltHSV) {
+            rag.populateEdgesWithLowThreshHSVSimilarity(sigma);
+        } else if (ltRGB) {
             rag.populateEdgesWithLowThreshRGBSimilarity(sigma);
         } else {
             rag.populateEdgesWithColorSimilarity(colorSpace,
@@ -285,7 +303,7 @@ public class NormalizedCuts {
 
                     log.fine("mCut=" + minCut.mCut);
                     log.fine("cut=" + Arrays.toString(minCut.minMask));
-                    log.fine("mCut=" + minCut.mCut + " thresh=" + thresh);
+                    log.info("mCut=" + minCut.mCut + " thresh=" + thresh);
                     
                     if (minCut.mCut < thresh) {
 
